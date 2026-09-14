@@ -22,7 +22,8 @@ Usage: $0 <base-path> <test-path> \
 Compare benchmark performance between two checked-out CCCL trees.
 
 At least one --cub-filter or --python-filter must be provided.
-CUB filters are regex patterns matched against ninja target names.
+CUB filters are regex patterns matched against CUB benchmark Ninja target names.
+Matching targets are built; only matching runnable binaries are launched.
 Python filters are regex patterns matched against benchmark script paths
 under python/cuda_cccl/benchmarks/ (e.g. compute/reduce/sum.py).
 
@@ -172,6 +173,40 @@ list_all_benchmark_targets() {
     | sort -u
 }
 
+list_built_benchmark_binaries() {
+  local build_path="$1"
+  if [[ ! -d "${build_path}/bin" ]]; then
+    return 0
+  fi
+
+  find "${build_path}/bin" -maxdepth 1 -type f -executable -printf '%f\n' \
+    | sort -u
+}
+
+normalize_benchmark_target() {
+  local target="$1"
+  target="${target#./}"
+  target="${target#bin/}"
+  target="${target##*/}"
+  printf "%s" "${target}"
+}
+
+target_was_requested_for_build() {
+  local target="$1"
+  shift
+  local build_target=""
+  local normalized_build_target=""
+
+  for build_target in "$@"; do
+    normalized_build_target="$(normalize_benchmark_target "${build_target}")"
+    if [[ "${target}" == "${normalized_build_target}" || "${target}" == "${normalized_build_target}".* ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 target_matches_filters() {
   local target="$1"
   local filter=""
@@ -186,36 +221,14 @@ target_matches_filters() {
   return 1
 }
 
-resolve_compare_script() {
+resolve_robust_compare_script() {
   local build_path="$1"
   local nvbench_src="${build_path}/_deps/nvbench-src"
-  local candidate=""
-  # Different versions have the script at different locations:
-  for candidate in \
-    "${nvbench_src}/python/scripts/nvbench_compare_robust.py" \
-    "${nvbench_src}/scripts/nvbench_compare_robust.py"; do
-    if [[ -f "${candidate}" ]]; then
-      printf "%s" "${candidate}"
-      return 0
-    fi
-  done
-  return 1
-}
-
-resolve_legacy_compare_script() {
-  local build_path="$1"
-  local nvbench_src="${build_path}/_deps/nvbench-src"
-  local candidate=""
-  # Different versions have the script at different locations:
-  for candidate in \
-    "${nvbench_src}/python/scripts/nvbench_compare.py" \
-    "${nvbench_src}/scripts/nvbench_compare.py"; do
-    if [[ -f "${candidate}" ]]; then
-      printf "%s" "${candidate}"
-      return 0
-    fi
-  done
-  return 1
+  local candidate="${nvbench_src}/python/scripts/nvbench_compare_robust.py"
+  if [[ -f "${candidate}" ]]; then
+    printf "%s" "${candidate}"
+  fi
+  return 0
 }
 
 run_target_for_side() {
@@ -283,6 +296,34 @@ select_targets() {
   if [[ "${#selected_targets_ref[@]}" -eq 0 ]]; then
     die "No CUB benchmark targets matched the supplied filters." 1
   fi
+}
+
+select_runnable_targets() {
+  local base_build_path="$1"
+  local test_build_path="$2"
+  local -n selected_runnable_targets_ref="$3"
+  local -a base_targets
+  local -a test_targets
+  local -a common_targets
+  shift 3
+  local target=""
+
+  mapfile -t base_targets < <(list_built_benchmark_binaries "${base_build_path}")
+  mapfile -t test_targets < <(list_built_benchmark_binaries "${test_build_path}")
+
+  mapfile -t common_targets < <(
+    comm -12 \
+      <(printf "%s\n" "${base_targets[@]}" | sort -u) \
+      <(printf "%s\n" "${test_targets[@]}" | sort -u)
+  )
+
+  selected_runnable_targets_ref=()
+  for target in "${common_targets[@]}"; do
+    [[ -n "${target}" ]] || continue
+    if target_was_requested_for_build "${target}" "$@"; then
+      selected_runnable_targets_ref+=("${target}")
+    fi
+  done
 }
 
 # ============================================================================
@@ -808,12 +849,11 @@ run_compare_command_with_pythonpath() {
 
 run_compare_target() {
   local target="$1"
-  local compare_script="$2"
-  local compare_script_dir="$3"
-  local base_json="$4"
-  local test_json="$5"
-  local legacy_compare_script="$6"
-  local legacy_compare_script_dir="$7"
+  local compare_script_dir="$2"
+  local robust_compare_script="$3"
+  local legacy_compare_script="$4"
+  local base_json="$5"
+  local test_json="$6"
 
   local compare_pythonpath="${compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
   local compare_python="${CCCL_BENCH_COMPARE_PYTHON:-python3}"
@@ -828,7 +868,7 @@ run_compare_target() {
     compare_log="$(compare_log_path_for_display "${target}" "${display}")"
     compare_cmd=(
       "${compare_python}"
-      "${compare_script}"
+      "${robust_compare_script}"
       --no-color
       "${NVBENCH_COMPARE_ARGS[@]}"
       --display
@@ -851,7 +891,6 @@ run_compare_target() {
   done
 
   if [[ -n "${legacy_compare_script}" ]]; then
-    compare_pythonpath="${legacy_compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
     compare_cmd=(
       "${compare_python}"
       "${legacy_compare_script}"
@@ -994,7 +1033,8 @@ write_summary() {
       echo "- Test build dir: \`${test_build_dir}\`"
       echo "- NVBench SHA/tag: \`${nvbench_sha}\`"
     fi
-    echo "- CUB targets selected: ${#selected_targets[@]}"
+    echo "- CUB build targets selected: ${#selected_targets[@]}"
+    echo "- CUB runnable targets selected: ${#selected_runnable_targets[@]}"
     echo "- CUB comparisons attempted: ${compares_attempted}"
     echo "- CUB comparisons succeeded: ${compares_succeeded}"
     echo "- Python targets selected: ${#selected_py_targets[@]}"
@@ -1038,9 +1078,9 @@ write_summary() {
       echo
     fi
 
-    if [[ "${#selected_targets[@]}" -gt 0 ]]; then
+    if [[ "${#selected_runnable_targets[@]}" -gt 0 ]]; then
       echo "## CUB Compare Reports"
-      for target in "${selected_targets[@]}"; do
+      for target in "${selected_runnable_targets[@]}"; do
         echo
         echo "### \`${target}\`"
         compare_report_file="$(compare_report_path_for_display "${target}" "intervals")"
@@ -1265,6 +1305,7 @@ any_failures=0
 compares_attempted=0
 compares_succeeded=0
 declare -a selected_targets=()
+declare -a selected_runnable_targets=()
 py_compares_attempted=0
 py_compares_succeeded=0
 declare -a selected_py_targets=()
@@ -1305,24 +1346,6 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
 
   printf "%s\n" "${selected_targets[@]}" > "${artifact_dir}/meta/selected_targets.txt"
 
-  compare_script="$(resolve_compare_script "${test_build_dir}" || true)"
-  if [[ -z "${compare_script}" ]]; then
-    compare_script="$(resolve_compare_script "${base_build_dir}" || true)"
-  fi
-  if [[ -z "${compare_script}" ]]; then
-    die "Unable to locate nvbench_compare_robust.py in build dependencies." 1
-  fi
-  compare_script_dir="$(dirname "${compare_script}")"
-
-  legacy_compare_script="$(resolve_legacy_compare_script "${test_build_dir}" || true)"
-  if [[ -z "${legacy_compare_script}" ]]; then
-    legacy_compare_script="$(resolve_legacy_compare_script "${base_build_dir}" || true)"
-  fi
-  legacy_compare_script_dir=""
-  if [[ -n "${legacy_compare_script}" ]]; then
-    legacy_compare_script_dir="$(dirname "${legacy_compare_script}")"
-  fi
-
   base_build_all_rc=0
   test_build_all_rc=0
 
@@ -1346,7 +1369,31 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
     any_failures=1
   fi
 
-  for target in "${selected_targets[@]}"; do
+  if [[ "${base_build_all_rc}" -eq 0 && "${test_build_all_rc}" -eq 0 ]]; then
+    select_runnable_targets "${base_build_dir}" "${test_build_dir}" selected_runnable_targets "${selected_targets[@]}"
+  fi
+  printf "%s\n" "${selected_runnable_targets[@]}" > "${artifact_dir}/meta/selected_runnable_targets.txt"
+
+  if [[ "${#selected_runnable_targets[@]}" -gt 0 ]]; then
+    robust_compare_script="$(resolve_robust_compare_script "${test_build_dir}")"
+    if [[ -z "${robust_compare_script}" ]]; then
+      robust_compare_script="$(resolve_robust_compare_script "${base_build_dir}")"
+    fi
+    if [[ -z "${robust_compare_script}" ]]; then
+      die "Unable to locate nvbench_compare_robust.py in build dependencies." 1
+    fi
+    compare_script_dir="$(dirname "${robust_compare_script}")"
+
+    legacy_compare_script="${compare_script_dir}/nvbench_compare.py"
+    if [[ ! -f "${legacy_compare_script}" ]]; then
+      legacy_compare_script=""
+    fi
+  elif [[ "${base_build_all_rc}" -eq 0 && "${test_build_all_rc}" -eq 0 ]]; then
+    echo "No runnable CUB benchmark targets matched the supplied filters; marking comparison as failed." >&2
+    any_failures=1
+  fi
+
+  for target in "${selected_runnable_targets[@]}"; do
     base_target_run_rc=125
     test_target_run_rc=125
     base_run_log="${artifact_dir}/logs/run.base.${target}.log"
@@ -1391,12 +1438,11 @@ if [[ "${#FILTERS[@]}" -gt 0 ]]; then
       compares_attempted=$((compares_attempted + 1))
       if run_compare_target \
         "${target}" \
-        "${compare_script}" \
         "${compare_script_dir}" \
-        "${base_json}" \
-        "${test_json}" \
+        "${robust_compare_script}" \
         "${legacy_compare_script}" \
-        "${legacy_compare_script_dir}"; then
+        "${base_json}" \
+        "${test_json}"; then
         compares_succeeded=$((compares_succeeded + 1))
       else
         any_failures=1

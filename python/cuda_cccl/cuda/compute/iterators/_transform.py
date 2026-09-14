@@ -12,7 +12,7 @@ from .._bindings import Op, OpKind
 from .._cpp_compile import compile_cpp_op_code, make_variable_declaration
 from ..op import make_op_adapter
 from ..types import TypeDescriptor, signature_from_annotations
-from ._base import IteratorBase
+from ._base import IteratorBase, compose_state_blobs
 from ._common import CUDA_PREAMBLE, ensure_iterator
 
 
@@ -46,6 +46,7 @@ class TransformIterator(IteratorBase):
         "_value_type",
         "_is_input",
         "_compiled_op",
+        "_op_state_offset",
     ]
 
     def __init__(
@@ -98,9 +99,30 @@ class TransformIterator(IteratorBase):
         assert value_type is not None
         self._value_type = value_type
 
+        # A stateful transform_op's state is folded into this
+        # iterator's own device state, alongside the underlying iterator's
+        # state, so that the generated deref glue (see _make_input_deref_op /
+        # _make_output_deref_op) has a pointer to hand the op as its `state`
+        # argument.
+        op_state = self._transform_op.get_state()
+        underlying_state = bytes(memoryview(self._underlying.state))
+        self._op_state_offset: int | None
+        if op_state:
+            state_bytes, state_alignment, offsets = compose_state_blobs(
+                [
+                    (underlying_state, self._underlying.state_alignment),
+                    (op_state, self._transform_op.state_alignment),
+                ]
+            )
+            self._op_state_offset = offsets[1]
+        else:
+            state_bytes = underlying_state
+            state_alignment = self._underlying.state_alignment
+            self._op_state_offset = None
+
         super().__init__(
-            state_bytes=bytes(self._underlying.state),
-            state_alignment=self._underlying.state_alignment,
+            state_bytes=state_bytes,
+            state_alignment=state_alignment,
             value_type=value_type,
         )
 
@@ -122,6 +144,25 @@ class TransformIterator(IteratorBase):
                 output_type,
             )
         return self._compiled_op[key]
+
+    def _op_decl_and_call(
+        self, compiled_op: Op, input_expr: str, output_expr: str
+    ) -> tuple[str, str]:
+        """Return (extern declaration, call statement) for `compiled_op`.
+
+        Handles both the stateless 2-argument `(input, output)` and stateful
+        3-argument `(state, input, output)` calling conventions -- shared by
+        _make_input_deref_op and _make_output_deref_op so the two prototypes
+        only need to agree in one place.
+        """
+        if compiled_op.operator_type == OpKind.STATEFUL:
+            decl = f'extern "C" __device__ void {compiled_op.name}(void* state, void* input, void* output);'
+            state_expr = f"static_cast<char*>(state) + {self._op_state_offset}"
+            call = f"{compiled_op.name}({state_expr}, {input_expr}, {output_expr});"
+        else:
+            decl = f'extern "C" __device__ void {compiled_op.name}(void* input, void* output);'
+            call = f"{compiled_op.name}({input_expr}, {output_expr});"
+        return decl, call
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that delegates to underlying iterator."""
@@ -160,16 +201,18 @@ class TransformIterator(IteratorBase):
         symbol = self._make_input_deref_symbol()
         temp_decl = make_variable_declaration(self._underlying.value_type, "temp")
 
+        op_decl, op_call = self._op_decl_and_call(compiled_op, "&temp", "result")
+
         source = dedent(f"""
             {CUDA_PREAMBLE}
 
             extern "C" __device__ void {child_op.name}(void* state, void* result);
-            extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+            {op_decl}
 
             extern "C" __device__ void {symbol}(void* state, void* result) {{
                 {temp_decl}
                 {child_op.name}(state, &temp);
-                {compiled_op.name}(&temp, result);
+                {op_call}
             }}
         """).strip()
 
@@ -200,15 +243,17 @@ class TransformIterator(IteratorBase):
         symbol = self._make_output_deref_symbol()
         temp_decl = make_variable_declaration(self._underlying.value_type, "temp")
 
+        op_decl, op_call = self._op_decl_and_call(compiled_op, "value", "&temp")
+
         source = dedent(f"""
             {CUDA_PREAMBLE}
 
             extern "C" __device__ void {child_op.name}(void* state, void* value);
-            extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+            {op_decl}
 
             extern "C" __device__ void {symbol}(void* state, void* value) {{
                 {temp_decl}
-                {compiled_op.name}(value, &temp);
+                {op_call}
                 {child_op.name}(state, &temp);
             }}
         """).strip()

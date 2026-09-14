@@ -26,7 +26,7 @@ struct TestFunctionalPlaceholdersValue
     const size_t n = 10000;
     using T        = typename Vector::value_type;
 
-    T a(13);
+    const T a(13);
 
     Vector x = unittest::random_integers<T>(n);
     Vector y = unittest::random_integers<T>(n);
@@ -40,10 +40,18 @@ struct TestFunctionalPlaceholdersValue
     ASSERT_ALMOST_EQUAL(reference, result);
   }
 };
-VectorUnitTest<TestFunctionalPlaceholdersValue, ThirtyTwoBitTypes, thrust::device_vector, thrust::device_allocator>
-  TestFunctionalPlaceholdersValueDevice;
-VectorUnitTest<TestFunctionalPlaceholdersValue, ThirtyTwoBitTypes, thrust::host_vector, std::allocator>
-  TestFunctionalPlaceholdersValueHost;
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestFunctionalPlaceholdersValue,
+  ThirtyTwoBitTypes,
+  thrust::device_vector,
+  thrust::device_allocator,
+  TestFunctionalPlaceholdersValueDevice);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestFunctionalPlaceholdersValue,
+  ThirtyTwoBitTypes,
+  thrust::host_vector,
+  std::allocator,
+  TestFunctionalPlaceholdersValueHost);
 
 template <typename Vector>
 struct TestFunctionalPlaceholdersTransformIterator
@@ -53,7 +61,7 @@ struct TestFunctionalPlaceholdersTransformIterator
     const size_t n = 10000;
     using T        = typename Vector::value_type;
 
-    T a(13);
+    const T a(13);
 
     Vector x = unittest::random_integers<T>(n);
     Vector y = unittest::random_integers<T>(n);
@@ -72,13 +80,18 @@ struct TestFunctionalPlaceholdersTransformIterator
     ASSERT_ALMOST_EQUAL(reference, result);
   }
 };
-VectorUnitTest<TestFunctionalPlaceholdersTransformIterator,
-               ThirtyTwoBitTypes,
-               thrust::device_vector,
-               thrust::device_allocator>
-  TestFunctionalPlaceholdersTransformIteratorInstanceDevice;
-VectorUnitTest<TestFunctionalPlaceholdersTransformIterator, ThirtyTwoBitTypes, thrust::host_vector, std::allocator>
-  TestFunctionalPlaceholdersTransformIteratorInstanceHost;
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestFunctionalPlaceholdersTransformIterator,
+  ThirtyTwoBitTypes,
+  thrust::device_vector,
+  thrust::device_allocator,
+  TestFunctionalPlaceholdersTransformIteratorDevice);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestFunctionalPlaceholdersTransformIterator,
+  ThirtyTwoBitTypes,
+  thrust::host_vector,
+  std::allocator,
+  TestFunctionalPlaceholdersTransformIteratorHost);
 
 void TestFunctionalPlaceholdersArgumentValueCategories()
 {
@@ -96,9 +109,10 @@ void TestFunctionalPlaceholdersSemiRegular()
 {
   using namespace thrust::placeholders;
   using Expr = decltype(_1 * _1 + _2 * _2);
+  // NOLINTNEXTLINE(misc-const-correctness)
   Expr expr; // default-constructible
   ASSERT_EQUAL(expr(2, 3), 13);
-  Expr expr2 = expr; // copy-constructible
+  const Expr expr2 = expr; // copy-constructible
   ASSERT_EQUAL(expr2(2, 3), 13);
   Expr expr3;
   expr3 = expr; // copy-assignable

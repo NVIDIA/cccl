@@ -106,8 +106,8 @@ template <class _Tp>
   const _Tp __real_abs = ::cuda::std::fabs(__x.real());
   const _Tp __imag_abs = ::cuda::std::fabs(__x.imag());
 
-  _Tp __max = (__real_abs > __imag_abs) ? __real_abs : __imag_abs;
-  _Tp __min = (__real_abs > __imag_abs) ? __imag_abs : __real_abs;
+  const _Tp __max = (__real_abs > __imag_abs) ? __real_abs : __imag_abs;
+  const _Tp __min = (__real_abs > __imag_abs) ? __imag_abs : __real_abs;
 
   // We would like to range reduce these values so that abs(x) ~ 1, as we'll take the log of this.
   // The below code inlines and removes these two calls:
@@ -118,12 +118,12 @@ template <class _Tp>
   int32_t __exp = static_cast<int32_t>(::cuda::std::bit_cast<__uint_t>(__max) >> __mant_nbits) - __exp_bias + 1;
 
   // Quick frexp:
-  __uint_t __max_reduced_as_uint = (::cuda::std::bit_cast<__uint_t>(__max) & __mant_mask) | __exp_mask_of_half;
-  _Tp __max_reduced              = ::cuda::std::bit_cast<_Tp>(__max_reduced_as_uint);
+  const __uint_t __max_reduced_as_uint = (::cuda::std::bit_cast<__uint_t>(__max) & __mant_mask) | __exp_mask_of_half;
+  _Tp __max_reduced                    = ::cuda::std::bit_cast<_Tp>(__max_reduced_as_uint);
 
   // Create an exponent for an inline ldexp(__min, -__exp)
-  __uint_t __exp_neg_as_uint = (static_cast<__uint_t>(__exp_bias - __exp) << __mant_nbits);
-  _Tp __exp_neg              = ::cuda::std::bit_cast<_Tp>(__exp_neg_as_uint);
+  const __uint_t __exp_neg_as_uint = (static_cast<__uint_t>(__exp_bias - __exp) << __mant_nbits);
+  const _Tp __exp_neg              = ::cuda::std::bit_cast<_Tp>(__exp_neg_as_uint);
 
   _Tp __min_reduced = __min * __exp_neg;
 
@@ -146,25 +146,27 @@ template <class _Tp>
         // and split it into two separate multiplications.
         // Inlined version of this code:
         //   __min_reduced = ::cuda::std::ldexp(__min, -__exp);
-        __uint_t __ldexp_factor_2_uint = (static_cast<__uint_t>(__exp_bias + __mant_nbits - __exp) << __mant_nbits);
-        __uint_t __two_m_mant_bits     = static_cast<__uint_t>(-__mant_nbits + __exp_bias) << __mant_nbits;
+        const __uint_t __ldexp_factor_2_uint =
+          (static_cast<__uint_t>(__exp_bias + __mant_nbits - __exp) << __mant_nbits);
+        const __uint_t __two_m_mant_bits = static_cast<__uint_t>(-__mant_nbits + __exp_bias) << __mant_nbits;
 
-        _Tp __ldexp_factor_1 = ::cuda::std::bit_cast<_Tp>(__two_m_mant_bits); // 2^(-__mant_nbits)
-        _Tp __ldexp_factor_2 = ::cuda::std::bit_cast<_Tp>(__ldexp_factor_2_uint);
-        __min_reduced        = (__min * __ldexp_factor_1) * __ldexp_factor_2;
+        const _Tp __ldexp_factor_1 = ::cuda::std::bit_cast<_Tp>(__two_m_mant_bits); // 2^(-__mant_nbits)
+        const _Tp __ldexp_factor_2 = ::cuda::std::bit_cast<_Tp>(__ldexp_factor_2_uint);
+        __min_reduced              = (__min * __ldexp_factor_1) * __ldexp_factor_2;
       }
       else
       {
         // __max is denormal (so __min is also denormal or 0.0)
         // Scale things up by 2^__mant_nbits then do the fast ldexp.
-        __uint_t __two_mant_bits = static_cast<__uint_t>(__mant_nbits + __exp_bias) << __mant_nbits;
-        _Tp __ldexp_factor       = ::cuda::std::bit_cast<_Tp>(__two_mant_bits);
-        __max_reduced            = __max * __ldexp_factor; // 2^__mant_nbits
-        __min_reduced            = __min * __ldexp_factor; // 2^__mant_nbits;
+        const __uint_t __two_mant_bits = static_cast<__uint_t>(__mant_nbits + __exp_bias) << __mant_nbits;
+        const _Tp __ldexp_factor       = ::cuda::std::bit_cast<_Tp>(__two_mant_bits);
+        __max_reduced                  = __max * __ldexp_factor; // 2^__mant_nbits
+        __min_reduced                  = __min * __ldexp_factor; // 2^__mant_nbits;
 
-        int32_t __exp_no_denorm_bias =
+        const int32_t __exp_no_denorm_bias =
           static_cast<int32_t>(::cuda::std::bit_cast<__uint_t>(__max_reduced) >> __mant_nbits) - __exp_bias + 1;
-        __uint_t ldexp_factor_no_denorm_bias = static_cast<__uint_t>(__exp_bias - __exp_no_denorm_bias) << __mant_nbits;
+        const __uint_t ldexp_factor_no_denorm_bias =
+          static_cast<__uint_t>(__exp_bias - __exp_no_denorm_bias) << __mant_nbits;
 
         __max_reduced *= ::cuda::std::bit_cast<_Tp>(ldexp_factor_no_denorm_bias);
         __min_reduced *= ::cuda::std::bit_cast<_Tp>(ldexp_factor_no_denorm_bias);
@@ -194,14 +196,14 @@ template <class _Tp>
   // To prevent this we instead calculate:
   //        ((real^2 +  imag^2) - 1)
   // accurately and use log1p.
-  _Tp max_2_hi = __max_reduced * __max_reduced;
-  _Tp max_2_lo = ::cuda::std::fma(__max_reduced, __max_reduced, -max_2_hi);
+  const _Tp max_2_hi = __max_reduced * __max_reduced;
+  const _Tp max_2_lo = ::cuda::std::fma(__max_reduced, __max_reduced, -max_2_hi);
 
-  _Tp min_2_hi = __min_reduced * __min_reduced;
-  _Tp min_2_lo = ::cuda::std::fma(__min_reduced, __min_reduced, -min_2_hi);
+  const _Tp min_2_hi = __min_reduced * __min_reduced;
+  const _Tp min_2_lo = ::cuda::std::fma(__min_reduced, __min_reduced, -min_2_hi);
 
-  _Tp sum_hi = max_2_hi + min_2_hi;
-  _Tp sum_lo = min_2_hi + (max_2_hi - sum_hi);
+  _Tp sum_hi       = max_2_hi + min_2_hi;
+  const _Tp sum_lo = min_2_hi + (max_2_hi - sum_hi);
 
   // Exact where it matters, with the previous range reduction.
   sum_hi -= _Tp(1.0);
@@ -231,7 +233,7 @@ template <class _Tp>
   }
 
   // __hypot_sq_scaled is now in [-0.25, 0.5], we can use a log1p polynomial estimate.
-  _Tp __log1p_poly = __internal_unsafe_log1p_poly(__hypot_sq_scaled);
+  const _Tp __log1p_poly = __internal_unsafe_log1p_poly(__hypot_sq_scaled);
 
   // Scale our answer back up.
   _Tp __abs_rescaled = ::cuda::std::fma(__numbers<_Tp>::__ln2(), __exp_d, __log1p_poly);

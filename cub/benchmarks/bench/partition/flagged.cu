@@ -106,7 +106,7 @@ void flagged(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinctPa
       cuda::execution::tune(policy_selector<T>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DevicePartition::Flagged,
       "Flagged failed",
       d_in,

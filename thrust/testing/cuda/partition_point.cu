@@ -63,7 +63,7 @@ void TestPartitionPointCudaStreams()
   v[2] = 1;
   v[3] = 0;
 
-  Iterator first = v.begin();
+  const Iterator first = v.begin();
 
   Iterator last = v.begin() + 4;
   Iterator ref  = first + 3;

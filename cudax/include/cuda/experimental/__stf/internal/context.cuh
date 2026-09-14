@@ -1150,31 +1150,36 @@ UNITTEST("context is_graph_ctx")
   ctx2.finalize();
 };
 
+namespace reserved
+{
+//! Test-only resource that records, via the flag it is given, that the context released it.
+//! Shared by the context-resource unit tests below. Kept out of the enclosing namespace since
+//! it exists only for those tests.
+struct dummy_released_resource : ctx_resource
+{
+  bool* released_ = nullptr;
+  explicit dummy_released_resource(bool* released)
+      : released_(released)
+  {}
+  bool can_release_in_callback() const noexcept override
+  {
+    return true;
+  }
+  void release_in_callback() noexcept override
+  {
+    if (released_)
+    {
+      *released_ = true;
+    }
+  }
+};
+} // end namespace reserved
+
 UNITTEST("context resources released on finalize")
 {
-  // Dummy resource that sets a flag when released (callback path)
-  struct dummy_released_resource : ctx_resource
-  {
-    bool* released_ = nullptr;
-    explicit dummy_released_resource(bool* released)
-        : released_(released)
-    {}
-    bool can_release_in_callback() const noexcept override
-    {
-      return true;
-    }
-    void release_in_callback() noexcept override
-    {
-      if (released_)
-      {
-        *released_ = true;
-      }
-    }
-  };
-
   bool released = false;
   context ctx;
-  ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  ctx.add_resource(::std::make_shared<reserved::dummy_released_resource>(&released));
   // This is a blocking call, resources should have been released when it returns
   ctx.finalize();
   EXPECT(released);
@@ -1182,25 +1187,6 @@ UNITTEST("context resources released on finalize")
 
 UNITTEST("context resources released on finalize non blocking")
 {
-  struct dummy_released_resource : ctx_resource
-  {
-    bool* released_ = nullptr;
-    explicit dummy_released_resource(bool* released)
-        : released_(released)
-    {}
-    bool can_release_in_callback() const noexcept override
-    {
-      return true;
-    }
-    void release_in_callback() noexcept override
-    {
-      if (released_)
-      {
-        *released_ = true;
-      }
-    }
-  };
-
   const cudaStream_t stream = cuda_try<cudaStreamCreate>();
   SCOPE(exit)
   {
@@ -1209,7 +1195,7 @@ UNITTEST("context resources released on finalize non blocking")
 
   bool released = false;
   context ctx(stream, async_resources_handle());
-  ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  ctx.add_resource(::std::make_shared<reserved::dummy_released_resource>(&released));
   ctx.finalize(); // non-blocking: context was created with user stream
   EXPECT(!released); // not yet, callback not run
   cuda_try<cudaStreamSynchronize>(stream);
@@ -1218,28 +1204,9 @@ UNITTEST("context resources released on finalize non blocking")
 
 UNITTEST("context import_resources_from")
 {
-  struct dummy_released_resource : ctx_resource
-  {
-    bool* released_ = nullptr;
-    explicit dummy_released_resource(bool* released)
-        : released_(released)
-    {}
-    bool can_release_in_callback() const noexcept override
-    {
-      return true;
-    }
-    void release_in_callback() noexcept override
-    {
-      if (released_)
-      {
-        *released_ = true;
-      }
-    }
-  };
-
   bool released = false;
   context child_ctx;
-  child_ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  child_ctx.add_resource(::std::make_shared<reserved::dummy_released_resource>(&released));
   context parent_ctx;
   parent_ctx.import_resources_from(child_ctx);
   // This is a blocking call, resources should have been released when it returns

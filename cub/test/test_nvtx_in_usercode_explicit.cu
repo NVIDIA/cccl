@@ -11,9 +11,9 @@ CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
 int main()
 {
-  nvtx3::v1::scoped_range range("user-range"); // user-side use of explicit NVTX API
+  const nvtx3::v1::scoped_range range("user-range"); // user-side use of explicit NVTX API
 
-  cuda::counting_iterator<int> it{0};
+  const cuda::counting_iterator<int> it{0};
   cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{}); // internal use of NVTX
   cudaDeviceSynchronize();
 }

@@ -43,7 +43,7 @@ __device__ void test_group_as(Config config)
       static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
       static_assert(cuda::std::is_empty_v<Mapping>);
 
-      Mapping mapping;
+      const Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
         CHECK(mapping.unit_count(i) == ns[i]);
@@ -54,6 +54,7 @@ __device__ void test_group_as(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, NsSeq>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_as mapping{NsSeq{}};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
@@ -156,6 +157,7 @@ __device__ void test_group_as(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, decltype(ns)>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_as mapping{ns};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
@@ -269,7 +271,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
       static_assert(cuda::std::is_empty_v<Mapping>);
 
-      Mapping mapping;
+      const Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
         CHECK(mapping.unit_count(i) == ns[i]);
@@ -283,6 +285,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, NsSeq, cudax::non_exhaustive_t>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_as mapping{NsSeq{}, cudax::non_exhaustive};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
@@ -347,7 +350,6 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
       CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
@@ -364,6 +366,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
           }
         }
 
+        CHECK(result.group_count() == static_cast<unsigned>(ngroups));
         CHECK(result.group_rank() == group_rank_ref);
 
         CHECK(result.unit_count() == ns[group_rank_ref]);
@@ -390,6 +393,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, decltype(ns), cudax::non_exhaustive_t>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_as mapping{ns, cudax::non_exhaustive};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
@@ -454,7 +458,6 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
       CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
@@ -471,6 +474,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
           }
         }
 
+        CHECK(result.group_count() == static_cast<unsigned>(ngroups));
         CHECK(result.group_rank() == group_rank_ref);
 
         CHECK(result.unit_count() == ns[group_rank_ref]);

@@ -1,5 +1,6 @@
 #include <thrust/execution_policy.h>
 #include <thrust/transform.h>
+#include <thrust/zip_function.h>
 
 #include <cuda/iterator>
 
@@ -313,7 +314,7 @@ void TestTransformUnaryCudaStreams()
 
   Vector input{1, -2, 3};
   Vector output(3);
-  Vector result{-1, 2, -3};
+  const Vector result{-1, 2, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -339,7 +340,7 @@ void TestTransformBinaryCudaStreams()
   Vector input1{1, -2, 3};
   Vector input2{-4, 5, 6};
   Vector output(3);
-  Vector result{5, -7, -3};
+  const Vector result{5, -7, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -410,7 +411,7 @@ void TestTransformThrustZipIteratorUnwrapping()
     thrust::transform(z, z + num_items, result.begin(), thrust::make_zip_function(sum_five{}));
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     ASSERT_EQUAL(reference, result);
   }
   // SECTION("trice")
@@ -423,7 +424,7 @@ void TestTransformThrustZipIteratorUnwrapping()
                       thrust::make_zip_function(thrust::make_zip_function(thrust::make_zip_function(sum_five{}))));
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     ASSERT_EQUAL(reference, result);
   }
 }
@@ -481,7 +482,7 @@ void TestTransformCudaZipIteratorUnwrapping()
     thrust::transform(z, z + num_items, result.begin(), cuda::zip_function(sum_five{}));
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     ASSERT_EQUAL(reference, result);
   }
   // SECTION("trice")
@@ -492,7 +493,7 @@ void TestTransformCudaZipIteratorUnwrapping()
       z, z + num_items, result.begin(), cuda::zip_function<cuda::zip_function<cuda::zip_function<sum_five>>>{});
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     ASSERT_EQUAL(reference, result);
   }
 }

@@ -26,6 +26,7 @@
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/span>
 
@@ -477,6 +478,45 @@ public:
   find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     return __impl.find(__group, __key);
+  }
+
+  //! @brief Applies `__callback_op` to a copy of every slot whose key is equivalent to `__key`.
+  //!
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //!
+  //! @tparam _ProbeKey Probe key type
+  //! @tparam _CallbackOp Unary callable invocable with `value_type`
+  //!
+  //! @param __key The key to search for
+  //! @param __callback_op Function to apply to every matching slot
+  template <class _ProbeKey, class _CallbackOp>
+  _CCCL_DEVICE_API void for_each(_ProbeKey __key, _CallbackOp&& __callback_op) const noexcept
+  {
+    __impl.for_each(__key, ::cuda::std::forward<_CallbackOp>(__callback_op));
+  }
+
+  //! @brief Cooperative-group variant of `for_each`.
+  //!
+  //! @note Any thread in `__group` may invoke the callback. If multiple threads find a match, each
+  //! of them invokes the callback with its own matching slot.
+  //!
+  //! @note Synchronizing `__group` inside `__callback_op` is undefined behavior.
+  //!
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type
+  //! @tparam _CallbackOp Unary callable invocable with `value_type`
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this operation
+  //! @param __key The key to search for
+  //! @param __callback_op Function to apply to every matching slot
+  template <class _ParentCG, class _ProbeKey, class _CallbackOp>
+  _CCCL_DEVICE_API void for_each(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+                                 _ProbeKey __key,
+                                 _CallbackOp&& __callback_op) const noexcept
+  {
+    __impl.for_each(__group, __key, ::cuda::std::forward<_CallbackOp>(__callback_op));
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };

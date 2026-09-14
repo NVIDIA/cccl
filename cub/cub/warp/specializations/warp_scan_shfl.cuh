@@ -127,7 +127,7 @@ struct WarpScanShfl
   InclusiveScanStep(int input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     int output;
-    int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
+    const int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -163,7 +163,7 @@ struct WarpScanShfl
   InclusiveScanStep(unsigned int input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     unsigned int output;
-    int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
+    const int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -199,7 +199,7 @@ struct WarpScanShfl
   InclusiveScanStep(float input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     float output;
-    int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
+    const int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -235,7 +235,7 @@ struct WarpScanShfl
   InclusiveScanStep(unsigned long long input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     unsigned long long output;
-    int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
+    const int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -276,7 +276,7 @@ struct WarpScanShfl
   InclusiveScanStep(long long input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     long long output;
-    int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
+    const int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -317,7 +317,7 @@ struct WarpScanShfl
   InclusiveScanStep(double input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     double output;
-    int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
+    const int shfl_c = first_lane | SHFL_C; // Shuffle control (mask and first-lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -525,7 +525,7 @@ struct WarpScanShfl
     inclusive_output = input;
 
     // Iterate scan steps
-    int segment_first_lane = 0;
+    const int segment_first_lane = 0;
 
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()

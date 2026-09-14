@@ -79,6 +79,9 @@ class group;
 template <class _Unit, class _ParentGroup, class _MappingResult>
 class virtual_group;
 
+template <class _Hierarchy>
+class coalesced_group;
+
 template <class _Unit, class _Group>
 class group_view;
 

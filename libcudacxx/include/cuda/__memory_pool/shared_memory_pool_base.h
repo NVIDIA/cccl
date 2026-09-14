@@ -51,7 +51,7 @@ struct __pool_destroyer
   {
     if (__pool != nullptr)
     {
-      _CCCL_ASSERT_CUDA_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool);
+      _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool);
     }
   }
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from functools import cache
 
-from .._caching import cache_with_registered_key_functions
+from .._caching import _process_wide_cache_registry, cache_with_registered_key_functions
 from .._cpp_compile import compile_cpp_op_code
 from .._serialization import NESTED, Serializable
 from .._utils.temp_storage_buffer import TempStorageBuffer
@@ -32,6 +32,11 @@ extern "C" __device__ void always_false(void*, void* result) {{
 """
     code = compile_cpp_op_code(source)
     return RawOp(ltoir=code, name="always_false")
+
+
+# Keep clear_all_caches() covering this memo too: it is a compile like the
+# operator and iterator memos, so a cold build must miss it as well.
+_process_wide_cache_registry["_select._always_false_op"] = _always_false_op
 
 
 def _get_always_false_op():

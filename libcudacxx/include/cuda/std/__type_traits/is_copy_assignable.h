@@ -49,7 +49,7 @@ is_copy_assignable : public is_assignable<add_lvalue_reference_t<_Tp>, add_lvalu
 
 template <class _Tp>
 inline constexpr bool is_copy_assignable_v =
-  is_assignable<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<add_const_t<_Tp>>>::value;
+  is_assignable_v<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<add_const_t<_Tp>>>;
 
 #endif // No builtin
 

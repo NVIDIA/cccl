@@ -1082,6 +1082,87 @@ private:
 
     const bool use_tuning = (key_is_primitive || key_size == 16) && (accum_is_primitive || accum_size == 16);
 
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && use_tuning)
+    {
+      if (key_size == 1 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
+      {
+        // ipt_13.tpb_256.trp_0.ld_1.ns_824.dcid_7.l2w_380 1.203  1.206  1.190  1.190
+        return {256,
+                13,
+                BLOCK_LOAD_DIRECT,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backon, 824, 380}};
+      }
+      if (key_size == 2 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
+      {
+        // ipt_14.tpb_224.trp_0.ld_1.ns_336.dcid_0.l2w_515 1.121  1.112  1.153  1.155
+        return {224, 14, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 515}};
+      }
+      if (key_size == 4 && accum_size == 4 && accum_t == type_t::float32)
+      {
+        // ipt_23.tpb_192.trp_1.ld_0.ns_1176.dcid_0.l2w_740 1.015  1.051  1.143  1.141
+        return {192,
+                23,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 740}};
+      }
+      if (key_size == 4 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
+      {
+        // ipt_22.tpb_128.trp_1.ld_0.ns_24.dcid_0.l2w_875 1.034  1.005  1.080  1.100
+        // ipt_22.tpb_128.trp_1.ld_0.ns_952.dcid_0.l2w_955 0.984  0.986  1.251  1.330
+        return {128,
+                22,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 875}};
+      }
+      if (key_size == 4 && accum_size == 8 && (accum_t == type_t::int64 || accum_t == type_t::uint64))
+      {
+        // ipt_22.tpb_128.trp_1.ld_1.ns_144.dcid_5.l2w_795 0.982  1.004  1.212  1.259
+        return {128,
+                22,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 144, 795}};
+      }
+      if (key_size == 8 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
+      {
+        // ipt_23.tpb_128.trp_1.ld_0.ns_132.dcid_0.l2w_960 0.970  1.040  1.245  1.316
+        return {128,
+                23,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 960}};
+      }
+      if (key_size == 8 && accum_size == 8 && accum_t == type_t::float64)
+      {
+        // ipt_15.tpb_192.trp_1.ld_1.ns_1996.dcid_0.l2w_645 0.994  1.068  1.083  1.118
+        return {192,
+                15,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 645}};
+      }
+      if (key_size == 8 && accum_size == 8 && (accum_t == type_t::int64 || accum_t == type_t::uint64))
+      {
+        // ipt_21.tpb_128.trp_1.ld_0.ns_528.dcid_0.l2w_895 0.964  1.053  1.199  1.255
+        return {128,
+                21,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 895}};
+      }
+      // no tuning found (e.g. 16-byte keys), fall through to the SM100 tunings
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0} && use_tuning) // if we don't have a tuning, fall back to SM90
     {
       if (key_size == 1 && accum_size == 1)

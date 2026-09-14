@@ -76,7 +76,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
   }
 
   template <class... _As>
-  using __just_from_t _CCCL_NODEBUG_ALIAS = decltype(just_from(conditional_t::__mk_complete_fn(declval<_As>()...)));
+  using __just_from_t _CCCL_NODEBUG = decltype(just_from(conditional_t::__mk_complete_fn(declval<_As>()...)));
 
   template <class _Pred, class _Then, class _Else, class... _Env>
   struct __either_sig_fn
@@ -117,7 +117,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
       ::cuda::std::__type_list<connect_result_t<__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>,
                                connect_result_t<__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>>;
 
-    using __next_ops_variant_t _CCCL_NODEBUG_ALIAS =
+    using __next_ops_variant_t _CCCL_NODEBUG =
       __value_types<_Completions, __opstate_list_t, __type_concat_into_quote<__variant>::__call>;
 
     _Rcvr __rcvr_;
@@ -201,7 +201,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 
 public:
   template <class _Pred, class _Then, class _Else>
-  using params _CCCL_NODEBUG_ALIAS = __closure_base_t<_Pred, _Then, _Else>;
+  using params _CCCL_NODEBUG = __closure_base_t<_Pred, _Then, _Else>;
 
   template <class _Params, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
@@ -216,7 +216,7 @@ public:
 template <class _Pred, class _Then, class _Else, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__closure_base_t<_Pred, _Then, _Else>, _Sndr>
 {
-  using __params_t _CCCL_NODEBUG_ALIAS = conditional_t::__closure_base_t<_Pred, _Then, _Else>;
+  using __params_t _CCCL_NODEBUG = conditional_t::__closure_base_t<_Pred, _Then, _Else>;
   /*_CCCL_NO_UNIQUE_ADDRESS*/ conditional_t __tag_;
   __params_t __params_;
   _Sndr __sndr_;
@@ -293,7 +293,7 @@ template <class _Sndr, class _Pred, class _Then, class _Else>
 _CCCL_HOST_DEVICE_API constexpr auto
 conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
-  using __params_t _CCCL_NODEBUG_ALIAS = __closure_base_t<_Pred, _Then, _Else>;
+  using __params_t _CCCL_NODEBUG = __closure_base_t<_Pred, _Then, _Else>;
   __params_t __params{static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
   return static_cast<__params_t&&>(__params)(static_cast<_Sndr&&>(__sndr));
 }

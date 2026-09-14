@@ -65,7 +65,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   const auto num_items = static_cast<OffsetT>(elements);
 
   // Pre-computation to get num_runs for statistics
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     cub::DeviceSelect::UniqueByKey,
     "UniqueByKey failed",
     d_in_keys,
@@ -75,7 +75,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
     d_num_runs_out,
     num_items,
     equality_op_t{});
-  _CCCL_TRY_CUDA_API(cudaDeviceSynchronize, "Sync failed");
+  _CCCL_TRY_RUNTIME_API(cudaDeviceSynchronize, "Sync failed");
   const OffsetT num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
@@ -95,7 +95,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
       cuda::execution::tune(bench_unique_by_key_policy_selector{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceSelect::UniqueByKey,
       "UniqueByKey failed",
       d_in_keys,

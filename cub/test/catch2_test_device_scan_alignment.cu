@@ -49,7 +49,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
   // Prepare verification data
-  c2h::host_vector<input_t> host_items(in_items);
+  const c2h::host_vector<input_t> host_items(in_items);
   c2h::host_vector<output_t> expected_result(num_items, thrust::no_init);
 
   // Compute verification data

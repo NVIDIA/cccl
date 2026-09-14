@@ -589,7 +589,7 @@ struct AgentSelectIf
       if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
       {
         // Use custom flag operator to additionally flag the first out-of-bounds item
-        guarded_inequality_op<EqualityOpT> flag_op{equality_op, num_tile_items};
+        const guarded_inequality_op<EqualityOpT> flag_op{equality_op, num_tile_items};
 
         // Set head selection_flags.  First tile sets the first flag for the first item
         BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, flag_op);
@@ -614,7 +614,7 @@ struct AgentSelectIf
       if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
       {
         // Use custom flag operator to additionally flag the first out-of-bounds item
-        guarded_inequality_op<EqualityOpT> flag_op{equality_op, num_tile_items};
+        const guarded_inequality_op<EqualityOpT> flag_op{equality_op, num_tile_items};
 
         // Set head selection_flags.  First tile sets the first flag for the first item
         BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
@@ -705,7 +705,7 @@ struct AgentSelectIf
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
+      const int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
       if (selection_flags[ITEM])
       {
         temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
@@ -798,16 +798,16 @@ struct AgentSelectIf
   {
     __syncthreads();
 
-    int tile_num_rejections = num_tile_items - num_tile_selections;
+    const int tile_num_rejections = num_tile_items - num_tile_selections;
 
     // Scatter items to shared memory (rejections first)
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int item_idx            = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
-      int local_selection_idx = selection_indices[ITEM] - num_selections_prefix;
-      int local_rejection_idx = item_idx - local_selection_idx;
-      int local_scatter_offset =
+      const int item_idx            = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
+      const int local_selection_idx = selection_indices[ITEM] - num_selections_prefix;
+      const int local_rejection_idx = item_idx - local_selection_idx;
+      const int local_scatter_offset =
         (selection_flags[ITEM]) ? tile_num_rejections + local_selection_idx : local_rejection_idx;
 
       temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
@@ -839,13 +839,13 @@ struct AgentSelectIf
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
-      int rejection_idx = item_idx;
-      int selection_idx = item_idx - tile_num_rejections;
-      OffsetT scatter_offset =
+      const int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      const int rejection_idx = item_idx;
+      const int selection_idx = item_idx - tile_num_rejections;
+      const OffsetT scatter_offset =
         (item_idx < tile_num_rejections) ? num_rejected_prefix + rejection_idx : num_selections_prefix + selection_idx;
 
-      InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+      const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
 
       if (!IS_LAST_TILE || (item_idx < num_tile_items))
       {
@@ -879,10 +879,10 @@ struct AgentSelectIf
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
-      int rejection_idx = item_idx;
-      int selection_idx = item_idx - tile_num_rejections;
-      total_offset_t scatter_offset =
+      const int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      const int rejection_idx = item_idx;
+      const int selection_idx = item_idx - tile_num_rejections;
+      const total_offset_t scatter_offset =
         (item_idx < tile_num_rejections)
           ? (streaming_context.num_total_items(num_items) - streaming_context.num_previously_rejected()
              - static_cast<total_offset_t>(num_rejected_prefix) - static_cast<total_offset_t>(rejection_idx)
@@ -890,7 +890,7 @@ struct AgentSelectIf
           : (streaming_context.num_previously_selected() + static_cast<total_offset_t>(num_selections_prefix)
              + static_cast<total_offset_t>(selection_idx));
 
-      InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+      const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
       if (!IS_LAST_TILE || (item_idx < num_tile_items))
       {
         partitioned_out_it[scatter_offset] = item;
@@ -1012,7 +1012,7 @@ struct AgentSelectIf
     // Discount any out-of-bounds selections
     if (IS_LAST_TILE)
     {
-      int num_discount = TILE_ITEMS - num_tile_items;
+      const int num_discount = TILE_ITEMS - num_tile_items;
       num_selections -= num_discount;
       num_tile_selections -= num_discount;
     }
