@@ -138,6 +138,32 @@ def test_block_algorithms_scan_thread_data_out_of_place(algorithm: str):
 
 
 @cuda.jit
+def _scan_one_element_of_a_loaded_tile(source, output):
+    thread = cuda.threadIdx.x
+    payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+    root_coop.load(
+        root_coop.this_block(),
+        source,
+        payload,
+        algorithm="transpose",
+    )
+    # An integer subscript of the loaded payload selects one scalar element.
+    output[thread] = root_coop.inclusive_sum(root_coop.this_block(), payload[0])
+
+
+def test_scalar_scan_accepts_an_element_of_a_loaded_payload():
+    source = ((np.arange(_TILE_ITEMS, dtype=np.int32) * 5) % 37) - 11
+    output = np.full(_BLOCK_THREADS, -1, dtype=np.int32)
+
+    _scan_one_element_of_a_loaded_tile[1, _BLOCK_THREADS](source, output)
+
+    np.testing.assert_array_equal(
+        output,
+        np.cumsum(source[::_ITEMS_PER_THREAD], dtype=np.int32),
+    )
+
+
+@cuda.jit
 def _local_array_numpy_scan(source, output, preserved, aggregates):
     thread = cuda.threadIdx.x
     value = cuda.local.array(_ITEMS_PER_THREAD, dtype=types.int32)
