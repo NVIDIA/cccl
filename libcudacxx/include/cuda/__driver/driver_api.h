@@ -918,14 +918,26 @@ __streamDestroyNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exceptio
   return static_cast<::cudaError_t>(__driver_fn(__stream));
 }
 
+//! @brief Swap the calling thread's stream-capture mode (`cuThreadExchangeStreamCaptureMode`),
+//! reporting failure through the return value. For destructors and other noexcept contexts.
+//! @param[in,out] __mode On entry, the mode to install for the calling thread; on return, the mode
+//! the thread had before the call.
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__threadExchangeStreamCaptureModeNoThrow(::CUstreamCaptureMode& __mode) noexcept // NOLINT(bugprone-exception-escape)
+{
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuThreadExchangeStreamCaptureMode);
+  return static_cast<::cudaError_t>(__driver_fn(&__mode));
+}
+
 //! @brief Swap the calling thread's stream-capture mode (`cuThreadExchangeStreamCaptureMode`).
 //! Per-thread, independent of any stream; no observable effect when the thread is not capturing.
 //! @param[in,out] __mode On entry, the mode to install for the calling thread; on return, the mode
 //! the thread had before the call.
 _CCCL_HOST_API inline void __threadExchangeStreamCaptureMode(::CUstreamCaptureMode& __mode)
 {
-  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuThreadExchangeStreamCaptureMode);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to exchange the thread's stream capture mode", &__mode);
+  _CCCL_TRY_DRIVER_API(::cuda::__driver::__threadExchangeStreamCaptureModeNoThrow,
+                       "Failed to exchange the thread's stream capture mode",
+                       __mode);
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUstreamCaptureStatus __streamIsCapturing(::CUstream __stream)

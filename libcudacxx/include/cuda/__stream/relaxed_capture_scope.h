@@ -50,15 +50,11 @@ struct [[maybe_unused]] __relaxed_capture_scope
     ::cuda::__driver::__threadExchangeStreamCaptureMode(__previous_);
   }
 
-  _CCCL_HOST_API ~__relaxed_capture_scope()
+  _CCCL_HOST_API ~__relaxed_capture_scope() noexcept
   {
-    // Restore whatever the thread had. The exchange cannot fail for a mode it returned itself,
-    // and a destructor must not throw.
-    _CCCL_TRY
-    {
-      ::cuda::__driver::__threadExchangeStreamCaptureMode(__previous_);
-    }
-    _CCCL_CATCH_ALL {}
+    // Restore whatever the thread had. The exchange cannot fail for a mode it returned itself, so
+    // the status is deliberately dropped rather than caught.
+    (void) ::cuda::__driver::__threadExchangeStreamCaptureModeNoThrow(__previous_);
   }
 
   __relaxed_capture_scope(const __relaxed_capture_scope&)            = delete;
