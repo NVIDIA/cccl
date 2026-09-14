@@ -250,8 +250,6 @@ struct basic_common_reference<A, tuple<B>, TQual, UQual>
 static_assert(
   cuda::std::is_same_v<cuda::std::common_reference_t<A, cuda::std::tuple<B>, cuda::std::tuple<D>>, cuda::std::tuple<B>>);
 
-// `basic_common_reference` for `pair` is only available since C++23
-#if TEST_STD_VER >= 2023
 static_assert(cuda::std::is_same_v<cuda::std::common_reference_t<cuda::std::pair<int, int>>, cuda::std::pair<int, int>>);
 static_assert(cuda::std::is_same_v<cuda::std::common_reference_t<cuda::std::pair<int, long>, cuda::std::pair<long, int>>,
                                    cuda::std::pair<long, long>>);
@@ -274,7 +272,6 @@ static_assert(cuda::std::is_same_v<cuda::std::common_reference_t<cuda::std::pair
 static_assert(!has_type<cuda::std::common_reference<cuda::std::pair<int, const X2>, cuda::std::pair<float, const Z2>>>);
 static_assert(!has_type<cuda::std::common_reference<cuda::std::pair<int, X2>, cuda::std::pair<float, Z2>>>);
 static_assert(!has_type<cuda::std::common_reference<cuda::std::pair<int, X2>, int, X2>>);
-#endif // TEST_STD_VER >= 2023
 
 int main(int, char**)
 {
