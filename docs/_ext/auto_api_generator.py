@@ -1055,9 +1055,17 @@ def make_api_reference_label(project_name, member_type, name):
     """Create a stable label for an auto-generated API page."""
     clean_name = clean_template_name(name)
 
-    if project_name == "libcudacxx" and "::" not in clean_name and member_type != "macro":
+    if (
+        project_name == "libcudacxx"
+        and "::" not in clean_name
+        and member_type != "macro"
+    ):
         clean_name = f"cuda::{clean_name}"
-    elif project_name in ["cub", "thrust"] and "::" not in clean_name and member_type != "macro":
+    elif (
+        project_name in ["cub", "thrust"]
+        and "::" not in clean_name
+        and member_type != "macro"
+    ):
         clean_name = f"{project_name}::{clean_name}"
 
     operator_tokens = {
@@ -1089,17 +1097,31 @@ def make_api_reference_label(project_name, member_type, name):
             label_parts.append("".join(current))
             current.clear()
 
-    for char in clean_name.lower():
+    index = 0
+    while index < len(clean_name):
+        if clean_name.startswith("::", index):
+            flush_current()
+            label_parts.append("ns")
+            index += 2
+            continue
+
+        char = clean_name[index].lower()
         if char.isalnum():
             current.append(char)
-        elif char in "_:" or char.isspace():
+        elif char == "_":
+            current.append(char)
+        elif char.isspace():
             flush_current()
+        elif char == ":":
+            flush_current()
+            label_parts.append("colon")
         elif char in operator_tokens:
             flush_current()
             label_parts.append(operator_tokens[char])
         else:
             flush_current()
             label_parts.append(f"x{ord(char):x}")
+        index += 1
 
     flush_current()
 

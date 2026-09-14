@@ -1,15 +1,15 @@
 .. _cccl-runtime-hierarchy:
 
-.. |cuda_hierarchy| replace:: :ref:`cuda::hierarchy <libcudacxx-api-class-cuda-hierarchy>`
-.. |cuda_make_hierarchy| replace:: :ref:`cuda::make_hierarchy <libcudacxx-api-function-cuda-make-hierarchy>`
-.. |cuda_make_config| replace:: :ref:`cuda::make_config <libcudacxx-api-function-cuda-make-config>`
-.. |cuda_grid_dims| replace:: :ref:`cuda::grid_dims <libcudacxx-api-function-cuda-grid-dims>`
-.. |cuda_cluster_dims| replace:: :ref:`cuda::cluster_dims <libcudacxx-api-function-cuda-cluster-dims>`
-.. |cuda_block_dims| replace:: :ref:`cuda::block_dims <libcudacxx-api-function-cuda-block-dims>`
-.. |cuda_warp| replace:: :ref:`cuda::warp <libcudacxx-api-variable-cuda-warp>`
-.. |cuda_gpu_thread| replace:: :ref:`cuda::gpu_thread <libcudacxx-api-variable-cuda-gpu-thread>`
-.. |cuda_hierarchy_add_level| replace:: :ref:`cuda::hierarchy_add_level <libcudacxx-api-function-cuda-hierarchy-add-level>`
-.. |cuda_get_launch_dimensions| replace:: :ref:`cuda::get_launch_dimensions <libcudacxx-api-function-cuda-get-launch-dimensions>`
+.. |cuda_hierarchy| replace:: :ref:`cuda::hierarchy <libcudacxx-api-class-cuda-ns-hierarchy>`
+.. |cuda_make_hierarchy| replace:: :ref:`cuda::make_hierarchy <libcudacxx-api-function-cuda-ns-make_hierarchy>`
+.. |cuda_make_config| replace:: :ref:`cuda::make_config <libcudacxx-api-function-cuda-ns-make_config>`
+.. |cuda_grid_dims| replace:: :ref:`cuda::grid_dims <libcudacxx-api-function-cuda-ns-grid_dims>`
+.. |cuda_cluster_dims| replace:: :ref:`cuda::cluster_dims <libcudacxx-api-function-cuda-ns-cluster_dims>`
+.. |cuda_block_dims| replace:: :ref:`cuda::block_dims <libcudacxx-api-function-cuda-ns-block_dims>`
+.. |cuda_warp| replace:: :ref:`cuda::warp <libcudacxx-api-variable-cuda-ns-warp>`
+.. |cuda_gpu_thread| replace:: :ref:`cuda::gpu_thread <libcudacxx-api-variable-cuda-ns-gpu_thread>`
+.. |cuda_hierarchy_add_level| replace:: :ref:`cuda::hierarchy_add_level <libcudacxx-api-function-cuda-ns-hierarchy_add_level>`
+.. |cuda_get_launch_dimensions| replace:: :ref:`cuda::get_launch_dimensions <libcudacxx-api-function-cuda-ns-get_launch_dimensions>`
 
 Hierarchy
 =========

@@ -1,12 +1,12 @@
 .. _cccl-runtime-launch:
 
-.. |cuda_launch| replace:: :ref:`cuda::launch <libcudacxx-api-function-cuda-launch>`
-.. |cuda_kernel_config| replace:: :ref:`cuda::kernel_config <libcudacxx-api-struct-cuda-kernel-config>`
-.. |cuda_make_config| replace:: :ref:`cuda::make_config <libcudacxx-api-function-cuda-make-config>`
-.. |cuda_cooperative_launch| replace:: :ref:`cuda::cooperative_launch <libcudacxx-api-struct-cuda-cooperative-launch>`
-.. |cuda_dynamic_shared_memory| replace:: :ref:`cuda::dynamic_shared_memory <libcudacxx-api-function-cuda-dynamic-shared-memory>`
-.. |cuda_launch_priority| replace:: :ref:`cuda::launch_priority <libcudacxx-api-struct-cuda-launch-priority>`
-.. |cuda_host_launch| replace:: :ref:`cuda::host_launch <libcudacxx-api-function-cuda-host-launch>`
+.. |cuda_launch| replace:: :ref:`cuda::launch <libcudacxx-api-function-cuda-ns-launch>`
+.. |cuda_kernel_config| replace:: :ref:`cuda::kernel_config <libcudacxx-api-struct-cuda-ns-kernel_config>`
+.. |cuda_make_config| replace:: :ref:`cuda::make_config <libcudacxx-api-function-cuda-ns-make_config>`
+.. |cuda_cooperative_launch| replace:: :ref:`cuda::cooperative_launch <libcudacxx-api-struct-cuda-ns-cooperative_launch>`
+.. |cuda_dynamic_shared_memory| replace:: :ref:`cuda::dynamic_shared_memory <libcudacxx-api-function-cuda-ns-dynamic_shared_memory>`
+.. |cuda_launch_priority| replace:: :ref:`cuda::launch_priority <libcudacxx-api-struct-cuda-ns-launch_priority>`
+.. |cuda_host_launch| replace:: :ref:`cuda::host_launch <libcudacxx-api-function-cuda-ns-host_launch>`
 
 Launch
 ======
