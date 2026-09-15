@@ -1,14 +1,19 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <thrust/device_ptr.h>
+#include <thrust/fill.h>
 #include <thrust/find.h>
 #include <thrust/scan.h>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
+#include <cuda/stream>
 
+#include <stdexcept>
+
+#include <c2h/detail/scoped_current_device.cuh>
 #include <c2h/device_policy.h>
+#include <c2h/generator_common.h>
 #include <c2h/generators.h>
 
 namespace c2h::detail
@@ -24,40 +29,106 @@ struct greater_equal_op
   }
 };
 
+template <typename Policy, typename T>
+std::size_t finish_uniform_offsets(
+  const Policy& policy, ::cuda::std::span<T> segment_offsets, T total_elements, std::size_t offsets_size)
+{
+  const auto total_elements_size = offsets_size - 2;
+
+  thrust::fill_n(policy, segment_offsets.begin() + total_elements_size, 1, total_elements + 1);
+  thrust::exclusive_scan(policy, segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
+  const auto iter =
+    thrust::find_if(policy, segment_offsets.begin(), segment_offsets.end(), greater_equal_op<T>{total_elements});
+  thrust::fill_n(policy, iter, 1, total_elements);
+  return iter - segment_offsets.begin() + 1;
+}
+
 template <typename T>
 std::size_t gen_uniform_offsets(
-  seed_t seed, cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size)
+  seed_t seed, ::cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size)
 {
+  const auto offsets_size = checked_uniform_offsets_size(total_elements);
+  if (segment_offsets.size() < offsets_size)
+  {
+    throw std::invalid_argument{"segment_offsets is too small for total_elements"};
+  }
+
   gen_values_between(seed, segment_offsets, min_segment_size, max_segment_size);
-  *thrust::device_ptr<T>(&segment_offsets[total_elements]) = total_elements + 1;
-  thrust::exclusive_scan(device_policy, segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
-  const auto iter =
-    thrust::find_if(device_policy, segment_offsets.begin(), segment_offsets.end(), greater_equal_op<T>{total_elements});
-  *thrust::device_ptr<T>(&*iter) = total_elements;
-  return iter - segment_offsets.begin() + 1;
+  return finish_uniform_offsets(device_policy, segment_offsets, total_elements, offsets_size);
+}
+
+template <typename T>
+std::size_t gen_uniform_offsets(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  ::cuda::std::span<T> segment_offsets,
+  T total_elements,
+  T min_segment_size,
+  T max_segment_size)
+{
+  const auto offsets_size = checked_uniform_offsets_size(total_elements);
+  if (segment_offsets.size() < offsets_size)
+  {
+    throw std::invalid_argument{"segment_offsets is too small for total_elements"};
+  }
+
+  const scoped_current_device device_scope{stream.device().get()};
+  const auto policy = device_policy.on(stream.get());
+
+  gen_values_between(stream, seed, segment_offsets, min_segment_size, max_segment_size);
+  return finish_uniform_offsets(policy, segment_offsets, total_elements, offsets_size);
 }
 
 template std::size_t gen_uniform_offsets(
   seed_t seed,
-  cuda::std::span<int32_t> segment_offsets,
+  ::cuda::std::span<int32_t> segment_offsets,
   int32_t total_elements,
   int32_t min_segment_size,
   int32_t max_segment_size);
 template std::size_t gen_uniform_offsets(
   seed_t seed,
-  cuda::std::span<uint32_t> segment_offsets,
+  ::cuda::std::span<uint32_t> segment_offsets,
   uint32_t total_elements,
   uint32_t min_segment_size,
   uint32_t max_segment_size);
 template std::size_t gen_uniform_offsets(
   seed_t seed,
-  cuda::std::span<int64_t> segment_offsets,
+  ::cuda::std::span<int64_t> segment_offsets,
   int64_t total_elements,
   int64_t min_segment_size,
   int64_t max_segment_size);
 template std::size_t gen_uniform_offsets(
   seed_t seed,
-  cuda::std::span<uint64_t> segment_offsets,
+  ::cuda::std::span<uint64_t> segment_offsets,
+  uint64_t total_elements,
+  uint64_t min_segment_size,
+  uint64_t max_segment_size);
+
+template std::size_t gen_uniform_offsets(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  ::cuda::std::span<int32_t> segment_offsets,
+  int32_t total_elements,
+  int32_t min_segment_size,
+  int32_t max_segment_size);
+template std::size_t gen_uniform_offsets(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  ::cuda::std::span<uint32_t> segment_offsets,
+  uint32_t total_elements,
+  uint32_t min_segment_size,
+  uint32_t max_segment_size);
+template std::size_t gen_uniform_offsets(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  ::cuda::std::span<int64_t> segment_offsets,
+  int64_t total_elements,
+  int64_t min_segment_size,
+  int64_t max_segment_size);
+template std::size_t gen_uniform_offsets(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  ::cuda::std::span<uint64_t> segment_offsets,
   uint64_t total_elements,
   uint64_t min_segment_size,
   uint64_t max_segment_size);

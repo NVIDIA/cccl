@@ -382,6 +382,17 @@ The wrapper allocates temporary storage and invokes the CUB API through whicheve
 three launch mechanisms matches the current ``TEST_LAUNCH`` value, checking return codes and
 launch errors along the way.
 
+When stream-ordered setup and teardown must use the same stream as the CUB call,
+pass any type supported by ``cuda::get_stream`` as the wrapper's first argument:
+
+.. code-block:: c++
+
+    cub_reduce_sum(stream, d_in, d_out, n);
+
+Host and graph launches pass that stream to the wrapped API.
+A device-side launch synchronizes it as a dependency boundary and invokes the wrapped API
+with its default stream because device code cannot consume a host stream handle.
+
 Under CUDA graph capture (``TEST_LAUNCH == 2``), the wrapper implicitly appends a ``stream`` argument to the call.
 If the wrapped API has default parameters before its ``stream`` parameter,
 specify those explicitly at all call sites so the injected stream argument lines up.
