@@ -3,11 +3,24 @@
 ``cuda.coop``: Cooperative Group Primitives
 ============================================
 
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+
+   Overview <self>
+   coop/programming_guide
+   coop/developer_overview
+
 ``cuda.coop`` provides cooperative CUDA primitives for Python kernel DSLs.
 The initial backend integrates with Numba-CUDA-MLIR and supports Load, Store,
 Exchange, Shuffle, Reduce, and Scan across their supported thread-group scopes.
 Its portable descriptors and planning records let primitive families share one
 dispatch, storage, and compilation model.
+
+The :doc:`Programming Guide <coop/programming_guide>` explains how to write
+kernels with the common and qualified APIs, groups, thread data, and temporary
+storage. The :doc:`Developer Overview <coop/developer_overview>` describes
+the compiler integration for readers working on the library itself.
 
 Installation
 ------------
@@ -69,15 +82,22 @@ scope. If that name already refers to the object imported by
 ``@cuda.jit`` uses the wrong module.
 
 Alternatively, import :mod:`cuda.coop.numba_mlir` as ``coop`` to use the
-qualified namespace. Its shared operations use the same signatures, selector
-strings, and inference rules as the portable namespace; it adds only backend
-memory namespaces in this release.
+qualified namespace. It supports the common operation forms and adds
+backend memory namespaces, local-array payloads, and operation-specific
+controls such as Scan aggregates and prefix callbacks. See
+:ref:`Choosing the common or qualified API <coop-programming-api-choice>`
+for examples and a comparison.
 
 Configuration
 -------------
 
 Runtime environment variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For the Boolean switches below, *truthy* means any value other than the
+empty string, ``0``, ``false``, ``no``, or ``off``. For example, ``1``,
+``true``, ``yes``, and ``on`` are all truthy. Values are case-insensitive,
+and leading and trailing whitespace is ignored. An unset variable is false.
 
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
    A truthy value disables automatic backend activation during
@@ -121,11 +141,10 @@ Runtime environment variables
    Supplies ``<value>/include`` after ``CUDA_HOME`` under the same fallback
    rule.
 
-If those mechanisms do not resolve CUDA headers,
-``/usr/local/cuda/include`` is tried last.
-
-For the two Boolean switches, values are case-insensitive; ``0``, ``false``,
-``no``, ``off``, and the empty string are false.
+On Linux and other POSIX systems, ``/usr/local/cuda/include`` is tried last.
+Windows uses ``cuda-pathfinder`` or the configured toolkit roots above; it
+does not try the Unix fallback. If no valid CUDA include directory is found,
+compilation reports a header-resolution error.
 
 Build-time CMake variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
