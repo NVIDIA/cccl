@@ -28,7 +28,7 @@ struct index_to_random_uniform
     curand_init(m_seed, i, 0, &state);
     return curand_uniform(&state);
 #else
-    cuda::std::philox4x32 engine(static_cast<cuda::std::philox4x32::result_type>(m_seed));
+    cuda::std::philox4x32 engine(static_cast<cuda::std::philox4x32::result_type>(m_seed ^ (m_seed >> 32)));
     engine.set_counter(
       {0,
        0,
