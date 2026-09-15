@@ -94,6 +94,11 @@ Configuration
 Runtime environment variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+For the Boolean switches below, *truthy* means any value other than the
+empty string, ``0``, ``false``, ``no``, or ``off``. For example, ``1``,
+``true``, ``yes``, and ``on`` are all truthy. Values are case-insensitive,
+and leading and trailing whitespace is ignored. An unset variable is false.
+
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
    A truthy value disables automatic backend activation during
    :mod:`cuda.coop` import. Explicit qualified-backend import still works.
@@ -140,9 +145,6 @@ On Linux and other POSIX systems, ``/usr/local/cuda/include`` is tried last.
 Windows uses ``cuda-pathfinder`` or the configured toolkit roots above; it
 does not try the Unix fallback. If no valid CUDA include directory is found,
 compilation reports a header-resolution error.
-
-For the two Boolean switches, values are case-insensitive; ``0``, ``false``,
-``no``, ``off``, and the empty string are false.
 
 Build-time CMake variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
