@@ -12,6 +12,7 @@
 
 // template <class... Tuples> tuple<CTypes...> tuple_cat(Tuples&&... tpls);
 
+#include <cuda/__complex_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
@@ -20,6 +21,7 @@
 
 #if _CCCL_HAS_HOST_STD_LIB()
 #  include <array>
+#  include <complex>
 #  include <tuple>
 #  include <utility>
 #endif // _CCCL_HAS_HOST_STD_LIB()
@@ -75,6 +77,11 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<0>(t) == 42.0f);
     assert(cuda::std::get<1>(t) == 1337.0f);
   }
+  {
+    cuda::std::tuple<float, float> t = cuda::std::tuple_cat(cuda::complex<float>(42.0f, 1337.0f));
+    assert(cuda::std::get<0>(t) == 42.0f);
+    assert(cuda::std::get<1>(t) == 1337.0f);
+  }
 #if _CCCL_HAS_HOST_STD_LIB()
   NV_IF_TARGET(
     NV_IS_HOST,
@@ -98,6 +105,13 @@ TEST_FUNC constexpr bool test()
         assert(cuda::std::get<1>(t) == 1);
       }))
 #endif // _CCCL_HAS_HOST_STD_LIB()
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 cuda::std::tuple<float, float> t = cuda::std::tuple_cat(std::complex<float>(42.0f, 1337.0f));
+                 assert(cuda::std::get<0>(t) == 42.0f);
+                 assert(cuda::std::get<1>(t) == 1337.0f);
+               }))
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_tuple_like >= 202311L
   {
     cuda::std::tuple<> t1{};
     cuda::std::tuple<> t2{};
