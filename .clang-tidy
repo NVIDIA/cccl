@@ -50,6 +50,7 @@ Checks:
   # libcu++ where the types must explicitly match the CUDA intrinsics.
   - '-google-runtime-int'
   - '-google-explicit-constructor'
+  - '-google-runtime-operator'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
