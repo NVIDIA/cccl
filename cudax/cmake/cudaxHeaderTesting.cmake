@@ -29,6 +29,9 @@ function(cudax_add_header_test label definitions)
       # Places headers are compiled separately:
       "cuda/experimental/places.cuh"
       "cuda/experimental/__places/*"
+      # Sharded headers are compiled separately (they build on places):
+      "cuda/experimental/sharded.cuh"
+      "cuda/experimental/__sharded/*"
       # STF headers are compiled separately:
       "cuda/experimental/stf.cuh"
       "cuda/experimental/__stf/*"
@@ -61,6 +64,25 @@ function(cudax_add_header_test label definitions)
       GLOBS #
         "cuda/experimental/places.cuh"
         "cuda/experimental/__places/*.cuh"
+      HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
+    )
+    target_link_libraries(${headertest_target} PUBLIC cudax.compiler_interface)
+    target_compile_options(
+      ${headertest_target}
+      PRIVATE
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
+    )
+
+    ###################
+    # Sharded headers #
+    set(headertest_target cudax.headers.${label}.sharded)
+    cccl_generate_header_tests(
+      ${headertest_target}
+      cudax/include
+      GLOBS #
+        "cuda/experimental/sharded.cuh"
+        "cuda/experimental/__sharded/*.cuh"
       HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
     )
     target_link_libraries(${headertest_target} PUBLIC cudax.compiler_interface)
