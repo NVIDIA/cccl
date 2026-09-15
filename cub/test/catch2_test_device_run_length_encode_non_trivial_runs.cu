@@ -76,7 +76,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input",
   using offset_type = typename c2h::get<0, TestType>;
 
   constexpr offset_type num_items = 0;
-  c2h::device_vector<offset_type> out_num_runs(1, 42);
+  c2h::device_vector<offset_type> out_num_runs{42};
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
   run_length_encode(
