@@ -422,7 +422,8 @@ coordinates in, C-order grid coordinates out), which makes the property easy
 to check -- and is the primitive an adapter can use to reason about element
 placement without re-implementing any policy::
 
-    tile_partition = stf.cute_partition.from_spec(tiles, spec, grid.dims)
+    tile_spec = (("blocked", 0), ("blocked", 1))
+    tile_partition = stf.cute_partition.from_spec(tiles, tile_spec, grid.dims)
     assert partition.owner((i, j, y, x)) == tile_partition.owner((i, j))
 
 Note that ``owner()`` is exact element-level ownership; the *physical*
