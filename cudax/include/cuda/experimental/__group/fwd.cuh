@@ -74,7 +74,7 @@ template <class _Hierarchy>
 class this_grid;
 
 template <class _Unit, class _ParentGroup, class _MappingResult, class _SynchronizerInstance>
-class group;
+class generic_group;
 
 template <class _Unit, class _ParentGroup, class _MappingResult>
 class virtual_group;

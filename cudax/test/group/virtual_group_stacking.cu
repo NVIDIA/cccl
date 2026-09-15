@@ -25,7 +25,7 @@
 template <class Group>
 __device__ void test_group_membership(const Group& group, cuda::std::uint32_t count, cuda::std::uint32_t rank)
 {
-  static_assert(cudax::is_group<Group>);
+  static_assert(cudax::group<Group>);
   static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
 
   REQUIRE(cuda::gpu_thread.is_part_of(group));
