@@ -40,10 +40,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // sees a pack to expand.
 #if _CCCL_COMPILER(MSVC)
 template <class _Tp, size_t>
-using __fake_type_at = type_identity_t<_Tp>;
+using __fake_type_at _CCCL_NODEBUG = type_identity_t<_Tp>;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Tp, size_t>
-using __fake_type_at = _Tp;
+using __fake_type_at _CCCL_NODEBUG = _Tp;
 #endif // !_CCCL_COMPILER(MSVC)
 
 template <class _Tp>
