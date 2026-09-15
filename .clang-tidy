@@ -49,6 +49,7 @@ Checks:
   # There are probably instances where this is useful, but a lot of these come from
   # libcu++ where the types must explicitly match the CUDA intrinsics.
   - '-google-runtime-int'
+  - '-google-explicit-constructor'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
