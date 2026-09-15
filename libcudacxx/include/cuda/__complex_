@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__complex/complex.h>
-#include <cuda/__complex/tuple.h>
 #include <cuda/std/complex>
 #include <cuda/version>
 
