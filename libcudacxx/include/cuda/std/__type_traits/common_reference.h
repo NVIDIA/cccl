@@ -52,7 +52,7 @@ template <class _Tp>
 _Tp __returns_exactly() noexcept; // not defined
 
 template <class _Xp, class _Yp>
-using __cond_res_if_right = decltype(false ? __returns_exactly<_Xp>() : __returns_exactly<_Yp>());
+using __cond_res_if_right _CCCL_NODEBUG = decltype(false ? __returns_exactly<_Xp>() : __returns_exactly<_Yp>());
 
 template <class _Tp, class _Up, class = void>
 struct __cond_res_workaround
@@ -61,9 +61,9 @@ struct __cond_res_workaround
 template <class _Tp, class _Up>
 struct __cond_res_workaround<_Tp, _Up, void_t<__cond_res_if_right<_Tp, _Up>>>
 {
-  using _RTp = remove_cvref_t<_Tp>;
+  using _RTp _CCCL_NODEBUG = remove_cvref_t<_Tp>;
   // MSVC decays arrays in a conditional expression, but COND-RES(T, T) is always T
-  using type =
+  using type _CCCL_NODEBUG =
     conditional_t<is_same_v<_Tp, _Up>,
                   _Tp,
                   conditional_t<is_same_v<_RTp, remove_cvref_t<_Up>> && (is_scalar_v<_RTp> || is_array_v<_RTp>)
@@ -74,10 +74,11 @@ struct __cond_res_workaround<_Tp, _Up, void_t<__cond_res_if_right<_Tp, _Up>>>
 };
 
 template <class _Xp, class _Yp>
-using __cond_res = typename __cond_res_workaround<_Xp, _Yp>::type;
+using __cond_res _CCCL_NODEBUG = typename __cond_res_workaround<_Xp, _Yp>::type;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Xp, class _Yp>
-using __cond_res = decltype(false ? ::cuda::std::declval<_Xp (&)()>()() : ::cuda::std::declval<_Yp (&)()>()());
+using __cond_res _CCCL_NODEBUG =
+  decltype(false ? ::cuda::std::declval<_Xp (&)()>()() : ::cuda::std::declval<_Yp (&)()>()());
 #endif // !_CCCL_COMPILER(MSVC)
 
 // Let `XREF(A)` denote a unary alias template `T` such that `T<U>` denotes the same type as `U`
@@ -85,7 +86,7 @@ using __cond_res = decltype(false ? ::cuda::std::declval<_Xp (&)()>()() : ::cuda
 // `U`.
 // [Note: `XREF(A)` is `__xref<A>::template __call`]
 template <class _Tp>
-using __xref = __apply_cvref_fn<_Tp>;
+using __xref _CCCL_NODEBUG = __apply_cvref_fn<_Tp>;
 
 // Given types A and B, let X be remove_reference_t<A>, let Y be remove_reference_t<B>,
 // and let COMMON-REF(A, B) be:
@@ -96,7 +97,7 @@ template <class _Xp, class _Yp>
 using __common_ref_t _CCCL_NODEBUG = typename __common_ref<_Xp, _Yp>::__type;
 
 template <class _Xp, class _Yp>
-using __cv_cond_res = __cond_res<__copy_cv_t<_Xp, _Yp>&, __copy_cv_t<_Yp, _Xp>&>;
+using __cv_cond_res _CCCL_NODEBUG = __cond_res<__copy_cv_t<_Xp, _Yp>&, __copy_cv_t<_Yp, _Xp>&>;
 
 //    If A and B are both lvalue reference types, COMMON-REF(A, B) is
 //    COND-RES(COPYCV(X, Y)&, COPYCV(Y, X)&) if that type exists and is a reference type.
@@ -108,7 +109,7 @@ struct __common_ref<_Ap&, _Bp&, enable_if_t<is_reference_v<__cv_cond_res<_Ap, _B
 
 //    Otherwise, let C be remove_reference_t<COMMON-REF(X&, Y&)>&&. ...
 template <class _Xp, class _Yp>
-using __common_ref_C = remove_reference_t<__common_ref_t<_Xp&, _Yp&>>&&;
+using __common_ref_C _CCCL_NODEBUG = remove_reference_t<__common_ref_t<_Xp&, _Yp&>>&&;
 
 //    .... If A and B are both rvalue reference types, C is well-formed, and
 //    is_convertible_v<A, C> && is_convertible_v<B, C> is true, then COMMON-REF(A, B) is C.
@@ -131,7 +132,7 @@ struct __common_ref<_Ap&&, _Bp&&> : __common_ref_rr<_Ap&&, _Bp&&>
 
 //    Otherwise, let D be COMMON-REF(const X&, Y&). ...
 template <class _Tp, class _Up>
-using __common_ref_D = __common_ref_t<const _Tp&, _Up&>;
+using __common_ref_D _CCCL_NODEBUG = __common_ref_t<const _Tp&, _Up&>;
 
 //    ... If A is an rvalue reference and B is an lvalue reference and D is well-formed and
 //    is_convertible_v<A, D> is true, then COMMON-REF(A, B) is D.
