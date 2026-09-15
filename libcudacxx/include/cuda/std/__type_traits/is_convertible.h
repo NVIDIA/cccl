@@ -46,7 +46,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Fm, class _To>
 inline constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_Fm, _To);
 
-#  if _CCCL_COMPILER(MSVC) // Workaround for DevCom-1627396
+#  if _CCCL_COMPILER(MSVC, <, 19, 42) // Workaround for DevCom-1627396
 template <class _Tp>
 inline constexpr bool is_convertible_v<_Tp&, volatile _Tp&> = true;
 
@@ -78,7 +78,7 @@ inline constexpr bool is_convertible_v<_Tp&&, const volatile _Tp&> = false;
 
 template <class _Tp>
 inline constexpr bool is_convertible_v<volatile _Tp&&, const volatile _Tp&> = false;
-#  endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC, <, 19, 42)
 
 #else // ^^^ _CCCL_BUILTIN_IS_CONVERTIBLE_TO ^^^ / vvv !_CCCL_BUILTIN_IS_CONVERTIBLE_TO vvv
 
