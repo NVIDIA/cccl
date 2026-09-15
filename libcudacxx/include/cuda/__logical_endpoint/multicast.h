@@ -38,12 +38,7 @@ class multicast_logical_endpoint_ref
   using __base = ::cuda::__detail::__logical_endpoint_ref_base<::cuda::__detail::__logical_endpoint_type::__multicast>;
 
 public:
-  //! @brief Creates a multicast endpoint reference from a logical endpoint ID.
-  //!
-  //! @param[in] __id The logical endpoint ID.
-  _CCCL_HOST_DEVICE_API explicit constexpr multicast_logical_endpoint_ref(logical_endpoint_id __id) noexcept
-      : __base{__id}
-  {}
+  using __base::__base;
 
   //! @brief Adds a CUDA device to the multicast logical endpoint.
   //!

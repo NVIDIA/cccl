@@ -56,7 +56,7 @@ struct __logical_endpoint_id_range_state;
 
 template <class _IsReady>
 [[nodiscard]] _CCCL_HOST_API bool
-__wait_until_ready_with_backoff(_IsReady __is_ready, ::cuda::std::chrono::nanoseconds __timeout);
+__wait_ready_for_with_backoff(_IsReady __is_ready, ::cuda::std::chrono::nanoseconds __timeout);
 } // namespace __detail
 
 //! @brief A CUDA logical endpoint ID.
@@ -283,7 +283,7 @@ namespace __detail
 {
 template <class _IsReady>
 [[nodiscard]] _CCCL_HOST_API bool
-__wait_until_ready_with_backoff(_IsReady __is_ready, ::cuda::std::chrono::nanoseconds __timeout)
+__wait_ready_for_with_backoff(_IsReady __is_ready, ::cuda::std::chrono::nanoseconds __timeout)
 {
   constexpr int __polling_count = 16;
   const auto __start            = ::cuda::std::chrono::high_resolution_clock::now();
@@ -291,7 +291,7 @@ __wait_until_ready_with_backoff(_IsReady __is_ready, ::cuda::std::chrono::nanose
   for (int __count = 0;;)
   {
     const auto __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-    if (__timeout != ::cuda::std::chrono::nanoseconds::zero() && __timeout <= __elapsed)
+    if (__timeout <= __elapsed)
     {
       return false;
     }
@@ -370,14 +370,13 @@ public:
     return ::cuda::__driver::__logicalEndpointQuery(native_handle(), /*__count=*/1);
   }
 
-  //! @brief Waits until the referenced endpoint is ready or a timeout expires.
+  //! @brief Waits for the referenced endpoint to become ready.
   //!
-  //! @param[in] __timeout The timeout duration; zero means wait indefinitely.
+  //! @param[in] __timeout The maximum time to wait.
   //! @return `true` if the endpoint became ready before timeout.
-  [[nodiscard]] _CCCL_HOST_API bool
-  wait_until_ready(::cuda::std::chrono::nanoseconds __timeout = ::cuda::std::chrono::nanoseconds::zero()) const
+  [[nodiscard]] _CCCL_HOST_API bool wait_ready_for(::cuda::std::chrono::nanoseconds __timeout) const
   {
-    return ::cuda::__detail::__wait_until_ready_with_backoff(
+    return ::cuda::__detail::__wait_ready_for_with_backoff(
       [this] {
         return this->is_ready();
       },

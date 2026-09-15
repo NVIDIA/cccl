@@ -16,6 +16,7 @@
 #include <cuda/logical_endpoint>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cassert>
+#include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -45,11 +46,13 @@ struct has_is_ready<_Tp, cuda::std::void_t<decltype(cuda::std::declval<const _Tp
 {};
 
 template <class _Tp, class = void>
-struct has_wait_until_ready : cuda::std::false_type
+struct has_wait_ready_for : cuda::std::false_type
 {};
 
 template <class _Tp>
-struct has_wait_until_ready<_Tp, cuda::std::void_t<decltype(cuda::std::declval<const _Tp&>().wait_until_ready())>>
+struct has_wait_ready_for<
+  _Tp,
+  cuda::std::void_t<decltype(cuda::std::declval<const _Tp&>().wait_ready_for(cuda::std::chrono::nanoseconds{1}))>>
     : cuda::std::true_type
 {};
 
@@ -70,7 +73,7 @@ static_assert(
 static_assert(!has_add_device<cuda::unicast_logical_endpoint_ref>::value);
 static_assert(has_add_device<cuda::multicast_logical_endpoint_ref>::value);
 static_assert(!has_is_ready<cuda::logical_endpoint_id_range>::value);
-static_assert(!has_wait_until_ready<cuda::logical_endpoint_id_range>::value);
+static_assert(!has_wait_ready_for<cuda::logical_endpoint_id_range>::value);
 
 TEST_FUNC constexpr bool test_endpoint_ids()
 {
