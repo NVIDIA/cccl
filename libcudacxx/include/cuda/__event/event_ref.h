@@ -26,7 +26,7 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/std/__cccl/assert.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
+#  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 
 #  include <cuda/std/__cccl/prologue.h>

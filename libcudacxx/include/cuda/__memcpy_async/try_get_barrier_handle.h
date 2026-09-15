@@ -28,7 +28,7 @@
 #include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

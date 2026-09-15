@@ -31,7 +31,7 @@
 #include <cuda/__fp/fpmp_math_impl_exp.h>
 #include <cuda/std/__floating_point/constants.h>
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

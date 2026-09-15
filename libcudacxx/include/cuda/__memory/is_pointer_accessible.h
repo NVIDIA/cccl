@@ -24,7 +24,7 @@
 #include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/ensure_current_context.h>
-#include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
+#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>

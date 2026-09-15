@@ -32,7 +32,7 @@
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
+#  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 

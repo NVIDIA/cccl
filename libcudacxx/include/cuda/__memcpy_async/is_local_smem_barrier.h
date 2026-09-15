@@ -27,7 +27,7 @@
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__type_traits/is_same.h>
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

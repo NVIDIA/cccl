@@ -211,7 +211,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 // CCCL_FP_CUSTOM_EXPLICIT_CASTS controls whether conversions INTO a reduced fp_custom are
 // explicit. It gates only the constructors, and only where the rank rule makes them

@@ -37,7 +37,7 @@
 #include <cuda/std/__utility/cmp.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
 #  include <intrin.h>
