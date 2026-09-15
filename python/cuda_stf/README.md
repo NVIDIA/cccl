@@ -107,19 +107,17 @@ b = torch.localized.zeros_like(x)  # reuses x's placement verbatim
 torch.localized.placement_report(x)  # dry-run: bytes per grid position
 ```
 
-Compute follows the same model: `torch.localized.map(fn, *tensors)` applies
-a map expression (eager, or a stock `torch.compile` artifact — fusion stays
-torch's job) once per die, each over a strided view of exactly the die's
-elements, forked/joined with events so the whole thing is CUDA-graph
-capturable. The iteration split is inferred from the operands' placement
-(all localized operands must share one spec; ordinary broadcast scalars
-pass whole).
-Valid bodies are maps w.r.t. the split axes: pointwise always, dim-wise ops
-along unsplit dims (softmax/LayerNorm over hidden with a batch split) too;
-reductions over a split dim are per-die partials over
-`torch.localized.views(t)` plus a fold. The runnable spectrum — including
-graph capture and an `nn.Module` — lives in
-`tests/stf/test_localized_map_examples.py`.
+Compute is ordinary pytorch: a localized tensor is a plain `torch.Tensor`,
+so every op and library call works unchanged (correct, but placement-blind:
+one launch reaches every die's pages). Where compute should follow the
+pages, `torch.localized.views(t)` returns one plain strided view per die --
+the placement-aware `chunk` -- and the per-die loop is stock torch:
+`for xv, yv in zip(views(x), views(y)): yv.add_(xv, alpha=a)`. Pointwise
+and dim-wise ops along unsplit dims are valid per die; reductions over a
+split dim are per-die partials plus a fold. Out-of-place results come from
+the ordinary allocator and are not localized -- write in place, or into a
+localized `out=`. The runnable spectrum -- including an `nn.Module` -- lives
+in `tests/stf/test_localized_views_examples.py`.
 
 `from torch.localized import zeros` works too. For codebases that prefer
 explicit imports over patching, `stf.interop.pytorch.namespace()` returns

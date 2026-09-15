@@ -514,55 +514,8 @@ def placement_report(tensor, probes: int = 0):
 
 
 # ---------------------------------------------------------------------------
-# map: per-die execution of a map expression over localized operands.
+# views: per-die strided views of a localized tensor.
 # ---------------------------------------------------------------------------
-
-
-def _partitions_equal(a, b):
-    if a is b:
-        return True
-    return (
-        tuple(a.true_dims) == tuple(b.true_dims)
-        and tuple(a.grid_dims) == tuple(b.grid_dims)
-        and a.place_leaves == b.place_leaves
-        and a.local_leaves == b.local_leaves
-    )
-
-
-#: Standalone stream-pool registry backing the fork/join streams. Module
-#: level so the streams it owns outlive every wrapper cached below.
-_MAP_RESOURCES = None
-#: Cache so repeated ``map`` calls on a grid skip re-deriving their streams
-#: from ``_MAP_RESOURCES`` (per-die place scope + pick_stream + wrapper).
-#: grid handle -> (grid, per-die torch streams); the grid is retained so its
-#: handle cannot be recycled while the entry is cached.
-_MAP_STREAMS: dict = {}
-
-
-def _map_streams(grid, nplaces):
-    """One torch stream per die, drawn from the die's own place: it lives on
-    that place's device (and inside its green context for locality
-    domains), so ``fn`` launches with compute affinity to the pages it
-    touches."""
-    global _MAP_RESOURCES  # noqa: PLW0603 - lazily created registry
-    from .. import exec_place_resources  # noqa: PLC0415
-
-    torch = _import_torch()
-    key = grid._handle_int
-    entry = _MAP_STREAMS.get(key)
-    if entry is None:
-        if _MAP_RESOURCES is None:
-            _MAP_RESOURCES = exec_place_resources()
-        streams = []
-        for die in range(nplaces):
-            place = grid.get_place(die)
-            with place:
-                ptr = place.pick_stream(_MAP_RESOURCES)
-            device = place.affine_data_place.device_id
-            streams.append(torch.cuda.ExternalStream(int(ptr), device=device))
-        entry = (grid, streams)
-        _MAP_STREAMS[key] = entry
-    return entry[1]
 
 
 def _die_view(torch, tensor, part, die):
@@ -584,9 +537,11 @@ def views(tensor, spec=None):
     """The per-die strided views of a localized tensor (one per grid
     position, exactly the die's owned elements, padded space).
 
-    The escape hatch for constructs beyond :func:`map` -- e.g. reductions
-    over a SPLIT dim, done as per-die partials over these views followed by
-    a fold of the P partials (the write-dual pattern).
+    Each view is a plain ``torch.Tensor`` (``as_strided`` over the same
+    storage), so any in-place torch op or library call runs per die on it
+    -- the placement-aware counterpart of ``tensor.chunk(P)``. Reductions
+    over a SPLIT dim are per-die partials over these views followed by a
+    fold of the P partials.
     """
     torch = _import_torch()
     part = spec if spec is not None else spec_of(tensor)
@@ -596,93 +551,6 @@ def views(tensor, spec=None):
     for e in tuple(part.grid_dims):
         gd *= int(e)
     return [_die_view(torch, tensor, part, d) for d in range(gd)]
-
-
-def map(fn, *tensors, spec=None, streams=None):  # noqa: A001 - namespace attribute
-    """Apply a MAP expression per die, each die over its owned elements.
-
-    ``fn`` is any callable -- eager, or a (stock) ``torch.compile`` artifact
-    -- whose dataflow respects the split axes: pointwise always; dim-wise
-    ops along UNSPLIT dims (softmax/LayerNorm over an unsplit hidden dim
-    with batch-blocked operands) are valid; reductions or stencils touching
-    a split dim are not (those need per-die partials + a fold). ``fn`` must
-    write IN-PLACE (or into localized operands passed to it): out-of-place
-    results would come from the ordinary torch allocator, unlocalized.
-
-    The iteration spec is inferred from the operands: all localized
-    operands must share one partition (validated eagerly from the
-    registry); ordinary broadcast scalars pass through whole. ``spec=``
-    overrides only when no localized operand carries one.
-
-    Execution forks one launch per die (the event-based fork/join idiom,
-    which stream capture follows), each over a strided view of exactly the
-    die's elements -- restriction by re-indexing, not predication. Each
-    die's launch runs on a stream picked from that die's execution place
-    (its device; its green context for a locality-domain grid), so compute
-    follows the pages. Pass explicit ``streams=`` (one per die) to
-    override.
-
-    Views cover the PADDED space: split dims are padded to divisibility,
-    so ``fn`` may compute on padding elements; they are never observed
-    through the tensor's true extents.
-    """
-    torch = _import_torch()
-
-    part = spec
-    grid = None
-    view_args = []  # per operand: partition or None (pass-through)
-    for t in tensors:
-        meta = get_meta(t) if isinstance(t, torch.Tensor) else None
-        if meta is None:
-            view_args.append(None)  # scalars and plain tensors: whole
-            continue
-        if grid is None:
-            grid = meta.grid
-        if meta.partition is None:
-            raise ValueError(
-                "map requires the structured (spec) tier; a mapper-tier "
-                "allocation has no leaves to build per-die views from"
-            )
-        if part is None:
-            part = meta.partition
-        elif not _partitions_equal(part, meta.partition):
-            raise ValueError(
-                "misaligned operands: all localized operands of map must "
-                "share one partition"
-            )
-        view_args.append(meta.partition)
-    if part is None:
-        raise ValueError(
-            "no localized operand carries a partition; pass spec= explicitly"
-        )
-
-    gd = 1
-    for e in tuple(part.grid_dims):
-        gd *= int(e)
-
-    if streams is None:
-        streams = _map_streams(grid, gd)
-    if len(streams) < gd:
-        raise ValueError(f"need {gd} streams, got {len(streams)}")
-
-    current = torch.cuda.current_stream()
-    fork = torch.cuda.Event()
-    fork.record(current)
-    join_events = []
-    for die in range(gd):
-        s = streams[die]
-        s.wait_event(fork)
-        with torch.cuda.stream(s):
-            args = tuple(
-                _die_view(torch, t, p, die) if p is not None else t
-                for t, p in zip(tensors, view_args)
-            )
-            fn(*args)
-        e = torch.cuda.Event()
-        e.record(s)
-        join_events.append(e)
-    for e in join_events:
-        current.wait_event(e)
 
 
 # ---------------------------------------------------------------------------
@@ -715,7 +583,6 @@ def _build_namespace(qualname):
     ns.get_meta = get_meta
     ns.spec_of = spec_of
     ns.grid_of = grid_of
-    ns.map = map
     ns.views = views
     ns.live_metas = live_metas
     ns.placement_report = placement_report
