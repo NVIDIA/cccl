@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Physical-warp cooperative primitive semantic builders."""
+"""Physical- and logical-warp cooperative primitive semantic builders."""
 
 from .load_store import (
     WarpLoadAlgorithm,

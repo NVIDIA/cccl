@@ -113,7 +113,7 @@ def _validate_portable_load_store_options(
                 f"cuda.coop.{operation} offset must be between 0 and "
                 "9223372036854775807"
             )
-    if group.kind == "warp":
+    if group.kind in {"warp", "threads_within_warp"}:
         if algorithm not in _WARP_LOAD_STORE_ALGORITHMS:
             raise ValueError(
                 f"cuda.coop.{operation} algorithm {algorithm!r} is supported "
@@ -122,14 +122,17 @@ def _validate_portable_load_store_options(
         if temp_storage is not None:
             raise ValueError(
                 f"cuda.coop.{operation} temp_storage is not supported for "
-                "physical Warp groups; omit it so the implementation can "
-                "provide per-Warp storage"
+                "Warp groups; omit it so the implementation can provide "
+                "per-group storage"
             )
     elif temp_storage is not None:
         _validate_common_temp_storage(operation, temp_storage)
 
 
-@_portable_group_operation("load", group_kinds=("block", "warp"))
+@_portable_group_operation(
+    "load",
+    group_kinds=("block", "warp", "threads_within_warp"),
+)
 def load(
     group: ThreadGroup,
     source: Any,
@@ -182,7 +185,10 @@ def load(
     )
 
 
-@_portable_group_operation("store", group_kinds=("block", "warp"))
+@_portable_group_operation(
+    "store",
+    group_kinds=("block", "warp", "threads_within_warp"),
+)
 def store(
     group: ThreadGroup,
     destination: Any,
