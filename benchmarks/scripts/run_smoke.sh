@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-set -eu
+set -eou pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 preset="${CCCL_SMOKE_PRESET:-cub-benchmark}"
