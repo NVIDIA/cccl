@@ -14,6 +14,8 @@
 #  include <cuda/std/optional>
 #  include <cuda/std/span>
 
+#  include <stdexcept>
+
 #  include "../traits.h"
 #  include <cccl/c/types.h>
 #endif
@@ -37,6 +39,18 @@ struct parameter_mapping<cccl_op_t>
   static std::string map(template_id<Traits>, ArgT arg)
   {
     const auto& value = arg_traits<cuda::std::decay_t<ArgT>>::unwrap(arg);
+    // This mapping requires a function name, even if the implementation is linked later.
+    // Reject missing names here so callers such as Python get a meaningful error.
+    if (value.name == nullptr || value.name[0] == '\0')
+    {
+      if (value.type != cccl_op_kind_t::CCCL_STATELESS && value.type != cccl_op_kind_t::CCCL_STATEFUL)
+      {
+        throw ::std::invalid_argument(
+          "c.parallel: built-in operations are not supported for storage types (including structs) without a custom "
+          "operation implementation.");
+      }
+      throw ::std::invalid_argument("c.parallel: a custom operation requires a non-empty function name.");
+    }
     return std::format(
       "cccl_op_t_mapping<{}>{{.is_stateless = {}, .size = {}, .alignment = {}}}",
       value.name,

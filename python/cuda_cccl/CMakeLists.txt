@@ -138,6 +138,7 @@ foreach (
   op_code_type
   serialization
   build_config
+  transform_diagnostics
 )
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cuda/compute/_bindings_${_pxi_stem}_${_backend_suffix}.pxi"
