@@ -188,7 +188,10 @@ public:
     }
     else
     {
-      _CCCL_ASSERT(__mapping_result.group_count() <= __barriers_.size(), "invalid number of barriers passed");
+      if (__mapping_result.is_valid())
+      {
+        _CCCL_ASSERT(__mapping_result.group_count() <= __barriers_.size(), "invalid number of barriers passed");
+      }
     }
 
     ::cuda::std::size_t __nthread_in_unit     = 1;
