@@ -136,7 +136,10 @@ struct F
 static_assert(!cuda::std::is_convertible_v<F*, E*>);
 
 // The following should not use 6.3.1, but fallback to 6.3.3
+// MSVC 19.44 does not consider the conversion operator when forming COND-RES(E&, F)
+#if !TEST_COMPILER(MSVC, ==, 19, 44)
 static_assert(cuda::std::is_same_v<cuda::std::common_reference_t<E&, F>, E&>);
+#endif // !TEST_COMPILER(MSVC, ==, 19, 44)
 
 // (6.3.2)
 //    -- Otherwise, if basic_common_reference<remove_cvref_t<T1>,

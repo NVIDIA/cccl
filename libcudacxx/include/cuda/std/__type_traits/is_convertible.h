@@ -58,6 +58,26 @@ inline constexpr bool is_convertible_v<_Tp&, const volatile _Tp&> = true;
 
 template <class _Tp>
 inline constexpr bool is_convertible_v<volatile _Tp&, const volatile _Tp&> = true;
+
+// MSVC also allows binding rvalues to (const) volatile lvalue references, which requires an lvalue
+// reference to a non-volatile const type ([dcl.init.ref]). That breaks COMMON-REF(T&&, volatile T&)
+template <class _Tp>
+inline constexpr bool is_convertible_v<_Tp, volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<_Tp, const volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<_Tp&&, volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<volatile _Tp&&, volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<_Tp&&, const volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<volatile _Tp&&, const volatile _Tp&> = false;
 #  endif // _CCCL_COMPILER(MSVC)
 
 #else // ^^^ _CCCL_BUILTIN_IS_CONVERTIBLE_TO ^^^ / vvv !_CCCL_BUILTIN_IS_CONVERTIBLE_TO vvv
