@@ -62,7 +62,7 @@ public:
   _CCCL_DEVICE_API __interwarp_synchronizer_instance(__interwarp_barrier_id __barrier_id) noexcept
       : __barrier_id_{__barrier_id}
   {
-    _CCCL_ASSERT(__barrier_id_ < 16, "Invalid native warp barrier id");
+    _CCCL_ASSERT(__barrier_id_ < 16u, "Invalid native warp barrier id");
   }
 
   template <class _MappingResult, class _Hierarchy>
