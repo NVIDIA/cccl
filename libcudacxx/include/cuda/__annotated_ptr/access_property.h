@@ -35,12 +35,12 @@ class __annotated_ptr_base; // forward declaration
 class access_property
 {
 private:
-  uint64_t __descriptor = __l2_interleave_normal;
+  ::cuda::std::uint64_t __descriptor = __l2_interleave_normal;
 
   friend class __annotated_ptr_base<access_property>;
 
   // needed by __annotated_ptr_base
-  _CCCL_HOST_DEVICE_API constexpr access_property(uint64_t __descriptor1) noexcept
+  _CCCL_HOST_DEVICE_API constexpr access_property(::cuda::std::uint64_t __descriptor1) noexcept
       : __descriptor{__descriptor1}
   {}
 
@@ -157,7 +157,7 @@ public:
           __l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_First, __ptr, __primary_bytes, __total_bytes)}
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr explicit operator uint64_t() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr explicit operator ::cuda::std::uint64_t() const noexcept
   {
     return __descriptor;
   }

@@ -64,7 +64,7 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cstdint> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 
 // Public API surface (fpemu_accuracy selector + CCCL_FPEMU_LIB / CCCL_FPEMU_INLINE
 // compile-mode knobs) lives in fpemu_common.h; all library-internal machinery
@@ -252,7 +252,7 @@ public:
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>))
   _CCCL_HOST_DEVICE_API fpemu(_Tp __i) noexcept
-      : fpemu(static_cast<int32_t>(__i))
+      : fpemu(static_cast<::cuda::std::int32_t>(__i))
   {}
 #if _CCCL_HAS_INT128()
   // 128-bit integers would silently truncate to 64 bits, so they are deleted until
@@ -301,14 +301,14 @@ public:
 private:
   // Accuracy-correct integer <-> value helpers (defined out-of-line where the fpemu
   // builtins are visible). Kept non-template so the definitions stay out-of-line.
-  _CCCL_HOST_DEVICE_API void __set_from_int32(int32_t) noexcept;
-  _CCCL_HOST_DEVICE_API void __set_from_int32(uint32_t) noexcept;
-  _CCCL_HOST_DEVICE_API void __set_from_int64(int64_t) noexcept;
-  _CCCL_HOST_DEVICE_API void __set_from_int64(uint64_t) noexcept;
-  _CCCL_HOST_DEVICE_API int32_t __to_integer(int32_t) const noexcept;
-  _CCCL_HOST_DEVICE_API uint32_t __to_integer(uint32_t) const noexcept;
-  _CCCL_HOST_DEVICE_API int64_t __to_integer(int64_t) const noexcept;
-  _CCCL_HOST_DEVICE_API uint64_t __to_integer(uint64_t) const noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int32(::cuda::std::int32_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int32(::cuda::std::uint32_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int64(::cuda::std::int64_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int64(::cuda::std::uint64_t) noexcept;
+  _CCCL_HOST_DEVICE_API ::cuda::std::int32_t __to_integer(::cuda::std::int32_t) const noexcept;
+  _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t __to_integer(::cuda::std::uint32_t) const noexcept;
+  _CCCL_HOST_DEVICE_API ::cuda::std::int64_t __to_integer(::cuda::std::int64_t) const noexcept;
+  _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t __to_integer(::cuda::std::uint64_t) const noexcept;
 
 public:
   /*
@@ -641,7 +641,7 @@ public:
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>))
   _CCCL_HOST_DEVICE_API explicit fpemu_unpacked(_Tp __i) noexcept
-      : fpemu_unpacked(static_cast<int32_t>(__i))
+      : fpemu_unpacked(static_cast<::cuda::std::int32_t>(__i))
   {}
 #if _CCCL_HAS_INT128()
   // 128-bit integers would silently truncate to 64 bits, so they are deleted until
@@ -689,14 +689,14 @@ public:
 private:
   // Accuracy-correct integer <-> value helpers (defined out-of-line where the fpemu
   // builtins are visible). Kept non-template so the definitions stay out-of-line.
-  _CCCL_HOST_DEVICE_API void __set_from_int32(int32_t) noexcept;
-  _CCCL_HOST_DEVICE_API void __set_from_int32(uint32_t) noexcept;
-  _CCCL_HOST_DEVICE_API void __set_from_int64(int64_t) noexcept;
-  _CCCL_HOST_DEVICE_API void __set_from_int64(uint64_t) noexcept;
-  _CCCL_HOST_DEVICE_API int32_t __to_integer(int32_t) const noexcept;
-  _CCCL_HOST_DEVICE_API uint32_t __to_integer(uint32_t) const noexcept;
-  _CCCL_HOST_DEVICE_API int64_t __to_integer(int64_t) const noexcept;
-  _CCCL_HOST_DEVICE_API uint64_t __to_integer(uint64_t) const noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int32(::cuda::std::int32_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int32(::cuda::std::uint32_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int64(::cuda::std::int64_t) noexcept;
+  _CCCL_HOST_DEVICE_API void __set_from_int64(::cuda::std::uint64_t) noexcept;
+  _CCCL_HOST_DEVICE_API ::cuda::std::int32_t __to_integer(::cuda::std::int32_t) const noexcept;
+  _CCCL_HOST_DEVICE_API ::cuda::std::uint32_t __to_integer(::cuda::std::uint32_t) const noexcept;
+  _CCCL_HOST_DEVICE_API ::cuda::std::int64_t __to_integer(::cuda::std::int64_t) const noexcept;
+  _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t __to_integer(::cuda::std::uint64_t) const noexcept;
 
 public:
   /*

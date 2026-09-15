@@ -40,8 +40,6 @@
 #include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstddef> // IWYU pragma: keep
-#include <cuda/std/limits> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

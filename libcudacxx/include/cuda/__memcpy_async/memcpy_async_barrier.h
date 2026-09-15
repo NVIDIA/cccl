@@ -32,7 +32,7 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/cstddef> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>

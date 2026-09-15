@@ -24,7 +24,7 @@
 #include <cuda/__memory/aligned_size.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h> // IWYU pragma: keep
-#include <cuda/std/cstdint> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -49,8 +49,8 @@ _CCCL_HOST_DEVICE_API inline bool __memcpy_async_check_pre(_Tp* __dst, const _Tp
 {
   constexpr auto __align = ::cuda::std::max(alignof(_Tp), __get_size_align_v<_Size>);
 
-  const auto __dst_val = reinterpret_cast<uintptr_t>(__dst);
-  const auto __src_val = reinterpret_cast<uintptr_t>(__src);
+  const auto __dst_val = reinterpret_cast<::cuda::std::uintptr_t>(__dst);
+  const auto __src_val = reinterpret_cast<::cuda::std::uintptr_t>(__src);
 
   // check src and dst alignment
   _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(::cuda::std::is_sufficiently_aligned<__align>(__dst),

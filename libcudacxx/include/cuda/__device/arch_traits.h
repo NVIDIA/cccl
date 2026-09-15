@@ -26,8 +26,8 @@
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -103,7 +103,7 @@
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cfloat> // IWYU pragma: keep
 #include <cuda/std/cmath> // IWYU pragma: keep
-#include <cuda/std/cstdint> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 #include <cuda/std/cstring> // IWYU pragma: keep
 
 #include <nv/target> // IWYU pragma: keep
@@ -543,7 +543,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_add_rz(float __x, float __y) noexcept
                       {
                         // Rounded away from zero: decrementing the mantissa moves the magnitude
                         // toward zero for both signs.
-                        uint32_t __bits = ::cuda::std::bit_cast<uint32_t>(__sum);
+                        ::cuda::std::uint32_t __bits = ::cuda::std::bit_cast<::cuda::std::uint32_t>(__sum);
                         __bits--;
                         __sum = ::cuda::std::bit_cast<float>(__bits);
                       }
@@ -610,31 +610,32 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_fast_log2(float __x) noexcept
                     }),
                     (return ::log2f(__x);))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(float __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::int32_t __fpmp_fp2int_rz(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rz(__x);), (return static_cast<int32_t>(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rz(__x);), (return static_cast<::cuda::std::int32_t>(__x);))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(float __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::int32_t __fpmp_fp2int_rn(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(roundf(__x));))
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<::cuda::std::int32_t>(roundf(__x));))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(float __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::uint32_t __fpmp_fp2uint_rz(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2uint_rz(__x);), (return static_cast<uint32_t>(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2uint_rz(__x);), (return static_cast<::cuda::std::uint32_t>(__x);))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API int64_t __fpmp_fp2ll_rz(float __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::int64_t __fpmp_fp2ll_rz(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2ll_rz(__x);), (return static_cast<int64_t>(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2ll_rz(__x);), (return static_cast<::cuda::std::int64_t>(__x);))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __fpmp_fp2ull_rz(float __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::uint64_t __fpmp_fp2ull_rz(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2ull_rz(__x);), (return static_cast<uint64_t>(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2ull_rz(__x);), (return static_cast<::cuda::std::uint64_t>(__x);))
 }
 
 // The host cast is already the round-to-nearest conversion the name promises, so it needs
 // no rounding call on top of it.
 template <typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rn(int32_t __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rn(::cuda::std::int32_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return static_cast<_FpType>(::__int2float_rn(__x));), (return static_cast<_FpType>(__x);))
@@ -648,7 +649,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rn(int32_t __x) noexcept
 // The templates serve both float and double.
 */
 template <typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rz(::cuda::std::int32_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(::__int2float_rz(__x));), ({
                       _FpType __f    = static_cast<_FpType>(__x);
@@ -668,7 +669,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
                     }))
 }
 template <typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_uint2fp_rz(::cuda::std::uint32_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(::__uint2float_rz(__x));), ({
                       _FpType __f    = static_cast<_FpType>(__x);
@@ -688,7 +689,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
                     }))
 }
 template <typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ll2fp_rz(::cuda::std::int64_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(::__ll2float_rz(__x));), ({
                       _FpType __f    = static_cast<_FpType>(__x);
@@ -708,7 +709,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
                     }))
 }
 template <typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ull2fp_rz(uint64_t __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ull2fp_rz(::cuda::std::uint64_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return static_cast<_FpType>(::__ull2float_rz(__x));), ({
                       _FpType __f    = static_cast<_FpType>(__x);
@@ -758,7 +759,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_add_rz(double __x, double __y) noexc
                       {
                         // Rounded away from zero: decrementing the mantissa moves the magnitude
                         // toward zero for both signs.
-                        uint64_t __bits = ::cuda::std::bit_cast<uint64_t>(__sum);
+                        ::cuda::std::uint64_t __bits = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__sum);
                         __bits--;
                         __sum = ::cuda::std::bit_cast<double>(__bits);
                       }
@@ -785,40 +786,41 @@ _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_rsqrt_rn(double __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);), (return 1.0 / ::cuda::std::sqrt(__x);))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(double __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::int32_t __fpmp_fp2int_rz(double __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2int_rz(__x);), (return static_cast<int32_t>(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2int_rz(__x);), (return static_cast<::cuda::std::int32_t>(__x);))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(double __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::int32_t __fpmp_fp2int_rn(double __x) noexcept
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::__double2int_rn(__x);), (return static_cast<int32_t>(::cuda::std::round(__x));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (return ::__double2int_rn(__x);),
+                    (return static_cast<::cuda::std::int32_t>(::cuda::std::round(__x));))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(double __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::uint32_t __fpmp_fp2uint_rz(double __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2uint_rz(__x);), (return static_cast<uint32_t>(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2uint_rz(__x);), (return static_cast<::cuda::std::uint32_t>(__x);))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API int64_t __fpmp_fp2ll_rz(double __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::int64_t __fpmp_fp2ll_rz(double __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2ll_rz(__x);), (return static_cast<int64_t>(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2ll_rz(__x);), (return static_cast<::cuda::std::int64_t>(__x);))
 }
-_CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __fpmp_fp2ull_rz(double __x) noexcept
+_CCCL_TRIVIAL_HOST_DEVICE_API ::cuda::std::uint64_t __fpmp_fp2ull_rz(double __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2ull_rz(__x);), (return static_cast<uint64_t>(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2ull_rz(__x);), (return static_cast<::cuda::std::uint64_t>(__x);))
 }
 // int32_t and uint32_t always fit exactly in double (52-bit mantissa vs 32-bit values)
 template <>
-_CCCL_HOST_DEVICE_API inline double __fpmp_int2fp_rn<double>(int32_t __x) noexcept
+_CCCL_HOST_DEVICE_API inline double __fpmp_int2fp_rn<double>(::cuda::std::int32_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__int2double_rn(__x);), (return static_cast<double>(__x);))
 }
 template <>
-_CCCL_HOST_DEVICE_API inline double __fpmp_int2fp_rz<double>(int32_t __x) noexcept
+_CCCL_HOST_DEVICE_API inline double __fpmp_int2fp_rz<double>(::cuda::std::int32_t __x) noexcept
 {
   return static_cast<double>(__x);
 }
 template <>
-_CCCL_HOST_DEVICE_API inline double __fpmp_uint2fp_rz<double>(uint32_t __x) noexcept
+_CCCL_HOST_DEVICE_API inline double __fpmp_uint2fp_rz<double>(::cuda::std::uint32_t __x) noexcept
 {
   return static_cast<double>(__x);
 }
@@ -826,7 +828,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_uint2fp_rz<double>(uint32_t __x) noex
 // conversion intrinsics, while the host detects a round away from zero by comparing
 // against long double and steps one value back.
 template <>
-_CCCL_HOST_DEVICE_API inline double __fpmp_ll2fp_rz<double>(int64_t __x) noexcept
+_CCCL_HOST_DEVICE_API inline double __fpmp_ll2fp_rz<double>(::cuda::std::int64_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__ll2double_rz(__x);), ({
                       double __d          = static_cast<double>(__x);
@@ -839,7 +841,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ll2fp_rz<double>(int64_t __x) noexcep
                     }))
 }
 template <>
-_CCCL_HOST_DEVICE_API inline double __fpmp_ull2fp_rz<double>(uint64_t __x) noexcept
+_CCCL_HOST_DEVICE_API inline double __fpmp_ull2fp_rz<double>(::cuda::std::uint64_t __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__ull2double_rz(__x);), ({
                       double __d          = static_cast<double>(__x);
