@@ -25,6 +25,7 @@
 #include <format>
 #include <mutex>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -40,6 +41,7 @@
 #include "util/serialization.h"
 #include <cccl/c/serialization.h>
 #include <cccl/c/transform.h>
+#include <cccl/c/transform_diagnostics.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
@@ -69,6 +71,24 @@ struct input2_storage_t;
 
 namespace transform
 {
+namespace
+{
+thread_local std::string last_error;
+
+void set_last_error(const char* message) noexcept
+{
+  try
+  {
+    last_error = message;
+  }
+  catch (...)
+  {
+    // Reporting an error must not let an allocation failure cross the C ABI.
+    last_error.clear();
+  }
+}
+} // namespace
+
 std::string
 get_kernel_name(std::string_view input_iterator_t, std::string_view output_iterator_t, std::string_view transform_op_t)
 {
@@ -216,6 +236,11 @@ auto make_iterator_info(cccl_iterator_t it) -> cub::detail::iterator_info
 }
 } // namespace transform
 
+extern "C" CCCL_C_API const char* cccl_transform_last_error(void)
+{
+  return transform::last_error.c_str();
+}
+
 CUresult cccl_device_unary_transform_compile(
   cccl_device_transform_build_result_t* build_ptr,
   cccl_iterator_t input_it,
@@ -230,6 +255,7 @@ CUresult cccl_device_unary_transform_compile(
   cccl_build_config* config)
 try
 {
+  transform::last_error.clear();
   const char* name = "test";
 
   const auto [input_iterator_name, input_iterator_src] =
@@ -386,8 +412,14 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {9}, "Ho
 
   return CUDA_SUCCESS;
 }
+catch (const std::invalid_argument& exc)
+{
+  transform::set_last_error(exc.what());
+  return CUDA_ERROR_INVALID_VALUE;
+}
 catch (const std::exception& exc)
 {
+  transform::set_last_error(exc.what());
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_unary_transform_compile(): %s\n", exc.what());
   fflush(stdout);
@@ -397,6 +429,7 @@ catch (const std::exception& exc)
 CUresult cccl_device_transform_load(cccl_device_transform_build_result_t* build_ptr)
 try
 {
+  transform::last_error.clear();
   if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
       || build_ptr->payload_kind != CCCL_PAYLOAD_CUBIN || build_ptr->transform_kernel_lowered_name == nullptr
       || build_ptr->transform_kernel_lowered_name[0] == '\0')
@@ -424,6 +457,7 @@ try
 }
 catch (const std::exception& exc)
 {
+  transform::set_last_error(exc.what());
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_transform_load(): %s\n", exc.what());
   fflush(stdout);
@@ -514,6 +548,7 @@ CUresult cccl_device_binary_transform_compile(
   cccl_build_config* config)
 try
 {
+  transform::last_error.clear();
   const char* name = "test";
 
   const auto [input1_iterator_name, input1_iterator_src] =
@@ -682,8 +717,14 @@ static_assert(device_transform_policy()(detail::current_tuning_cc()) == {12}, "H
 
   return CUDA_SUCCESS;
 }
+catch (const std::invalid_argument& exc)
+{
+  transform::set_last_error(exc.what());
+  return CUDA_ERROR_INVALID_VALUE;
+}
 catch (const std::exception& exc)
 {
+  transform::set_last_error(exc.what());
   fflush(stderr);
   printf("\nEXCEPTION in cccl_device_binary_transform_compile(): %s\n", exc.what());
   fflush(stdout);

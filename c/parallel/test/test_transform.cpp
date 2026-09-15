@@ -3,6 +3,7 @@
 #include <numeric>
 #include <optional> // std::optional
 #include <string>
+#include <thread>
 
 #include <cuda_runtime.h>
 
@@ -11,6 +12,10 @@
 #include "test_util.h"
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h>
+
+#ifndef CCCL_C_PARALLEL_V2
+#  include <cccl/c/transform_diagnostics.h>
+#endif
 
 using BuildResultT = cccl_device_transform_build_result_t;
 
@@ -894,6 +899,112 @@ extern "C" __device__ void op(void* state_ptr, void* x_ptr, void* out_ptr) {
 }
 
 #ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("Transform rejects unnamed fallback operations", "[transform][diagnostics]")
+{
+  const char* name    = GENERATE(static_cast<const char*>(nullptr), "");
+  const bool binary   = GENERATE(false, true);
+  const bool built_in = GENERATE(false, true);
+  cccl_op_t op{};
+  op.type = built_in ? (binary ? CCCL_PLUS : CCCL_IDENTITY) : CCCL_STATELESS;
+  op.name = name;
+  pointer_t<pair> input(1);
+  pointer_t<pair> output(1);
+  const auto& info = BuildInformation<>::init();
+  BuildResultT build{};
+  const CUresult status =
+    binary
+      ? cccl_device_binary_transform_compile(
+          &build,
+          input,
+          input,
+          output,
+          op,
+          info.get_cc_major(),
+          info.get_cc_minor(),
+          info.get_cub_path(),
+          info.get_thrust_path(),
+          info.get_libcudacxx_path(),
+          info.get_ctk_path(),
+          nullptr)
+      : cccl_device_unary_transform_compile(
+          &build,
+          input,
+          output,
+          op,
+          info.get_cc_major(),
+          info.get_cc_minor(),
+          info.get_cub_path(),
+          info.get_thrust_path(),
+          info.get_libcudacxx_path(),
+          info.get_ctk_path(),
+          nullptr);
+  REQUIRE(status == CUDA_ERROR_INVALID_VALUE);
+  REQUIRE(build.payload == nullptr);
+  const std::string message = cccl_transform_last_error();
+  CHECK(message.find(built_in ? "built-in operations are not supported for storage types" : "non-empty function name")
+        != std::string::npos);
+
+  // Reading/clearing a diagnostic on another thread must not change ours.
+  std::string other_message;
+  CUresult other_status = CUDA_SUCCESS;
+  std::thread other([&] {
+    other_message = cccl_transform_last_error();
+    other_status  = cccl_device_transform_load(nullptr);
+  });
+  other.join();
+  CHECK(other_message.empty());
+  CHECK(other_status == CUDA_ERROR_INVALID_VALUE);
+  CHECK(std::string(cccl_transform_last_error()) == message);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+  CHECK(std::string(cccl_transform_last_error()) == message);
+  // Even an early failure must clear a stale diagnostic from an earlier call.
+  REQUIRE(CUDA_ERROR_INVALID_VALUE == cccl_device_transform_load(nullptr));
+  CHECK(std::string(cccl_transform_last_error()).empty());
+}
+
+C2H_TEST("Transform fallback supports deferred operator linking", "[transform][diagnostics]")
+{
+  const bool built_in = GENERATE(false, true);
+  cccl_op_t op{};
+  op.type = built_in ? CCCL_IDENTITY : CCCL_STATELESS;
+  op.name = "copy_pair";
+  const std::vector<pair> values{{1, 10}, {2, 20}, {3, 30}};
+  pointer_t<pair> input(values);
+  pointer_t<pair> output(values.size());
+  const auto& info = BuildInformation<>::init();
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unary_transform_compile(
+      &build,
+      input,
+      output,
+      op,
+      info.get_cc_major(),
+      info.get_cc_minor(),
+      info.get_cub_path(),
+      info.get_thrust_path(),
+      info.get_libcudacxx_path(),
+      info.get_ctk_path(),
+      nullptr));
+  CHECK(std::string(cccl_transform_last_error()).empty());
+  REQUIRE(build.payload_kind == CCCL_PAYLOAD_LTOIR);
+
+  operation_t implementation = make_operation("copy_pair", R"(
+struct pair { short a; size_t b; };
+extern "C" __device__ void copy_pair(void* input, void* output) {
+  *static_cast<pair*>(output) = *static_cast<const pair*>(input);
+})");
+  const void* code           = implementation.code.data();
+  const size_t code_size     = implementation.code.size();
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_link_ltoir(&build, &code, &code_size, 1));
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_load(&build));
+  REQUIRE(CUDA_SUCCESS == cccl_device_unary_transform(build, input, output, values.size(), op, CU_STREAM_LEGACY));
+  CHECK(std::vector<pair>(output) == values);
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+}
+
 C2H_TEST("Transform build result has serialization metadata populated", "[transform][serialization]")
 {
   using T = int32_t;
