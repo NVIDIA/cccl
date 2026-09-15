@@ -35,6 +35,31 @@ Each guideline is a section of the form:
 - The provenance comment lists the historical regressions the rule was distilled from
   (introducing PR → fixing PR); it is metadata for maintainers, not part of the rule.
 
+## build.compiler-matrix (important, all C++ code)
+
+<!-- provenance:
+  #534→#536 MSVC int128/asm;
+  #1403→#1423 VLAs;
+  #1320→#1417 NVHPC/GCC;
+  ICC visibility →#1152;
+  #1863→#1929 include cleanup broke non-NVRTC;
+  #1915→#2341 host-system macro clobbered by mechanical typedef→using sweep;
+  #5906→#5921 unguarded __is_trivially_copyable broke NVHPC/MSVC;
+  #8957→#9003 atomicCAS in shared lit-test kernel broke tile-mode compilation;
+  #10623→#10865 __uint128_t punning in __nv_atomic unavailable under tile mode/MSVC;
+  #10927→#11014 plain if in an if-constexpr dispatch chain made 64/128-bit instantiations ill-formed under -mbmi2, invisible to CI;
+  #6337→#6759 exception-macro refactor wrapped all of cuda_error.h in #if !NVRTC, removing __throw_cuda_error from NVRTC entirely;
+  #3989→#4089 new usage site of the #ifdef-guarded ublkcp enumerator left unguarded, breaking NVHPC;
+  #4871→#4891 compiler-crash workaround (_CCCL_NO_UNIQUE_ADDRESS removal) applied to the primary template but not the two-arg partial specialization;
+  #4286→#8139 concept-constrained NTTP in ptx-json partial specializations rejected by NVRTC < 12.5
+-->
+
+Flag compiler-specific constructs unless guarded by a feature macro: `__int128`, GNU inline
+`asm`, `__attribute__`, VLAs, visibility attributes, one-compiler warning suppressions, etc.
+CCCL must build with GCC, Clang, MSVC, NVHPC/NVC++ (incl. `-stdpar`), and NVRTC; PR CI does
+not cover all of these, so green CI is not sufficient. Compiler-detection refactors must
+stay equivalent for every supported compiler — beware masquerading (Clang and NVHPC define
+`__GNUC__`). Benchmarks and tests count too.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
