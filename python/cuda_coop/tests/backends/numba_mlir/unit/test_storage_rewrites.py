@@ -368,21 +368,30 @@ class _FakeInvocable:
         del args
 
 
-def _register_leading_pointer_provider(invocable):
+def _register_leading_pointer_provider(
+    invocable,
+    *,
+    execution_scope=SynchronizationScope.BLOCK,
+    synchronization_scope=SynchronizationScope.BLOCK,
+):
     operation = f"_test_storage_rewrite_family_{id(invocable)}"
+    calls = []
 
     def provider(*runtime_args, **factory_kwargs):
         assert not runtime_args
         assert not factory_kwargs
+        calls.append((runtime_args, factory_kwargs))
         return invocable
+
+    provider.calls = calls
 
     _operations.register_factory(
         provider,
         operation=operation,
         namespace="storage_test",
         storage_abi=_operations.StorageABI.LEADING_POINTER,
-        execution_scope=SynchronizationScope.BLOCK,
-        synchronization_scope=SynchronizationScope.BLOCK,
+        execution_scope=execution_scope,
+        synchronization_scope=synchronization_scope,
     )
     _operations.register_rewrite_operation(
         operation,
@@ -449,6 +458,347 @@ def _rewrite_preflight(function):
         metadata={"targetoptions": {}},
     )
     return func_ir, state, CoopSinglePhaseRewrite(state)
+
+
+@pytest.mark.parametrize(
+    ("execution_scope", "synchronization_scope", "accepted"),
+    [
+        pytest.param(
+            SynchronizationScope.BLOCK,
+            SynchronizationScope.BLOCK,
+            True,
+            id="block-block",
+        ),
+        pytest.param(
+            SynchronizationScope.BLOCK,
+            SynchronizationScope.NONE,
+            False,
+            id="block-none",
+        ),
+        pytest.param(
+            SynchronizationScope.WARP,
+            SynchronizationScope.WARP,
+            False,
+            id="warp-warp",
+        ),
+        pytest.param(
+            SynchronizationScope.NONE,
+            SynchronizationScope.NONE,
+            False,
+            id="none-none",
+        ),
+        pytest.param(
+            SynchronizationScope.GROUP,
+            SynchronizationScope.GROUP,
+            False,
+            id="group-group",
+        ),
+    ],
+)
+def test_storage_provider_without_plan_requires_block_scope(
+    execution_scope,
+    synchronization_scope,
+    accepted,
+):
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(
+        invocable,
+        execution_scope=execution_scope,
+        synchronization_scope=synchronization_scope,
+    )
+
+    def kernel(value):
+        return provider(value)
+
+    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    entry_block = func_ir.blocks[min(func_ir.blocks)]
+    if accepted:
+        prepared = []
+        rewrite._prepare_ltoir_bundle_for_matches = lambda matches: prepared.append(
+            tuple(matches)
+        )
+
+        assert rewrite.match(func_ir, entry_block, state.typemap, state.calltypes)
+        assert len(prepared) == 1
+        assert len(prepared[0]) == 1
+        assert provider.calls == [((), {})]
+        return
+
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: pytest.fail(
+        "invalid no-plan provider reached bundle preparation"
+    )
+    rewrite._materialize_invocable = lambda _match: pytest.fail(
+        "invalid no-plan provider reached provider materialization"
+    )
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="require block execution and block synchronization scopes",
+    ):
+        rewrite.match(func_ir, entry_block, state.typemap, state.calltypes)
+    assert provider.calls == []
+
+
+@pytest.mark.parametrize(
+    ("case", "with_descriptor", "message"),
+    [
+        pytest.param(
+            "group",
+            False,
+            "execution scope 'group' has no storage emitter",
+            id="group",
+        ),
+        pytest.param(
+            "address-space",
+            False,
+            "shared-address-space TempStorage",
+            id="address-space",
+        ),
+        pytest.param(
+            "implementation-with-descriptor",
+            True,
+            "TempStorage ownership disagrees with its runtime arguments",
+            id="implementation-with-descriptor",
+        ),
+        pytest.param(
+            "caller-without-descriptor",
+            False,
+            "TempStorage ownership disagrees with its runtime arguments",
+            id="caller-without-descriptor",
+        ),
+        pytest.param(
+            "caller-none",
+            True,
+            "caller-owned TempStorage is supported only for single-instance block",
+            id="caller-none",
+        ),
+        pytest.param(
+            "caller-group",
+            True,
+            "execution scope 'group' has no storage emitter",
+            id="caller-group",
+        ),
+    ],
+)
+def test_planned_storage_guardrails_fail_before_materialization(
+    case,
+    with_descriptor,
+    message,
+):
+    from dataclasses import replace
+
+    from cuda.coop._core import (
+        GroupLoadStoreAlgorithm,
+        GroupLoweringTarget,
+        GroupTopologyContract,
+        LaunchFacts,
+        ParticipationContract,
+        StorageOwnership,
+        SynchronizationContract,
+        make_group_primitive_call,
+        resolve_thread_group,
+        this_block,
+        this_thread,
+    )
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(
+        this_block(),
+        _load_store(algorithm=GroupLoadStoreAlgorithm.TRANSPOSE),
+    )
+    execution_scope = SynchronizationScope.BLOCK
+    synchronization_scope = SynchronizationScope.BLOCK
+    if case in {"group", "caller-group"}:
+        execution_scope = SynchronizationScope.GROUP
+        synchronization_scope = SynchronizationScope.GROUP
+        plan = replace(
+            plan,
+            topology=replace(
+                plan.topology,
+                execution_scope=SynchronizationScope.GROUP,
+            ),
+            synchronization=replace(
+                plan.synchronization,
+                storage_reuse_barrier=SynchronizationScope.GROUP,
+            ),
+        )
+    elif case == "address-space":
+        plan = replace(
+            plan,
+            temp_storage=replace(plan.temp_storage, address_space="local"),
+        )
+    elif case == "caller-none":
+        execution_scope = SynchronizationScope.NONE
+        synchronization_scope = SynchronizationScope.NONE
+        launch = LaunchFacts(exact_block_dim=(64, 1, 1))
+        resolved_thread = resolve_thread_group(
+            this_thread(), launch
+        ).require_supported()
+        operation = plan.call.operation
+        plan = replace(
+            plan,
+            target=GroupLoweringTarget.CUDAX_GROUP,
+            call=make_group_primitive_call(resolved_thread, operation),
+            resolved_group=resolved_thread,
+            topology=GroupTopologyContract(
+                group_kind="thread",
+                logical_width=1,
+                instances=64,
+                instance_index="linear_thread_rank",
+                thread_rank="0",
+                execution_scope=SynchronizationScope.NONE,
+            ),
+            participation=ParticipationContract(
+                group_kind="thread",
+                exact_group_size=1,
+                exact_block_dim=(64, 1, 1),
+                complete_membership=True,
+                contiguous=True,
+                aligned=True,
+                converged_entry=True,
+                complete_parent_partition=True,
+            ),
+            synchronization=SynchronizationContract(
+                converged_entry=True,
+                storage_reuse_barrier=SynchronizationScope.NONE,
+            ),
+            temp_storage=replace(
+                plan.temp_storage,
+                instances=64,
+                instance_index="linear_thread_rank",
+            ),
+        )
+    if case.startswith("caller-"):
+        plan = replace(
+            plan,
+            temp_storage=replace(
+                plan.temp_storage,
+                ownership=StorageOwnership.CALLER,
+                exact_layout_required=True,
+                sharing="shared",
+            ),
+        )
+
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(
+        invocable,
+        execution_scope=execution_scope,
+        synchronization_scope=synchronization_scope,
+    )
+    if with_descriptor:
+
+        def kernel(value):
+            storage = coop.TempStorage()
+            return provider(
+                value,
+                temp_storage=storage,
+                __cuda_coop_group_lowering_plan__=plan,
+            )
+
+    else:
+
+        def kernel(value):
+            return provider(
+                value,
+                __cuda_coop_group_lowering_plan__=plan,
+            )
+
+    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: pytest.fail(
+        "invalid planned provider reached bundle preparation"
+    )
+    rewrite._materialize_invocable = lambda _match: pytest.fail(
+        "invalid planned provider reached provider materialization"
+    )
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match=message):
+        rewrite.match(
+            func_ir,
+            func_ir.blocks[min(func_ir.blocks)],
+            state.typemap,
+            state.calltypes,
+        )
+    assert provider.calls == []
+
+
+@pytest.mark.parametrize("descriptor_auto_sync", [False, True], ids=["drift", "agree"])
+def test_planned_caller_storage_contract_must_match_the_descriptor(
+    descriptor_auto_sync,
+):
+    from cuda.coop._core import GroupLoadStoreAlgorithm, StorageOwnership, this_block
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(
+        this_block(),
+        _load_store(
+            algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
+            storage_ownership=StorageOwnership.CALLER,
+            storage_sharing="shared",
+            storage_auto_sync=True,
+        ),
+    )
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        storage = coop.TempStorage(auto_sync=descriptor_auto_sync)
+        return provider(
+            value,
+            temp_storage=storage,
+            __cuda_coop_group_lowering_plan__=plan,
+        )
+
+    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
+    rewrite._materialize_invocable = lambda _match: (invocable, False)
+    entry = func_ir.blocks[min(func_ir.blocks)]
+
+    if descriptor_auto_sync:
+        assert rewrite.match(func_ir, entry, state.typemap, state.calltypes)
+        return
+    # The planner parsed auto_sync=True into the plan while the rewrite sees
+    # auto_sync=False: neither parser may silently win.
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="disagrees between the group lowering plan",
+    ):
+        rewrite.match(func_ir, entry, state.typemap, state.calltypes)
+
+
+def test_apply_refuses_a_plan_whose_auto_sync_disagrees_with_implicit_storage():
+    from dataclasses import replace
+
+    from cuda.coop._core import GroupLoadStoreAlgorithm, this_block
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(
+        this_block(),
+        _load_store(algorithm=GroupLoadStoreAlgorithm.TRANSPOSE),
+    )
+    plan = replace(
+        plan,
+        temp_storage=replace(plan.temp_storage, auto_sync=False),
+        synchronization=replace(
+            plan.synchronization,
+            storage_reuse_barrier=SynchronizationScope.NONE,
+        ),
+    )
+    invocable = _FakeInvocable()
+    invocable.synchronization_scope = "none"
+    provider = _register_leading_pointer_provider(
+        invocable,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+
+    def kernel(value):
+        return provider(value, __cuda_coop_group_lowering_plan__=plan)
+
+    # Implementation-owned storage always carries the trailing barrier; a plan
+    # that claims otherwise must be rejected rather than drop the barrier.
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="disagrees between the group lowering plan and the descriptor",
+    ):
+        _rewrite_registered_provider(kernel)
 
 
 def _resolved_calls(func_ir):
