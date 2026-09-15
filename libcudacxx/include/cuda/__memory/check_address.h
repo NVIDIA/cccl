@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__memory/address_space.h>
