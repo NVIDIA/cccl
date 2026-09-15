@@ -848,6 +848,27 @@ class Bench:
         runs_cache.push_run(self, result.code, result.elapsed)
         return bench_cache.push_bench_centers(self, result, estimator)
 
+    def is_cached(self, ct_workload_point, rt_values):
+        """Whether the score can be derived from stored results alone.
+
+        A hit means `score` touches neither the compiler nor the GPU, so callers
+        can skip building the variant. Mirrors the falsy check in `run`, which
+        treats an empty result as a miss.
+        """
+        bench_cache = BenchCache()
+
+        if not bench_cache.pull_bench_centers(self, ct_workload_point, rt_values):
+            return False
+
+        if self.is_base():
+            return True
+
+        return bool(
+            bench_cache.pull_bench_centers(
+                self.get_base(), ct_workload_point, rt_values
+            )
+        )
+
     def speedup(self, ct_workload_point, rt_values, base_estimator, variant_estimator):
         if self.is_base():
             return 1.0
