@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__barrier/barrier.h>
-#include <cuda/__memory/address_space.h> // IWYU pragma: keep
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__type_traits/is_same.h>

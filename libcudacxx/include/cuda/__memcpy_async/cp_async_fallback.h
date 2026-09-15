@@ -24,8 +24,6 @@
 
 #include <cuda/std/__cstddef/types.h>
 
-#include <nv/target> // IWYU pragma: keep
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA

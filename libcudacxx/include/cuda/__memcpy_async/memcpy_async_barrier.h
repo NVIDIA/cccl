@@ -27,7 +27,7 @@
 #include <cuda/__memcpy_async/dispatch_memcpy_async.h>
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>
 #include <cuda/__memcpy_async/memcpy_completion.h>
-#include <cuda/__memcpy_async/try_get_barrier_handle.h> // IWYU pragma: keep
+#include <cuda/__memcpy_async/try_get_barrier_handle.h>
 #include <cuda/__memory/aligned_size.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>

@@ -32,8 +32,8 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__type_traits/is_function.h> // IWYU pragma: keep
-#  include <cuda/std/__type_traits/is_pointer.h> // IWYU pragma: keep
+#  include <cuda/std/__type_traits/is_function.h>
+#  include <cuda/std/__type_traits/is_pointer.h>
 #  include <cuda/std/__utility/forward.h>
 
 #  include <cuda/std/__cccl/prologue.h>

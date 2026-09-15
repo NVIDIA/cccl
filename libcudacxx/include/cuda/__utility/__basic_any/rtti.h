@@ -29,7 +29,7 @@
 #include <cuda/std/__utility/typeid.h>
 
 #if _CCCL_HOSTED()
-#  include <typeinfo> // IWYU pragma: keep
+#  include <typeinfo>
 #endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>

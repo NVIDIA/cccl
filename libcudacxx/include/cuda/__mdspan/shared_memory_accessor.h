@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/address_space.h> // IWYU pragma: keep
+#include <cuda/__memory/address_space.h>
 #include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
