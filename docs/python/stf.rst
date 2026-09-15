@@ -151,6 +151,14 @@ are complementary and a consumer picks the semantics by construction:
   consumer's stream after the allocation stream with an event wait (nothing
   blocks on the host).
 
+The localized-allocation surface (``interop.pytorch.localized_empty``)
+exposes the same choice as ``lifetime="pinned"`` (CAI import; the metadata
+registry pins the pages until :func:`release`) versus ``lifetime="gc"``
+(DLPack import; the tensor -- typically an ``nn.Parameter``, where it is the
+default -- owns the pages, so unloading the module frees the VMM and the
+placement metadata). See ``tests/stf/test_device_array_dlpack.py`` and
+``tests/stf/interop/test_localized_weights_example.py``.
+
 Interop adapters
 ----------------
 
@@ -414,7 +422,8 @@ coordinates in, C-order grid coordinates out), which makes the property easy
 to check -- and is the primitive an adapter can use to reason about element
 placement without re-implementing any policy::
 
-    tile_partition = stf.cute_partition.from_spec(tiles, spec, grid.dims)
+    tile_spec = (("blocked", 0), ("blocked", 1))
+    tile_partition = stf.cute_partition.from_spec(tiles, tile_spec, grid.dims)
     assert partition.owner((i, j, y, x)) == tile_partition.owner((i, j))
 
 Note that ``owner()`` is exact element-level ownership; the *physical*
