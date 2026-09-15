@@ -32,6 +32,27 @@ struct spaced_out_it_op
   }
 };
 
+template <typename T>
+struct offset_to_iterator_t
+{
+  char* base_it;
+  std::size_t element_size;
+
+  __host__
+    __device__ __forceinline__ thrust::transform_iterator<spaced_out_it_op<T>, thrust::counting_iterator<std::size_t>>
+    operator()(std::size_t offset) const
+  {
+    // The pointer to the beginning of this "buffer" (aka a series of same "keys")
+    auto base_ptr = base_it + (element_size * offset);
+
+    // We need to make sure that the i-th element within this "buffer" is spaced out by
+    // `element_size`
+    auto counting_it = thrust::make_counting_iterator(std::size_t{0});
+    spaced_out_it_op<T> space_out_op{base_ptr, element_size};
+    return thrust::make_transform_iterator(counting_it, space_out_op);
+  }
+};
+
 struct random_to_custom_t
 {
   static constexpr std::size_t m_max_key = std::numeric_limits<std::size_t>::max();
@@ -56,31 +77,9 @@ void gen_custom_type_state(
   std::size_t element_size)
 {
   // FIXME(bgruber): implement min/max handling for custom_type_state_t
-  auto out_it = thrust::make_transform_iterator(
-    thrust::counting_iterator<std::size_t>{0}, spaced_out_it_op<custom_type_state_t>{d_out, element_size});
+  auto out_it = offset_to_iterator_t<custom_type_state_t>{d_out, element_size}(std::size_t{0});
   thrust::tabulate(device_policy, out_it, out_it + elements, random_to_custom_t{seed.get()});
 }
-
-template <typename T>
-struct offset_to_iterator_t
-{
-  char* base_it;
-  std::size_t element_size;
-
-  __host__
-    __device__ __forceinline__ thrust::transform_iterator<spaced_out_it_op<T>, thrust::counting_iterator<std::size_t>>
-    operator()(std::size_t offset) const
-  {
-    // The pointer to the beginning of this "buffer" (aka a series of same "keys")
-    auto base_ptr = base_it + (element_size * offset);
-
-    // We need to make sure that the i-th element within this "buffer" is spaced out by
-    // `element_size`
-    auto counting_it = thrust::make_counting_iterator(std::size_t{0});
-    spaced_out_it_op<T> space_out_op{base_ptr, element_size};
-    return thrust::make_transform_iterator(counting_it, space_out_op);
-  }
-};
 
 template <class T>
 struct repeat_index_t
