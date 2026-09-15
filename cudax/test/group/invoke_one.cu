@@ -274,7 +274,7 @@ struct TestKernel
     if (cuda::warp.rank(cuda::grid, config) == 0)
     {
       const cudax::this_warp warp{config};
-      const cudax::group group{cuda::gpu_thread, warp, cudax::group_by<4>{}, cudax::lane_synchronizer{}};
+      const cudax::generic_group group{cuda::gpu_thread, warp, cudax::group_by<4>{}, cudax::lane_synchronizer{}};
 
       if (group.rank(warp) == 0)
       {

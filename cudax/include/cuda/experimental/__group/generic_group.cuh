@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___GROUP_GROUP_CUH
-#define _CUDA_EXPERIMENTAL___GROUP_GROUP_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_GENERIC_GROUP_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_GENERIC_GROUP_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -80,10 +80,10 @@ using __group_synchronizer_instance_t = decltype(::cuda::experimental::__make_sy
   ::cuda::std::declval<_Synchronizer>()));
 
 template <class _Unit, class _ParentGroup, class _MappingResult, class _SynchronizerInstance>
-class group
+class generic_group
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
-  static_assert(is_group<_ParentGroup>);
+  static_assert(group<_ParentGroup>);
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
@@ -106,7 +106,7 @@ public:
     ::cuda::std::is_same_v<_MappingResult, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>> _CCCL_AND ::cuda::
       std::is_same_v<_SynchronizerInstance,
                      __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>>)
-  _CCCL_DEVICE_API explicit group(
+  _CCCL_DEVICE_API explicit generic_group(
     const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping, _Synchronizer&& __synchronizer) noexcept
       : __hier_{__parent.hierarchy()}
       , __mapping_result_{::cuda::experimental::__do_group_mapping(
@@ -116,15 +116,12 @@ public:
   {}
 
   // Groups can't be copied, moved nor assigned.
-  group(const group&)            = delete;
-  group(group&&)                 = delete;
-  group& operator=(const group&) = delete;
-  group& operator=(group&&)      = delete;
+  generic_group(const generic_group&)            = delete;
+  generic_group(generic_group&&)                 = delete;
+  generic_group& operator=(const generic_group&) = delete;
+  generic_group& operator=(generic_group&&)      = delete;
 
-  // todo(dabayer): Delete copy constructor.
-  // group(const group&) = delete;
-
-  _CCCL_DEVICE_API ~group()
+  _CCCL_DEVICE_API ~generic_group()
   {
     // Skip the synchronization for threads that are not part of this group.
     if constexpr (!_MappingResult::is_always_exhaustive())
@@ -233,14 +230,14 @@ _CCCL_TEMPLATE(
   class _Synchronizer,
   class _MappingResult        = __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>,
   class _SynchronizerInstance = __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>)
-_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup> _CCCL_AND
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND group<_ParentGroup> _CCCL_AND
                  __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group(const _Unit&, const _ParentGroup&, _Mapping&&, _Synchronizer&&)
-  -> group<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES generic_group(const _Unit&, const _ParentGroup&, _Mapping&&, _Synchronizer&&)
+  -> generic_group<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___GROUP_GROUP_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_GENERIC_GROUP_CUH

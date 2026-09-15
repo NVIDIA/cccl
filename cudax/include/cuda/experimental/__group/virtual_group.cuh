@@ -98,7 +98,7 @@ template <class _Unit, class _ParentGroup, class _MappingResult>
 class virtual_group
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
-  static_assert(is_group<_ParentGroup>);
+  static_assert(group<_ParentGroup>);
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
@@ -211,7 +211,7 @@ _CCCL_TEMPLATE(class _Unit,
                class _ParentGroup,
                class _Mapping,
                class _MappingResult = __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>)
-_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup> _CCCL_AND
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND group<_ParentGroup> _CCCL_AND
                  __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES virtual_group(const _Unit&, const _ParentGroup&, _Mapping&&)
   -> virtual_group<_Unit, _ParentGroup, _MappingResult>;
