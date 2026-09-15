@@ -70,7 +70,7 @@ public:
   //!
   //! @return Copy of the current probing scheme
   template <class _NewHash>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
   {
     return linear_probing<cg_size, _NewHash>{__hash};
   }
@@ -86,7 +86,7 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const
   {
     using __size_type        = typename _Capacity::index_type;
     using __step_extent      = ::cuda::std::extents<__size_type, _BucketSize>;
@@ -107,10 +107,8 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
-                _ProbeKey __probe_key,
-                _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(
+    ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __probe_key, _Capacity __cap) const
   {
     using __size_type              = typename _Capacity::index_type;
     constexpr __size_type __stride = cg_size * _BucketSize;
@@ -123,7 +121,7 @@ public:
   //! @brief Gets the function used to hash keys.
   //!
   //! @return The function used to hash keys
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const
   {
     return __hash;
   }
@@ -201,7 +199,7 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const
   {
     using __size_type   = typename _Capacity::index_type;
     using __step_extent = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
@@ -224,10 +222,8 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
-                _ProbeKey __probe_key,
-                _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(
+    ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __probe_key, _Capacity __cap) const
   {
     using __size_type              = typename _Capacity::index_type;
     constexpr __size_type __stride = cg_size * _BucketSize;
@@ -243,7 +239,7 @@ public:
   //! @brief Gets the functions used to hash keys.
   //!
   //! @return The functions used to hash keys
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const
   {
     return {__hash1, __hash2};
   }
