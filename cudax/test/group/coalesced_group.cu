@@ -30,7 +30,7 @@ __device__ void test_coalesced_group(Config config)
     cudax::coalesced_group group{config};
     using Group = decltype(group);
 
-    static_assert(cudax::is_group<Group>);
+    static_assert(cudax::group<Group>);
 
     static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
     static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::level_type>);
@@ -71,7 +71,7 @@ __device__ void test_coalesced_group(Config config)
     cudax::coalesced_group group{config};
     using Group = decltype(group);
 
-    static_assert(cudax::is_group<Group>);
+    static_assert(cudax::group<Group>);
 
     static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
     static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::level_type>);
@@ -112,7 +112,7 @@ __device__ void test_coalesced_group(Config config)
     cudax::coalesced_group group{config};
     using Group = decltype(group);
 
-    static_assert(cudax::is_group<Group>);
+    static_assert(cudax::group<Group>);
 
     static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
     static_assert(cuda::std::is_same_v<cuda::warp_level, typename Group::level_type>);

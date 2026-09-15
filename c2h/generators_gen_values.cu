@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <thrust/tabulate.h>
-#include <thrust/transform.h>
 
 #include <cuda/stream>
 
@@ -10,6 +9,7 @@
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
+#include <c2h/generators.h>
 #include <c2h/half.cuh>
 
 namespace c2h::detail
@@ -17,16 +17,15 @@ namespace c2h::detail
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  gen_values_between(::cuda::stream_ref{::cudaStream_t{}}, seed, data, min, max);
+  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
+  thrust::tabulate(device_policy, data.begin(), data.end(), op);
 }
 
 template <typename T>
 void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  const auto random_data = prepare_random_data(stream, seed, data.size());
-  const auto* dist       = random_data.data();
-  thrust::transform(
-    device_policy.on(stream.get()), dist, dist + data.size(), data.begin(), random_to_item_t<T>(min, max));
+  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
+  thrust::tabulate(device_policy.on(stream.get()), data.begin(), data.end(), op);
 }
 
 template <typename T>
@@ -50,7 +49,7 @@ void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data)
 
 #define INSTANTIATE_RND(TYPE)                                                                       \
   template void gen_values_between<TYPE>(seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max); \
-  template void gen_values_between<TYPE>(::cuda::stream_ref, seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max)
+  template void gen_values_between<TYPE>(::cuda::stream_ref, seed_t, ::cuda::std::span<TYPE>, TYPE min, TYPE max)
 #define INSTANTIATE_MOD(TYPE) template void gen_values_cyclic<TYPE>(modulo_t, ::cuda::std::span<TYPE> data)
 
 #define INSTANTIATE(TYPE) \

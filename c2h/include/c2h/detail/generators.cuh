@@ -4,60 +4,54 @@
 #pragma once
 
 #include <cuda/std/complex>
-#include <cuda/stream>
+#include <cuda/std/cstddef>
 #include <cuda/type_traits>
-
-#include <cstddef>
-#include <memory>
 
 #include <c2h/generator_common.h>
 
+#if C2H_HAS_CURAND
+#  include <curand_kernel.h>
+#else
+#  include <cuda/std/random>
+#endif
+
 namespace c2h::detail
 {
-class generator_state_t;
-
-inline constexpr std::size_t max_cached_generator_states = 16;
-
-class random_data_t
+// draws a single uniform float in (0, 1] from an independent stream per index, so many indices can be drawn
+// concurrently without any shared state
+struct index_to_random_uniform
 {
-public:
-  random_data_t(const random_data_t&)            = delete;
-  random_data_t& operator=(const random_data_t&) = delete;
+  unsigned long long m_seed;
 
-  random_data_t(random_data_t&&) noexcept;
-  random_data_t& operator=(random_data_t&&) noexcept;
-
-  ~random_data_t();
-
-  [[nodiscard]] float* data() const noexcept
+  __device__ float operator()(std::size_t i) const
   {
-    return m_data;
+#if C2H_HAS_CURAND
+    curandStatePhilox4_32_10_t state;
+    curand_init(m_seed, i, 0, &state);
+    return curand_uniform(&state);
+#else
+    cuda::std::philox4x32 engine(static_cast<cuda::std::philox4x32::result_type>(m_seed ^ (m_seed >> 32)));
+    engine.set_counter(
+      {0,
+       0,
+       static_cast<cuda::std::philox4x32::result_type>(i >> 32),
+       static_cast<cuda::std::philox4x32::result_type>(i)});
+    return cuda::std::uniform_real_distribution<float>{0.0f, 1.0f}(engine);
+#endif // C2H_HAS_CURAND
   }
-
-private:
-  friend class generator_t;
-
-  random_data_t(float* data, std::shared_ptr<generator_state_t> state) noexcept;
-
-  float* m_data = nullptr;
-  std::shared_ptr<generator_state_t> m_state;
 };
 
-// called once from main to set up the generator state
-void init_generator();
+template <typename Op>
+struct index_to_transformed_random_uniform
+{
+  unsigned long long m_seed;
+  Op m_op;
 
-// Sets the seed and fills the per-device default-stream distribution. The returned object keeps the distribution alive;
-// enqueue all consumers before destroying it.
-[[nodiscard]] random_data_t prepare_random_data(seed_t seed, std::size_t num_items);
-
-// Sets the seed and fills the per-device, per-stream distribution. The returned object keeps the distribution alive;
-// enqueue all consumers on stream before destroying it.
-[[nodiscard]] random_data_t prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items);
-
-[[nodiscard]] std::size_t cached_generator_state_count();
-
-// called once before main returns to clean up the generator state
-void cleanup_generator();
+  __device__ auto operator()(std::size_t i)
+  {
+    return m_op(index_to_random_uniform{m_seed}(i));
+  }
+};
 
 template <typename T, bool = ::cuda::is_floating_point_v<T>>
 struct random_to_item_t

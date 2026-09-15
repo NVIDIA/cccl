@@ -1,20 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <thrust/detail/config/device_system.h>
-#include <thrust/for_each.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/tabulate.h>
 
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/span>
 #include <cuda/stream>
 
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/fill_striped.h>
+#include <c2h/generators.h>
 #include <c2h/vector.h>
 
 namespace c2h::detail
@@ -22,10 +19,18 @@ namespace c2h::detail
 template <typename T, int VecSize>
 struct random_to_vec_item_t
 {
-  __device__ void operator()(std::size_t idx)
+  unsigned long long m_seed;
+  T m_min;
+  T m_max;
+
+  __device__ T operator()(std::size_t idx)
   {
+    T out{};
+    index_to_random_uniform rng{m_seed};
+    int field = 0;
 #define SET_FIELD(VEC_FIELD) \
-  m_out[idx].VEC_FIELD = random_to_item_t<decltype(m_min.VEC_FIELD)>(m_min.VEC_FIELD, m_max.VEC_FIELD)(m_in[idx]);
+  out.VEC_FIELD =            \
+    random_to_item_t<decltype(m_min.VEC_FIELD)>(m_min.VEC_FIELD, m_max.VEC_FIELD)(rng(idx * VecSize + field++));
 
     if constexpr (VecSize >= 4)
     {
@@ -44,30 +49,27 @@ struct random_to_vec_item_t
       SET_FIELD(x);
     }
 #undef SET_FIELD
+    return out;
   }
-
-  T m_min;
-  T m_max;
-  const float* m_in{};
-  T* m_out{};
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  define VEC_SPECIALIZATION(T)                                                                                   \
-    template <>                                                                                                   \
-    void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)      \
-    {                                                                                                             \
-      const auto random_data = prepare_random_data(stream, seed, data.size());                                    \
-      auto op = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, random_data.data(), data.data()}; \
-      thrust::for_each(device_policy.on(stream.get()),                                                            \
-                       thrust::counting_iterator<size_t>{0},                                                      \
-                       thrust::counting_iterator<size_t>{data.size()},                                            \
-                       op);                                                                                       \
-    }                                                                                                             \
-    template <>                                                                                                   \
-    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                                 \
-    {                                                                                                             \
-      gen_values_between(::cuda::stream_ref{::cudaStream_t{}}, seed, data, min, max);                             \
+#  define VEC_SPECIALIZATION(T)                                                                              \
+    template <>                                                                                              \
+    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                            \
+    {                                                                                                        \
+      thrust::tabulate(device_policy,                                                                        \
+                       data.begin(),                                                                         \
+                       data.end(),                                                                           \
+                       random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{seed.get(), min, max});         \
+    }                                                                                                        \
+    template <>                                                                                              \
+    void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max) \
+    {                                                                                                        \
+      thrust::tabulate(device_policy.on(stream.get()),                                                       \
+                       data.begin(),                                                                         \
+                       data.end(),                                                                           \
+                       random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{seed.get(), min, max});         \
     }
 
 VEC_SPECIALIZATION(char2);

@@ -46,7 +46,7 @@ struct ReduceKernel
     RedOp red_op)
   {
     const cudax::this_warp warp{config};
-    const cudax::group group{
+    const cudax::generic_group group{
       cuda::gpu_thread, warp, cudax::group_by<NThreadsInGroup, false>{}, cudax::lane_synchronizer{}};
 
     // All threads that are not part of the groups should exit early.

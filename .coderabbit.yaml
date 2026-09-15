@@ -128,6 +128,7 @@ knowledge_base:
   code_guidelines:
     filePatterns:
       - "AGENTS.md"
+      - ".agent/skills/cccl-review/SKILL.md"
       - ".agent/skills/cccl-style/SKILL.md"
       - ".agent/skills/cccl-style/references/common.md"
       - ".agent/skills/cccl-style/references/cub.md"
@@ -141,6 +142,7 @@ knowledge_base:
       - "docs/cccl/development/visibility.rst"
       - "docs/cccl/development/testing.rst"
       - "docs/cccl/development/coding_guidelines.rst"
+      - "docs/cccl/development/review_guidelines.md"
       - "docs/cub/developer_overview.rst"
       - "docs/cub/developer/*.rst"
       - "docs/cub/benchmarking.rst"
