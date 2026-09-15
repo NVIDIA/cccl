@@ -8,10 +8,12 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/iterator>
+#include <cuda/stream>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/generators.cuh>
+#include <c2h/detail/scoped_current_device.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
@@ -78,6 +80,20 @@ void gen_custom_type_state(
 {
   auto out_it = offset_to_iterator_t<custom_type_state_t>{d_out, element_size}(std::size_t{0});
   thrust::tabulate(device_policy, out_it, out_it + elements, random_to_custom_t{min, max, seed.get()});
+}
+
+void gen_custom_type_state(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  char* d_out,
+  custom_type_state_t min,
+  custom_type_state_t max,
+  std::size_t elements,
+  std::size_t element_size)
+{
+  const scoped_current_device device_scope{stream.device().get()};
+  auto out_it = offset_to_iterator_t<custom_type_state_t>{d_out, element_size}(std::size_t{0});
+  thrust::tabulate(device_policy.on(stream.get()), out_it, out_it + elements, random_to_custom_t{min, max, seed.get()});
 }
 
 template <class T>
