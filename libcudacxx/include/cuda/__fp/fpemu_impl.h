@@ -41,7 +41,7 @@
 //! appropriate decorators and provide consistent behavior across different
 //! platforms and compilers.
 #if !defined(__CUDA_LIBDEVICE__)
-#  include <cuda/std/cstdint> // IWYU pragma: keep
+#  include <cuda/std/cstdint>
 #  include <cuda/std/cstdlib> // IWYU pragma: keep
 #  include <cuda/std/cstring> // IWYU pragma: keep
 #endif

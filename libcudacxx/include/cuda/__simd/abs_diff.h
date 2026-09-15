@@ -28,7 +28,7 @@
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/cstdint> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 #if _CCCL_HAS_SIMD_VABSDIFF()
 #  include <cuda/__simd/simd_intrinsics_array.h>
 #  include <cuda/std/__simd/specializations/simd_intrinsics_array.h>

@@ -12,6 +12,8 @@
 #ifndef _CUDA_STD___CSTDDEF_TYPES_H
 #define _CUDA_STD___CSTDDEF_TYPES_H
 
+// IWYU pragma: always_keep
+
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

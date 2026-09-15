@@ -21,21 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__semaphore/atomic_semaphore.h>
-#include <cuda/std/climits> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <thread_scope _Sco, ::cuda::std::ptrdiff_t __least_max_value = INT_MAX>
+template <thread_scope _Sco, ptrdiff_t __least_max_value = INT_MAX>
 class counting_semaphore : public ::cuda::std::__atomic_semaphore<_Sco, __least_max_value>
 {
   static_assert(__least_max_value <= ::cuda::std::__atomic_semaphore<_Sco, __least_max_value>::max());
 
 public:
-  _CCCL_HOST_DEVICE_API constexpr counting_semaphore(::cuda::std::ptrdiff_t __count = 0)
+  _CCCL_HOST_DEVICE_API constexpr counting_semaphore(ptrdiff_t __count = 0)
       : ::cuda::std::__atomic_semaphore<_Sco, __least_max_value>(__count)
   {}
   _CCCL_HIDE_FROM_ABI ~counting_semaphore() = default;

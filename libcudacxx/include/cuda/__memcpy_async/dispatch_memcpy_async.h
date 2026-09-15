@@ -75,7 +75,7 @@ template <::cuda::std::size_t _Align, typename _Group>
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     ([[maybe_unused]] const bool __can_use_complete_tx =
-       __allowed_completions & ::cuda::std::uint32_t(__completion_mechanism::__mbarrier_complete_tx);
+       __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
      _CCCL_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle),
                   "Pass non-null bar_handle if and only if can_use_complete_tx.");
      if constexpr (_Align >= 16) {
@@ -90,18 +90,18 @@ template <::cuda::std::size_t _Align, typename _Group>
      ));
 #endif // __cccl_ptx_isa >= 800
 
-  NV_IF_TARGET(NV_PROVIDES_SM_80,
-               (if constexpr (_Align >= 4) {
-                 const bool __can_use_async_group =
-                   __allowed_completions & ::cuda::std::uint32_t(__completion_mechanism::__async_group);
-                 if (__can_use_async_group)
-                 {
-                   ::cuda::__cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);
-                   return __completion_mechanism::__async_group;
-                 }
-               }
-                // Fallthrough..
-                ));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_80,
+    (if constexpr (_Align >= 4) {
+      const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
+      if (__can_use_async_group)
+      {
+        ::cuda::__cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);
+        return __completion_mechanism::__async_group;
+      }
+    }
+     // Fallthrough..
+     ));
 
   ::cuda::__cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
   return __completion_mechanism::__sync;
