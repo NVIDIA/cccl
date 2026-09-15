@@ -22,11 +22,10 @@ namespace c2h
 namespace detail
 {
 template <typename T>
-[[nodiscard]] cuda::host_buffer<T> device_buffer_to_host_buffer(
-  cuda::stream_ref stream, cuda::device_ref device, const cuda::device_buffer<T>& d_items, std::size_t num_items)
+[[nodiscard]] cuda::host_buffer<T>
+device_buffer_to_host_buffer(cuda::stream_ref stream, const cuda::device_buffer<T>& d_items, std::size_t num_items)
 {
-  // Scope `device` for host allocation checks and possible default-stream copies.
-  // Non-default stream/device agreement is part of the public helper contract.
+  const auto device = stream.device();
   const ::c2h::detail::scoped_current_device device_scope{device.get()};
 
   auto h_items = ::c2h::make_host_buffer<T>(stream, device, num_items, cuda::no_init);
@@ -71,17 +70,16 @@ struct sized_device_host_buffers
 
 //! @brief Generates random data with the existing c2h device generator and returns it in device memory.
 //!
-//! @pre If @c stream is non-default, it must have been created for @c device.
+//! @pre @c stream must not be the legacy default stream.
 template <typename T>
 [[nodiscard]] cuda::device_buffer<T> gen_device_buffer(
   cuda::stream_ref stream,
-  cuda::device_ref device,
   seed_t seed,
   std::size_t num_items,
   T min = ::cuda::std::numeric_limits<T>::lowest(),
   T max = ::cuda::std::numeric_limits<T>::max())
 {
-  // Scope `device` for generator storage backed by current-device allocation.
+  const auto device = stream.device();
   const ::c2h::detail::scoped_current_device device_scope{device.get()};
 
   auto d_items = ::c2h::make_device_buffer<T>(stream, device, num_items, cuda::no_init);
@@ -92,37 +90,35 @@ template <typename T>
 
 //! @brief Generates random data with the existing c2h device generator and returns device and host buffers.
 //!
-//! @pre If @c stream is non-default, it must have been created for @c device.
+//! @pre @c stream must not be the legacy default stream.
 template <typename T>
 [[nodiscard]] sized_device_host_buffers<T> gen_buffers(
   cuda::stream_ref stream,
-  cuda::device_ref device,
   seed_t seed,
   std::size_t num_items,
   T min = ::cuda::std::numeric_limits<T>::lowest(),
   T max = ::cuda::std::numeric_limits<T>::max())
 {
-  auto d_items = ::c2h::gen_device_buffer<T>(stream, device, seed, num_items, min, max);
+  auto d_items = ::c2h::gen_device_buffer<T>(stream, seed, num_items, min, max);
 
   const auto items_count = d_items.size();
-  auto h_items           = ::c2h::detail::device_buffer_to_host_buffer(stream, device, d_items, items_count);
+  auto h_items           = ::c2h::detail::device_buffer_to_host_buffer(stream, d_items, items_count);
 
   return {::cuda::std::move(d_items), ::cuda::std::move(h_items), items_count};
 }
 
 //! @brief Generates random data with the existing c2h device generator and returns it in host pageable memory.
 //!
-//! @pre If @c stream is non-default, it must have been created for @c device.
+//! @pre @c stream must not be the legacy default stream.
 template <typename T>
 [[nodiscard]] cuda::host_buffer<T> gen_host_buffer(
   cuda::stream_ref stream,
-  cuda::device_ref device,
   seed_t seed,
   std::size_t num_items,
   T min = ::cuda::std::numeric_limits<T>::lowest(),
   T max = ::cuda::std::numeric_limits<T>::max())
 {
-  auto buffers = ::c2h::gen_buffers<T>(stream, device, seed, num_items, min, max);
+  auto buffers = ::c2h::gen_buffers<T>(stream, seed, num_items, min, max);
   return ::cuda::std::move(buffers.h_items);
 }
 } // namespace c2h

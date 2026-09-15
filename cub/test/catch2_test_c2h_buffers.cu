@@ -128,7 +128,7 @@ CUB_TEST("c2h buffer generator handles zero items", "[c2h][buffers][generators]"
 {
   const auto device = c2h::current_test_device();
   const cuda::stream stream{device};
-  const auto d_items = c2h::gen_device_buffer<std::int32_t>(stream, device, c2h::seed_t{1234}, 0);
+  const auto d_items = c2h::gen_device_buffer<std::int32_t>(stream, c2h::seed_t{1234}, 0);
   REQUIRE(d_items.empty());
   REQUIRE(d_items.data() == nullptr);
 }
@@ -140,7 +140,7 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
 
   constexpr std::size_t num_items = 256;
   constexpr std::int32_t expected = 42;
-  const auto buffers = c2h::gen_buffers<std::int32_t>(stream, device, c2h::seed_t{1234}, num_items, expected, expected);
+  const auto buffers = c2h::gen_buffers<std::int32_t>(stream, c2h::seed_t{1234}, num_items, expected, expected);
 
   REQUIRE(buffers.size == num_items);
   REQUIRE(buffers.d_items.size() == num_items);
@@ -149,21 +149,7 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
 
   constexpr std::int32_t host_expected = -17;
   const auto h_items =
-    c2h::gen_host_buffer<std::int32_t>(stream, device, c2h::seed_t{5678}, num_items, host_expected, host_expected);
+    c2h::gen_host_buffer<std::int32_t>(stream, c2h::seed_t{5678}, num_items, host_expected, host_expected);
   REQUIRE(h_items.size() == num_items);
   REQUIRE(static_cast<std::size_t>(std::count(h_items.begin(), h_items.end(), host_expected)) == num_items);
-}
-
-CUB_TEST("c2h buffer generator supports the legacy default stream", "[c2h][buffers][generators]", CUB_SMALL)
-{
-  const auto device = c2h::current_test_device();
-  const cuda::stream_ref stream{::cudaStream_t{}};
-  constexpr std::size_t num_items = 256;
-  constexpr std::int32_t expected = 42;
-  const auto buffers = c2h::gen_buffers<std::int32_t>(stream, device, c2h::seed_t{1234}, num_items, expected, expected);
-
-  REQUIRE(buffers.size == num_items);
-  REQUIRE(buffers.d_items.size() == num_items);
-  REQUIRE(buffers.h_items.size() == num_items);
-  REQUIRE(static_cast<std::size_t>(std::count(buffers.h_items.begin(), buffers.h_items.end(), expected)) == num_items);
 }
