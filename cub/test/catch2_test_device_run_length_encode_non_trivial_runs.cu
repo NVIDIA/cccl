@@ -457,7 +457,7 @@ try
   auto expected_run_lengths_it     = cuda::make_constant_iterator(run_length_type{2});
   auto check_run_length_out_it     = check_run_length_out_helper.get_flagging_output_iterator(expected_run_lengths_it);
 
-  c2h::device_vector<offset_type> out_num_runs(1);
+  c2h::device_vector<offset_type> out_num_runs(1, thrust::no_init);
 
   run_length_encode(input_item_it, check_offset_out_it, check_run_length_out_it, out_num_runs.begin(), num_items);
 
