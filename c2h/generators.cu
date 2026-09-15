@@ -55,15 +55,15 @@ struct offset_to_iterator_t
 
 struct random_to_custom_t
 {
-  static constexpr std::size_t m_max_key = std::numeric_limits<std::size_t>::max();
-
+  custom_type_state_t m_min;
+  custom_type_state_t m_max;
   unsigned long long m_seed;
 
   __device__ custom_type_state_t operator()(std::size_t idx) const
   {
     custom_type_state_t out{};
-    out.key = static_cast<std::size_t>(static_cast<float>(m_max_key) * index_to_random_uniform{m_seed}(idx * 2 + 0));
-    out.val = static_cast<std::size_t>(static_cast<float>(m_max_key) * index_to_random_uniform{m_seed}(idx * 2 + 1));
+    out.key = random_to_item_t<std::size_t>(m_min.key, m_max.key)(index_to_random_uniform{m_seed}(idx * 2 + 0));
+    out.val = random_to_item_t<std::size_t>(m_min.val, m_max.val)(index_to_random_uniform{m_seed}(idx * 2 + 1));
     return out;
   }
 };
@@ -71,14 +71,13 @@ struct random_to_custom_t
 void gen_custom_type_state(
   seed_t seed,
   char* d_out,
-  custom_type_state_t /* min */,
-  custom_type_state_t /* max */,
+  custom_type_state_t min,
+  custom_type_state_t max,
   std::size_t elements,
   std::size_t element_size)
 {
-  // FIXME(bgruber): implement min/max handling for custom_type_state_t
   auto out_it = offset_to_iterator_t<custom_type_state_t>{d_out, element_size}(std::size_t{0});
-  thrust::tabulate(device_policy, out_it, out_it + elements, random_to_custom_t{seed.get()});
+  thrust::tabulate(device_policy, out_it, out_it + elements, random_to_custom_t{min, max, seed.get()});
 }
 
 template <class T>
