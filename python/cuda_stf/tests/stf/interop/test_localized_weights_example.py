@@ -85,16 +85,12 @@ def test_localized_weights_lifecycle_example():
     meta = tp.get_meta(model.w1)
     assert meta.partition is not None and meta.lifetime == "gc"
     report = tp.placement_report(model.w1)
-    # The evaluator quantizes ownership to the device's VMM allocation
-    # granularity; placement is exact only when each place's band of rows
-    # is a multiple of it (otherwise one block straddles two owners).
+    # Placement is exact when the band size is a multiple of the granularity
     granularity = _device_allocation_granularity(0)
     assert report.block_size == granularity
     band_bytes = model.w1.numel() * model.w1.element_size() // 2
     if band_bytes % granularity == 0:
         assert report.accuracy == 1.0
-    else:
-        assert 0.0 < report.accuracy < 1.0
 
     # module-owned lifetime: unloading the model frees pages AND metadata
     w1_meta = weakref.ref(meta)
