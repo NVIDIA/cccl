@@ -20,7 +20,7 @@ namespace c2h::detail
 {
 // draws a single uniform float in (0, 1] from an independent stream per index, so many indices can be drawn
 // concurrently without any shared state
-struct i_to_rnd_t
+struct index_to_random_uniform
 {
   unsigned long long m_seed;
 
@@ -43,14 +43,14 @@ struct i_to_rnd_t
 };
 
 template <typename Op>
-struct i_to_random_op_t
+struct index_to_transformed_random_uniform
 {
   unsigned long long m_seed;
   Op m_op;
 
-  __device__ auto operator()(std::size_t i) -> decltype(m_op(i_to_rnd_t{m_seed}(i)))
+  __device__ auto operator()(std::size_t i)
   {
-    return m_op(i_to_rnd_t{m_seed}(i));
+    return m_op(index_to_random_uniform{m_seed}(i));
   }
 };
 
@@ -58,7 +58,7 @@ struct i_to_random_op_t
 template <typename OutputIt, typename Op>
 void generate_transformed_random_data(seed_t seed, OutputIt first, OutputIt last, Op op)
 {
-  thrust::tabulate(device_policy, first, last, i_to_random_op_t<Op>{seed.get(), op});
+  thrust::tabulate(device_policy, first, last, index_to_transformed_random_uniform<Op>{seed.get(), op});
 }
 
 template <typename T, bool = ::cuda::is_floating_point_v<T>>

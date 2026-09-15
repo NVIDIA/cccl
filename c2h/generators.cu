@@ -62,8 +62,8 @@ struct random_to_custom_t
   __device__ custom_type_state_t operator()(std::size_t idx) const
   {
     custom_type_state_t out{};
-    out.key = static_cast<std::size_t>(static_cast<float>(m_max_key) * i_to_rnd_t{m_seed}(idx * 2 + 0));
-    out.val = static_cast<std::size_t>(static_cast<float>(m_max_key) * i_to_rnd_t{m_seed}(idx * 2 + 1));
+    out.key = static_cast<std::size_t>(static_cast<float>(m_max_key) * index_to_random_uniform{m_seed}(idx * 2 + 0));
+    out.val = static_cast<std::size_t>(static_cast<float>(m_max_key) * index_to_random_uniform{m_seed}(idx * 2 + 1));
     return out;
   }
 };
