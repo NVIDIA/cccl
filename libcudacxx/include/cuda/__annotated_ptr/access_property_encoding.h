@@ -26,7 +26,7 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h> // IWYU pragma: keep
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/saturating_sub.h>
 #include <cuda/std/__utility/to_underlying.h>
@@ -103,10 +103,14 @@ enum class __l2_descriptor_mode_t : uint32_t
 #endif // !_CCCL_CUDA_COMPILER(NVRTC)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline uint64_t __block_encoding(
-  __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, size_t __primary_bytes, size_t __total_bytes)
+  __l2_evict_t __primary,
+  __l2_evict_t __secondary,
+  const void* __ptr,
+  ::cuda::std::size_t __primary_bytes,
+  ::cuda::std::size_t __total_bytes)
 {
-  _CCCL_ASSERT(__primary_bytes <= size_t{0xFFFFFFFF}, "primary size must be less than 4GB");
-  _CCCL_ASSERT(__total_bytes <= size_t{0xFFFFFFFF}, "total size must be less than 4GB");
+  _CCCL_ASSERT(__primary_bytes <= ::cuda::std::size_t{0xFFFFFFFF}, "primary size must be less than 4GB");
+  _CCCL_ASSERT(__total_bytes <= ::cuda::std::size_t{0xFFFFFFFF}, "total size must be less than 4GB");
   auto __primary_bytes1 = static_cast<uint32_t>(__primary_bytes);
   auto __total_bytes1   = static_cast<uint32_t>(__total_bytes);
   NV_IF_ELSE_TARGET(

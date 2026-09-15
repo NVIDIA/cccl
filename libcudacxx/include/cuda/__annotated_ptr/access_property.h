@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property_encoding.h>
-#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -112,7 +112,7 @@ public:
   {}
 
   _CCCL_HOST_DEVICE_API inline access_property(
-    void* __ptr, size_t __primary_bytes, size_t __total_bytes, normal) noexcept
+    void* __ptr, ::cuda::std::size_t __primary_bytes, ::cuda::std::size_t __total_bytes, normal) noexcept
       : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Normal_Demote,
           __l2_evict_t::_L2_Evict_Unchanged,
@@ -122,37 +122,37 @@ public:
   {}
 
   _CCCL_HOST_DEVICE_API inline access_property(
-    void* __ptr, size_t __primary_bytes, size_t __total_bytes, streaming) noexcept
+    void* __ptr, ::cuda::std::size_t __primary_bytes, ::cuda::std::size_t __total_bytes, streaming) noexcept
       : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_First, __l2_evict_t::_L2_Evict_Unchanged, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _CCCL_HOST_DEVICE_API inline access_property(
-    void* __ptr, size_t __primary_bytes, size_t __total_bytes, persisting) noexcept
+    void* __ptr, ::cuda::std::size_t __primary_bytes, ::cuda::std::size_t __total_bytes, persisting) noexcept
       : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_Unchanged, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _CCCL_HOST_DEVICE_API inline access_property(
-    void* __ptr, size_t __primary_bytes, size_t __total_bytes, global, streaming) noexcept
+    void* __ptr, ::cuda::std::size_t __primary_bytes, ::cuda::std::size_t __total_bytes, global, streaming) noexcept
       : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Unchanged, __l2_evict_t::_L2_Evict_First, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _CCCL_HOST_DEVICE_API inline access_property(
-    void* __ptr, size_t __primary_bytes, size_t __total_bytes, normal, streaming) noexcept
+    void* __ptr, ::cuda::std::size_t __primary_bytes, ::cuda::std::size_t __total_bytes, normal, streaming) noexcept
       : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Normal_Demote, __l2_evict_t::_L2_Evict_First, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _CCCL_HOST_DEVICE_API inline access_property(
-    void* __ptr, size_t __primary_bytes, size_t __total_bytes, streaming, streaming) noexcept
+    void* __ptr, ::cuda::std::size_t __primary_bytes, ::cuda::std::size_t __total_bytes, streaming, streaming) noexcept
       : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_First, __l2_evict_t::_L2_Evict_First, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _CCCL_HOST_DEVICE_API inline access_property(
-    void* __ptr, size_t __primary_bytes, size_t __total_bytes, persisting, streaming) noexcept
+    void* __ptr, ::cuda::std::size_t __primary_bytes, ::cuda::std::size_t __total_bytes, persisting, streaming) noexcept
       : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_First, __ptr, __primary_bytes, __total_bytes)}
   {}
