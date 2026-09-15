@@ -2,8 +2,6 @@
 ..
 .. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-:html_theme.sidebar_secondary.remove:
-
 .. _cuda.coop.developer_overview:
 
 ``cuda.coop`` Developer Overview
@@ -142,17 +140,29 @@ Kernels and their generated C++
 .. raw:: html
 
    <style>
-   .bd-sidebar-secondary { display: none !important; }
+   body { overflow-x: clip; }
+   .bd-page-width { max-width: 120rem; }
+   .bd-header .logo__title {
+     max-width: calc(100vw - 9rem);
+     overflow: hidden;
+     text-overflow: ellipsis;
+     white-space: nowrap;
+   }
+   .bd-sidebar-primary,
+   .bd-sidebar-secondary { flex-basis: var(--pst-sidebar-secondary); }
    .bd-main .bd-content .bd-article-container {
-     width: 100% !important;
-     max-width: none !important;
-     flex: 1 0 100% !important;
+     max-width: none;
+     min-width: 0;
+   }
+   .coop-shim-pair > .sd-row {
+     display: grid;
+     grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
    }
    .coop-shim-pair pre {
      white-space: pre-wrap;
      overflow-wrap: anywhere;
    }
-   .coop-shim-pair .sd-col { min-width: 0; }
+   .coop-shim-pair .sd-col { width: auto; min-width: 0; }
    </style>
 
 The following pairs use source captured while compiling real kernels. Each
