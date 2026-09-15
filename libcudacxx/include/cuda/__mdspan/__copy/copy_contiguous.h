@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_CONTIGUOUS_H
-#define _CUDAX__COPY_CONTIGUOUS_H
+#ifndef _CUDA___MDSPAN___COPY_COPY_CONTIGUOUS_H
+#define _CUDA___MDSPAN___COPY_COPY_CONTIGUOUS_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,6 +29,9 @@
 #include <cuda/__device/arch_traits.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
+#include <cuda/__mdspan/__copy/tensor_copy_utils.h>
+#include <cuda/__mdspan/__copy/tensor_iterator.h>
+#include <cuda/__mdspan/__copy/types.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
@@ -36,14 +39,9 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
 
-#include <cuda/experimental/__copy/tensor_copy_utils.cuh>
-#include <cuda/experimental/__copy/tensor_iterator.cuh>
-#include <cuda/experimental/__copy_bytes/types.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Tiled copy kernel for contiguous innermost dimension.
@@ -83,11 +81,11 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
   _CCCL_GRID_CONSTANT const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter,
   _CCCL_GRID_CONSTANT const _ExtentT __inner_size)
 {
-  using __partial_tensor_src  = __partial_tensor<const _TpSrc, _StrideTIn, _Rank, _SrcAccessor>;
-  using __partial_tensor_dst  = __partial_tensor<_TpDst, _StrideTOut, _Rank, _DstAccessor>;
-  const auto __thread_id      = ::cuda::gpu_thread.rank_as<_ExtentT>(::cuda::block, __config);
-  const auto __block_idx      = ::cuda::block.index_as<_ExtentT>(::cuda::grid);
-  constexpr auto __block_size = ::cuda::gpu_thread.count_as<int>(::cuda::block, __config);
+  using __partial_tensor_src _CCCL_NODEBUG = __partial_tensor<const _TpSrc, _StrideTIn, _Rank, _SrcAccessor>;
+  using __partial_tensor_dst _CCCL_NODEBUG = __partial_tensor<_TpDst, _StrideTOut, _Rank, _DstAccessor>;
+  const auto __thread_id                   = ::cuda::gpu_thread.rank_as<_ExtentT>(::cuda::block, __config);
+  const auto __block_idx                   = ::cuda::block.index_as<_ExtentT>(::cuda::grid);
+  constexpr auto __block_size              = ::cuda::gpu_thread.count_as<int>(::cuda::block, __config);
   const __partial_tensor_src __src{__src_ptr, __src_strides, __src_accessor};
   const __partial_tensor_dst __dst{__dst_ptr, __dst_strides, __dst_accessor};
 
@@ -141,7 +139,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
 // Compute the number of elements each thread copies for a given vector width.
 [[nodiscard]] _CCCL_HOST_API inline int __elem_per_thread(int __access_bytes, int __bytes_in_flight) noexcept
 {
-  const auto __threads_per_sm = ::cuda::experimental::__max_threads_per_sm();
+  const auto __threads_per_sm = ::cuda::__max_threads_per_sm();
   return ::cuda::std::max(__bytes_in_flight / (__access_bytes * __threads_per_sm), 1);
 }
 
@@ -194,16 +192,15 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
 {
   // Block size = 256 is a heuristic based on benchmark results. Smaller block sizes (e.g. 128) show significant
   // performance degradation.
-  constexpr int __block_size   = 256;
-  const auto __bytes_in_flight = ::cuda::experimental::__bytes_in_flight();
-  const auto __elems_per_thread =
-    ::cuda::experimental::__elem_per_thread(static_cast<int>(sizeof(_TpIn)), __bytes_in_flight);
-  const auto __tile_size_rt = __block_size * __elems_per_thread;
+  constexpr int __block_size    = 256;
+  const auto __bytes_in_flight  = ::cuda::__bytes_in_flight();
+  const auto __elems_per_thread = ::cuda::__elem_per_thread(static_cast<int>(sizeof(_TpIn)), __bytes_in_flight);
+  const auto __tile_size_rt     = __block_size * __elems_per_thread;
 
-  ::cuda::experimental::__dispatch_tile_size(__tile_size_rt, [&](auto __tile_constant) {
+  ::cuda::__dispatch_tile_size(__tile_size_rt, [&](auto __tile_constant) {
     constexpr int __tile_size    = decltype(__tile_constant)::value;
     const auto __inner_size      = __src.__extents[0];
-    const auto __outer_size      = ::cuda::experimental::__total_size(__src) / __inner_size;
+    const auto __outer_size      = ::cuda::__total_size(__src) / __inner_size;
     const auto __num_inner_tiles = ::cuda::ceil_div(__inner_size, __tile_size);
     constexpr auto __arch_limits = ::cuda::__common_arch_traits(::cuda::arch_id::sm_90);
     _CCCL_ASSERT(__num_inner_tiles <= _ExtentT(__arch_limits.max_grid_dim_x),
@@ -214,7 +211,7 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
     const auto __config    = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_dims));
 
     const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter{__src.__extents};
-    const auto __kernel = ::cuda::experimental::__copy_contiguous_kernel<
+    const auto __kernel = ::cuda::__copy_contiguous_kernel<
       decltype(__config),
       __tile_size,
       _TpIn,
@@ -242,8 +239,8 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__COPY_CONTIGUOUS_H
+#endif // _CUDA___MDSPAN___COPY_COPY_CONTIGUOUS_H

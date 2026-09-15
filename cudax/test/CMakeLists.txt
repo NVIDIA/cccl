@@ -99,17 +99,6 @@ cudax_add_catch2_test(test_target fill_bytes
     fill_bytes/fill_bytes_mdspan_example.cu
 )
 
-cudax_add_catch2_test(test_target copy
-    copy/copy.cu
-    copy/copy_edge_cases.cu
-    copy/copy_vectorize.cu
-    copy/copy_vectorize_5d.cu
-    copy/copy_llm.cu
-    copy/copy_nvmath.cu
-    copy/copy_nvmath_transpose.cu
-    copy/copy_shared_memory.cu
-)
-
 add_subdirectory(cuco)
 
 cudax_add_catch2_test(test_target green_context
