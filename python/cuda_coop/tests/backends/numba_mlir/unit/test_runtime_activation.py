@@ -171,6 +171,53 @@ def test_root_first_qualified_import_explicitly_activates_backend():
     )
 
 
+def test_reduce_providers_load_only_during_reduce_planning():
+    _run_import_probe(
+        """
+        import sys
+        from types import SimpleNamespace
+
+        from numba_cuda_mlir import types
+        from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+
+        from cuda import coop as portable
+        import cuda.coop.numba_mlir as qualified
+        from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+        from cuda.coop.numba_mlir._compiler._operations import _FACTORY_OPERATIONS
+
+        provider_module = "cuda.coop.numba_mlir._lowering._reduce"
+
+        def reduce_factories():
+            return {
+                factory
+                for factory in _FACTORY_OPERATIONS
+                if factory.__module__ == provider_module
+            }
+
+        assert provider_module not in sys.modules
+        assert callable(portable.reduce)
+        assert callable(portable.sum)
+        assert callable(qualified.reduce)
+        assert callable(qualified.sum)
+        assert provider_module not in sys.modules
+        assert not reduce_factories()
+
+        def kernel(value):
+            return qualified.sum(qualified.this_block(), value)
+
+        func_ir = run_frontend(kernel)
+        planner = _GroupCallPlanner(
+            SimpleNamespace(func_ir=func_ir, args=(types.int32,)),
+            {"block": (64, 1, 1), "grid": (1, 1, 1), "cluster": None},
+        )
+        assert provider_module not in sys.modules
+        assert planner.run()
+        assert provider_module in sys.modules
+        assert reduce_factories()
+        """
+    )
+
+
 @pytest.mark.parametrize(
     ("hook_name", "count"),
     [
