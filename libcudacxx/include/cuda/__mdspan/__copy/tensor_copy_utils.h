@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_TENSOR_COPY_UTILS_H
-#define _CUDAX__COPY_TENSOR_COPY_UTILS_H
+#ifndef _CUDA___MDSPAN___COPY_TENSOR_COPY_UTILS_H
+#define _CUDA___MDSPAN___COPY_TENSOR_COPY_UTILS_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,6 +23,9 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__mdspan/__copy/abs_integer.h>
+#  include <cuda/__mdspan/__copy/types.h>
+#  include <cuda/__mdspan/__copy/vector_access.h>
 #  include <cuda/__memory/ptr_alignment.h>
 #  include <cuda/__memory/ranges_overlap.h>
 #  include <cuda/__utility/in_range.h>
@@ -33,14 +36,10 @@
 #  include <cuda/std/__type_traits/conditional.h>
 #  include <cuda/std/__type_traits/is_const.h>
 
-#  include <cuda/experimental/__copy/vector_access.cuh>
-#  include <cuda/experimental/__copy_bytes/abs_integer.cuh>
-#  include <cuda/experimental/__copy_bytes/types.cuh>
-
 #  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 //! @brief Compute the maximum vectorization width in bytes for a raw tensor.
 //!
 //! Expects mode 0 to be the contiguous mode (stride == 1), as established by
@@ -61,8 +60,8 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 __max_alignment(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
   using ::cuda::std::size_t;
-  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
-  using __rank_t       = typename __raw_tensor_t::__rank_t;
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
   _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, size_t{1}, _MaxRank), "Invalid tensor rank");
   if (__tensor.__strides[0] != 1)
   {
@@ -73,7 +72,7 @@ __max_alignment(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor)
   // (2) alignment over all strides
   for (__rank_t __i = 0; __i < __tensor.__rank; ++__i)
   {
-    const auto __stride = ::cuda::experimental::__abs_integer(__tensor.__strides[__i]);
+    const auto __stride = ::cuda::__abs_integer(__tensor.__strides[__i]);
     if (__stride != 1)
     {
       const size_t __stride_bytes = static_cast<size_t>(__stride) * sizeof(_Tp);
@@ -88,10 +87,10 @@ __max_alignment(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor)
 }
 
 template <::cuda::std::size_t _VectorBytes, typename _Tp>
-using __reshape_vector_type =
+using __reshape_vector_type _CCCL_NODEBUG =
   ::cuda::std::conditional_t<::cuda::std::is_const_v<_Tp>,
-                             const ::cuda::experimental::__vector_access_t<_VectorBytes>,
-                             ::cuda::experimental::__vector_access_t<_VectorBytes>>;
+                             const ::cuda::__vector_access_t<_VectorBytes>,
+                             ::cuda::__vector_access_t<_VectorBytes>>;
 
 //! @brief Reshape a raw tensor for vectorized access by widening the element type.
 //!
@@ -107,8 +106,8 @@ template <::cuda::std::size_t _VectorBytes, typename _ExtentT, typename _StrideT
 _CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, __reshape_vector_type<_VectorBytes, _Tp>, _MaxRank>
 __reshape_vectorized(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  using __vector_t = __reshape_vector_type<_VectorBytes, _Tp>;
-  using __rank_t   = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
+  using __vector_t _CCCL_NODEBUG = __reshape_vector_type<_VectorBytes, _Tp>;
+  using __rank_t _CCCL_NODEBUG   = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
   static_assert(_VectorBytes % sizeof(_Tp) == 0, "vector size must be a multiple of element size");
 
   constexpr auto __elems_per_vector = _VectorBytes / sizeof(_Tp);
@@ -140,9 +139,9 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]]
 _CCCL_HOST_API _ExtentT __total_size(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  using __raw_tensor_t  = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
-  using __rank_t        = typename __raw_tensor_t::__rank_t;
-  _ExtentT __total_size = 1;
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
+  _ExtentT __total_size              = 1;
   for (__rank_t __i = 0; __i < __tensor.__rank; ++__i)
   {
     __total_size *= __tensor.__extents[__i];
@@ -184,9 +183,10 @@ __may_overlap(const ::cuda::std::mdspan<_Tp1, _Extents1, _LayoutPolicy1, _Access
   const auto* __b_end   = __b_begin + __b.mapping().required_span_size() * sizeof(_Tp2);
   return ::cuda::ranges_overlap(__a_begin, __a_end, __b_begin, __b_end);
 }
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // _CUDAX__COPY_TENSOR_COPY_UTILS_H
+#endif // _CUDA___MDSPAN___COPY_TENSOR_COPY_UTILS_H

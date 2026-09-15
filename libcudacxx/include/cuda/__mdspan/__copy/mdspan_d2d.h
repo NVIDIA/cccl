@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,12 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_MDSPAN_D2D_H
-#define _CUDAX__COPY_MDSPAN_D2D_H
+#ifndef _CUDA___MDSPAN___COPY_MDSPAN_D2D_H
+#define _CUDA___MDSPAN___COPY_MDSPAN_D2D_H
 
 #include <cuda/std/detail/__config>
-
-#include <cuda/std/__type_traits/remove_cv.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,13 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cub/device/device_transform.cuh>
 
 #  include <cuda/__cmath/pow2.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__functional/address_stability.h>
+#  include <cuda/__mdspan/__copy/copy_contiguous.h>
+#  include <cuda/__mdspan/__copy/copy_dst_contiguous.h>
+#  include <cuda/__mdspan/__copy/copy_optimized.h>
+#  include <cuda/__mdspan/__copy/copy_shared_memory.h>
+#  include <cuda/__mdspan/__copy/dispatch_by_vector.h>
+#  include <cuda/__mdspan/__copy/simplify_paired.h>
+#  include <cuda/__mdspan/__copy/tensor_copy_utils.h>
+#  include <cuda/__mdspan/__copy/tensor_query.h>
+#  include <cuda/__mdspan/__copy/vector_access.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -41,25 +48,17 @@
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__type_traits/common_type.h>
 #  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/is_assignable.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/is_signed.h>
-
-#  include <cuda/experimental/__copy/copy_contiguous.cuh>
-#  include <cuda/experimental/__copy/copy_dst_contiguous.cuh>
-#  include <cuda/experimental/__copy/copy_optimized.cuh>
-#  include <cuda/experimental/__copy/copy_shared_memory.cuh>
-#  include <cuda/experimental/__copy/dispatch_by_vector.cuh>
-#  include <cuda/experimental/__copy/tensor_copy_utils.cuh>
-#  include <cuda/experimental/__copy/vector_access.cuh>
-#  include <cuda/experimental/__copy_bytes/simplify_paired.cuh>
-#  include <cuda/experimental/__copy_bytes/tensor_query.cuh>
+#  include <cuda/std/__type_traits/remove_cv.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 //! @brief Launch a copy using the simplified tensor pair's exact static rank.
 //!
 //! The shared-memory path is reconsidered with the narrower descriptors because the original mdspan rank may exceed
@@ -87,8 +86,8 @@ _CCCL_HOST_API void __copy_simplified_rank(
   const _DstAccessor& __dst_accessor) noexcept
 {
   // create a copy of the tensors with compile-time rank
-  const auto __src_narrow = ::cuda::experimental::__narrow_raw_tensor_rank<_RankOut>(__src);
-  const auto __dst_narrow = ::cuda::experimental::__narrow_raw_tensor_rank<_RankOut>(__dst);
+  const auto __src_narrow = ::cuda::__narrow_raw_tensor_rank<_RankOut>(__src);
+  const auto __dst_narrow = ::cuda::__narrow_raw_tensor_rank<_RankOut>(__dst);
   if constexpr (_RankOut >= 2)
   {
     // if source and destination tensors are not both contiguous, try to use the destination tensor as contiguous
@@ -96,15 +95,15 @@ _CCCL_HOST_API void __copy_simplified_rank(
     {
       auto __src_dst_ordered = __src_narrow;
       auto __dst_dst_ordered = __dst_narrow;
-      ::cuda::experimental::__sort_by_stride_paired(__dst_dst_ordered, __src_dst_ordered);
-      ::cuda::experimental::__flip_negative_strides_paired(__dst_dst_ordered, __src_dst_ordered);
+      ::cuda::__sort_by_stride_paired(__dst_dst_ordered, __src_dst_ordered);
+      ::cuda::__flip_negative_strides_paired(__dst_dst_ordered, __src_dst_ordered);
       // destination tensor is contiguous
-      if (::cuda::experimental::__num_contiguous_dimensions(__dst_dst_ordered) == __dst_dst_ordered.__rank)
+      if (::cuda::__num_contiguous_dimensions(__dst_dst_ordered) == __dst_dst_ordered.__rank)
       {
-        ::cuda::experimental::__copy_dst_contiguous(
+        ::cuda::__copy_dst_contiguous(
           __src_dst_ordered,
           __dst_dst_ordered,
-          ::cuda::experimental::__total_size(__src_dst_ordered),
+          ::cuda::__total_size(__src_dst_ordered),
           __stream,
           __src_accessor,
           __dst_accessor);
@@ -112,27 +111,23 @@ _CCCL_HOST_API void __copy_simplified_rank(
       }
     }
 
-    if (::cuda::experimental::__use_shared_mem_kernel(__src_narrow, __dst_narrow, __stream.device()))
+    if (::cuda::__use_shared_mem_kernel(__src_narrow, __dst_narrow, __stream.device()))
     {
-      ::cuda::experimental::__launch_copy_shared_mem_kernel(
-        __src_narrow, __dst_narrow, __stream, __src_accessor, __dst_accessor);
+      ::cuda::__launch_copy_shared_mem_kernel(__src_narrow, __dst_narrow, __stream, __src_accessor, __dst_accessor);
       return;
     }
   }
-  ::cuda::experimental::__copy_optimized(
-    __src_narrow,
-    __dst_narrow,
-    ::cuda::experimental::__total_size(__src_narrow),
-    __stream,
-    __src_accessor,
-    __dst_accessor);
+  ::cuda::__copy_optimized(
+    __src_narrow, __dst_narrow, ::cuda::__total_size(__src_narrow), __stream, __src_accessor, __dst_accessor);
 }
 
-//! @brief Copy elements between two device mdspans.
+//! @brief Asynchronously copy elements between two device mdspans.
 //!
 //! Validates preconditions, converts mdspans to raw tensor descriptors, simplifies the paired layout
 //! (sort, flip negative strides, coalesce), then dispatches either a vectorized contiguous kernel or a
-//! strided element-wise kernel.
+//! strided element-wise kernel. The copy is enqueued on @p __stream and may still be executing when
+//! this function returns. The caller must preserve the source and destination storage until the stream
+//! reaches the copy.
 //!
 //! @param[in]  __src    Source device mdspan
 //! @param[out] __dst    Destination device mdspan
@@ -149,8 +144,10 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
                          ::cuda::device_mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut> __dst,
                          ::cuda::stream_ref __stream)
 {
-  namespace cudax = ::cuda::experimental;
-  static_assert(::cuda::std::is_convertible_v<_TpIn, _TpOut>, "TpIn must be convertible to TpOut");
+  using __src_reference _CCCL_NODEBUG = typename decltype(__src)::reference;
+  using __dst_reference _CCCL_NODEBUG = typename decltype(__dst)::reference;
+  static_assert(::cuda::std::is_assignable_v<__dst_reference, __src_reference>,
+                "destination mdspan reference must be assignable from source mdspan reference");
   static_assert(!::cuda::std::is_const_v<_TpOut>, "TpOut must not be const");
   static_assert(::cuda::__is_cuda_mdspan_layout_v<_LayoutPolicyIn>,
                 "LayoutPolicyIn must be a predefined layout policy");
@@ -178,17 +175,17 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   {
     _CCCL_THROW(::std::invalid_argument, "destination mdspan must be sufficiently aligned");
   }
-  if (cudax::__has_interleaved_stride_order(__dst))
+  if (::cuda::__has_interleaved_stride_order(__dst))
   {
     _CCCL_THROW(::std::invalid_argument, "destination mdspan must not have interleaved stride order");
   }
-  if (cudax::__may_overlap(__src, __dst))
+  if (::cuda::__may_overlap(__src, __dst))
   {
     _CCCL_THROW(::std::invalid_argument, "mdspans must not overlap in memory");
   }
 
-  using __default_accessor_in  = ::cuda::std::default_accessor<_TpIn>;
-  using __default_accessor_out = ::cuda::std::default_accessor<_TpOut>;
+  using __default_accessor_in _CCCL_NODEBUG  = ::cuda::std::default_accessor<_TpIn>;
+  using __default_accessor_out _CCCL_NODEBUG = ::cuda::std::default_accessor<_TpOut>;
   constexpr bool __have_default_accessors =
     ::cuda::std::is_convertible_v<_AccessorPolicyIn, __default_accessor_in>
     && ::cuda::std::is_convertible_v<_AccessorPolicyOut, __default_accessor_out>;
@@ -217,32 +214,32 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   if constexpr (_ExtentsIn::rank() > 0 && _ExtentsOut::rank() > 0)
   {
     // use the most efficient type for device code
-    using __src_extent_t = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, int>;
-    using __dst_extent_t = ::cuda::std::common_type_t<typename _ExtentsOut::index_type, int>;
-    using __common_extent_t =
+    using __src_extent_t _CCCL_NODEBUG = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, int>;
+    using __dst_extent_t _CCCL_NODEBUG = ::cuda::std::common_type_t<typename _ExtentsOut::index_type, int>;
+    using __common_extent_t _CCCL_NODEBUG =
       ::cuda::std::conditional_t<(sizeof(__src_extent_t) < sizeof(__dst_extent_t)), __src_extent_t, __dst_extent_t>;
-    using __src_stride_t =
-      ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_LayoutPolicyIn, decltype(__src.mapping())>, int>;
-    using __dst_stride_t =
-      ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_LayoutPolicyOut, decltype(__dst.mapping())>, int>;
+    using __src_stride_t _CCCL_NODEBUG =
+      ::cuda::std::common_type_t<::cuda::__mdspan_stride_t<_LayoutPolicyIn, decltype(__src.mapping())>, int>;
+    using __dst_stride_t _CCCL_NODEBUG =
+      ::cuda::std::common_type_t<::cuda::__mdspan_stride_t<_LayoutPolicyOut, decltype(__dst.mapping())>, int>;
 
-    constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
-    const auto __src_raw      = cudax::__to_raw_tensor<__common_extent_t, __src_stride_t, __max_rank>(__src);
-    const auto __dst_raw      = cudax::__to_raw_tensor<__common_extent_t, __dst_stride_t, __max_rank>(__dst);
-    if (!cudax::__same_extents(__src_raw, __dst_raw))
+    static constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
+    const auto __src_raw             = ::cuda::__to_raw_tensor<__common_extent_t, __src_stride_t, __max_rank>(__src);
+    const auto __dst_raw             = ::cuda::__to_raw_tensor<__common_extent_t, __dst_stride_t, __max_rank>(__dst);
+    if (!::cuda::__same_extents(__src_raw, __dst_raw))
     {
       _CCCL_THROW(::std::invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");
     }
 
     auto __src_simplified = __src_raw;
     auto __dst_simplified = __dst_raw;
-    cudax::__sort_by_stride_paired(__src_simplified, __dst_simplified);
-    cudax::__flip_negative_strides_paired(__src_simplified, __dst_simplified);
-    cudax::__coalesce_paired(__src_simplified, __dst_simplified);
+    ::cuda::__sort_by_stride_paired(__src_simplified, __dst_simplified);
+    ::cuda::__flip_negative_strides_paired(__src_simplified, __dst_simplified);
+    ::cuda::__coalesce_paired(__src_simplified, __dst_simplified);
     const bool __both_stride1 = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
     const auto __tile_size    = __both_stride1 ? __src_simplified.__extents[0] : 1;
-    auto __src_normalized     = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
-    auto __dst_normalized     = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
+    auto __src_normalized     = (__tile_size > 1) ? __src_simplified : ::cuda::__reverse_modes(__src_raw);
+    auto __dst_normalized     = (__tile_size > 1) ? __dst_simplified : ::cuda::__reverse_modes(__dst_raw);
 
     // If the source tensor is not contiguous, check if the destination tensor is contiguous and use it instead.
     // Prefer the destination tensor in this case to improve coalescing.
@@ -250,9 +247,9 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     {
       auto __src_dst_ordered = __src_raw;
       auto __dst_dst_ordered = __dst_raw;
-      cudax::__sort_by_stride_paired(__dst_dst_ordered, __src_dst_ordered);
-      cudax::__flip_negative_strides_paired(__dst_dst_ordered, __src_dst_ordered);
-      cudax::__coalesce_paired(__dst_dst_ordered, __src_dst_ordered);
+      ::cuda::__sort_by_stride_paired(__dst_dst_ordered, __src_dst_ordered);
+      ::cuda::__flip_negative_strides_paired(__dst_dst_ordered, __src_dst_ordered);
+      ::cuda::__coalesce_paired(__dst_dst_ordered, __src_dst_ordered);
       if (__dst_dst_ordered.__strides[0] == 1)
       {
         __src_normalized = __src_dst_ordered;
@@ -285,42 +282,43 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     }
 
     // (2) both contiguous and inner size is large
-    if (__both_stride1 && __inner_extent_bytes >= cudax::__bytes_in_flight())
+    if (__both_stride1
+        && __inner_extent_bytes >= static_cast<decltype(__inner_extent_bytes)>(::cuda::__bytes_in_flight()))
     {
       // (2a) vectorized case
       if constexpr (__are_vectorizable_copy)
       {
         const auto __op = [__stream](const auto& __src, const auto& __dst) {
-          cudax::__launch_copy_contiguous_kernel(__src, __dst, __stream);
+          ::cuda::__launch_copy_contiguous_kernel(__src, __dst, __stream);
         };
-        cudax::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __op);
+        ::cuda::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __op);
       }
       // (2b) non-vectorized case but inner size is large enough to use the contiguous kernel
       else
       {
-        cudax::__launch_copy_contiguous_kernel(
+        ::cuda::__launch_copy_contiguous_kernel(
           __src_normalized, __dst_normalized, __stream, __src.accessor(), __dst.accessor());
       }
       return;
     }
 
     const auto __try_shared_mem_copy = [&]() {
-      if constexpr (__max_rank >= 2 && __max_rank <= cudax::__max_shared_mem_kernel_rank)
+      if constexpr (__max_rank >= 2 && __max_rank <= ::cuda::__max_shared_mem_kernel_rank)
       {
         if (__src_simplified.__rank == 2) // Optimize when the actual rank is 2
         {
-          const auto __src_rank2 = cudax::__narrow_raw_tensor_rank<2>(__src_simplified);
-          const auto __dst_rank2 = cudax::__narrow_raw_tensor_rank<2>(__dst_simplified);
-          if (cudax::__use_shared_mem_kernel(__src_rank2, __dst_rank2, __stream.device()))
+          const auto __src_rank2 = ::cuda::__narrow_raw_tensor_rank<2>(__src_simplified);
+          const auto __dst_rank2 = ::cuda::__narrow_raw_tensor_rank<2>(__dst_simplified);
+          if (::cuda::__use_shared_mem_kernel(__src_rank2, __dst_rank2, __stream.device()))
           {
-            cudax::__launch_copy_shared_mem_kernel(
+            ::cuda::__launch_copy_shared_mem_kernel(
               __src_rank2, __dst_rank2, __stream, __src.accessor(), __dst.accessor());
             return true;
           }
         }
-        if (cudax::__use_shared_mem_kernel(__src_simplified, __dst_simplified, __stream.device()))
+        if (::cuda::__use_shared_mem_kernel(__src_simplified, __dst_simplified, __stream.device()))
         {
-          cudax::__launch_copy_shared_mem_kernel(
+          ::cuda::__launch_copy_shared_mem_kernel(
             __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
           return true;
         }
@@ -335,8 +333,8 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       {
         // transpose cases can have the innermost mode == 1. These should not fall in the vectorizable_copy and
         // prefer the shared-memory transpose when possible.
-        const auto __src_stride_order = cudax::__stride_order(__src_simplified);
-        const auto __dst_stride_order = cudax::__stride_order(__dst_simplified);
+        const auto __src_stride_order = ::cuda::__stride_order(__src_simplified);
+        const auto __dst_stride_order = ::cuda::__stride_order(__dst_simplified);
         bool __same_stride_order      = true;
         for (::cuda::std::size_t __i = 0; __i < __src_simplified.__rank; ++__i)
         {
@@ -348,9 +346,9 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         }
 
         const auto __op = [__stream](const auto& __src, const auto& __dst) {
-          cudax::__copy_optimized(__src, __dst, cudax::__total_size(__src), __stream);
+          ::cuda::__copy_optimized(__src, __dst, ::cuda::__total_size(__src), __stream);
         };
-        cudax::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __op);
+        ::cuda::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __op);
         return;
       }
     }
@@ -364,12 +362,12 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       {
         __has_negative_src_stride = __has_negative_src_stride || __src_normalized.__strides[__i] < 0;
       }
-      if (__has_negative_src_stride && cudax::__num_contiguous_dimensions(__dst_normalized) == __dst_normalized.__rank)
+      if (__has_negative_src_stride && ::cuda::__num_contiguous_dimensions(__dst_normalized) == __dst_normalized.__rank)
       {
-        cudax::__copy_dst_contiguous(
+        ::cuda::__copy_dst_contiguous(
           __src_normalized,
           __dst_normalized,
-          cudax::__total_size(__src_normalized),
+          ::cuda::__total_size(__src_normalized),
           __stream,
           __src.accessor(),
           __dst.accessor());
@@ -388,7 +386,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     {
       if (__src_simplified.__rank == 1)
       {
-        cudax::__copy_simplified_rank<1>(
+        ::cuda::__copy_simplified_rank<1>(
           __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
         return;
       }
@@ -397,7 +395,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     {
       if (__src_simplified.__rank == 2)
       {
-        cudax::__copy_simplified_rank<2>(
+        ::cuda::__copy_simplified_rank<2>(
           __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
         return;
       }
@@ -406,7 +404,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     {
       if (__src_simplified.__rank == 3)
       {
-        cudax::__copy_simplified_rank<3>(
+        ::cuda::__copy_simplified_rank<3>(
           __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
         return;
       }
@@ -415,25 +413,26 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     {
       if (__src_simplified.__rank == 4)
       {
-        cudax::__copy_simplified_rank<4>(
+        ::cuda::__copy_simplified_rank<4>(
           __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
         return;
       }
     }
 
     // (7) generic case (fallback)
-    cudax::__copy_optimized(
+    ::cuda::__copy_optimized(
       __src_normalized,
       __dst_normalized,
-      cudax::__total_size(__src_normalized),
+      ::cuda::__total_size(__src_normalized),
       __stream,
       __src.accessor(),
       __dst.accessor());
   }
 }
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
-#endif // _CUDAX__COPY_MDSPAN_D2D_H
+#endif // _CCCL_HAS_BACKEND_CUDA()
+#endif // _CUDA___MDSPAN___COPY_MDSPAN_D2D_H

@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_ABS_INTEGER_H
-#define __CUDAX_COPY_ABS_INTEGER_H
+#ifndef _CUDA___MDSPAN___COPY_ABS_INTEGER_H
+#define _CUDA___MDSPAN___COPY_ABS_INTEGER_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,8 +30,8 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 //! @brief Returns the absolute value of an integer. Identity for unsigned types.
 //!
 //! @param[in] __value Integer value
@@ -49,9 +49,10 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
     return __value;
   }
 }
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // __CUDAX_COPY_ABS_INTEGER_H
+#endif // _CUDA___MDSPAN___COPY_ABS_INTEGER_H

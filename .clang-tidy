@@ -43,6 +43,8 @@ Checks:
   - 'cert-*'
   - '-cert-str34-c'
   - '-cert-err33-c'
+  - 'portability-*'
+  - '-portability-template-virtual-member-function'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
