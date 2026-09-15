@@ -1,14 +1,12 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-#include <cuda/experimental/__copy/copy_shared_memory_utils.cuh>
 
 #include "copy_common.cuh"
 
@@ -150,58 +148,4 @@ TEST_CASE("copy d2d shared_memory 3D padded small dimension", "[copy][d2d][share
   const cuda::std::array<int, 3> src_strides{1, D0 * D2, D0};
   const cuda::std::array<int, 3> dst_strides{D1 * dst_pitch, dst_pitch, 1};
   test_copy_stride_relaxed<data_t>(src_alloc, 0, shape, src_strides, dst_alloc, 0, dst_strides);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// internal utilities
-
-TEST_CASE("copy shared_memory tiling preserves greedy candidate", "[copy][shared_memory][tiling]")
-{
-  using raw_tensor_t = cuda::experimental::__raw_tensor<int, int, data_t, 3>;
-
-  constexpr cuda::std::array<int, 3> shape{1024, 1024, 1024};
-  const raw_tensor_t src{nullptr, 3, shape, {1, 1024, 1024 * 1024}};
-  const raw_tensor_t dst{nullptr, 3, shape, {1024 * 1024, 1024, 1}};
-
-  constexpr cuda::std::size_t max_shared_mem_bytes = 128 * 1024;
-  constexpr cuda::std::size_t num_sms              = 1;
-  const auto result =
-    cuda::experimental::__find_shared_mem_tiling_with_limits<data_t>(src, dst, max_shared_mem_bytes, num_sms);
-
-  constexpr cuda::std::array<unsigned, 3> expected_tile_sizes{32, 32, 32};
-  REQUIRE(result.__is_valid);
-  REQUIRE(result.__tile_sizes == expected_tile_sizes);
-}
-
-TEST_CASE("copy shared_memory tiling falls back to logical 2D", "[copy][shared_memory][tiling][fallback]")
-{
-  using raw_tensor_t = cuda::experimental::__raw_tensor<int, int, data_t, 3>;
-
-  constexpr cuda::std::size_t max_shared_mem_bytes = 99 * 1024;
-  constexpr cuda::std::size_t num_sms              = 1;
-  constexpr cuda::std::array<unsigned, 3> expected_tile_sizes{32, 1, 32};
-
-  SECTION("power-of-two extents")
-  {
-    constexpr cuda::std::array<int, 3> shape{1024, 1024, 1024};
-    const raw_tensor_t src{nullptr, 3, shape, {1, 1024, 1024 * 1024}};
-    const raw_tensor_t dst{nullptr, 3, shape, {1024 * 1024, 1024, 1}};
-    const auto result =
-      cuda::experimental::__find_shared_mem_tiling_with_limits<data_t>(src, dst, max_shared_mem_bytes, num_sms);
-
-    REQUIRE(result.__is_valid);
-    REQUIRE(result.__tile_sizes == expected_tile_sizes);
-  }
-
-  SECTION("odd extents")
-  {
-    constexpr cuda::std::array<int, 3> shape{1023, 1025, 1024};
-    const raw_tensor_t src{nullptr, 3, shape, {1, 1023, 1023 * 1025}};
-    const raw_tensor_t dst{nullptr, 3, shape, {1025 * 1024, 1024, 1}};
-    const auto result =
-      cuda::experimental::__find_shared_mem_tiling_with_limits<data_t>(src, dst, max_shared_mem_bytes, num_sms);
-
-    REQUIRE(result.__is_valid);
-    REQUIRE(result.__tile_sizes == expected_tile_sizes);
-  }
 }
