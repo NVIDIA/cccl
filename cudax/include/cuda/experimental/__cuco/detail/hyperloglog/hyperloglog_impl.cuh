@@ -24,6 +24,9 @@
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/hierarchy_levels.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__launch/launch.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__runtime/api_wrapper.h>
@@ -368,8 +371,14 @@ public:
       _CCCL_THROW(::std::invalid_argument, "Cannot merge estimators with different sketch sizes");
     }
 
-    constexpr auto __block_size = 1024;
-    ::cuda::experimental::cuco::__hyperloglog_ns::__merge<<<1, __block_size, 0, __stream.get()>>>(__other, *this);
+    [[maybe_unused]] constexpr auto __block_size = 1024;
+    ::cuda::launch(
+      __stream,
+      ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<__block_size>()),
+      ::cuda::experimental::cuco::__hyperloglog_ns::__merge<__hyperloglog_impl<_Tp, _OtherScope, _Policy>,
+                                                            __hyperloglog_impl>,
+      __other,
+      *this);
   }
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator.
