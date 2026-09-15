@@ -47,7 +47,7 @@
 */
 
 #include <cuda/__fp/fpmp.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -77,7 +77,7 @@ class numeric_limits<::cuda::experimental::fpmp2<_FpType, _Met>>
 {
 private:
   // numeric_limits of the underlying IEEE-754 component type (float or double).
-  using __base = numeric_limits<_FpType>;
+  using __base = ::cuda::std::numeric_limits<_FpType>;
 
 public:
   using type = ::cuda::experimental::fpmp2<_FpType, _Met>;

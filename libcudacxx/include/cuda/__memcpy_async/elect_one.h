@@ -22,8 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memcpy_async/group_traits.h>
-#include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/__memcpy_async/group_traits.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/elect_sync.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

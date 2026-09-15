@@ -23,10 +23,9 @@
 
 #include <cuda/__annotated_ptr/access_property.h>
 #include <cuda/__annotated_ptr/annotated_ptr_base.h>
-#include <cuda/__memcpy_async/memcpy_async.h>
-#include <cuda/__memory/address_space.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
+#include <cuda/__memcpy_async/memcpy_async.h> // IWYU pragma: keep
+#include <cuda/__memory/address_space.h> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -37,11 +36,11 @@ class annotated_ptr : private ::cuda::__annotated_ptr_base<_Property>
 {
 public:
   using value_type      = _Tp;
-  using size_type       = size_t;
+  using size_type       = ::cuda::std::size_t;
   using reference       = value_type&;
   using pointer         = value_type*;
   using const_pointer   = const value_type*;
-  using difference_type = ptrdiff_t;
+  using difference_type = ::cuda::std::ptrdiff_t;
 
 private:
   static_assert(__is_access_property_v<_Property>);

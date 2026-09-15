@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,20 +35,20 @@ struct __tagged_ptr<_Tp*>
 {
   _CCCL_HOST_DEVICE_API void __set(_Tp* __pv, bool __flag) noexcept
   {
-    __ptr_ = reinterpret_cast<uintptr_t>(__pv) | uintptr_t(__flag);
+    __ptr_ = reinterpret_cast<::cuda::std::uintptr_t>(__pv) | ::cuda::std::uintptr_t(__flag);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get() const noexcept -> _Tp*
   {
-    return reinterpret_cast<_Tp*>(__ptr_ & ~uintptr_t(1));
+    return reinterpret_cast<_Tp*>(__ptr_ & ~::cuda::std::uintptr_t(1));
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto __flag() const noexcept -> bool
   {
-    return static_cast<bool>(__ptr_ & uintptr_t(1));
+    return static_cast<bool>(__ptr_ & ::cuda::std::uintptr_t(1));
   }
 
-  uintptr_t __ptr_ = 0;
+  ::cuda::std::uintptr_t __ptr_ = 0;
 };
 
 _CCCL_END_NAMESPACE_CUDA

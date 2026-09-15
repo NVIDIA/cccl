@@ -32,8 +32,7 @@
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__mdspan/extents.h>
-#  include <cuda/std/__type_traits/is_integer.h>
+#  include <cuda/std/__type_traits/is_integer.h> // IWYU pragma: keep
 
 #  if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
 #    include <cuda/experimental/__group/concepts.cuh>

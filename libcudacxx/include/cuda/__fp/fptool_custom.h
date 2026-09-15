@@ -201,7 +201,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cmath>
+#include <cuda/std/cmath> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
@@ -211,7 +211,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <nv/target>
+#include <nv/target> // IWYU pragma: keep
 
 // CCCL_FP_CUSTOM_EXPLICIT_CASTS controls whether conversions INTO a reduced fp_custom are
 // explicit. It gates only the constructors, and only where the rank rule makes them

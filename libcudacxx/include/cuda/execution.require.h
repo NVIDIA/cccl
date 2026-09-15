@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__execution/require.h>
+#include <cuda/__execution/require.h> // IWYU pragma: export
 
 #endif // _CUDA_EXECUTION_EXECUTION_REQUIRE_H

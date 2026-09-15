@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/uabs.h>
-#include <cuda/__numeric/overflow_cast.h>
+#include <cuda/__cmath/uabs.h> // IWYU pragma: keep
+#include <cuda/__numeric/overflow_cast.h> // IWYU pragma: keep
 #include <cuda/__numeric/overflow_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
@@ -30,14 +30,14 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
-#include <cuda/std/__type_traits/make_signed.h>
+#include <cuda/std/__type_traits/make_nbit_int.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/make_signed.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/__utility/cmp.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/__type_traits/num_bits.h> // IWYU pragma: keep
+#include <cuda/std/__utility/cmp.h> // IWYU pragma: keep
+#include <cuda/std/cstdint> // IWYU pragma: keep
 
-#include <nv/target>
+#include <nv/target> // IWYU pragma: keep
 
 #if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
 #  include <intrin.h>

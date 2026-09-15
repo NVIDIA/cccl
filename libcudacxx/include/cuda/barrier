@@ -25,17 +25,17 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif // _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 
-#include <cuda/__barrier/barrier.h>
-#include <cuda/__barrier/barrier_arrive_tx.h>
-#include <cuda/__barrier/barrier_block_scope.h>
-#include <cuda/__barrier/barrier_expect_tx.h>
-#include <cuda/__barrier/barrier_thread_scope.h>
-#include <cuda/__memcpy_async/memcpy_async.h>
-#include <cuda/__memcpy_async/memcpy_async_tx.h>
-#include <cuda/__memory/address_space.h>
-#include <cuda/__memory/aligned_size.h>
-#include <cuda/ptx>
-#include <cuda/std/barrier>
+#include <cuda/__barrier/barrier.h> // IWYU pragma: export
+#include <cuda/__barrier/barrier_arrive_tx.h> // IWYU pragma: export
+#include <cuda/__barrier/barrier_block_scope.h> // IWYU pragma: export
+#include <cuda/__barrier/barrier_expect_tx.h> // IWYU pragma: export
+#include <cuda/__barrier/barrier_thread_scope.h> // IWYU pragma: export
+#include <cuda/__memcpy_async/memcpy_async.h> // IWYU pragma: export
+#include <cuda/__memcpy_async/memcpy_async_tx.h> // IWYU pragma: export
+#include <cuda/__memory/address_space.h> // IWYU pragma: export
+#include <cuda/__memory/aligned_size.h> // IWYU pragma: export
+#include <cuda/ptx> // IWYU pragma: export
+#include <cuda/std/barrier> // IWYU pragma: export
 
 // Forward-declare CUtensorMap for use in cp_async_bulk_tensor_* PTX wrapping
 // functions. These functions take a pointer to CUtensorMap, so do not need to

@@ -21,15 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/address_space.h>
-#include <cuda/std/cstddef>
+#include <cuda/__memory/address_space.h> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-enum class __l2_evict_t : uint32_t
+enum class __l2_evict_t : ::cuda::std::uint32_t
 {
   _L2_Evict_Unchanged     = 0, // called "_L2_Evict_Normal" at lower level
   _L2_Evict_First         = 1,
@@ -44,10 +44,14 @@ enum class __l2_evict_t : uint32_t
 #if _CCCL_CUDA_COMPILATION()
 
 template <typename = void>
-[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API uint64_t __createpolicy_range_ptx(
-  __l2_evict_t __primary, __l2_evict_t __secondary, size_t __gmem_ptr, uint32_t __primary_size, uint32_t __total_size)
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API ::cuda::std::uint64_t __createpolicy_range_ptx(
+  __l2_evict_t __primary,
+  __l2_evict_t __secondary,
+  ::cuda::std::size_t __gmem_ptr,
+  ::cuda::std::uint32_t __primary_size,
+  ::cuda::std::uint32_t __total_size)
 {
-  uint64_t __policy;
+  ::cuda::std::uint64_t __policy;
   if (__secondary == __l2_evict_t::_L2_Evict_Unchanged)
   {
     if (__primary == __l2_evict_t::_L2_Evict_Last)
@@ -114,10 +118,10 @@ template <typename = void>
 }
 
 template <typename = void>
-[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API uint64_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API ::cuda::std::uint64_t
 __createpolicy_fraction_ptx(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction)
 {
-  uint64_t __policy;
+  ::cuda::std::uint64_t __policy;
   if (__secondary == __l2_evict_t::_L2_Evict_Unchanged)
   {
     if (__primary == __l2_evict_t::_L2_Evict_Last)
@@ -174,8 +178,12 @@ __createpolicy_fraction_ptx(__l2_evict_t __primary, __l2_evict_t __secondary, fl
 extern "C" _CCCL_DEVICE void __createpolicy_is_not_supported_before_SM_80();
 
 template <typename T = void>
-[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API uint64_t __createpolicy_range(
-  __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_size, uint32_t __total_size)
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API ::cuda::std::uint64_t __createpolicy_range(
+  __l2_evict_t __primary,
+  __l2_evict_t __secondary,
+  const void* __ptr,
+  ::cuda::std::uint32_t __primary_size,
+  ::cuda::std::uint32_t __total_size)
 {
   _CCCL_ASSERT(::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global), "ptr must be global");
   _CCCL_ASSERT(__primary_size > 0, "primary_size  must be greater than zero");
@@ -190,7 +198,7 @@ template <typename T = void>
 }
 
 template <typename T = void>
-[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API uint64_t
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API ::cuda::std::uint64_t
 __createpolicy_fraction(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction = 1.0f)
 {
   _CCCL_ASSERT(__fraction > 0.0f && __fraction <= 1.0f, "fraction must be between 0.0f and 1.0f");

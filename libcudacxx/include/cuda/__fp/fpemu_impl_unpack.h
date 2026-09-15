@@ -51,7 +51,7 @@
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/std/__bit/countl.h>
 
-#include <nv/target>
+#include <nv/target> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

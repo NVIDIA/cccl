@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__execution/policy.h>
+#include <cuda/__execution/policy.h> // IWYU pragma: export
 
 #endif // _CUDA_EXECUTION_EXECUTION_POLICY_H

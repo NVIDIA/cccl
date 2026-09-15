@@ -31,17 +31,15 @@
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/cmp.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 

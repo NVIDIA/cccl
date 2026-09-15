@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__argument/argument.h>
+#include <cuda/__argument/argument.h> // IWYU pragma: export
 
 #endif // _CUDA_ARGUMENT_

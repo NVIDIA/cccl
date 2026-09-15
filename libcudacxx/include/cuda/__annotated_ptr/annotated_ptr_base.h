@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
-#include <cuda/__annotated_ptr/associate_access_property.h>
+#include <cuda/__annotated_ptr/associate_access_property.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
@@ -34,7 +34,7 @@ template <typename _AccessProperty>
 class __annotated_ptr_base
 {
 protected:
-  _CCCL_HOST_DEVICE_API static constexpr uint64_t __default_property() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr ::cuda::std::uint64_t __default_property() noexcept
   {
     return ::cuda::std::is_same_v<_AccessProperty, access_property::global>     ? __l2_interleave_normal
          : ::cuda::std::is_same_v<_AccessProperty, access_property::normal>     ? __l2_interleave_normal_demote
@@ -44,7 +44,7 @@ protected:
            : 0; // access_property::shared;
   }
 
-  static constexpr uint64_t __prop = __default_property();
+  static constexpr ::cuda::std::uint64_t __prop = __default_property();
 
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept = default;
 
@@ -72,10 +72,10 @@ template <>
 class __annotated_ptr_base<access_property>
 {
 protected:
-  uint64_t __prop = static_cast<uint64_t>(access_property{});
+  ::cuda::std::uint64_t __prop = static_cast<::cuda::std::uint64_t>(access_property{});
 
   _CCCL_HOST_DEVICE_API constexpr __annotated_ptr_base(access_property __property) noexcept
-      : __prop{static_cast<uint64_t>(__property)}
+      : __prop{static_cast<::cuda::std::uint64_t>(__property)}
   {}
 
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept = default;
