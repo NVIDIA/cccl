@@ -21,6 +21,7 @@ Each guideline is a section of the form:
 
 <!-- provenance:
   #<introducing PR>→#<fixing PR> <short note>;
+  review feedback on #<PR> (<link>) <short note>;
   ...
 -->
 
@@ -32,8 +33,9 @@ Each guideline is a section of the form:
 - `<severity>` — `critical` (must be addressed), `important` (not addressing requires a justification),
   or `suggestion` (worth considering, no action required).
 - `<scope>` — which files/diffs the rule applies to.
-- The provenance comment lists the historical regressions the rule was distilled from
-  (introducing PR → fixing PR); it is metadata for maintainers, not part of the rule.
+- The provenance comment lists what the rule was distilled from: historical regressions
+  (introducing PR → fixing PR) or review feedback that prevented a defect from shipping
+  (link to the review comment); it is metadata for maintainers, not part of the rule.
 
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
