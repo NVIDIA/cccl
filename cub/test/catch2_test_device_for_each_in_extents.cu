@@ -137,11 +137,7 @@ CUB_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][devic
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
-// MSVC error: C3546: '...': there are no parameter packs available to expand in
-//             make_tuple_types.h:__make_tuple_types_flat
-#if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);
-#endif // !_CCCL_COMPILER(MSVC)
 }
 
 CUB_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", CUB_SMALL, index_types_dynamic)

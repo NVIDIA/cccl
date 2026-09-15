@@ -24,139 +24,86 @@
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__type_traits/copy_cvref.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-// __make_tuple_types<_Tuple<_Types...>, _Ep, _Sp>::type is a
-// __tuple_types<_Types...> using only those _Types in the range [_Sp, _Ep).
-// _Sp defaults to 0 and _Ep defaults to tuple_size<_Tuple>.  If _Tuple is a
-// lvalue_reference type, then __tuple_types<_Types&...> is the result.
+// __make_tuple_types_t<_Tuple<_Types...>> is a __tuple_types<_Types...>
 
-template <class _TupleTypes, class _TupleIndices>
-struct __make_tuple_types_flat;
-
-template <template <class...> class _Tuple, class... _Types, size_t... _Idx>
-struct __make_tuple_types_flat<_Tuple<_Types...>, __tuple_indices<_Idx...>>
-{
-  using __tuple_types_list = __type_list<_Types...>;
-
-  // Specialization for pair, tuple, and __tuple_types
-  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals _CCCL_NODEBUG_ALIAS =
-    __tuple_types<__type_call<_ApplyFn, __type_at_c<_Idx, __tuple_types_list>>...>;
-};
-
-template <class _Vt, size_t _Np, size_t... _Idx>
-struct __make_tuple_types_flat<array<_Vt, _Np>, __tuple_indices<_Idx...>>
-{
-  // MSVC eagerly substitutes an alias template that discards its index argument and then no longer
-  // sees a pack to expand in `__apply_quals`.
+// MSVC eagerly substitutes an alias template that discards its index argument and then no longer
+// sees a pack to expand.
 #if _CCCL_COMPILER(MSVC)
-  template <size_t>
-  struct __value_type
-  {
-    using type _CCCL_NODEBUG = _Vt;
-  };
-  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals _CCCL_NODEBUG = __tuple_types<__type_call<_ApplyFn, typename __value_type<_Idx>::type>...>;
+template <class _Tp, size_t>
+using __fake_type_at _CCCL_NODEBUG = type_identity_t<_Tp>;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  template <size_t>
-  using __value_type _CCCL_NODEBUG_ALIAS = _Vt;
-  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
-#endif // _CCCL_COMPILER(MSVC)
-};
+template <class _Tp, size_t>
+using __fake_type_at _CCCL_NODEBUG = _Tp;
+#endif // !_CCCL_COMPILER(MSVC)
 
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class _Vt, size_t _Np, size_t... _Idx>
-struct __make_tuple_types_flat<::std::array<_Vt, _Np>, __tuple_indices<_Idx...>>
-{
-#  if _CCCL_COMPILER(MSVC)
-  template <size_t>
-  struct __value_type
-  {
-    using type _CCCL_NODEBUG = _Vt;
-  };
-  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals _CCCL_NODEBUG = __tuple_types<__type_call<_ApplyFn, typename __value_type<_Idx>::type>...>;
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  template <size_t>
-  using __value_type _CCCL_NODEBUG_ALIAS = _Vt;
-  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
-#  endif // _CCCL_COMPILER(MSVC)
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
-
-template <class _Vt, size_t... _Idx>
-struct __make_tuple_types_flat<complex<_Vt>, __tuple_indices<_Idx...>>
-{
-  static_assert(sizeof...(_Idx) == 2, "__make_tuple_types: complex has only 2 members");
-  template <size_t>
-  using __value_type _CCCL_NODEBUG_ALIAS = _Vt;
-  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
-};
-
-template <class _Vt, size_t... _Idx>
-struct __make_tuple_types_flat<::cuda::complex<_Vt>, __tuple_indices<_Idx...>>
-{
-  static_assert(sizeof...(_Idx) == 2, "__make_tuple_types: complex has only 2 members");
-  template <size_t>
-  using __value_type _CCCL_NODEBUG_ALIAS = _Vt;
-  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
-};
-
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class _Vt, size_t... _Idx>
-struct __make_tuple_types_flat<::std::complex<_Vt>, __tuple_indices<_Idx...>>
-{
-  static_assert(sizeof...(_Idx) == 2, "__make_tuple_types: complex has only 2 members");
-  template <size_t>
-  using __value_type _CCCL_NODEBUG_ALIAS = _Vt;
-  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
-
-template <class _Tp,
-          size_t _Ep     = tuple_size<remove_reference_t<_Tp>>::value,
-          size_t _Sp     = 0,
-          bool _SameSize = (_Ep == tuple_size<remove_reference_t<_Tp>>::value)>
+template <class _Tp>
 struct __make_tuple_types
 {
-  static_assert(_Sp <= _Ep, "__make_tuple_types input error");
-  using _RawTp _CCCL_NODEBUG_ALIAS = remove_cv_t<remove_reference_t<_Tp>>;
-  using _Maker _CCCL_NODEBUG_ALIAS = __make_tuple_types_flat<_RawTp, __make_tuple_indices_t<_Ep, _Sp>>;
-  using type _CCCL_NODEBUG_ALIAS   = typename _Maker::template __apply_quals<_Tp>;
+  static_assert(__always_false_v<_Tp>, "Unsupported type in __make_tuple_types");
 };
 
-template <class... _Types, size_t _Ep>
-struct __make_tuple_types<tuple<_Types...>, _Ep, 0, true>
+template <class>
+struct __make_tuple_types_array;
+
+template <size_t... _Indices>
+struct __make_tuple_types_array<__tuple_indices<_Indices...>>
+{
+  template <class _Tp>
+  using type _CCCL_NODEBUG = __tuple_types<__fake_type_at<_Tp, _Indices>...>;
+};
+
+template <class _Tp, size_t _Size>
+struct __make_tuple_types<array<_Tp, _Size>>
+{
+  using type _CCCL_NODEBUG = typename __make_tuple_types_array<__make_tuple_indices_t<_Size>>::template type<_Tp>;
+};
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp, size_t _Size>
+struct __make_tuple_types<::std::array<_Tp, _Size>>
+{
+  using type _CCCL_NODEBUG = typename __make_tuple_types_array<__make_tuple_indices_t<_Size>>::template type<_Tp>;
+};
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+template <class _Tp>
+struct __make_tuple_types<complex<_Tp>>
+{
+  using type _CCCL_NODEBUG = __tuple_types<_Tp, _Tp>;
+};
+
+template <class _Tp>
+struct __make_tuple_types<::cuda::complex<_Tp>>
+{
+  using type _CCCL_NODEBUG = __tuple_types<_Tp, _Tp>;
+};
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp>
+struct __make_tuple_types<::std::complex<_Tp>>
+{
+  using type _CCCL_NODEBUG = __tuple_types<_Tp, _Tp>;
+};
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+template <template <class...> class _Tuple, class... _Types>
+struct __make_tuple_types<_Tuple<_Types...>>
 {
   using type _CCCL_NODEBUG_ALIAS = __tuple_types<_Types...>;
 };
 
-template <class... _Types, size_t _Ep>
-struct __make_tuple_types<__tuple_types<_Types...>, _Ep, 0, true>
-{
-  using type _CCCL_NODEBUG_ALIAS = __tuple_types<_Types...>;
-};
-
-template <class _Tp, size_t _Ep = tuple_size<remove_reference_t<_Tp>>::value, size_t _Sp = 0>
-using __make_tuple_types_t = typename __make_tuple_types<_Tp, _Ep, _Sp>::type;
+template <class _Tuple>
+using __make_tuple_types_t = typename __make_tuple_types<remove_cvref_t<_Tuple>>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
