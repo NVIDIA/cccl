@@ -35,7 +35,6 @@ Each guideline is a section of the form:
 - The provenance comment lists the historical regressions the rule was distilled from
   (introducing PR → fixing PR); it is metadata for maintainers, not part of the rule.
 
-
 ## build.compiler-matrix (important, all C++ code)
 
 <!-- provenance:
@@ -56,15 +55,11 @@ Each guideline is a section of the form:
 -->
 
 Flag compiler-specific constructs unless guarded by a feature macro: `__int128`, GNU inline
-`asm`, `__attribute__`, VLAs, visibility attributes, one-compiler warning suppressions, and
-advanced/recent C++20 syntax such as concept-constrained non-type template parameters in a partial
-specialization (`template <SomeConcept auto V> struct X<V>`) — NVRTC before 12.5 rejects those even
-where GCC/Clang/MSVC accept them.
+`asm`, `__attribute__`, VLAs, visibility attributes, one-compiler warning suppressions, etc.
 CCCL must build with GCC, Clang, MSVC, NVHPC/NVC++ (incl. `-stdpar`), and NVRTC; PR CI does
 not cover all of these, so green CI is not sufficient. Compiler-detection refactors must
-stay equivalent for every supported compiler — beware masquerading (NVHPC defines
-`__GNUC__`, Intel defines Clang/GCC macros). Benchmarks and tests count too. Dropping a
-`_CCCL_CHECK_BUILTIN` guard plus fallback around a compiler builtin counts as such a refactor.
+stay equivalent for every supported compiler — beware masquerading (Clang and NVHPC define
+`__GNUC__`). Benchmarks and tests count too.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
