@@ -367,7 +367,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory",
 }
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works for a large number of items",
-         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck][!mayfail]",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_SMALL,
          offset_types)
 try
@@ -432,7 +432,7 @@ struct run_index_to_pair_offset_op
 };
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works when a run starts at a partition boundary",
-         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck][!mayfail]",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_SMALL,
          offset_types)
 try
@@ -471,7 +471,7 @@ catch (const std::bad_alloc& e)
 }
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works for large runs of equal items",
-         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck][!mayfail]",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_SMALL,
          offset_types)
 try
