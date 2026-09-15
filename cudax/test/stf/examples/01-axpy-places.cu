@@ -19,6 +19,8 @@
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
+#include <vector>
+
 using namespace cuda::experimental::stf;
 
 template <typename T>
@@ -49,15 +51,10 @@ void run()
   Ctx ctx;
 
   const int N = 1024 * 1024 * 32;
-  double *X, *Y;
 
-  X = new double[N];
-  Y = new double[N];
-  SCOPE(exit)
-  {
-    delete[] X;
-    delete[] Y;
-  };
+  // No guards needed: each vector releases its own storage, so a throw from the second
+  // allocation cannot leak the first.
+  ::std::vector<double> X(N), Y(N);
 
   for (size_t ind = 0; ind < N; ind++)
   {
@@ -77,8 +74,8 @@ void run()
 
   data_place cdp = data_place::composite(tiled_partition<512 * 1024ULL>(), all_devs);
 
-  auto handle_X = ctx.logical_data(X, {N});
-  auto handle_Y = ctx.logical_data(Y, {N});
+  auto handle_X = ctx.logical_data(X.data(), {N});
+  auto handle_Y = ctx.logical_data(Y.data(), {N});
 
   double alpha = 3.14;
 
