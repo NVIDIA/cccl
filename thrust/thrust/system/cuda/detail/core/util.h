@@ -283,7 +283,6 @@ struct get_agent_plan_impl<Agent, typelist<lowest_supported_sm_arch>>
   using Plan = typename get_plan<Agent>::type;
   Plan THRUST_RUNTIME_FUNCTION static get(int /* ptx_version */)
   {
-    using Plan = typename get_plan<Agent>::type;
     return Plan(specialize_plan<Agent::template PtxPlan, lowest_supported_sm_arch>());
   }
 };

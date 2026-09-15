@@ -190,10 +190,10 @@ struct TestKernel
     test_cooperative_algorithm(cudax::this_block{config});
     test_cooperative_algorithm(cudax::this_cluster{config});
 
-    test_cooperative_algorithm(
-      cudax::group{cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<2>{}, cudax::lane_synchronizer{}});
-    test_cooperative_algorithm(
-      cudax::group{cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<16>{}, cudax::lane_synchronizer{}});
+    test_cooperative_algorithm(cudax::generic_group{
+      cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<2>{}, cudax::lane_synchronizer{}});
+    test_cooperative_algorithm(cudax::generic_group{
+      cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<16>{}, cudax::lane_synchronizer{}});
   }
 };
 } // namespace
