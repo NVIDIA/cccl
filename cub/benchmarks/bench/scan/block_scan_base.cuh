@@ -20,27 +20,20 @@ struct benchmark_op_t
     __shared__ TempStorage temp_storage;
     T inclusive_output;
     BlockScan{temp_storage}.InclusiveScan(thread_data, inclusive_output, op_t{});
-    // BlockScan::TempStorage is real shared memory, unlike WarpScanShfl's empty type, so the
-    // chained calls in benchmark_kernel all reuse one instance of it. BlockScan documents that
-    // "a subsequent __syncthreads() threadblock barrier should be invoked after calling this
-    // method if the collective's temporary storage is to be reused or repurposed", so the
-    // barrier is required here for correctness, not as a precaution. It therefore falls inside
-    // the timed region, which is the honest place for it: any caller that reuses one
-    // TempStorage in a loop pays the same barrier every iteration.
+    // Reuse one TempStorage across chained calls to mimic realistic workloads. BlockScan needs a barrier before reuse.
     __syncthreads();
     return inclusive_output;
   }
 };
 
-template <typename T>
-void block_scan(nvbench::state& state, nvbench::type_list<T>)
+template <typename T, int BlockSize>
+void run_block_scan(nvbench::state& state)
 {
-  constexpr int block_size    = 256;
   constexpr int unroll_factor = 128; // compromise between compile time and noise
-  const auto& kernel          = benchmark_kernel<block_size, unroll_factor, benchmark_op_t<block_size>, T>;
+  const auto& kernel          = benchmark_kernel<BlockSize, unroll_factor, benchmark_op_t<BlockSize>, T>;
   const int num_SMs     = state.get_device().value().get_number_of_sms(); // NOLINT(bugprone-unchecked-optional-access)
   int max_blocks_per_SM = 0;
-  NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_size, 0));
+  NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, BlockSize, 0));
   // NVBENCH_CUDA_CALL_NOEXCEPT swallows a failed occupancy query, which would leave
   // max_blocks_per_SM at 0 and turn the launch into a bare cudaErrorInvalidConfiguration.
   if (max_blocks_per_SM == 0)
@@ -50,8 +43,32 @@ void block_scan(nvbench::state& state, nvbench::type_list<T>)
   }
   const int grid_size = max_blocks_per_SM * num_SMs;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
-    kernel<<<grid_size, block_size>>>(benchmark_op_t<block_size>{});
+    kernel<<<grid_size, BlockSize>>>(benchmark_op_t<BlockSize>{});
   });
 }
 
-NVBENCH_BENCH_TYPES(block_scan, NVBENCH_TYPE_AXES(value_types)).set_name("base").set_type_axes_names({"T{ct}"});
+template <typename T>
+void block_scan(nvbench::state& state, nvbench::type_list<T>)
+{
+  // BlockSize is a compile-time parameter of BlockScan, so each axis value dispatches to its own instantiation.
+  switch (state.get_int64("BlockSize"))
+  {
+    case 64:
+      return run_block_scan<T, 64>(state);
+    case 128:
+      return run_block_scan<T, 128>(state);
+    case 256:
+      return run_block_scan<T, 256>(state);
+    case 512:
+      return run_block_scan<T, 512>(state);
+    case 1024:
+      return run_block_scan<T, 1024>(state);
+    default:
+      state.skip("Skipping: unsupported block size.");
+  }
+}
+
+NVBENCH_BENCH_TYPES(block_scan, NVBENCH_TYPE_AXES(value_types))
+  .set_name("base")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("BlockSize", nvbench::range(6, 10, 1));
