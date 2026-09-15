@@ -1,13 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <thrust/tabulate.h>
-
 #include <cuda/std/complex>
 #include <cuda/std/cstddef>
 #include <cuda/type_traits>
 
-#include <c2h/device_policy.h>
 #include <c2h/generator_common.h>
 
 #if C2H_HAS_CURAND
@@ -53,13 +50,6 @@ struct index_to_transformed_random_uniform
     return m_op(index_to_random_uniform{m_seed}(i));
   }
 };
-
-// fills [first, last) by drawing a uniform random value at each position and applying op to it
-template <typename OutputIt, typename Op>
-void generate_transformed_random_data(seed_t seed, OutputIt first, OutputIt last, Op op)
-{
-  thrust::tabulate(device_policy, first, last, index_to_transformed_random_uniform<Op>{seed.get(), op});
-}
 
 template <typename T, bool = ::cuda::is_floating_point_v<T>>
 struct random_to_item_t

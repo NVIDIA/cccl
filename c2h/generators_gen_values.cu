@@ -15,7 +15,8 @@ namespace c2h::detail
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  generate_transformed_random_data(seed, data.begin(), data.end(), random_to_item_t<T>(min, max));
+  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
+  thrust::tabulate(device_policy, data.begin(), data.end(), op);
 }
 
 template <typename T>
