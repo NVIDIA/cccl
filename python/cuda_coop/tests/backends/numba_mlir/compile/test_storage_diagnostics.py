@@ -19,6 +19,7 @@ from numba_cuda_mlir.numba_cuda.misc.special import literal_unroll
 
 import cuda.coop.numba_mlir as coop
 from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+from cuda.coop.numba_mlir._compiler._rewrite_support import CoopSinglePhaseRewriteError
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
@@ -38,12 +39,12 @@ def _fixed_current_device(monkeypatch):
     )
 
 
-def _compile(kernel, *arg_types):
+def _compile(kernel, *arg_types, block=(32, 1, 1)):
     return kernel._compile_launch_config_signature(
         types.void(*arg_types),
         (
             ("grid", (1, 1, 1)),
-            ("block", (32, 1, 1)),
+            ("block", block),
             ("sharedmem", 0),
             ("cluster", None),
         ),
@@ -116,15 +117,19 @@ def test_standalone_collective_helper_reports_inline_requirement():
         _compile(kernel, types.int32[::1], types.int32[::1])
 
 
-@pytest.mark.parametrize("payload_kind", ["thread_data", "local_array"])
+@pytest.mark.parametrize(
+    "payload_kind", ["thread_data", "local_array", "local_array_keyword"]
+)
 def test_literal_unroll_cannot_determine_cooperative_payload_shape(payload_kind):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         for count in literal_unroll((1, 2)):
             if payload_kind == "thread_data":
                 payload = coop.ThreadData(count, types.int32)
-            else:
+            elif payload_kind == "local_array":
                 payload = cuda.local.array(count, types.int32)
+            else:
+                payload = cuda.local.array(shape=count, dtype=types.int32)
             coop.load(coop.this_block(), source, payload)
             destination[cuda.threadIdx.x] = payload[0]
 
@@ -170,3 +175,119 @@ def test_literal_unroll_cannot_determine_cooperative_selector():
         (GroupRewriteError, TypingError), match="does not support literal_unroll values"
     ):
         _compile(kernel, types.int32[::1], types.int32[::1])
+
+
+@pytest.mark.parametrize("dynamic_backing", [False, True], ids=["static", "dynamic"])
+@pytest.mark.parametrize("user_shape", ["static", "zero", "runtime"])
+def test_inlined_user_shared_allocation_is_checked_after_inlining(
+    monkeypatch, dynamic_backing, user_shape
+):
+    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "_query_device_shared_memory_limits",
+        lambda: {
+            "max_default_shared_memory_per_block": 48 * 1024,
+            "max_optin_shared_memory_per_block": 96 * 1024,
+        },
+    )
+    size_in_bytes = 64 * 1024 if dynamic_backing else None
+    shape = 32 if user_shape == "static" else 0
+
+    if user_shape == "runtime":
+
+        @cuda.jit(device=True)
+        def user_allocation(count):
+            allocate = cuda.shared.array
+            alias = allocate
+            return alias(count, types.int32)
+
+    else:
+
+        @cuda.jit(device=True)
+        def user_allocation(count):
+            allocate = cuda.shared.array
+            alias = allocate
+            return alias(shape, types.int32)
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        mine = user_allocation(source[0])
+        thread = cuda.threadIdx.x
+        mine[thread] = source[thread]
+        storage = coop.TempStorage(size_in_bytes)
+        payload = coop.ThreadData(1, types.int32)
+        payload[0] = mine[thread]
+        coop.store(
+            coop.this_block(),
+            destination,
+            payload,
+            algorithm="transpose",
+            temp_storage=storage,
+        )
+
+    if not dynamic_backing and user_shape == "static":
+        assert _compile(kernel, types.int32[::1], types.int32[::1]).metadata["ltoir"]
+    else:
+        with pytest.raises(
+            CoopSinglePhaseRewriteError,
+            match=r"shared-memory backing.*test_storage_diagnostics.py.*would alias",
+        ):
+            _compile(kernel, types.int32[::1], types.int32[::1])
+
+
+@pytest.mark.parametrize("argument", ["storage", "group_by"])
+def test_literal_unroll_cannot_determine_cooperative_storage_or_partition(argument):
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        for count in literal_unroll((32, 64)):
+            block = coop.this_block()
+            if argument == "storage":
+                storage = coop.TempStorage(count)
+                payload = coop.ThreadData(1, types.int32)
+                payload[0] = source[cuda.threadIdx.x]
+                coop.store(
+                    block,
+                    destination,
+                    payload,
+                    algorithm="transpose",
+                    temp_storage=storage,
+                )
+            else:
+                group = block.group_by(count)
+                coop.store(group, destination, source[cuda.threadIdx.x])
+
+    with pytest.raises(
+        (GroupRewriteError, TypingError), match="does not support literal_unroll values"
+    ):
+        _compile(kernel, types.int32[::1], types.int32[::1])
+
+
+def test_implicit_oversized_storage_rejects_user_static_shared_allocation(monkeypatch):
+    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "_query_device_shared_memory_limits",
+        lambda: {
+            "max_default_shared_memory_per_block": 48 * 1024,
+            "max_optin_shared_memory_per_block": 96 * 1024,
+        },
+    )
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        mine = cuda.shared.array(1024, types.int32)
+        thread = cuda.threadIdx.x
+        mine[thread] = source[thread]
+        payload = coop.ThreadData(16, types.int32)
+        for item in range(16):
+            payload[item] = mine[thread]
+        coop.store(coop.this_block(), destination, payload, algorithm="transpose")
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="dynamic shared-memory backing.*static cuda.shared.array.*would alias",
+    ):
+        _compile(kernel, types.int32[::1], types.int32[::1], block=(1024, 1, 1))
