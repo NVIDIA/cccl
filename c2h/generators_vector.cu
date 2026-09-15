@@ -18,11 +18,18 @@ namespace c2h::detail
 template <typename T, int VecSize>
 struct random_to_vec_item_t
 {
-  __device__ T operator()(float random_value)
+  unsigned long long m_seed;
+  T m_min;
+  T m_max;
+
+  __device__ T operator()(std::size_t idx)
   {
     T out{};
+    index_to_random_uniform rng{m_seed};
+    int field = 0;
 #define SET_FIELD(VEC_FIELD) \
-  out.VEC_FIELD = random_to_item_t<decltype(m_min.VEC_FIELD)>(m_min.VEC_FIELD, m_max.VEC_FIELD)(random_value);
+  out.VEC_FIELD =            \
+    random_to_item_t<decltype(m_min.VEC_FIELD)>(m_min.VEC_FIELD, m_max.VEC_FIELD)(rng(idx * VecSize + field++));
 
     if constexpr (VecSize >= 4)
     {
@@ -43,18 +50,17 @@ struct random_to_vec_item_t
 #undef SET_FIELD
     return out;
   }
-
-  T m_min;
-  T m_max;
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  define VEC_SPECIALIZATION(T)                                                                           \
-    template <>                                                                                           \
-    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                         \
-    {                                                                                                     \
-      generate_transformed_random_data(                                                                   \
-        seed, data.begin(), data.end(), random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max}); \
+#  define VEC_SPECIALIZATION(T)                                                                      \
+    template <>                                                                                      \
+    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                    \
+    {                                                                                                \
+      thrust::tabulate(device_policy,                                                                \
+                       data.begin(),                                                                 \
+                       data.end(),                                                                   \
+                       random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{seed.get(), min, max}); \
     }
 
 VEC_SPECIALIZATION(char2);
