@@ -112,3 +112,16 @@ refactor, a swapped helper function), flag it. Require a clean SASS diff for the
 benchmarks across the primitive's consumers (not just its own microbenchmark). Cover non-standard
 binary operators, large value types, and every architecture the change affects: a change that helps
 one workload can silently regress a different algorithm layered on top of the primitive.
+
+## perf.vector-init-before-overwrite (suggestion, `thrust::host_vector`/`thrust::device_vector` and c2h's `host_vector`/`device_vector` construction anywhere in the diff)
+
+<!-- provenance: manually added -->
+
+Flag a sized `thrust`/`c2h` `host_vector`/`device_vector` construction (`vector(n)`, `vector(n, value)`)
+or `resize(n)` that doesn't use the `thrust::no_init` sentinel when the vector's content is never read
+before being fully overwritten — as an algorithm's output, a kernel/copy destination, or an explicit
+full assignment right after. The default overload zero-fills every element first, work the overwrite
+immediately discards. Temporary-storage allocations are almost always a `no_init` candidate, since
+callers assume that memory starts uninitialized. Does not apply when the vector is read before being
+overwritten, or when zero-initialization is semantically required (e.g. an accumulator seed, or a
+vector only partially written).
