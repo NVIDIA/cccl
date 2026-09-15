@@ -4,6 +4,14 @@
 
 """Configuration and validation for the CUB performance smoke profile."""
 
+from collections.abc import Collection
+
+# { subbench_name: { "FeatureNameA": ["ValueA1", "ValueA2", ...]},
+#                    "FeatureNameB": ["ValueB1", "ValueB2", ...]}, ... }
+# Example: {"small": {"Elements{io}[pow2]":   ["26"],
+#                     "MaxSegmentSize[pow2]": ["8"]}}
+RuntimeBenchmarkInputs = dict[str, dict[str, list[str]]]
+
 SMOKE_WORKLOADS = {
     "cub.bench.radix_sort.keys": {
         "T{ct}": ["I8", "I16", "I32", "I64"],
@@ -160,9 +168,9 @@ SMOKE_SUBBENCHES = {
 }
 
 
-def validate_smoke_benchmarks(available_benchmarks):
+def validate_smoke_benchmarks(available_benchmarks: Collection[str]) -> None:
     """Reject stale smoke entries instead of silently dropping them."""
-    missing = sorted(set(SMOKE_BENCHMARKS) - set(available_benchmarks))
+    missing = [name for name in SMOKE_BENCHMARKS if name not in available_benchmarks]
     if missing:
         raise ValueError(
             "Smoke benchmarks are not registered in this build: {}".format(
@@ -171,7 +179,9 @@ def validate_smoke_benchmarks(available_benchmarks):
         )
 
 
-def smoke_runtime_bench_inputs(alg_name, runtime_benchmark_inputs):
+def smoke_runtime_bench_inputs(
+    alg_name: str, runtime_benchmark_inputs: RuntimeBenchmarkInputs
+) -> RuntimeBenchmarkInputs:
     """Limit algorithms with multiple subbenchmarks to representative cases."""
     selected_subbenches = SMOKE_SUBBENCHES.get(alg_name)
     if selected_subbenches is None:
