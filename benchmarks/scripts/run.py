@@ -4,7 +4,6 @@ import json
 import math
 import os
 import sys
-import time
 
 import cccl.bench
 
@@ -51,7 +50,6 @@ class BaseRunner:
 
         bench = cccl.bench.BaseBench(algname)
         for ct_workload in ct_workload_space:
-            begin = time.perf_counter()
             try:
                 results = bench.run(ct_workload, rt_values, self.estimator, False)
                 for subbench in results:
@@ -72,22 +70,27 @@ class BaseRunner:
                 self.timings[algname].append(
                     {
                         "compile_time_axes": list(ct_workload),
-                        "elapsed_seconds": time.perf_counter() - begin,
+                        "benchmark_seconds": bench.execution_seconds,
                     }
                 )
 
 
-def create_timing_report(algorithm_results, runner_timings, total_elapsed):
+def create_timing_report(algorithm_results, runner_timings):
+    algorithms = [
+        {
+            **result,
+            "workloads": runner_timings.get(result["algorithm"], []),
+        }
+        for result in algorithm_results
+    ]
     return {
         "schema_version": 1,
-        "total_elapsed_seconds": total_elapsed,
-        "algorithms": [
-            {
-                **timing,
-                "workloads": runner_timings.get(timing["algorithm"], []),
-            }
-            for timing in algorithm_results
-        ],
+        "total_benchmark_seconds": sum(
+            workload["benchmark_seconds"]
+            for algorithm in algorithms
+            for workload in algorithm["workloads"]
+        ),
+        "algorithms": algorithms,
     }
 
 
@@ -101,10 +104,10 @@ def print_timing_summary(report):
     print("\n### Benchmark timing summary")
     for algorithm in report["algorithms"]:
         benchmark_seconds = sum(
-            workload["elapsed_seconds"] for workload in algorithm["workloads"]
+            workload["benchmark_seconds"] for workload in algorithm["workloads"]
         )
         print(
-            "  * {}: {:.1f}s benchmark, {} workload(s)".format(
+            "  * {}: {:.1f}s execution, {} workload(s)".format(
                 algorithm["algorithm"],
                 benchmark_seconds,
                 len(algorithm["workloads"]),
@@ -112,8 +115,12 @@ def print_timing_summary(report):
         )
         for workload in algorithm["workloads"]:
             axes = " ".join(workload["compile_time_axes"])
-            print("    * {}: {:.1f}s".format(axes, workload["elapsed_seconds"]))
-    print("  * total: {:.1f}s".format(report["total_elapsed_seconds"]))
+            print("    * {}: {:.1f}s".format(axes, workload["benchmark_seconds"]))
+    print(
+        "  * total benchmark execution: {:.1f}s".format(
+            report["total_benchmark_seconds"]
+        )
+    )
     print("  * timing report: {}".format(TIMING_REPORT_PATH))
 
 
@@ -121,12 +128,10 @@ def main():
     print("&&&& RUNNING bench")
     os.environ["CUDA_MODULE_LOADING"] = "EAGER"
     runner = BaseRunner()
-    begin = time.perf_counter()
     algorithm_results = cccl.bench.search(runner)
-    total_elapsed = time.perf_counter() - begin
 
     if algorithm_results is not None:
-        report = create_timing_report(algorithm_results, runner.timings, total_elapsed)
+        report = create_timing_report(algorithm_results, runner.timings)
         write_timing_report(report)
         print_timing_summary(report)
 

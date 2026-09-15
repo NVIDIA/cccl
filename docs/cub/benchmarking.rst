@@ -281,7 +281,7 @@ The list of smoke benchmarks and workloads is available with:
 
 The script execution generates the following files:
 
-- :code:`cccl_meta_bench_timing.json`: JSON file containing the timing information for each benchmark
+- :code:`cccl_meta_bench_timing.json`: JSON file containing benchmark execution times for each workload (excluding compilation and setup)
 - :code:`cccl_meta_bench.db`: SQLite database containing the benchmark results
 - :code:`cccl_meta_bench.csv`: CSV file containing the benchmark metadata/configuration
 

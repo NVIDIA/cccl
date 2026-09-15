@@ -609,6 +609,7 @@ class Bench:
         self.algname = algorithm_name
         self.variant = variant
         self.ct_workload = ct_workload
+        self.execution_seconds = 0.0
 
     def label(self):
         return self.algname + "." + self.variant.label()
@@ -829,6 +830,7 @@ class Bench:
         logger = Logger()
         bench_cache = BenchCache()
         runs_cache = RunsCache()
+        self.execution_seconds = 0.0
         cached_centers = bench_cache.pull_bench_centers(
             self, ct_workload_point, rt_values
         )
@@ -845,6 +847,7 @@ class Bench:
             timeout = elapsed * 50
 
         result = self.do_run(ct_workload_point, rt_values, timeout, is_search)
+        self.execution_seconds = result.elapsed
         runs_cache.push_run(self, result.code, result.elapsed)
         return bench_cache.push_bench_centers(self, result, estimator)
 
