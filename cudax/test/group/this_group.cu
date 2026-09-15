@@ -42,6 +42,10 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
     static_assert(cuda::std::is_same_v<decltype(hierarchy), const Hierarchy&>);
   }
 
+  // Test that the group exposes properties.
+  static_assert(Group::is_always_exhaustive());
+  static_assert(Group::is_always_contiguous());
+
   // Test that the group can be synchronized using .sync() method.
   {
     static_assert(cuda::std::is_same_v<void, decltype(group.sync())>);
