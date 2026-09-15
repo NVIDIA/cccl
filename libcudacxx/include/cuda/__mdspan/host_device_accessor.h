@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/is_pointer_accessible.h> // IWYU pragma: keep
+#include <cuda/__memory/is_pointer_accessible.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__iterator/concepts.h> // IWYU pragma: keep
-#include <cuda/std/__memory/pointer_traits.h> // IWYU pragma: keep
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>

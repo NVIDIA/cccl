@@ -120,6 +120,10 @@ If:
   PathMatch: ".*libcudacxx/include/cuda/.*"
   PathExclude: ".*libcudacxx/include/cuda/(std|__ptx)/.*"
 
+CompileFlags:
+  Add:
+    - "-DCCCL_ENABLE_ASSERTIONS"
+
 Diagnostics:
   Includes:
     IgnoreHeader: "cuda/std/detail/__config"

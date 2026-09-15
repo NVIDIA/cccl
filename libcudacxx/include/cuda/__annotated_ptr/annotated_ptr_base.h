@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
-#include <cuda/__annotated_ptr/associate_access_property.h> // IWYU pragma: keep
+#include <cuda/__annotated_ptr/associate_access_property.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 

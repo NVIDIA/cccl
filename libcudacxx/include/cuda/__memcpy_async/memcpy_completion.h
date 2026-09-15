@@ -23,18 +23,12 @@
 
 #include <cuda/__barrier/async_contract_fulfillment.h>
 #include <cuda/__barrier/barrier_block_scope.h>
-#include <cuda/__barrier/barrier_expect_tx.h> // IWYU pragma: keep
 #include <cuda/__fwd/pipeline.h>
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>
-#include <cuda/__memcpy_async/try_get_barrier_handle.h> // IWYU pragma: keep
+#include <cuda/__memcpy_async/try_get_barrier_handle.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/cstdint>
-
-#if _CCCL_CUDA_COMPILATION()
-#  include <cuda/__ptx/ptx_dot_variants.h> // IWYU pragma: keep
-#  include <cuda/__ptx/ptx_helper_functions.h> // IWYU pragma: keep
-#endif // _CCCL_CUDA_COMPILATION()
 
 #include <nv/target> // IWYU pragma: keep
 
