@@ -18,7 +18,9 @@
 #include "cub_test_macros.h"
 #include <c2h/buffer_generators.cuh>
 #include <c2h/checked_memory_resource.cuh>
+#include <c2h/custom_type.h>
 #include <c2h/detail/env.cuh>
+#include <c2h/detail/scoped_current_device.cuh>
 
 namespace
 {
@@ -152,4 +154,56 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
     c2h::gen_host_buffer<std::int32_t>(stream, c2h::seed_t{5678}, num_items, host_expected, host_expected);
   REQUIRE(h_items.size() == num_items);
   REQUIRE(static_cast<std::size_t>(std::count(h_items.begin(), h_items.end(), host_expected)) == num_items);
+}
+
+CUB_TEST("c2h stream generators select the stream device", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  int device_count{};
+  REQUIRE(cudaSuccess == cudaGetDeviceCount(&device_count));
+  if (device_count < 2)
+  {
+    SKIP("This test requires at least two CUDA devices.");
+  }
+
+  const auto device      = c2h::current_test_device();
+  const int other_device = (device.get() + 1) % device_count;
+  const cuda::stream stream{device};
+  constexpr std::size_t size = 1;
+
+  auto d_scalar = c2h::make_device_buffer<std::int32_t>(stream, device, size, cuda::no_init);
+  auto d_vector = c2h::make_device_buffer<int2>(stream, device, size, cuda::no_init);
+
+  using custom_t = c2h::custom_type_t<c2h::equal_comparable_t>;
+  auto d_custom  = c2h::make_device_buffer<custom_t>(stream, device, size, cuda::no_init);
+
+  constexpr std::int32_t scalar_value = 42;
+  const int2 vector_value{42, 42};
+  const auto custom_value = [] {
+    custom_t value{};
+    value.key = 42;
+    value.val = 42;
+    return value;
+  }();
+
+  {
+    const c2h::detail::scoped_current_device other_device_scope{other_device};
+
+    c2h::detail::gen_into_device_buffer(c2h::seed_t{1234}, d_scalar, scalar_value, scalar_value);
+    c2h::detail::gen_into_device_buffer(c2h::seed_t{1234}, d_vector, vector_value, vector_value);
+    c2h::detail::gen_into_device_buffer(c2h::seed_t{1234}, d_custom, custom_value, custom_value);
+
+    int current_device{};
+    REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+    REQUIRE(current_device == other_device);
+  }
+
+  const auto h_scalar = c2h::make_host_buffer<std::int32_t>(stream, device, d_scalar);
+  const auto h_vector = c2h::make_host_buffer<int2>(stream, device, d_vector);
+  const auto h_custom = c2h::make_host_buffer<custom_t>(stream, device, d_custom);
+  stream.sync();
+
+  REQUIRE(h_scalar.front() == scalar_value);
+  REQUIRE(h_vector.front().x == vector_value.x);
+  REQUIRE(h_vector.front().y == vector_value.y);
+  REQUIRE(h_custom.front() == custom_value);
 }

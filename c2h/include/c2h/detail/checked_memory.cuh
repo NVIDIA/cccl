@@ -6,7 +6,6 @@
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__numeric/add_overflow.h>
-#include <cuda/std/__exception/cuda_error.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -17,6 +16,7 @@
 #include <cuda_runtime_api.h>
 
 #include <c2h/detail/env.cuh>
+#include <c2h/detail/scoped_current_device.cuh>
 
 namespace c2h::detail
 {
@@ -118,44 +118,6 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
 
   return cudaMalloc(ptr, bytes);
 }
-
-class scoped_current_device
-{
-public:
-  explicit scoped_current_device(int device)
-  {
-    const cudaError_t get_status = cudaGetDevice(&m_previous_device);
-    if (get_status != cudaSuccess)
-    {
-      throw cuda::cuda_error{get_status, "failed to get current device"};
-    }
-
-    if (m_previous_device != device)
-    {
-      const cudaError_t set_status = cudaSetDevice(device);
-      if (set_status != cudaSuccess)
-      {
-        throw cuda::cuda_error{set_status, "failed to change current device"};
-      }
-      m_restore = true;
-    }
-  }
-
-  scoped_current_device(const scoped_current_device&)            = delete;
-  scoped_current_device& operator=(const scoped_current_device&) = delete;
-
-  ~scoped_current_device() noexcept
-  {
-    if (m_restore)
-    {
-      (void) cudaSetDevice(m_previous_device);
-    }
-  }
-
-private:
-  int m_previous_device = 0;
-  bool m_restore        = false;
-};
 
 [[nodiscard]] inline bool is_valid_cuda_malloc_alignment(std::size_t alignment) noexcept
 {

@@ -6,7 +6,9 @@
 #include <cuda/stream>
 
 #include <c2h/bfloat16.cuh>
+// Include CURAND before cuda_runtime_api.h from scoped_current_device.cuh to avoid a CUDA 13.0/MSVC pragma bug.
 #include <c2h/detail/generators.cuh>
+#include <c2h/detail/scoped_current_device.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
@@ -24,6 +26,7 @@ void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 template <typename T>
 void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
+  const scoped_current_device device_scope{stream.device().get()};
   auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
   thrust::tabulate(device_policy.on(stream.get()), data.begin(), data.end(), op);
 }
