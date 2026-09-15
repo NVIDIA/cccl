@@ -13,7 +13,6 @@ set -x
   --quiet \
   --extra-arg='-Wno-error=unused-command-line-argument' \
   --extra-arg='-D_CCCL_CLANG_TIDY_INVOKED=1' \
-  --extra-arg='-DCCCL_ENABLE_ASSERTIONS' \
   -p '@CMAKE_BINARY_DIR@' \
   "${clang_tidy_args[@]}" \
   "$@"
