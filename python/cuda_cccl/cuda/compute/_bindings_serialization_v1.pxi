@@ -623,7 +623,7 @@ def _unary_transform_deserialize(blob, load=True, check_cc=True):
         with nogil:
             status = cccl_device_transform_load(&self.build_data)
         if status != 0:
-            raise RuntimeError(f"Failed loading unary_transform after deserialize, error code: {status}")
+            _raise_transform_error(f"Failed loading unary_transform after deserialize, error code: {status}")
         self._loaded = True
     return self
 
@@ -664,7 +664,7 @@ def _binary_transform_deserialize(blob, load=True, check_cc=True):
         with nogil:
             status = cccl_device_transform_load(&self.build_data)
         if status != 0:
-            raise RuntimeError(f"Failed loading binary_transform after deserialize, error code: {status}")
+            _raise_transform_error(f"Failed loading binary_transform after deserialize, error code: {status}")
         self._loaded = True
     return self
 
