@@ -38,6 +38,20 @@ requires_cuda = pytest.mark.skipif(
 )
 
 
+def _device_allocation_granularity(device):
+    from cuda.bindings import driver as cu
+
+    prop = cu.CUmemAllocationProp()
+    prop.type = cu.CUmemAllocationType.CU_MEM_ALLOCATION_TYPE_PINNED
+    prop.location.type = cu.CUmemLocationType.CU_MEM_LOCATION_TYPE_DEVICE
+    prop.location.id = device
+    err, granularity = cu.cuMemGetAllocationGranularity(
+        prop, cu.CUmemAllocationGranularity_flags.CU_MEM_ALLOC_GRANULARITY_MINIMUM
+    )
+    assert err == cu.CUresult.CUDA_SUCCESS
+    return granularity
+
+
 class LocalizedMLP(torch.nn.Module):
     """Two matmul weights, each blocked over the grid's places along the
     outermost axis (rows land whole on one place)."""
@@ -71,7 +85,16 @@ def test_localized_weights_lifecycle_example():
     meta = tp.get_meta(model.w1)
     assert meta.partition is not None and meta.lifetime == "gc"
     report = tp.placement_report(model.w1)
-    assert report.accuracy == 1.0  # page-aligned rows: exact placement
+    # The evaluator quantizes ownership to the device's VMM allocation
+    # granularity; placement is exact only when each place's band of rows
+    # is a multiple of it (otherwise one block straddles two owners).
+    granularity = _device_allocation_granularity(0)
+    assert report.block_size == granularity
+    band_bytes = model.w1.numel() * model.w1.element_size() // 2
+    if band_bytes % granularity == 0:
+        assert report.accuracy == 1.0
+    else:
+        assert 0.0 < report.accuracy < 1.0
 
     # module-owned lifetime: unloading the model frees pages AND metadata
     w1_meta = weakref.ref(meta)
