@@ -35,7 +35,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 struct [[maybe_unused]] __relaxed_capture_scope
 {
   _CCCL_HOST_API __relaxed_capture_scope()
-      : __previous_{::CU_STREAM_CAPTURE_MODE_RELAXED}
   {
     ::cuda::__driver::__threadExchangeStreamCaptureMode(__previous_);
   }
@@ -50,7 +49,7 @@ struct [[maybe_unused]] __relaxed_capture_scope
   __relaxed_capture_scope& operator=(const __relaxed_capture_scope&) = delete;
 
 private:
-  ::CUstreamCaptureMode __previous_;
+  ::CUstreamCaptureMode __previous_{::CU_STREAM_CAPTURE_MODE_RELAXED};
 };
 
 _CCCL_END_NAMESPACE_CUDA
