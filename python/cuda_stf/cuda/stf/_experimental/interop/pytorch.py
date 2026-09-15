@@ -532,6 +532,8 @@ def _partitions_equal(a, b):
 #: Standalone stream-pool registry backing the fork/join streams. Module
 #: level so the streams it owns outlive every wrapper cached below.
 _MAP_RESOURCES = None
+#: Cache so repeated ``map`` calls on a grid skip re-deriving their streams
+#: from ``_MAP_RESOURCES`` (per-die place scope + pick_stream + wrapper).
 #: grid handle -> (grid, per-die torch streams); the grid is retained so its
 #: handle cannot be recycled while the entry is cached.
 _MAP_STREAMS: dict = {}
