@@ -378,7 +378,7 @@ void for_each_type(L<Ts...>, Args&&... args)
 #define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TEST, ...)   \
   TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))              \
   {                                                            \
-    for (size_t s : get_test_sizes())                          \
+    for (const size_t s : get_test_sizes())                    \
     {                                                          \
       unittest::detail::for_each_type<TEST>(__VA_ARGS__{}, s); \
     }                                                          \
@@ -388,7 +388,7 @@ void for_each_type(L<Ts...>, Args&&... args)
 #define DECLARE_VARIABLE_UNITTEST(TEST)           \
   TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__)) \
   {                                               \
-    for (size_t s : get_test_sizes())             \
+    for (const size_t s : get_test_sizes())       \
     {                                             \
       TEST<signed char>(s);                       \
       TEST<unsigned char>(s);                     \
@@ -404,7 +404,7 @@ void for_each_type(L<Ts...>, Args&&... args)
 #define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST)  \
   TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__)) \
   {                                               \
-    for (size_t s : get_test_sizes())             \
+    for (const size_t s : get_test_sizes())       \
     {                                             \
       TEST<signed char>(s);                       \
       TEST<unsigned char>(s);                     \
