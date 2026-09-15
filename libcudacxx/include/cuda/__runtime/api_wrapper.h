@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
+#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
 
 #define _CCCL_TRY_RUNTIME_API(_NAME, _MSG, ...)                \

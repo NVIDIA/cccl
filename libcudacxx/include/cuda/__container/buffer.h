@@ -38,7 +38,7 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
-#  include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
+#  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__iterator/concepts.h>

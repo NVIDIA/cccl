@@ -45,7 +45,7 @@
 #include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #if _CCCL_COMPILER(NVRTC)
 #  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type*) 0)->member))

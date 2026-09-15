@@ -27,7 +27,7 @@
 #  include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION()
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

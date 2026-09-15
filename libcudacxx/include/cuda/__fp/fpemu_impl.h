@@ -50,7 +50,7 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countl.h>
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

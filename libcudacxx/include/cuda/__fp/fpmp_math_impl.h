@@ -38,7 +38,7 @@
 
 #include <cuda/__fp/fpmp.h>
 #include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
-#include <cuda/std/cassert> // IWYU pragma: keep
+#include <cuda/std/cassert>
 #include <cuda/std/cmath> // IWYU pragma: keep
 
 /*

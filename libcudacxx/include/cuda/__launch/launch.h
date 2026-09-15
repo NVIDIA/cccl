@@ -30,7 +30,7 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
+#  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__type_traits/is_function.h>
 #  include <cuda/std/__type_traits/is_pointer.h>

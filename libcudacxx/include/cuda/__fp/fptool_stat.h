@@ -287,7 +287,7 @@
 #  include <cuda/__stream/stream_ref.h>
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

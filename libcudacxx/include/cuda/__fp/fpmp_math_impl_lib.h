@@ -35,7 +35,7 @@
 */
 
 #include <cuda/__fp/fpmp.h> // IWYU pragma: keep
-#include <cuda/std/cassert> // IWYU pragma: keep
+#include <cuda/std/cassert>
 #include <cuda/std/cmath> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>

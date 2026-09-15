@@ -32,7 +32,7 @@
 #  include <cuda/std/__simd/specializations/simd_intrinsics_array.h>
 #endif // _CCCL_HAS_SIMD_SAT()
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

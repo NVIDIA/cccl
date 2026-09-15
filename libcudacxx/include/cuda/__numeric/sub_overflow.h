@@ -35,7 +35,7 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/cmp.h> // IWYU pragma: keep
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
 #  include <intrin.h>

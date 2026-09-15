@@ -32,7 +32,7 @@
 #include <cuda/__fp/fpmp_math_impl_exp.h> // IWYU pragma: keep
 #include <cuda/std/__bit/countl.h> // countl_zero for the Payne-Hanek normalization
 
-#include <nv/target> // IWYU pragma: keep
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
