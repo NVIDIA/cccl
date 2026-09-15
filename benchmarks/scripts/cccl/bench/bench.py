@@ -792,10 +792,10 @@ class Bench:
                 )
             )
 
-            begin = time.time()
+            begin = time.perf_counter()
             p = ProcessRunner().new_process(cmd)
             p.wait(timeout=timeout)
-            elapsed = time.time() - begin
+            elapsed = time.perf_counter() - begin
 
             logger.info(
                 "finished benchmark {} with {} ({}) in {:.3f}s".format(
