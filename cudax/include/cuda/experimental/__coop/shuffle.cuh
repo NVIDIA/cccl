@@ -41,7 +41,7 @@ template <bool _Dummy = false>
 }
 
 _CCCL_TEMPLATE(class _Group, class _Tp)
-_CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
+_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
                  _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API _Tp __shuffle_impl(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
 {
