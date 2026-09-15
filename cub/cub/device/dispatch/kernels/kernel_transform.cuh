@@ -1002,7 +1002,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // all threads wait for bulk copy
   __syncthreads();
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
-    ;
+  {
+  }
 
   if constexpr (vectorize_eligible)
   {

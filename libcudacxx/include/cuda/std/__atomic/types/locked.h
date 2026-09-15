@@ -52,13 +52,17 @@ struct __atomic_locked_storage
   _CCCL_HOST_DEVICE_API void __lock(_Sco) const volatile noexcept
   {
     while (1 == __atomic_exchange_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
-      /*spin*/;
+    {
+      /*spin*/
+    }
   }
   template <typename _Sco>
   _CCCL_HOST_DEVICE_API void __lock(_Sco) const noexcept
   {
     while (1 == __atomic_exchange_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
-      /*spin*/;
+    {
+      /*spin*/
+    }
   }
   template <typename _Sco>
   _CCCL_HOST_DEVICE_API void __unlock(_Sco) const volatile noexcept

@@ -45,6 +45,12 @@ Checks:
   - '-cert-err33-c'
   - 'portability-*'
   - '-portability-template-virtual-member-function'
+  - 'google-*'
+  # There are probably instances where this is useful, but a lot of these come from
+  # libcu++ where the types must explicitly match the CUDA intrinsics.
+  - '-google-runtime-int'
+  - '-google-explicit-constructor'
+  - '-google-runtime-operator'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
