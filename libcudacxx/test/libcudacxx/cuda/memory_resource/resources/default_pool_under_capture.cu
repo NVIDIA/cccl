@@ -84,7 +84,7 @@ C2H_CCCLRT_TEST("default memory pool resolved under stream capture", "[memory_re
   for (const auto& c : capture_modes)
   {
     INFO("capture mode: " << c.name);
-    cuda::stream stream{dev};
+    const cuda::stream stream{dev};
     REQUIRE(begin_capture(stream.get(), c.mode) == ::CUDA_SUCCESS);
 
     cuda::device_memory_pool_ref& pool = cuda::device_default_memory_pool(dev);
@@ -105,7 +105,7 @@ C2H_CCCLRT_TEST("default memory pool resolved under stream capture", "[memory_re
 
   SECTION("the thread's capture mode is restored after the accessor returns")
   {
-    cuda::stream stream{dev};
+    const cuda::stream stream{dev};
     REQUIRE(begin_capture(stream.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 
     const ::cudaMemPool_t raw = cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
