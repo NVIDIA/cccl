@@ -12,7 +12,7 @@ from collections.abc import Collection
 #                     "MaxSegmentSize[pow2]": ["8"]}}
 RuntimeBenchmarkInputs = dict[str, dict[str, list[str]]]
 
-SMOKE_WORKLOADS = {
+SMOKE_WORKLOADS: dict[str, dict[str, list[str]]] = {
     "cub.bench.radix_sort.keys": {
         "T{ct}": ["I8", "I16", "I32", "I64"],
         "OffsetT{ct}": ["I32"],
@@ -33,6 +33,11 @@ SMOKE_WORKLOADS = {
         "Segments{io}[pow2]": ["16"],
         "Entropy": ["1.000"],
     },
+    "cub.bench.segmented_sort.keys": {
+        "T{ct}": ["I32"],
+        "OffsetT{ct}": ["I32"],
+        "Elements{io}[pow2]": ["26"],
+    },
     "cub.bench.reduce.sum": {
         "T{ct}": ["I8", "I16", "F32", "F64", "C32"],
         "OffsetT{ct}": ["I32"],
@@ -44,6 +49,10 @@ SMOKE_WORKLOADS = {
         "OffsetT{ct}": ["I32"],
         "Elements{io}[pow2]": ["28"],
         "MaxSegSize[pow2]": ["4"],
+    },
+    "cub.bench.segmented_reduce.sum": {
+        "T{ct}": ["I32", "F32"],
+        "Elements{io}[pow2]": ["28"],
     },
     "cub.bench.scan.exclusive.sum": {
         "T{ct}": ["I8", "I16", "I32", "I64"],
@@ -60,6 +69,12 @@ SMOKE_WORKLOADS = {
         "T{ct}": ["F32", "F64"],
         "OffsetT{ct}": ["I64"],
         "Elements{io}[pow2]": ["28"],
+    },
+    "cub.bench.segmented_scan.sum": {
+        "T{ct}": ["I32", "F32"],
+        "OffsetT{ct}": ["I32"],
+        "Elements{io}[pow2]": ["26"],
+        "SegmentSize{io}": ["233"],
     },
     "cub.bench.topk.keys": {
         "KeyT{ct}": ["F32"],
@@ -85,6 +100,13 @@ SMOKE_WORKLOADS = {
         "Elements{io}[pow2]": ["28"],
         "Entropy": ["0.544"],
     },
+    "cub.bench.segmented_topk.variable.keys": {
+        "KeyT{ct}": ["F32"],
+        "MaxSegmentSize{ct}": ["8192"],
+        "K{ct}": ["512"],
+        "NumSegments": ["32"],
+        "Pattern": ["relu_quantized"],
+    },
     "cub.bench.transform.babelstream": {
         "T{ct}": ["I8", "I16", "F32", "F64"],
         "Aligned": ["yes"],
@@ -107,6 +129,17 @@ SMOKE_WORKLOADS = {
         "OffsetT{ct}": ["I32"],
         "Elements{io}[pow2]": ["28"],
         "Entropy": ["1.000"],
+    },
+    "cub.bench.adjacent_difference.subtract_left": {
+        "T{ct}": ["I32"],
+        "OffsetT{ct}": ["I32"],
+        "Elements{io}[pow2]": ["28"],
+    },
+    "cub.bench.find_if.base": {
+        "T{ct}": ["I32"],
+        "OffsetT{ct}": ["I32"],
+        "Elements{io}[pow2]": ["28"],
+        "MismatchAt": ["1", "0.5", "0"],
     },
     "cub.bench.run_length_encode.encode": {
         "T{ct}": ["I32"],
@@ -160,10 +193,24 @@ SMOKE_WORKLOADS = {
 
 SMOKE_BENCHMARKS = tuple(SMOKE_WORKLOADS)
 
-SMOKE_SUBBENCHES = {
+SMOKE_SUBBENCHES: dict[str, RuntimeBenchmarkInputs] = {
     "cub.bench.segmented_radix_sort.keys": {
         "power": {},
         "small": {"MaxSegmentSize[pow2]": ["8"]},
+    },
+    "cub.bench.segmented_sort.keys": {
+        "small": {"MaxSegmentSize[pow2]": ["8"]},
+    },
+    "cub.bench.segmented_reduce.sum": {
+        "small": {"SegmentSize[pow2]": ["4"]},
+        "medium": {"SegmentSize[pow2]": ["8"]},
+        "large": {"SegmentSize[pow2]": ["12"]},
+    },
+    "cub.bench.segmented_scan.sum": {
+        "fixed_size_segments": {},
+    },
+    "cub.bench.segmented_topk.variable.keys": {
+        "decode_style_variable_topk_keys": {},
     },
 }
 
