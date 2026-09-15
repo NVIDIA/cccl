@@ -18,10 +18,11 @@ namespace c2h::detail
 template <typename T, int VecSize>
 struct random_to_vec_item_t
 {
-  __device__ void operator()(std::size_t idx)
+  __device__ T operator()(float random_value)
   {
+    T out{};
 #define SET_FIELD(VEC_FIELD) \
-  m_out[idx].VEC_FIELD = random_to_item_t<decltype(m_min.VEC_FIELD)>(m_min.VEC_FIELD, m_max.VEC_FIELD)(m_in[idx]);
+  out.VEC_FIELD = random_to_item_t<decltype(m_min.VEC_FIELD)>(m_min.VEC_FIELD, m_max.VEC_FIELD)(random_value);
 
     if constexpr (VecSize >= 4)
     {
@@ -40,23 +41,20 @@ struct random_to_vec_item_t
       SET_FIELD(x);
     }
 #undef SET_FIELD
+    return out;
   }
 
   T m_min;
   T m_max;
-  const float* m_in{};
-  T* m_out{};
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  define VEC_SPECIALIZATION(T)                                                                                   \
-    template <>                                                                                                   \
-    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                                 \
-    {                                                                                                             \
-      const auto* dist = prepare_random_data(seed, data.size());                                                  \
-      auto op          = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, dist, data.data()};      \
-      thrust::for_each(                                                                                           \
-        device_policy, thrust::counting_iterator<size_t>{0}, thrust::counting_iterator<size_t>{data.size()}, op); \
+#  define VEC_SPECIALIZATION(T)                                                                           \
+    template <>                                                                                           \
+    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                         \
+    {                                                                                                     \
+      generate_transformed_random_data(                                                                   \
+        seed, data.begin(), data.end(), random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max}); \
     }
 
 VEC_SPECIALIZATION(char2);

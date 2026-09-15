@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <thrust/tabulate.h>
-#include <thrust/transform.h>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/detail/generators.cuh>
@@ -16,8 +15,7 @@ namespace c2h::detail
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  const auto* dist = prepare_random_data(seed, data.size());
-  thrust::transform(device_policy, dist, dist + data.size(), data.begin(), random_to_item_t<T>(min, max));
+  generate_transformed_random_data(seed, data.begin(), data.end(), random_to_item_t<T>(min, max));
 }
 
 template <typename T>
