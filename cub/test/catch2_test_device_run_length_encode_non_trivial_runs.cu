@@ -68,10 +68,15 @@ struct run_index_to_offset_op
   }
 };
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]", CUB_SMALL)
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input",
+         "[device][run_length_encode]",
+         CUB_SMALL,
+         offset_types)
 {
-  constexpr int num_items = 0;
-  c2h::device_vector<int> out_num_runs(1, 42);
+  using offset_type = typename c2h::get<0, TestType>;
+
+  constexpr offset_type num_items = 0;
+  c2h::device_vector<offset_type> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
   run_length_encode(
