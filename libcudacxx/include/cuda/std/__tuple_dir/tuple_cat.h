@@ -57,7 +57,7 @@ template <class... _Types>
 
 template <class... _Tuples>
 using __tuple_cat_return_t = decltype(::cuda::std::__tuple_cat_return_type(
-  ::cuda::std::__tuple_cat_return_impl(__make_tuple_types_t<remove_cvref_t<_Tuples>>{}...)));
+  ::cuda::std::__tuple_cat_return_impl(__make_tuple_types_t<_Tuples>{}...)));
 
 // clang-tidy incorrectly reports "'__t0' used after it was forwarded".
 // Each expansion forwards the tuple only to select get<I>'s cvref-qualified

@@ -74,11 +74,9 @@ inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
 template <class... _Types>
 struct __tuple_constraints;
 
-template <class... _Types>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __tuple_get_constraints(__tuple_types<_Types...>) noexcept
-{
-  return __tuple_constraints<_Types...>{};
-}
+template <class... _Types, size_t... _Indices>
+[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __tuple_get_constraints(__tuple_indices<_Indices...>) noexcept
+  -> __tuple_constraints<__type_at_c<_Indices, __type_list<_Types...>>...>;
 
 template <class... _Types>
 struct __tuple_constraints
@@ -297,8 +295,8 @@ struct __tuple_constraints
     }
     else
     { // MSVC has issues with constexpr variables here, so no constexpr variable
-      using __arg_list        = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
-      using __arg_constraints = decltype(::cuda::std::__tuple_get_constraints(__arg_list{}));
+      using __arg_constraints =
+        decltype(::cuda::std::__tuple_get_constraints<_Types...>(__make_tuple_indices_t<sizeof...(_UTypes)>{}));
       if constexpr (!__arg_constraints::template __disambiguate_variadic_constructible<_UTypes...>())
       {
         return __select_constructor::__invalid;
@@ -312,8 +310,8 @@ struct __tuple_constraints
       }
       else
       {
-        using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-        using __defaulted_constraints = decltype(::cuda::std::__tuple_get_constraints(__defaulted_list{}));
+        using __defaulted_constraints = decltype(::cuda::std::__tuple_get_constraints<_Types...>(
+          __make_tuple_indices_t<sizeof...(_Types), sizeof...(_UTypes)>{}));
         if constexpr (__defaulted_constraints::__select_default_constructible() == __select_constructor::__implicit
                       || __defaulted_constraints::__select_default_constructible() == __select_constructor::__explicit)
         {
