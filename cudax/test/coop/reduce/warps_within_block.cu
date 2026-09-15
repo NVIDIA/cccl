@@ -133,7 +133,7 @@ struct MultiGroupReduceKernel
     __shared__ cuda::std::aligned_storage_t<sizeof(Barriers), alignof(Barriers)> barriers_storage;
     auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
 
-    const cudax::group parent{
+    const cudax::generic_group parent{
       cuda::warp, block, cudax::group_by<nwarps_in_group, false>{}, cudax::barrier_synchronizer{barriers}};
 
     if (!cuda::gpu_thread.is_part_of(parent))
