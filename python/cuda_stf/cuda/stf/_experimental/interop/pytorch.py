@@ -529,17 +529,38 @@ def _partitions_equal(a, b):
     )
 
 
-#: per-grid-size stream pools for the fork/join (created once, reused)
+#: Standalone stream-pool registry backing the fork/join streams. Module
+#: level so the streams it owns outlive every wrapper cached below.
+_MAP_RESOURCES = None
+#: grid handle -> (grid, per-die torch streams); the grid is retained so its
+#: handle cannot be recycled while the entry is cached.
 _MAP_STREAMS: dict = {}
 
 
-def _map_streams(nplaces):
+def _map_streams(grid, nplaces):
+    """One torch stream per die, drawn from the die's own place: it lives on
+    that place's device (and inside its green context for locality
+    domains), so ``fn`` launches with compute affinity to the pages it
+    touches."""
+    global _MAP_RESOURCES  # noqa: PLW0603 - lazily created registry
+    from .. import exec_place_resources  # noqa: PLC0415
+
     torch = _import_torch()
-    pool = _MAP_STREAMS.get(nplaces)
-    if pool is None:
-        pool = [torch.cuda.Stream() for _ in range(nplaces)]
-        _MAP_STREAMS[nplaces] = pool
-    return pool
+    key = grid._handle_int
+    entry = _MAP_STREAMS.get(key)
+    if entry is None:
+        if _MAP_RESOURCES is None:
+            _MAP_RESOURCES = exec_place_resources()
+        streams = []
+        for die in range(nplaces):
+            place = grid.get_place(die)
+            with place:
+                ptr = place.pick_stream(_MAP_RESOURCES)
+            device = place.affine_data_place.device_id
+            streams.append(torch.cuda.ExternalStream(int(ptr), device=device))
+        entry = (grid, streams)
+        _MAP_STREAMS[key] = entry
+    return entry[1]
 
 
 def _die_view(torch, tensor, part, die):
@@ -591,11 +612,13 @@ def map(fn, *tensors, spec=None, streams=None):  # noqa: A001 - namespace attrib
     registry); ordinary broadcast scalars pass through whole. ``spec=``
     overrides only when no localized operand carries one.
 
-    Execution forks one launch per die on a cached per-die stream (the
-    event-based fork/join idiom, which stream capture follows), each over
-    a strided view of exactly the die's elements -- restriction by
-    re-indexing, not predication. Confinement to SM partitions can be
-    layered by passing explicit ``streams=`` (e.g. green-context streams).
+    Execution forks one launch per die (the event-based fork/join idiom,
+    which stream capture follows), each over a strided view of exactly the
+    die's elements -- restriction by re-indexing, not predication. Each
+    die's launch runs on a stream picked from that die's execution place
+    (its device; its green context for a locality-domain grid), so compute
+    follows the pages. Pass explicit ``streams=`` (one per die) to
+    override.
 
     Views cover the PADDED space: split dims are padded to divisibility,
     so ``fn`` may compute on padding elements; they are never observed
@@ -604,12 +627,15 @@ def map(fn, *tensors, spec=None, streams=None):  # noqa: A001 - namespace attrib
     torch = _import_torch()
 
     part = spec
+    grid = None
     view_args = []  # per operand: partition or None (pass-through)
     for t in tensors:
         meta = get_meta(t) if isinstance(t, torch.Tensor) else None
         if meta is None:
             view_args.append(None)  # scalars and plain tensors: whole
             continue
+        if grid is None:
+            grid = meta.grid
         if meta.partition is None:
             raise ValueError(
                 "map requires the structured (spec) tier; a mapper-tier "
@@ -633,7 +659,7 @@ def map(fn, *tensors, spec=None, streams=None):  # noqa: A001 - namespace attrib
         gd *= int(e)
 
     if streams is None:
-        streams = _map_streams(gd)
+        streams = _map_streams(grid, gd)
     if len(streams) < gd:
         raise ValueError(f"need {gd} streams, got {len(streams)}")
 

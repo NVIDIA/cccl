@@ -65,6 +65,22 @@ def _compiled(fn):
         return fn
 
 
+# -- 0. the default per-die streams come from the grid's places -------------
+
+
+@requires_cuda
+def test_map_streams_follow_places(grid):
+    """Default fork/join streams are drawn from each die's execution place
+    (its device, its green context for locality domains) and cached per
+    grid."""
+    n = grid.size
+    streams = tp._map_streams(grid, n)
+    assert len(streams) == n and len({s.cuda_stream for s in streams}) == n
+    for die, s in enumerate(streams):
+        assert s.device.index == grid[die].affine_data_place.device_id
+    assert tp._map_streams(grid, n) is streams
+
+
 # -- 1. trivially independent: a fused pointwise chain ----------------------
 
 
