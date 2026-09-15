@@ -1,0 +1,10 @@
+# Files on disk are LF (all platforms), files in repository are LF.
+# Also even though we don't use Make, @wmaxey says Make requires
+# line endings are LF
+# see: https://git-scm.com/docs/gitattributes.html#_eol
+# see: https://github.com/actions/checkout/issues/135#issuecomment-613361104
+* text eol=lf
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
