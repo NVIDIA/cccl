@@ -7,7 +7,6 @@
 #include <cuda/std/cstdint>
 #include <cuda/stream>
 
-// Include CURAND before cuda_runtime_api.h from scoped_current_device.cuh to avoid a CUDA 13.0/MSVC pragma bug.
 #include <c2h/detail/generators.cuh>
 #include <c2h/detail/scoped_current_device.cuh>
 #include <c2h/device_policy.h>

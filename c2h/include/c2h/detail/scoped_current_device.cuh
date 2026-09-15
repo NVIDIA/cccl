@@ -3,33 +3,20 @@
 
 #pragma once
 
-#include <cuda/std/__exception/cuda_error.h>
-
-#include <cuda_runtime_api.h>
+#include <cuda/__device/device_ref.h>
+#include <cuda/__device/physical_device.h>
+#include <cuda/__driver/driver_api.h>
 
 namespace c2h::detail
 {
-//! @brief Temporarily makes a CUDA device current and restores the previous device when destroyed.
+//! @brief Temporarily makes a CUDA device's primary context current and restores the previous context when destroyed.
 class scoped_current_device
 {
 public:
   explicit scoped_current_device(int device)
   {
-    const ::cudaError_t get_status = ::cudaGetDevice(&m_previous_device);
-    if (get_status != ::cudaSuccess)
-    {
-      throw ::cuda::cuda_error{get_status, "failed to get current device"};
-    }
-
-    if (m_previous_device != device)
-    {
-      const ::cudaError_t set_status = ::cudaSetDevice(device);
-      if (set_status != ::cudaSuccess)
-      {
-        throw ::cuda::cuda_error{set_status, "failed to change current device"};
-      }
-      m_restore = true;
-    }
+    const auto context = ::cuda::device_ref{device}.__primary_context();
+    ::cuda::__driver::__ctxPush(context);
   }
 
   scoped_current_device(const scoped_current_device&)            = delete;
@@ -37,15 +24,14 @@ public:
 
   ~scoped_current_device() noexcept
   {
-    if (m_restore)
+    try
     {
-      // Destructors cannot report device-restoration failures.
-      (void) ::cudaSetDevice(m_previous_device);
+      (void) ::cuda::__driver::__ctxPop();
+    }
+    catch (...)
+    {
+      // Destructors cannot report context-restoration failures.
     }
   }
-
-private:
-  int m_previous_device = 0;
-  bool m_restore        = false;
 };
 } // namespace c2h::detail
