@@ -74,7 +74,7 @@ struct __make_tuple_types<::std::array<_Tp, _Size>>
 {
   using type _CCCL_NODEBUG = typename __make_tuple_types_array<__make_tuple_indices_t<_Size>>::template type<_Tp>;
 };
-#endif _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 template <class _Tp>
 struct __make_tuple_types<complex<_Tp>>
@@ -94,7 +94,7 @@ struct __make_tuple_types<::std::complex<_Tp>>
 {
   using type _CCCL_NODEBUG = __tuple_types<_Tp, _Tp>;
 };
-#endif _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 template <template <class...> class _Tuple, class... _Types>
 struct __make_tuple_types<_Tuple<_Types...>>
