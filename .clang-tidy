@@ -45,6 +45,7 @@ Checks:
   - '-cert-err33-c'
   - 'portability-*'
   - '-portability-template-virtual-member-function'
+  - 'google-*'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
