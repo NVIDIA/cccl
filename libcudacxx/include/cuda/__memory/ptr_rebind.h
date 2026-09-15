@@ -24,7 +24,7 @@
 #include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/cstdint> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

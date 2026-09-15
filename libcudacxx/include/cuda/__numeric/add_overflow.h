@@ -35,7 +35,7 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h> // IWYU pragma: keep
 #include <cuda/std/__utility/cmp.h> // IWYU pragma: keep
-#include <cuda/std/cstdint> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 
 #include <nv/target> // IWYU pragma: keep
 

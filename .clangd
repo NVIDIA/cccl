@@ -127,7 +127,7 @@ Diagnostics:
 ---
 
 If:
-  PathMatch: ".*libcudacxx/include/cuda/__ptx/.*"
+  PathMatch: ".*libcudacxx/include/cuda/(std|__ptx)/.*"
 
 Diagnostics:
   Suppress:

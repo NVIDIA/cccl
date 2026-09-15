@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstdint>
@@ -61,13 +60,13 @@ struct __rtti_base;
 
 struct __rtti;
 
-template <::cuda::std::size_t NbrBases>
+template <size_t NbrBases>
 struct __rtti_ex;
 
 template <class...>
 struct __extends;
 
-template <template <class...> class, class = __extends<>, ::cuda::std::size_t = 0, ::cuda::std::size_t = 0>
+template <template <class...> class, class = __extends<>, size_t = 0, size_t = 0>
 struct __basic_interface;
 
 template <class _Interface, class... _Super>
@@ -99,21 +98,21 @@ struct __ctag_;
 template <auto... _Is>
 using __ctag _CCCL_NODEBUG = __ctag_<_Is...>*;
 
-constexpr ::cuda::std::size_t __word                       = sizeof(void*);
-constexpr ::cuda::std::size_t __default_small_object_size  = 3 * __word;
-constexpr ::cuda::std::size_t __default_small_object_align = alignof(::cuda::std::max_align_t);
+constexpr size_t __word                       = sizeof(void*);
+constexpr size_t __default_small_object_size  = 3 * __word;
+constexpr size_t __default_small_object_align = alignof(::cuda::std::max_align_t);
 
 using __make_type_list _CCCL_NODEBUG = ::cuda::std::__type_quote<::cuda::std::__type_list>;
 
 [[noreturn]] _CCCL_HOST_DEVICE_API void __throw_bad_any_cast();
 
-enum class __vtable_kind : ::cuda::std::uint8_t
+enum class __vtable_kind : uint8_t
 {
   __normal,
   __rtti,
 };
 
-inline constexpr ::cuda::std::uint8_t __basic_any_version = 1;
+inline constexpr uint8_t __basic_any_version = 1;
 
 template <class _Interface>
 extern _Interface __remove_ireference_v; // specialized in interfaces.cuh

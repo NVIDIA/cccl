@@ -70,7 +70,7 @@
 // the emulation cores (which take fpemu_accuracy as a template parameter) can see
 // it in every build.
 #if !defined(__CUDA_LIBDEVICE__)
-#  include <cuda/std/cstdint> // IWYU pragma: keep
+#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 #endif

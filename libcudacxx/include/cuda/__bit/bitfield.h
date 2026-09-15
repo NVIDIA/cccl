@@ -37,32 +37,29 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 #  if __cccl_ptx_isa >= 200
 
 [[nodiscard]]
-_CCCL_DEVICE_API inline ::cuda::std::uint32_t
-__bfi(::cuda::std::uint32_t __dest, ::cuda::std::uint32_t __source, int __start, int __width) noexcept
+_CCCL_DEVICE_API inline uint32_t __bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
 {
   asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__dest) : "r"(__source), "r"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t
-__bfi(::cuda::std::uint64_t __dest, ::cuda::std::uint64_t __source, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline uint64_t
+__bfi(uint64_t __dest, uint64_t __source, int __start, int __width) noexcept
 {
   asm("bfi.b64 %0, %1, %2, %3, %4;" : "=l"(__dest) : "l"(__source), "l"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t
-__bfe(::cuda::std::uint32_t __value, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline uint32_t __bfe(uint32_t __value, int __start, int __width) noexcept
 {
-  ::cuda::std::uint32_t __ret;
+  uint32_t __ret;
   asm("bfe.u32 %0, %1, %2, %3;" : "=r"(__ret) : "r"(__value), "r"(__start), "r"(__width));
   return __ret;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t
-__bfe(::cuda::std::uint64_t __value, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline uint64_t __bfe(uint64_t __value, int __start, int __width) noexcept
 {
-  ::cuda::std::uint64_t __ret;
+  uint64_t __ret;
   asm("bfe.u64 %0, %1, %2, %3;" : "=l"(__ret) : "l"(__value), "r"(__start), "r"(__width));
   return __ret;
 }
@@ -82,14 +79,12 @@ _CCCL_API constexpr _Tp bitfield_insert(const _Tp __dest, const _Tp __source, in
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint64_t))
+    if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
     {
       // clang-format off
       NV_DISPATCH_TARGET( // all SM < 70
         NV_PROVIDES_SM_70, (;),
-        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(::cuda::std::uint32_t),
-                                                        ::cuda::std::uint32_t,
-                                                        ::cuda::std::uint64_t>;
+        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                             return ::cuda::__bfi(static_cast<_Up>(__dest), static_cast<_Up>(__source),
                                                  __start, __width);))
       // clang-format on
@@ -112,14 +107,12 @@ template <typename _Tp>
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint32_t))
+    if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {
       // clang-format off
       NV_DISPATCH_TARGET( // all SM < 70
         NV_PROVIDES_SM_70, (;),
-        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(::cuda::std::uint32_t),
-                                                        ::cuda::std::uint32_t,
-                                                        ::cuda::std::uint64_t>;
+        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                             return ::cuda::__bfe(static_cast<_Up>(__value), __start, __width);))
       // clang-format on
     }

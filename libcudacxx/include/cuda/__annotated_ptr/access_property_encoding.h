@@ -24,6 +24,7 @@
 #include <cuda/__annotated_ptr/createpolicy.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h> // IWYU pragma: keep
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
@@ -35,7 +36,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-enum class __l2_descriptor_mode_t : ::cuda::std::uint32_t
+enum class __l2_descriptor_mode_t : uint32_t
 {
   _Desc_Implicit    = 0,
   _Desc_Interleaved = 2,
@@ -66,27 +67,21 @@ enum class __l2_descriptor_mode_t : ::cuda::std::uint32_t
 
 #if !_CCCL_CUDA_COMPILER(NVRTC)
 
-[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::uint64_t __block_encoding_host(
-  __l2_evict_t __primary,
-  __l2_evict_t __secondary,
-  const void* __ptr,
-  ::cuda::std::uint32_t __primary_bytes,
-  ::cuda::std::uint32_t __total_bytes)
+[[nodiscard]] _CCCL_HOST_API inline uint64_t __block_encoding_host(
+  __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_bytes, uint32_t __total_bytes)
 {
   _CCCL_ASSERT(__primary_bytes > 0, "primary_size must be greater than 0");
   _CCCL_ASSERT(__primary_bytes <= __total_bytes, "primary_size must be less than or equal to total_size");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
                "secondary policy must be evict_first or evict_unchanged");
-  auto __raw_ptr         = ::cuda::std::bit_cast<::cuda::std::uintptr_t>(__ptr);
+  auto __raw_ptr         = ::cuda::std::bit_cast<uintptr_t>(__ptr);
   auto __log2_total_size = ::cuda::ceil_ilog2(__total_bytes);
-  auto __block_size_enum = ::cuda::std::saturating_sub<::cuda::std::uint32_t>(__log2_total_size, 19); // min block size
-                                                                                                      // = 4K
+  auto __block_size_enum = ::cuda::std::saturating_sub<uint32_t>(__log2_total_size, 19); // min block size = 4K
   auto __log2_block_size = 12u + __block_size_enum;
   auto __block_size      = 1u << __log2_block_size;
-  auto __block_start     = static_cast<::cuda::std::uint32_t>(__raw_ptr >> __log2_block_size); // ptr / block_size
+  auto __block_start     = static_cast<uint32_t>(__raw_ptr >> __log2_block_size); // ptr / block_size
   // vvvv block_end = ceil_div(ptr + primary_size, block_size)
-  auto __block_end =
-    static_cast<::cuda::std::uint32_t>((__raw_ptr + __primary_bytes + __block_size - 1) >> __log2_block_size);
+  auto __block_end = static_cast<uint32_t>((__raw_ptr + __primary_bytes + __block_size - 1) >> __log2_block_size);
   _CCCL_ASSERT(__block_end >= __block_start, "block_end < block_start");
   // NOTE: there is a bug in PTX createpolicy when __block_size_enum == 13. The *incorrect* behavior matches the
   //       following code:
@@ -97,27 +92,23 @@ enum class __l2_descriptor_mode_t : ::cuda::std::uint32_t
   auto __l2_cop_off         = ::cuda::std::to_underlying(__secondary);
   auto __l2_cop_on          = ::cuda::std::to_underlying(__primary);
   auto __l2_descriptor_mode = ::cuda::std::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
-  return static_cast<::cuda::std::uint64_t>(__block_count) << 37 //
-       | static_cast<::cuda::std::uint64_t>(__block_start) << 44 //
-       | static_cast<::cuda::std::uint64_t>(__block_size_enum) << 52 //
-       | static_cast<::cuda::std::uint64_t>(__l2_cop_off) << 56 //
-       | static_cast<::cuda::std::uint64_t>(__l2_cop_on) << 57 //
-       | static_cast<::cuda::std::uint64_t>(__l2_descriptor_mode) << 59;
+  return static_cast<uint64_t>(__block_count) << 37 //
+       | static_cast<uint64_t>(__block_start) << 44 //
+       | static_cast<uint64_t>(__block_size_enum) << 52 //
+       | static_cast<uint64_t>(__l2_cop_off) << 56 //
+       | static_cast<uint64_t>(__l2_cop_on) << 57 //
+       | static_cast<uint64_t>(__l2_descriptor_mode) << 59;
 }
 
 #endif // !_CCCL_CUDA_COMPILER(NVRTC)
 
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline ::cuda::std::uint64_t __block_encoding(
-  __l2_evict_t __primary,
-  __l2_evict_t __secondary,
-  const void* __ptr,
-  ::cuda::std::size_t __primary_bytes,
-  ::cuda::std::size_t __total_bytes)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline uint64_t __block_encoding(
+  __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, size_t __primary_bytes, size_t __total_bytes)
 {
-  _CCCL_ASSERT(__primary_bytes <= ::cuda::std::size_t{0xFFFFFFFF}, "primary size must be less than 4GB");
-  _CCCL_ASSERT(__total_bytes <= ::cuda::std::size_t{0xFFFFFFFF}, "total size must be less than 4GB");
-  auto __primary_bytes1 = static_cast<::cuda::std::uint32_t>(__primary_bytes);
-  auto __total_bytes1   = static_cast<::cuda::std::uint32_t>(__total_bytes);
+  _CCCL_ASSERT(__primary_bytes <= size_t{0xFFFFFFFF}, "primary size must be less than 4GB");
+  _CCCL_ASSERT(__total_bytes <= size_t{0xFFFFFFFF}, "total size must be less than 4GB");
+  auto __primary_bytes1 = static_cast<uint32_t>(__primary_bytes);
+  auto __total_bytes1   = static_cast<uint32_t>(__total_bytes);
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     (return ::cuda::__block_encoding_host(__primary, __secondary, __ptr, __primary_bytes1, __total_bytes1);),
@@ -143,7 +134,7 @@ enum class __l2_descriptor_mode_t : ::cuda::std::uint32_t
 //   uint32_t                          : 1;
 // };
 
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t
 __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction)
 {
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -154,24 +145,24 @@ __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fracti
   _CCCL_ASSERT(__fraction > 0.0f && __fraction <= 1.0f, "fraction must be between 0.0f and 1.0f");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
                "secondary policy must be evict_first or evict_unchanged");
-  constexpr auto __epsilon = ::cuda::std::numeric_limits<float>::epsilon();
-  auto __num        = static_cast<::cuda::std::uint32_t>((__fraction - __epsilon) * 16.0f); // fraction = num / 16
-  auto __l2_cop_off = ::cuda::std::to_underlying(__secondary);
-  auto __l2_cop_on  = ::cuda::std::to_underlying(__primary);
+  constexpr auto __epsilon  = ::cuda::std::numeric_limits<float>::epsilon();
+  auto __num                = static_cast<uint32_t>((__fraction - __epsilon) * 16.0f); // fraction = num / 16
+  auto __l2_cop_off         = ::cuda::std::to_underlying(__secondary);
+  auto __l2_cop_on          = ::cuda::std::to_underlying(__primary);
   auto __l2_descriptor_mode = ::cuda::std::to_underlying(__l2_descriptor_mode_t::_Desc_Interleaved);
-  return static_cast<::cuda::std::uint64_t>(__num) << 52 //
-       | static_cast<::cuda::std::uint64_t>(__l2_cop_off) << 56 //
-       | static_cast<::cuda::std::uint64_t>(__l2_cop_on) << 57 //
-       | static_cast<::cuda::std::uint64_t>(__l2_descriptor_mode) << 59;
+  return static_cast<uint64_t>(__num) << 52 //
+       | static_cast<uint64_t>(__l2_cop_off) << 56 //
+       | static_cast<uint64_t>(__l2_cop_on) << 57 //
+       | static_cast<uint64_t>(__l2_descriptor_mode) << 59;
 }
 
-inline constexpr auto __l2_interleave_normal = ::cuda::std::uint64_t{0x10F0000000000000};
+inline constexpr auto __l2_interleave_normal = uint64_t{0x10F0000000000000};
 
-inline constexpr auto __l2_interleave_streaming = ::cuda::std::uint64_t{0x12F0000000000000};
+inline constexpr auto __l2_interleave_streaming = uint64_t{0x12F0000000000000};
 
-inline constexpr auto __l2_interleave_persisting = ::cuda::std::uint64_t{0x14F0000000000000};
+inline constexpr auto __l2_interleave_persisting = uint64_t{0x14F0000000000000};
 
-inline constexpr auto __l2_interleave_normal_demote = ::cuda::std::uint64_t{0x16F0000000000000};
+inline constexpr auto __l2_interleave_normal_demote = uint64_t{0x16F0000000000000};
 
 _CCCL_END_NAMESPACE_CUDA
 

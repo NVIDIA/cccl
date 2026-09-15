@@ -26,7 +26,7 @@
 #include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
-#include <cuda/std/cstdint> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -78,7 +78,7 @@ template <typename _Property>
   return __ptr;
 }
 
-_CCCL_DEVICE_API inline void* __associate_raw_descriptor(void* __ptr, [[maybe_unused]] ::cuda::std::uint64_t __prop)
+_CCCL_DEVICE_API inline void* __associate_raw_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_80, (return ::__nv_associate_access_property(__ptr, __prop);))
   return __ptr;
@@ -90,7 +90,7 @@ template <typename _Property>
   static_assert(__is_access_property_v<_Property>, "invalid cuda::access_property");
   if constexpr (!::cuda::std::is_same_v<_Property, access_property::shared>)
   {
-    [[maybe_unused]] auto __raw_prop = static_cast<::cuda::std::uint64_t>(access_property{__prop});
+    [[maybe_unused]] auto __raw_prop = static_cast<uint64_t>(access_property{__prop});
     return ::cuda::__associate_raw_descriptor(__ptr, __raw_prop);
   }
   return __ptr;

@@ -24,7 +24,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/cstdint> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
