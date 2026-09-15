@@ -1,6 +1,5 @@
 import argparse
 import re
-import time
 
 import numpy as np
 
@@ -148,10 +147,8 @@ def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
 
 
 def run_benches(algnames, sub_space, seeker, args):
-    timings = []
+    results = []
     for algname in algnames:
-        begin = time.perf_counter()
-        benchmark_begin = None
         succeeded = True
         try:
             bench = BaseBench(algname)
@@ -165,7 +162,6 @@ def run_benches(algnames, sub_space, seeker, args):
                 ct_space, rt_values = filter_benchmark_space_for_p0(
                     algname, ct_space, rt_values
                 )
-            benchmark_begin = time.perf_counter()
             seeker(algname, ct_space, rt_values)
         except Exception as e:
             succeeded = False
@@ -174,19 +170,9 @@ def run_benches(algnames, sub_space, seeker, args):
                     algname, e
                 )
             )
-        end = time.perf_counter()
-        setup_end = benchmark_begin if benchmark_begin is not None else end
-        timings.append(
-            {
-                "algorithm": algname,
-                "elapsed_seconds": end - begin,
-                "build_seconds": setup_end - begin,
-                "benchmark_seconds": end - setup_end,
-                "succeeded": succeeded,
-            }
-        )
+        results.append({"algorithm": algname, "succeeded": succeeded})
 
-    return timings
+    return results
 
 
 def filter_benchmarks_by_regex(benchmarks, R):

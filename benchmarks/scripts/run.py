@@ -77,7 +77,7 @@ class BaseRunner:
                 )
 
 
-def create_timing_report(algorithm_timings, runner_timings, total_elapsed):
+def create_timing_report(algorithm_results, runner_timings, total_elapsed):
     return {
         "schema_version": 1,
         "total_elapsed_seconds": total_elapsed,
@@ -86,7 +86,7 @@ def create_timing_report(algorithm_timings, runner_timings, total_elapsed):
                 **timing,
                 "workloads": runner_timings.get(timing["algorithm"], []),
             }
-            for timing in algorithm_timings
+            for timing in algorithm_results
         ],
     }
 
@@ -100,13 +100,13 @@ def write_timing_report(report, path=TIMING_REPORT_PATH):
 def print_timing_summary(report):
     print("\n### Benchmark timing summary")
     for algorithm in report["algorithms"]:
+        benchmark_seconds = sum(
+            workload["elapsed_seconds"] for workload in algorithm["workloads"]
+        )
         print(
-            "  * {}: {:.1f}s total, {:.1f}s build, "
-            "{:.1f}s benchmark, {} workload(s)".format(
+            "  * {}: {:.1f}s benchmark, {} workload(s)".format(
                 algorithm["algorithm"],
-                algorithm["elapsed_seconds"],
-                algorithm["build_seconds"],
-                algorithm["benchmark_seconds"],
+                benchmark_seconds,
                 len(algorithm["workloads"]),
             )
         )
@@ -122,17 +122,17 @@ def main():
     os.environ["CUDA_MODULE_LOADING"] = "EAGER"
     runner = BaseRunner()
     begin = time.perf_counter()
-    algorithm_timings = cccl.bench.search(runner)
+    algorithm_results = cccl.bench.search(runner)
     total_elapsed = time.perf_counter() - begin
 
-    if algorithm_timings is not None:
-        report = create_timing_report(algorithm_timings, runner.timings, total_elapsed)
+    if algorithm_results is not None:
+        report = create_timing_report(algorithm_results, runner.timings, total_elapsed)
         write_timing_report(report)
         print_timing_summary(report)
 
         failed = [
             timing["algorithm"]
-            for timing in algorithm_timings
+            for timing in algorithm_results
             if not timing["succeeded"]
         ]
         if failed:
