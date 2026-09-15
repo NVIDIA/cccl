@@ -59,6 +59,38 @@ template <size_t _Index, class _Tp>
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp& get(::cuda::complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return (_Index == 0) ? __z.__re_ : __z.__im_;
+}
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp&& get(::cuda::complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
+}
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr const _Tp& get(const ::cuda::complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return (_Index == 0) ? __z.__re_ : __z.__im_;
+}
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr const _Tp&& get(const ::cuda::complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
+}
+
+_CCCL_END_NAMESPACE_CUDA
+
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___COMPLEX_TUPLE_H
