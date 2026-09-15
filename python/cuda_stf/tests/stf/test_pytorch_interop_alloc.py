@@ -91,6 +91,29 @@ def test_placement_report_and_tier_parity(grid):
 
 
 @requires_cuda
+def test_placement_report_forwards_probes(grid):
+    """``probes`` reaches ``placement_evaluate``: the callback tier invokes
+    the mapper once per probe, so the call count scales with ``probes``."""
+    calls = []
+
+    def blocked_bytes(data_coords, data_dims, grid_dims):
+        calls.append(data_coords)
+        n = grid_dims[0]
+        chunk = -(-data_dims[0] // n)
+        return (min(data_coords[0] // chunk, n - 1),)
+
+    t = tp.localized_empty(SHAPE, torch.float16, grid, mapper=blocked_bytes)
+    calls.clear()
+    s1 = tp.placement_report(t, probes=1)
+    n1 = len(calls)
+    calls.clear()
+    s2 = tp.placement_report(t, probes=3)
+    n3 = len(calls)
+    assert n1 == s1.nblocks
+    assert n3 == 3 * s2.nblocks == 3 * n1
+
+
+@requires_cuda
 def test_parameter_and_spec_mapper_exclusive(grid):
     p = tp.localized_parameter((4, 64, 16384), torch.float16, grid)
     assert isinstance(p, torch.nn.Parameter) and not p.requires_grad

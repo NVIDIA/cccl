@@ -487,12 +487,13 @@ def live_metas():
     return list(_REGISTRY.values())
 
 
-def placement_report(tensor, probes: int = 4096):
+def placement_report(tensor, probes: int = 0):
     """Dry-run the block-owner decision for *tensor*'s allocation.
 
     Returns the ``placement_evaluate`` stats (bytes per grid index and a
     sampling-fidelity ``accuracy``; ~1.0 means page granularity matches
-    the partition exactly).
+    the partition exactly). ``probes`` is the number of samples per block
+    forwarded to ``placement_evaluate``; 0 selects its default.
     """
     from .. import placement_evaluate  # noqa: PLC0415
 
@@ -501,11 +502,15 @@ def placement_report(tensor, probes: int = 4096):
         raise ValueError("tensor is not a localized allocation")
     np_dtype = _np_dtype(meta.dtype)
     if meta.partition is not None:
-        return placement_evaluate(meta.grid, meta.partition, None, np_dtype.itemsize)
+        return placement_evaluate(
+            meta.grid, meta.partition, None, np_dtype.itemsize, probes
+        )
     numel = 1
     for s in meta.shape:
         numel *= s
-    return placement_evaluate(meta.grid, meta.mapper, (numel * np_dtype.itemsize,), 1)
+    return placement_evaluate(
+        meta.grid, meta.mapper, (numel * np_dtype.itemsize,), 1, probes
+    )
 
 
 # ---------------------------------------------------------------------------
