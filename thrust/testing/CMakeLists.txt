@@ -15,6 +15,7 @@ endmacro()
 # In the TBB backend, reduce_by_key does not currently work with transform_output_iterator
 # https://github.com/NVIDIA/thrust/issues/1811
 thrust_declare_test_restrictions(transform_output_iterator_reduce_by_key CPP.CPP CPP.OMP CPP.CUDA)
+thrust_declare_test_restrictions(nvrtc_unsupported_headers CPP.CUDA)
 
 function(thrust_is_catch2_test result_var test_src)
   # If the test_src contains the substring "catch2_test_", `result_var` will be set to TRUE.
