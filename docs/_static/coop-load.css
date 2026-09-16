@@ -198,6 +198,7 @@ html[data-theme="dark"] .coop-load {
 .coop-load-token[data-selected="true"] .coop-load-token-outline,
 .coop-load-token:focus .coop-load-token-outline { opacity: 1; }
 .coop-load-token:focus { outline: none; }
+.coop-explorer-token { transition: transform 650ms ease, opacity 350ms ease; }
 
 .coop-load .coop-load-status {
   font-size: 0.85rem;
@@ -235,6 +236,6 @@ html[data-theme="dark"] .coop-load {
 }
 
 @media print {
-  [data-coop-load] { display: none; }
+  [data-coop-load], [data-coop-explorer] { display: none; }
   .coop-visualization-fallback { display: block; }
 }
