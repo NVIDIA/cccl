@@ -25,6 +25,20 @@ endmacro()
 macro(cccl_get_catch2)
   include("${_cccl_cpm_file}")
   CPMAddPackage("gh:catchorg/Catch2@3.12.0")
+  if (CCCL_USE_LIBCXX)
+    # Catch2WithMain is a separate archive and does not inherit Catch2's PRIVATE
+    # flags. Both must match the tests that link them.
+    foreach (catch2_target IN ITEMS Catch2 Catch2WithMain)
+      target_compile_definitions(
+        ${catch2_target}
+        PRIVATE _ALLOW_UNSUPPORTED_LIBCPP=1
+      )
+      target_compile_options(
+        ${catch2_target}
+        PRIVATE -Xclang -stdlib=libc++ -stdlib++-isystem /usr/include/c++/v1
+      )
+    endforeach()
+  endif()
 endmacro()
 
 macro(cccl_get_cccl)
