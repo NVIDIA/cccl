@@ -37,6 +37,9 @@ multiple of 32 threads. All illustrated loads read a full tile.
 Reading the stages
 ------------------
 
+See :ref:`blocked versus striped <coop-glossary-layouts>` for a compact
+ownership table and the index formulas used here.
+
 The memory row numbers values by their position in the tile. The next row
 shows the threads that read them. For algorithms with an exchange, shared
 scratch connects those readers to the final owners. Select a value to
