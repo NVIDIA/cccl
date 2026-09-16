@@ -79,11 +79,7 @@ _CCCL_HOST_API void barrier(const _Envs& envs, const _PolicyEnv& policy_env = {}
 {
   require_sync_allowed(policy_env, "sharded::barrier");
   const ::std::size_t n = reserved::__env_count(envs);
-  places::check_not_capturing(nullptr, "sharded::barrier");
-  for (const auto i : each(n))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[i]).get(), "sharded::barrier");
-  }
+  reserved::__check_envs_not_capturing(envs, n, "sharded::barrier");
   for (const auto i : each(n))
   {
     cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[i]).get()));
@@ -173,8 +169,7 @@ _CCCL_HOST_API void lane_sync(const _Envs& envs, ::std::size_t i, const _PolicyE
     _CCCL_THROW(::std::invalid_argument, "sharded::lane_sync: lane out of range");
   }
   const cudaStream_t s = ::cuda::get_stream(envs[i]).get();
-  places::check_not_capturing(nullptr, "sharded::lane_sync");
-  places::check_not_capturing(s, "sharded::lane_sync");
+  reserved::__check_stream_not_capturing(s, "sharded::lane_sync");
   cuda_safe_call(cudaStreamSynchronize(s));
 }
 } // namespace cuda::experimental::sharded

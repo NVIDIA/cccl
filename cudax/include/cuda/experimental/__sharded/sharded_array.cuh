@@ -47,6 +47,7 @@
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/fork_join.cuh>
 #include <cuda/experimental/__sharded/shard.cuh>
+#include <cuda/experimental/__sharded/stream_scope.cuh>
 
 #include <algorithm>
 #include <functional>
@@ -175,14 +176,9 @@ public:
    */
   static sharded_array allocate(const ::std::vector<shard_spec>& specs)
   {
-    places::check_not_capturing(nullptr, "sharded_array::allocate");
-    for (const auto& spec : specs)
-    {
-      if (cudaStream_t stream = ::std::get<3>(spec))
-      {
-        places::check_not_capturing(stream, "sharded_array::allocate");
-      }
-    }
+    reserved::__check_not_capturing_all(specs.size(), "sharded_array::allocate", [&](size_t i) {
+      return ::std::get<3>(specs[i]);
+    });
 
     sharded_array arr;
     arr.ownership_ = ownership::owning_shards;
@@ -424,14 +420,9 @@ public:
    */
   static sharded_array allocate_contiguous(const ::std::vector<shard_spec>& specs)
   {
-    places::check_not_capturing(nullptr, "sharded_array::allocate_contiguous");
-    for (const auto& spec : specs)
-    {
-      if (cudaStream_t stream = ::std::get<3>(spec))
-      {
-        places::check_not_capturing(stream, "sharded_array::allocate_contiguous");
-      }
-    }
+    reserved::__check_not_capturing_all(specs.size(), "sharded_array::allocate_contiguous", [&](size_t i) {
+      return ::std::get<3>(specs[i]);
+    });
 
     sharded_array arr;
     arr.ownership_ = ownership::owning_backing; // released via contiguous_backing_
@@ -729,10 +720,9 @@ public:
   void sync(size_t shard_idx) const
   {
     const auto& s = shard(shard_idx);
-    places::check_not_capturing(nullptr, "sharded_array::sync");
+    reserved::__check_stream_not_capturing(s.stream, "sharded_array::sync");
     if (s.stream)
     {
-      places::check_not_capturing(s.stream, "sharded_array::sync");
       exec_place_scope scope(s.exec);
       cuda_safe_call(cudaStreamSynchronize(s.stream));
     }
@@ -803,28 +793,12 @@ public:
       }
       if (!event)
       {
-        int device                             = -1;
-        cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
-        if (stream)
-        {
-          cuda_safe_call(cudaStreamIsCapturing(stream, &capture_status));
-        }
-        if (stream && capture_status == cudaStreamCaptureStatusNone)
-        {
-          // stream_ref::device() is version-portable (cudaStreamGetDevice
-          // itself requires CUDA 12.8+); green-context streams report their
-          // underlying device, which is exactly the event-pool key we want.
-          device = ::cuda::stream_ref{stream}.device().get();
-        }
-        else
-        {
-          // Under capture, querying a stream's device is not permitted on
-          // every driver (CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED); the event
-          // recorded on a capturing stream only becomes a graph dependency
-          // node, so the current device is the right home for it.
-          cuda_safe_call(cudaGetDevice(&device));
-        }
-        event = fork_join_events_.fork_event(device);
+        // The fork event must live on the caller stream's device; the query
+        // is capture-safe on CTK >= 12.8 (see get_device_from_stream), and
+        // green-context streams report their underlying device, which is
+        // exactly the event-pool key we want. Same path as sharded_csr.
+        const int device = places::get_device_from_stream(stream);
+        event            = fork_join_events_.fork_event(device);
         cuda_safe_call(cudaEventRecord(event, stream));
       }
       cuda_safe_call(cudaStreamWaitEvent(s.stream, event, 0));
@@ -1260,14 +1234,9 @@ private:
   /// each shard's reference stream. Throws without touching the capture.
   void check_not_capturing_any(const char* what) const
   {
-    places::check_not_capturing(nullptr, what);
-    for (const auto& s : shards_)
-    {
-      if (s.stream)
-      {
-        places::check_not_capturing(s.stream, what);
-      }
-    }
+    reserved::__check_not_capturing_all(shards_.size(), what, [&](size_t i) {
+      return shards_[i].stream;
+    });
   }
 
   static ::std::vector<size_t> split_evenly(size_t total_size, size_t parts)
@@ -1339,14 +1308,9 @@ namespace reserved
 template <typename _Tp>
 void check_not_capturing(const sharded_array<_Tp>& data, const char* what)
 {
-  places::check_not_capturing(nullptr, what);
-  for (const auto& s : data)
-  {
-    if (s.stream)
-    {
-      places::check_not_capturing(s.stream, what);
-    }
-  }
+  __check_not_capturing_all(data.num_shards(), what, [&](size_t i) {
+    return data.shard(i).stream;
+  });
 }
 } // namespace reserved
 

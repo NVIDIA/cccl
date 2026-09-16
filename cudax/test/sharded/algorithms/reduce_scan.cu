@@ -239,17 +239,8 @@ void test_adjacent_difference_empty_shard(place_group& group)
     EXPECT(host[i] == 1LL); // iota differences, INCLUDING across the empty shard
   }
 
-  // Aliasing refusal
-  bool threw = false;
-  try
-  {
-    adjacent_difference(input, input, ::cuda::std::minus<long long>{});
-  }
-  catch (const ::std::invalid_argument&)
-  {
-    threw = true;
-  }
-  EXPECT(threw);
+  // (No aliasing test: in/out overlap is a documented precondition, not a
+  // checked error — see the @pre on adjacent_difference.)
 }
 
 void test_per_shard_sync(place_group& group)

@@ -135,8 +135,9 @@ environment selects the contract):
   stream-bearing call form records under graph capture;
 - ``count`` / ``count_if``: per-shard CUB transform-reduce plus a host sum;
 - ``histogram_even``: per-shard CUB ``DeviceHistogram`` plus a per-bin sum;
-- ``copy_if`` / ``filter`` / ``remove_if`` / ``unique``: in-place per-shard
-  ``DeviceSelect`` over any ``owning_sharded`` structure, sizes committed
+- ``select_if`` / ``remove_if`` / ``unique``: in-place per-shard
+  ``DeviceSelect`` over any ``owning_sharded`` structure (``select_if``
+  keeps the elements satisfying the predicate, ``remove_if`` drops them), sizes committed
   through one atomic ``commit_sizes`` (mutation capability probed at entry
   by committing the current sizes — contiguous backing refuses there,
   before anything changes).
@@ -212,10 +213,10 @@ a hand-rolled model over raw buffers and caller streams, and a
 Size-mutating algorithms and the contiguous backing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``copy_if`` / ``filter`` / ``remove_if`` and ``unique`` shrink shard sizes in
-place (capacities are unchanged; ``reset_sizes_to_capacity()`` reuses the
-buffers). ``copy_if`` also has an out-of-place form —
-``copy_if(src, dst, pred)`` — selecting from a read-only view into an owning
+``select_if`` / ``remove_if`` and ``unique`` shrink shard sizes in place
+(capacities are unchanged; ``reset_sizes_to_capacity()`` reuses the buffers).
+``copy_if`` is the out-of-place form — ``copy_if(src, dst, pred)``, after
+``thrust::copy_if`` — selecting from a read-only view into an owning
 destination whose per-shard sizes become the data-dependent selected counts
 (the frontier shape: derive a new ragged structure without destroying the
 source; per shard the destination's capacity must cover the source's size). On a contiguous array this is unrepresentable: shrinking a shard
@@ -382,7 +383,7 @@ work. The refusing set:
   host and refuse at ENTRY, before any work is enqueued: ``reduce`` /
   ``sum`` / ``min`` / ``max``, the scans, ``count`` / ``count_if``,
   ``histogram_even``, ``adjacent_difference``,
-  ``copy_if`` / ``filter`` / ``remove_if``, ``unique``,
+  ``select_if`` / ``remove_if`` / ``copy_if``, ``unique``,
   ``adjacent_difference``.
 
 The guards also refuse when a global-mode capture is active anywhere in the

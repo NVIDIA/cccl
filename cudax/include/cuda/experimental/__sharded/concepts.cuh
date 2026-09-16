@@ -126,6 +126,19 @@ template <class _S>
 {
   return static_cast<::std::size_t>(__s.num_shards());
 }
+
+//! @brief Entry guard shared by every algorithm: a `sharded_env_range` must
+//! carry exactly one environment per shard. Extra environments are refused
+//! too, since they almost always mean a mismatched view/envs pairing.
+//! @throws std::invalid_argument prefixed with @p __what.
+template <class _Envs>
+void __check_env_count(const _Envs& __envs, ::std::size_t __num_shards, const char* __what)
+{
+  if (__env_count(__envs) != __num_shards)
+  {
+    _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": environment count does not match shard count");
+  }
+}
 } // namespace reserved
 
 template <class _Tp>
@@ -291,8 +304,8 @@ _CCCL_CONCEPT __has_capacity_field =
 //! additionally expose `capacity` (allocated element count, >= size) and
 //! which supports the atomic size-mutation verb `commit_sizes`.
 //!
-//! This is the home of the size-mutating algorithm family (`copy_if`,
-//! `unique`, sort): shrinking shards' logical sizes and re-tiling the global
+//! This is the home of the size-mutating algorithm family (`select_if` /
+//! `remove_if`, `unique`, sort): shrinking shards' logical sizes and re-tiling the global
 //! offsets are container-metadata operations that a non-owning view must not
 //! (and cannot) express. `commit_sizes(new_sizes)` applies one size per
 //! shard (each `<= capacity`) and restores the view invariants in a single

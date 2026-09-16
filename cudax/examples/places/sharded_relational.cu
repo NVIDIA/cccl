@@ -29,7 +29,8 @@
  *   GLOBAL row id — the same trick `sharded_graph.cu` uses for vertex
  *   vectors. (Physical ownership snaps to the 2 MiB granule at the cut.)
  * - RAGGED RESULTS (survivor ids, group boundaries, anti-join output) are
- *   plain `allocate`: size-mutating verbs (`copy_if`) shrink each shard and
+ *   plain `allocate`: size-mutating verbs (`select_if`, `copy_if` into a
+ *   fresh destination) shrink each shard and
  *   COMMIT the data-dependent sizes into the container; the contiguous grade
  *   refuses that by design (a shrunken shard would leave a gap).
  *

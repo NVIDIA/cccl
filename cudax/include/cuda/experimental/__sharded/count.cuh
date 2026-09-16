@@ -98,10 +98,7 @@ count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env
 {
   using elem_t                   = view_element_t<_S>;
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) < num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, "sharded::count_if: fewer environments than shards");
-  }
+  reserved::__check_env_count(envs, num_shards, "sharded::count_if");
   if (num_shards == 0)
   {
     return 0;
@@ -109,11 +106,7 @@ count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env
 
   // Refusals first, before any CUDA call: this form synchronizes.
   require_sync_allowed(call_env, "sharded::count_if (synchronous form)");
-  places::check_not_capturing(nullptr, "sharded::count_if");
-  for (const auto g : each(num_shards))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::count_if");
-  }
+  reserved::__check_envs_not_capturing(envs, num_shards, "sharded::count_if");
 
   constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
                              || ::cuda::mr::__has_member_get_resource<_CallEnv>;

@@ -11,8 +11,9 @@
 /**
  * @file
  *
- * @brief Correctness of the size-mutating sharded algorithms `copy_if` /
- *        `remove_if` / `filter` and `unique` against host references, over
+ * @brief Correctness of the size-mutating sharded algorithms `select_if` /
+ *        `remove_if`, the out-of-place `copy_if`, and `unique` against host
+ *        references, over
  *        multiple places: per-shard compaction, shard-size and offset
  *        bookkeeping (including shards whose result is empty), the
  *        cross-shard boundary trim of `unique`, and the contract that
@@ -52,13 +53,13 @@ struct less_than
   }
 };
 
-void test_copy_if(place_group& group)
+void test_select_if(place_group& group)
 {
   const size_t n = 500009;
   auto data      = sharded_array<long long>::allocate(group, n);
   iota(data, 0LL); // 0 .. n-1
 
-  const size_t kept = copy_if(data, is_even{});
+  const size_t kept = select_if(data, is_even{});
   EXPECT(kept == (n + 1) / 2);
   EXPECT(data.size() == kept);
   EXPECT(data.validate());
@@ -79,7 +80,7 @@ void test_copy_if(place_group& group)
 
   // Empty array
   sharded_array<long long> empty;
-  EXPECT(copy_if(empty, is_even{}) == 0UL);
+  EXPECT(select_if(empty, is_even{}) == 0UL);
 }
 
 void test_copy_if_empty_result_shards(place_group& group)
@@ -91,7 +92,7 @@ void test_copy_if_empty_result_shards(place_group& group)
   // Keep only values inside the first half of shard 0: every other shard
   // compacts to an EMPTY result
   const long long bound = static_cast<long long>(data.shard(0).size / 2);
-  const size_t kept     = copy_if(data, less_than{bound});
+  const size_t kept     = select_if(data, less_than{bound});
   EXPECT(kept == static_cast<size_t>(bound));
   EXPECT(data.size() == kept);
   EXPECT(data.validate());
@@ -110,7 +111,7 @@ void test_copy_if_empty_result_shards(place_group& group)
   // Keep nothing: every shard compacts to empty
   data.reset_sizes_to_capacity();
   iota(data, 0LL);
-  EXPECT(copy_if(data, less_than{0}) == 0UL);
+  EXPECT(select_if(data, less_than{0}) == 0UL);
   EXPECT(data.size() == 0UL);
   EXPECT(data.validate());
 }
@@ -121,7 +122,7 @@ void test_remove_if_and_filter(place_group& group)
   auto data      = sharded_array<long long>::allocate(group, n);
   iota(data, 0LL);
 
-  // remove_if is the inverse of copy_if: drop the evens, keep the odds
+  // remove_if is the inverse of select_if: drop the evens, keep the odds
   const size_t kept = remove_if(data, is_even{});
   EXPECT(kept == n / 2);
   ::std::vector<long long> host(kept);
@@ -131,10 +132,10 @@ void test_remove_if_and_filter(place_group& group)
     EXPECT(host[i] == 2 * static_cast<long long>(i) + 1);
   }
 
-  // filter is an alias for copy_if
+  // select_if with the same predicate keeps exactly the complement
   auto other = sharded_array<long long>::allocate(group, n);
   iota(other, 0LL);
-  EXPECT(filter(other, is_even{}) == (n + 1) / 2);
+  EXPECT(select_if(other, is_even{}) == (n + 1) / 2);
 }
 
 void test_unique_cross_shard_boundary(place_group& group)
@@ -297,7 +298,7 @@ void test_size_mutators_refuse_contiguous(place_group& group)
   bool threw = false;
   try
   {
-    (void) copy_if(data, is_even{});
+    (void) select_if(data, is_even{});
   }
   catch (const ::std::invalid_argument&)
   {
@@ -341,7 +342,7 @@ int main()
 
   auto group = place_group{make_locality_domain_grid()};
 
-  test_copy_if(group);
+  test_select_if(group);
   test_copy_if_empty_result_shards(group);
   test_copy_if_out_of_place(group);
   test_remove_if_and_filter(group);

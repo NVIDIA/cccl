@@ -88,10 +88,7 @@ _CCCL_REQUIRES(
   using elem_t                   = view_element_t<_S>;
   using count_type               = ::cuda::std::int64_t;
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) < num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, "sharded::unique: fewer environments than shards");
-  }
+  reserved::__check_env_count(envs, num_shards, "sharded::unique");
   if (num_shards == 0)
   {
     return 0;
@@ -99,11 +96,7 @@ _CCCL_REQUIRES(
 
   // Refusals first, before any CUDA call: size write-back synchronizes.
   require_sync_allowed(call_env, "sharded::unique (synchronous form)");
-  places::check_not_capturing(nullptr, "sharded::unique");
-  for (const auto g : each(num_shards))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::unique");
-  }
+  reserved::__check_envs_not_capturing(envs, num_shards, "sharded::unique");
 
   // Entry probe: committing the current sizes throws exactly when this model
   // cannot mutate sizes, before any element moves.

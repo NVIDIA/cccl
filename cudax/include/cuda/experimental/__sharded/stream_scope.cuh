@@ -114,6 +114,46 @@ private:
   bool __switched_ = false;
 };
 
+namespace reserved
+{
+//! @brief Capture entry guard for synchronous / host-side operations: refuse
+//! when a global-mode capture is open anywhere in the process (legacy-stream
+//! probe) or when any of the @p __count streams named by @p __stream_at is
+//! itself being captured (null streams are skipped). Runs before anything is
+//! enqueued, so a refusal leaves the caller's capture valid. Each probe is a
+//! ~40 ns host-side query.
+template <class _StreamAt>
+void __check_not_capturing_all(::std::size_t __count, const char* __what, _StreamAt __stream_at)
+{
+  places::check_not_capturing(nullptr, __what);
+  for (::std::size_t __i = 0; __i < __count; ++__i)
+  {
+    if (const cudaStream_t __s = __stream_at(__i))
+    {
+      places::check_not_capturing(__s, __what);
+    }
+  }
+}
+
+//! @brief `__check_not_capturing_all` over the first @p __num_shards streams
+//! of a `sharded_env_range`.
+template <class _Envs>
+void __check_envs_not_capturing(const _Envs& __envs, ::std::size_t __num_shards, const char* __what)
+{
+  __check_not_capturing_all(__num_shards, __what, [&](::std::size_t __g) {
+    return ::cuda::get_stream(__envs[__g]).get();
+  });
+}
+
+//! @brief `__check_not_capturing_all` over a single (possibly null) stream.
+inline void __check_stream_not_capturing(cudaStream_t __stream, const char* __what)
+{
+  __check_not_capturing_all(1, __what, [&](::std::size_t) {
+    return __stream;
+  });
+}
+} // namespace reserved
+
 namespace __detail
 {
 //! @brief Make @p __consumer wait for all work currently enqueued on
@@ -166,10 +206,7 @@ _CCCL_HOST_API void
 __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _PerShard __body)
 {
   const ::std::size_t __num_shards = reserved::__shard_count(__data);
-  if (reserved::__env_count(__envs) < __num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": fewer environments than shards");
-  }
+  reserved::__check_env_count(__envs, __num_shards, __what);
 
   constexpr bool __is_async         = async_call_env<_CallEnv>;
   [[maybe_unused]] bool __bracketed = false;
@@ -180,11 +217,7 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
     // end, so both refusal conditions must be decided before any work is
     // enqueued (the entry-guard discipline, applied family-wide).
     require_sync_allowed(__call_env, __what);
-    places::check_not_capturing(nullptr, __what);
-    for (const auto __g : each(__num_shards))
-    {
-      places::check_not_capturing(::cuda::get_stream(__envs[__g]).get(), __what);
-    }
+    reserved::__check_envs_not_capturing(__envs, __num_shards, __what);
   }
   else
   {

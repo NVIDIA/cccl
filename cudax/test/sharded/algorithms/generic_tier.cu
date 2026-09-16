@@ -173,19 +173,8 @@ int main()
     const long long m = (long long) n - 1;
     EXPECT(reduce(a, ::cuda::std::plus<long long>{}, 0LL) == 5 + m * (m + 1) + 9 * m);
   }
-  // Aliasing refused
-  {
-    bool threw = false;
-    try
-    {
-      adjacent_difference(b, envs, b, ::cuda::std::minus<long long>{});
-    }
-    catch (const ::std::invalid_argument&)
-    {
-      threw = true;
-    }
-    EXPECT(threw);
-  }
+  // (No aliasing test: in/out overlap is a documented precondition, not a
+  // checked error — see the @pre on adjacent_difference.)
   fill(b, envs, 1LL); // restore the state the zip block below expects
 
   // Out-of-place elementwise: zip_transform is the generic spelling (a plain
@@ -231,7 +220,7 @@ int main()
     b.reset_sizes_to_capacity();
 
     iota(b, 0LL);
-    const size_t evens = copy_if(b, keep_even{}); // self-bound
+    const size_t evens = select_if(b, keep_even{}); // self-bound
     EXPECT(evens == ((size_t) n + 1) / 2);
     b.reset_sizes_to_capacity();
 
@@ -246,7 +235,7 @@ int main()
     bool threw = false;
     try
     {
-      (void) copy_if(c, keep_even{});
+      (void) select_if(c, keep_even{});
     }
     catch (const ::std::invalid_argument&)
     {

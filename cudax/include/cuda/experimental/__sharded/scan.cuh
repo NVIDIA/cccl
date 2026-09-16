@@ -94,10 +94,7 @@ _CCCL_HOST_API void __scan_generic(
   const char* what)
 {
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) < num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, ::std::string(what) + ": fewer environments than shards");
-  }
+  reserved::__check_env_count(envs, num_shards, what);
   if (num_shards == 0)
   {
     return;
@@ -105,11 +102,7 @@ _CCCL_HOST_API void __scan_generic(
 
   // Refusals first, before any CUDA call: the host prefix synchronizes.
   require_sync_allowed(call_env, what);
-  places::check_not_capturing(nullptr, what);
-  for (const auto g : each(num_shards))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[g]).get(), what);
-  }
+  reserved::__check_envs_not_capturing(envs, num_shards, what);
 
   // Per-shard totals staging (host-accessible; call-env resource override,
   // pinned arena default). Prefilled with the identity so empty shards
