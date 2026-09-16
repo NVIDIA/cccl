@@ -402,19 +402,6 @@ CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
   cc = ::cuda::compute_capability{ptx_version / 10};
   return cudaSuccess;
 }
-
-//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
-template <class T = void>
-_CCCL_HOST_API cudaError_t ptx_compute_cap(::cuda::compute_capability& cc, int device)
-{
-  int ptx_version = 0;
-  if (const auto error = PtxVersion<T>(ptx_version, device))
-  {
-    return error;
-  }
-  cc = ::cuda::compute_capability{ptx_version / 10};
-  return cudaSuccess;
-}
 } // namespace detail
 
 /**

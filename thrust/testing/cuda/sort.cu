@@ -173,22 +173,23 @@ struct TestRadixSortDispatch
 
   void operator()() const {}
 };
-using test_types_radix_sort =
-  unittest::concat<IntegralTypes,
-                   FloatingPointTypes
-#if _CCCL_HAS_INT128()
-                   ,
-                   unittest::type_list<__int128_t, __uint128_t>
-#endif // _CCCL_HAS_INT128()
+using test_types_radix_sort = cuda::std::__type_concat<
+  IntegralTypes,
+  FloatingPointTypes
+// nvcc's tile codegen does not support 128-bit integer types
+#if _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
+  ,
+  unittest::type_list<__int128_t, __uint128_t>
+#endif // _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
 #if _CCCL_HAS_NVFP16()
-                   ,
-                   unittest::type_list<__half>
+  ,
+  unittest::type_list<__half>
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-                   ,
-                   unittest::type_list<__nv_bfloat16>
+  ,
+  unittest::type_list<__nv_bfloat16>
 #endif // _CCCL_HAS_NVBF16()
-                   >;
+  >;
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestRadixSortDispatch, test_types_radix_sort);
 
 /**
@@ -312,22 +313,23 @@ struct TestSortAscendingKey
   }
 };
 
-using test_types_ascending_key =
-  unittest::concat<unittest::type_list<>
-#if _CCCL_HAS_INT128()
-                   ,
-                   unittest::type_list<__int128_t, __uint128_t>
-#endif // _CCCL_HAS_INT128()
+using test_types_ascending_key = cuda::std::__type_concat<
+  unittest::type_list<>
+// nvcc's tile codegen does not support 128-bit integer types
+#if _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
+  ,
+  unittest::type_list<__int128_t, __uint128_t>
+#endif // _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
 // CTK 12.2 offers __host__ __device__ operators for __half and __nv_bfloat16, so we can use std::sort
 #if _CCCL_CTK_AT_LEAST(12, 2)
 #  if _CCCL_HAS_NVFP16() || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-                   ,
-                   unittest::type_list<__half>
+  ,
+  unittest::type_list<__half>
 #  endif
 #  if _CCCL_HAS_NVBF16() || !defined(__CUDA_NO_BFLOAT16_OPERATORS__) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__)
-                   ,
-                   unittest::type_list<__nv_bfloat16>
+  ,
+  unittest::type_list<__nv_bfloat16>
 #  endif
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
-                   >;
+  >;
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestSortAscendingKey, test_types_ascending_key);
