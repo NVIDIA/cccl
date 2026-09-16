@@ -113,8 +113,10 @@ def _find_source_checkout(start: Path) -> tuple[Path, tuple[Path, ...]] | None:
     if current.is_file():
         current = current.parent
     for candidate in (current, *current.parents):
+        if not _belongs_to_source_package(current, candidate):
+            continue
         paths = _source_checkout_paths(candidate)
-        if paths and _belongs_to_source_package(current, candidate):
+        if paths:
             return candidate, paths
     return None
 

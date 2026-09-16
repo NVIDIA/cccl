@@ -186,7 +186,7 @@ def test_planner_captures_exact_launch_facts_and_provenance():
         provenance=tuple(
             LaunchFactOrigin(
                 fact=fact,
-                source="independent_frontend",
+                source="numba_cuda_mlir_launch_config",
                 verified=True,
             )
             for fact in (

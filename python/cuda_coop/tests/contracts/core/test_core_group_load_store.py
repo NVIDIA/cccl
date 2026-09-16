@@ -348,10 +348,15 @@ def test_shared_cub_warp_width_rules():
         _cub_warp_width(this_block())
 
 
-def test_grid_family_requires_verified_cooperative_launch():
+def test_grid_family_requires_verified_cooperative_launch(monkeypatch):
     from dataclasses import dataclass
 
     from cuda.coop._core.group._dispatch import _register_group_operation_family
+
+    dispatch = import_module("cuda.coop._core.group._dispatch")
+    monkeypatch.setattr(
+        dispatch, "_GROUP_OPERATION_FAMILIES", dispatch._GROUP_OPERATION_FAMILIES.copy()
+    )
 
     @dataclass(frozen=True)
     class _GridOperation:
