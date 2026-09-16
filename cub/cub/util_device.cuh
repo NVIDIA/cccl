@@ -456,35 +456,37 @@ namespace detail
 template <class T = void>
 CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 {
-  [[maybe_unused]] const auto& target_ccs = ::cuda::__target_compute_capabilities();
-
 #  if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__)
-  // PtxVersion() (via cudaFuncGetAttributes()) can report a virtual architecture clamped below the actual
-  // architecture by nvlink when relocatable device code is linked against any object compiled for a lower
-  // architecture (nvlink picks the lowest arch among all linked objects). Critically, the clamped value may not be
-  // contained in __CUDA_ARCH_LIST__ or can coincidentally equal a *different*, lower entry in __CUDA_ARCH_LIST__.
-  int sm_version = 0;
-  if (const auto error = SmVersion(sm_version))
   {
-    return error;
-  }
-  const ::cuda::compute_capability sm_cc{sm_version / 10};
+    const auto& target_ccs = ::cuda::__target_compute_capabilities();
 
-  ::cuda::compute_capability best{};
-  for (const auto& candidate : target_ccs)
-  {
-    if (candidate <= sm_cc && best < candidate)
+    // PtxVersion() (via cudaFuncGetAttributes()) can report a virtual architecture clamped below the actual
+    // architecture by nvlink when relocatable device code is linked against any object compiled for a lower
+    // architecture (nvlink picks the lowest arch among all linked objects). Critically, the clamped value may not be
+    // contained in __CUDA_ARCH_LIST__ or can coincidentally equal a *different*, lower entry in __CUDA_ARCH_LIST__.
+    int sm_version = 0;
+    if (const auto error = SmVersion(sm_version))
     {
-      best = candidate;
+      return error;
     }
+    const ::cuda::compute_capability sm_cc{sm_version / 10};
+
+    ::cuda::compute_capability best{};
+    for (const auto& candidate : target_ccs)
+    {
+      if (candidate <= sm_cc && best < candidate)
+      {
+        best = candidate;
+      }
+    }
+    _CCCL_ASSERT(best != ::cuda::compute_capability{},
+                 "Failed to find a target compute capability for the current device");
+    if (best == ::cuda::compute_capability{})
+    {
+      return cudaErrorInvalidDeviceFunction;
+    }
+    cc = best;
   }
-  _CCCL_ASSERT(best != ::cuda::compute_capability{},
-               "Failed to find a target compute capability for the current device");
-  if (best == ::cuda::compute_capability{})
-  {
-    return cudaErrorInvalidDeviceFunction;
-  }
-  cc = best;
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__) ^^^ / vvv !(...) vvv
   int ptx_version = 0;
   if (const auto error = PtxVersion<T>(ptx_version))
@@ -492,10 +494,16 @@ CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
     return error;
   }
   cc = ::cuda::compute_capability{ptx_version / 10};
+
 #  endif // !(_CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__))
 
-  _CCCL_ASSERT(cuda::std::find(target_ccs.begin(), target_ccs.end(), cc) != target_ccs.end(),
-               "The compute capability must be one of __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST");
+#  if _CCCL_CUDA_COMPILATION()
+  {
+    [[maybe_unused]] const auto& target_ccs = ::cuda::__target_compute_capabilities();
+    _CCCL_ASSERT(cuda::std::find(target_ccs.begin(), target_ccs.end(), cc) != target_ccs.end(),
+                 "The compute capability must be one of __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST");
+  }
+#  endif // _CCCL_CUDA_COMPILATION()
 
   return cudaSuccess;
 }
