@@ -23,6 +23,7 @@
 
 #include <cuda/std/__atomic/functions.h>
 #include <cuda/std/__atomic/types/common.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
@@ -76,17 +77,18 @@ struct __atomic_storage
                      (return _Fn(__cuda_atomic_host_backend{}, __VA_ARGS__);))
 
 template <class _Scope>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Scope __cuda_atomic_widen_cluster_scope(_Scope __scope)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __cuda_atomic_widen_cluster_scope(_Scope __scope)
 {
-  return __scope;
-}
-
-// Thread block clusters are unavailable before SM90. Widen cluster-scoped
-// operations to device scope on those architectures.
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __thread_scope_device_tag
-__cuda_atomic_widen_cluster_scope(__thread_scope_cluster_tag)
-{
-  return {};
+  if constexpr (is_same_v<_Scope, __thread_scope_cluster_tag>)
+  {
+    // Thread block clusters are unavailable before SM90. Widen cluster-scoped
+    // operations to device scope on those architectures.
+    return __thread_scope_device_tag{};
+  }
+  else
+  {
+    return __scope;
+  }
 }
 
 #define _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(_Fn, _Scope, ...)                                                          \

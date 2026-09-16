@@ -26,25 +26,14 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // REMEMBER CHANGES TO THESE ARE ABI BREAKING
-// TODO: Space values out for potential new scopes
-#ifndef __ATOMIC_BLOCK
-#  define __ATOMIC_SYSTEM 0 // 0 indicates default
-#  define __ATOMIC_DEVICE 1
-#  define __ATOMIC_BLOCK  2
-#  define __ATOMIC_THREAD 10
-#endif //__ATOMIC_BLOCK
-
-#ifndef __ATOMIC_CLUSTER
-#  define __ATOMIC_CLUSTER 3
-#endif // __ATOMIC_CLUSTER
-
+// TODO: Space values out for potential new scopes at an ABI break.
 enum thread_scope
 {
-  thread_scope_system  = __ATOMIC_SYSTEM,
-  thread_scope_device  = __ATOMIC_DEVICE,
-  thread_scope_cluster = __ATOMIC_CLUSTER,
-  thread_scope_block   = __ATOMIC_BLOCK,
-  thread_scope_thread  = __ATOMIC_THREAD
+  thread_scope_system  = 0,
+  thread_scope_device  = 1,
+  thread_scope_cluster = 3,
+  thread_scope_block   = 2,
+  thread_scope_thread  = 10
 };
 
 struct __thread_scope_tag
