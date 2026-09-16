@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HOSTED()
+#if _CCCL_HOSTED() && __has_include(<nv_decode.h>)
 
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
@@ -33,10 +33,9 @@
 
 #  include <string>
 
-#  include <cuda/std/__cccl/prologue.h>
+#  include <nv_decode.h>
 
-// Forward declare the __cu_demangle symbol defined in <nv_decode.h>.
-extern "C" char* __cu_demangle(const char*, char*, size_t*, int*);
+#  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -44,20 +43,18 @@ namespace cuda::experimental
 
 //! @brief Demangles a CUDA C++ mangled name.
 //!
+//! @note Use of this function introduces a dependency on the cu++filt library which is part of the cuxxfilt package
+//!       from the CUDA Toolkit and must be linked to the program.
+//!
 //! @param __name The mangled name to demangle.
 //!
 //! @return A \c std::string containing the demangled name.
 //!
 //! @throws \c std::bad_alloc if memory allocation fails.
-//! @throws \c std::runtime_error if the passed \c __name is not a valid mangled symbol.
+//! @throws \c std::runtime_error if the passed \c __name is not a valid mangled symbol or an unknown error happens.
 template <class _Dummy = void>
-[[nodiscard]] _CCCL_HOST_API ::std::string demangle([[maybe_unused]] ::cuda::std::string_view __name)
+[[nodiscard]] _CCCL_HOST_API ::std::string demangle(::cuda::std::string_view __name)
 {
-#  if !__has_include(<nv_decode.h>)
-  static_assert(::cuda::std::__always_false_v<_Dummy>,
-                "cuda::demangle requires the `cuxxfilt` package from the CUDA Toolkit.");
-  return {};
-#  else // ^^^ no cuxxfilt ^^^ / vvv has cuxxfilt vvv
   // input must be zero-terminated, so we convert string_view to std::string
   ::std::string __name_in{__name.data(), __name.size()};
 
@@ -89,12 +86,11 @@ template <class _Dummy = void>
     ::cuda::std::free(__dname);
     _CCCL_RETHROW;
   }
-#  endif // ^^^ has cuxxfilt ^^^
 }
 } // namespace cuda::experimental
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HOSTED()
+#endif // _CCCL_HOSTED() && __has_include(<nv_decode.h>)
 
 #endif // _CUDAX___BINUTILS_DEMANGLE_CUH
