@@ -58,3 +58,19 @@ policy struct shifting every positional brace-init (`ScanLookaheadPolicy{6, 104 
 dispatch wrapper no longer forwarding its policy selector to an inner dispatch call. A claim of "no
 SASS changes" verified on one test type is not sufficient; demand a SASS diff or benchmark sweep over
 non-default/non-primitive value types and every affected architecture.
+
+## perf.shared-primitive-consumers (important, shared thread/warp/block-scope primitives in cub/thrust/libcudacxx)
+
+<!-- provenance:
+  #2756→#2944 ThreadReduce SIMD/ILP rewrite regressed Select, ReduceByKey, and large-value-type Reduce;
+  #4377→#6246 (backport #6265) ThreadReduce flattening refactor passed the raw Input type instead of the value type to the enable_*_v traits, permanently disabling all SIMD/ternary fast paths;
+  #5507→#5542 vectorized-load selection demoted from compile-time to a runtime bool in the per-tile hot loop;
+  #6099→#6452 (backport #6458) __bit_log2 swap in BlockRadixRankMatchEarlyCounts regressed radix sort up to 30%
+-->
+
+When a diff changes the implementation of a widely-reused low-level primitive (e.g. `ThreadReduce`,
+warp/block scan/reduce helpers) in a way that can affect the generated SASS (a new fast path, a
+refactor, a swapped helper function), flag it unless the PR shows a clean SASS diff or benchmarks
+across the primitive's consumers, not just its own microbenchmark. Cover non-standard binary
+operators, large value types, and every architecture the change affects: a change that helps one
+workload can silently regress a different algorithm layered on top of the primitive.
