@@ -14,41 +14,37 @@ from ._semantic import _normalize_numba_callable
 
 @dataclass(frozen=True, slots=True)
 class StatefulFunction:
-    """Describe a device callback with an explicit per-thread state cell.
+    """Pair a scan prefix callback with its state dtype.
 
-    Pass the descriptor as ``prefix_op`` to a qualified Block Scan and pass
-    its state as the third positional argument. See
-    :ref:`prefix callbacks <coop-prefix-callbacks>` for execution and
-    synchronization rules.
+    Pass this descriptor as ``prefix_op`` to
+    :func:`cuda.coop.numba_mlir.scan` or its block scan variants, with the
+    state as the third positional argument.
 
     Parameters
     ----------
     op : callable
-        Device callback with signature ``op(state, aggregate)``. It may update
-        ``state[0]`` and returns the prefix to apply to the tile. The callback
-        is compiled with the scanned value dtype as its return type. A
-        decorated Numba device function or a supported Python device
-        callable may be used.
+        Device callback ``op(state, aggregate)``. It may update ``state[0]``
+        and returns the tile prefix in the scanned value dtype. Accepts a
+        decorated Numba device function or supported Python device callable.
     dtype : dtype-like
         Numeric dtype of the one-item state payload. It must exactly match
         the supplied state array, but may differ from the scanned value dtype.
     name : str, optional
-        Optional nonempty descriptive label for diagnostics. It does not
-        determine the generated provider symbol or the callback's identity.
+        Nonempty diagnostic label, or ``None``. Does not affect the callback's
+        identity or generated symbol.
 
     Notes
     -----
-    This descriptor does not allocate state. Initialize a one-item
-    :func:`cuda.coop.ThreadData` or supported local array in every thread.
-    CUB may invoke the prefix callback in each lane of the first warp;
-    only lane zero's returned prefix is applied. Initialize all state cells
-    identically and read the authoritative running state from thread zero.
+    Allocate a one-item :func:`cuda.coop.ThreadData` or local array and
+    initialize every thread's state identically. CUB may call each lane of
+    the first warp but applies lane zero's prefix; read the final state from
+    block thread zero. See :ref:`coop-prefix-callbacks` for synchronization.
     Structured state and stateful binary scan operators are unsupported.
 
     Examples
     --------
-    The executable example in :func:`cuda.coop.numba_mlir.scan` carries a
-    running prefix across multiple tiles with this descriptor.
+    :func:`cuda.coop.numba_mlir.exclusive_sum` carries a running prefix across
+    tiles with this descriptor.
 
     See Also
     --------

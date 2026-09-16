@@ -17,6 +17,7 @@ assumes some familiarity with CUDA threads, blocks, and shared memory. The
 :doc:`Programming Guide <programming_guide>` covers writing kernels and
 the :doc:`overview <../coop>` covers installation and supported operations;
 the focus here is how the implementation works and where to change it.
+For a hands-on tour, follow the :ref:`cuda.coop.debugger_walkthrough`.
 
 *Draft scope: this describes the current Numba-CUDA-MLIR 0.5.x integration,
 including the Reduce and Scan work in the*
@@ -810,18 +811,20 @@ currently cannot be combined with ``initial_value`` or
 Activation and compilation reuse
 --------------------------------
 
-The import order in the first example is intentional. Importing
-``cuda.coop`` after ``numba_cuda_mlir`` activates the Numba backend hooks.
-An isolated portable import does not load optional compilers. If the
-portable module was imported first, an explicit qualified import activates
-the hooks:
+Importing ``cuda.coop`` after ``numba_cuda_mlir`` activates the Numba backend
+hooks. An isolated common API import does not load optional compilers.
+Register explicitly to make initialization independent of import order:
 
 .. code-block:: python
 
-   import cuda.coop.numba_mlir as numba_coop
+   from cuda import coop
 
-Use an alias: a bare dotted import would bind ``cuda`` to the top-level
-package and could replace the local name used for Numba's ``cuda.jit``.
+   coop.register("numba-cuda-mlir")
+
+This host-side call imports the selected backend and activates its hooks.
+It is safe to repeat. Importing ``cuda.coop.numba_mlir as numba_coop`` also
+activates the hooks and exposes the backend namespace. Installing an extra
+only supplies dependencies; it does not register hooks in a running process.
 
 ``_compiler/_activation.py`` registers the planners and rewrite.
 ``_compiler/_numba_mlir_compat.py`` isolates access to Numba-CUDA-MLIR's
@@ -863,6 +866,396 @@ explicit root. NVRTC, its builtins, nvJitLink, and CUDA headers must also
 resolve coherently. ``_headers/`` and ``_compiler/_nvrtc.py`` handle that
 selection. An invocable retains its temporary LTO-IR files for linking;
 those files are compilation inputs, not loaded kernel handles.
+
+.. _cuda.coop.debugger_walkthrough:
+
+Debugger Walkthrough
+--------------------
+
+Follow the tile copy through a Python debugger to see how the compiler
+recognizes a collective, chooses its CUB specialization, and connects the
+generated device code to the kernel. These breakpoints stop in the host
+Python code doing the compilation. GPU threads execute the compiled kernel;
+the Python debugger cannot stop inside that device execution.
+
+An example to debug
+^^^^^^^^^^^^^^^^^^
+
+Open ``docs/python/coop/debugger_walkthrough.py`` in your checkout, or
+:download:`download the example <debugger_walkthrough.py>`. It needs no
+command-line arguments:
+
+.. literalinclude:: debugger_walkthrough.py
+   :language: python
+   :start-at: # Import the kernel DSL
+
+All 128 threads copy two integers each. The second launch uses the same
+argument types and block shape so you can observe compilation reuse.
+Both launches check the result. Warnings about a small grid and host-array
+copies are expected for this small example.
+
+Configure VS Code
+^^^^^^^^^^^^^^^^^
+
+Use a checkout containing the Numba-CUDA-MLIR stack described above. Open
+that CCCL checkout as the VS Code folder, and use **Python: Select
+Interpreter** to choose an environment with the Numba backend installed
+as described in the :doc:`installation instructions <../coop>`.
+The Python and Python Debugger extensions must be installed in the
+environment where VS Code runs the program, including the remote side
+when using Remote SSH.
+
+Add this configuration to ``.vscode/launch.json`` in the checkout. If that
+file already exists, add the configuration to its ``configurations`` list:
+
+.. code-block:: json
+
+   {
+     "version": "0.2.0",
+     "configurations": [
+       {
+         "name": "cuda.coop: Debug active Python file",
+         "type": "debugpy",
+         "request": "launch",
+         "program": "${file}",
+         "console": "integratedTerminal",
+         "cwd": "${workspaceFolder}",
+         "justMyCode": false,
+         "env": {
+           "PYTHONPATH": "${workspaceFolder}/python/cuda_coop",
+           "CUDA_COOP_CCCL_ROOT": "${workspaceFolder}",
+           "CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION": "0",
+           "CUDA_COOP_ENABLE_CACHE": "0",
+           "CUDA_COOP_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-debug-sources"
+         }
+       }
+     ]
+   }
+
+``justMyCode: false`` lets you step into the compiler and library modules.
+``PYTHONPATH`` and ``CUDA_COOP_CCCL_ROOT`` select this checkout's Python
+sources and C++ headers. Automatic registration is enabled, and the
+provider disk cache is disabled so a fresh debug session reaches NVRTC.
+On a machine with several GPUs, add ``CUDA_VISIBLE_DEVICES`` to ``env``
+to select the device you want to use.
+
+With the example file active, set your **first breakpoint** on
+``from cuda import coop``, using the gutter or **F9**. Select
+``cuda.coop: Debug active Python file`` in **Run and Debug**, then press
+**F5**. Keep the example active when starting: ``${file}`` means the
+currently selected editor file.
+
+VS Code also has a **Python Debugger: Debug Python File** editor action.
+Use the named launch configuration for this walkthrough so the source
+paths and library-stepping setting above apply. See the
+`VS Code Python debugging documentation
+<https://code.visualstudio.com/docs/python/debugging>`_ for those controls.
+
+At a breakpoint, **F10** steps over a statement, **F11** steps into a call,
+**Shift+F11** steps out, and **F5** continues to the next breakpoint.
+Expressions in **Debug Console** use the selected **Call Stack** frame.
+The instructions below name functions and statements so you can find the
+breakpoints even as line numbers change. Put breakpoints on the executable
+statement, rather than the ``def`` line or its decorator.
+
+Initial import and registration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The first stop is just before ``cuda.coop`` imports. Numba-CUDA-MLIR has
+already loaded because of the preceding import. Under
+``python/cuda_coop/cuda/coop/``, open ``__init__.py`` and put a breakpoint
+on ``_auto_register_known_dsls()``. Continue to it and step into the call.
+
+In ``_core/_auto_registration.py``, follow the loop to
+``candidate.activate()``. Inspect ``candidate.runtime_module`` and its
+membership in ``sys.modules``: the runtime name is ``numba_cuda_mlir``.
+This is why the import order matters. The automatic path recognizes a
+runtime the application has already imported.
+
+Before continuing, set a breakpoint on ``_require_runtime()`` inside
+``_initialize_runtime_hooks_transaction()`` in
+``numba_mlir/_compiler/_activation.py``. At this stop, the call stack
+connects the root import to the qualified backend import and then to hook
+registration. Step over the imports of ``_rewrite`` and ``_group_planner``;
+their decorators register the compiler hooks.
+
+For a compact confirmation, stop on ``invalid = tuple(...)`` inside
+``_verify_registration_postconditions()`` in the same file. Inspect
+``registration_counts``. It should contain one registration each for
+``CoopGroupHierarchyPlanner``, ``CoopWholeFunctionPlanner``, and
+``CoopSinglePhaseRewrite``. Registration gives Numba ways to recognize and
+rewrite cooperative calls when it compiles a kernel.
+
+Disable these import breakpoints. Set a breakpoint on the first
+``copy_tile[1, 128](source, destination)`` in the example and continue.
+At this point, check ``coop.__file__`` in Debug Console. It should point
+inside the checkout you opened. The ``@cuda.jit`` decorator has made a
+dispatcher; this first launch will trigger compilation for its arguments.
+
+Fast-forward to the Numba hooks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Paths from here through the provider steps are relative to
+``python/cuda_coop/cuda/coop/numba_mlir/``.
+
+In ``_compiler/_group_planner.py``, find
+``CoopGroupHierarchyPlanner.run()`` and set a breakpoint on
+``launch_config = require_launch_config(self.state)``. Continue from the
+example's launch line. You have crossed from application code into a hook
+Numba calls while compiling it. Inspect the Call Stack to see that caller.
+
+Step over the assignment, then evaluate:
+
+.. code-block:: python
+
+   self.state.func_ir.func_id.func_qualname
+   launch_config
+   self.state.func_ir.dump()
+
+The function name is ``copy_tile``. The launch configuration contains
+``block: (128, 1, 1)`` and ``grid: (1, 1, 1)``. The IR dump shows Numba's
+intermediate representation of the Python function, including the
+``this_block``, ``ThreadData``, ``load``, and ``store`` calls. The dump
+prints to the debuggee's output; its return value is ``None``.
+
+The block dimensions came from ``[1, 128]`` at the host launch site. They
+give ``this_block()`` a concrete group shape for C++ specialization. You
+are inspecting compiler values and descriptors here; ``items`` has not
+become a particular GPU thread's two integers.
+
+An earlier ``CoopSinglePhaseRewrite.match()`` can run before this stop.
+It leaves group markers alone until group planning resolves them. Planner
+and rewrite hooks can also run for generated helper functions. The
+breakpoint above comes after the no-group-markers guard, which avoids
+many uninteresting stops. This configured launch obtains its launch facts
+directly; it does not require a failed first compilation to discover them.
+
+From a collective call to a plan
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Set the next breakpoint in ``_compiler/_group_load_store.py``, inside
+``_LoadStorePlanning._lower_load_store()``, on
+``planned_operation = self._plan_provider_operation(plan)``. Continue.
+The preceding call has produced a ``GroupLoweringPlan`` for Load.
+Inspect these expressions:
+
+.. code-block:: python
+
+   operation
+   plan.target
+   dict(plan.implementation.template_arguments)
+   plan.participation
+   plan.temp_storage
+   plan.synchronization
+
+Expect ``operation == "load"``, target ``CUB_BLOCK``, ``T`` equal to
+``int32``, ``BLOCK_DIM_X`` equal to 128, and ``ITEMS_PER_THREAD`` equal to
+2. ``ALGORITHM`` selects ``::cub::BLOCK_LOAD_DIRECT``. The participation
+contract requires the complete block. Direct Load needs no shared scratch,
+and its storage-reuse barrier is ``NONE``.
+
+In the same function, advance to ``statements.extend(...)`` near the end.
+Compare ``factory_kwargs`` with ``runtime_args``. The block shape, dtype,
+item count, and algorithm are compile-time choices in ``factory_kwargs``.
+``runtime_args`` holds IR variables for ``source`` and ``items``. Those
+become operands of the generated device call.
+
+Continue to the same stops for Store. Its template selects
+``BLOCK_STORE_DIRECT``, and its runtime operands are ``destination`` and
+``items``. Disable the Load/Store breakpoints after inspecting both calls.
+The public calls now have private provider calls carrying those choices.
+
+Generate and compile the C++ providers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Set a breakpoint on ``rewrite = CoopSinglePhaseRewrite(...)`` in
+``CoopWholeFunctionPlanner.run()`` in ``_compiler/_rewrite.py``. Continue
+and use ``self.state.func_ir.dump()`` again. Compare it with the earlier
+dump: the group planner has introduced private factories and constants
+for the resolved operations.
+
+Before continuing, set a breakpoint in ``_types.py``, inside
+``prepare_ltoir_bundle()``, on ``_, ltoir = nvrtc.compile(...)``.
+At that stop, inspect ``src`` and:
+
+.. code-block:: python
+
+   [algo.struct_name for algo in algorithms]
+
+This example produces both the BlockLoad and BlockStore specializations
+in one C++ source unit. Find ``BLOCK_LOAD_DIRECT``, ``BLOCK_STORE_DIRECT``,
+and the ``extern "C"`` ABI wrappers in ``src``. Their template arguments
+should agree with the plan you just inspected. To trace an individual
+provider's source generation on another run, stop in
+``Algorithm._source_code()`` in the same file.
+
+The Call Stack at the bundle stop also explains its timing:
+``CoopSinglePhaseRewrite.match()`` collects function-wide storage
+requirements and prepares the providers before ``apply()`` replaces the
+calls. Provider compilation can supply the size and alignment facts that
+storage planning needs.
+
+Set a breakpoint in ``_compiler/_nvrtc.py``, inside ``compile_impl()``,
+on ``err, prog = nvrtc.nvrtcCreateProgram(...)``. Continue and inspect
+``cpp``, ``cc``, ``rdc``, ``code``, and ``compiler_options``. ``cpp`` is the
+source you just saw; ``cc`` identifies your device's target architecture.
+``rdc`` is true and ``code`` is ``"lto"``. The options include C++17,
+the selected include directories, and ``-dlto``.
+
+Step over ``nvrtcCompileProgram`` and the subsequent error check. NVRTC
+has compiled the C++ provider code. The ``nvrtcGetLTOIR`` calls retrieve
+the bytes for linking it into the Python kernel. The launch configuration
+also saves the generated ``.cu`` source in ``build/coop-debug-sources``.
+Open that file for a more convenient view of the complete source.
+
+Materialize the payload and device calls
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Set a breakpoint in ``CoopSinglePhaseRewrite.apply()`` in
+``_compiler/_rewrite.py`` on
+``self._record_invocable_specialization(invocable)``. Continue to it.
+The preceding statement has materialized a callable provider for a match.
+Inspect:
+
+.. code-block:: python
+
+   match.op_name
+   match.factory_kwargs
+   match.runtime_args
+   invocable.files
+   invocable.storage_abi
+   invocable.temp_storage_bytes
+
+Load and Store each have an ``Invocable``. Their ``files`` refer to the
+shared provider LTO-IR file from the previous step. The direct algorithms
+have storage ABI ``NONE`` and zero temporary-storage bytes.
+
+After seeing both matches, disable that breakpoint and stop on
+``return new_block`` at the end of ``apply()``. Evaluate
+``new_block.dump()``. Find the local-array construction for ``items`` and
+the calls through globals holding the ``Invocable`` objects. The local
+array has extent 2 and dtype ``int32``. The group constructors have been
+removed from the executable calls; dead marker references may still
+appear as ``None`` pending later cleanup.
+
+This is the point where the compiler's representation has concrete
+per-thread storage and device calls in place of the public collective
+syntax. Later compilation decides whether that local array's values can
+live in registers.
+
+Hand the call and link inputs to Numba
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Before continuing from ``apply()``, put a breakpoint in
+``Algorithm.codegen_method()`` in ``_types.py`` on
+``extern_fn = ExternFunction(...)``. At this stop, inspect ``abi_name``,
+``abi_input_types``, ``arg_transforms``, and ``link_files``.
+
+``abi_name`` matches an ABI wrapper in the generated C++. Pointer
+arguments have a ``"ptr"`` transform; scalar arguments, when present,
+use ``"value"``. ``link_files`` supplies the compiled provider to
+Numba-CUDA-MLIR. Each specialization can expose several supported call
+signatures, so this breakpoint may fire more than once per collective.
+
+``ExternFunction`` gives the compiler a device symbol, a signature, and
+the files needed to resolve it. Its default Numba ABI includes the
+status return and return-value slot shown earlier in this guide. The
+Python ``Invocable.__call__`` body is a marker that rejects host calls;
+kernel compilation consumes its compiler type and overload instead.
+
+For an optional look across the dependency boundary, open the installed
+``numba_cuda_mlir/mlir_lowering.py`` from the selected interpreter. Find
+``lower_call_external_function()`` and stop on its call to
+``self._link_external_function(fn_value)``. Inspect ``fn_value.name``,
+``fn_value.sig``, ``fn_value.abi``, and ``fn_value.link``. Here the kernel
+compiler receives the external function and its provider link inputs.
+Step through the remainder to see it construct the MLIR call. This file
+belongs to Numba-CUDA-MLIR, so use its installed source path rather than
+looking for it under CCCL.
+
+Finish the launch and observe reuse
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Disable the compiler breakpoints and set a breakpoint on the second
+``copy_tile[1, 128](source, destination)`` in the example. Continue.
+The first launch has completed and its assertion has passed. Inspect
+``source[:8]`` and ``destination[:8]`` in the example's ``main`` frame:
+``source`` starts at 0, while ``destination`` contains the ``-1`` values
+written immediately before this second launch.
+
+Re-enable the group-planner and NVRTC breakpoints, then continue. This
+launch uses the existing kernel specialization, so it should finish
+without those compilation stops. Both verification messages should print.
+
+Start a new debug session to repeat the whole tour. Disabling the provider
+disk cache does not disable in-process provider or kernel reuse. Editing
+source while paused also does not replace the function already loaded
+into that process.
+
+A second pass: shared scratch and synchronization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Replace just the kernel in the example with this version. Before restarting,
+set the two additional storage breakpoints listed below:
+
+.. code-block:: python
+
+   @cuda.jit
+   def copy_tile(source, destination):
+       block = coop.this_block()
+       items = coop.ThreadData(2, dtype=np.int32)
+       scratch = coop.TempStorage()
+       coop.load(
+           block, source, items, algorithm="transpose", temp_storage=scratch
+       )
+       coop.store(
+           block, destination, items, algorithm="transpose", temp_storage=scratch
+       )
+
+The expected result stays the same. At the Load/Store plan breakpoint,
+inspect ``plan.temp_storage`` and ``plan.synchronization`` again. The
+transpose algorithms exchange data through shared memory and require a
+block barrier before that scratch can be reused.
+
+At the invocable breakpoint, the storage ABI is now ``LEADING_POINTER``, and the
+temporary-storage size is nonzero. The compiled provider supplies its
+size and alignment; avoid hard-coding the numbers from one toolkit.
+
+The additional stops are in ``_compiler/_rewrite_storage.py``. Set both
+before starting this pass: allocation happens before the invocable stop.
+
+* In ``_emit_temp_storage_backing()``, stop on
+  ``alloc_size = 0 if plan.uses_dynamic_smem else int(plan.total_size)``.
+  Inspect ``plan.total_size``, ``plan.max_alignment``, and
+  ``plan.uses_dynamic_smem``. The rewrite emits shared storage satisfying
+  the provider requirements. Both uses of ``scratch`` refer to this
+  planned allocation.
+* In ``_emit_temp_storage_auto_sync()``, stop on ``sync_args = []``.
+  Inspect ``synchronization_scope`` and ``sync_attr``. For this block
+  example they select a block barrier, emitted as ``syncthreads``.
+
+Compare ``new_block.dump()`` at the end of ``apply()`` with the direct
+version. It now includes the shared allocation, scratch arguments, and
+synchronization in addition to the per-thread ``items`` array.
+``TempStorage`` describes shared workspace for the collective;
+``ThreadData`` holds each thread's payload. Seeing both in the rewritten
+IR makes their different lifetimes and uses concrete.
+
+If a breakpoint does not stop
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* Check ``coop.__file__`` at the first launch and confirm the breakpoint
+  belongs to that checkout. An older installed wheel or another worktree
+  can otherwise supply the running code.
+* Confirm you started the named launch configuration with
+  ``justMyCode: false``. A hollow breakpoint can remain pending until its
+  module loads; check it again after the import.
+* If registration is skipped, restart with the imports in the example's
+  order and ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=0``. Read any
+  automatic-registration warning for an incompatible compiler dependency.
+* If NVRTC is skipped, use a fresh process with
+  ``CUDA_COOP_ENABLE_CACHE=0``. Break in ``_nvrtc.compile()`` to see the
+  request before the compilation cache, and check which launch you are on.
 
 Working on a primitive
 ----------------------
