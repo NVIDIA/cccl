@@ -8,7 +8,10 @@
 #include <c2h/generator_common.h>
 
 #if C2H_HAS_CURAND
+// nvcc 13.0 on Windows emits warnings regarding unrecognized #pragma in device code.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(20199)
 #  include <curand_kernel.h>
+_CCCL_END_NV_DIAG_SUPPRESS()
 #else
 #  include <cuda/std/random>
 #endif
