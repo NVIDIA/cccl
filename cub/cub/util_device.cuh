@@ -26,6 +26,7 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/std/__algorithm/find.h>
 #include <cuda/std/__concepts/regular.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
@@ -388,22 +389,6 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& ptx_version)
   return result;
 }
 
-namespace detail
-{
-//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
-template <class T = void>
-CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
-{
-  int ptx_version = 0;
-  if (const auto error = PtxVersion<T>(ptx_version))
-  {
-    return error;
-  }
-  cc = ::cuda::compute_capability{ptx_version / 10};
-  return cudaSuccess;
-}
-} // namespace detail
-
 /**
  * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10)
  */
@@ -464,6 +449,57 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 
   return result;
 }
+
+namespace detail
+{
+//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
+template <class T = void>
+CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
+{
+  const auto& target_ccs = ::cuda::__target_compute_capabilities();
+
+#  if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__)
+  // PtxVersion() (via cudaFuncGetAttributes()) can report a virtual architecture clamped below the actual
+  // architecture by nvlink when relocatable device code is linked against any object compiled for a lower
+  // architecture (nvlink picks the lowest arch among all linked objects). Critically, the clamped value may not be
+  // contained in __CUDA_ARCH_LIST__ or can coincidentally equal a *different*, lower entry in __CUDA_ARCH_LIST__.
+  int sm_version = 0;
+  if (const auto error = SmVersion(sm_version))
+  {
+    return error;
+  }
+  const ::cuda::compute_capability sm_cc{sm_version / 10};
+
+  ::cuda::compute_capability best{};
+  for (const auto& candidate : target_ccs)
+  {
+    if (candidate <= sm_cc && best < candidate)
+    {
+      best = candidate;
+    }
+  }
+  _CCCL_ASSERT(best != ::cuda::compute_capability{},
+               "Failed to find a target compute capability for the current device");
+  if (best == ::cuda::compute_capability{})
+  {
+    return cudaErrorInvalidDeviceFunction;
+  }
+  cc = best;
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__) ^^^ / vvv !(...) vvv
+  int ptx_version = 0;
+  if (const auto error = PtxVersion<T>(ptx_version))
+  {
+    return error;
+  }
+  cc = ::cuda::compute_capability{ptx_version / 10};
+#  endif // !(_CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__))
+
+  _CCCL_ASSERT(cuda::std::find(target_ccs.begin(), target_ccs.end(), cc) != target_ccs.end(),
+               "The compute capability must be one of __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST");
+
+  return cudaSuccess;
+}
+} // namespace detail
 
 //! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
