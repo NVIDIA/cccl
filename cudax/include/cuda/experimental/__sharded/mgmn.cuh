@@ -724,9 +724,9 @@ private:
   ::cuda::std::int32_t __rank_ = 0;
 };
 
-static_assert(::cuda::experimental::__communicator<places_communicator>);
-static_assert(::cuda::experimental::__has_all_gather<places_communicator>);
-static_assert(::cuda::experimental::__has_all_reduce<places_communicator>);
+static_assert(::cuda::experimental::mgmn::__communicator<places_communicator>);
+static_assert(::cuda::experimental::mgmn::__has_all_gather<places_communicator>);
+static_assert(::cuda::experimental::mgmn::__has_all_reduce<places_communicator>);
 
 // ============================================================================
 // The adapter: sharded environments -> MGMN environments and communicators
@@ -1010,12 +1010,12 @@ _CCCL_HOST_API void __mgmn_scan(
 
   if constexpr (_Inclusive)
   {
-    ::cuda::experimental::inclusive_scan(
+    ::cuda::experimental::mgmn::inclusive_scan(
       ::cuda::experimental::distributed, __comms, __menvs, __inputs, __sizes, __outputs, __init, __op, __identity);
   }
   else
   {
-    ::cuda::experimental::exclusive_scan(
+    ::cuda::experimental::mgmn::exclusive_scan(
       ::cuda::experimental::distributed, __comms, __menvs, __inputs, __sizes, __outputs, __init, __op, __identity);
   }
 }
@@ -1265,7 +1265,7 @@ _CCCL_HOST_API void reduce_into_lanes(
     __outputs.push_back(outs[__g]);
   }
 
-  ::cuda::experimental::reduce(
+  ::cuda::experimental::mgmn::reduce(
     ::cuda::experimental::broadcasted, __comms, __menvs, __inputs, __sizes, __outputs, init_value, reduce_op, identity);
 }
 
@@ -1398,7 +1398,8 @@ _CCCL_HOST_API void transform(const _SIn& in, _SOut&& out, const _Envs& envs, _U
           ::cuda::get_stream, ::cuda::stream_ref{::cuda::get_stream(envs[__g])}}});
   }
 
-  ::cuda::experimental::transform(::cuda::experimental::distributed, __comms, __menvs, __inputs, __sizes, __outputs, op);
+  ::cuda::experimental::mgmn::transform(
+    ::cuda::experimental::distributed, __comms, __menvs, __inputs, __sizes, __outputs, op);
 }
 
 /// @brief In-place unary transform (explicit environments).

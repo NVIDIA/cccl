@@ -696,15 +696,7 @@ public:
              view_.domain_id,
              ") are not representable in a localized memory location");
     }
-    // The library-wide accessor also applies the release-threshold policy,
-    // which reads a pool attribute: not permitted while `stream` is
-    // capturing. The handle itself is stable, so a captured allocation takes
-    // it directly; the policy is applied by any allocation made outside a
-    // capture (warm up before capturing, as with every amortized state).
-    const CUmemoryPool pool =
-      cuda_try<cudaStreamIsCapturing>(stream) != cudaStreamCaptureStatusNone
-        ? ::cuda::__driver::__getDefaultMemPool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED)
-        : ::cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    const CUmemoryPool pool = ::cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
 
     CUdeviceptr ptr = 0;
     cuda_try(cuMemAllocFromPoolAsync(&ptr, static_cast<size_t>(size), pool, reinterpret_cast<CUstream>(stream)));

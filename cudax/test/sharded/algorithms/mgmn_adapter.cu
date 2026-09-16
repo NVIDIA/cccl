@@ -46,18 +46,18 @@ using cuda::experimental::places::place_memory_resource;
 // environment's resource is what the MGMN algorithms allocate from (the
 // default-pool fallback of `__resource_from_env` is never selected).
 // ---------------------------------------------------------------------------
-static_assert(cuda::experimental::__communicator<places_communicator>);
-static_assert(cuda::experimental::__communicator<places_communicator&>);
-static_assert(cuda::experimental::__has_all_gather<places_communicator>);
-static_assert(cuda::experimental::__has_all_gather<places_communicator, long long*>);
-static_assert(cuda::experimental::__has_all_reduce<places_communicator>);
-static_assert(cuda::experimental::__has_all_reduce<places_communicator, long long*, cuda::std::plus<>>);
-static_assert(!cuda::experimental::__has_reduce<places_communicator>);
-static_assert(cuda::experimental::__range_of_communicators<::std::vector<places_communicator>>);
-static_assert(cuda::experimental::__range_of_communicators<const ::std::vector<places_communicator>&>);
+static_assert(cuda::experimental::mgmn::__communicator<places_communicator>);
+static_assert(cuda::experimental::mgmn::__communicator<places_communicator&>);
+static_assert(cuda::experimental::mgmn::__has_all_gather<places_communicator>);
+static_assert(cuda::experimental::mgmn::__has_all_gather<places_communicator, long long*>);
+static_assert(cuda::experimental::mgmn::__has_all_reduce<places_communicator>);
+static_assert(cuda::experimental::mgmn::__has_all_reduce<places_communicator, long long*, cuda::std::plus<>>);
+static_assert(!cuda::experimental::mgmn::__has_reduce<places_communicator>);
+static_assert(cuda::experimental::mgmn::__range_of_communicators<::std::vector<places_communicator>>);
+static_assert(cuda::experimental::mgmn::__range_of_communicators<const ::std::vector<places_communicator>&>);
 
 using default_mgmn_env_t = mgmn_env_t<::std::vector<shard_env_t>>;
-static_assert(::cuda::std::is_same_v<::cuda::experimental::__detail::__resource_type_for<default_mgmn_env_t>,
+static_assert(::cuda::std::is_same_v<::cuda::experimental::mgmn::__detail::__resource_type_for<default_mgmn_env_t>,
                                      reserved::__device_accessible_adapter<place_memory_resource>>);
 static_assert(::cuda::mr::resource_with<reserved::__device_accessible_adapter<place_memory_resource>,
                                         ::cuda::mr::device_accessible>);
@@ -89,9 +89,9 @@ struct no_all_reduce_comm : places_communicator
   {}
   void all_reduce() = delete;
 };
-static_assert(cuda::experimental::__communicator<no_all_reduce_comm>);
-static_assert(cuda::experimental::__has_all_gather<no_all_reduce_comm>);
-static_assert(!cuda::experimental::__has_all_reduce<no_all_reduce_comm>);
+static_assert(cuda::experimental::mgmn::__communicator<no_all_reduce_comm>);
+static_assert(cuda::experimental::mgmn::__has_all_gather<no_all_reduce_comm>);
+static_assert(!cuda::experimental::mgmn::__has_all_reduce<no_all_reduce_comm>);
 
 // A `place_memory_resource` that counts its stream-ordered allocations and,
 // like the wrapped type, advertises no `default_queries`: the adapter must
@@ -519,7 +519,7 @@ void test_reduce_fallback_path(place_group& group)
     sizes.push_back(data.shard(g).size);
     outs.push_back(d_out + g);
   }
-  ::cuda::experimental::reduce(
+  ::cuda::experimental::mgmn::reduce(
     ::cuda::experimental::broadcasted, comms, menvs, ins, sizes, outs, 2LL, ::cuda::std::plus<long long>{}, 0LL);
   barrier(envs);
   ::std::vector<long long> lanes(P);
@@ -554,7 +554,7 @@ void test_env_resource_allocates(place_group& group)
   // deduction then names the wrapper — the environment's resource — not a
   // default pool.
   static_assert(
-    ::cuda::std::is_same_v<::cuda::experimental::__detail::__resource_type_for<mgmn_env_t<::std::vector<env_t>>>,
+    ::cuda::std::is_same_v<::cuda::experimental::mgmn::__detail::__resource_type_for<mgmn_env_t<::std::vector<env_t>>>,
                            reserved::__device_accessible_adapter<counting_resource>>);
 
   mgmn::inclusive_scan(data, envs, ::cuda::std::plus<long long>{});
