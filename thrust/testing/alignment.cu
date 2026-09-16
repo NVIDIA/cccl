@@ -1,6 +1,6 @@
 #include <thrust/detail/alignment.h>
 
-#include "catch2_test_helper.h"
+#include <unittest/unittest.h>
 
 struct alignof_mock_0
 {
