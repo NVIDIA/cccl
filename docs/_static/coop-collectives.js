@@ -108,7 +108,7 @@
       "Only rank zero of each group has a defined return value; ? marks every other return.",
       "The partial-combine rows show an illustrative legal reduction tree, not a CUB instruction trace. Floating-point results can depend on combination order.",
     ];
-    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir; the common API accepts built-in operator names.");
+    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir; the common namespace accepts built-in operator names.");
     return {
       detail: `${algorithm.label}: ${state.scope.replaceAll("_", " ")} groups combine ${valid * items} values using ${state.operator === "sum" ? "sum" : "maximum"}.`,
       rows: [

@@ -107,7 +107,7 @@ input:
 .. code-block:: python
 
    from numba_cuda_mlir import cuda
-   import cuda.coop.numba_mlir as coop
+   import cuda.coop.numba_mlir as qualified_coop
 
    @cuda.jit(device=True)
    def maximum(left, right):
@@ -116,8 +116,8 @@ input:
    @cuda.jit
    def block_maximum(source, output):
        thread = cuda.threadIdx.x
-       result = coop.reduce(
-           coop.this_block(),
+       result = qualified_coop.reduce(
+           qualified_coop.this_block(),
            source[thread],
            binary_op=maximum,
        )
