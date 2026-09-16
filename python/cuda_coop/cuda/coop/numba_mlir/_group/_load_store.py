@@ -12,26 +12,11 @@ Calling a marker directly in Python raises the ``RuntimeError`` from
 
 from __future__ import annotations
 
-try:
-    import numpy
-except ModuleNotFoundError as exc:
-    if exc.name != "numpy":
-        raise
-
-
-from cuda.coop._typing import _PortableNumericT
+from typing import Any
 
 from ..._core.api import ThreadDataLike
-from ..._typing import (
-    BlockLoadStoreAlgorithm,
-    IntegerValue,
-    PortableThreadDataLike,
-    TempStorageLike,
-    ValidItems,
-    WarpLoadStoreAlgorithm,
-)
 from .._compiler._operations import group_operation
-from .._thread_group import BlockGroup, WarpGroup
+from .._thread_group import ThreadGroup
 from ._marker import group_primitive_marker
 
 
@@ -40,16 +25,16 @@ from ._marker import group_primitive_marker
     family_module="cuda.coop.numba_mlir._compiler._group_load_store",
 )
 def load(
-    group: BlockGroup | WarpGroup,
-    source: object,
-    output: ThreadDataLike[_PortableNumericT] | numpy.ndarray,
+    group: ThreadGroup,
+    source: Any,
+    output: ThreadDataLike[Any],
     /,
     *,
-    algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
-    valid_items: ValidItems | None = None,
-    oob_default: _PortableNumericT | float | None = None,
-    offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    algorithm: Any = "direct",
+    valid_items: Any = None,
+    oob_default: Any = None,
+    offset: Any = None,
+    temp_storage: Any = None,
 ) -> None:
     """Load a block or warp tile with the Numba-CUDA-MLIR backend.
 
@@ -66,18 +51,7 @@ def load(
     See Also
     --------
     :cpp:class:`cub::BlockLoad`, :cpp:class:`cub::WarpLoad`
-        C++ Load primitives used for these group scopes.
-
-    Examples
-    --------
-    Copy a partial final tile using a Numba local array.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_load_store_examples.py
-        :language: python
-        :start-after: # qualified-load-store-example-begin
-        :end-before: # qualified-load-store-example-end
-        :dedent: 4
+        C++ Load collectives used for these group scopes.
     """
 
     group_primitive_marker(
@@ -98,17 +72,15 @@ def load(
     family_module="cuda.coop.numba_mlir._compiler._group_load_store",
 )
 def store(
-    group: BlockGroup | WarpGroup,
-    destination: object,
-    value: _PortableNumericT
-    | PortableThreadDataLike[_PortableNumericT]
-    | numpy.ndarray,
+    group: ThreadGroup,
+    destination: Any,
+    value: Any,
     /,
     *,
-    algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
-    valid_items: ValidItems | None = None,
-    offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    algorithm: Any = "direct",
+    valid_items: Any = None,
+    offset: Any = None,
+    temp_storage: Any = None,
 ) -> None:
     """Store a block or warp tile with the Numba-CUDA-MLIR backend.
 
@@ -124,18 +96,7 @@ def store(
     See Also
     --------
     :cpp:class:`cub::BlockStore`, :cpp:class:`cub::WarpStore`
-        C++ Store primitives used for these group scopes.
-
-    Examples
-    --------
-    Store only the valid prefix of the final tile.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_load_store_examples.py
-        :language: python
-        :start-after: # qualified-load-store-example-begin
-        :end-before: # qualified-load-store-example-end
-        :dedent: 4
+        C++ Store collectives used for these group scopes.
     """
 
     group_primitive_marker(

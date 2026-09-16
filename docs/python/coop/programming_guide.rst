@@ -233,6 +233,8 @@ package to the name ``cuda``, replacing an earlier
 ``from numba_cuda_mlir import cuda`` binding in that scope. These collective
 calls belong inside kernels compiled by a compatible backend.
 
+.. _coop-thread-groups:
+
 Groups: which threads cooperate
 -------------------------------
 
@@ -295,6 +297,8 @@ requirements before using that guard around an operation.
 Mapped groups of physical warps support hierarchy queries through their
 immediate parent block. Primitives and group barriers are unavailable for these
 groups. Use the block and logical-warp forms for the examples in this guide.
+
+.. _coop-group-queries:
 
 Ranks and sizes
 ^^^^^^^^^^^^^^^
@@ -364,6 +368,8 @@ Warp Scan accepts one scalar per lane. Block Scan also accepts multiple
 items per thread. The row example has exactly enough threads for the input;
 a more general kernel must handle its final rows explicitly.
 
+.. _coop-participation:
+
 Participation and synchronization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -392,6 +398,8 @@ every member must still reach the collective and its barrier.
 Arrange synchronization for your own shared-memory communication as well.
 Constructing a group or a ``ThreadData`` object does not synchronize threads.
 
+.. _coop-thread-data:
+
 ``ThreadData``: the part of a tile owned by one thread
 ----------------------------------------------------
 
@@ -399,6 +407,12 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 With 128 threads, the group owns 256 values. Each thread
 indexes only its own slots with ``items[0]`` and ``items[1]``. To move values
 between threads, use an operation such as Exchange, Shuffle, or Scan.
+
+:class:`~cuda.coop.ThreadDataLike` names the portable payload interface used
+in API signatures. It describes the item count, dtype, and indexed reads and
+writes. Use :func:`~cuda.coop.ThreadData` to construct a payload for the
+active compiler backend. Other payload representations require support from
+that backend.
 
 The item count must be a positive compile-time integer. You can use
 ``items.items_per_thread`` as a loop bound:
@@ -412,6 +426,8 @@ Initialize every slot before reading it. Constructing ``ThreadData`` does
 not fill it with zeros. A full Load initializes the entire payload; a
 partial Load needs either an ``oob_default`` or previously initialized slots
 for the missing elements.
+
+.. _coop-data-layouts:
 
 Blocked and striped order
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -654,6 +670,8 @@ Adding ``group_origin`` to ``offset`` here would count it twice. This
 automatic origin applies to Warp Load and Store; ordinary array indexing
 in a kernel uses exactly the index you write.
 
+.. _coop-temp-storage:
+
 ``TempStorage``: scratch used during a collective
 -----------------------------------------------
 
@@ -661,10 +679,16 @@ Some algorithms exchange intermediate values through shared memory.
 By default, ``cuda.coop`` allocates the scratch they need and inserts
 the required reuse barrier. Start with that behavior.
 
-An explicit ``TempStorage`` descriptor lets several supported block calls
-reuse an allocation and lets you control capacity, alignment, and
-synchronization. Construct it inside the kernel. Its contents are opaque;
-keep application values in ``ThreadData`` or your own arrays.
+:class:`~cuda.coop.TempStorageLike` names the portable interface for explicit
+scratch descriptors in API signatures. Construct one inside the kernel with
+:func:`~cuda.coop.TempStorage`. Its ``size_in_bytes``, ``alignment``,
+``auto_sync``, and ``sharing`` properties control capacity, alignment,
+synchronization, and allocation sharing. The active compiler backend must
+recognize the descriptor.
+
+An explicit descriptor lets several supported block calls reuse an
+allocation. Its contents are opaque; keep application values in
+``ThreadData`` or your own arrays.
 
 .. list-table::
    :header-rows: 1
@@ -829,6 +853,8 @@ groups, operation selectors, or payload and storage shapes. Write the affected
 calls explicitly with compile-time constants. Ordinary runtime loops with fixed
 cooperative shapes, and unrelated uses of ``literal_unroll``, remain supported.
 
+.. _coop-reductions:
+
 Reduction and result ownership
 ------------------------------
 
@@ -895,6 +921,15 @@ and the group size, and requires a scalar input. The example instead
 pads a multi-item Load and reduces the full payload. These two techniques
 have different valid-count contracts.
 
+Block Reduce accepts ``temp_storage=scratch`` to share a ``coop.TempStorage``
+descriptor with other block operations. Omitting the argument uses
+compiler-managed scratch with automatic synchronization. An explicit
+``coop.TempStorage()`` defaults to ``auto_sync=False``: insert a block barrier
+between uses, or construct it with ``auto_sync=True``. Warp Reduce uses
+compiler-managed scratch.
+
+.. _coop-scans:
+
 Scan operators and carrying a prefix
 -----------------------------------
 
@@ -955,6 +990,8 @@ device function shows where to put an application's own associative
 operator. It executes on the GPU and must return the payload dtype.
 Binary Scan callbacks are stateless in the current API. Each callback
 combines two numeric scalars, even when a thread owns several items.
+
+.. _coop-prefix-callbacks:
 
 Several tiles in one block
 ^^^^^^^^^^^^^^^^^^^^^^^^^

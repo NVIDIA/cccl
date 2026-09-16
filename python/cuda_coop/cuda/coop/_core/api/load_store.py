@@ -104,7 +104,7 @@ def load(
     See Also
     --------
     :cpp:class:`cub::BlockLoad`, :cpp:class:`cub::WarpLoad`
-        C++ block and warp Load primitives.
+        C++ block and warp Load collectives.
 
     Examples
     --------
@@ -197,7 +197,7 @@ def store(
     See Also
     --------
     :cpp:class:`cub::BlockStore`, :cpp:class:`cub::WarpStore`
-        C++ block and warp Store primitives.
+        C++ block and warp Store collectives.
 
     Examples
     --------
@@ -213,7 +213,7 @@ def store(
         :dedent: 4
 
     See :ref:`participation and synchronization <coop-participation>` for
-    control-flow requirements at primitive calls.
+    control-flow requirements at collective calls.
     """
 
     raise CoopCompilerContextRequiredError(

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose the common API marker for returning a unit-shifted block payload."""
+"""Portable cooperative Shuffle entry point."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def shuffle(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Complete block whose members all call the primitive; see
+        Complete block whose members all call the collective; see
         :ref:`thread groups <coop-thread-groups>`. Warp, mapped-warp, cluster,
         and grid groups are unsupported.
     value : cuda.coop.ThreadDataLike

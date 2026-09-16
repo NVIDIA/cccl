@@ -6,29 +6,16 @@
 
 These markers share the common reduction contract and add native local-array
 operands and supported device-operator forms. The whole-function planner
-resolves them to CUB providers before ordinary type inference.
+resolves them to CUB or CUDAX providers before ordinary type inference.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Literal, TypeVar
+from typing import Any
 
-import numpy
-
-from ..._typing import (
-    PortableNumericScalar,
-    PortableThreadDataLike,
-    ReduceAlgorithm,
-    ReduceOperator,
-    TempStorageLike,
-    ValidItems,
-)
 from .._compiler._operations import group_operation
-from .._thread_group import BlockGroup, WarpGroup
+from .._thread_group import ThreadGroup
 from ._marker import group_primitive_marker
-
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 
 
 @group_operation(
@@ -36,19 +23,15 @@ _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
     family_module="cuda.coop.numba_mlir._compiler._group_reduce",
 )
 def reduce(
-    group: BlockGroup | WarpGroup,
-    value: PortableThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    group: ThreadGroup,
+    value: Any,
     /,
     *,
-    binary_op: ReduceOperator
-    | Callable[[_ItemT, _ItemT], _ItemT]
-    | None = None,
-    valid_items: ValidItems | None = None,
-    algorithm: ReduceAlgorithm
-    | Literal["raking", "warp_reductions"]
-    | None = None,
-    temp_storage: TempStorageLike | None = None,
-) -> _ItemT:
+    binary_op: Any = None,
+    valid_items: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+) -> Any:
     """Reduce values with a built-in alias or custom device operator.
 
     See :func:`cuda.coop.reduce` for the shared parameters, defaults, supported
@@ -102,9 +85,9 @@ def reduce(
         group,
         value,
         binary_op=binary_op,
+        temp_storage=temp_storage,
         valid_items=valid_items,
         algorithm=algorithm,
-        temp_storage=temp_storage,
     )
 
 
@@ -113,14 +96,14 @@ def reduce(
     family_module="cuda.coop.numba_mlir._compiler._group_reduce",
 )
 def sum(
-    group: BlockGroup | WarpGroup,
-    value: PortableThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    group: ThreadGroup,
+    value: Any,
     /,
     *,
-    valid_items: ValidItems | None = None,
-    algorithm: ReduceAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-) -> _ItemT:
+    valid_items: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+) -> Any:
     """Sum values with Numba-CUDA-MLIR.
 
     See :func:`cuda.coop.sum` for all parameters, defaults, supported groups,
@@ -156,9 +139,9 @@ def sum(
         "sum",
         group,
         value,
+        temp_storage=temp_storage,
         valid_items=valid_items,
         algorithm=algorithm,
-        temp_storage=temp_storage,
     )
 
 
