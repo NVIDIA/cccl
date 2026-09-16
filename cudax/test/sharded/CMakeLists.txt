@@ -19,11 +19,13 @@ set(
   algorithms/composition_verbs.cu
   algorithms/segmented_reduce.cu
   algorithms/sort.cu
+  algorithms/mgmn_adapter.cu
   graph_capture/elementwise_pipeline.cu
   graph_capture/reduce_scan_capture.cu
   graph_capture/must_not_capture.cu
   graph_capture/graph_owned_memory.cu
   graph_capture/contiguous_capture.cu
+  graph_capture/mgmn_pipeline_capture.cu
   sparse/sharded_csr.cu
 )
 
