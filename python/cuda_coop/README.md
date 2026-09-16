@@ -136,7 +136,7 @@ coop.store(
 )
 ```
 
-`load` returns the same output object passed by the caller. `valid_items` counts
+`load` fills the supplied output in place and returns `None`. `valid_items` counts
 items across the complete block tile, while `offset` is a nonnegative element
 offset. Runtime offsets are caller-validated. Source and destination arrays
 must be one-dimensional and contiguous. Without `oob_default`, invalid Load

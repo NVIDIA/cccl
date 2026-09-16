@@ -35,11 +35,11 @@ def check_numba_surface(source: object, destination: object) -> None:
             algorithm="direct",
             temp_storage=storage,
         ),
-        ThreadDataLike[np.uint16],
+        None,
     )
     assert_type(
         coop.load(block, source, byte_values),
-        ThreadDataLike[np.int8],
+        None,
     )
     assert_type(
         coop.load(
@@ -49,11 +49,11 @@ def check_numba_surface(source: object, destination: object) -> None:
             valid_items=1,
             oob_default=0,
         ),
-        ThreadDataLike[np.int8],
+        None,
     )
     assert_type(
         coop.load(block, source, values, algorithm="vectorize"),
-        ThreadDataLike[np.uint16],
+        None,
     )
     assert_type(
         coop.load(
@@ -62,7 +62,7 @@ def check_numba_surface(source: object, destination: object) -> None:
             values,
             algorithm="warp_transpose_timesliced",
         ),
-        ThreadDataLike[np.uint16],
+        None,
     )
     assert_type(
         coop.store(

@@ -488,11 +488,14 @@ class CoopSinglePhaseRewrite(
                     ),
                 )
         used_var_names: set[str] = set()
-        for stmt in new_block.body:
-            stmt_vars = list(stmt.list_vars())
-            if isinstance(stmt, ir.Assign):
-                stmt_vars = [var for var in stmt_vars if var.name != stmt.target.name]
-            used_var_names.update((var.name for var in stmt_vars))
+        for block in self._func_ir.blocks.values():
+            rewritten_block = new_block if block is self._block else block
+            for stmt in rewritten_block.body:
+                used_var_names.update(
+                    var.name
+                    for var in stmt.list_vars()
+                    if not isinstance(stmt, ir.Assign) or var.name != stmt.target.name
+                )
         if candidate_dead_factory_kw_vars:
             filtered_block = ir.Block(new_block.scope, new_block.loc)
             for stmt in new_block.body:

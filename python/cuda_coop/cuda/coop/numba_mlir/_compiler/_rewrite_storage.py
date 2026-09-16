@@ -602,8 +602,8 @@ class _StorageRewrite:
                 raise CoopSinglePhaseRewriteError(
                     "TempStorage values are opaque compile-time descriptors and "
                     "may only be passed as temp_storage= to a registered "
-                    "cooperative primitive; use "
-                    f"involving {names!r} would escape to runtime."
+                    "cooperative primitive; a use involving "
+                    f"{names!r} would escape to runtime."
                 )
 
         constructor_keys = {

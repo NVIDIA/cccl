@@ -215,6 +215,69 @@ def test_provider_memory_parameters_require_contiguous_arrays():
     assert _types.Pointer(types.int32).dtype() == types.Array(types.int32, 1, "C")
 
 
+def test_static_factory_value_used_in_another_block_keeps_its_definition(monkeypatch):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+    from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
+
+    def kernel(source, flag):
+        valid_items = 31
+        output = coop.ThreadData(2, dtype=types.int32)
+        provider_load(
+            source,
+            output,
+            num_valid_items=valid_items,
+            dtype=types.int32,
+            threads_per_block=32,
+            items_per_thread=2,
+        )
+        if flag:
+            return valid_items
+        return 0
+
+    func_ir = run_frontend(kernel)
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(types.Array(types.int32, 1, "C"), types.boolean),
+        typingctx=SimpleNamespace(refresh=lambda: None),
+        typemap={},
+        calltypes={},
+        metadata={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    invocable = SimpleNamespace(files=(), specialization=None)
+    monkeypatch.setattr(rewrite, "_prepare_ltoir_bundle_for_matches", lambda _: None)
+    monkeypatch.setattr(rewrite, "_materialize_invocable", lambda _: (invocable, False))
+    monkeypatch.setattr(rewrite, "_record_invocable_specialization", lambda _: None)
+    for label in sorted(func_ir.blocks):
+        block = func_ir.blocks[label]
+        if rewrite.match(func_ir, block, state.typemap, state.calltypes):
+            func_ir.blocks[label] = rewrite.apply()
+
+    definition_blocks = {
+        label
+        for label, block in func_ir.blocks.items()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign) and stmt.target.name == "valid_items"
+    }
+    use_blocks = {
+        label
+        for label, block in func_ir.blocks.items()
+        for stmt in block.body
+        if any(
+            var.name == "valid_items"
+            for var in stmt.list_vars()
+            if not isinstance(stmt, ir.Assign) or var.name != stmt.target.name
+        )
+    }
+    assert len(definition_blocks) == 1
+    assert use_blocks - definition_blocks
+
+
 def test_common_direct_block_load_store_lowers_to_private_factories():
     pytest.importorskip("numba_cuda_mlir")
     from numba_cuda_mlir import types
@@ -1110,17 +1173,26 @@ def test_cuda_and_array_scalars_keep_compiler_dtypes_for_store(
 
     module = qualified_coop if qualified else root_coop
 
-    def memory(source, destination):
-        index = cuda.threadIdx.x
-        if source_kind == "index":
-            value = index
-        elif source_kind == "element":
-            value = source[index]
-        elif source_kind == "numpy-cast":
-            value = np.int32(index + 1)
-        else:
-            value = types.int32(index + 1)
-        module.store(module.this_block(), destination, value)
+    def index_source(source, destination):
+        module.store(module.this_block(), destination, cuda.threadIdx.x)
+
+    def element_source(source, destination):
+        module.store(module.this_block(), destination, source[cuda.threadIdx.x])
+
+    def numpy_cast_source(source, destination):
+        module.store(module.this_block(), destination, np.int32(cuda.threadIdx.x + 1))
+
+    def compiler_cast_source(source, destination):
+        module.store(
+            module.this_block(), destination, types.int32(cuda.threadIdx.x + 1)
+        )
+
+    memory = {
+        "index": index_source,
+        "element": element_source,
+        "numpy-cast": numpy_cast_source,
+        "compiler-cast": compiler_cast_source,
+    }[source_kind]
 
     array_type = types.Array(types.int32, 1, "C")
     _, planner = _plan(memory, arg_types=(array_type, array_type))

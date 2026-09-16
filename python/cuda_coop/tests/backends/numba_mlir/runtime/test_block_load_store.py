@@ -840,9 +840,9 @@ def _divergent_direct_load_store(source, destination, observed):
     thread = cuda.threadIdx.x
     if thread & 1:
         payload = root_coop.ThreadData(1, dtype=types.int32)
-        loaded = root_coop.load(root_coop.this_block(), source, payload)
-        root_coop.store(root_coop.this_block(), destination, loaded)
-        observed[thread] = loaded[0]
+        root_coop.load(root_coop.this_block(), source, payload)
+        root_coop.store(root_coop.this_block(), destination, payload)
+        observed[thread] = payload[0]
 
 
 def test_direct_load_store_are_safe_in_divergent_control_flow():

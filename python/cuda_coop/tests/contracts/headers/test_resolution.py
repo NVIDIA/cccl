@@ -30,12 +30,19 @@ def _write_source_checkout(checkout: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("complete_checkout", (False, True))
 def test_environment_inside_checkout_uses_installed_headers(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    complete_checkout: bool,
 ) -> None:
     checkout = tmp_path / "cccl"
-    _write_source_checkout(checkout)
+    if complete_checkout:
+        _write_source_checkout(checkout)
+    else:
+        probe = checkout / "cub" / "cub" / "version.cuh"
+        probe.parent.mkdir(parents=True)
+        probe.touch()
     installed_module = (
         checkout
         / ".venv"
@@ -84,6 +91,20 @@ def test_source_package_path_resolves_only_its_checkout(tmp_path: Path) -> None:
         checkout / "cudax" / "include",
         checkout / "libcudacxx" / "include",
     )
+
+
+def test_incomplete_source_checkout_reports_missing_headers(tmp_path: Path) -> None:
+    checkout = tmp_path / "cccl"
+    probe = checkout / "cub" / "cub" / "version.cuh"
+    probe.parent.mkdir(parents=True)
+    probe.touch()
+    source_module = checkout / "python" / "cuda_coop" / "cuda" / "coop"
+    source_module.mkdir(parents=True)
+
+    with pytest.raises(
+        headers.HeaderResolutionError, match="missing source include roots"
+    ):
+        resolve_include_paths(start=source_module)
 
 
 def test_import_cuda_coop_does_not_import_cuda_bindings() -> None:
