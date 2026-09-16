@@ -30,7 +30,7 @@
 #include <cuda/std/__type_traits/decay.h>
 
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
-#include <cuda/experimental/__cuco/detail/utility/hash.cuh>
+#include <cuda/experimental/__cuco/detail/utility/hash_to_index.cuh>
 
 #include <cooperative_groups.h>
 
@@ -93,7 +93,7 @@ public:
     using __step_extent             = ::cuda::std::extents<__size_type, _BucketSize>;
     const __size_type __num_buckets = __cap.extent(0) / _BucketSize;
     const __size_type __init =
-      ::cuda::experimental::cuco::detail::__reduce_hash(__hash(__probe_key), __num_buckets) * _BucketSize;
+      ::cuda::experimental::cuco::detail::__hash_to_index(__hash(__probe_key), __num_buckets) * _BucketSize;
     return detail::__probing_iterator<_Capacity, __step_extent>{__init, __step_extent{}, __cap};
   }
 
@@ -120,7 +120,7 @@ public:
     using __step_extent            = ::cuda::std::extents<__size_type, __stride>;
     const __size_type __num_groups = __cap.extent(0) / __stride;
     const __size_type __init =
-      ::cuda::experimental::cuco::detail::__reduce_hash(__hash(__probe_key), __num_groups) * __stride
+      ::cuda::experimental::cuco::detail::__hash_to_index(__hash(__probe_key), __num_groups) * __stride
       + static_cast<__size_type>(__group.thread_rank()) * _BucketSize;
     return detail::__probing_iterator<_Capacity, __step_extent>{__init, __step_extent{}, __cap};
   }
@@ -212,9 +212,9 @@ public:
     using __step_extent             = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
     const __size_type __num_buckets = __cap.extent(0) / _BucketSize;
     return detail::__probing_iterator<_Capacity, __step_extent>{
-      ::cuda::experimental::cuco::detail::__reduce_hash(__hash1(__probe_key), __num_buckets) * _BucketSize,
+      ::cuda::experimental::cuco::detail::__hash_to_index(__hash1(__probe_key), __num_buckets) * _BucketSize,
       __step_extent{static_cast<__size_type>(
-        (::cuda::experimental::cuco::detail::__reduce_hash(
+        (::cuda::experimental::cuco::detail::__hash_to_index(
            __hash2(__probe_key), static_cast<__size_type>(__num_buckets - 1))
          + 1)
         * _BucketSize)},
@@ -245,10 +245,10 @@ public:
     const __size_type __num_groups = __cap.extent(0) / __stride;
 
     return detail::__probing_iterator<_Capacity, __step_extent>{
-      ::cuda::experimental::cuco::detail::__reduce_hash(__hash1(__probe_key), __num_groups) * __stride
+      ::cuda::experimental::cuco::detail::__hash_to_index(__hash1(__probe_key), __num_groups) * __stride
         + static_cast<__size_type>(__group.thread_rank()) * _BucketSize,
       __step_extent{static_cast<__size_type>(
-        (::cuda::experimental::cuco::detail::__reduce_hash(
+        (::cuda::experimental::cuco::detail::__hash_to_index(
            __hash2(__probe_key), static_cast<__size_type>(__num_groups - 1))
          + 1)
         * __stride)},
