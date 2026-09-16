@@ -1,0 +1,222 @@
+/* Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ *
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ *
+ * Adapted from python/cuda_coop/docs/fern/fern/main.css at
+ * cccl-mirror trentn/dev/cuda-coop 5dba3d36b6eaae48b967d6fa48f9d15e98136000.
+ */
+
+.coop-visualization {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.coop-load {
+  --coop-accent: #527f00;
+  --coop-panel: var(--pst-color-surface, #f3f5f7);
+  --coop-background: var(--pst-color-background, #fff);
+  --coop-text: var(--pst-color-text-base, #222);
+  --coop-muted: var(--pst-color-text-muted, #52606d);
+  --coop-border: var(--pst-color-border, #cbd2d8);
+  color: var(--coop-text);
+  background: var(--coop-background);
+  border: 1px solid var(--coop-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 1.5rem 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+html[data-theme="dark"] .coop-load {
+  --coop-accent: #93ce32;
+}
+
+.coop-load-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.coop-load .coop-load-eyebrow {
+  color: var(--coop-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 0 0 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.coop-load h2 {
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+.coop-load button,
+.coop-load select {
+  font: inherit;
+  color: var(--coop-text);
+  background: var(--coop-background);
+  border: 1px solid var(--coop-border);
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+
+.coop-load button { cursor: pointer; }
+
+.coop-load button:hover {
+  border-color: var(--coop-accent);
+}
+
+.coop-load button:focus-visible,
+.coop-load select:focus-visible,
+.coop-load-scroll:focus-visible {
+  outline: 3px solid var(--coop-accent);
+  outline-offset: 3px;
+}
+
+.coop-load-transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 0.8rem;
+}
+
+.coop-load-transport [data-action="play"] {
+  color: var(--coop-background);
+  background: var(--coop-accent);
+  border-color: var(--coop-accent);
+  font-weight: 700;
+  min-width: 60px;
+}
+
+.coop-load-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.coop-load-options button {
+  min-width: 0;
+  text-align: left;
+  padding: 10px;
+  background: var(--coop-panel);
+  line-height: 1.35;
+}
+
+.coop-load-options strong,
+.coop-load-options span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.coop-load-options strong { font-size: 0.87rem; }
+.coop-load-options span { font-size: 0.72rem; margin-top: 5px; color: var(--coop-muted); }
+
+.coop-load-options [aria-pressed="true"] {
+  border-color: var(--coop-accent);
+  box-shadow: inset 3px 0 var(--coop-accent);
+}
+
+.coop-load-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin-top: 18px;
+  font-size: 0.8rem;
+}
+
+.coop-load-settings label { display: grid; gap: 5px; }
+.coop-load-settings [data-tile-size] { color: var(--coop-muted); padding-bottom: 9px; }
+.coop-load .coop-load-detail { margin: 16px 0; font-size: 0.88rem; }
+
+.coop-load-phases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.coop-load-phases button {
+  flex: 1 1 100px;
+  font-size: 0.75rem;
+  padding: 8px 6px;
+}
+
+.coop-load-phases [aria-current="step"] {
+  border-color: var(--coop-accent);
+  color: var(--coop-accent);
+  font-weight: 700;
+  box-shadow: inset 0 -2px var(--coop-accent);
+}
+
+.coop-load-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--coop-border);
+  border-radius: 8px;
+  background: var(--coop-panel);
+}
+
+.coop-load-diagram { display: block; width: 100%; }
+.coop-load-diagram text { font-family: var(--pst-font-family-base, sans-serif); }
+.coop-load-axis { fill: var(--coop-text); font-size: 13px; font-weight: 600; }
+.coop-load-address { fill: var(--coop-muted); font-size: 10px; text-anchor: middle; }
+.coop-load-card { fill: var(--coop-background); stroke: var(--coop-border); }
+.coop-load-thread-label { fill: var(--coop-muted); font-size: 12px; }
+.coop-load-warp-label { fill: var(--coop-muted); font-size: 11px; }
+.coop-load-slot { fill: var(--coop-background); stroke: var(--coop-border); }
+.coop-load-shared-slot { stroke-dasharray: 3 2; }
+.coop-load-vector { fill: none; stroke: var(--coop-accent); stroke-width: 2px; }
+.coop-load-path { fill: none; stroke: var(--coop-accent); stroke-width: 2px; stroke-dasharray: 5 5; opacity: 0.65; }
+.coop-load-token { cursor: pointer; transition: transform 650ms ease; }
+.coop-load-token-body { fill: var(--coop-token-color); }
+.coop-load-token text { fill: #111; font-weight: 700; font-size: 12px; pointer-events: none; }
+.coop-load-token-outline { fill: none; stroke: var(--coop-text); stroke-width: 2px; opacity: 0; }
+.coop-load-token[data-selected="true"] .coop-load-token-outline,
+.coop-load-token:focus .coop-load-token-outline { opacity: 1; }
+.coop-load-token:focus { outline: none; }
+
+.coop-load .coop-load-status {
+  font-size: 0.85rem;
+  margin: 12px 0;
+  border-left: 3px solid var(--coop-accent);
+  padding-left: 10px;
+  min-height: 2.8em;
+}
+
+.coop-load-inspection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.coop-load-inspection > div { padding: 12px; border-radius: 7px; background: var(--coop-panel); }
+.coop-load-inspection h3 { font-size: 0.8rem; margin: 0 0 6px; color: var(--coop-muted); }
+.coop-load-inspection p { font-size: 0.85rem; margin: 0; overflow-wrap: anywhere; }
+.coop-load-notes { font-size: 0.8rem; margin: 14px 0; }
+.coop-load-notes p { margin: 6px 0; }
+.coop-load .coop-load-caption { font-size: 0.75rem; color: var(--coop-muted); margin-bottom: 0; }
+
+@media screen {
+  .coop-load-ready .coop-visualization-fallback { display: none; }
+}
+
+@media (max-width: 600px) {
+  .coop-load { padding: 12px; }
+  .coop-load-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .coop-load-inspection { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coop-load-token { transition: none; }
+}
+
+@media print {
+  [data-coop-load] { display: none; }
+  .coop-visualization-fallback { display: block; }
+}
