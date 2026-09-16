@@ -295,7 +295,7 @@ void TestCopyIfWithMagnitude(int magnitude)
 
   // Prepare input
   const offset_t num_items = offset_t{1ull} << magnitude;
-  const thrust::counting_iterator<offset_t> begin(offset_t{0});
+  const cuda::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + static_cast<std::ptrdiff_t>(num_items);
   ASSERT_EQUAL(static_cast<offset_t>(::cuda::std::distance(begin, end)), num_items);
 
@@ -331,9 +331,9 @@ void TestCopyIfStencilWithMagnitude(int magnitude)
 
   // Prepare input
   const offset_t num_items = offset_t{1ull} << magnitude;
-  const thrust::counting_iterator<offset_t> begin(offset_t{0});
+  const cuda::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + static_cast<std::ptrdiff_t>(num_items);
-  const thrust::counting_iterator<offset_t> stencil(offset_t{0});
+  const cuda::counting_iterator<offset_t> stencil(offset_t{0});
   ASSERT_EQUAL(static_cast<offset_t>(::cuda::std::distance(begin, end)), num_items);
 
   // Run algorithm on large number of items

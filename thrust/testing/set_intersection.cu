@@ -207,10 +207,10 @@ DECLARE_VARIABLE_UNITTEST(TestSetIntersectionMultiset);
 #if !_CCCL_COMPILER(MSVC)
 void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 {
-  const thrust::counting_iterator<long long> begin1(0);
-  const thrust::counting_iterator<long long> begin2 = begin1 + (1ll << magnitude);
-  const thrust::counting_iterator<long long> end1   = begin2 + 1;
-  const thrust::counting_iterator<long long> end2   = begin2 + (1ll << magnitude);
+  const cuda::counting_iterator<long long> begin1(0);
+  const cuda::counting_iterator<long long> begin2 = begin1 + (1ll << magnitude);
+  const cuda::counting_iterator<long long> end1   = begin2 + 1;
+  const cuda::counting_iterator<long long> end2   = begin2 + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin2, end1), 1);
 
   thrust::device_vector<long long> result;

@@ -21,7 +21,7 @@ class CountingIterator(IteratorBase):
     """
     Iterator representing a sequence of incrementing values.
 
-    Similar to `thrust::counting_iterator <https://nvidia.github.io/cccl/thrust/api/classthrust_1_1counting__iterator.html>`_.
+    Similar to `cuda::counting_iterator <https://nvidia.github.io/cccl/unstable/libcudacxx/api/classcuda_1_1counting__iterator.html>`_.
 
     The iterator starts at `start` and increments by 1 for each advance.
 

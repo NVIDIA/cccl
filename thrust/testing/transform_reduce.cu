@@ -1,7 +1,8 @@
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/transform_reduce.h>
+
+#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
@@ -96,7 +97,7 @@ void TestTransformReduceCountingIterator()
   using T     = typename Vector::value_type;
   using space = typename thrust::iterator_system<typename Vector::iterator>::type;
 
-  const thrust::counting_iterator<T, space> first(1);
+  const cuda::counting_iterator<T, space> first(1);
 
   const T result =
     thrust::transform_reduce(first, first + 3, ::cuda::std::negate<short>(), 0, ::cuda::std::plus<short>());
