@@ -13,8 +13,12 @@
    coop/visualizations/index
 
 ``cuda.coop`` provides cooperative CUDA primitives for Python kernel DSLs.
-The initial backend integrates with Numba-CUDA-MLIR and supports Load, Store,
-Exchange, Shuffle, Reduce, and Scan across their supported thread-group scopes.
+The initial backend integrates with Numba-CUDA-MLIR and supports
+:doc:`Load <coop/visualizations/load>`, :doc:`Store <coop/visualizations/store>`,
+:doc:`Exchange <coop/visualizations/exchange>`,
+:doc:`Shuffle <coop/visualizations/shuffle>`,
+:doc:`Reduce <coop/visualizations/reduce>`, and
+:doc:`Scan <coop/visualizations/scan>` across their supported thread-group scopes.
 Its portable descriptors and planning records let primitive families share one
 dispatch, storage, and compilation model.
 

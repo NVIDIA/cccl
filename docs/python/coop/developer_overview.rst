@@ -61,6 +61,10 @@ The Load fills that payload; the Store writes it back. This is a *blocked*
 arrangement of the tile. ``ThreadData(2)`` describes two values per thread,
 not two values shared by the block.
 
+The :doc:`Load <visualizations/load>` and :doc:`Store <visualizations/store>`
+visualizations show this ownership pattern and the exchanges used by other
+algorithms.
+
 All 128 threads execute both calls. There is one kernel launch. Neither
 ``load`` nor ``store`` launches another kernel or returns to the host.
 
@@ -690,6 +694,9 @@ With Load and Store connected, we can put a collective between them:
 The blocked arrangement defines the scan order across the tile. The
 result is a new two-item payload for each thread. Block Scan uses CUB
 temporary storage even though this example's Load and Store do not.
+
+The :doc:`Scan visualization <visualizations/scan>` shows the ordered
+prefixes and per-thread results for this operation.
 
 This computes one block's prefix sum. Processing multiple blocks requires
 the caller to assign separate tiles and, for a device-wide scan, arrange
