@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "catch2_test_helper.h"
+#include <unittest/unittest.h>
 
 template <typename Cat, typename Tag>
 inline constexpr bool system_is = cuda::std::is_same_v<thrust::detail::iterator_category_to_system_t<Cat>, Tag>;

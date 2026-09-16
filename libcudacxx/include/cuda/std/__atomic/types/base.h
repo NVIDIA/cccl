@@ -119,7 +119,7 @@ _CCCL_HOST_DEVICE_API inline void __atomic_signal_fence_dispatch(memory_order __
 template <typename _Sto, typename _Up, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API void __atomic_init_dispatch(_Sto* __a, _Up __val)
 {
-  __atomic_assign_volatile(__a->get(), __val);
+  ::cuda::std::__atomic_assign_volatile(__a->get(), __val);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
