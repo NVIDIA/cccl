@@ -26,7 +26,6 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/std/__algorithm/find.h>
 #include <cuda/std/__concepts/regular.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
@@ -51,8 +50,15 @@ namespace detail
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
 template <typename T>
-_CCCL_KERNEL_ATTRIBUTES void EmptyKernel()
-{}
+_CCCL_KERNEL_ATTRIBUTES void EmptyKernel(int* arch_out = nullptr)
+{
+#  ifdef __CUDA_ARCH__
+  if (arch_out)
+  {
+    *arch_out = __CUDA_ARCH__;
+  }
+#  endif // __CUDA_ARCH__
+}
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -452,60 +458,145 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 
 namespace detail
 {
-//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
+struct PtxComputeCapCacheTag
+{};
+
+//! @brief Launches \p kernel (EmptyKernel<T>) on a dedicated stream and reads back the __CUDA_ARCH__ it actually ran
+//! with, which reflects the architecture CUDA really dispatches for the current device. Unlike PTX manifest
+//! metadata queried via cudaFuncGetAttributes() (which can be clamped by nvlink, or otherwise not represent what is
+//! actually run; see NVIDIA/cccl#11403 and NVIDIA/cccl#11440), this directly observes execution and cannot be
+//! fooled. The probe runs on a stream created with cudaStreamNonBlocking so it is never swept into a CUDA graph that
+//! may be capturing on another (e.g. the caller's current) stream. Allocating, launching, and synchronizing are all
+//! rejected outright by the driver if *any* stream on this thread is currently being captured (regardless of which
+//! stream is used), so the whole probe is bracketed by cudaThreadExchangeStreamCaptureMode(..., Relaxed), the
+//! sanctioned escape hatch for library-internal side operations like this one during a caller's capture.
+template <class Kernel>
+_CCCL_HOST cudaError_t ptx_compute_cap_uncached_host(Kernel kernel, ::cuda::compute_capability& cc)
+{
+  cudaStreamCaptureMode old_mode = cudaStreamCaptureModeRelaxed;
+  {
+    const auto error = CubDebug(cudaThreadExchangeStreamCaptureMode(&old_mode));
+    if (error)
+    {
+      return error; // nothing to undo yet
+    }
+  }
+
+  int* d_arch         = nullptr;
+  cudaStream_t stream = nullptr;
+  cudaError_t error   = cudaSuccess;
+  int arch            = 0;
+  do
+  {
+    // Launch on a dedicated, non-blocking stream so this probe is never captured into an unrelated CUDA graph that
+    // may currently be recording on another stream.
+    error = CubDebug(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    if (error)
+    {
+      break;
+    }
+    error = CubDebug(cudaMallocAsync(&d_arch, sizeof(int), stream));
+    if (error)
+    {
+      break;
+    }
+    kernel<<<1, 1, 0, stream>>>(d_arch);
+    error = CubDebug(cudaPeekAtLastError());
+    if (error)
+    {
+      break;
+    }
+    error = CubDebug(cudaMemcpyAsync(&arch, d_arch, sizeof(int), cudaMemcpyDeviceToHost, stream));
+  } while (false);
+
+  if (d_arch)
+  {
+    CubDebug(cudaFreeAsync(d_arch, stream));
+  }
+  if (stream)
+  {
+    const auto sync_error = CubDebug(cudaStreamSynchronize(stream));
+    error                 = error ? error : sync_error;
+    CubDebug(cudaStreamDestroy(stream));
+  }
+  CubDebug(cudaThreadExchangeStreamCaptureMode(&old_mode));
+
+  if (!error)
+  {
+    cc = ::cuda::compute_capability{arch / 10};
+  }
+  return error;
+}
+
+//! @brief Retrieves the GPU architecture that will be used on the current device.
+template <class T = void>
+CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap_uncached(::cuda::compute_capability& cc)
+{
+  // Instantiate `EmptyKernel<T>` in both host and device code to ensure it can be called below.
+  [[maybe_unused]] const auto empty_kernel = detail::EmptyKernel<T>;
+
+  cudaError_t result = cudaErrorUnknown;
+#  if _CCCL_HOSTED()
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (result = ptx_compute_cap_uncached_host(empty_kernel, cc);), ({
+                      cc     = ::cuda::device::current_compute_capability();
+                      result = cudaSuccess;
+                    }));
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+  cc     = ::cuda::device::current_compute_capability();
+  result = cudaSuccess;
+#  endif // !_CCCL_HOSTED()
+  return result;
+}
+
+#  if _CCCL_HOSTED()
+//! @brief Retrieves the GPU architecture that will be used on \p device.
+template <class T = void>
+_CCCL_HOST cudaError_t ptx_compute_cap_uncached(::cuda::compute_capability& cc, int device)
+{
+  const SwitchDevice sd(device);
+  return ptx_compute_cap_uncached<T>(cc);
+}
+
+//! @brief Retrieves the GPU architecture that will be used on \p device.
+//!
+//! \note This function may cache the result internally.
+//! \note This function is thread safe.
+template <class T = void>
+_CCCL_HOST cudaError_t ptx_compute_cap(::cuda::compute_capability& cc, int device)
+{
+  auto const payload = GetPerDeviceAttributeCache<PtxComputeCapCacheTag>()(
+    // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
+    [=](int& pv) {
+      ::cuda::compute_capability tmp{};
+      const auto error = ptx_compute_cap_uncached<T>(tmp, device);
+      pv               = tmp.get();
+      return error;
+    },
+    device);
+
+  if (!CubDebug(payload.error))
+  {
+    cc = ::cuda::compute_capability{payload.attribute};
+  }
+  return payload.error;
+}
+#  endif // _CCCL_HOSTED()
+
+//! @brief Retrieves the GPU architecture that will be used on the current device.
+//!
+//! \note This function may cache the result internally.
+//! \note This function is thread safe.
 template <class T = void>
 CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 {
-#  if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__)
-  {
-    const auto& target_ccs = ::cuda::__target_compute_capabilities();
-
-    // PtxVersion() (via cudaFuncGetAttributes()) can report a virtual architecture clamped below the actual
-    // architecture by nvlink when relocatable device code is linked against any object compiled for a lower
-    // architecture (nvlink picks the lowest arch among all linked objects). Critically, the clamped value may not be
-    // contained in __CUDA_ARCH_LIST__ or can coincidentally equal a *different*, lower entry in __CUDA_ARCH_LIST__.
-    int sm_version = 0;
-    if (const auto error = SmVersion(sm_version))
-    {
-      return error;
-    }
-    const ::cuda::compute_capability sm_cc{sm_version / 10};
-
-    ::cuda::compute_capability best{};
-    for (const auto& candidate : target_ccs)
-    {
-      if (candidate <= sm_cc && best < candidate)
-      {
-        best = candidate;
-      }
-    }
-    _CCCL_ASSERT(best != ::cuda::compute_capability{},
-                 "Failed to find a target compute capability for the current device");
-    if (best == ::cuda::compute_capability{})
-    {
-      return cudaErrorInvalidDeviceFunction;
-    }
-    cc = best;
-  }
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__) ^^^ / vvv !(...) vvv
-  int ptx_version = 0;
-  if (const auto error = PtxVersion<T>(ptx_version))
-  {
-    return error;
-  }
-  cc = ::cuda::compute_capability{ptx_version / 10};
-
-#  endif // !(_CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__))
-
-#  if _CCCL_CUDA_COMPILATION()
-  {
-    [[maybe_unused]] const auto& target_ccs = ::cuda::__target_compute_capabilities();
-    _CCCL_ASSERT(cuda::std::find(target_ccs.begin(), target_ccs.end(), cc) != target_ccs.end(),
-                 "The compute capability must be one of __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST");
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
-
-  return cudaSuccess;
+  cudaError_t result = cudaErrorUnknown;
+#  if _CCCL_HOSTED()
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (result = ptx_compute_cap<T>(cc, CurrentDevice());), (result = ptx_compute_cap_uncached<T>(cc);));
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+  result = ptx_compute_cap_uncached<T>(cc);
+#  endif // !_CCCL_HOSTED()
+  return result;
 }
 } // namespace detail
 
