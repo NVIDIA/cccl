@@ -14,7 +14,7 @@ boundaries. The qualified Numba-CUDA-MLIR API also supports scalar
 
 The explorer shows eight illustrative threads. Change the items per thread
 to see how local shifts connect across threads. Scalar modes use one value
-per thread. All block members must participate in each primitive.
+per thread. All block members must participate in each collective.
 
 .. coop-visualization:: shuffle
 
@@ -101,4 +101,4 @@ outside the kernel and use the qualified namespace:
 This second fragment also assumes a complete 128-thread block and 128 valid
 elements per block. See :func:`cuda.coop.shuffle` and the
 :doc:`../programming_guide` for the common/qualified API distinction and
-primitive participation rules.
+collective participation rules.
