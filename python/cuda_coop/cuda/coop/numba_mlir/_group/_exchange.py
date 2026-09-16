@@ -31,7 +31,7 @@ def exchange(
     See :func:`cuda.coop.exchange` for shared group requirements, layout
     definitions, dtypes, and examples. The qualified API adds local arrays,
     block scatter modes, and the options below. Every group member must call
-    the primitive, including members whose scatter items are all invalid.
+    the collective, including members whose scatter items are all invalid.
 
     Parameters
     ----------

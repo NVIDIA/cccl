@@ -34,18 +34,15 @@ def TempStorage(
         satisfies both this request and the operations' alignment needs.
     auto_sync : bool, optional
         Whether to insert a trailing barrier after each scratch-using call.
-        Defaults to ``False``; ``None`` also disables automatic reuse
-        synchronization. The caller must synchronize before reusing the
-        scratch, including on the next iteration of a loop. Pass ``True``
-        to request automatic reuse barriers.
+        ``None`` and ``True`` enable automatic reuse synchronization.
+        ``False`` requires the caller to synchronize before the scratch is
+        reused, including on the next iteration of a loop.
     sharing : {"shared", "exclusive"}, optional
-        Compile-time allocation policy, default ``"shared"``. Calls using
-        the same descriptor can reuse one scratch slice. ``"exclusive"``
-        gives distinct call sites separate slices, using more shared memory
-        to avoid barriers needed solely for cross-call scratch reuse when
-        ``auto_sync=False``. Repeated execution of one call site still reuses
-        its slice and requires synchronization before reuse. Omitting
-        ``temp_storage`` leaves layout and reuse barriers to the compiler.
+        Compile-time allocation policy, default ``"shared"``. Shared call
+        sites can reuse one scratch slice. ``"exclusive"`` gives distinct
+        call sites separate slices, which may consume more shared memory.
+        It does not disable automatic synchronization: repeated executions
+        of a single call site still reuse its slice.
 
     Returns
     -------
@@ -57,8 +54,8 @@ def TempStorage(
     Examples
     --------
     Reuse one descriptor for transpose Load, Scan, and transpose Store.
-    The loop processes two independent tiles. Explicit ``auto_sync=True``
-    enables barriers between operations and between iterations.
+    The loop processes two independent tiles. Automatic barriers protect
+    reuse between operations and between iterations.
 
     .. literalinclude::
         ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
