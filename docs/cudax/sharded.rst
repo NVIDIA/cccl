@@ -108,7 +108,11 @@ environment selects the contract):
   ``iota``, ``tabulate``, ``generate``, ``for_each``, ``transform``
   (in place); ``zip_transform`` is the out-of-place spelling for any arity
   (``out[i] = op(in1[i], in2[i], ...)``, in-place into an input supported,
-  co-partitioning checked);
+  co-partitioning checked). ``transform`` and ``zip_transform`` are executed
+  by the MGMN transform engine (``cuda::experimental::mgmn::transform``,
+  see the MGMN algorithms built on ``__multi_gpu``) over an in-process
+  communicator, one rank per shard; the sharded signatures and contract are
+  unchanged, and the engine is not visible to the caller;
 - ``reduce`` / ``sum`` / ``min`` / ``max``: per-shard CUB ``DeviceReduce``
   plus a deterministic combine — the synchronous forms return the value;
   ``reduce_into`` is the asynchronous form, writing the aggregate through a

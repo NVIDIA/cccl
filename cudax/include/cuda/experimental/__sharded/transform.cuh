@@ -10,14 +10,19 @@
 
 /**
  * @file
- * @brief Elementwise transforms over sharded arrays (in-place, unary,
- *        binary). No cross-place stage: each shard transforms locally.
+ * @brief Elementwise transforms over sharded views (in-place unary and
+ *        n-ary zip). No cross-place stage: each shard transforms locally.
+ *
+ * The engine is the MGMN transform (`cuda::experimental::mgmn::transform`,
+ * rank-local `cub::DeviceTransform`), instantiated over the in-process
+ * `places_communicator` of `mgmn_adapter.cuh`, one rank per non-empty shard.
+ * The sharded verbs keep their signatures and their contract; the engine is
+ * not visible to the caller.
  */
 
 #pragma once
 
 #include <cuda/__cccl_config>
-#include <cuda/stream>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,26 +32,48 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/device_transform.cuh>
+#include <cuda/__iterator/zip_function.h>
+#include <cuda/__iterator/zip_iterator.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/type_traits>
 
-#include <thrust/execution_policy.h>
-#include <thrust/transform.h>
-
-#include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__multi_gpu/algorithm/transform/transform.h>
 #include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
-#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
-#include <cuda/experimental/__sharded/sharded_array.cuh>
-#include <cuda/experimental/__sharded/stream_scope.cuh>
+#include <cuda/experimental/__sharded/default_envs.cuh>
+#include <cuda/experimental/__sharded/mgmn_adapter.cuh>
+#include <cuda/experimental/__utility/result_policy.cuh>
 
-#include <stdexcept>
-
-#include <cuda_runtime.h>
+#include <cstddef>
+#include <vector>
 
 namespace cuda::experimental::sharded
 {
+namespace reserved
+{
+//! @brief The operator with its result converted to the output element type
+//! `_Tp` — the implicit conversion the store `out[i] = op(...)` performs
+//! anyway, stated as the return type. That declared type is what lets the
+//! engine's host-side checks (`indirectly_unary_invocable`,
+//! `indirectly_writable`) accept extended `__device__` lambdas, whose return
+//! type cannot be queried in host code. The operator is `mutable`: the
+//! host-side stub nvcc gives such a lambda has a non-const call operator.
+template <class _Tp, class _Op>
+struct __into
+{
+  mutable _Op __op;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Args>
+  _CCCL_HOST_DEVICE_API _Tp operator()(_Args&&... __args) const
+  {
+    return __op(::cuda::std::forward<_Args>(__args)...);
+  }
+};
+} // namespace reserved
+
 // ============================================================================
-// Concept-generic tier (pilot): any sharded_view + per-shard environments
+// Concept-generic tier: any sharded_view + per-shard environments
 // ============================================================================
 
 /**
@@ -75,10 +102,25 @@ _CCCL_REQUIRES(
   sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallEnv& call_env = {})
 {
-  __detail::__generic_map(data, envs, call_env, "sharded::transform", [&](const auto& d, cudaStream_t s) {
-    thrust::transform(thrust::cuda::par_nosync.on(s), d.data, d.data + d.size, d.data, op);
-    cuda_safe_call(cudaGetLastError());
-  });
+  using __elem_t = view_element_t<_S>;
+  reserved::__mgmn_map(
+    data, envs, call_env, "sharded::transform", [&](const auto& __comms, const auto& __menvs, const auto& __lanes) {
+      const auto __ptrs  = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) -> __elem_t* {
+        return data.shard(__g).data;
+      });
+      const auto __sizes = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) {
+        return static_cast<::std::size_t>(data.shard(__g).size);
+      });
+      // Output aliases input: the MGMN transform's in-place form.
+      ::cuda::experimental::mgmn::transform(
+        ::cuda::experimental::distributed,
+        __comms,
+        __menvs,
+        __ptrs,
+        __sizes,
+        __ptrs,
+        reserved::__into<__elem_t, _UnaryOp>{op});
+    });
 }
 
 /**
@@ -95,27 +137,12 @@ _CCCL_HOST_API void transform(_S&& data, _UnaryOp op, const _CallEnv& call_env =
   sharded::transform(::cuda::std::forward<_S>(data), envs, op, call_env);
 }
 
-namespace reserved
-{
-//! @brief Wrap an n-ary operator so its result rides `cub::DeviceTransform`'s
-//! tuple-of-outputs convention (one output here).
-template <class _Op>
-struct __tuple_result_op
-{
-  _Op __op;
-  template <class... _Args>
-  _CCCL_HOST_DEVICE_API auto operator()(_Args&&... __args) const
-  {
-    return ::cuda::std::tuple<decltype(__op(::cuda::std::forward<_Args>(__args)...))>{
-      __op(::cuda::std::forward<_Args>(__args)...)};
-  }
-};
-} // namespace reserved
-
 /**
  * @brief N-ary zip transform over sharded views:
- * `out[i] = op(in1[i], in2[i], ...)`, one fused pass per shard
- * (`cub::DeviceTransform` over a tuple of shard pointers).
+ * `out[i] = op(in1[i], in2[i], ...)`, one fused pass per shard (the MGMN
+ * transform over a `cuda::zip_iterator` of the shard's input pointers, with
+ * the operator lifted to the tuple by `cuda::zip_function`;
+ * `cub::DeviceTransform` unwraps that pair into its multi-input kernel).
  *
  * All views must be co-partitioned with @p out (same shard count, identical
  * per-shard global regions); inputs must be readable where the output's
@@ -140,20 +167,27 @@ _CCCL_HOST_API void zip_transform(_SOut&& out, const _Envs& envs, _Op op, const 
   static_assert(sizeof...(_SIn) >= 1, "zip_transform needs at least one input view");
   (reserved::__check_copartitioned(out, ins, "sharded::zip_transform"), ...);
 
-  // Same driver as the rest of the map family (`transform`, `fill`, ...):
-  // environment-count refusal, the synchronous no-stream form, and the
-  // asynchronous contract — LANE-ORDERED by default (no edges against the
-  // call stream), fork/join edges only under `composition::bracketed`, and
-  // the capture-time refusal of a lane-ordered call whose lanes are not
-  // capturing. The shard index selects the co-partitioned input shards.
-  __detail::__generic_map(
-    out, envs, call_env, "sharded::zip_transform", [&](::std::size_t g, const auto& s_out, cudaStream_t) {
-      cuda_safe_call(cub::DeviceTransform::Transform(
-        ::cuda::std::tuple{ins.shard(g).data...},
-        ::cuda::std::tuple{s_out.data},
-        s_out.size,
-        reserved::__tuple_result_op<_Op>{op},
-        envs[g]));
+  using __out_t = view_element_t<_SOut>;
+  reserved::__mgmn_map(
+    out, envs, call_env, "sharded::zip_transform", [&](const auto& __comms, const auto& __menvs, const auto& __lanes) {
+      // The shard index selects the co-partitioned input shards.
+      const auto __inputs  = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) {
+        return ::cuda::make_zip_iterator(ins.shard(__g).data...);
+      });
+      const auto __sizes   = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) {
+        return static_cast<::std::size_t>(out.shard(__g).size);
+      });
+      const auto __outputs = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) -> __out_t* {
+        return out.shard(__g).data;
+      });
+      ::cuda::experimental::mgmn::transform(
+        ::cuda::experimental::distributed,
+        __comms,
+        __menvs,
+        __inputs,
+        __sizes,
+        __outputs,
+        ::cuda::zip_function<reserved::__into<__out_t, _Op>>{reserved::__into<__out_t, _Op>{op}});
     });
 }
 

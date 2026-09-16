@@ -13,8 +13,9 @@
  *
  * @brief The MGMN bridge: `places_communicator` satisfies the MGMN
  *        communicator concept and its collectives are correct; the `mgmn::`
- *        verbs (reduce, inclusive/exclusive scan, transform) run the MGMN
- *        algorithms over sharded arrays and agree with the existing sharded
+ *        verbs (reduce, inclusive/exclusive scan) and the sharded transforms
+ *        (whose engine is the MGMN transform) run the MGMN algorithms over
+ *        sharded arrays and agree with the existing sharded
  *        implementations and with host references — on a locality-domain
  *        group and on a single-place group, at divisible and non-divisible
  *        sizes, with custom operators and initial values; the environment's
@@ -427,11 +428,12 @@ void test_verbs(place_group& group, size_t n)
     }
   }
 
-  // transform (out of place and in place) vs sharded::transform vs host
+  // transform (out of place through zip_transform, and in place): the
+  // sharded verbs, whose engine is the MGMN transform, vs host
   {
     data.copy_from_host(input.data());
     ref.copy_from_host(input.data());
-    mgmn::transform(data, out, times_three_op{});
+    zip_transform(out, times_three_op{}, data);
     transform(ref, times_three_op{});
     const auto h = host_of(out);
     const auto r = host_of(ref);
@@ -440,7 +442,7 @@ void test_verbs(place_group& group, size_t n)
       EXPECT(h[i] == 3 * input[i]);
       EXPECT(h[i] == r[i]);
     }
-    mgmn::transform(data, times_three_op{});
+    transform(data, times_three_op{});
     const auto d = host_of(data);
     for (size_t i = 0; i < n; i++)
     {

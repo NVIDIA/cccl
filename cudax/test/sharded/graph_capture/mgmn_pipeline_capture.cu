@@ -57,11 +57,11 @@ template <class CallEnv>
 void enqueue_pipeline(sharded_array<long long>& data, ::std::vector<long long*>& lane_outs, const CallEnv& call_env)
 {
   const auto envs = default_envs(data);
-  mgmn::transform(data, envs, twice_op{}, call_env);
+  transform(data, envs, twice_op{}, call_env);
   mgmn::reduce_into_lanes(data, envs, lane_outs, ::cuda::std::plus<long long>{}, 0LL, 0LL, call_env);
   mgmn::inclusive_sum(data, envs, call_env);
   mgmn::exclusive_sum(data, envs, exclusive_init, call_env);
-  mgmn::transform(data, envs, plus_one_op{}, call_env);
+  transform(data, envs, plus_one_op{}, call_env);
 }
 
 // Host reference of the pipeline: returns the array and the reduce value

@@ -56,9 +56,10 @@ int main()
     ::cuda::std::execution::env{::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}}};
   const auto envs = default_envs(data);
 
-  // The MGMN verbs with a call environment, lane-ordered behind a fork/join
+  // The MGMN-engined verbs with a call environment, lane-ordered behind a
+  // fork/join
   data.fork_from(origin);
-  mgmn::transform(data, envs, twice_op{}, ce);
+  transform(data, envs, twice_op{}, ce);
   mgmn::inclusive_sum(data, envs, ce);
   mgmn::inclusive_scan(data, envs, ::cuda::std::plus<long long>{});
   data.join_into(origin);
