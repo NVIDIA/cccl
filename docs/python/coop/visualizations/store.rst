@@ -38,13 +38,10 @@ of 32 threads.
 Reading the stages
 ------------------
 
-See :ref:`blocked versus striped <coop-glossary-layouts>` for a compact
-ownership table and the index formulas used here.
-
-The first row shows the input payload. Transpose Store algorithms may
-rearrange that payload in place, as in CUB; copy values before Store if they
-are needed later. For algorithms with an exchange, values pass through shared
-scratch before reaching the writer-register row. The final row shows memory
+The first row shows a working copy of the input payload. Store preserves
+the caller's payload, including when an exchange rearranges its internal
+copy. For algorithms with an exchange, values pass through shared scratch
+before reaching the writer-register row. The final row shows memory
 positions. Select a value to follow its input thread, writer thread, and
 destination address.
 
@@ -67,21 +64,20 @@ stores; the diagram does not impose a serial global-memory store schedule.
 Using Store in a kernel
 -----------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel that accepts
-``items_per_thread``. Import
-``cuda`` from ``numba_cuda_mlir``, ``numpy as np``, and
-``cuda.coop as coop``. Launch with 128 threads and provide at least ``128 * items_per_thread``
+This fragment uses the common API inside a Numba-CUDA-MLIR kernel, with
+``cuda`` imported from ``numba_cuda_mlir``, ``numpy as np``, and
+``cuda.coop as coop``. Launch with 128 threads and provide at least 256
 source and destination elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
-   offset = cuda.blockIdx.x * 128 * items_per_thread
+   items = coop.ThreadData(items_per_thread=2)
+   offset = cuda.blockIdx.x * 256
    coop.load(block, source, items, algorithm="direct", offset=offset)
    coop.store(block, destination, items, algorithm="transpose", offset=offset)
-   # The block's values are written in their original logical order.
-   # Store writes memory and returns None; items may now be rearranged.
+   # The block's 256 values are written in their original logical order.
+   # Store writes memory and returns None.
 
 For a partial final tile, pass ``valid_items`` to limit the stored prefix;
 memory beyond that prefix remains untouched. Supply a matching valid count
