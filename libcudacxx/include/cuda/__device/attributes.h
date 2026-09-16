@@ -33,20 +33,28 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <::cudaDeviceAttr _Attr, typename _Type>
-struct __dev_attr_impl
+template <::CUdevice_attribute _Attr, typename _Type>
+struct __cu_dev_attr_impl
 {
   using type = _Type;
 
-  [[nodiscard]] _CCCL_HOST_API constexpr operator ::cudaDeviceAttr() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr operator ::CUdevice_attribute() const noexcept
   {
     return _Attr;
   }
 
   [[nodiscard]] _CCCL_HOST_API type operator()(device_ref __dev) const
   {
-    return static_cast<type>(::cuda::__driver::__deviceGetAttribute(
-      static_cast<::CUdevice_attribute>(_Attr), ::cuda::__driver::__deviceGet(__dev.get())));
+    return static_cast<type>(::cuda::__driver::__deviceGetAttribute(_Attr, ::cuda::__driver::__deviceGet(__dev.get())));
+  }
+};
+
+template <::cudaDeviceAttr _Attr, typename _Type>
+struct __dev_attr_impl : __cu_dev_attr_impl<static_cast<::CUdevice_attribute>(_Attr), _Type>
+{
+  [[nodiscard]] _CCCL_HOST_API constexpr operator ::cudaDeviceAttr() const noexcept
+  {
+    return _Attr;
   }
 };
 
@@ -759,6 +767,29 @@ inline constexpr host_numa_memory_pools_supported_t host_numa_memory_pools_suppo
 using host_memory_pools_supported_t = __dev_attr<::cudaDevAttrHostMemoryPoolsSupported>;
 inline constexpr host_memory_pools_supported_t host_memory_pools_supported{};
 #  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^
+
+#  if _CCCL_CTK_AT_LEAST(13, 3)
+using handle_type_fabric_supported_t =
+  __cu_dev_attr_impl<::CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_FABRIC_SUPPORTED, bool>;
+inline constexpr handle_type_fabric_supported_t handle_type_fabric_supported{};
+
+using logical_endpoint_unicast_supported_t =
+  __cu_dev_attr_impl<::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_UNICAST_SUPPORTED, bool>;
+inline constexpr logical_endpoint_unicast_supported_t logical_endpoint_unicast_supported{};
+
+using logical_endpoint_multicast_supported_t =
+  __cu_dev_attr_impl<::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_MULTICAST_SUPPORTED, bool>;
+inline constexpr logical_endpoint_multicast_supported_t logical_endpoint_multicast_supported{};
+
+using logical_endpoint_counted_ops_supported_t =
+  __cu_dev_attr_impl<::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_COUNTED_OPS_SUPPORTED, bool>;
+inline constexpr logical_endpoint_counted_ops_supported_t logical_endpoint_counted_ops_supported{};
+
+using logical_endpoint_unicast_access_on_owner_device_supported_t =
+  __cu_dev_attr_impl<::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_UNICAST_ACCESS_ON_OWNER_DEVICE_SUPPORTED, bool>;
+inline constexpr logical_endpoint_unicast_access_on_owner_device_supported_t
+  logical_endpoint_unicast_access_on_owner_device_supported{};
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 3) ^^^
 
 // Total global memory available on the device in bytes
 struct total_global_memory_t

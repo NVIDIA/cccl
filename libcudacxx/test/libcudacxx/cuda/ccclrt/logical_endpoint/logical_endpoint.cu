@@ -251,11 +251,13 @@ C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with caller-owned ID range",
 
   cuda::unicast_logical_endpoint moved{cuda::std::move(endpoint)};
   CHECK(endpoint.size() == 0);
+  CHECK(endpoint.id() == cuda::invalid_logical_endpoint_id);
   CHECK(moved.size() == bytes);
   CHECK(moved.id() == ids[0]);
 
   auto released = moved.release();
   CHECK(moved.size() == 0);
+  CHECK(moved.id() == cuda::invalid_logical_endpoint_id);
   CHECK(released.first == ids[0]);
   REQUIRE(released.second.has_value());
   CHECK(released.second->base_id() == ids.base_id());
@@ -288,6 +290,7 @@ C2H_CCCLRT_TEST("logical endpoint retains caller-owned ID range after source ran
 
   auto released = endpoint.release();
   CHECK(endpoint.size() == 0);
+  CHECK(endpoint.id() == cuda::invalid_logical_endpoint_id);
   CHECK(released.first == expected_id);
   REQUIRE(released.second.has_value());
   CHECK(released.second->base_id() == expected_id);
@@ -310,6 +313,7 @@ C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with internally reserved ID"
 
   auto released = endpoint.release();
   CHECK(endpoint.size() == 0);
+  CHECK(endpoint.id() == cuda::invalid_logical_endpoint_id);
   REQUIRE(released.second.has_value());
   CHECK(released.second->size() == 1);
 
@@ -332,6 +336,7 @@ C2H_CCCLRT_TEST("unicast logical endpoint release from explicit ID has no retain
 
   auto released = endpoint.release();
   CHECK(endpoint.size() == 0);
+  CHECK(endpoint.id() == cuda::invalid_logical_endpoint_id);
   CHECK(released.first == ids[0]);
   CHECK(!released.second.has_value());
 
@@ -882,6 +887,7 @@ C2H_CCCLRT_TEST("multicast logical endpoint release from explicit ID has no reta
 
   auto released = endpoint.release();
   CHECK(endpoint.size() == 0);
+  CHECK(endpoint.id() == cuda::invalid_logical_endpoint_id);
   CHECK(released.first == ids[0]);
   CHECK(!released.second.has_value());
 
