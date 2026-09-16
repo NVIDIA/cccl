@@ -6,6 +6,24 @@
  * cccl-mirror trentn/dev/cuda-coop 5dba3d36b6eaae48b967d6fa48f9d15e98136000.
  */
 
+/* Match the developer overview's wide layout. Sphinx includes this stylesheet
+ * only on pages that embed the explorer.
+ */
+body { overflow-x: clip; }
+.bd-page-width { max-width: 120rem; }
+.bd-header .logo__title {
+  max-width: calc(100vw - 9rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bd-sidebar-primary,
+.bd-sidebar-secondary { flex-basis: var(--pst-sidebar-secondary); }
+.bd-main .bd-content .bd-article-container {
+  max-width: none;
+  min-width: 0;
+}
+
 .coop-visualization {
   min-width: 0;
   max-width: 100%;
