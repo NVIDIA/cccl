@@ -13,11 +13,13 @@
 // UNSUPPORTED: nvrtc
 // ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_FORCE_INCLUDE_H
 
+#include <cuda/launch>
 #include <cuda/logical_endpoint>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/cstdint>
+#include <cuda/std/optional>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -33,6 +35,15 @@ template <class _Tp>
 struct has_add_device<
   _Tp,
   cuda::std::void_t<decltype(cuda::std::declval<const _Tp&>().add_device(cuda::std::declval<cuda::device_ref>()))>>
+    : cuda::std::true_type
+{};
+
+template <class _Tp, class = void>
+struct has_bitwise_or : cuda::std::false_type
+{};
+
+template <class _Tp>
+struct has_bitwise_or<_Tp, cuda::std::void_t<decltype(cuda::std::declval<_Tp>() | cuda::std::declval<_Tp>())>>
     : cuda::std::true_type
 {};
 
@@ -63,15 +74,71 @@ static_assert(!cuda::std::is_default_constructible_v<cuda::logical_endpoint_id>)
 static_assert(!cuda::std::is_default_constructible_v<cuda::unicast_logical_endpoint_ref>);
 static_assert(!cuda::std::is_default_constructible_v<cuda::multicast_logical_endpoint_ref>);
 static_assert(cuda::std::is_default_constructible_v<cuda::logical_endpoint_id_range>);
+static_assert(cuda::std::is_default_constructible_v<cuda::unicast_logical_endpoint>);
+static_assert(cuda::std::is_default_constructible_v<cuda::multicast_logical_endpoint>);
 static_assert(cuda::std::is_constructible_v<cuda::logical_endpoint_id, cuda::std::uint32_t>);
 static_assert(!cuda::std::is_convertible_v<cuda::std::uint32_t, cuda::logical_endpoint_id>);
 static_assert(!cuda::std::is_convertible_v<cuda::std::uint32_t, cuda::unicast_logical_endpoint_ref>);
 static_assert(!cuda::std::is_convertible_v<cuda::std::uint32_t, cuda::multicast_logical_endpoint_ref>);
+static_assert(cuda::std::is_constructible_v<cuda::unicast_logical_endpoint_spec, cuda::device_ref>);
+static_assert(cuda::std::is_constructible_v<cuda::multicast_logical_endpoint_spec, unsigned int>);
+static_assert(!cuda::std::is_constructible_v<cuda::multicast_logical_endpoint_spec, cuda::device_ref, unsigned int>);
+static_assert(!cuda::std::is_copy_constructible_v<cuda::unicast_logical_endpoint>);
+static_assert(!cuda::std::is_copy_constructible_v<cuda::multicast_logical_endpoint>);
+static_assert(cuda::std::is_move_constructible_v<cuda::unicast_logical_endpoint>);
+static_assert(cuda::std::is_move_constructible_v<cuda::multicast_logical_endpoint>);
+static_assert(cuda::std::is_move_assignable_v<cuda::unicast_logical_endpoint>);
+static_assert(cuda::std::is_move_assignable_v<cuda::multicast_logical_endpoint>);
+static_assert(!cuda::std::is_constructible_v<bool, const cuda::unicast_logical_endpoint&>);
+static_assert(!cuda::std::is_constructible_v<bool, const cuda::multicast_logical_endpoint&>);
+static_assert(cuda::std::is_convertible_v<const cuda::unicast_logical_endpoint&, cuda::unicast_logical_endpoint_ref>);
+static_assert(
+  cuda::std::is_convertible_v<const cuda::multicast_logical_endpoint&, cuda::multicast_logical_endpoint_ref>);
 static_assert(cuda::std::is_constructible_v<cuda::logical_endpoint_id_range, cuda::std::uint32_t>);
 static_assert(
   !cuda::std::is_constructible_v<cuda::logical_endpoint_id_range, cuda::logical_endpoint_id, cuda::std::uint32_t>);
+static_assert(cuda::std::is_constructible_v<cuda::unicast_logical_endpoint,
+                                            const cuda::unicast_logical_endpoint_spec&,
+                                            cuda::std::uint64_t>);
+static_assert(cuda::std::is_constructible_v<cuda::unicast_logical_endpoint,
+                                            cuda::logical_endpoint_id,
+                                            const cuda::unicast_logical_endpoint_spec&,
+                                            cuda::std::uint64_t>);
+static_assert(cuda::std::is_constructible_v<cuda::unicast_logical_endpoint,
+                                            const cuda::logical_endpoint_id_range&,
+                                            cuda::std::uint32_t,
+                                            const cuda::unicast_logical_endpoint_spec&,
+                                            cuda::std::uint64_t>);
+static_assert(cuda::std::is_constructible_v<cuda::multicast_logical_endpoint,
+                                            const cuda::multicast_logical_endpoint_spec&,
+                                            cuda::std::uint64_t>);
+static_assert(cuda::std::is_constructible_v<cuda::multicast_logical_endpoint,
+                                            cuda::logical_endpoint_id,
+                                            const cuda::multicast_logical_endpoint_spec&,
+                                            cuda::std::uint64_t>);
+static_assert(cuda::std::is_constructible_v<cuda::multicast_logical_endpoint,
+                                            const cuda::logical_endpoint_id_range&,
+                                            cuda::std::uint32_t,
+                                            const cuda::multicast_logical_endpoint_spec&,
+                                            cuda::std::uint64_t>);
+static_assert(!cuda::std::is_constructible_v<cuda::multicast_logical_endpoint, cuda::device_ref, cuda::std::uint64_t>);
+
+static_assert(cuda::std::is_same_v<cuda::transformed_device_argument_t<cuda::unicast_logical_endpoint&>,
+                                   cuda::unicast_logical_endpoint_ref>);
+static_assert(cuda::std::is_same_v<cuda::transformed_device_argument_t<cuda::multicast_logical_endpoint&>,
+                                   cuda::multicast_logical_endpoint_ref>);
+static_assert(cuda::std::is_same_v<
+              decltype(cuda::std::declval<cuda::unicast_logical_endpoint&>().release()),
+              cuda::std::pair<cuda::logical_endpoint_id, cuda::std::optional<cuda::logical_endpoint_id_range>>>);
+static_assert(cuda::std::is_same_v<
+              decltype(cuda::std::declval<cuda::multicast_logical_endpoint&>().release()),
+              cuda::std::pair<cuda::logical_endpoint_id, cuda::std::optional<cuda::logical_endpoint_id_range>>>);
 static_assert(!has_add_device<cuda::unicast_logical_endpoint_ref>::value);
 static_assert(has_add_device<cuda::multicast_logical_endpoint_ref>::value);
+static_assert(!has_add_device<cuda::unicast_logical_endpoint>::value);
+static_assert(has_add_device<cuda::multicast_logical_endpoint>::value);
+static_assert(has_bitwise_or<cuda::logical_endpoint_flag>::value);
+static_assert(!has_bitwise_or<cuda::logical_endpoint_ipc_handle_type>::value);
 static_assert(!has_is_ready<cuda::logical_endpoint_id_range>::value);
 static_assert(!has_wait_ready_for<cuda::logical_endpoint_id_range>::value);
 
@@ -101,6 +168,45 @@ TEST_FUNC constexpr bool test_endpoint_ids()
   return true;
 }
 
+constexpr bool test_endpoint_flags()
+{
+  const cuda::logical_endpoint_flag flags =
+    cuda::logical_endpoint_flag::none | cuda::logical_endpoint_flag::counted_ops;
+
+  assert(cuda::std::to_underlying(flags) == cuda::std::to_underlying(cuda::logical_endpoint_flag::counted_ops));
+
+  return true;
+}
+
+bool test_empty_owning_endpoints()
+{
+  cuda::unicast_logical_endpoint unicast;
+  cuda::multicast_logical_endpoint multicast;
+
+  assert(unicast.size() == 0);
+  assert(multicast.size() == 0);
+  assert(unicast.bind_alignment() == 0);
+  assert(multicast.bind_alignment() == 0);
+
+  cuda::unicast_logical_endpoint moved_unicast{cuda::std::move(unicast)};
+  cuda::multicast_logical_endpoint moved_multicast{cuda::std::move(multicast)};
+  assert(unicast.size() == 0);
+  assert(multicast.size() == 0);
+  assert(moved_unicast.size() == 0);
+  assert(moved_multicast.size() == 0);
+
+  cuda::unicast_logical_endpoint assigned_unicast;
+  cuda::multicast_logical_endpoint assigned_multicast;
+  assigned_unicast   = cuda::std::move(moved_unicast);
+  assigned_multicast = cuda::std::move(moved_multicast);
+  assert(assigned_unicast.size() == 0);
+  assert(assigned_multicast.size() == 0);
+  assert(moved_unicast.size() == 0);
+  assert(moved_multicast.size() == 0);
+
+  return true;
+}
+
 bool test_empty_id_ranges()
 {
   cuda::logical_endpoint_id_range ids;
@@ -119,6 +225,7 @@ bool test_empty_id_ranges()
 }
 
 static_assert(test_endpoint_ids());
+static_assert(test_endpoint_flags());
 
 #endif // _CCCL_CTK_AT_LEAST(13, 3) && !TEST_COMPILER(NVRTC)
 
@@ -126,6 +233,8 @@ int main(int, char**)
 {
 #if _CCCL_CTK_AT_LEAST(13, 3) && !TEST_COMPILER(NVRTC)
   assert(test_endpoint_ids());
+  assert(test_endpoint_flags());
+  assert(test_empty_owning_endpoints());
   assert(test_empty_id_ranges());
 #endif // _CCCL_CTK_AT_LEAST(13, 3) && !TEST_COMPILER(NVRTC)
 
