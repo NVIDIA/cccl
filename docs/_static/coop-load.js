@@ -64,7 +64,7 @@
   function mount(host, index) {
     const wrapper = host.closest(".coop-visualization");
     const reduced_motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const state = { algorithm: "transpose", items: 2, value: 5, thread: 0, phase: 0, playing: false };
+    const state = { algorithm: "transpose", items: 2, value: 5, thread: 0, phase: 0, playing: !reduced_motion.matches };
     const prefix = `coop-load-${index}`;
     let phases = [];
     let geometry;
@@ -132,7 +132,7 @@
         state[name] = Number.isInteger(value) && value >= 0 && value < limit ? value : fallback;
       }
       state.phase = 0;
-      state.playing = false;
+      state.playing = !reduced_motion.matches;
     }
 
     function write_url() {
@@ -320,7 +320,6 @@
       if (button.dataset.algorithm) {
         state.algorithm = button.dataset.algorithm;
         state.phase = 0;
-        state.playing = false;
         build_scene();
         write_url();
       } else if (button.dataset.phase !== undefined) {
@@ -341,7 +340,6 @@
         state.items = Number(event.target.value);
         state.value = Math.min(state.value, threads * state.items - 1);
         state.phase = 0;
-        state.playing = false;
         build_scene();
       } else if (event.target.matches("[data-value]")) {
         choose_value(Number(event.target.value));
@@ -379,6 +377,7 @@
       const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; sync_timer(); });
       observer.observe(host);
     }
+    sync_timer();
   }
 
   function initialize() {
