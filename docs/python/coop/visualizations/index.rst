@@ -6,8 +6,8 @@
 Visualizations
 ==============
 
-Explore how ``cuda.coop`` primitives move, combine, compare, count, decode, and order values.
-Change the settings, step through the stages, and select a value to follow
+Explore how ``cuda.coop`` primitives move values between memory and threads.
+Change an algorithm, step through its stages, and select a value to follow
 its ownership. These diagrams show data movement; their timing and geometry
 do not predict GPU performance.
 
@@ -15,16 +15,3 @@ do not predict GPU performance.
    :maxdepth: 1
 
    load
-   store
-   exchange
-   shuffle
-   reduce
-   reduce-batched
-   scan
-   adjacent-difference
-   discontinuity
-   histogram
-   run-length-decode
-   merge-sort
-   radix
-   topk
