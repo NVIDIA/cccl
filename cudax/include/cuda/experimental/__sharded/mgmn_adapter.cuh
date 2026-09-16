@@ -32,15 +32,16 @@
  *    helpers — turns a sharded view and its per-shard environments into the
  *    five lockstep ranges the MGMN multi-local-rank overloads consume
  *    (communicators, environments, input iterators, sizes, output
- *    iterators). `reserved::__mgmn_map` is the driver of the sharded
- *    map-family verbs whose engine is a rank-local MGMN algorithm
- *    (`transform`, `zip_transform`): it applies the map family's contract —
- *    the environment-count guard, the synchronous no-stream form,
- *    lane-ordered or `composition::bracketed` composition, the capture-time
- *    refusal — around one MGMN call over the non-empty shards.
- *
- * The verbs whose engine is a cross-shard MGMN algorithm (scans,
- * reductions) live in `mgmn.cuh`, which includes this header.
+ *    iterators). `reserved::__mgmn_drive` is the driver every sharded verb
+ *    whose engine is an MGMN algorithm goes through: it applies the sharded
+ *    contract — the strict environment-count guard, the synchronous
+ *    no-stream form, lane-ordered or `composition::bracketed` composition,
+ *    the capture-time refusal — around one MGMN call. `__mgmn_map` is its
+ *    map-family spelling (rank-local engines: `transform`, `zip_transform`;
+ *    stream-only environments, empty shards skipped); the combine family
+ *    (`reduce.cuh`, `scan.cuh`) drives it with allocating environments that
+ *    also carry the determinism requirement (`__mgmn_alloc_env`), one rank
+ *    per shard, empty shards included (their partial is the identity).
  */
 
 #pragma once
@@ -55,6 +56,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/thread/thread_operators.cuh> // is_cuda_binary_operator, is_cuda_std_plus_v
+
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
@@ -69,7 +74,6 @@
 #include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
-#include <cuda/experimental/__sharded/reduce.cuh> // __partial_slots, __max_fold_shards
 #include <cuda/experimental/__sharded/stream_scope.cuh>
 
 #include <exception>
@@ -85,6 +89,18 @@ namespace cuda::experimental::sharded
 {
 namespace reserved
 {
+//! @brief Maximum rank count of one communicator group (the by-value slot
+//! array of the all-reduce kernel).
+inline constexpr unsigned __max_fold_shards = 64;
+
+//! @brief The P source pointers of an all-reduce, passed to the fold kernel
+//! by value (one per rank).
+template <typename _Tp>
+struct __partial_slots
+{
+  const _Tp* __p[__max_fold_shards];
+};
+
 //! @brief Element-wise reduction of P rank buffers into one output, in rank
 //! order (deterministic): `out[i] = op(...op(op(p_0[i], p_1[i]), p_2[i])...)`.
 //! One launch per destination rank of an `all_reduce`, reading every rank's
@@ -901,39 +917,171 @@ template <class _Make>
   return __result;
 }
 
-//! @brief Driver of the map-family verbs whose engine is a rank-local MGMN
-//! algorithm: the `__generic_map` contract around one MGMN call.
+//! @brief Tag standing for "no call environment" in `__mgmn_drive`: the
+//! purely lane-ordered asynchronous contract of a verb that has no call
+//! stream at all (`reduce_into_lanes`) — no refusal, no edge, no tail.
+struct __lane_ordered_t
+{};
+
+//! @brief The requirements the combine-family verbs hand to the MGMN
+//! environments, as the `cuda::execution::__get_requirements` property the
+//! CUB environment overloads read: the call environment's own requirements
+//! when it carries any (`cuda::execution::require(...)`), else
+//! `determinism::run_to_run` when @p _RunToRun (CUB's local scans default to
+//! `not_guaranteed`; reductions to `run_to_run`), else no requirement.
+template <bool _RunToRun, class _CallEnv>
+[[nodiscard]] auto __mgmn_requirements(const _CallEnv& __call_env)
+{
+  if constexpr (::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::execution::__get_requirements_t>)
+  {
+    using __reqs_t = ::cuda::std::remove_cvref_t<decltype(::cuda::execution::__get_requirements(__call_env))>;
+    return ::cuda::std::execution::prop<::cuda::execution::__get_requirements_t, __reqs_t>{
+      ::cuda::execution::__get_requirements_t{}, ::cuda::execution::__get_requirements(__call_env)};
+  }
+  else if constexpr (_RunToRun)
+  {
+    (void) __call_env;
+    return ::cuda::execution::require(::cuda::execution::determinism::run_to_run);
+  }
+  else
+  {
+    (void) __call_env;
+    return ::cuda::execution::require();
+  }
+}
+
+//! @brief Can CUB honor `determinism::run_to_run` for a scan of `_Tp` under
+//! `_Op`? (Its static contract: a known CUB operator on an integral type,
+//! or `plus` on a floating-point type.) Reductions honor it for every
+//! operator.
+template <class _Op, class _Tp>
+inline constexpr bool __scan_run_to_run_v =
+  (::cuda::std::is_integral_v<_Tp> && CUB_NS_QUALIFIER::detail::is_cuda_binary_operator<_Op>)
+  || (::cuda::std::is_floating_point_v<_Tp> && CUB_NS_QUALIFIER::detail::is_cuda_std_plus_v<_Op, _Tp>);
+
+//! @brief A `cuda::mr::resource` that declares no `default_queries`, given
+//! the `device_accessible` property set the MGMN algorithms size their
+//! `cuda::buffer` temporaries from. The sharded contract admits any
+//! stream-ordered resource of `cuda::mr::resource` shape (it only ever
+//! allocated and deallocated through it); this keeps that contract on the
+//! engine, which needs the property set.
+template <class _Mr>
+class __device_resource_adaptor
+{
+public:
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
+
+  explicit __device_resource_adaptor(_Mr __mr)
+      : __mr_(::std::move(__mr))
+  {}
+
+  void*
+  allocate(::cuda::stream_ref __stream, ::std::size_t __bytes, ::std::size_t __alignment = alignof(::std::max_align_t))
+  {
+    return __mr_.allocate(__stream, __bytes, __alignment);
+  }
+  void deallocate(::cuda::stream_ref __stream,
+                  void* __ptr,
+                  ::std::size_t __bytes,
+                  ::std::size_t __alignment = alignof(::std::max_align_t))
+  {
+    __mr_.deallocate(__stream, __ptr, __bytes, __alignment);
+  }
+  void* allocate_sync(::std::size_t __bytes, ::std::size_t __alignment = alignof(::std::max_align_t))
+  {
+    return __mr_.allocate_sync(__bytes, __alignment);
+  }
+  void deallocate_sync(void* __ptr, ::std::size_t __bytes, ::std::size_t __alignment = alignof(::std::max_align_t))
+  {
+    __mr_.deallocate_sync(__ptr, __bytes, __alignment);
+  }
+
+  [[nodiscard]] friend bool operator==(const __device_resource_adaptor& __a, const __device_resource_adaptor& __b)
+  {
+    return __a.__mr_ == __b.__mr_;
+  }
+  [[nodiscard]] friend bool operator!=(const __device_resource_adaptor& __a, const __device_resource_adaptor& __b)
+  {
+    return !(__a == __b);
+  }
+  friend constexpr void get_property(const __device_resource_adaptor&, ::cuda::mr::device_accessible) noexcept {}
+
+private:
+  _Mr __mr_;
+};
+
+//! @brief The environment's resource as the engine consumes it: as is when
+//! it declares `default_queries`, adapted otherwise.
+template <class _Env>
+using __mgmn_resource_t = ::cuda::std::conditional_t<
+  ::cuda::mr::__has_default_queries<
+    ::cuda::std::remove_cvref_t<decltype(::cuda::mr::get_memory_resource(::cuda::std::declval<const _Env&>()))>>,
+  ::cuda::std::remove_cvref_t<decltype(::cuda::mr::get_memory_resource(::cuda::std::declval<const _Env&>()))>,
+  __device_resource_adaptor<
+    ::cuda::std::remove_cvref_t<decltype(::cuda::mr::get_memory_resource(::cuda::std::declval<const _Env&>()))>>>;
+
+//! @brief The MGMN environment of an allocating sharded environment: its
+//! stream, its memory resource (the MGMN algorithms size their `cuda::buffer`
+//! temporaries from its `default_queries`; a resource declaring none is
+//! wrapped in `__device_resource_adaptor`), and the requirements of
+//! `__mgmn_requirements`.
+template <class _Env, class _Reqs>
+[[nodiscard]] auto __mgmn_alloc_env(const _Env& __env, const _Reqs& __reqs)
+{
+  using __mr_t    = __mgmn_resource_t<_Env>;
+  using __sprop_t = ::cuda::std::execution::prop<::cuda::get_stream_t, ::cuda::stream_ref>;
+  using __mprop_t = ::cuda::std::execution::prop<::cuda::mr::get_memory_resource_t, __mr_t>;
+  return ::cuda::std::execution::env<__sprop_t, __mprop_t, _Reqs>{
+    __sprop_t{::cuda::get_stream, ::cuda::stream_ref{::cuda::get_stream(__env)}},
+    __mprop_t{::cuda::mr::get_memory_resource, __mr_t{::cuda::mr::get_memory_resource(__env)}},
+    __reqs};
+}
+
+//! @brief Driver of every sharded verb whose engine is an MGMN algorithm:
+//! the sharded contract around one MGMN call.
 //!
-//! The per-call environment selects the contract exactly as for the rest of
-//! the map family — stream present = asynchronous (LANE-ORDERED by default:
-//! each shard's work is enqueued on its environment's stream and nothing
-//! else is touched; a call environment carrying `composition::bracketed`
-//! seals the call against the call stream with fork/join edges), no stream =
-//! synchronous convenience (refused under `sync_policy::forbid` and under
-//! capture). A lane-ordered call whose call stream is capturing while a
-//! non-empty shard's stream is not is REFUSED before anything is enqueued.
-//! Empty shards take no part: no rank, no launch, no edge.
+//! The per-call environment selects the contract — stream present =
+//! asynchronous (LANE-ORDERED by default: each shard's work is enqueued on
+//! its environment's stream and nothing else is touched; a call environment
+//! carrying `composition::bracketed` seals the call against the call stream
+//! with fork/join edges), no stream = synchronous convenience (refused under
+//! `sync_policy::forbid` and under capture; every lane synchronized before
+//! returning), `__lane_ordered_t` = asynchronous with no call stream at all.
+//! A lane-ordered call whose call stream is capturing while a participating
+//! shard's stream is not is REFUSED before anything is enqueued.
 //!
-//! @p __body is a host callable `(comms, envs, lanes)` receiving the
-//! communicator group (one rank per non-empty shard, in shard order), the
-//! matching MGMN environments (stream only), and the shard indices they
-//! stand for; it builds the remaining lockstep ranges and issues the MGMN
-//! call. The host never synchronizes inside the asynchronous forms.
-template <class _S, class _Envs, class _CallEnv, class _Body>
-_CCCL_HOST_API void
-__mgmn_map(const _S& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _Body __body)
+//! @tparam _AllLanes Every shard is a rank (the combine family: an empty
+//!         shard's partial is the operator's identity and its output is
+//!         still written); otherwise empty shards take no part — no rank,
+//!         no launch, no edge (the map family).
+//! @param __make_env Host callable `(const shard_env&) -> MGMN env`.
+//! @param __body Host callable `(comms, envs, lanes)` receiving the
+//!        communicator group (one rank per participating shard, in shard
+//!        order), the matching MGMN environments, and the shard indices they
+//!        stand for; it builds the remaining lockstep ranges and issues the
+//!        MGMN call. The host never synchronizes inside the asynchronous
+//!        forms.
+template <bool _AllLanes, class _S, class _Envs, class _CallEnv, class _MakeEnv, class _Body>
+_CCCL_HOST_API void __mgmn_drive(
+  const _S& __data,
+  const _Envs& __envs,
+  const _CallEnv& __call_env,
+  const char* __what,
+  _MakeEnv __make_env,
+  _Body __body)
 {
   const ::std::size_t __num_shards = __shard_count(__data);
   __check_env_count(__envs, __num_shards, __what);
 
-  constexpr bool __is_async         = async_call_env<_CallEnv>;
+  constexpr bool __no_call_env      = ::cuda::std::is_same_v<_CallEnv, __lane_ordered_t>;
+  constexpr bool __is_async         = __no_call_env || async_call_env<_CallEnv>;
   [[maybe_unused]] bool __bracketed = false;
 
   ::std::vector<::std::size_t> __lanes;
   __lanes.reserve(__num_shards);
   for (const auto __g : each(__num_shards))
   {
-    if (__data.shard(__g).size != 0)
+    if (_AllLanes || __data.shard(__g).size != 0)
     {
       __lanes.push_back(__g);
     }
@@ -945,13 +1093,13 @@ __mgmn_map(const _S& __data, const _Envs& __envs, const _CallEnv& __call_env, co
     require_sync_allowed(__call_env, __what);
     __check_envs_not_capturing(__envs, __num_shards, __what);
   }
-  else
+  else if constexpr (!__no_call_env)
   {
     __bracketed = query_composition(__call_env) == composition::bracketed;
     if (!__bracketed && places::stream_in_capture(::cuda::get_stream(__call_env).get()))
     {
-      // Lane-ordered under capture: every non-empty lane must already be
-      // part of the capture, or its work would silently escape the graph.
+      // Lane-ordered under capture: every participating lane must already
+      // be part of the capture, or its work would silently escape the graph.
       for (const ::std::size_t __g : __lanes)
       {
         if (!places::stream_in_capture(::cuda::get_stream(__envs[__g]).get()))
@@ -972,7 +1120,7 @@ __mgmn_map(const _S& __data, const _Envs& __envs, const _CallEnv& __call_env, co
     return;
   }
 
-  if constexpr (__is_async)
+  if constexpr (__is_async && !__no_call_env)
   {
     if (__bracketed)
     {
@@ -987,11 +1135,11 @@ __mgmn_map(const _S& __data, const _Envs& __envs, const _CallEnv& __call_env, co
     return ::cuda::stream_ref{::cuda::get_stream(__envs[__g])};
   }));
   const auto __menvs = __mgmn_per_lane(__lanes, [&](::std::size_t __g) {
-    return __mgmn_stream_env(__envs[__g]);
+    return __make_env(__envs[__g]);
   });
   __body(__comms, __menvs, __lanes);
 
-  if constexpr (__is_async)
+  if constexpr (__is_async && !__no_call_env)
   {
     if (__bracketed)
     {
@@ -1001,13 +1149,31 @@ __mgmn_map(const _S& __data, const _Envs& __envs, const _CallEnv& __call_env, co
       }
     }
   }
-  else
+  else if constexpr (!__is_async)
   {
     for (const ::std::size_t __g : __lanes)
     {
       cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(__envs[__g]).get()));
     }
   }
+}
+
+//! @brief The map-family spelling of `__mgmn_drive`: rank-local engines
+//! (`transform`, `zip_transform`) that allocate nothing — stream-only
+//! environments (any `sharded_env_range`), one rank per NON-EMPTY shard.
+template <class _S, class _Envs, class _CallEnv, class _Body>
+_CCCL_HOST_API void
+__mgmn_map(const _S& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _Body __body)
+{
+  __mgmn_drive<false>(
+    __data,
+    __envs,
+    __call_env,
+    __what,
+    [](const auto& __env) {
+      return __mgmn_stream_env(__env);
+    },
+    ::std::move(__body));
 }
 } // namespace reserved
 } // namespace cuda::experimental::sharded

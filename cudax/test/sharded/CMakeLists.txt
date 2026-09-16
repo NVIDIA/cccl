@@ -21,6 +21,8 @@ set(
   algorithms/sort.cu
   algorithms/mgmn_adapter.cu
   algorithms/mgmn_std_execution.cu
+  algorithms/legacy_parity.cu
+  algorithms/bit_determinism.cu
   graph_capture/elementwise_pipeline.cu
   graph_capture/reduce_scan_capture.cu
   graph_capture/must_not_capture.cu
@@ -106,6 +108,8 @@ endif()
 ## Header hygiene: every `__sharded` header must compile on its own, so that
 ## no header silently depends on a name another header happens to introduce
 ## first. One compile-only target per header, each including just that one.
+## (`__sharded/legacy/` — the temporary reference implementations — is not
+## enumerated: the glob is not recursive; `legacy_parity.cu` compiles them.)
 file(
   GLOB sharded_headers
   RELATIVE

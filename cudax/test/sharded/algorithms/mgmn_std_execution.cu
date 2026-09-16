@@ -13,8 +13,8 @@
  *
  * @brief Regression: a translation unit that includes `<cuda/std/execution>`
  *        ahead of the sharded headers and drives CUB's environment dispatch
- *        with a `place_memory_resource` — through `sharded::inclusive_sum`
- *        and through the MGMN verbs with a per-call environment — must
+ *        with a `place_memory_resource` — through the sharded scans in their
+ *        synchronous and stream-bearing forms — must
  *        compile under relocatable device code. CUB reaches the resource
  *        from `CUB_RUNTIME_FUNCTION` (`__host__ __device__`) code there; a
  *        host-only `allocate`/`deallocate` was nvcc error #20011.
@@ -56,16 +56,15 @@ int main()
     ::cuda::std::execution::env{::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}}};
   const auto envs = default_envs(data);
 
-  // The MGMN-engined verbs with a call environment, lane-ordered behind a
-  // fork/join
+  // The stream-bearing forms, lane-ordered behind a fork/join
   data.fork_from(origin);
   transform(data, envs, twice_op{}, ce);
-  mgmn::inclusive_sum(data, envs, ce);
-  mgmn::inclusive_scan(data, envs, ::cuda::std::plus<long long>{});
+  inclusive_sum(data, envs, ce);
+  inclusive_scan(data, envs, ::cuda::std::plus<long long>{}, 0LL, ce);
   data.join_into(origin);
   cuda_safe_call(cudaStreamSynchronize(origin));
 
-  // The existing (synchronous) sharded scan on the same array
+  // The synchronous form on the same array
   inclusive_sum(data);
 
   ::std::vector<long long> h(n);

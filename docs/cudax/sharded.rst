@@ -113,14 +113,24 @@ environment selects the contract):
   see the MGMN algorithms built on ``__multi_gpu``) over an in-process
   communicator, one rank per shard; the sharded signatures and contract are
   unchanged, and the engine is not visible to the caller;
-- ``reduce`` / ``sum`` / ``min`` / ``max``: per-shard CUB ``DeviceReduce``
-  plus a deterministic combine — the synchronous forms return the value;
-  ``reduce_into`` is the asynchronous form, writing the aggregate through a
-  device-writable output iterator on the call environment's stream
-  (capture-legal);
+- ``reduce`` / ``sum`` / ``min`` / ``max``, ``reduce_into``,
+  ``reduce_into_lanes``: the MGMN reduce (``cuda::experimental::mgmn::reduce``:
+  per-shard CUB ``DeviceReduce``, then an all-reduce of the P partials
+  folded in shard order) over the same in-process communicator — the
+  synchronous forms return the value; ``reduce_into`` is the asynchronous
+  form, writing the aggregate through a device-writable output iterator on
+  the call environment's stream; ``reduce_into_lanes`` delivers it once per
+  lane on the lane's own stream (both capture-legal). Operators without a
+  known ``cuda::identity_element`` run the engine over a lifted
+  ``{value, present}`` pair, so no identity is required of the caller;
 - ``inclusive_scan`` / ``exclusive_scan`` / ``inclusive_sum`` /
-  ``exclusive_sum``: reduce-then-scan — per-shard totals, a host prefix over
-  the P totals, then per-shard seeded scans in place;
+  ``exclusive_sum``: the MGMN scan (per-shard totals, an all-gather of the
+  P totals, a device prefix, then per-shard seeded CUB scans in place) over
+  the in-process communicator — asynchronous and capture-legal in the
+  stream-bearing form, synchronous convenience without a stream. The
+  per-shard CUB scans run under ``determinism::run_to_run`` whenever CUB can
+  honor it (its known operators on integers, ``plus`` on floating point), or
+  under the requirements the call environment carries;
 - ``adjacent_difference``: per-shard differences with each predecessor's
   boundary element staged through pinned host memory;
 - ``sort``: global in-place sort, each shard keeping its original
@@ -189,6 +199,11 @@ shard's stream executes in the stream's context with the stream's SM
 confinement (``stream_scope`` supplies the one thing a launch needs from the
 calling thread — device currency — derived from the stream itself; see
 ``test/sharded/stream_scope.cu``).
+
+``cuda/experimental/__sharded/legacy/`` holds the previous hand-written
+bodies of the reductions, scans and transforms as a *temporary* reference for
+parity and overhead measurement (``reserved::legacy``); it is not part of the
+API, not included by the umbrella header, and will be removed.
 
 The pilot generic entry points are ``transform`` (in-place unary) and the
 synchronous ``reduce``:
@@ -330,9 +345,10 @@ What captures
 ~~~~~~~~~~~~~
 
 The asynchronous forms — the elementwise family, ``zip_transform``,
-``segmented_reduce`` and ``reduce_into`` called with a stream-bearing
-per-call environment — are pure per-shard stream work, so a pipeline
-captures directly. Under the lane-ordered contract the pipeline forks the
+``segmented_reduce``, ``reduce_into``, ``reduce_into_lanes`` and the scans
+called with a stream-bearing per-call environment — are stream work only
+(kernels, copies, event edges between the lanes), so a pipeline captures
+directly. Under the lane-ordered contract the pipeline forks the
 lanes from the capture origin ONCE, records its chain (per-lane stream order
 becomes graph edges within each lane; distinct lanes become graph-level
 parallelism), and joins the lanes back with the stream barrier:
@@ -355,11 +371,10 @@ A lane-ordered call whose call stream is capturing while the lanes are not
 refuses at entry (the work would silently escape the graph); fork the lanes
 first, or seal that call with ``composition::bracketed``.
 
-The last line is new capability relative to the container era: the
-asynchronous reduce keeps its cross-shard combine on-device (a deterministic
-fold kernel bitwise-identical to the synchronous host fold), so the whole
-iterate-and-reduce shape replays as one graph, with the aggregate landing in
-a device or pinned location per replay.
+The reductions and scans keep their cross-shard stage on-device (the
+communicator's all-reduce / all-gather, folded in fixed shard order), so the
+whole iterate-scan-reduce shape replays as one graph, with the aggregate
+landing in a device or pinned location per replay.
 
 The captured graph is placement-faithful: each shard's kernels are recorded
 from that place's stream, and the per-place SM confinement of those streams
@@ -383,9 +398,9 @@ work. The refusing set:
   ``allocate_contiguous``;
 - host transfers: ``copy_from_host``, ``copy_to_host``, ``copy_between``;
 - synchronization: ``sharded_array::sync`` and ``place_group::sync``;
-- the synchronous forms, all of which stage per-shard partials through the
-  host and refuse at ENTRY, before any work is enqueued: ``reduce`` /
-  ``sum`` / ``min`` / ``max``, the scans, ``count`` / ``count_if``,
+- the synchronous forms, which synchronize with the host and refuse at
+  ENTRY, before any work is enqueued: ``reduce`` / ``sum`` / ``min`` /
+  ``max``, the no-stream form of the scans, ``count`` / ``count_if``,
   ``histogram_even``, ``adjacent_difference``,
   ``select_if`` / ``remove_if`` / ``copy_if``, ``unique``,
   ``adjacent_difference``.

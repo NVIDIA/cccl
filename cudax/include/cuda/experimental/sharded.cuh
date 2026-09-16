@@ -35,7 +35,7 @@
 #include <cuda/experimental/__sharded/default_envs.cuh>
 #include <cuda/experimental/__sharded/fill.cuh>
 #include <cuda/experimental/__sharded/histogram.cuh>
-#include <cuda/experimental/__sharded/mgmn.cuh>
+#include <cuda/experimental/__sharded/mgmn_adapter.cuh>
 #include <cuda/experimental/__sharded/reduce.cuh>
 #include <cuda/experimental/__sharded/scan.cuh>
 #include <cuda/experimental/__sharded/segmented_reduce.cuh>

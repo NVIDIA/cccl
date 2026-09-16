@@ -11,14 +11,14 @@
 /**
  * @file
  *
- * @brief A back-to-back MGMN pipeline over one sharded array — transform,
- *        reduce (into device scalars), inclusive_scan, exclusive_scan,
- *        transform — with no host synchronization between the calls:
- *        (a) eagerly, lane-ordered, with a single final join, and (b)
- *        captured into ONE CUDA graph through the fork_from/join_into
+ * @brief A back-to-back pipeline over one sharded array — transform,
+ *        reduce_into_lanes, inclusive_sum, exclusive_sum, transform, all on
+ *        their MGMN engines — with no host synchronization between the
+ *        calls: (a) eagerly, lane-ordered, with a single final join, and
+ *        (b) captured into ONE CUDA graph through the fork_from/join_into
  *        pattern, instantiated, and replayed with inputs mutated between
- *        launches. The existing `sharded::inclusive_sum` keeps refusing
- *        under capture (its host prefix), while the MGMN path captures.
+ *        launches. The synchronous no-stream form of a scan keeps refusing
+ *        under capture, while the stream-bearing forms capture.
  */
 
 #include <cuda/experimental/sharded.cuh>
@@ -54,13 +54,13 @@ constexpr long long exclusive_init = 3;
 // orders after the previous one per lane by stream order; the cross-lane
 // steps inside reduce and the scans are event edges. No host sync anywhere.
 template <class CallEnv>
-void enqueue_pipeline(sharded_array<long long>& data, ::std::vector<long long*>& lane_outs, const CallEnv& call_env)
+void enqueue_pipeline(sharded_array<long long>& data, long long* lane_outs, const CallEnv& call_env)
 {
   const auto envs = default_envs(data);
   transform(data, envs, twice_op{}, call_env);
-  mgmn::reduce_into_lanes(data, envs, lane_outs, ::cuda::std::plus<long long>{}, 0LL, 0LL, call_env);
-  mgmn::inclusive_sum(data, envs, call_env);
-  mgmn::exclusive_sum(data, envs, exclusive_init, call_env);
+  reduce_into_lanes(data, envs, lane_outs, ::cuda::std::plus<long long>{}, 0LL);
+  inclusive_sum(data, envs, call_env);
+  exclusive_sum(data, envs, exclusive_init, call_env);
   transform(data, envs, plus_one_op{}, call_env);
 }
 
@@ -136,11 +136,6 @@ void test_pipeline(place_group& group)
 
   long long* d_lanes = nullptr;
   cuda_safe_call(cudaMalloc(&d_lanes, P * sizeof(long long)));
-  ::std::vector<long long*> lane_outs;
-  for (size_t g = 0; g < P; g++)
-  {
-    lane_outs.push_back(d_lanes + g);
-  }
 
   cudaStream_t origin;
   cuda_safe_call(cudaStreamCreate(&origin));
@@ -157,7 +152,7 @@ void test_pipeline(place_group& group)
   expected                = input;
   const long long total_a = reference(expected);
   data.fork_from(origin);
-  enqueue_pipeline(data, lane_outs, ce);
+  enqueue_pipeline(data, d_lanes, ce);
   data.join_into(origin);
   cuda_safe_call(cudaStreamSynchronize(origin));
   check(data, d_lanes, P, expected, total_a);
@@ -169,8 +164,8 @@ void test_pipeline(place_group& group)
   cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
   data.fork_from(origin);
 
-  // The existing synchronous sharded scan refuses under capture (unchanged
-  // behavior), leaving the capture active...
+  // The synchronous (no-stream) form of a scan refuses under capture,
+  // leaving the capture active...
   bool threw = false;
   try
   {
@@ -183,8 +178,8 @@ void test_pipeline(place_group& group)
   EXPECT(threw);
   EXPECT(capture_active(origin));
 
-  // ...while the MGMN path captures.
-  enqueue_pipeline(data, lane_outs, ce);
+  // ...while the stream-bearing forms capture.
+  enqueue_pipeline(data, d_lanes, ce);
   data.join_into(origin);
 
   cudaGraph_t graph = nullptr;
@@ -214,7 +209,7 @@ void test_pipeline(place_group& group)
   expected              = input;
   const long long total = reference(expected);
   data.fork_from(origin);
-  enqueue_pipeline(data, lane_outs, ce);
+  enqueue_pipeline(data, d_lanes, ce);
   data.join_into(origin);
   cuda_safe_call(cudaStreamSynchronize(origin));
   check(data, d_lanes, P, expected, total);
@@ -239,8 +234,8 @@ void test_bracketed(place_group& group)
   const auto bprop = ::cuda::std::execution::prop{get_composition_t{}, composition::bracketed};
   const auto ce    = ::cuda::std::execution::env{sprop, bprop};
 
-  mgmn::inclusive_sum(data, ce);
-  mgmn::exclusive_sum(data, 1LL, ce);
+  inclusive_sum(data, ce);
+  exclusive_sum(data, 1LL, ce);
   cuda_safe_call(cudaStreamSynchronize(call)); // the bracket's join
   ::std::vector<long long> host(n);
   data.copy_to_host(host.data());

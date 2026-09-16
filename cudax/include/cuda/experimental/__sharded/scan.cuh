@@ -10,10 +10,27 @@
 
 /**
  * @file
- * @brief In-place scans over sharded arrays: each place runs the device-scope
- *        primitive (CUB `DeviceScan`) on its shard, then per-place totals are
- *        prefix-combined and folded back into the shards in place over the
- *        shared address space.
+ * @brief In-place scans over sharded views.
+ *
+ * The engine is the MGMN scan (`cuda::experimental::mgmn::inclusive_scan` /
+ * `exclusive_scan`: per-rank `cub::DeviceReduce` of the shard, `all_gather`
+ * of the P totals, a device prefix over the totals preceding the rank, then
+ * the shard's seeded `cub::DeviceScan` in place), instantiated over the
+ * in-process `places_communicator` of `mgmn_adapter.cuh`, one rank per shard.
+ * Every step is stream work (kernels, copies, event edges): the scans are
+ * asynchronous in their stream-bearing form and capture into CUDA graphs;
+ * the no-stream form is the synchronous convenience. Algorithm temporaries
+ * are drawn from each shard's environment resource. The sharded verbs keep
+ * their signatures and their contract; the engine is not visible to the
+ * caller.
+ *
+ * Determinism: the per-shard CUB scans run under `determinism::run_to_run`
+ * whenever CUB can honor it for the operator and type (its known operators
+ * on integers, `plus` on floating point), or under the requirements the call
+ * environment carries (`cuda::execution::require`).
+ *
+ * Exclusive semantics are the global ones: `out[i] = fold(init,
+ * x_0..x_{i-1})` — init enters the fold exactly once.
  */
 
 #pragma once
@@ -28,201 +45,93 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/device_reduce.cuh>
-#include <cub/device/device_scan.cuh>
-
-#include <thrust/execution_policy.h>
-#include <thrust/transform.h>
-
 #include <cuda/__functional/operator_properties.h> // identity_element
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
+#include <cuda/experimental/__multi_gpu/algorithm/scan/scan.h>
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
-#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
-#include <cuda/experimental/__sharded/pinned_staging.cuh>
-#include <cuda/experimental/__sharded/sharded_array.cuh>
-#include <cuda/experimental/__sharded/stream_scope.cuh>
+#include <cuda/experimental/__sharded/mgmn_adapter.cuh>
+#include <cuda/experimental/__utility/result_policy.cuh>
 
-#include <algorithm>
-#include <stdexcept>
-#include <string>
+#include <cstddef>
 #include <vector>
-
-#include <cuda_runtime.h>
 
 namespace cuda::experimental::sharded
 {
-// ============================================================================
-// Concept-generic tier: scans over any sharded_view (reduce-then-scan)
-// ============================================================================
-
 namespace reserved
 {
-//! @brief Shared generic scan implementation, REDUCE-THEN-SCAN skeleton
-//! (measured 23% faster at GiB scale than scan-then-propagate, and the
-//! shape whose cross-shard stage is a pure prefix over P totals):
-//!
-//! 1. per-shard totals via `cub::DeviceReduce` on each shard's environment
-//!    (collected BEFORE any mutation — which is what allows the in-place
-//!    seeded scans of phase 3);
-//! 2. host prefix over the P totals (the cross-shard stage; staged through
-//!    the call environment's resource or the pinned arena);
-//! 3. per-shard seeded scans (`InclusiveScan[Init]` / `ExclusiveScan` with
-//!    the shard's seed), temp storage stream-ordered from each shard's
-//!    environment, launched through the shared map driver whose synchronous
-//!    tail provides the final join.
-//!
-//! SYNCHRONOUS-ONLY in this form (the host prefix synchronizes mid-flight):
-//! refuses at entry under `sync_policy::forbid` and under capture. The
-//! asynchronous variant (device prefix over the P totals, seeds delivered
-//! as `cub::FutureValue`) is the recorded follow-up.
-//!
-//! Exclusive semantics are the global ones: `out[i] = fold(init,
-//! x_0..x_{i-1})` — init enters the fold exactly once.
+//! @brief Shared driver of the scans: the distributed MGMN scan of @p __data
+//! in place, over every shard, under the sharded contract of `__mgmn_drive`.
+//! For the inclusive form @p __init is the identity.
 template <bool _Inclusive, class _S, class _Envs, class _ScanOp, class _Tp, class _CallEnv>
-_CCCL_HOST_API void __scan_generic(
-  _S&& data,
-  const _Envs& envs,
-  _ScanOp scan_op,
-  _Tp init_value,
-  _Tp identity,
-  const _CallEnv& call_env,
-  const char* what)
+_CCCL_HOST_API void __mgmn_scan(
+  _S&& __data,
+  const _Envs& __envs,
+  _ScanOp __op,
+  _Tp __init,
+  _Tp __identity,
+  const _CallEnv& __call_env,
+  const char* __what)
 {
-  const ::std::size_t num_shards = reserved::__shard_count(data);
-  reserved::__check_env_count(envs, num_shards, what);
-  if (num_shards == 0)
-  {
-    return;
-  }
-
-  // Refusals first, before any CUDA call: the host prefix synchronizes.
-  require_sync_allowed(call_env, what);
-  reserved::__check_envs_not_capturing(envs, num_shards, what);
-
-  // Per-shard totals staging (host-accessible; call-env resource override,
-  // pinned arena default). Prefilled with the identity so empty shards
-  // contribute nothing to the prefix.
-  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  _Tp* h_totals               = nullptr;
-  if constexpr (__env_has_mr)
-  {
-    auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
-    h_totals        = static_cast<_Tp*>(staging_mr.allocate_sync(num_shards * sizeof(_Tp), alignof(_Tp)));
-  }
-  else
-  {
-    h_totals = static_cast<_Tp*>(reserved::__pinned_staging(num_shards * sizeof(_Tp)));
-  }
-  ::std::fill(h_totals, h_totals + num_shards, identity);
-
-  // Phase 1: per-shard totals, collected before any element is mutated.
-  for (const auto g : each(num_shards))
-  {
-    const auto& s = data.shard(g);
-    if (s.size == 0)
-    {
-      continue;
-    }
-    const auto& env                       = envs[g];
-    const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
-    stream_scope scope(shard_stream.get());
-    auto mr      = ::cuda::mr::get_memory_resource(env);
-    _Tp* d_total = static_cast<_Tp*>(mr.allocate(shard_stream, sizeof(_Tp), alignof(_Tp)));
-    cuda_safe_call(cub::DeviceReduce::Reduce(s.data, d_total, s.size, scan_op, identity, env));
-    cuda_safe_call(cudaMemcpyAsync(&h_totals[g], d_total, sizeof(_Tp), cudaMemcpyDeviceToHost, shard_stream.get()));
-    mr.deallocate(shard_stream, d_total, sizeof(_Tp), alignof(_Tp)); // stream-ordered, after the copy
-  }
-  barrier(envs);
-
-  // Phase 2: host prefix — the seed of shard g is the fold of everything
-  // before it (plus init, exactly once, for the exclusive form).
-  ::std::vector<_Tp> seed(num_shards, identity);
-  ::std::vector<bool> has_seed(num_shards, false);
-  {
-    _Tp running    = init_value; // meaningful for the exclusive form only
-    bool have_prev = false;
-    for (const auto g : each(num_shards))
-    {
+  const auto __reqs = __mgmn_requirements<__scan_run_to_run_v<_ScanOp, _Tp>>(__call_env);
+  __mgmn_drive<true>(
+    __data,
+    __envs,
+    __call_env,
+    __what,
+    [&](const auto& __env) {
+      return __mgmn_alloc_env(__env, __reqs);
+    },
+    [&](const auto& __comms, const auto& __menvs, const auto& __lanes) {
+      const auto __inputs  = __mgmn_per_lane(__lanes, [&](::std::size_t __g) -> const _Tp* {
+        return __data.shard(__g).data;
+      });
+      const auto __sizes   = __mgmn_per_lane(__lanes, [&](::std::size_t __g) {
+        return static_cast<::std::size_t>(__data.shard(__g).size);
+      });
+      const auto __outputs = __mgmn_per_lane(__lanes, [&](::std::size_t __g) -> _Tp* {
+        return __data.shard(__g).data;
+      });
       if constexpr (_Inclusive)
       {
-        seed[g]     = running;
-        has_seed[g] = have_prev;
+        ::cuda::experimental::mgmn::inclusive_scan(
+          ::cuda::experimental::distributed, __comms, __menvs, __inputs, __sizes, __outputs, __init, __op, __identity);
       }
       else
       {
-        seed[g]     = running;
-        has_seed[g] = true; // exclusive always seeds (init on the first shard)
+        ::cuda::experimental::mgmn::exclusive_scan(
+          ::cuda::experimental::distributed, __comms, __menvs, __inputs, __sizes, __outputs, __init, __op, __identity);
       }
-      if (data.shard(g).size != 0)
-      {
-        running   = have_prev || !_Inclusive ? scan_op(running, h_totals[g]) : h_totals[g];
-        have_prev = true;
-      }
-    }
-  }
-
-  // Phase 3: per-shard in-place seeded scans through the shared driver
-  // (its synchronous tail provides this form's final join).
-  __detail::__generic_map(data, envs, call_env, what, [&](::std::size_t g, const auto& d, cudaStream_t s) {
-    const auto& env = envs[g];
-    auto mr         = ::cuda::mr::get_memory_resource(env);
-
-    auto run_two_call = [&](auto&& launch) {
-      ::std::size_t temp_bytes = 0;
-      launch(nullptr, temp_bytes);
-      void* d_temp = mr.allocate(::cuda::stream_ref{s}, temp_bytes, alignof(::std::max_align_t));
-      launch(d_temp, temp_bytes);
-      mr.deallocate(::cuda::stream_ref{s}, d_temp, temp_bytes, alignof(::std::max_align_t));
-    };
-
-    if constexpr (_Inclusive)
-    {
-      if (has_seed[g])
-      {
-        run_two_call([&](void* t, ::std::size_t& b) {
-          cuda_safe_call(cub::DeviceScan::InclusiveScanInit(
-            t, b, d.data, d.data, scan_op, seed[g], static_cast<::cuda::std::int64_t>(d.size), s));
-        });
-      }
-      else
-      {
-        run_two_call([&](void* t, ::std::size_t& b) {
-          cuda_safe_call(cub::DeviceScan::InclusiveScan(
-            t, b, d.data, d.data, scan_op, static_cast<::cuda::std::int64_t>(d.size), s));
-        });
-      }
-    }
-    else
-    {
-      run_two_call([&](void* t, ::std::size_t& b) {
-        cuda_safe_call(cub::DeviceScan::ExclusiveScan(
-          t, b, d.data, d.data, scan_op, seed[g], static_cast<::cuda::std::int64_t>(d.size), s));
-      });
-    }
-  });
-
-  if constexpr (__env_has_mr)
-  {
-    auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
-    staging_mr.deallocate_sync(h_totals, num_shards * sizeof(_Tp), alignof(_Tp));
-  }
-  // (arena staging is cached; nothing to release)
+    });
 }
 } // namespace reserved
+
+// ============================================================================
+// Concept-generic tier: scans over any sharded_view
+// ============================================================================
 
 /**
  * @brief In-place inclusive scan over any `sharded_view`:
  * `data[i] = fold(data[0..i])` across the global index space.
  *
- * Reduce-then-scan skeleton; synchronous-only (see the implementation note).
+ * Contract per the call environment: stream present (`async_call_env`) =
+ * asynchronous (lane-ordered by default: enqueue on the environments'
+ * streams, cross-shard steps as event edges between them, no host
+ * synchronization; `composition::bracketed` on the call environment seals
+ * the call against the call stream instead; capture-legal — under capture
+ * the lanes must already be capturing, or the call refuses at entry); no
+ * stream = synchronous convenience (refused under `sync_policy::forbid` and
+ * under capture).
+ *
  * @p identity is the operator's identity element, defaulted where
  * `cuda::identity_element` knows the operator; custom operators supply it.
+ *
+ * @throws std::invalid_argument when the environment count does not match
+ *         the shard count, or on more than 64 shards.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _ScanOp, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(
@@ -234,7 +143,7 @@ _CCCL_HOST_API void inclusive_scan(
   view_element_t<_S> identity = ::cuda::identity_element<_ScanOp, view_element_t<_S>>(),
   const _CallEnv& call_env    = {})
 {
-  reserved::__scan_generic<true>(
+  reserved::__mgmn_scan<true>(
     ::cuda::std::forward<_S>(data), envs, scan_op, identity, identity, call_env, "sharded::inclusive_scan");
 }
 
@@ -249,14 +158,15 @@ _CCCL_HOST_API void inclusive_scan(
   const _CallEnv& call_env    = {})
 {
   const auto envs = default_envs(data);
-  reserved::__scan_generic<true>(
+  reserved::__mgmn_scan<true>(
     ::cuda::std::forward<_S>(data), envs, scan_op, identity, identity, call_env, "sharded::inclusive_scan");
 }
 
 /**
  * @brief In-place exclusive scan over any `sharded_view`:
  * `data[i] = fold(init, data[0..i-1])` across the global index space — the
- * global semantics, init entering the fold exactly once.
+ * global semantics, init entering the fold exactly once. Contract as for
+ * `inclusive_scan`.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _ScanOp, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(
@@ -269,7 +179,7 @@ _CCCL_HOST_API void exclusive_scan(
   view_element_t<_S> identity = ::cuda::identity_element<_ScanOp, view_element_t<_S>>(),
   const _CallEnv& call_env    = {})
 {
-  reserved::__scan_generic<false>(
+  reserved::__mgmn_scan<false>(
     ::cuda::std::forward<_S>(data), envs, scan_op, init_value, identity, call_env, "sharded::exclusive_scan");
 }
 
@@ -285,7 +195,7 @@ _CCCL_HOST_API void exclusive_scan(
   const _CallEnv& call_env    = {})
 {
   const auto envs = default_envs(data);
-  reserved::__scan_generic<false>(
+  reserved::__mgmn_scan<false>(
     ::cuda::std::forward<_S>(data), envs, scan_op, init_value, identity, call_env, "sharded::exclusive_scan");
 }
 

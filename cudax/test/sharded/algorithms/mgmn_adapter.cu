@@ -12,16 +12,14 @@
  * @file
  *
  * @brief The MGMN bridge: `places_communicator` satisfies the MGMN
- *        communicator concept and its collectives are correct; the `mgmn::`
- *        verbs (reduce, inclusive/exclusive scan) and the sharded transforms
- *        (whose engine is the MGMN transform) run the MGMN algorithms over
- *        sharded arrays and agree with the existing sharded
- *        implementations and with host references — on a locality-domain
- *        group and on a single-place group, at divisible and non-divisible
- *        sizes, with custom operators and initial values; the environment's
- *        memory resource is the one allocating the MGMN temporaries; and
- *        the MGMN device-selection guard activates the shard stream's
- *        (green) context.
+ *        communicator concept and its collectives are correct; the sharded
+ *        verbs whose engine is an MGMN algorithm (reduce, reduce_into_lanes,
+ *        inclusive/exclusive scan, transform) agree with host references —
+ *        on a locality-domain group and on a single-place group, at
+ *        divisible and non-divisible sizes, with custom operators and
+ *        initial values; the environment's memory resource is the one
+ *        allocating the MGMN temporaries; and the MGMN device-selection
+ *        guard activates the shard stream's (green) context.
  */
 
 #include <cuda/__runtime/ensure_current_context.h>
@@ -305,7 +303,7 @@ void test_communicator(place_group& group)
 }
 
 // ---------------------------------------------------------------------------
-// The mgmn:: verbs against the sharded reference implementations and host
+// The sharded verbs (MGMN engines) against host references
 // ---------------------------------------------------------------------------
 void test_verbs(place_group& group, size_t n)
 {
@@ -323,16 +321,17 @@ void test_verbs(place_group& group, size_t n)
   data.copy_from_host(input.data());
   ref.copy_from_host(input.data());
 
-  // reduce: value-returning MGMN path vs sharded::reduce vs host
+  // reduce: the value-returning form vs host (a known-identity operator on
+  // the direct engine path, a custom operator on the lifted one)
   {
     const long long host_sum = ::std::accumulate(input.begin(), input.end(), 0LL);
     const long long host_max = *::std::max_element(input.begin(), input.end());
-    EXPECT(mgmn::reduce(data, ::cuda::std::plus<long long>{}, 0LL) == host_sum);
-    EXPECT(mgmn::reduce(data, ::cuda::std::plus<long long>{}, 0LL) == sum(ref));
-    EXPECT(mgmn::reduce(data, ::cuda::std::plus<long long>{}, 11LL) == host_sum + 11);
-    EXPECT(mgmn::reduce(data, max_op{}, lowest, lowest) == host_max);
-    EXPECT(mgmn::reduce(data, max_op{}, lowest, lowest) == reduce(ref, max_op{}, lowest));
-    EXPECT(mgmn::reduce(data, max_op{}, 5000LL, lowest) == 5000LL); // init enters the fold
+    EXPECT(reduce(data, ::cuda::std::plus<long long>{}, 0LL) == host_sum);
+    EXPECT(reduce(data, ::cuda::std::plus<long long>{}, 0LL) == sum(ref));
+    EXPECT(reduce(data, ::cuda::std::plus<long long>{}, 11LL) == host_sum + 11);
+    EXPECT(reduce(data, max_op{}, lowest) == host_max);
+    EXPECT(reduce(data, max_op{}, lowest) == reduce(ref, max_op{}, lowest));
+    EXPECT(reduce(data, max_op{}, 5000LL) == 5000LL); // init enters the fold
   }
 
   // reduce_into_lanes: the broadcasted MGMN result, one scalar per lane
@@ -340,12 +339,7 @@ void test_verbs(place_group& group, size_t n)
     const size_t P = data.num_shards();
     long long* d_lanes;
     cuda_safe_call(cudaMalloc(&d_lanes, P * sizeof(long long)));
-    ::std::vector<long long*> outs;
-    for (size_t g = 0; g < P; g++)
-    {
-      outs.push_back(d_lanes + g);
-    }
-    mgmn::reduce_into_lanes(data, outs, ::cuda::std::plus<long long>{}, 3LL);
+    reduce_into_lanes(data, d_lanes, ::cuda::std::plus<long long>{}, 3LL);
     barrier(default_envs(data));
     ::std::vector<long long> lanes(P);
     cuda_safe_call(cudaMemcpy(lanes.data(), d_lanes, P * sizeof(long long), cudaMemcpyDefault));
@@ -357,10 +351,10 @@ void test_verbs(place_group& group, size_t n)
     cuda_safe_call(cudaFree(d_lanes));
   }
 
-  // inclusive_scan (plus, in place) vs sharded::inclusive_sum vs host
+  // inclusive_sum (in place) vs host, self-bound and explicit environments
   {
-    mgmn::inclusive_sum(data);
-    inclusive_sum(ref);
+    inclusive_sum(data);
+    inclusive_sum(ref, default_envs(ref));
     const auto h      = host_of(data);
     const auto r      = host_of(ref);
     long long running = 0;
@@ -372,13 +366,13 @@ void test_verbs(place_group& group, size_t n)
     }
   }
 
-  // inclusive_scan (max, out of place) vs sharded::inclusive_scan vs host
+  // inclusive_scan (custom max, explicit identity) vs host, on a copy
   {
     data.copy_from_host(input.data());
     ref.copy_from_host(input.data());
-    fill(out, -12345LL);
-    mgmn::inclusive_scan(data, out, max_op{}, lowest);
-    inclusive_scan(ref, max_op{}, lowest);
+    out.copy_from_host(input.data());
+    inclusive_scan(out, max_op{}, lowest);
+    inclusive_scan(ref, default_envs(ref), max_op{}, lowest);
     const auto h      = host_of(out);
     const auto r      = host_of(ref);
     const auto d      = host_of(data);
@@ -392,13 +386,13 @@ void test_verbs(place_group& group, size_t n)
     }
   }
 
-  // exclusive_scan (plus, init 5, in place) vs sharded::exclusive_sum vs host:
-  // out[i] = init + x_0 + ... + x_{i-1}, init entering exactly once
+  // exclusive_sum (init 5, in place) vs host: out[i] = init + x_0 + ... +
+  // x_{i-1}, init entering exactly once
   {
     data.copy_from_host(input.data());
     ref.copy_from_host(input.data());
-    mgmn::exclusive_sum(data, 5LL);
-    exclusive_sum(ref, 5LL);
+    exclusive_sum(data, 5LL);
+    exclusive_sum(ref, default_envs(ref), 5LL);
     const auto h      = host_of(data);
     const auto r      = host_of(ref);
     long long running = 5;
@@ -410,12 +404,13 @@ void test_verbs(place_group& group, size_t n)
     }
   }
 
-  // exclusive_scan (max, init 7, out of place, explicit environments)
+  // exclusive_scan (custom max, init 7, explicit environments) vs host
   {
     data.copy_from_host(input.data());
     ref.copy_from_host(input.data());
-    const auto envs = default_envs(data);
-    mgmn::exclusive_scan(data, out, envs, max_op{}, 7LL, lowest);
+    out.copy_from_host(input.data());
+    const auto envs = default_envs(out);
+    exclusive_scan(out, envs, max_op{}, 7LL, lowest);
     exclusive_scan(ref, max_op{}, 7LL, lowest);
     const auto h      = host_of(out);
     const auto r      = host_of(ref);
@@ -450,16 +445,14 @@ void test_verbs(place_group& group, size_t n)
     }
   }
 
-  // Co-partition refusal
-  if (n >= 2)
+  // Environment-count refusal (strict: one environment per shard)
   {
-    ::std::vector<size_t> sizes(group.size(), 0);
-    sizes[0]   = n - 1;
-    auto other = sharded_array<long long>::allocate(group, sizes);
+    auto envs = default_envs(data);
+    envs.push_back(envs.front());
     bool threw = false;
     try
     {
-      mgmn::inclusive_scan(data, other, ::cuda::std::plus<long long>{});
+      inclusive_scan(data, envs, ::cuda::std::plus<long long>{});
     }
     catch (const ::std::invalid_argument&)
     {
@@ -481,14 +474,14 @@ void test_empty_shards(place_group& group)
   sizes[group.size() - 1] = n;
   auto data               = sharded_array<long long>::allocate(group, sizes);
   fill(data, 1LL);
-  EXPECT(mgmn::reduce(data, ::cuda::std::plus<long long>{}, 0LL) == static_cast<long long>(n));
-  mgmn::inclusive_sum(data);
+  EXPECT(reduce(data, ::cuda::std::plus<long long>{}, 0LL) == static_cast<long long>(n));
+  inclusive_sum(data);
   const auto h = host_of(data);
   for (size_t i = 0; i < n; i++)
   {
     EXPECT(h[i] == static_cast<long long>(i) + 1);
   }
-  mgmn::exclusive_sum(data, 0LL); // of 1..n: 0, 1, 3, 6, ...
+  exclusive_sum(data, 0LL); // of 1..n: 0, 1, 3, 6, ...
   const auto e      = host_of(data);
   long long running = 0;
   for (size_t i = 0; i < n; i++)
@@ -499,8 +492,8 @@ void test_empty_shards(place_group& group)
 
   // An all-empty array is a no-op / returns init
   sharded_array<long long> empty;
-  EXPECT(mgmn::reduce(empty, ::cuda::std::plus<long long>{}, 42LL) == 42LL);
-  mgmn::inclusive_sum(empty);
+  EXPECT(reduce(empty, ::cuda::std::plus<long long>{}, 42LL) == 42LL);
+  inclusive_sum(empty);
 }
 
 // The MGMN reduce without `all_reduce`: the all_gather + local-reduce fallback
@@ -566,7 +559,7 @@ void test_env_resource_allocates(place_group& group)
     ::cuda::std::is_same_v<::cuda::experimental::mgmn::__detail::__resource_type_for<mgmn_env_t<::std::vector<env_t>>>,
                            counting_resource>);
 
-  mgmn::inclusive_scan(data, envs, ::cuda::std::plus<long long>{});
+  inclusive_scan(data, envs, ::cuda::std::plus<long long>{});
   barrier(envs);
   // Per shard: the P-wide partials buffer, the prefix scalar (MGMN), plus
   // CUB temporaries — strictly more than nothing, and all through the env.
@@ -582,7 +575,7 @@ void test_env_resource_allocates(place_group& group)
   // `data` now holds the prefix sums; their total is the reduce reference
   const long long total = ::std::accumulate(h.begin(), h.end(), 0LL);
   const size_t before   = counter->load();
-  EXPECT(mgmn::reduce(data, envs, ::cuda::std::plus<long long>{}, 0LL) == total);
+  EXPECT(reduce(data, envs, ::cuda::std::plus<long long>{}, 0LL) == total);
   EXPECT(counter->load() > before);
 }
 
