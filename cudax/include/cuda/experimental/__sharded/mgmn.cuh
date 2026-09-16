@@ -60,9 +60,7 @@
 
 #include <cuda/__functional/operator_properties.h> // identity_element
 #include <cuda/__memory_resource/get_memory_resource.h>
-#include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/cstdint>
@@ -734,108 +732,23 @@ static_assert(::cuda::experimental::mgmn::__has_all_reduce<places_communicator>)
 
 namespace reserved
 {
-/**
- * @brief Give a stream-ordered memory resource the `device_accessible`
- * property and the `default_queries` the MGMN algorithms need to build
- * their `cuda::buffer` temporaries (`place_memory_resource` allocates at a
- * device place but does not advertise it). Every allocation still goes
- * through the wrapped resource: the environment's resource is the one that
- * allocates.
- */
-template <class _Resource>
-class __device_accessible_adapter
-{
-public:
-  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
-
-  explicit __device_accessible_adapter(_Resource __mr)
-      : __mr_(::std::move(__mr))
-  {}
-
-  [[nodiscard]] void* allocate(::cuda::stream_ref __stream, ::std::size_t __bytes, ::std::size_t __alignment)
-  {
-    return __mr_.allocate(__stream, __bytes, __alignment);
-  }
-  [[nodiscard]] void* allocate(::cuda::stream_ref __stream, ::std::size_t __bytes)
-  {
-    return __mr_.allocate(__stream, __bytes);
-  }
-  void deallocate(::cuda::stream_ref __stream, void* __ptr, ::std::size_t __bytes, ::std::size_t __alignment)
-  {
-    __mr_.deallocate(__stream, __ptr, __bytes, __alignment);
-  }
-  void deallocate(::cuda::stream_ref __stream, void* __ptr, ::std::size_t __bytes)
-  {
-    __mr_.deallocate(__stream, __ptr, __bytes);
-  }
-  [[nodiscard]] void* allocate_sync(::std::size_t __bytes, ::std::size_t __alignment)
-  {
-    return __mr_.allocate_sync(__bytes, __alignment);
-  }
-  [[nodiscard]] void* allocate_sync(::std::size_t __bytes)
-  {
-    return __mr_.allocate_sync(__bytes);
-  }
-  void deallocate_sync(void* __ptr, ::std::size_t __bytes, ::std::size_t __alignment)
-  {
-    __mr_.deallocate_sync(__ptr, __bytes, __alignment);
-  }
-  void deallocate_sync(void* __ptr, ::std::size_t __bytes)
-  {
-    __mr_.deallocate_sync(__ptr, __bytes);
-  }
-
-  //! @brief The wrapped resource.
-  [[nodiscard]] const _Resource& resource() const noexcept
-  {
-    return __mr_;
-  }
-
-  [[nodiscard]] friend bool
-  operator==(const __device_accessible_adapter& __a, const __device_accessible_adapter& __b) noexcept
-  {
-    return __a.__mr_ == __b.__mr_;
-  }
-  [[nodiscard]] friend bool
-  operator!=(const __device_accessible_adapter& __a, const __device_accessible_adapter& __b) noexcept
-  {
-    return !(__a == __b);
-  }
-
-  friend constexpr void get_property(const __device_accessible_adapter&, ::cuda::mr::device_accessible) noexcept {}
-
-private:
-  _Resource __mr_;
-};
-
-//! @brief The environment's resource as the MGMN algorithms can consume it:
-//! unchanged when it already advertises `default_queries`, otherwise wrapped.
-template <class _Env>
-[[nodiscard]] auto __mgmn_resource(const _Env& __env)
-{
-  using __raw_t = ::cuda::std::remove_cvref_t<decltype(::cuda::mr::get_memory_resource(__env))>;
-  if constexpr (::cuda::mr::__has_default_queries<__raw_t>)
-  {
-    return __raw_t{::cuda::mr::get_memory_resource(__env)};
-  }
-  else
-  {
-    return __device_accessible_adapter<__raw_t>{::cuda::mr::get_memory_resource(__env)};
-  }
-}
-
 //! @brief One MGMN environment from one sharded environment: its stream and
-//! its (adapted) memory resource, nothing else.
+//! its memory resource, nothing else. The resource is passed through as is;
+//! the MGMN algorithms size their `cuda::buffer` temporaries from its
+//! `default_queries` (`place_memory_resource` declares `device_accessible`).
 template <class _Env>
 [[nodiscard]] auto __mgmn_env(const _Env& __env)
 {
-  using __mr_t = decltype(__mgmn_resource(__env));
+  using __mr_t = ::cuda::std::remove_cvref_t<decltype(::cuda::mr::get_memory_resource(__env))>;
+  static_assert(::cuda::mr::__has_default_queries<__mr_t>,
+                "sharded::mgmn: the environment's memory resource must declare `default_queries` "
+                "(the property set the MGMN algorithms build their temporaries from)");
   return ::cuda::std::execution::env<::cuda::std::execution::prop<::cuda::get_stream_t, ::cuda::stream_ref>,
                                      ::cuda::std::execution::prop<::cuda::mr::get_memory_resource_t, __mr_t>>{
     ::cuda::std::execution::prop<::cuda::get_stream_t, ::cuda::stream_ref>{
       ::cuda::get_stream, ::cuda::stream_ref{::cuda::get_stream(__env)}},
     ::cuda::std::execution::prop<::cuda::mr::get_memory_resource_t, __mr_t>{
-      ::cuda::mr::get_memory_resource, __mgmn_resource(__env)}};
+      ::cuda::mr::get_memory_resource, __mr_t{::cuda::mr::get_memory_resource(__env)}}};
 }
 } // namespace reserved
 

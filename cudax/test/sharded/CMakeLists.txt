@@ -20,6 +20,7 @@ set(
   algorithms/segmented_reduce.cu
   algorithms/sort.cu
   algorithms/mgmn_adapter.cu
+  algorithms/mgmn_std_execution.cu
   graph_capture/elementwise_pipeline.cu
   graph_capture/reduce_scan_capture.cu
   graph_capture/must_not_capture.cu

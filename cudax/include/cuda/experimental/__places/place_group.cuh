@@ -366,12 +366,11 @@ public:
    * foreign streams. (Defined ahead of `lane_view`, which uses its deduced
    * return type.)
    */
-  static auto env(const data_place& dplace,
-                  cudaStream_t stream,
-                  ::cuda::std::optional<size_t> lane_id = ::cuda::std::nullopt)
+  static auto
+  env(const data_place& dplace, cudaStream_t stream, ::cuda::std::optional<size_t> lane_id = ::cuda::std::nullopt)
   {
     const auto stream_prop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{stream}};
-    const auto mr_prop = ::cuda::std::execution::prop{::cuda::mr::get_memory_resource, place_memory_resource(dplace)};
+    const auto mr_prop   = ::cuda::std::execution::prop{::cuda::mr::get_memory_resource, place_memory_resource(dplace)};
     const auto lane_prop = ::cuda::std::execution::prop{get_lane_id, lane_id};
     return ::cuda::std::execution::env{stream_prop, mr_prop, lane_prop};
   }
@@ -639,8 +638,8 @@ private:
     if (lane_id >= num_lanes_)
     {
       _CCCL_THROW(::std::out_of_range,
-                  ::std::string(what) + ": lane id " + ::std::to_string(lane_id) + " out of range (num_lanes() = "
-                    + ::std::to_string(num_lanes_) + "); lane ids never wrap");
+                  ::std::string(what) + ": lane id " + ::std::to_string(lane_id)
+                    + " out of range (num_lanes() = " + ::std::to_string(num_lanes_) + "); lane ids never wrap");
     }
   }
 
@@ -751,8 +750,8 @@ UNITTEST("place_group lanes are views")
   place_group group{make_locality_domain_grid()};
 
   // lane(k) is the group on lane k; plain group converts to lane 0
-  auto l1                    = group.lane(1);
-  place_group::lane_view l0  = group;
+  auto l1                   = group.lane(1);
+  place_group::lane_view l0 = group;
   EXPECT(l0.lane_id() == 0UL);
   EXPECT(l1.lane_id() == 1UL);
   EXPECT(&l1.group() == &group);
@@ -795,6 +794,13 @@ UNITTEST("place_group lanes are views")
 
 UNITTEST("place_group per-place memory resources")
 {
+  // The resource models the cuda::mr concepts and declares the property set
+  // containers built from it inherit.
+  static_assert(::cuda::mr::resource<place_memory_resource>);
+  static_assert(::cuda::mr::synchronous_resource<place_memory_resource>);
+  static_assert(::cuda::mr::resource_with<place_memory_resource, ::cuda::mr::device_accessible>);
+  static_assert(::cuda::mr::__has_default_queries<place_memory_resource>);
+
   place_group group{exec_place::device(0)};
 
   auto mr        = group.memory_resource(0);

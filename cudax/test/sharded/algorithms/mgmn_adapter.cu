@@ -53,14 +53,18 @@ static_assert(cuda::experimental::mgmn::__has_all_gather<places_communicator, lo
 static_assert(cuda::experimental::mgmn::__has_all_reduce<places_communicator>);
 static_assert(cuda::experimental::mgmn::__has_all_reduce<places_communicator, long long*, cuda::std::plus<>>);
 static_assert(!cuda::experimental::mgmn::__has_reduce<places_communicator>);
+static_assert(!cuda::experimental::mgmn::__has_broadcast<places_communicator>);
 static_assert(cuda::experimental::mgmn::__range_of_communicators<::std::vector<places_communicator>>);
 static_assert(cuda::experimental::mgmn::__range_of_communicators<const ::std::vector<places_communicator>&>);
 
+// The environment's `place_memory_resource` travels through unchanged: it
+// declares `device_accessible` itself, so it is what the MGMN resource
+// deduction names (never the default-pool fallback, never a wrapper).
 using default_mgmn_env_t = mgmn_env_t<::std::vector<shard_env_t>>;
 static_assert(::cuda::std::is_same_v<::cuda::experimental::mgmn::__detail::__resource_type_for<default_mgmn_env_t>,
-                                     reserved::__device_accessible_adapter<place_memory_resource>>);
-static_assert(::cuda::mr::resource_with<reserved::__device_accessible_adapter<place_memory_resource>,
-                                        ::cuda::mr::device_accessible>);
+                                     place_memory_resource>);
+static_assert(::cuda::mr::resource_with<place_memory_resource, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::__has_default_queries<place_memory_resource>);
 
 namespace
 {
@@ -93,14 +97,17 @@ static_assert(cuda::experimental::mgmn::__communicator<no_all_reduce_comm>);
 static_assert(cuda::experimental::mgmn::__has_all_gather<no_all_reduce_comm>);
 static_assert(!cuda::experimental::mgmn::__has_all_reduce<no_all_reduce_comm>);
 
-// A `place_memory_resource` that counts its stream-ordered allocations and,
-// like the wrapped type, advertises no `default_queries`: the adapter must
-// wrap it, and every MGMN temporary must come through it. (The counter is a
-// plain pointer: nvcc gives implicit special members host/device linkage,
-// so a `shared_ptr` member would drag a host-only move into device code.)
+// A `place_memory_resource` that counts its stream-ordered allocations: the
+// environment passes it through untouched, and every MGMN temporary must
+// come through it. Like any resource the MGMN algorithms allocate from, it
+// declares its `default_queries`. (The counter is a plain pointer: nvcc gives
+// implicit special members host/device linkage, so a `shared_ptr` member
+// would drag a host-only move into device code.)
 class counting_resource
 {
 public:
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
+
   explicit counting_resource(place_memory_resource mr, ::std::atomic<size_t>* counter)
       : mr_(::std::move(mr))
       , counter_(counter)
@@ -131,13 +138,14 @@ public:
   {
     return !(a == b);
   }
+  friend constexpr void get_property(const counting_resource&, ::cuda::mr::device_accessible) noexcept {}
 
 private:
   place_memory_resource mr_;
   ::std::atomic<size_t>* counter_;
 };
 static_assert(::cuda::mr::resource<counting_resource>);
-static_assert(!::cuda::mr::__has_default_queries<counting_resource>);
+static_assert(::cuda::mr::__has_default_queries<counting_resource>);
 
 auto make_counting_env(cudaStream_t stream, const data_place& place, ::std::atomic<size_t>* counter)
 {
@@ -550,12 +558,11 @@ void test_env_resource_allocates(place_group& group)
     envs.push_back(make_counting_env(s.stream, s.place, counter));
   }
   static_assert(sharded_alloc_env_range<::std::vector<env_t>>);
-  // The adapter wraps a resource without default_queries; MGMN's resource
-  // deduction then names the wrapper — the environment's resource — not a
-  // default pool.
+  // MGMN's resource deduction names the environment's resource itself, not
+  // a default pool.
   static_assert(
     ::cuda::std::is_same_v<::cuda::experimental::mgmn::__detail::__resource_type_for<mgmn_env_t<::std::vector<env_t>>>,
-                           reserved::__device_accessible_adapter<counting_resource>>);
+                           counting_resource>);
 
   mgmn::inclusive_scan(data, envs, ::cuda::std::plus<long long>{});
   barrier(envs);
