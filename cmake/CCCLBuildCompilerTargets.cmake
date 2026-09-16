@@ -119,11 +119,6 @@ function(cccl_build_compiler_targets)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
   endif()
 
-  #  if (CCCL_USE_LIBCXX)
-  #    list(APPEND cxx_compile_options "-stdlib=libc++")
-  #    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
-  #  endif()
-
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cuda_compile_options "--use-local-env")
     list(APPEND cxx_compile_options "/bigobj")
@@ -255,6 +250,40 @@ function(cccl_build_compiler_targets)
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
   )
+
+  # Specifically add libc++ testing if requested.
+  # One genex per flag so CMake does not pack spaces into a single argv token.
+  # nvcc must get `-Xcompiler=...`; a bare `/usr/include/c++/v1` is treated as
+  # an extra input file. Link options use LINK_LANG_AND_ID (not COMPILE_*).
+  if (CCCL_USE_LIBCXX)
+    target_compile_definitions(
+      cccl.compiler_interface
+      INTERFACE _ALLOW_UNSUPPORTED_LIBCPP=1
+    )
+    target_compile_options(
+      cccl.compiler_interface
+      INTERFACE
+        $<$<COMPILE_LANG_AND_ID:CXX,Clang>:-Wno-unused-command-line-argument>
+        $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unused-command-line-argument>
+        $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang>
+        $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-stdlib=libc++>
+        $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-stdlib++-isystem>
+        $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:/usr/include/c++/v1>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=-stdlib=libc++>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=-stdlib++-isystem>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/usr/include/c++/v1>
+        $<$<COMPILE_LANG_AND_ID:CXX,Clang>:-stdlib=libc++>
+        $<$<COMPILE_LANG_AND_ID:CXX,Clang>:-stdlib++-isystem>
+        $<$<COMPILE_LANG_AND_ID:CXX,Clang>:/usr/include/c++/v1>
+    )
+    target_link_options(
+      cccl.compiler_interface
+      INTERFACE
+        $<$<LINK_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=-stdlib=libc++>
+        $<$<LINK_LANG_AND_ID:CUDA,Clang>:-stdlib=libc++>
+        $<$<LINK_LANG_AND_ID:CXX,Clang>:-stdlib=libc++>
+    )
+  endif()
 
   # Clang-cuda only:
   target_compile_options(

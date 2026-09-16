@@ -27,11 +27,6 @@ file(
 set(public_host_header_cxx_compile_options)
 set(public_host_header_cxx_compile_definitions)
 
-# Specifically add libc++ testing if requested to the libcudacxx host suite
-if (CCCL_USE_LIBCXX)
-  list(APPEND public_host_header_cxx_compile_options "-stdlib=libc++")
-endif()
-
 function(
   libcudacxx_add_public_header_test_host_target
   target_name
