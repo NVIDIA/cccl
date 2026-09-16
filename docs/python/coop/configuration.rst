@@ -10,26 +10,32 @@ Configuration
 Installation
 ------------
 
-Install the extra matching the CUDA major version used to compile the kernel:
+Install the common API without a compiler backend:
+
+.. code-block:: console
+
+   python -m pip install cuda-coop
+
+The base distribution has no Python package dependencies. It contains the
+common API, type declarations, and a matching bundle of CUB, Thrust, and
+libcu++ headers. You can import ``cuda.coop`` without a compiler or GPU;
+executing its primitives inside a kernel requires a supported backend.
+
+For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
 
 .. code-block:: console
 
    python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
    # Use numba-cuda-mlir-cu12 with CUDA 12.
 
-The base ``cuda-coop`` distribution contains the portable API, type
-declarations, and a coherent bundle of CUB, Thrust, and libcu++ headers.
-Installed-wheel compilation uses that bundle by default. Development from a
-CCCL source checkout uses the matching checkout headers, and
-``CUDA_COOP_CCCL_ROOT`` can select another source checkout or ``cuda-coop``
-header bundle. Importing :mod:`cuda.coop` does not require Numba-CUDA-MLIR or
-an accessible GPU.
+The extra installs the compiler and its dependencies alongside ``cuda-coop``.
+The current integration supports ``numba-cuda-mlir>=0.5.0,<0.6``.
+Installing an extra does not register a backend in a running Python process;
+see :ref:`installation versus registration <coop-faq-installed-extra>`.
 
-The Numba backend is intentionally limited to
-``numba-cuda-mlir>=0.5.0,<0.6``. Its private compiler API module
-provides access to overload templates, IR, datamodels, and the registries
-needed to roll back a failed activation. It does not adapt between runtime
-versions. Other runtime series are rejected before compiler registries change.
+Installed-wheel compilation uses the bundled CCCL headers. Development from a
+CCCL source checkout uses its matching headers. ``CUDA_COOP_CCCL_ROOT`` can
+select another source checkout or ``cuda-coop`` header bundle.
 
 
 Runtime environment variables
@@ -42,7 +48,8 @@ and leading and trailing whitespace is ignored. An unset variable is false.
 
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
    A truthy value disables automatic backend activation during
-   :mod:`cuda.coop` import. Explicit qualified-backend import still works.
+   :mod:`cuda.coop` import. Explicit ``coop.register(...)`` and
+   backend imports still work.
 
 ``CUDA_COOP_CCCL_ROOT``
    Selects a CCCL source checkout or a ``cuda-coop`` header bundle. An invalid

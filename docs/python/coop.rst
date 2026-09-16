@@ -112,16 +112,17 @@ To work on the integration, follow a kernel through the
 
 .. raw:: html
 
-   <span id="backend-activation"></span>
    <span id="block-prefix-callbacks"></span>
    <span id="build-time-cmake-variables"></span>
    <span id="compilation-and-headers"></span>
    <span id="configuration"></span>
+   <span id="coop-backend-registration"></span>
    <span id="exchange-semantics"></span>
    <span id="groups-and-thread-data"></span>
    <span id="installation"></span>
    <span id="kernel-api"></span>
    <span id="load-and-store-semantics"></span>
+   <span id="registering-a-backend"></span>
    <span id="runtime-environment-variables"></span>
    <span id="scan-semantics"></span>
    <span id="shuffle-semantics"></span>
