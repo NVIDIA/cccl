@@ -12,6 +12,10 @@ load a tile, compute a prefix sum across its elements, and write the result
 without leaving the kernel. You choose the participating group and the data
 each thread contributes.
 
+The :doc:`visualizations <visualizations/index>` show how values move through
+these operations. Each explorer includes an example kernel and lets you
+step through the algorithm.
+
 This guide assumes you have written a CUDA kernel and know how threads,
 blocks, and device arrays work. The examples use Numba-CUDA-MLIR. The
 :doc:`installation instructions <../coop>` describe the matching
@@ -448,6 +452,10 @@ The payload does not carry a runtime layout tag that corrects mismatched
 operations. The algorithms you call determine the interpretation. Pairing
 a striped Load with a direct Store without a conversion permutes the data.
 
+Compare the :doc:`Load <visualizations/load>` and
+:doc:`Store <visualizations/store>` visualizations to see how each algorithm
+maps memory positions to per-thread slots.
+
 Dtypes and storage
 ^^^^^^^^^^^^^^^^^^
 
@@ -586,12 +594,19 @@ Qualified block scatter modes let you supply destination ranks for finer
 control. Valid ranks and unique active destinations are caller requirements;
 duplicate destinations and holes leave unspecified slots.
 
+The :doc:`Exchange visualization <visualizations/exchange>` shows both
+layout conversions and ranked scatters, including the holes left by
+suppressed writes.
+
 Shuffle operates on a block's flattened blocked tile. The common ``up``
 and ``down`` modes shift it by one element and return a fresh payload.
 The first ``up`` slot or last ``down`` slot is unspecified. Set that
 boundary yourself before consuming it. Qualified scalar ``offset`` and
 ``rotate`` modes have different distance rules; see :doc:`../coop_api`
 before substituting them for an array shift.
+
+Use the :doc:`Shuffle visualization <visualizations/shuffle>` to compare
+the array shifts with scalar offsets and rotation.
 
 Warp tile addresses
 ^^^^^^^^^^^^^^^^^^^
@@ -827,6 +842,9 @@ non-power-of-two group per physical warp. For those widths, use
 ``group_by(width, exhaustive=False)`` and
 guard the reduction with ``group.is_member()`` to exclude trailing lanes.
 
+The :doc:`Reduce visualization <visualizations/reduce>` shows which values
+contribute and which group members receive a defined result.
+
 This kernel writes one sum per block, including a partial final tile:
 
 .. code-block:: python
@@ -891,6 +909,10 @@ dtype and meaning for the operator, or use the qualified Block Scan prefix
 callback described below. Inclusive Scan rejects an explicit initial value.
 Block array scans flatten their inputs in blocked order and return one
 result for every input element.
+
+The :doc:`Scan visualization <visualizations/scan>` compares inclusive and
+exclusive results and shows how an initial value or prefix callback changes
+the sequence.
 
 Built-in operators use the same string vocabulary as Reduce. Scan relies
 on an associative operation: regrouping the inputs must preserve the
