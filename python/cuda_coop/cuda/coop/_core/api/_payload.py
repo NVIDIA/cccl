@@ -37,14 +37,22 @@ class _ReadableThreadDataLike(Protocol[_ItemT]):
 
 @runtime_checkable
 class ThreadDataLike(_ReadableThreadDataLike[_ItemT], Protocol[_ItemT]):
-    """Mutable fixed-size per-thread payload understood by supported backends."""
+    """Mutable fixed-size per-thread payload understood by supported backends.
+
+    See :ref:`per-thread payloads <coop-thread-data>` for construction, item
+    access, and dtype requirements.
+    """
 
     def __setitem__(self, index: int, value: _ItemT) -> None: ...
 
 
 @runtime_checkable
 class TempStorageLike(Protocol):
-    """Explicit cooperative scratch descriptor understood by supported backends."""
+    """Explicit cooperative scratch descriptor understood by supported backends.
+
+    See :ref:`temporary storage <coop-temp-storage>` for construction,
+    allocation sharing, and synchronization.
+    """
 
     size_in_bytes: int | None
     alignment: int | None

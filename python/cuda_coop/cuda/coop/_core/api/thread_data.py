@@ -23,11 +23,45 @@ def ThreadData(
     *,
     alignment: int | None = None,
 ) -> ThreadDataLike[Any]:
-    """Construct a per-thread payload with optional minimum storage alignment.
+    """Construct a fixed-size payload owned by the calling thread.
 
-    ``alignment`` is a compile-time positive power of two in bytes, or ``None``
-    to let the compiler choose. It applies when payload storage is materialized;
-    it does not assert alignment of the inputs or outputs of Load and Store.
+    Each thread has its own slots. See :ref:`per-thread payloads
+    <coop-thread-data>` for their relationship to a group tile and the
+    :ref:`blocked and striped layouts <coop-data-layouts>`.
+
+    Parameters
+    ----------
+    items_per_thread : int
+        Positive compile-time number of items owned by each thread.
+        This extent is fixed for the lifetime of the payload and is available
+        inside the kernel as ``items.items_per_thread``.
+    dtype : dtype-like, optional
+        Numeric element dtype, for example ``numpy.int32``. ``None`` lets
+        the compiler infer it from a supported producer such as
+        :func:`cuda.coop.load`. All items have the same dtype.
+    alignment : int, optional
+        Compile-time minimum storage alignment in bytes, expressed as a
+        positive power of two. ``None`` lets the compiler choose. The request
+        applies when payload storage is materialized; it does not assert
+        alignment of a Load source or Store destination.
+
+    Returns
+    -------
+    cuda.coop.ThreadDataLike
+        Writable per-thread payload with indexed reads and writes. Its
+        contents are uninitialized; write every item before reading it.
+        Construction does not synchronize threads.
+
+    Examples
+    --------
+    Construct two items per thread, fill them with squared indices, and
+    store the resulting blocked tiles:
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
+        :language: python
+        :start-after: # thread-data-example-begin
+        :end-before: # thread-data-example-end
+        :dedent: 4
     """
 
     alignment = _normalize_alignment(alignment)

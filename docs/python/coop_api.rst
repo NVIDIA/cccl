@@ -12,12 +12,92 @@ Portable API
 The portable functions below are compiler markers. The installed ``.pyi``
 files are authoritative for overload and result typing.
 
-.. automodule:: cuda.coop
-   :members:
-   :exclude-members: __version__
-   :imported-members:
-   :no-undoc-members:
+.. currentmodule:: cuda.coop
+
+Thread groups
+^^^^^^^^^^^^^
+
+See :ref:`thread groups <coop-thread-groups>` and
+:ref:`participation and synchronization <coop-participation>` for the shared
+execution model. A descriptor's availability does not imply that every
+collective supports that group.
+
+.. autofunction:: this_thread
+.. autofunction:: this_warp
+.. autofunction:: this_block
+.. autofunction:: this_cluster
+.. autofunction:: this_grid
+
+.. autoclass:: ThreadGroup
+   :no-members:
    :no-special-members:
+
+   .. automethod:: group_by
+   .. automethod:: rank
+   .. automethod:: count
+   .. automethod:: rank_as
+   .. automethod:: count_as
+   .. automethod:: is_member
+   .. automethod:: sync
+   .. automethod:: sync_aligned
+
+.. autoclass:: ThreadHierarchy
+   :no-members:
+   :no-special-members:
+
+.. py:class:: Hierarchy
+
+   Alias for :class:`ThreadHierarchy`.
+
+Payloads and temporary storage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: ThreadData
+
+.. autoclass:: ThreadDataLike
+   :no-members:
+   :no-special-members:
+
+.. autofunction:: TempStorage
+
+.. autoclass:: TempStorageLike
+   :no-members:
+   :no-special-members:
+
+Memory operations
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: load
+.. autofunction:: store
+
+Reduction
+^^^^^^^^^
+
+See :ref:`reduction and result ownership <coop-reductions>`.
+
+.. autofunction:: reduce
+.. autofunction:: sum
+
+Scan
+^^^^
+
+See :ref:`scan operators and prefixes <coop-scans>`.
+
+.. autofunction:: scan
+.. autofunction:: exclusive_sum
+.. autofunction:: inclusive_sum
+.. autofunction:: exclusive_scan
+.. autofunction:: inclusive_scan
+
+Data rearrangement
+^^^^^^^^^^^^^^^^^^
+
+See :ref:`blocked and striped layouts <coop-data-layouts>`.
+
+.. autofunction:: exchange
+.. autofunction:: shuffle
+
+.. _coop-numba-extensions:
 
 Numba-CUDA-MLIR-qualified API
 -----------------------------
@@ -93,8 +173,9 @@ signed or unsigned 8-, 16-, 32-, and 64-bit integer dtypes.
 
 ``group_by`` accepts only compile-time ``count`` and ``exhaustive`` values.
 Mapped groups may query their constituents and immediate physical parent but
-not a higher level. Mapped warps-within-block groups provide queries and
-membership only; their synchronization methods are rejected. Grid
+not a higher level. Mapped groups of physical warps support queries, membership, and the
+restricted reductions described by :func:`cuda.coop.reduce`; their explicit
+synchronization methods are rejected. Grid
 synchronization is also rejected because this backend does not request a
 cooperative grid launch. Callers of non-exhaustive partitions should use
 ``is_member()`` to guard rank-dependent work for excluded threads, but must not
@@ -106,3 +187,36 @@ See the :github:`Numba-CUDA-MLIR type declarations
 <python/cuda_coop/cuda/coop/numba_mlir/__init__.pyi>` for the complete overload
 contract. Importing this qualified module requires the matching
 Numba-CUDA-MLIR extra.
+
+Qualified function reference
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The qualified functions retain the common parameter order and add the
+extensions described below. The group factories and descriptors follow the
+same :ref:`thread-group contract <coop-thread-groups>` as the portable API.
+``local`` and ``shared`` expose the active Numba-CUDA-MLIR runtime's memory
+namespaces; their allocations follow that compiler's rules.
+
+.. currentmodule:: cuda.coop.numba_mlir
+
+.. autofunction:: ThreadData
+
+.. autoclass:: TempStorage
+   :no-members:
+   :no-special-members:
+
+.. autoclass:: StatefulFunction
+   :no-members:
+   :no-special-members:
+
+.. autofunction:: load
+.. autofunction:: store
+.. autofunction:: reduce
+.. autofunction:: sum
+.. autofunction:: scan
+.. autofunction:: exclusive_sum
+.. autofunction:: inclusive_sum
+.. autofunction:: exclusive_scan
+.. autofunction:: inclusive_scan
+.. autofunction:: exchange
+.. autofunction:: shuffle

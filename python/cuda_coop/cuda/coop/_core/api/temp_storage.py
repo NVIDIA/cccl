@@ -24,11 +24,53 @@ def TempStorage(
     auto_sync: Any = None,
     sharing: str = "shared",
 ) -> TempStorageLike:
-    """Construct scratch storage with optional minimum alignment in bytes.
+    """Describe shared scratch for supported cooperative block operations.
 
-    ``alignment`` is a compile-time positive power of two, or ``None`` to let
-    the compiler choose. Storage satisfies both this minimum and the alignment
-    required by every primitive using it.
+    Construct the descriptor inside the kernel and pass it as
+    ``temp_storage`` to operations that accept explicit block scratch.
+    See :ref:`temporary storage <coop-temp-storage>` for supported operations,
+    allocation lifetime, and launch-time shared-memory requirements.
+
+    Parameters
+    ----------
+    size_in_bytes : int, optional
+        Positive compile-time capacity in bytes. ``None`` lets the compiler
+        determine the capacity from all uses. An explicit capacity must be
+        large enough for those operations; undersized storage is rejected.
+    alignment : int, optional
+        Compile-time minimum alignment in bytes, expressed as a positive
+        power of two. ``None`` lets the compiler choose. The allocation
+        satisfies both this request and the operations' alignment needs.
+    auto_sync : bool, optional
+        Whether to insert a trailing barrier after each scratch-using call.
+        ``None`` and ``True`` enable automatic reuse synchronization.
+        ``False`` requires the caller to synchronize before the scratch is
+        reused, including on the next iteration of a loop.
+    sharing : {"shared", "exclusive"}, optional
+        Compile-time allocation policy, default ``"shared"``. Shared call
+        sites can reuse one scratch slice. ``"exclusive"`` gives distinct
+        call sites separate slices, which may consume more shared memory.
+        It does not disable automatic synchronization: repeated executions
+        of a single call site still reuse its slice.
+
+    Returns
+    -------
+    cuda.coop.TempStorageLike
+        Compiler-recognized scratch descriptor. The storage contents are
+        opaque; keep application data in :func:`cuda.coop.ThreadData` or
+        application-owned arrays.
+
+    Examples
+    --------
+    Reuse one descriptor for transpose Load, Scan, and transpose Store.
+    The loop processes two independent tiles. Automatic barriers protect
+    reuse between operations and between iterations.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
+        :language: python
+        :start-after: # temp-storage-example-begin
+        :end-before: # temp-storage-example-end
+        :dedent: 4
     """
 
     alignment = _normalize_alignment(alignment)
