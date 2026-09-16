@@ -456,7 +456,7 @@ namespace detail
 template <class T = void>
 CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 {
-  const auto& target_ccs = ::cuda::__target_compute_capabilities();
+  [[maybe_unused]] const auto& target_ccs = ::cuda::__target_compute_capabilities();
 
 #  if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__)
   // PtxVersion() (via cudaFuncGetAttributes()) can report a virtual architecture clamped below the actual
