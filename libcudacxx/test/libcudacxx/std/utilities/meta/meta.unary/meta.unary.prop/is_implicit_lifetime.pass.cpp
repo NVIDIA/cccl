@@ -101,7 +101,7 @@ struct UserDeletedDestructorInAggregate
 
 struct UserDeletedDestructorInNonAggregate
 {
-  virtual void NonAggregate();
+  TEST_FUNC virtual void NonAggregate();
   ~UserDeletedDestructorInNonAggregate() = delete;
 };
 
@@ -153,10 +153,12 @@ struct StructWithFlexibleArrayMember
 };
 #endif // TEST_COMPILER(CLANG)
 
+#if !TEST_COMPILER(NVRTC)
 struct StructWithZeroSizedArray
 {
   int arr[0];
 };
+#endif // !TEST_COMPILER(NVRTC)
 
 // Test implicit-lifetime type
 template <typename T, bool Expected>
@@ -287,7 +289,9 @@ TEST_FUNC constexpr bool test()
   test_is_implicit_lifetime<StructWithFlexibleArrayMember, true>();
 #endif // TEST_COMPILER(CLANG)
 
+#if !TEST_COMPILER(NVRTC)
   test_is_implicit_lifetime<StructWithZeroSizedArray, true>();
+#endif // !TEST_COMPILER(NVRTC)
 
   // C++ standard library types
 
