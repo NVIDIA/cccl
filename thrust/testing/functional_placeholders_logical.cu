@@ -2,7 +2,6 @@
 #include <thrust/functional.h>
 #include <thrust/transform.h>
 
-#include "catch2_test_helper.h"
 #include <unittest/unittest.h>
 
 constexpr size_t num_samples = 10000;
