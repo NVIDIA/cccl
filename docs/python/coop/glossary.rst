@@ -23,24 +23,10 @@ Terms
       positions ``t * K`` through ``t * K + K - 1``. See
       :ref:`blocked versus striped <coop-glossary-layouts>`.
 
-   primitive
-      .. raw:: html
-
-         <span id="term-collective"></span>
-
-      A cooperative operation provided by ``cuda.coop``, such as ``load``,
-      ``reduce``, or ``exclusive_sum``. Each primitive defines which threads
-      participate, how it uses their data, and where its results are
-      available. See
+   collective
+      An operation executed together by a :term:`thread group`. Every
+      required participant must reach the same invocation. See
       :ref:`participation and synchronization <coop-participation>`.
-
-   family
-      A group of related :term:`primitives <primitive>` that share semantics
-      and implementation. For example, the Scan family includes ``scan``,
-      ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
-      ``inclusive_sum``. Families organize implementation modules; a
-      :term:`thread group` describes the threads executing a primitive.
-      See :ref:`implementation families <coop-implementation-families>`.
 
    payload
       The values contributed or received by one thread. ``ThreadData(K)``
@@ -48,87 +34,12 @@ Terms
       accept scalars or backend-specific arrays. See
       :ref:`thread data <coop-thread-data>`.
 
-   batch
-      One independent reduction in :func:`cuda.coop.reduce_batched`.
-      Each lane contributes the value in the same local payload slot:
-      slot ``j`` contributes to batch ``j``. A batch spans the selected
-      warp, and its result belongs to the lane and slot selected by the
-      output layout. See :doc:`batched reduction <visualizations/reduce-batched>`.
-
-   bin
-      A counter indexed by an input sample in :func:`cuda.coop.histogram`.
-      A sample with value ``b`` increments bin ``b``. Every sample must
-      satisfy ``0 <= b < bins``. Returned bins use :term:`striped`
-      ownership. See :doc:`Histogram <visualizations/histogram>`.
-
-   tile boundary
-      The edge between one group's tile and the neighboring data.
-      Adjacent Difference and Discontinuity can consume an explicit
-      predecessor or successor value to compare across this edge.
-      Without one, their endpoint rules apply to the local tile. See
-      :doc:`neighbor operations <neighbor-operations>`.
-
-   run
-      A consecutive sequence represented by one value and its repetition
-      count, such as value ``7`` and length ``3`` representing ``7, 7, 7``.
-      Run Length Decode expands these pairs. Its run-length payload uses
-      positive lengths followed by optional zero-length padding. See
-      :doc:`Run Length Decode <visualizations/run-length-decode>`.
-
-   head flag
-      An integer flag marking the start of a sequence according to
-      Discontinuity's comparison predicate. With the default inequality
-      predicate, it is one where an item differs from its predecessor.
-      Without an explicit tile predecessor, the first item is a head.
-      See :doc:`Discontinuity <visualizations/discontinuity>`.
-
-   tail flag
-      An integer flag marking the end of a sequence according to
-      Discontinuity's comparison predicate. With the default inequality
-      predicate, it is one where an item differs from its successor.
-      Without an explicit tile successor, the last item is a tail.
-
-   decoded window
-      The output interval returned by one :func:`cuda.coop.run_length_decode`
-      call. Its start is an offset in the expanded sequence, and its
-      capacity is ``block_threads * decoded_items_per_thread``. Positions
-      beyond the sequence contain zero. See
-      :ref:`decoding windows and scratch <coop-glossary-decoding>`.
-
-   relative run offset
-      A decoded element's position within its own :term:`run`. For runs
-      ``[7, 9]`` with lengths ``[3, 2]``, the full sequence has relative
-      offsets ``[0, 1, 2, 0, 1]``. This differs from its absolute decoded
-      position or its position within a requested window.
-
-   key-value pair
-      A key used for ordering or selection and an associated value, such as
-      its original array index. Pair operations move the two together.
-      Key and value payloads have the same extent but may have different
-      dtypes. See :ref:`Merge Sort <coop-merge-sort>`.
-
-   stable sort
-      A sort that preserves the input order of elements with equal keys.
-      A function's contract must promise stability before a program relies
-      on it. Radix Sort in ``cuda.coop`` is stable; Merge Sort does not
-      promise equal-key order. See :ref:`radix sorting <coop-radix>`.
-
-   radix digit
-      A fixed-width interval of key bits used in one ranking or sorting
-      step. ``radix_rank_keys`` assigns ranks according to one such digit;
-      ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
-      requested bit interval. See :ref:`radix sorting and ranks <coop-radix>`.
-
-   common API
-      .. raw:: html
-
-         <span id="term-portable-API"></span>
-
-      The backend-independent API exposed through ``from cuda import coop``.
-      It describes operations on thread groups, values, and storage.
-      Support for particular operations and argument types depends on the
-      backend. Qualified APIs provide backend-specific extensions. See
-      :ref:`choosing an API <coop-programming-api-choice>`.
+   portable API
+      The common API available through ``from cuda import coop``. Its
+      operations describe groups, values, and storage independently of a
+      particular kernel compiler. Each backend implements its supported
+      operations; a common spelling does not guarantee support in every
+      compiler. See :ref:`choosing an API <coop-programming-api-choice>`.
 
    qualified API
       A backend's namespace, such as ``cuda.coop.numba_mlir``. It provides
@@ -142,14 +53,14 @@ Terms
       :ref:`blocked versus striped <coop-glossary-layouts>`.
 
    temporary storage
-      Shared-memory scratch used internally by a primitive. The compiler
+      Shared-memory scratch used internally by a collective. The compiler
       allocates it automatically when needed. An explicit ``TempStorage``
       descriptor can control allocation sharing and synchronization for
       supported operations. Keep application data in payloads or arrays.
       See :ref:`the temporary-storage FAQ <coop-faq-temp-storage>`.
 
    thread group
-      The threads participating in a primitive, such as a block, a physical
+      The threads participating in a collective, such as a block, a physical
       warp, or a logical group within a warp. A thread's rank identifies its
       position within that group. See :ref:`groups <coop-thread-groups>`.
 
@@ -158,11 +69,6 @@ Terms
       ``G`` threads and ``K`` items per thread, a full tile has ``G * K``
       values. ``valid_items`` in Load and Store selects a prefix of that
       sequence. It counts tile elements, not elements per thread.
-
-   top-k
-      Selection of the smallest or largest ``k`` keys, optionally with
-      associated values. ``cuda.coop`` TopK returns an unordered selection;
-      only its selected prefix is defined. See :ref:`TopK <coop-topk>`.
 
 .. _coop-glossary-layouts:
 
@@ -224,44 +130,3 @@ Follow the values in the :doc:`Load <visualizations/load>` and
 :doc:`Store <visualizations/store>` visualizations. :doc:`Exchange
 <visualizations/exchange>` converts between layouts; the
 :ref:`programming guide <coop-data-layouts>` shows how layout affects Scan.
-
-.. _coop-glossary-decoding:
-
-Run positions, windows, and scratch
------------------------------------
-
-Run Length Decode first prepares a table of run values and starting
-positions in shared scratch. A window offset then selects where to read
-from the expanded sequence. For values ``[7, 9]`` and lengths ``[3, 2]``:
-
-.. list-table::
-   :header-rows: 1
-
-   * - Absolute decoded position
-     - Value
-     - Relative run offset
-   * - 0
-     - 7
-     - 0
-   * - 1
-     - 7
-     - 1
-   * - 2
-     - 7
-     - 2
-   * - 3
-     - 9
-     - 0
-   * - 4
-     - 9
-     - 1
-
-A window starting at position two begins with values ``[7, 9, 9]`` and
-relative offsets ``[2, 0, 1]``. The total decoded size remains five.
-Each independent window call prepares its table again; passing the same
-``TempStorage`` descriptor reuses memory, not a prepared decoder.
-
-:func:`cuda.coop.run_length_decode_into` keeps that table alive while it
-loops over windows within one call. The table's lifetime ends when the
-call returns. Neither form exposes a parent decoder object or a mutable
-decode cursor. See :ref:`the RLD lifecycle FAQ <coop-faq-rld-lifecycle>`.

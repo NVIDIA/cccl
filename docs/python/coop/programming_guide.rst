@@ -14,7 +14,8 @@ each thread contributes.
 
 The :doc:`visualizations <visualizations/index>` show how values move through
 these operations. Each explorer includes an example kernel and lets you
-step through the algorithm.
+step through the algorithm. The :doc:`glossary <glossary>` defines terms and
+layouts; the :doc:`FAQs <faqs>` explain common API choices.
 
 This guide assumes you have written a CUDA kernel and know how threads,
 blocks, and device arrays work. The examples use Numba-CUDA-MLIR. The
@@ -109,9 +110,10 @@ The common API is imported with:
    from cuda import coop
 
 ``cuda.coop`` expresses operations through a common vocabulary of groups,
-numeric values, ``ThreadData``, and ``TempStorage``. The active kernel
-compiler selects the backend. Start here when these operations cover your
-kernel's needs.
+numeric values, ``ThreadData``, and ``TempStorage``. The kernel
+compiler uses its registered backend to implement those calls. Start here
+when these operations cover your kernel's needs. Numba-CUDA-MLIR is the first
+backend; CUTLASS support is planned.
 
 The qualified import selects the Numba-CUDA-MLIR API explicitly:
 
@@ -205,18 +207,28 @@ check that the selected backend implements the requested group, dtype, and
 operation. The kernels here also contain Numba launch and indexing code;
 porting the complete kernel to another DSL involves those parts too.
 
-Import order
-^^^^^^^^^^^^
+Registering the compiler backend
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-With the current integration, import Numba-CUDA-MLIR before ``cuda.coop``
-to activate the backend automatically. If a dependency imported ``cuda.coop``
-first, explicitly import ``cuda.coop.numba_mlir`` with an alias before
-compiling. That activates common calls as well.
+Register explicitly on the host before compiling when imports may occur in
+any order, as in a library or notebook:
 
-Keep the alias: bare ``import cuda.coop.numba_mlir`` assigns the top-level
-package to the name ``cuda``, replacing an earlier
-``from numba_cuda_mlir import cuda`` binding in that scope. These collective
-calls belong inside kernels compiled by a compatible backend.
+.. code-block:: python
+
+   from cuda import coop
+
+   coop.register("numba-cuda-mlir")
+
+   from numba_cuda_mlir import cuda
+
+Repeated calls are safe. ``"numba_cuda_mlir"`` is also accepted. Importing
+Numba-CUDA-MLIR before ``cuda.coop`` activates the backend automatically;
+importing ``cuda.coop.numba_mlir as numba_coop`` does so explicitly and gives
+you the backend namespace. See :ref:`backend registration
+<coop-backend-registration>` for details.
+
+These collective calls belong inside kernels compiled by a compatible
+backend. Registration itself is a host-side operation.
 
 .. _coop-thread-groups:
 
@@ -413,6 +425,9 @@ for the missing elements.
 
 Blocked and striped order
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The glossary defines :term:`blocked` and :term:`striped` ownership and
+compares their :ref:`layouts <coop-glossary-layouts>`.
 
 A collective needs to know how the per-thread slots correspond to the
 group's tile. Here is a small layout illustration with four threads and

@@ -11,89 +11,97 @@
    coop/programming_guide
    coop/developer_overview
    coop/visualizations/index
+   coop/glossary
+   coop/faqs
 
 ``cuda.coop`` provides cooperative CUDA primitives for Python kernel DSLs.
-The initial backend integrates with Numba-CUDA-MLIR and supports
-:doc:`Load <coop/visualizations/load>`, :doc:`Store <coop/visualizations/store>`,
-:doc:`Exchange <coop/visualizations/exchange>`,
-:doc:`Shuffle <coop/visualizations/shuffle>`,
-:doc:`Reduce <coop/visualizations/reduce>`, and
-:doc:`Scan <coop/visualizations/scan>` across their supported thread-group scopes.
-Its portable descriptors and planning records let primitive families share one
-dispatch, storage, and compilation model.
+Threads work together to :doc:`load <coop/visualizations/load>` and
+:doc:`store <coop/visualizations/store>` tiles, rearrange values with
+:doc:`Exchange <coop/visualizations/exchange>` and
+:doc:`Shuffle <coop/visualizations/shuffle>`, or compute
+:doc:`reductions <coop/visualizations/reduce>` and
+:doc:`scans <coop/visualizations/scan>` inside a kernel.
 
-The :doc:`Programming Guide <coop/programming_guide>` explains how to write
-kernels with the common and qualified APIs, groups, thread data, and temporary
-storage. The :doc:`Developer Overview <coop/developer_overview>` describes
-the compiler integration for readers working on the library itself.
-The :doc:`Visualizations <coop/visualizations/index>` let you follow values
-through a primitive's memory accesses and per-thread storage.
+The common ``cuda.coop`` API describes those operations independently of a
+kernel compiler. Numba-CUDA-MLIR is the first supported backend; CUTLASS
+support is planned. The backend namespace adds features specific to its
+compiler. See :ref:`Which namespace should I use? <coop-faq-namespaces>`.
+
+Start with the :doc:`Programming Guide <coop/programming_guide>` to write a
+kernel. The :doc:`Visualizations <coop/visualizations/index>` show where each
+value goes, and the :doc:`Glossary <coop/glossary>` explains terms such as
+:term:`blocked` and :term:`striped`. The :doc:`FAQs <coop/faqs>` cover API
+choices and common questions. For compiler integration details, see the
+:doc:`Developer Overview <coop/developer_overview>`.
 
 Installation
 ------------
 
-Install the extra matching the CUDA major version used to compile the kernel:
+Install the common API without a compiler backend:
+
+.. code-block:: console
+
+   python -m pip install cuda-coop
+
+The base distribution has no Python package dependencies. It contains the
+common API, type declarations, and a matching bundle of CUB, Thrust, libcu++,
+and CUDAX headers. You can import ``cuda.coop`` without a compiler or GPU;
+executing its primitives inside a kernel requires a supported backend.
+
+For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
 
 .. code-block:: console
 
    python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
    # Use numba-cuda-mlir-cu12 with CUDA 12.
 
-The base ``cuda-coop`` distribution contains the portable API, type
-declarations, and a coherent bundle of CUB, Thrust, libcu++, and CUDAX headers.
-Installed-wheel compilation uses that bundle by default. Development from a
-CCCL source checkout uses the matching checkout headers, and
-``CUDA_COOP_CCCL_ROOT`` can select another source checkout or ``cuda-coop``
-header bundle. Importing :mod:`cuda.coop` does not require Numba-CUDA-MLIR or
-an accessible GPU.
+The extra installs the compiler and its dependencies alongside ``cuda-coop``.
+The current integration supports ``numba-cuda-mlir>=0.5.0,<0.6``.
+Installing an extra does not register a backend in a running Python process;
+see :ref:`installation versus registration <coop-faq-installed-extra>`.
 
-The Numba backend is intentionally limited to
-``numba-cuda-mlir>=0.5.0,<0.6``. Its private compiler API module
-provides access to overload templates, IR, datamodels, and the registries
-needed to roll back a failed activation. It does not adapt between runtime
-versions. Other runtime series are rejected before compiler registries change.
+Installed-wheel compilation uses the bundled CCCL headers. Development from a
+CCCL source checkout uses its matching headers. ``CUDA_COOP_CCCL_ROOT`` can
+select another source checkout or ``cuda-coop`` header bundle.
 
-Backend activation
-------------------
+.. _coop-backend-registration:
 
-When using the portable namespace with Numba-CUDA-MLIR, import the compiler
-runtime first:
+Registering a backend
+--------------------
+
+Call :func:`cuda.coop.register` on the host before compiling kernels to
+select the backend explicitly:
 
 .. code-block:: python
+
+   from cuda import coop
+
+   coop.register("numba-cuda-mlir")
 
    from numba_cuda_mlir import cuda
 
-   from cuda import coop
+Registration loads the backend and installs its compiler hooks, so this
+works regardless of whether ``cuda.coop`` or Numba-CUDA-MLIR was imported
+first. Repeated calls are safe and return ``None``. The spelling
+``"numba_cuda_mlir"`` is also accepted. Registration requires the backend's
+dependencies to be installed; it does not install packages.
 
-Because Numba-CUDA-MLIR is already imported, importing :mod:`cuda.coop`
-automatically activates its compiler hooks. A standalone :mod:`cuda.coop`
-import does not discover or load optional compiler runtimes or CUDA bindings.
+For convenience, importing ``cuda.coop`` after ``numba_cuda_mlir`` also
+registers the backend automatically. A standalone ``cuda.coop`` import does
+not discover or load optional compilers. Explicit registration is useful in
+libraries and notebooks where another import may already have loaded
+``cuda.coop``.
 
-If :mod:`cuda.coop` was imported first, activate the backend explicitly before
-compiling a kernel:
+Importing the backend namespace also registers it:
 
 .. code-block:: python
 
-   from cuda import coop
-   import cuda.coop.numba_mlir as _coop_numba_mlir  # Activate portable calls.
+   import cuda.coop.numba_mlir as numba_coop
 
-Importing :mod:`cuda.coop` first and compiling without that explicit
-activation is unsupported. Numba-CUDA-MLIR then reports the portable marker as
-unknown, typically as ``Unknown attribute 'this_block'``, because its compiler
-hooks were not registered.
-
-Keep the alias on the qualified activation import. A bare
-``import cuda.coop.numba_mlir`` binds the name ``cuda`` in the importing
-scope. If that name already refers to the object imported by
-``from numba_cuda_mlir import cuda``, the bare import replaces it and later
-``@cuda.jit`` uses the wrong module.
-
-Alternatively, import :mod:`cuda.coop.numba_mlir` as ``coop`` to use the
-qualified namespace. It supports the common operation forms and adds
-backend memory namespaces, local-array payloads, and operation-specific
-controls such as Scan aggregates and prefix callbacks. See
-:ref:`Choosing the common or qualified API <coop-programming-api-choice>`
-for examples and a comparison.
+Use ``numba_coop`` when mixing common and backend calls. If your program uses
+only the backend namespace, you can import it as ``coop`` instead. See the
+:ref:`namespace FAQ <coop-faq-numba-only>` and
+:ref:`API comparison <coop-programming-api-choice>`.
 
 Configuration
 -------------
@@ -108,7 +116,8 @@ and leading and trailing whitespace is ignored. An unset variable is false.
 
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
    A truthy value disables automatic backend activation during
-   :mod:`cuda.coop` import. Explicit qualified-backend import still works.
+   :mod:`cuda.coop` import. Explicit ``coop.register(...)`` and
+   backend imports still work.
 
 ``CUDA_COOP_CCCL_ROOT``
    Selects a CCCL source checkout or a ``cuda-coop`` header bundle. An invalid
@@ -370,9 +379,9 @@ Numba-CUDA-MLIR backend. ``direct`` and ``vectorize`` use blocked ordering, so
 each thread owns a contiguous segment of the tile. ``striped`` exposes striped
 ordering, where item ``i`` for a thread is separated from its next item by the
 block size. The three transpose algorithms use striped memory transactions but
-present blocked ``ThreadData`` to the caller. The two warp-transpose variants
-perform that reordering within each warp and require a block size divisible by
-32.
+present :term:`blocked` ``ThreadData`` to the caller. The two warp-transpose
+variants perform that reordering within each warp and require a block size
+divisible by 32.
 
 Physical and logical Warp Load and Store support ``direct``, ``striped``,
 ``vectorize``, and ``transpose``. Their layouts follow the same rules at the

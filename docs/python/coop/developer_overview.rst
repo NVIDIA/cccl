@@ -17,6 +17,7 @@ assumes some familiarity with CUDA threads, blocks, and shared memory. The
 :doc:`Programming Guide <programming_guide>` covers writing kernels and
 the :doc:`overview <../coop>` covers installation and supported operations;
 the focus here is how the implementation works and where to change it.
+For a hands-on tour, follow the :ref:`cuda.coop.debugger_walkthrough`.
 
 *Draft scope: this describes the current Numba-CUDA-MLIR 0.5.x integration,
 including the Reduce and Scan work in the*
@@ -811,18 +812,20 @@ currently cannot be combined with ``initial_value`` or
 Activation and compilation reuse
 --------------------------------
 
-The import order in the first example is intentional. Importing
-``cuda.coop`` after ``numba_cuda_mlir`` activates the Numba backend hooks.
-An isolated portable import does not load optional compilers. If the
-portable module was imported first, an explicit qualified import activates
-the hooks:
+Importing ``cuda.coop`` after ``numba_cuda_mlir`` activates the Numba backend
+hooks. An isolated common API import does not load optional compilers.
+Register explicitly to make initialization independent of import order:
 
 .. code-block:: python
 
-   import cuda.coop.numba_mlir as numba_coop
+   from cuda import coop
 
-Use an alias: a bare dotted import would bind ``cuda`` to the top-level
-package and could replace the local name used for Numba's ``cuda.jit``.
+   coop.register("numba-cuda-mlir")
+
+This host-side call imports the selected backend and activates its hooks.
+It is safe to repeat. Importing ``cuda.coop.numba_mlir as numba_coop`` also
+activates the hooks and exposes the backend namespace. Installing an extra
+only supplies dependencies; it does not register hooks in a running process.
 
 ``_compiler/_activation.py`` checks the runtime and compiler compatibility,
 imports the planner, and registers ``CoopWholeFunctionPlanner`` as its
