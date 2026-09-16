@@ -16,6 +16,33 @@ _EXPLORERS = {
     "scan": "coop-collectives.js",
 }
 
+_API_VISUALIZATIONS = (
+    dict.fromkeys(
+        ("scan", "exclusive_scan", "inclusive_scan", "exclusive_sum", "inclusive_sum"),
+        "scan",
+    )
+    | {name: name for name in _EXPLORERS}
+    | {"sum": "reduce"}
+)
+
+
+def add_api_visualization_link(app, what, name, obj, options, lines):
+    module, _, function = name.rpartition(".")
+    if what != "function" or module not in {"cuda.coop", "cuda.coop.numba_mlir"}:
+        return
+    visualization = _API_VISUALIZATIONS.get(function)
+    if visualization is not None:
+        lines.extend(
+            [
+                "",
+                ".. seealso::",
+                "",
+                f"   :doc:`{visualization.title()} visualization "
+                f"</python/coop/visualizations/{visualization}>`",
+                "",
+            ]
+        )
+
 
 class CoopVisualization(SphinxDirective):
     required_arguments = 1
@@ -56,11 +83,13 @@ def add_visualization_assets(app, pagename, templatename, context, doctree):
 
 
 def setup(app):
+    app.setup_extension("sphinx.ext.autodoc")
     app.add_directive("coop-visualization", CoopVisualization)
+    app.connect("autodoc-process-docstring", add_api_visualization_link)
     app.connect("html-page-context", add_visualization_assets)
     return {
-        "version": "2",
-        "env_version": 1,
+        "version": "3",
+        "env_version": 2,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }
