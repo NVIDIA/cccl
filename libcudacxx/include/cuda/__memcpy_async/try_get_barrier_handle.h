@@ -23,9 +23,7 @@
 
 #include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__barrier/barrier.h> // IWYU pragma: keep
 #include <cuda/std/__barrier/empty_completion.h>
-#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 #include <nv/target>

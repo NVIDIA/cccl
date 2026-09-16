@@ -23,9 +23,11 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__mdspan/mdspan.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/mdspan> // IWYU pragma: keep
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -42,7 +42,6 @@
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
-#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 #include <nv/target>
