@@ -15,3 +15,6 @@ do not predict GPU performance.
    :maxdepth: 1
 
    load
+   store
+   exchange
+   shuffle
