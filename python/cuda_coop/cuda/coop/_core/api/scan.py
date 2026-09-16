@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Portable cooperative scan entry points."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -37,7 +39,7 @@ def scan(
         Participating threads; see :ref:`thread groups <coop-thread-groups>`.
         Supports blocks and physical or logical warps. Warp scans require
         an enclosing block size divisible by 32. All group members must
-        execute the primitive together.
+        execute the collective together.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
         :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
@@ -90,14 +92,14 @@ def scan(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ primitive types providing ``ExclusiveScan``, ``InclusiveScan``,
+        C++ collective types providing ``ExclusiveScan``, ``InclusiveScan``,
         and their sum overloads.
 
     Examples
     --------
     Compute inclusive bitwise XOR prefixes across a block with
     Numba-CUDA-MLIR. The qualified import activates the backend, and the
-    calls use the common ``cuda.coop`` API.
+    calls use the portable ``cuda.coop`` API.
 
     .. literalinclude::
         ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
@@ -129,7 +131,7 @@ def exclusive_sum(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Block or physical/logical warp whose members execute the primitive
+        Block or physical/logical warp whose members execute the collective
         together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
@@ -166,7 +168,7 @@ def exclusive_sum(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ primitive types providing ``ExclusiveSum``.
+        C++ collective types providing ``ExclusiveSum``.
 
     Examples
     --------
@@ -203,7 +205,7 @@ def inclusive_sum(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Block or physical/logical warp whose members execute the primitive
+        Block or physical/logical warp whose members execute the collective
         together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
@@ -240,7 +242,7 @@ def inclusive_sum(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ primitive types providing ``InclusiveSum``.
+        C++ collective types providing ``InclusiveSum``.
 
     Examples
     --------
@@ -281,7 +283,7 @@ def exclusive_scan(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Block or physical/logical warp whose members execute the primitive
+        Block or physical/logical warp whose members execute the collective
         together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
@@ -329,7 +331,7 @@ def exclusive_scan(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ primitive types providing ``ExclusiveScan``.
+        C++ collective types providing ``ExclusiveScan``.
 
     Examples
     --------
@@ -369,7 +371,7 @@ def inclusive_scan(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Block or physical/logical warp whose members execute the primitive
+        Block or physical/logical warp whose members execute the collective
         together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
@@ -411,7 +413,7 @@ def inclusive_scan(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ primitive types providing ``InclusiveScan``.
+        C++ collective types providing ``InclusiveScan``.
 
     Examples
     --------

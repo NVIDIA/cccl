@@ -25,10 +25,11 @@ def reduce(
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> Any:
-    """Reduce values with a built-in alias or custom device operator.
+    """Reduce values with Numba-CUDA-MLIR, including custom operators.
 
     See :func:`cuda.coop.reduce` for the shared parameters, defaults, supported
-    groups, and examples. Qualified operand forms are described below.
+    groups, result visibility, and examples. The qualified API adds these
+    operand forms:
 
     Parameters
     ----------
@@ -37,10 +38,8 @@ def reduce(
         extent. Its elements contribute to one scalar result, just like
         :ref:`ThreadData <coop-thread-data>`. The input is preserved.
     binary_op : str or callable, optional
-        Also accepts ``operator``/NumPy aliases such as ``operator.add`` and
-        ``numpy.add``, which retain the built-in behavior, or a stateless
-        device callable ``op(left, right)`` returning the input dtype.
-        Custom operators must be associative and require
+        In addition to the built-in strings, accepts a device-compilable
+        binary callable returning the input dtype. Custom operators require
         ``broadcast=False`` and a complete block or physical or logical warp.
         Warp custom reductions accept scalar inputs only. For a block, use
         ``algorithm=None``, ``"raking"``, or ``"warp_reductions"``;

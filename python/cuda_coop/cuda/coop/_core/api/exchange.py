@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Portable cooperative exchange entry point."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -34,7 +36,7 @@ def exchange(
     group : cuda.coop.ThreadGroup
         Participating :ref:`thread group <coop-thread-groups>`: a complete
         block, physical warp, or logical warp. Logical warp widths must be
-        powers of two between 1 and 32. Every member must call the primitive;
+        powers of two between 1 and 32. Every member must call the collective;
         warp operations require an enclosing block size divisible by 32.
     value : cuda.coop.ThreadDataLike
         Readable :ref:`per-thread payload <coop-thread-data>` with a fixed

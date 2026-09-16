@@ -43,7 +43,7 @@ def load(
     See Also
     --------
     :cpp:class:`cub::BlockLoad`, :cpp:class:`cub::WarpLoad`
-        C++ Load primitives used for these group scopes.
+        C++ Load collectives used for these group scopes.
     """
 
     group_primitive_marker(
@@ -88,7 +88,7 @@ def store(
     See Also
     --------
     :cpp:class:`cub::BlockStore`, :cpp:class:`cub::WarpStore`
-        C++ Store primitives used for these group scopes.
+        C++ Store collectives used for these group scopes.
     """
 
     group_primitive_marker(

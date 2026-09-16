@@ -68,6 +68,46 @@ algorithms.
 All 128 threads execute both calls. There is one kernel launch. Neither
 ``load`` nor ``store`` launches another kernel or returns to the host.
 
+.. _cuda.coop.calling_conventions:
+
+Positional operands and keyword-only options
+-------------------------------------------
+
+Collective calls take the participating group first, followed by their data
+operands. These arguments are positional-only. Options such as
+``algorithm``, ``valid_items``, and ``broadcast`` are keyword-only:
+
+.. code-block:: python
+
+   total = coop.sum(block, value)
+   leader_total = coop.sum(block, value, broadcast=False)
+   coop.load(block, source, items, algorithm="direct", valid_items=n)
+
+Reduction and Scan usually need just a group and a value. Load and Store
+add a source or destination. This short operand list keeps collective
+calls compact inside a kernel, while named options make choices such as
+partial-tile handling and result broadcasting explicit. New optional
+keyword parameters can be added without changing existing calls.
+
+In the API reference, ``/`` marks the end of the positional-only arguments
+and ``*`` introduces keyword-only parameters. For example, pass the group
+and value as ``coop.sum(block, value)``, and select result broadcasting with
+``broadcast=False``. With that option, only group rank zero has a defined
+result; every member must still participate in the call.
+
+``cuda.compute`` uses keyword-only parameters for all its algorithms, as
+described in its :doc:`API conventions <../compute/index>`. Device-wide
+algorithms can take several input and output arrays, item counts, offsets,
+and a stream. Naming those arguments helps distinguish their roles and
+allows callers to omit optional arguments, such as unused value buffers in
+a key-only sort.
+
+For ``cuda.coop``, the group already describes the participating threads,
+and operations such as Reduction and Scan return their results directly.
+The positional operands and named controls fit that smaller call shape.
+When extending an API, keep the operand order consistent and use
+keyword-only parameters for additional options.
+
 Calling CUB from the kernel
 --------------------------
 
