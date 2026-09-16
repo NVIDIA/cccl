@@ -153,6 +153,16 @@ public:
     return __synchronizer_instance_;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
+  {
+    return __mapping_result_type::is_always_exhaustive();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  {
+    return __mapping_result_type::is_always_contiguous();
+  }
+
   _CCCL_DEVICE_API void sync() const noexcept
   {
     __synchronizer_instance_.do_sync(__mapping_result_, __hier_);

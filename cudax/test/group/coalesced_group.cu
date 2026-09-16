@@ -41,6 +41,9 @@ __device__ void test_coalesced_group(Config config)
       static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
     }
 
+    static_assert(Group::is_always_exhaustive());
+    static_assert(!Group::is_always_contiguous());
+
     group.sync();
     group.sync_aligned();
 
@@ -63,6 +66,8 @@ __device__ void test_coalesced_group(Config config)
     REQUIRE(group.rank(cuda::block) == cuda::warp.rank(cuda::block));
     REQUIRE(group.rank(cuda::cluster) == cuda::warp.rank(cuda::cluster));
     REQUIRE(group.rank(cuda::grid) == cuda::warp.rank(cuda::grid));
+
+    REQUIRE(cuda::gpu_thread.is_part_of(group));
   }
 
   // Test coalesced group constructoed by first half threads in a warp.
@@ -81,6 +86,9 @@ __device__ void test_coalesced_group(Config config)
       decltype(auto) hierarchy = cuda::std::as_const(group).hierarchy();
       static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
     }
+
+    static_assert(Group::is_always_exhaustive());
+    static_assert(!Group::is_always_contiguous());
 
     group.sync();
     group.sync_aligned();
@@ -104,6 +112,8 @@ __device__ void test_coalesced_group(Config config)
     REQUIRE(group.rank(cuda::block) == cuda::warp.rank(cuda::block));
     REQUIRE(group.rank(cuda::cluster) == cuda::warp.rank(cuda::cluster));
     REQUIRE(group.rank(cuda::grid) == cuda::warp.rank(cuda::grid));
+
+    REQUIRE(cuda::gpu_thread.is_part_of(group));
   }
 
   // Test coalesced group constructoed by all even threads in a warp.
@@ -122,6 +132,9 @@ __device__ void test_coalesced_group(Config config)
       decltype(auto) hierarchy = cuda::std::as_const(group).hierarchy();
       static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
     }
+
+    static_assert(Group::is_always_exhaustive());
+    static_assert(!Group::is_always_contiguous());
 
     group.sync();
     group.sync_aligned();
@@ -145,6 +158,8 @@ __device__ void test_coalesced_group(Config config)
     REQUIRE(group.rank(cuda::block) == cuda::warp.rank(cuda::block));
     REQUIRE(group.rank(cuda::cluster) == cuda::warp.rank(cuda::cluster));
     REQUIRE(group.rank(cuda::grid) == cuda::warp.rank(cuda::grid));
+
+    REQUIRE(cuda::gpu_thread.is_part_of(group));
   }
 }
 

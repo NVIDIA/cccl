@@ -55,7 +55,7 @@ _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::u
   const auto __lane_offset = static_cast<int>(__src_unit_rank) - static_cast<int>(__mapping_result.unit_rank());
 
   unsigned __src_lane{};
-  if constexpr (_MappingResult::is_always_contiguous())
+  if constexpr (_Group::is_always_contiguous())
   {
     const auto __lane = ::cuda::ptx::get_sreg_laneid();
     __src_lane        = static_cast<unsigned>(__lane + __lane_offset);

@@ -25,6 +25,7 @@
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/cstdint>
 
@@ -36,15 +37,27 @@ namespace cuda::experimental
 {
 template <class _Group>
 _CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
+  // Member types.
   typename(typename _Group::unit_type),
   requires(__is_hierarchy_level_v<typename _Group::unit_type>),
   typename(typename _Group::level_type),
   requires(__is_hierarchy_level_v<typename _Group::level_type>),
   typename(typename _Group::hierarchy_type),
   requires(__is_hierarchy_v<typename _Group::hierarchy_type>),
+
+  // Getters.
+  _Same_as(const typename _Group::hierarchy_type&) __cg.hierarchy(),
+
+  // Synchronization.
   _Same_as(void) __g.sync(),
   _Same_as(void) __g.sync_aligned(),
-  _Same_as(const typename _Group::hierarchy_type&) __cg.hierarchy()
+
+  // Properties.
+  _Same_as(bool) _Group::is_always_exhaustive(),
+  _Same_as(bool) _Group::is_always_contiguous(),
+  (::cuda::std::bool_constant<_Group::is_always_exhaustive()>::value),
+  (::cuda::std::bool_constant<_Group::is_always_contiguous()>::value)
+
   // todo: add __sub_unit_queryable and __super_unit_queryable
 );
 
