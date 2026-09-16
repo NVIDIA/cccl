@@ -98,8 +98,7 @@
     function position(row_id, index) {
       const row = model.rows.find((row) => row.id === row_id);
       const row_index = model.rows.indexOf(row);
-      const start = row.align === "start" ? 20 : (geometry.width - row.count * 42 + 10) / 2;
-      return [start + index * 42, 76 + row_index * 120];
+      return [(geometry.width - row.count * 42 + 10) / 2 + index * 42, 76 + row_index * 120];
     }
 
     function rebuild() {
