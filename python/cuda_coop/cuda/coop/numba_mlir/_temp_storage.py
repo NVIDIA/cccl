@@ -10,7 +10,18 @@ from .._core.api._payload import _normalize_alignment
 
 
 class TempStorage:
-    """Shared-memory requirements for cooperative operations in one kernel."""
+    """Shared-memory requirements for cooperative operations in one kernel.
+
+    Parameters, defaults, synchronization rules, and the executable reuse
+    example follow :func:`cuda.coop.TempStorage`. This qualified descriptor
+    exposes ``size_in_bytes``, ``alignment``, ``auto_sync``, and ``sharing``
+    for the Numba-CUDA-MLIR planner. ``auto_sync=None`` becomes ``True``.
+
+    Only supported block algorithms accept an explicit descriptor. The
+    planner determines capacity and alignment from its uses; its contents
+    are opaque to user code. See :ref:`temporary storage <coop-temp-storage>`
+    for shared versus exclusive slices and manual reuse synchronization.
+    """
 
     def __init__(
         self,

@@ -220,6 +220,9 @@ primary_domain = "py"
 
 # Mock imports for Python documentation - these modules may not be installed
 autodoc_mock_imports = [
+    # Render real cooperative markers without initializing an optional compiler.
+    "numba_cuda_mlir",
+    "cuda.coop.numba_mlir._compiler._activation",
     "numba",
     "numba.core",
     "numba.core.cgutils",
