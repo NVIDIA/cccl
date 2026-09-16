@@ -85,6 +85,11 @@ function(add_bench target_name bench_name bench_src)
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
   cccl_add_executable(${bench_target} SOURCES "${bench_src}")
+  # Target objects exclude linked helper kernels from SASS comparisons.
+  file(
+    GENERATE OUTPUT "${CMAKE_BINARY_DIR}/sass/${bench_target}.objects"
+    CONTENT "$<JOIN:$<TARGET_OBJECTS:${bench_target}>,\n>\n"
+  )
   target_link_libraries(
     ${bench_target}
     PRIVATE #
