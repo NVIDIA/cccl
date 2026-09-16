@@ -90,7 +90,7 @@ Example
 
    #include <cuda/atomic>
 
-   __global__ void example_kernel(int *gmem, int *pinned_mem) {
+   __global__ void example_kernel(int *gmem, int *cluster_gmem, int *pinned_mem) {
      // This atomic is suitable for all threads in the system.
      cuda::atomic_ref<int, cuda::thread_scope_system> a(*pinned_mem);
 
@@ -101,7 +101,7 @@ Example
      cuda::atomic_ref<int, cuda::thread_scope_device> c(*gmem);
 
      // This atomic is suitable for all threads in the same thread block cluster.
-     cuda::atomic_ref<int, cuda::thread_scope_cluster> d(*gmem);
+     cuda::atomic_ref<int, cuda::thread_scope_cluster> d(*cluster_gmem);
 
      __shared__ int shared_v;
      // This atomic is suitable for threads in the same thread block.
