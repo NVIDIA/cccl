@@ -108,7 +108,7 @@ size matches the input:
 .. code-block:: python
 
    from numba_cuda_mlir import cuda
-   import cuda.coop.numba_mlir as coop
+   import cuda.coop.numba_mlir as qualified_coop
 
    @cuda.jit(device=True)
    def maximum(left, right):
@@ -117,8 +117,8 @@ size matches the input:
    @cuda.jit
    def running_maximum(source, output):
        thread = cuda.threadIdx.x
-       output[thread] = coop.inclusive_scan(
-           coop.this_block(), source[thread], scan_op=maximum
+       output[thread] = qualified_coop.inclusive_scan(
+           qualified_coop.this_block(), source[thread], scan_op=maximum
        )
 
 A stateless prefix callback uses the qualified ``prefix_op`` argument. Define
@@ -131,8 +131,8 @@ this function at module scope, then pass it inside the kernel:
        return aggregate + 7
 
    # Inside a kernel, with an int32 scalar value in each thread:
-   prefix = coop.exclusive_sum(
-       coop.this_block(), value, prefix_op=prefix_after_aggregate
+   prefix = qualified_coop.exclusive_sum(
+       qualified_coop.this_block(), value, prefix_op=prefix_after_aggregate
    )
 
 For consecutive tiles, a ``StatefulFunction`` carries a running prefix. This
@@ -150,26 +150,24 @@ state is authoritative.
        state[0] = previous + aggregate
        return previous
 
-   prefix_callback = coop.StatefulFunction(
+   prefix_callback = qualified_coop.StatefulFunction(
        running_prefix, types.int64, name="running_prefix"
    )
 
    @cuda.jit
    def scan_two_tiles(source, output, final_state):
        thread = cuda.threadIdx.x
-       state = coop.ThreadData(1, dtype=types.int64)
+       state = qualified_coop.ThreadData(1, dtype=types.int64)
        state[0] = 10
        for tile in range(2):
            index = tile * 128 + thread
-           output[index] = coop.exclusive_sum(
-               coop.this_block(), source[index], state,
+           output[index] = qualified_coop.exclusive_sum(
+               qualified_coop.this_block(), source[index], state,
                prefix_op=prefix_callback,
            )
        if thread == 0:
            final_state[0] = state[0]
 
-This example uses compiler-managed scratch with automatic reuse synchronization.
-For an explicit ``TempStorage`` descriptor, request ``auto_sync=True`` or provide
-barriers before reusing scratch.
+Keep the default synchronization when reusing scan scratch between calls.
 See :doc:`../../coop_api` for the qualified callback and aggregate-output
 contracts, and the :doc:`../programming_guide` for backend activation.
