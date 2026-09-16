@@ -10,6 +10,7 @@
    Overview <self>
    coop/programming_guide
    coop/developer_overview
+   coop/visualizations/index
 
 ``cuda.coop`` provides cooperative CUDA primitives for Python kernel DSLs.
 The initial backend integrates with Numba-CUDA-MLIR and supports Load, Store,
@@ -21,6 +22,8 @@ The :doc:`Programming Guide <coop/programming_guide>` explains how to write
 kernels with the common and qualified APIs, groups, thread data, and temporary
 storage. The :doc:`Developer Overview <coop/developer_overview>` describes
 the compiler integration for readers working on the library itself.
+The :doc:`Visualizations <coop/visualizations/index>` let you follow values
+through a primitive's memory accesses and per-thread storage.
 
 Installation
 ------------
