@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common cooperative reduction entry points."""
+"""Portable cooperative reduction entry points."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def reduce(
         Participating :ref:`thread group <coop-thread-groups>`. Supports a
         single thread, physical or logical warp, block, mapped group of warps,
         or cluster. Grid reductions are unsupported. Every member must call
-        the primitive, including members excluded by ``valid_items``.
+        the collective, including members excluded by ``valid_items``.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's contribution. A :ref:`per-thread payload
         <coop-thread-data>` contributes all its elements to the same scalar
@@ -72,7 +72,7 @@ def reduce(
     algorithm : str, optional
         Compile-time block algorithm: ``"raking_commutative_only"``,
         ``"raking"``, or ``"warp_reductions"``. An explicit choice requires
-        a block and ``broadcast=False``. All common operators support these
+        a block and ``broadcast=False``. All portable operators support these
         choices. ``None`` lets the implementation select an algorithm.
 
     Returns
@@ -134,7 +134,7 @@ def sum(
         Participating :ref:`thread group <coop-thread-groups>`. Supports a
         single thread, physical or logical warp, block, mapped group of warps,
         or cluster. Grid reductions are unsupported. Every member must call
-        the primitive.
+        the collective.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's contribution. A :ref:`per-thread payload
         <coop-thread-data>` contributes all its elements; its dtype and fixed
