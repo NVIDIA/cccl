@@ -918,6 +918,20 @@ __streamDestroyNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exceptio
   return static_cast<::cudaError_t>(__driver_fn(__stream));
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__threadExchangeStreamCaptureModeNoThrow(::CUstreamCaptureMode& __mode) noexcept // NOLINT(bugprone-exception-escape)
+{
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuThreadExchangeStreamCaptureMode);
+  return static_cast<::cudaError_t>(__driver_fn(&__mode));
+}
+
+_CCCL_HOST_API inline void __threadExchangeStreamCaptureMode(::CUstreamCaptureMode& __mode)
+{
+  _CCCL_TRY_DRIVER_API(::cuda::__driver::__threadExchangeStreamCaptureModeNoThrow,
+                       "Failed to exchange the thread's stream capture mode",
+                       __mode);
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::CUstreamCaptureStatus __streamIsCapturing(::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamIsCapturing);

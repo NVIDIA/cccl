@@ -57,6 +57,9 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(gv.count(level) == 1);
     REQUIRE(gv.rank(level) == 0);
 
+    static_assert(gv.is_always_exhaustive() == g.is_always_exhaustive());
+    static_assert(gv.is_always_contiguous() == g.is_always_contiguous());
+
     gv.sync();
 
     // Test that the view is copyable.
@@ -100,6 +103,9 @@ __device__ void test_group_view(Config config, Level level)
     static_assert(gv.static_count(level) == 1);
     REQUIRE(gv.count(level) == 1);
     REQUIRE(gv.rank(level) == 0);
+
+    static_assert(gv.is_always_exhaustive() == g.is_always_exhaustive());
+    static_assert(gv.is_always_contiguous() == g.is_always_contiguous());
 
     gv.sync();
 
@@ -147,6 +153,9 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(gv2.count(level) == 1);
     REQUIRE(gv2.rank(level) == 0);
 
+    static_assert(gv2.is_always_exhaustive() == g.is_always_exhaustive());
+    static_assert(gv2.is_always_contiguous() == g.is_always_contiguous());
+
     gv2.sync();
   }
 
@@ -173,6 +182,9 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(gv2.count(level) == 1);
     REQUIRE(gv2.rank(level) == 0);
 
+    static_assert(gv2.is_always_exhaustive() == g.is_always_exhaustive());
+    static_assert(gv2.is_always_contiguous() == g.is_always_contiguous());
+
     gv2.sync();
   }
 
@@ -182,7 +194,7 @@ __device__ void test_group_view(Config config, Level level)
     constexpr auto n = 2;
     auto& barriers   = get_barriers<cuda::warp.static_count(level, config) / n>(cuda::warp);
 
-    const cudax::group g2{cuda::warp, g, cudax::group_by<n>{}, cudax::barrier_synchronizer{barriers}};
+    const cudax::generic_group g2{cuda::warp, g, cudax::group_by<n>{}, cudax::barrier_synchronizer{barriers}};
     REQUIRE(cuda::warp.count(g2) == n);
     REQUIRE(g2.count(g) == cuda::warp.count(level) / n);
 
@@ -190,12 +202,16 @@ __device__ void test_group_view(Config config, Level level)
     REQUIRE(cuda::warp.is_part_of(g2_view));
     REQUIRE(cuda::warp.count(g2_view) == n);
     REQUIRE(g2_view.count(g2) == cuda::warp.count(level) / n);
+    static_assert(g2_view.is_always_exhaustive());
+    static_assert(g2_view.is_always_contiguous());
     g2_view.sync();
 
     const cudax::group_view g2_view_threads{cuda::gpu_thread, g2_view};
     REQUIRE(cuda::gpu_thread.is_part_of(g2_view_threads));
     REQUIRE(cuda::gpu_thread.count(g2_view_threads) == n * cuda::gpu_thread.count(cuda::warp));
     REQUIRE(g2_view_threads.count(g2) == n);
+    static_assert(g2_view_threads.is_always_exhaustive());
+    static_assert(g2_view_threads.is_always_contiguous());
     g2_view_threads.sync();
   }
 }

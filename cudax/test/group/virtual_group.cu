@@ -38,6 +38,9 @@ __device__ void test_virtual_group(Config config, Level level)
     REQUIRE(vg.count(g) == 1);
     REQUIRE(vg.rank(g) == 0);
 
+    static_assert(vg.is_always_exhaustive());
+    static_assert(vg.is_always_contiguous());
+
     vg.sync();
     vg.sync_aligned();
   }
@@ -56,6 +59,9 @@ __device__ void test_virtual_group(Config config, Level level)
 
     REQUIRE(vg.count(g) == cuda::gpu_thread.count(g) / n);
     REQUIRE(vg.rank(g) == cuda::gpu_thread.rank(g) / n);
+
+    static_assert(vg.is_always_exhaustive());
+    static_assert(vg.is_always_contiguous());
 
     vg.sync();
     vg.sync_aligned();

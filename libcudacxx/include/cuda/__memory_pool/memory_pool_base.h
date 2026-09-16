@@ -30,6 +30,7 @@
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/types.h>
 #  include <cuda/__stream/internal_streams.h>
+#  include <cuda/__stream/relaxed_capture_scope.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -354,9 +355,13 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
                "Before CUDA 13 only device memory pools have a default");
   ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(::CUdevice{__location.id});
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
-  if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
   {
-    ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
+    // Pool attribute accesses are refused while the calling thread is capturing.
+    const ::cuda::__relaxed_capture_scope __relaxed{};
+    if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
+    {
+      ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
+    }
   }
   return __pool;
 }
