@@ -262,6 +262,28 @@ The tuning infrastructure stores results in an SQLite database called :code:`ccc
 This database persists across tuning runs.
 If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
 
+Running the CUB Smoke Performance Benchmarks
+--------------------------------------------
+
+The CUB performance smoke profile runs representative large workloads for a set of important algorithms and workloads. The goal is to provide performance evaluation in under 20 minutes on an RTX PRO 6000 (Blackwell).
+
+From the repository root, configure and run the profile with:
+
+.. code-block:: bash
+
+    benchmarks/scripts/run_smoke.sh
+
+The list of smoke benchmarks and workloads is available with:
+
+.. code-block:: bash
+
+    benchmarks/scripts/run_smoke.sh --list-benches
+
+The script execution generates the following files:
+
+- :code:`cccl_meta_bench_timing.json`: JSON file containing benchmark execution times for each workload (excluding compilation and setup)
+- :code:`cccl_meta_bench.db`: SQLite database containing the benchmark results
+- :code:`cccl_meta_bench.csv`: CSV file containing the benchmark metadata/configuration
 
 Comparing results of multiple tuning databases
 --------------------------------------------------------------------------------
