@@ -40,7 +40,20 @@ class unicast_logical_endpoint_spec
   logical_endpoint_flag __flags_          = logical_endpoint_flag::none;
   logical_endpoint_ipc_handle_type __ipc_ = logical_endpoint_ipc_handle_type::fabric;
 
+  [[nodiscard]] _CCCL_HOST_API ::CUlogicalEndpointProp __as_prop(::cuda::std::uint64_t __bytes) const
+  {
+    ::CUlogicalEndpointProp __prop{};
+    __prop.type           = ::CU_LOGICAL_ENDPOINT_TYPE_UNICAST;
+    __prop.unicast.device = ::cuda::__driver::__deviceGet(device().get());
+    __prop.size           = __bytes;
+    __prop.ipcHandleTypes = ::cuda::std::to_underlying(ipc_handle_type());
+    __prop.flags          = ::cuda::std::to_underlying(flags());
+    return __prop;
+  }
+
 public:
+  friend class unicast_logical_endpoint;
+
   //! @brief Creates a unicast endpoint specification.
   //!
   //! @param[in] __device The CUDA device for the unicast endpoint.
@@ -86,42 +99,21 @@ public:
   //! @param[in] __checker Optional device used for support attribute checks.
   //! @return `true` if the requested configuration is supported by the checked device.
   [[nodiscard]] _CCCL_HOST_API bool
-  is_supported(::cuda::std::optional<::cuda::device_ref> __checker = ::cuda::std::nullopt) const;
+  is_supported(::cuda::std::optional<::cuda::device_ref> __checker = ::cuda::std::nullopt) const
+  {
+    const auto __device = __checker.has_value() ? *__checker : device();
+    return ::cuda::__detail::__is_logical_endpoint_supported(
+      __device, ::cuda::device_attributes::logical_endpoint_unicast_supported, ipc_handle_type(), flags());
+  }
 
   //! @brief Queries CUDA driver limits for this endpoint configuration.
   //!
   //! @return The required bind alignment and maximum endpoint size.
-  [[nodiscard]] _CCCL_HOST_API logical_endpoint_limits limits() const;
+  [[nodiscard]] _CCCL_HOST_API logical_endpoint_limits limits() const
+  {
+    return ::cuda::__detail::__get_logical_endpoint_limits(__as_prop(0));
+  }
 };
-
-namespace __detail
-{
-[[nodiscard]] _CCCL_HOST_API inline ::CUlogicalEndpointProp
-__make_unicast_logical_endpoint_prop(const ::cuda::unicast_logical_endpoint_spec& __spec, ::cuda::std::uint64_t __bytes)
-{
-  ::CUlogicalEndpointProp __prop{};
-  __prop.type           = ::CU_LOGICAL_ENDPOINT_TYPE_UNICAST;
-  __prop.unicast.device = ::cuda::__driver::__deviceGet(__spec.device().get());
-  __prop.size           = __bytes;
-  __prop.ipcHandleTypes = ::cuda::std::to_underlying(__spec.ipc_handle_type());
-  __prop.flags          = ::cuda::std::to_underlying(__spec.flags());
-  return __prop;
-}
-} // namespace __detail
-
-[[nodiscard]] _CCCL_HOST_API inline bool
-unicast_logical_endpoint_spec::is_supported(::cuda::std::optional<::cuda::device_ref> __checker) const
-{
-  const auto __device = __checker.has_value() ? *__checker : device();
-  return ::cuda::__detail::__is_logical_endpoint_supported(
-    __device, ::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_UNICAST_SUPPORTED, ipc_handle_type(), flags());
-}
-
-[[nodiscard]] _CCCL_HOST_API inline logical_endpoint_limits unicast_logical_endpoint_spec::limits() const
-{
-  const auto __prop = ::cuda::__detail::__make_unicast_logical_endpoint_prop(*this, 0);
-  return ::cuda::__detail::__get_logical_endpoint_limits(__prop);
-}
 
 //! @brief Non-owning reference to a unicast CUDA logical endpoint.
 //!
@@ -187,10 +179,9 @@ public:
   //! @param[in] __bytes The endpoint size in bytes.
   _CCCL_HOST_API unicast_logical_endpoint(
     logical_endpoint_id __id, const unicast_logical_endpoint_spec& __spec, ::cuda::std::uint64_t __bytes)
-      : __base(__id)
+      : __base()
   {
-    const auto __prop = ::cuda::__detail::__make_unicast_logical_endpoint_prop(__spec, __bytes);
-    this->__create_endpoint(__prop);
+    this->__create_endpoint(__id, __spec.__as_prop(__bytes));
   }
 
   //! @brief Creates a unicast logical endpoint from an ID in a retained range.
@@ -204,11 +195,11 @@ public:
     ::cuda::std::uint32_t __index,
     const unicast_logical_endpoint_spec& __spec,
     ::cuda::std::uint64_t __bytes)
-      : __base(::cuda::__detail::__checked_logical_endpoint_id(__range, __index))
+      : __base()
   {
+    const auto __id = ::cuda::__detail::__checked_logical_endpoint_id(__range, __index);
+    this->__create_endpoint(__id, __spec.__as_prop(__bytes));
     this->__retain_id_range(__range);
-    const auto __prop = ::cuda::__detail::__make_unicast_logical_endpoint_prop(__spec, __bytes);
-    this->__create_endpoint(__prop);
   }
 };
 

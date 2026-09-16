@@ -154,6 +154,7 @@ TEST_FUNC constexpr bool test_endpoint_ids()
   cuda::logical_endpoint_id retreated = advanced;
   retreated -= 3;
 
+  assert(cuda::invalid_logical_endpoint_id == cuda::logical_endpoint_id{static_cast<cuda::std::uint32_t>(-1)});
   assert(id.native_handle() == 7);
   assert((id + 5).native_handle() == 12);
   assert((5 + id).native_handle() == 12);
@@ -187,6 +188,8 @@ bool test_empty_owning_endpoints()
   assert(multicast.size() == 0);
   assert(unicast.bind_alignment() == 0);
   assert(multicast.bind_alignment() == 0);
+  assert(unicast.id() == cuda::invalid_logical_endpoint_id);
+  assert(multicast.id() == cuda::invalid_logical_endpoint_id);
 
   cuda::unicast_logical_endpoint moved_unicast{cuda::std::move(unicast)};
   cuda::multicast_logical_endpoint moved_multicast{cuda::std::move(multicast)};
@@ -194,6 +197,10 @@ bool test_empty_owning_endpoints()
   assert(multicast.size() == 0);
   assert(moved_unicast.size() == 0);
   assert(moved_multicast.size() == 0);
+  assert(unicast.id() == cuda::invalid_logical_endpoint_id);
+  assert(multicast.id() == cuda::invalid_logical_endpoint_id);
+  assert(moved_unicast.id() == cuda::invalid_logical_endpoint_id);
+  assert(moved_multicast.id() == cuda::invalid_logical_endpoint_id);
 
   cuda::unicast_logical_endpoint assigned_unicast;
   cuda::multicast_logical_endpoint assigned_multicast;
@@ -203,6 +210,10 @@ bool test_empty_owning_endpoints()
   assert(assigned_multicast.size() == 0);
   assert(moved_unicast.size() == 0);
   assert(moved_multicast.size() == 0);
+  assert(assigned_unicast.id() == cuda::invalid_logical_endpoint_id);
+  assert(assigned_multicast.id() == cuda::invalid_logical_endpoint_id);
+  assert(moved_unicast.id() == cuda::invalid_logical_endpoint_id);
+  assert(moved_multicast.id() == cuda::invalid_logical_endpoint_id);
 
   return true;
 }
