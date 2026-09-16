@@ -10,7 +10,7 @@ from .smoke import (
     SMOKE_BENCHMARKS,
     SMOKE_SUBBENCHES,
     SMOKE_WORKLOADS,
-    smoke_runtime_bench_inputs,
+    filter_smoke_subbench_inputs,
     validate_smoke_benchmarks,
 )
 from .storage import Storage
@@ -157,7 +157,7 @@ def run_benches(algnames, sub_space, seeker, args):
             ct_space = bench.ct_workload_space(algorithm_sub_space)
             rt_values = bench.rt_axes_values(algorithm_sub_space)
             if args.smoke:
-                rt_values = smoke_runtime_bench_inputs(algname, rt_values)
+                rt_values = filter_smoke_subbench_inputs(algname, rt_values)
             if args.P0:
                 ct_space, rt_values = filter_benchmark_space_for_p0(
                     algname, ct_space, rt_values

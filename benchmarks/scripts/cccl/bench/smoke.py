@@ -88,11 +88,6 @@ SMOKE_WORKLOADS: dict[str, dict[str, list[str]]] = {
         "OffsetT{ct}": ["I32", "I64"],
         "Elements{io}[pow2]": ["28"],
     },
-    "cub.bench.scan.exclusive.sum.lookahead": {
-        "T{ct}": ["I32", "F32"],
-        "OffsetT{ct}": ["I64"],
-        "Elements{io}[pow2]": ["28"],
-    },
     "cub.bench.scan.exclusive.by_key": {
         "KeyT{ct}": ["I32"],
         "ValueT{ct}": ["I8", "I16", "I32", "I64"],
@@ -369,7 +364,7 @@ def validate_smoke_benchmarks(available_benchmarks: Collection[str]) -> None:
         )
 
 
-def smoke_runtime_bench_inputs(
+def filter_smoke_subbench_inputs(
     alg_name: str, runtime_benchmark_inputs: RuntimeBenchmarkInputs
 ) -> RuntimeBenchmarkInputs:
     """Limit algorithms with multiple subbenchmarks to representative cases."""
