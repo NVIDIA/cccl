@@ -100,6 +100,23 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reverse_items(KeyT* keys, ValueT* values, in
     }
   }
 }
+
+template <int ItemsPerThread, int LogicalWarpThreads, typename KeyT, typename ValueT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void initialize_invalid_items(KeyT* keys, ValueT* values, int valid_items, int lane)
+{
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = 0; i < ItemsPerThread; ++i)
+  {
+    if (i * LogicalWarpThreads + lane >= valid_items)
+    {
+      keys[i] = KeyT{};
+      if constexpr (!::cuda::std::is_same_v<ValueT, NullType>)
+      {
+        values[i] = ValueT{};
+      }
+    }
+  }
+}
 } // namespace warp_bitonic_topk
 
 enum class WarpBitonicTopKAlgorithm
@@ -400,7 +417,8 @@ public:
     {
       if (i * LogicalWarpThreads + lane >= valid_items)
       {
-        keys[i] = oob_default;
+        keys[i]   = oob_default;
+        values[i] = ValueT{};
       }
     }
     TopK(keys, values, compare_op, k);
@@ -430,7 +448,7 @@ public:
 
     if (valid_items <= MaxK)
     {
-      MaxKSortT{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
+      sort_partial<max_k_per_thread>(keys, values, compare_op, valid_items);
       return;
     }
 
@@ -448,7 +466,7 @@ public:
       }
       else if (remain_items > 0)
       {
-        MaxKSortT{}.template sort<CompareOp, false>(keys + i, values + i, compare_op, remain_items);
+        sort_partial<max_k_per_thread>(keys + i, values + i, compare_op, remain_items);
         warp_bitonic_topk::compare_and_replace<max_k_per_thread, LogicalWarpThreads>(
           keys, values, keys + i, values + i, compare_op, remain_items, lane);
         MaxKSortT{}.template merge<CompareOp, true>(keys, values, compare_op);
@@ -463,8 +481,7 @@ public:
       const int remain_items = valid_items - offset * LogicalWarpThreads;
       if (remain_items > 0)
       {
-        WarpBitonicSortT<remain>{}.template sort<CompareOp, false>(
-          keys + offset, values + offset, compare_op, remain_items);
+        sort_partial<remain>(keys + offset, values + offset, compare_op, remain_items);
         warp_bitonic_topk::compare_and_replace<remain, LogicalWarpThreads>(
           keys, values, keys + offset, values + offset, compare_op, remain_items, lane);
         MaxKSortT{}.template merge<CompareOp, true>(keys, values, compare_op);
@@ -475,6 +492,16 @@ public:
   }
 
 private:
+  // WarpBitonicSort's private sort(..., valid_items) requires all items to be initialized, including those beyond
+  // valid_items. This wrapper handles that initialization.
+  template <int ItemsPerThread, typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  sort_partial(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  {
+    warp_bitonic_topk::initialize_invalid_items<ItemsPerThread, LogicalWarpThreads>(keys, values, valid_items, lane);
+    WarpBitonicSortT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
+  }
+
   int lane                 = detail::logical_lane_id<LogicalWarpThreads>();
   unsigned int member_mask = WarpMask<LogicalWarpThreads>(detail::logical_warp_id<LogicalWarpThreads>());
 };
@@ -610,7 +637,7 @@ public:
 
     if (valid_items <= MaxK)
     {
-      MaxKSortT{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
+      sort_partial<max_k_per_thread>(keys, values, compare_op, valid_items);
       return;
     }
 
@@ -695,7 +722,7 @@ public:
 
     if (num_items <= MaxK)
     {
-      MaxKSortT{}.template sort<CompareOp, false>(keys_out, values_out, compare_op, num_items);
+      sort_partial<max_k_per_thread>(keys_out, values_out, compare_op, num_items);
       return;
     }
 
@@ -735,6 +762,16 @@ public:
   }
 
 private:
+  // WarpBitonicSort's private sort(..., valid_items) requires all items to be initialized, including those beyond
+  // valid_items. This wrapper handles that initialization.
+  template <int ItemsPerThread, typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  sort_partial(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  {
+    warp_bitonic_topk::initialize_invalid_items<ItemsPerThread, LogicalWarpThreads>(keys, values, valid_items, lane);
+    WarpBitonicSortT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
+  }
+
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_candidate(
     KeyT* keys_out,
@@ -801,7 +838,7 @@ private:
       __syncwarp(member_mask);
       const _TempStorage& temp_storage = *storage;
       KeyT key                         = (lane < num_candidates) ? temp_storage.keys[lane] : KeyT{};
-      ValueT value{};
+      ValueT value;
       if constexpr (!keys_only)
       {
         value = (lane < num_candidates) ? temp_storage.values[lane] : ValueT{};
@@ -825,6 +862,8 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void merge_candidates(
     KeyT* keys_out, ValueT* values_out, KeyT& key, ValueT& value, CompareOp compare_op, int valid_items) const
   {
+    // flush_candidates initializes key and value beyond valid_items, so it's safe to use CandidateSortT instead of
+    // sort_partial here
     CandidateSortT{}.template sort<CompareOp, false>(&key, &value, compare_op, valid_items);
 
     warp_bitonic_topk::compare_and_replace<1, LogicalWarpThreads>(
