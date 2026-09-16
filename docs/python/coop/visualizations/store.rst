@@ -38,6 +38,9 @@ of 32 threads.
 Reading the stages
 ------------------
 
+See :ref:`blocked versus striped <coop-glossary-layouts>` for a compact
+ownership table and the index formulas used here.
+
 The first row shows a working copy of the input payload. Store preserves
 the caller's payload, including when an exchange rearranges its internal
 copy. For algorithms with an exchange, values pass through shared scratch

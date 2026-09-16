@@ -36,6 +36,9 @@ rank-based scatters. Each option identifies which API provides it.
 Reading the stages
 ------------------
 
+See :ref:`blocked versus striped <coop-glossary-layouts>` for a compact
+ownership table and the index formulas used here.
+
 The first row groups inputs by thread. The middle row shows shared scratch
 at logical positions; the final row groups the returned values by their
 new owners. Select a value to inspect its input and result slots.
