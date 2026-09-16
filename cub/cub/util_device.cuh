@@ -393,39 +393,6 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& ptx_version)
   return result;
 }
 
-namespace detail
-{
-//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
-template <class T = void>
-CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
-{
-  // When compiling with nvc++ in CUDA mode, we always use the minimum cc tuning for all architectures, because we don't
-  // implement nvc++-compatible arch dispatch on device.
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-  cc = ::cuda::compute_capability{NV_TARGET_MINIMUM_SM_INTEGER};
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
-  int ptx_version = 0;
-  if (const auto error = PtxVersion<T>(ptx_version))
-  {
-    return error;
-  }
-  cc = ::cuda::compute_capability{ptx_version / 10};
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
-
-#  if _CCCL_CUDA_COMPILATION()
-  // PtxVersion() (via cudaFuncGetAttributes() and .ptxVersion) can report a virtual architecture that does not
-  // correspond to any architecture in __CUDA_ARCH_LIST__. This can happen if a user compiles with -rdc=true and links
-  // against a TU that is compiled for a lower architecture than the current TU. See
-  // https://github.com/NVIDIA/cccl/issues/11403 for details.
-  const auto& target_ccs = ::cuda::__target_compute_capabilities();
-  _CCCL_VERIFY(::cuda::std::find(target_ccs.begin(), target_ccs.end(), cc) != target_ccs.end(),
-               "The compute capability must be one of __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST");
-#  endif // _CCCL_CUDA_COMPILATION()
-
-  return cudaSuccess;
-}
-} // namespace detail
-
 /**
  * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10)
  */
@@ -486,6 +453,57 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 
   return result;
 }
+
+namespace detail
+{
+//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
+template <class T = void>
+CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
+{
+  const auto& target_ccs = ::cuda::__target_compute_capabilities();
+
+#  if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__)
+  // PtxVersion() (via cudaFuncGetAttributes()) can report a virtual architecture clamped below the actual
+  // architecture by nvlink when relocatable device code is linked against any object compiled for a lower
+  // architecture (nvlink picks the lowest arch among all linked objects). Critically, the clamped value may not be
+  // contained in __CUDA_ARCH_LIST__ or can coincidentally equal a *different*, lower entry in __CUDA_ARCH_LIST__.
+  int sm_version = 0;
+  if (const auto error = SmVersion(sm_version))
+  {
+    return error;
+  }
+  const ::cuda::compute_capability sm_cc{sm_version / 10};
+
+  ::cuda::compute_capability best{};
+  for (const auto& candidate : target_ccs)
+  {
+    if (candidate <= sm_cc && best < candidate)
+    {
+      best = candidate;
+    }
+  }
+  _CCCL_ASSERT(best != ::cuda::compute_capability{},
+               "Failed to find a target compute capability for the current device");
+  if (best == ::cuda::compute_capability{})
+  {
+    return cudaErrorInvalidDeviceFunction;
+  }
+  cc = best;
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__) ^^^ / vvv !(...) vvv
+  int ptx_version = 0;
+  if (const auto error = PtxVersion<T>(ptx_version))
+  {
+    return error;
+  }
+  cc = ::cuda::compute_capability{ptx_version / 10};
+#  endif // !(_CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_RDC__))
+
+  _CCCL_ASSERT(cuda::std::find(target_ccs.begin(), target_ccs.end(), cc) != target_ccs.end(),
+               "The compute capability must be one of __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST");
+
+  return cudaSuccess;
+}
+} // namespace detail
 
 //! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
