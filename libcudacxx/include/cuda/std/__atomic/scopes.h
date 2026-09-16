@@ -34,12 +34,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define __ATOMIC_THREAD 10
 #endif //__ATOMIC_BLOCK
 
+#ifndef __ATOMIC_CLUSTER
+#  define __ATOMIC_CLUSTER 3
+#endif // __ATOMIC_CLUSTER
+
 enum thread_scope
 {
-  thread_scope_system = __ATOMIC_SYSTEM,
-  thread_scope_device = __ATOMIC_DEVICE,
-  thread_scope_block  = __ATOMIC_BLOCK,
-  thread_scope_thread = __ATOMIC_THREAD
+  thread_scope_system  = __ATOMIC_SYSTEM,
+  thread_scope_device  = __ATOMIC_DEVICE,
+  thread_scope_cluster = __ATOMIC_CLUSTER,
+  thread_scope_block   = __ATOMIC_BLOCK,
+  thread_scope_thread  = __ATOMIC_THREAD
 };
 
 struct __thread_scope_tag
@@ -73,6 +78,11 @@ struct __scope_enum_to_tag<(int) thread_scope_block>
   using __tag = __thread_scope_block_tag;
 };
 template <>
+struct __scope_enum_to_tag<(int) thread_scope_cluster>
+{
+  using __tag = __thread_scope_cluster_tag;
+};
+template <>
 struct __scope_enum_to_tag<(int) thread_scope_device>
 {
   using __tag = __thread_scope_device_tag;
@@ -92,11 +102,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 using ::cuda::std::thread_scope;
 using ::cuda::std::thread_scope_block;
+using ::cuda::std::thread_scope_cluster;
 using ::cuda::std::thread_scope_device;
 using ::cuda::std::thread_scope_system;
 using ::cuda::std::thread_scope_thread;
 
 using ::cuda::std::__thread_scope_block_tag;
+using ::cuda::std::__thread_scope_cluster_tag;
 using ::cuda::std::__thread_scope_device_tag;
 using ::cuda::std::__thread_scope_system_tag;
 

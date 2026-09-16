@@ -100,9 +100,12 @@ Example
      // This atomic is suitable for all threads on the current processor (e.g. GPU).
      cuda::atomic_ref<int, cuda::thread_scope_device> c(*gmem);
 
+     // This atomic is suitable for all threads in the same thread block cluster.
+     cuda::atomic_ref<int, cuda::thread_scope_cluster> d(*gmem);
+
      __shared__ int shared_v;
      // This atomic is suitable for threads in the same thread block.
-     cuda::atomic_ref<int, cuda::thread_scope_block> d(shared_v);
+     cuda::atomic_ref<int, cuda::thread_scope_block> e(shared_v);
    }
 
 `See it on Godbolt <https://godbolt.org/z/fr4K7ErEh>`_

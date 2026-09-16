@@ -156,13 +156,14 @@ endfunction()
 # Architecture-family prefixes used only in PREFIX_COMBINE directives are
 # activated without being passed to FileCheck as standalone prefixes.
 function(
-  libcudacxx_codegen_get_sass_check_prefixes
+  libcudacxx_codegen_get_arch_check_prefixes
   out_prefixes
   out_has_specific_checks
   test_contents
   arch
+  base_prefixes
 )
-  set(check_prefixes SMXX)
+  set(check_prefixes ${base_prefixes})
   set(arch_prefix "SM${arch}")
   string(TOUPPER "${test_contents}" uppercase_test_contents)
 
@@ -230,6 +231,28 @@ function(
     string(REGEX REPLACE ".*SM([0-9]+)-PLUS.*" "\\1" plus_arch "${plus_prefix}")
     if (arch GREATER_EQUAL plus_arch)
       list(APPEND check_prefixes "SM${plus_arch}-PLUS")
+    endif()
+  endforeach()
+
+  string(
+    REGEX MATCHALL
+    "; NOT-SM[0-9]+-PLUS(:|-[A-Z]+:)"
+    not_plus_prefixes
+    "${test_contents}"
+  )
+  if ("${arch}" MATCHES "[af]$")
+    set(not_plus_prefixes)
+  endif()
+  foreach (not_plus_prefix IN LISTS not_plus_prefixes)
+    string(
+      REGEX REPLACE
+      ".*NOT-SM([0-9]+)-PLUS.*"
+      "\\1"
+      plus_arch
+      "${not_plus_prefix}"
+    )
+    if (arch LESS plus_arch)
+      list(APPEND check_prefixes "NOT-SM${plus_arch}-PLUS")
     endif()
   endforeach()
 
@@ -548,13 +571,27 @@ function(libcudacxx_codegen_add_ptx_tests)
   )
 
   foreach (test_path IN LISTS arg_TESTS)
+    set_property(
+      DIRECTORY
+      APPEND
+      PROPERTY CMAKE_CONFIGURE_DEPENDS "${test_path}"
+    )
+    file(READ "${test_path}" test_contents)
+    libcudacxx_codegen_get_arch_check_prefixes(
+      check_prefixes
+      unused_has_arch_specific_checks
+      "${test_contents}"
+      "${arg_ARCH}"
+      "${arg_CHECK_PREFIXES}"
+    )
+
     libcudacxx_codegen_add_test(
       AGGREGATE_TARGET ${arg_AGGREGATE_TARGET}
       TARGET_PREFIX ${arg_TARGET_PREFIX}
       CODE_KIND ptx
       ARCH ${arg_ARCH}
       TEST "${test_path}"
-      CHECK_PREFIXES ${arg_CHECK_PREFIXES}
+      CHECK_PREFIXES "${check_prefixes}"
       COMPILE_DEFINITIONS ${arg_COMPILE_DEFINITIONS}
     )
   endforeach()
@@ -607,11 +644,12 @@ function(libcudacxx_codegen_add_sass_tests)
     set(test_archs)
     set(has_arch_specific_checks FALSE)
     foreach (arch IN LISTS arg_ARCHITECTURES)
-      libcudacxx_codegen_get_sass_check_prefixes(
+      libcudacxx_codegen_get_arch_check_prefixes(
         check_prefixes
         arch_has_specific_checks
         "${test_contents}"
         "${arch}"
+        SMXX
       )
       if (arch_has_specific_checks)
         set(has_arch_specific_checks TRUE)
@@ -639,11 +677,12 @@ function(libcudacxx_codegen_add_sass_tests)
     endif()
 
     foreach (arch IN LISTS test_archs)
-      libcudacxx_codegen_get_sass_check_prefixes(
+      libcudacxx_codegen_get_arch_check_prefixes(
         check_prefixes
         has_arch_specific_checks
         "${test_contents}"
         "${arch}"
+        SMXX
       )
       string(REPLACE "," ";" common_check_prefixes "${check_prefixes}")
       string(TOUPPER "${test_contents}" uppercase_test_contents)
