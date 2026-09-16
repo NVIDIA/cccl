@@ -112,8 +112,8 @@ struct level_synchronizer::__synchronizer_instance
     {
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
                         ({
-                          asm volatile("barrier.cluster.arrive.aligned;");
-                          asm volatile("barrier.cluster.wait.aligned;");
+                          asm volatile("barrier.cluster.arrive.aligned;" ::: "memory");
+                          asm volatile("barrier.cluster.wait.aligned;" ::: "memory");
                         }),
                         ({ ::cuda::experimental::__block_sync</*is-aligned*/ true>(); }))
     }

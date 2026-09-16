@@ -58,7 +58,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__hss_sort
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hss_sort
 {
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
@@ -153,7 +154,7 @@ _CCCL_KERNEL_ATTRIBUTES void __sample_probes_kernel(
     const auto __remaining_samples = static_cast<::cuda::std::uint64_t>(__samples.end() - __samples_it);
 
     // Note: NOT cuda::std::sample() which is O(population) not O(num_samples)!
-    __samples_it = ::cuda::experimental::__detail::__hss_sort::__random_sample_n(
+    __samples_it = ::cuda::experimental::mgmn::__detail::__hss_sort::__random_sample_n(
       __first, __last, __samples_it, ::cuda::std::min(__num_samples, __remaining_samples), __gen);
 
     // This isn't just an optimization. The sampled intervals need to be distinct.
@@ -210,7 +211,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
       // All inputs should be on the same stream here
       __I_j.stream(),
       __launch_config,
-      ::cuda::experimental::__detail::__hss_sort::
+      ::cuda::experimental::mgmn::__detail::__hss_sort::
         __sample_probes_kernel<::cuda::std::remove_cvref_t<decltype(__launch_config)>, _Tp, _BinaryOp>,
       ::cuda::std::philox4x64{__seed},
       __sampling_probability,
@@ -301,8 +302,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
     const auto __stream  = ::cuda::get_stream(__env);
     const auto __n_split = __comm_size - 1;
 
-    auto&& __resource   = ::cuda::experimental::__detail::__resource_from_env(__env, __stream.__logical_device());
-    auto&& __buffer_env = ::cuda::experimental::__detail::__sanitize_buffer_env(__env);
+    auto&& __resource   = ::cuda::experimental::mgmn::__detail::__resource_from_env(__env, __stream.__logical_device());
+    auto&& __buffer_env = ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(__env);
 
     __local_scratch.emplace_back(__per_comm_sampling_scratch_type{
       /*__all_samples=*/
@@ -645,7 +646,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental::__detail::__hss_sort
+} // namespace __detail::__hss_sort
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

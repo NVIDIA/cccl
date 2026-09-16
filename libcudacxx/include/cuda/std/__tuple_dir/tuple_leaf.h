@@ -29,6 +29,7 @@
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
@@ -447,7 +448,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   {}
 
   template <class _Tuple, size_t _Indx2>
-  using __tuple_elem_at = tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>;
+  using __tuple_elem_at = __copy_cvref_t<_Tuple, tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple>
