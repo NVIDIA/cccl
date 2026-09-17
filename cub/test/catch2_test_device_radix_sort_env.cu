@@ -11,6 +11,7 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <sstream>
@@ -1171,7 +1172,7 @@ std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selec
   auto env                 = stdexec::env{device_memory_resource{stream.get(), &bytes_allocated, &bytes_deallocated},
                                           stream,
                                           cuda::execution::tune(policy_selector)};
-  REQUIRE(cudaSuccess == run(env));
+  REQUIRE(cudaSuccess == cuda::std::forward<CallableT>(run)(env));
   stream.sync();
   CHECK(bytes_allocated > 0);
   CHECK(bytes_allocated == bytes_deallocated);

@@ -28,6 +28,7 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
@@ -292,7 +293,7 @@ struct CastOp
   template <typename A>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE B operator()(A&& a) const
   {
-    return (B) a;
+    return (B)::cuda::std::forward<A>(a);
   }
 };
 
