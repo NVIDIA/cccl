@@ -267,7 +267,7 @@ set -- "${common_args[@]}"
 # Device-time traces are sensitive to machine contention. Default to a quarter
 # of (nproc-1) instead of nproc-1 from ci/build_common.sh.
 if [[ -z "${PARALLEL_LEVEL:-}" ]]; then
-  PARALLEL_LEVEL=$(( ($(nproc --all) - 1) / 4 ))
+  PARALLEL_LEVEL=$(( ($(nproc --all) - 1) / 2 ))
   if (( PARALLEL_LEVEL < 1 )); then
     PARALLEL_LEVEL=1
   fi
