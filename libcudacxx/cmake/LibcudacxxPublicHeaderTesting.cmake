@@ -16,7 +16,6 @@ file(
   "${libcudacxx_SOURCE_DIR}/include/cuda/*"
   "${libcudacxx_SOURCE_DIR}/include/cuda/std/*"
 )
-list(FILTER public_headers EXCLUDE REGEX "(^|/)\\.clang-tidy$")
 
 # annotated_ptr does not work with clang cuda due to __nv_associate_access_property
 if ("Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")

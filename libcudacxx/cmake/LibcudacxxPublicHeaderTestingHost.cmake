@@ -23,7 +23,6 @@ file(
   "${libcudacxx_SOURCE_DIR}/include/cuda/*"
   "${libcudacxx_SOURCE_DIR}/include/cuda/std/*"
 )
-list(FILTER public_headers_host_only EXCLUDE REGEX "(^|/)\\.clang-tidy$")
 
 set(public_host_header_cxx_compile_options)
 set(public_host_header_cxx_compile_definitions)

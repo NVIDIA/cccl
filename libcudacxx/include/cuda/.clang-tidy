@@ -1,6 +1,0 @@
-InheritParentConfig: true
-Checks: 'misc-include-cleaner'
-CheckOptions:
-  misc-include-cleaner.IgnoreHeaders: 'cuda/std/detail/__config'
-  misc-include-cleaner.MissingIncludes: 'false'
-  misc-include-cleaner.UnusedIncludes: 'true'
