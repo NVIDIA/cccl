@@ -68,3 +68,46 @@ Availability: CCCL 3.1.0 / CUDA 13.1
        s.sync();
      } // Stream is automatically destroyed here
    }
+
+:cpp:class:`cuda::stream_pool`
+-------------------------------
+.. _cccl-runtime-stream-stream-pool:
+
+:cpp:class:`cuda::stream_pool` owns a fixed number of non-blocking :cpp:struct:`cuda::stream` objects created on one
+device or green context. It is meant for code that wants to spread independent work over a few streams without
+managing their lifetime, and is a lightweight replacement for per-project stream pools such as
+``rmm::cuda_stream_pool``.
+
+- ``get_stream()``: returns the next stream in round-robin order
+- ``get_stream(i)``: returns the stream in slot ``i % size()``
+- ``size()``, ``device()``, ``priority()``: the parameters given at construction
+
+Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool, including across a
+move of the pool. Streams are created on first use and destroyed with the pool. A pool can be moved but not copied,
+and all getters can be called concurrently from several threads.
+
+Creating a stream is refused by the driver while the calling thread has a global or thread-local stream capture in
+flight. The pool creates its streams in relaxed capture mode, so the first request for a stream during a capture
+leaves that capture valid.
+
+Availability: CCCL 3.6.0
+
+.. code:: cpp
+
+   #include <cuda/stream>
+   #include <cuda/devices>
+
+   int main() {
+     // 16 streams on device 0, none created yet
+     cuda::stream_pool pool{cuda::devices[0]};
+
+     for (int i = 0; i < 64; ++i) {
+       // Cycles through the 16 streams, creating each one the first time it is handed out
+       cuda::stream_ref s = pool.get_stream();
+       // Pass to a stream-ordered API
+     }
+
+     // Always the same stream, for work that must stay ordered
+     cuda::stream_ref fixed = pool.get_stream(3);
+     fixed.sync();
+   } // All streams are destroyed here

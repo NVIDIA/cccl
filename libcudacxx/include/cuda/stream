@@ -27,6 +27,7 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/invalid_stream.h>
 #include <cuda/__stream/stream.h>
+#include <cuda/__stream/stream_pool.h>
 #include <cuda/__stream/stream_ref.h>
 
 #endif //_CUDA_STREAM
