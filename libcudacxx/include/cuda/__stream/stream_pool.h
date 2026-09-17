@@ -53,6 +53,15 @@ public:
   //! @brief Number of streams used when none is requested
   static constexpr ::cuda::std::size_t default_size = 16;
 
+  //! @brief Tag selecting the constructors that create every stream up front
+  struct eager_t
+  {
+    explicit eager_t() = default;
+  };
+
+  //! @brief Tag value selecting the constructors that create every stream up front, see `eager_t`
+  static constexpr eager_t eager{};
+
   //! @brief Constructs a pool of streams on the primary context of a device
   //!
   //! No stream is created until it is requested.
@@ -84,6 +93,45 @@ public:
     {
       __streams_.emplace_back(no_init);
     }
+  }
+
+  //! @brief Constructs a pool of streams on the primary context of a device and creates all of them
+  //!
+  //! Equivalent to the lazy constructor followed by `create_all_streams()`.
+  //!
+  //! @param[in] __eager Tag selecting eager creation, pass `stream_pool::eager`
+  //! @param[in] __device The device the streams are created on
+  //! @param[in] __size Number of streams in the pool, must be greater than zero, defaults to `default_size` (16)
+  //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
+  //!
+  //! @throws cuda_error if a stream creation fails
+  _CCCL_HOST_API explicit stream_pool(
+    eager_t __eager,
+    device_ref __device,
+    ::cuda::std::size_t __size = default_size,
+    int __priority             = stream::default_priority)
+      : stream_pool{__eager, __logical_device_ref{__device}, __size, __priority}
+  {}
+
+  //! @brief Constructs a pool of streams on a logical device and creates all of them
+  //!
+  //! Equivalent to the lazy constructor followed by `create_all_streams()`. The pool does not own the
+  //! green context, which must outlive the pool.
+  //!
+  //! @param[in] __eager Tag selecting eager creation, pass `stream_pool::eager`
+  //! @param[in] __device The logical device the streams are created on
+  //! @param[in] __size Number of streams in the pool, must be greater than zero, defaults to `default_size` (16)
+  //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
+  //!
+  //! @throws cuda_error if a stream creation fails
+  _CCCL_HOST_API explicit stream_pool(
+    eager_t,
+    __logical_device_ref __device,
+    ::cuda::std::size_t __size = default_size,
+    int __priority             = stream::default_priority)
+      : stream_pool{__device, __size, __priority}
+  {
+    create_all_streams();
   }
 
   stream_pool(const stream_pool&)            = delete;
@@ -155,8 +203,9 @@ public:
   //! @brief Creates every stream of the pool that does not exist yet
   //!
   //! Streams are created lazily, so by default the first `size()` calls to `get_stream()` each pay for
-  //! a stream creation. Call this once after construction when that cost must not land on the hot path.
-  //! Afterwards, `get_stream()` never creates a stream and `streams()` has `size()` entries.
+  //! a stream creation. Call this once after construction, or construct with `stream_pool::eager`, when
+  //! that cost must not land on the hot path. Afterwards, `get_stream()` never creates a stream and
+  //! `streams()` has `size()` entries.
   //!
   //! @throws cuda_error if a stream creation fails
   _CCCL_HOST_API void create_all_streams() const

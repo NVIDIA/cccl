@@ -76,6 +76,20 @@ C2H_CCCLRT_TEST("Stream pool type properties", "[stream][stream_pool]")
   STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::stream_pool, cuda::__logical_device_ref>);
   STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::stream_pool, const cuda::__logical_device&>);
 
+  // The eager tag leads, so size and priority keep their defaults.
+  STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::stream_pool, cuda::stream_pool::eager_t, cuda::device_ref>);
+  STATIC_REQUIRE(
+    cuda::std::is_constructible_v<cuda::stream_pool, cuda::stream_pool::eager_t, cuda::device_ref, cuda::std::size_t>);
+  STATIC_REQUIRE(
+    cuda::std::
+      is_constructible_v<cuda::stream_pool, cuda::stream_pool::eager_t, cuda::device_ref, cuda::std::size_t, int>);
+  STATIC_REQUIRE(
+    cuda::std::is_constructible_v<cuda::stream_pool, cuda::stream_pool::eager_t, cuda::__logical_device_ref>);
+  STATIC_REQUIRE(
+    cuda::std::is_constructible_v<cuda::stream_pool, cuda::stream_pool::eager_t, const cuda::__logical_device&>);
+  // The tag cannot be produced by accident from an empty brace list.
+  STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::stream_pool::eager_t, cuda::stream_pool>);
+
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>().get_stream()), cuda::stream_ref>);
   STATIC_REQUIRE(cuda::stream_pool::default_size == 16);
@@ -271,6 +285,27 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     }
     pool.create_all_streams();
     REQUIRE(pool.streams() == all);
+  }
+
+  SECTION("The eager constructor creates every slot")
+  {
+    const cuda::stream_pool pool{cuda::stream_pool::eager, device, 3};
+    REQUIRE(pool.size() == 3);
+    REQUIRE(pool.device() == device);
+    REQUIRE(pool.priority() == cuda::stream::default_priority);
+
+    const auto all = pool.streams();
+    REQUIRE(all.size() == 3);
+    for (cuda::std::size_t i = 0; i < all.size(); ++i)
+    {
+      REQUIRE(pool.get_stream(i) == all[i]);
+      REQUIRE(all[i].device() == device);
+    }
+
+    // Defaults still apply with the tag.
+    const cuda::stream_pool defaulted{cuda::stream_pool::eager, device};
+    REQUIRE(defaulted.size() == cuda::stream_pool::default_size);
+    REQUIRE(defaulted.streams().size() == cuda::stream_pool::default_size);
   }
 
   SECTION("create_all_streams() keeps the streams already handed out")
@@ -522,6 +557,19 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
       ::test::launch_kernel_single_thread(str, ::test::assign_42{}, value.get());
       str.sync();
       REQUIRE(*value == 42);
+    }
+  }
+
+  SECTION("The eager constructor creates every slot on the green context")
+  {
+    auto ldev = ::make_logical_device(device);
+    const cuda::stream_pool pool{cuda::stream_pool::eager, ldev, 2};
+
+    const auto all = pool.streams();
+    REQUIRE(all.size() == 2);
+    for (const cuda::stream_ref str : all)
+    {
+      REQUIRE(str.__logical_device().green_context() == ldev.green_context());
     }
   }
 
