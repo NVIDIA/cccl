@@ -48,10 +48,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! Both return a `cuda::stream_ref` that stays valid for the lifetime of the pool, including across a
 //! move of the pool itself.
 //!
-//! Creating a slot is a "potentially unsafe" driver call in the sense of stream capture. The pool runs
-//! it in relaxed capture mode, so a stream may be requested for the first time while the calling thread
-//! has a global or thread-local capture in flight without invalidating that capture. Nothing is issued
-//! into any stream while doing so.
+//! The driver refuses to create a stream while the calling thread has a global or thread-local capture in
+//! flight, and invalidates that capture. The pool therefore fills a slot in relaxed capture mode, which
+//! lifts the refusal. Relaxed mode is only correct when the captured work cannot depend on the call made
+//! under it; filling a slot creates a stream and enqueues nothing, so requesting a stream for the first
+//! time during a capture is safe.
 //!
 //! All member functions may be called concurrently from several threads. A move must not overlap with
 //! any other use of either pool, as for a `std::vector`.
@@ -203,8 +204,8 @@ private:
     if (__slot.get() == ::cuda::__invalid_stream())
     {
       // Stream creation is refused while the calling thread is in a global or thread-local capture and
-      // would invalidate that capture. Creation does not synchronize and touches no capturing stream, so
-      // relaxed mode is safe here.
+      // would invalidate that capture. Relaxed mode lifts the refusal; it is correct here because creating
+      // a stream enqueues nothing, so no captured work can depend on it.
       const __relaxed_capture_scope __relaxed{};
       __slot = __create_stream();
     }

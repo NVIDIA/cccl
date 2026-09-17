@@ -87,8 +87,9 @@ move of the pool. Streams are created on first use and destroyed with the pool. 
 and all getters can be called concurrently from several threads.
 
 Creating a stream is refused by the driver while the calling thread has a global or thread-local stream capture in
-flight. The pool creates its streams in relaxed capture mode, so the first request for a stream during a capture
-leaves that capture valid.
+flight, and the refusal invalidates the capture. The pool creates its streams in relaxed capture mode, which lifts
+the refusal. This is correct because creating a stream enqueues no work, so nothing captured can depend on it. The
+first request for a stream during a capture therefore leaves that capture valid.
 
 Availability: CCCL 3.6.0
 
