@@ -408,7 +408,7 @@ CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
   // against a TU that is compiled for a lower architecture than the current TU. See
   // https://github.com/NVIDIA/cccl/issues/11403 for details.
   const auto& target_ccs = ::cuda::__target_compute_capabilities();
-  _CCCL_VERIFY(cuda::std::find(target_ccs.begin(), target_ccs.end(), cc) != target_ccs.end(),
+  _CCCL_VERIFY(::cuda::std::find(target_ccs.begin(), target_ccs.end(), cc) != target_ccs.end(),
                "The compute capability must be one of __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST");
 #  endif // _CCCL_CUDA_COMPILATION()
 
