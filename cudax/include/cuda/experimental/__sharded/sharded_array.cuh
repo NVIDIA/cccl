@@ -281,8 +281,9 @@ public:
       const auto& place = lane.place(i);
       specs.emplace_back(sizes[i], place.affine_data_place(), place, lane.stream(i));
     }
-    auto arr  = allocate(specs);
-    arr.lane_ = lane.lane_id();
+    auto arr   = allocate(specs);
+    arr.lane_  = lane.lane_id();
+    arr.group_ = &lane.group();
     return arr;
   }
 
@@ -354,7 +355,8 @@ public:
       offset += s.size;
     }
     sharded_array arr(mv(shards));
-    arr.lane_ = lane.lane_id();
+    arr.lane_  = lane.lane_id();
+    arr.group_ = &lane.group();
     return arr;
   }
 
@@ -512,8 +514,9 @@ public:
       const auto& place = lane.place(i);
       specs.emplace_back(sizes[i], place.affine_data_place(), place, lane.stream(i));
     }
-    auto arr  = allocate_contiguous(specs);
-    arr.lane_ = lane.lane_id();
+    auto arr   = allocate_contiguous(specs);
+    arr.lane_  = lane.lane_id();
+    arr.group_ = &lane.group();
     return arr;
   }
 
@@ -579,8 +582,9 @@ public:
       const auto& s = other.shard(i);
       specs.emplace_back(s.size, s.place, s.exec, s.stream);
     }
-    auto arr  = allocate(specs);
-    arr.lane_ = other.lane();
+    auto arr   = allocate(specs);
+    arr.lane_  = other.lane();
+    arr.group_ = other.group();
     return arr;
   }
 
@@ -858,6 +862,7 @@ public:
       , contiguous_backing_(mv(other.contiguous_backing_))
       , fork_join_events_(mv(other.fork_join_events_))
       , lane_(other.lane_)
+      , group_(other.group_)
   {
     each_shard.parent_ = this;
     other.total_size_  = 0;
@@ -875,6 +880,7 @@ public:
       contiguous_backing_ = mv(other.contiguous_backing_);
       fork_join_events_   = mv(other.fork_join_events_);
       lane_               = other.lane_;
+      group_              = other.group_;
       other.total_size_   = 0;
       other.ownership_    = ownership::view;
       // each_shard.parent_ already points to this
@@ -899,6 +905,15 @@ public:
   [[nodiscard]] ::cuda::std::optional<size_t> lane() const noexcept
   {
     return lane_;
+  }
+
+  /// @brief The group this container was built on (the one `lane()` is a
+  /// lane of), whose lane resources — streams, communicators — its shards
+  /// use; `nullptr` for containers not built from a group. The group must
+  /// outlive the container (`lane_view` borrows it).
+  [[nodiscard]] place_group* group() const noexcept
+  {
+    return group_;
   }
 
   size_t size() const
@@ -1022,7 +1037,8 @@ public:
     }
 
     sharded_array view(mv(new_shards)); // non-owning
-    view.lane_ = lane_; // same reference streams, same lane
+    view.lane_  = lane_; // same reference streams, same lane, same group
+    view.group_ = group_;
     return view;
   }
 
@@ -1292,8 +1308,10 @@ private:
   // Pooled events for fork_from/join_into (lazily created; mutable because
   // the ordering declarations are const — they do not modify elements).
   mutable reserved::fork_join_event_pool fork_join_events_;
-  // The lane the container was built on (see `lane()`); slices inherit it.
+  // The lane and group the container was built on (see `lane()`, `group()`);
+  // slices inherit them.
   ::cuda::std::optional<size_t> lane_;
+  place_group* group_ = nullptr;
 };
 
 namespace reserved

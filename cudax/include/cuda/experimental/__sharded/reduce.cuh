@@ -273,15 +273,12 @@ _CCCL_HOST_API void __mgmn_reduce_into_slots(
       const auto __inputs = __mgmn_per_lane(__lanes, [&](::std::size_t __g) {
         return __engine::__input(static_cast<const __elem_t*>(__data.shard(__g).data));
       });
-      const auto __sizes  = __mgmn_per_lane(__lanes, [&](::std::size_t __g) {
-        return static_cast<::std::size_t>(__data.shard(__g).size);
-      });
       ::cuda::experimental::mgmn::reduce(
         ::cuda::experimental::broadcasted,
         __comms,
         __menvs,
         __inputs,
-        __sizes,
+        __mgmn_sizes(__data, __lanes),
         __outputs,
         __engine::__lift_init(__init),
         __engine::__lift_op(__op),

@@ -15,9 +15,10 @@
  *
  * The engine is the MGMN transform (`cuda::experimental::mgmn::transform`,
  * rank-local `cub::DeviceTransform`), instantiated over the in-process
- * `places_communicator` of `mgmn_adapter.cuh`, one rank per non-empty shard.
- * The sharded verbs keep their signatures and their contract; the engine is
- * not visible to the caller.
+ * `places_communicator` of `mgmn_adapter.cuh` — the lane's owned group for
+ * group-built environments — one rank per non-empty shard, the shard
+ * environments handed to it as they are. The sharded verbs keep their
+ * signatures and their contract; the engine is not visible to the caller.
  */
 
 #pragma once
@@ -35,6 +36,7 @@
 #include <cuda/__iterator/zip_function.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/__multi_gpu/algorithm/transform/transform.h>
@@ -51,13 +53,28 @@ namespace cuda::experimental::sharded
 {
 namespace reserved
 {
+//! @brief Is `_Op` an operator whose return type host code cannot query: an
+//! extended `__device__` lambda without a trailing return type? (nvcc's
+//! host-side stub of such a lambda has no queryable result;
+//! `cuda::std::invoke_result` refuses it with a static assertion rather than
+//! failing softly.) Named function objects, `__host__ __device__` lambdas
+//! and `-> R` lambdas are queryable.
+template <class _Op>
+inline constexpr bool __opaque_result_v =
+#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__)
+  __nv_is_extended_device_lambda_closure_type(_Op) && !__nv_is_extended_host_device_lambda_closure_type(_Op)
+  && !__nv_is_extended_device_lambda_with_preserved_return_type(_Op);
+#else
+  false;
+#endif
+
 //! @brief The operator with its result converted to the output element type
 //! `_Tp` — the implicit conversion the store `out[i] = op(...)` performs
 //! anyway, stated as the return type. That declared type is what lets the
 //! engine's host-side checks (`indirectly_unary_invocable`,
-//! `indirectly_writable`) accept extended `__device__` lambdas, whose return
-//! type cannot be queried in host code. The operator is `mutable`: the
-//! host-side stub nvcc gives such a lambda has a non-const call operator.
+//! `indirectly_writable`) accept operators of `__opaque_result_v`. The
+//! operator is `mutable`: the host-side stub nvcc gives such a lambda has a
+//! non-const call operator.
 template <class _Tp, class _Op>
 struct __into
 {
@@ -70,6 +87,21 @@ struct __into
     return __op(::cuda::std::forward<_Args>(__args)...);
   }
 };
+
+//! @brief @p __op as the engine takes it: itself when its result type is
+//! queryable, wrapped in `__into<_Tp>` otherwise.
+template <class _Tp, class _Op>
+[[nodiscard]] auto __engine_op(_Op __op)
+{
+  if constexpr (__opaque_result_v<_Op>)
+  {
+    return __into<_Tp, _Op>{::cuda::std::move(__op)};
+  }
+  else
+  {
+    return __op;
+  }
+}
 } // namespace reserved
 
 // ============================================================================
@@ -102,24 +134,18 @@ _CCCL_REQUIRES(
   sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallEnv& call_env = {})
 {
-  using __elem_t = view_element_t<_S>;
   reserved::__mgmn_map(
-    data, envs, call_env, "sharded::transform", [&](const auto& __comms, const auto& __menvs, const auto& __lanes) {
-      const auto __ptrs  = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) -> __elem_t* {
-        return data.shard(__g).data;
-      });
-      const auto __sizes = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) {
-        return static_cast<::std::size_t>(data.shard(__g).size);
-      });
+    data, envs, call_env, "sharded::transform", [&](const auto& __comms, const auto& __envs, const auto& __lanes) {
       // Output aliases input: the MGMN transform's in-place form.
+      const auto __ptrs = reserved::__mgmn_pointers<view_element_t<_S>*>(data, __lanes);
       ::cuda::experimental::mgmn::transform(
         ::cuda::experimental::distributed,
         __comms,
-        __menvs,
+        __envs,
         __ptrs,
-        __sizes,
+        reserved::__mgmn_sizes(data, __lanes),
         __ptrs,
-        reserved::__into<__elem_t, _UnaryOp>{op});
+        reserved::__engine_op<view_element_t<_S>>(op));
     });
 }
 
@@ -169,25 +195,19 @@ _CCCL_HOST_API void zip_transform(_SOut&& out, const _Envs& envs, _Op op, const 
 
   using __out_t = view_element_t<_SOut>;
   reserved::__mgmn_map(
-    out, envs, call_env, "sharded::zip_transform", [&](const auto& __comms, const auto& __menvs, const auto& __lanes) {
+    out, envs, call_env, "sharded::zip_transform", [&](const auto& __comms, const auto& __envs, const auto& __lanes) {
       // The shard index selects the co-partitioned input shards.
-      const auto __inputs  = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) {
+      const auto __inputs = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) {
         return ::cuda::make_zip_iterator(ins.shard(__g).data...);
-      });
-      const auto __sizes   = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) {
-        return static_cast<::std::size_t>(out.shard(__g).size);
-      });
-      const auto __outputs = reserved::__mgmn_per_lane(__lanes, [&](::std::size_t __g) -> __out_t* {
-        return out.shard(__g).data;
       });
       ::cuda::experimental::mgmn::transform(
         ::cuda::experimental::distributed,
         __comms,
-        __menvs,
+        __envs,
         __inputs,
-        __sizes,
-        __outputs,
-        ::cuda::zip_function<reserved::__into<__out_t, _Op>>{reserved::__into<__out_t, _Op>{op}});
+        reserved::__mgmn_sizes(out, __lanes),
+        reserved::__mgmn_pointers<__out_t*>(out, __lanes),
+        ::cuda::make_zip_function(reserved::__engine_op<__out_t>(op)));
     });
 }
 

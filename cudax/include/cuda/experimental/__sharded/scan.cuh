@@ -87,15 +87,9 @@ _CCCL_HOST_API void __mgmn_scan(
       return __mgmn_alloc_env(__env, __reqs);
     },
     [&](const auto& __comms, const auto& __menvs, const auto& __lanes) {
-      const auto __inputs  = __mgmn_per_lane(__lanes, [&](::std::size_t __g) -> const _Tp* {
-        return __data.shard(__g).data;
-      });
-      const auto __sizes   = __mgmn_per_lane(__lanes, [&](::std::size_t __g) {
-        return static_cast<::std::size_t>(__data.shard(__g).size);
-      });
-      const auto __outputs = __mgmn_per_lane(__lanes, [&](::std::size_t __g) -> _Tp* {
-        return __data.shard(__g).data;
-      });
+      const auto __inputs  = __mgmn_pointers<const _Tp*>(__data, __lanes);
+      const auto __sizes   = __mgmn_sizes(__data, __lanes);
+      const auto __outputs = __mgmn_pointers<_Tp*>(__data, __lanes);
       if constexpr (_Inclusive)
       {
         ::cuda::experimental::mgmn::inclusive_scan(

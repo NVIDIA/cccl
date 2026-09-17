@@ -12,7 +12,9 @@
  * @file
  *
  * @brief The MGMN bridge: `places_communicator` satisfies the MGMN
- *        communicator concept and its collectives are correct; the sharded
+ *        communicator concept and its collectives are correct; a group's
+ *        lanes own stable, distinct communicator groups that the verbs run
+ *        over (environments from elsewhere get a per-call group); the sharded
  *        verbs whose engine is an MGMN algorithm (reduce, reduce_into_lanes,
  *        inclusive/exclusive scan, transform) agree with host references —
  *        on a locality-domain group and on a single-place group, at
@@ -300,6 +302,92 @@ void test_communicator(place_group& group)
     EXPECT(threw);
   }
   barrier(envs);
+}
+
+// ---------------------------------------------------------------------------
+// The group owns one communicator group per lane: stable across calls (the
+// same handles, the same event pools), distinct between lanes, and the one
+// the verbs run over for group-built containers. Environments from elsewhere
+// (a foreign stream, a foreign environment type) still run, over a per-call
+// group.
+// ---------------------------------------------------------------------------
+void test_owned_communicators(place_group& group)
+{
+  const size_t P = group.size();
+
+  // Stability: the same range and the same group identity every time
+  const auto& c0 = group.communicators(0);
+  EXPECT(c0.size() == P);
+  EXPECT(&group.communicators(0) == &c0);
+  EXPECT(&group.lane(0).communicators() == &c0);
+  for (size_t r = 0; r < P; r++)
+  {
+    EXPECT(c0[r].rank() == static_cast<int>(r));
+    EXPECT(c0[r].native_handle() == c0[0].native_handle());
+    EXPECT(group.communicators(0)[r] == c0[r]);
+  }
+  // Two lanes, two groups
+  if (group.num_lanes() > 1)
+  {
+    auto l1        = group.lane(1);
+    const auto& c1 = l1.communicators();
+    EXPECT(c1.size() == P);
+    EXPECT(c1[0].native_handle() != c0[0].native_handle());
+    EXPECT(&group.communicators(1) == &c1);
+  }
+
+  // A group-built container's environments name the group and the lane, and
+  // the verbs run over the lane's group: a collective-bearing verb issued
+  // twice grows the lane's event pools once (the pools are the group's, not
+  // the call's) — observable as the group identity staying put, and as the
+  // results being right.
+  const size_t n = 100003;
+  auto data      = sharded_array<long long>::allocate(group, n);
+  iota(data, 1LL);
+  for (const auto& e : default_envs(data))
+  {
+    EXPECT(cuda::experimental::places::query_place_group(e) == &group);
+    EXPECT(cuda::experimental::places::query_lane_id(e) == ::cuda::std::optional<size_t>{0});
+  }
+  const long long expected = static_cast<long long>(n) * static_cast<long long>(n + 1) / 2;
+  EXPECT(reduce(data, ::cuda::std::plus<long long>{}, 0LL) == expected);
+  EXPECT(reduce(data, ::cuda::std::plus<long long>{}, 0LL) == expected);
+  EXPECT(&group.communicators(0) == &c0);
+  EXPECT(c0[0].native_handle() == group.communicators(0)[0].native_handle());
+  if (group.num_lanes() > 1)
+  {
+    auto on_lane1 = sharded_array<long long>::allocate(group.lane(1), n);
+    iota(on_lane1, 1LL);
+    for (const auto& e : default_envs(on_lane1))
+    {
+      EXPECT(cuda::experimental::places::query_lane_id(e) == ::cuda::std::optional<size_t>{1});
+    }
+    EXPECT(reduce(on_lane1, ::cuda::std::plus<long long>{}, 0LL) == expected);
+  }
+
+  // Foreign environments over the same data: no group, no lane — the verbs
+  // still run (over a communicator group created for the call).
+  {
+    ::std::vector<cudaStream_t> streams(P);
+    ::std::vector<decltype(group.env(size_t{}, cudaStream_t{}))> envs;
+    for (size_t g = 0; g < P; g++)
+    {
+      cuda::experimental::places::exec_place_scope scope(group.place(g));
+      cuda_safe_call(cudaStreamCreate(&streams[g]));
+      envs.push_back(group.env(g, streams[g]));
+      EXPECT(cuda::experimental::places::query_place_group(envs.back()) == nullptr);
+      EXPECT(!cuda::experimental::places::query_lane_id(envs.back()).has_value());
+    }
+    EXPECT(reduce(data, envs, ::cuda::std::plus<long long>{}, 0LL) == expected);
+    inclusive_sum(data, envs);
+    barrier(envs);
+    const auto h = host_of(data);
+    EXPECT(h[n - 1] == expected);
+    for (size_t g = 0; g < P; g++)
+    {
+      cuda_safe_call(cudaStreamDestroy(streams[g]));
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -649,6 +737,7 @@ int main()
   for (place_group* group : {&domains, &single})
   {
     test_communicator(*group);
+    test_owned_communicators(*group);
     for (const size_t n : {size_t{3}, size_t{5}, size_t{262147}, size_t{1000001}})
     {
       test_verbs(*group, n);
