@@ -19,8 +19,9 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 
 // trivially constructible types to allow uninitialized thrust vector
-using types    = c2h::type_list<std::int32_t, std::int64_t>;
-using offset_t = std::int32_t;
+using types = c2h::type_list<std::int32_t, std::int64_t>;
+// MSVC warnings about alias shadowing prevent us from using offset_t as the name
+using index_t = std::int32_t;
 
 // The last element must not be read in an exclusive scan, to be confirmed by compute-sanitizer initcheck
 CUB_TEST("Device exclusive scan ignores last input element", "[scan][device]", CUB_SMALL, types)
@@ -28,9 +29,9 @@ CUB_TEST("Device exclusive scan ignores last input element", "[scan][device]", C
   using type = c2h::get<0, TestType>;
   using op_t = ::cuda::std::plus<>;
 
-  const offset_t initialized_size =
+  const index_t initialized_size =
     GENERATE_COPY(values({0, 1, 2, 31, 32, 33, 1023, 1024, 1025, 4095, 4096, 4097}), take(3, random(1, 1'000'000)));
-  const offset_t size = initialized_size + 1;
+  const index_t size = initialized_size + 1;
   CAPTURE(size, c2h::type_name<type>());
 
   c2h::device_vector<type> input(initialized_size);
@@ -101,7 +102,7 @@ struct lookahead_tuning
     if (!supported)
     {
       return cub::detail::scan::
-        policy_selector_from_types<T*, T*, T, cub::detail::choose_offset_t<offset_t>, checking_op>{}(cc);
+        policy_selector_from_types<T*, T*, T, cub::detail::choose_offset_t<index_t>, checking_op>{}(cc);
     }
 
     // 256 / sizeof(T) - 1 items per thread is what the sm_100 tuning uses and keeps us within 48 KiB.
@@ -116,9 +117,9 @@ struct lookahead_tuning
 };
 
 template <typename T, typename EnvT>
-void check_scan_op_receives_only_valid_values(offset_t size, const EnvT& env)
+void check_scan_op_receives_only_valid_values(index_t size, const EnvT& env)
 {
-  constexpr offset_t padding = 100;
+  constexpr index_t padding = 100;
 
   c2h::device_vector<T> data(size, valid_value);
   data.resize(size + padding, invalid_value);
@@ -142,7 +143,7 @@ CUB_TEST("Device exclusive scan operator only receives valid values", "[scan][de
 
   // 1 << 19 spans more than the 32 tiles a lookahead step covers for all tunings used here, so the lookahead warp has
   // to combine tile aggregates across several steps, including partially filled windows of tile states
-  const offset_t size = GENERATE_COPY(
+  const index_t size = GENERATE_COPY(
     values({0, 1, 2, 31, 32, 33, 1023, 1024, 1025, 4095, 4096, 4097, 1 << 19}), take(3, random(1, 1'000'000)));
   CAPTURE(size, c2h::type_name<type>());
 
