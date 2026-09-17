@@ -17,7 +17,7 @@ void TestMergeSimple()
   Vector result(7);
   const auto end = thrust::merge(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestMergeSimple);
@@ -113,8 +113,8 @@ void TestMergeToDiscardIterator(size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeToDiscardIterator);
 

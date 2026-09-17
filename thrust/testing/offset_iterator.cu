@@ -41,18 +41,18 @@ void TestOffsetConstructor()
 
   Vector v{42, 43};
   thrust::offset_iterator iter1(v.begin());
-  ASSERT_EQUAL_QUIET(iter1.base(), v.begin());
+  REQUIRE(iter1.base() == v.begin());
   REQUIRE(iter1.offset() == 0);
   REQUIRE(*iter1 == 42);
 
   thrust::offset_iterator iter2(v.begin(), 1);
-  ASSERT_EQUAL_QUIET(iter2.base(), v.begin());
+  REQUIRE(iter2.base() == v.begin());
   REQUIRE(iter2.offset() == 1);
   REQUIRE(*iter2 == 43);
 
   ptrdiff_t offset = 1;
   thrust::offset_iterator iter3(v.begin(), &offset);
-  ASSERT_EQUAL_QUIET(iter3.base(), v.begin());
+  REQUIRE(iter3.base() == v.begin());
   REQUIRE(iter3.offset() == &offset);
   REQUIRE(*iter3.offset() == 1);
   REQUIRE(*iter3 == 43);

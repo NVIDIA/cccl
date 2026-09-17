@@ -60,7 +60,7 @@ void TestSetSymmetricDifferenceSimple()
 
   const Iterator end = thrust::set_symmetric_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetSymmetricDifferenceSimple);
@@ -204,6 +204,6 @@ void TestSetSymmetricDifferenceKeyValue(size_t n)
 
   d_result.erase(d_end, d_result.begin());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceKeyValue);

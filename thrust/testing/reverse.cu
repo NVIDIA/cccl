@@ -156,8 +156,8 @@ struct TestReverseCopyToDiscardIterator
 
     const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopyToDiscardIterator, ReverseTypes);

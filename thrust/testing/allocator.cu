@@ -36,7 +36,7 @@ void TestAllocatorCustomDefaultConstruct(size_t n)
   const thrust::device_vector<T> ref(n, 13);
   const thrust::device_vector<T, my_allocator_with_custom_construct1<T>> vec(n);
 
-  ASSERT_EQUAL_QUIET(ref, vec);
+  REQUIRE(ref == vec);
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomDefaultConstruct);
 
@@ -59,7 +59,7 @@ void TestAllocatorCustomCopyConstruct(size_t n)
   thrust::device_vector<T> copy_from(n, 7);
   const thrust::device_vector<T, my_allocator_with_custom_construct2<T>> vec(copy_from.begin(), copy_from.end());
 
-  ASSERT_EQUAL_QUIET(ref, vec);
+  REQUIRE(ref == vec);
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomCopyConstruct);
 

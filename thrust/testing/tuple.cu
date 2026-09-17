@@ -489,10 +489,10 @@ void TestTupleSwap()
 
   const swappable_tuple ref(user_swappable(true), user_swappable(true), user_swappable(true), user_swappable(true));
 
-  ASSERT_EQUAL_QUIET(ref, h_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, h_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, (swappable_tuple) d_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, (swappable_tuple) d_v1[0]);
+  REQUIRE(ref == h_v1[0]);
+  REQUIRE(ref == h_v1[0]);
+  REQUIRE(ref == (swappable_tuple) d_v1[0]);
+  REQUIRE(ref == (swappable_tuple) d_v1[0]);
 }
 DECLARE_UNITTEST(TestTupleSwap);
 
