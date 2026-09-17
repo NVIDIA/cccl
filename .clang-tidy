@@ -80,6 +80,7 @@ Checks:
   - '-cppcoreguidelines-non-private-member-variables-in-classes'
   - '-cppcoreguidelines-prefer-member-initializer'
   - '-cppcoreguidelines-slicing'
+  # This does not understand the concept macros
   - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME
   # TODO(jfaibussowit):
