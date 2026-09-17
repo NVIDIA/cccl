@@ -152,12 +152,28 @@ public:
     return __get_or_create(__index % __streams_.size());
   }
 
+  //! @brief Creates every stream of the pool that does not exist yet
+  //!
+  //! Streams are created lazily, so by default the first `size()` calls to `get_stream()` each pay for
+  //! a stream creation. Call this once after construction when that cost must not land on the hot path.
+  //! Afterwards, `get_stream()` never creates a stream and `streams()` has `size()` entries.
+  //!
+  //! @throws cuda_error if a stream creation fails
+  _CCCL_HOST_API void create_all_streams() const
+  {
+    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
+    for (::cuda::std::size_t __i = 0; __i < __streams_.size(); ++__i)
+    {
+      (void) __get_or_create(__i);
+    }
+  }
+
   //! @brief Returns the streams created so far, in slot order
   //!
   //! Streams are created lazily, so the result may have fewer than `size()` entries: only the slots that
-  //! were handed out at least once are included. No stream is created by this call. The result is a
-  //! snapshot and does not see streams created afterwards. Use it to act on every stream that may carry
-  //! work, for instance to synchronize the whole pool.
+  //! were handed out at least once, or created by `create_all_streams()`, are included. No stream is
+  //! created by this call. The result is a snapshot and does not see streams created afterwards. Use it
+  //! to act on every stream that may carry work, for instance to synchronize the whole pool.
   //!
   //! @return The references to the streams created so far
   [[nodiscard]] _CCCL_HOST_API ::std::vector<stream_ref> streams() const

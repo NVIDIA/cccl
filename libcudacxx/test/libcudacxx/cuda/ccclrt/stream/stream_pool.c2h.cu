@@ -243,6 +243,46 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(pool.streams().size() == pool.size());
   }
 
+  SECTION("create_all_streams() creates every slot up front")
+  {
+    const cuda::stream_pool pool{device, 4};
+    REQUIRE(pool.streams().empty());
+
+    pool.create_all_streams();
+    const auto all = pool.streams();
+    REQUIRE(all.size() == pool.size());
+
+    // Every entry is a distinct, valid stream on the device.
+    for (cuda::std::size_t i = 0; i < all.size(); ++i)
+    {
+      REQUIRE(all[i].get() != nullptr);
+      REQUIRE(all[i].device() == device);
+      for (cuda::std::size_t j = i + 1; j < all.size(); ++j)
+      {
+        REQUIRE(all[i] != all[j]);
+      }
+    }
+
+    // The getters hand out the streams that were created, and a second call creates nothing new.
+    for (cuda::std::size_t i = 0; i < all.size(); ++i)
+    {
+      REQUIRE(pool.get_stream(i) == all[i]);
+      REQUIRE(pool.get_stream() == all[i]);
+    }
+    pool.create_all_streams();
+    REQUIRE(pool.streams() == all);
+  }
+
+  SECTION("create_all_streams() keeps the streams already handed out")
+  {
+    const cuda::stream_pool pool{device, 3};
+    const cuda::stream_ref s1 = pool.get_stream(1);
+    pool.create_all_streams();
+    REQUIRE(pool.get_stream(1) == s1);
+    REQUIRE(pool.streams().size() == 3);
+    REQUIRE(pool.streams()[1] == s1);
+  }
+
   SECTION("streams() can be used to wait for all outstanding work")
   {
     const cuda::stream_pool pool{device, 3};

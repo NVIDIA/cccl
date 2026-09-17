@@ -79,6 +79,7 @@ managing their lifetime.
 
 - ``get_stream()``: returns the next stream in round-robin order
 - ``get_stream(i)``: returns the stream in slot ``i % size()``
+- ``create_all_streams()``: creates every stream up front, for callers that must not pay creation on the hot path
 - ``streams()``: returns the streams created so far, which may be fewer than ``size()``
 - ``size()``, ``device()``, ``priority()``: the parameters given at construction
 
