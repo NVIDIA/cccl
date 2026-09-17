@@ -55,6 +55,10 @@ Checks:
   - '-google-runtime-float'
   # Same as misc-anonymous-namespace-in-header
   - '-google-build-namespaces'
+  - 'cppcoreguidelines-*'
+  - '-cppcoreguidelines-pro-bounds-pointer-arithmetic'
+  - '-cppcoreguidelines-pro-bounds-constant-array-index'
+  - '-cppcoreguidelines-avoid-do-while'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
