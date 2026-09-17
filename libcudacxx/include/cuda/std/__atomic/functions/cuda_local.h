@@ -23,6 +23,7 @@
 #include <cuda/__memory/address_space.h>
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/types/common.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 
@@ -164,7 +165,7 @@ __cuda_atomic_fetch_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>
   _ValueType __old{};
   ::cuda::std::__atomic_assign_volatile(&__old, *__ptr);
   *__ret                     = __old;
-  const _ValueType __desired = __bop(__old, __val);
+  const _ValueType __desired = ::cuda::std::forward<_BOp>(__bop)(__old, __val);
   ::cuda::std::__atomic_assign_volatile(__ptr, __desired);
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;

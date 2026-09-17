@@ -71,6 +71,8 @@ Checks:
   - '-cppcoreguidelines-avoid-const-or-ref-data-members'
   # Device code requires printf() and friends
   - '-cppcoreguidelines-pro-type-vararg'
+  # This does not understand the concept macros
+  - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
