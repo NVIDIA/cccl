@@ -4,8 +4,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 template <typename T>
 struct TestTupleConstructor
 {
@@ -13,7 +11,7 @@ struct TestTupleConstructor
   {
     using namespace thrust;
 
-    host_vector<T> data = random_integers<T>(10);
+    host_vector<T> data = unittest::random_integers<T>(10);
 
     tuple<T> t1(data[0]);
     ASSERT_EQUAL(data[0], get<0>(t1));
@@ -101,7 +99,7 @@ struct TestMakeTuple
   {
     using namespace thrust;
 
-    host_vector<T> data = random_integers<T>(10);
+    host_vector<T> data = unittest::random_integers<T>(10);
 
     tuple<T> t1 = make_tuple(data[0]);
     ASSERT_EQUAL(data[0], get<0>(t1));
@@ -190,7 +188,7 @@ struct TestTupleGet
   void operator()()
   {
     using namespace thrust;
-    host_vector<T> data = random_integers<T>(10);
+    host_vector<T> data = unittest::random_integers<T>(10);
 
     tuple<T> t1(data[0]);
     ASSERT_EQUAL(data[0], thrust::get<0>(t1));

@@ -107,7 +107,9 @@ public:
     ASSERT_EQUAL(id_to_deallocate, 0u);
   }
 
-  tracked_pointer<void> do_allocate(std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  tracked_pointer<void> do_allocate( // NOLINT(google-default-arguments)
+    std::size_t n,
+    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     ASSERT_EQUAL(id_to_allocate || id_to_allocate == -1u, true);
 
@@ -125,8 +127,9 @@ public:
     return ret;
   }
 
-  void
-  do_deallocate(tracked_pointer<void> p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  void do_deallocate(tracked_pointer<void> p, // NOLINT(google-default-arguments)
+                     std::size_t n,
+                     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     ASSERT_GEQUAL(p.size, n);
     ASSERT_GEQUAL(p.alignment, alignment);

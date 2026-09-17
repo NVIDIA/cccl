@@ -5,8 +5,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 struct MakeTupleFunctor
 {
   template <typename T1, typename T2>
@@ -31,8 +29,8 @@ struct TestTupleStableSort
 {
   void operator()(const size_t n)
   {
-    thrust::host_vector<T> h_keys   = random_integers<T>(n);
-    thrust::host_vector<T> h_values = random_integers<T>(n);
+    thrust::host_vector<T> h_keys   = unittest::random_integers<T>(n);
+    thrust::host_vector<T> h_values = unittest::random_integers<T>(n);
 
     // zip up the data
     thrust::host_vector<cuda::std::tuple<T, T>> h_tuples(n);
