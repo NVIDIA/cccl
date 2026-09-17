@@ -218,32 +218,29 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     }
   }
 
-  SECTION("streams() returns every slot in order, creating the missing ones")
+  SECTION("streams() lists only the created streams, in slot order")
   {
     const cuda::stream_pool pool{device, 4};
+    REQUIRE(pool.streams().empty());
 
     const cuda::stream_ref s2 = pool.get_stream(2);
-    const auto all            = pool.streams();
-    REQUIRE(all.size() == pool.size());
-    REQUIRE(all[2] == s2);
+    REQUIRE(pool.streams().size() == 1);
+    REQUIRE(pool.streams()[0] == s2);
 
-    // The other slots were created by the call and are handed out afterwards.
-    REQUIRE(pool.get_stream(0) == all[0]);
-    REQUIRE(pool.get_stream(1) == all[1]);
-    REQUIRE(pool.get_stream(3) == all[3]);
+    const cuda::stream_ref s0 = pool.get_stream(0);
+    const auto created        = pool.streams();
+    REQUIRE(created.size() == 2);
+    REQUIRE(created[0] == s0);
+    REQUIRE(created[1] == s2);
 
-    // Every entry is a distinct, valid stream.
-    for (cuda::std::size_t i = 0; i < all.size(); ++i)
-    {
-      REQUIRE(all[i].get() != nullptr);
-      for (cuda::std::size_t j = i + 1; j < all.size(); ++j)
-      {
-        REQUIRE(all[i] != all[j]);
-      }
-    }
+    // A snapshot does not see streams created later.
+    (void) pool.get_stream(1);
+    REQUIRE(created.size() == 2);
+    REQUIRE(pool.streams().size() == 3);
 
-    // A second call reports the same streams.
-    REQUIRE(pool.streams() == all);
+    // Once every slot was handed out, all of them are listed.
+    (void) pool.get_stream(3);
+    REQUIRE(pool.streams().size() == pool.size());
   }
 
   SECTION("streams() can be used to wait for all outstanding work")

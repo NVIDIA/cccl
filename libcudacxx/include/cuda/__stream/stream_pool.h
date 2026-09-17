@@ -152,22 +152,25 @@ public:
     return __get_or_create(__index % __streams_.size());
   }
 
-  //! @brief Returns every stream of the pool, in slot order
+  //! @brief Returns the streams created so far, in slot order
   //!
-  //! Slots not yet handed out are created first, so the result always has `size()` entries. Use it to
-  //! act on the whole pool, for instance to synchronize every stream.
+  //! Streams are created lazily, so the result may have fewer than `size()` entries: only the slots that
+  //! were handed out at least once are included. No stream is created by this call. The result is a
+  //! snapshot and does not see streams created afterwards. Use it to act on every stream that may carry
+  //! work, for instance to synchronize the whole pool.
   //!
-  //! @return The references to all streams of the pool
-  //!
-  //! @throws cuda_error if a stream has to be created and creation fails
+  //! @return The references to the streams created so far
   [[nodiscard]] _CCCL_HOST_API ::std::vector<stream_ref> streams() const
   {
     const ::std::lock_guard<::std::mutex> __lock{__mutex_};
     ::std::vector<stream_ref> __result{};
     __result.reserve(__streams_.size());
-    for (::cuda::std::size_t __i = 0; __i < __streams_.size(); ++__i)
+    for (const stream& __slot : __streams_)
     {
-      __result.push_back(__get_or_create(__i));
+      if (__slot.get() != ::cuda::__invalid_stream())
+      {
+        __result.push_back(__slot);
+      }
     }
     return __result;
   }

@@ -79,7 +79,7 @@ managing their lifetime.
 
 - ``get_stream()``: returns the next stream in round-robin order
 - ``get_stream(i)``: returns the stream in slot ``i % size()``
-- ``streams()``: returns all ``size()`` streams, creating the ones not handed out yet
+- ``streams()``: returns the streams created so far, which may be fewer than ``size()``
 - ``size()``, ``device()``, ``priority()``: the parameters given at construction
 
 Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool, including across a
@@ -106,7 +106,7 @@ Availability: CCCL 3.6.0
      // Always the same stream, for work that must stay ordered
      cuda::stream_ref fixed = pool.get_stream(3);
 
-     // Wait for everything submitted to the pool
+     // Wait for everything submitted to the pool; slots never handed out carry no work
      for (cuda::stream_ref s : pool.streams()) {
        s.sync();
      }
