@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import re
 
-import lldb
+import cccl_common
 
-from . import cccl_common
+import lldb
 
 _ANNOTATED_PTR_PATTERN = re.compile(r"^cuda::annotated_ptr<.+,.+>$")
 InternalDict = dict[str, object]

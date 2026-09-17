@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from types import ModuleType
 
+import cccl_common
+
 import gdb
 import gdb.printing
-
-from . import cccl_common
 
 
 def _is_annotated_ptr(value_type: gdb.Type) -> bool:
