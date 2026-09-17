@@ -164,12 +164,18 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
+  // The entry point goes first: a refused unload can already have unregistered the
+  // fatbin, and then there is nothing left to launch. Everything else stays for the
+  // retry, the compiler and the first-call state included; see release_jit_artifacts().
+  build_ptr->binary_search_fn = nullptr;
+  if (!cccl::detail::release_jit_artifacts(build_ptr))
+  {
+    return CUDA_ERROR_ILLEGAL_STATE;
+  }
 #if CCCL_OS(WINDOWS)
   delete static_cast<cccl::detail::first_call_gate*>(build_ptr->first_call_state);
   build_ptr->first_call_state = nullptr;
 #endif
-  cccl::detail::release_jit_artifacts(build_ptr);
-  build_ptr->binary_search_fn = nullptr;
 
   return CUDA_SUCCESS;
 }

@@ -65,6 +65,13 @@ public:
     return library_.isLoaded();
   }
 
+  // Absolute path of the currently-loaded JIT module as the OS sees it, or empty
+  // if nothing is loaded. Lets callers learn the module's real name at runtime.
+  std::string getLoadedModulePath() const
+  {
+    return library_.getLoadedModulePath();
+  }
+
   // Get the path to compiled artifacts (object file, shared library, etc.)
   // Only valid after successful compile() and if keep_artifacts is set
   std::string getArtifactsPath() const
@@ -78,8 +85,13 @@ public:
     return cubin_;
   }
 
-  // Unload the current library and clean up temporary files
-  void cleanup();
+  // Unload the current library and clean up temporary files. Returns false if the
+  // module could not be unloaded, which leaves it mapped and its artifacts on disk;
+  // getLastError() says why. Depending on which stage refused, the module may already
+  // have unregistered its fatbin, in which case nothing can be run from it any more
+  // and the only thing to do with this object is call cleanup() again -- which is why
+  // a caller that cannot do that must not destroy it. See DynamicLibrary::unload().
+  bool cleanup();
 
 private:
   std::string createTempDirectory();

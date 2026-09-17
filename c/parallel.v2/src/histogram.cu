@@ -197,8 +197,14 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  cccl::detail::release_jit_artifacts(build_ptr);
+  // The entry point goes first: a refused unload can already have unregistered the
+  // fatbin, and then there is nothing left to launch. What a retry needs stays, the
+  // compiler included; see release_jit_artifacts().
   build_ptr->histogram_fn = nullptr;
+  if (!cccl::detail::release_jit_artifacts(build_ptr))
+  {
+    return CUDA_ERROR_ILLEGAL_STATE;
+  }
 
   return CUDA_SUCCESS;
 }
