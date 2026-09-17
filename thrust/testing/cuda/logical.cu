@@ -24,7 +24,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   v[1] = 0;
 
@@ -34,7 +34,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}, result.begin());
   {
@@ -42,7 +42,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}, result.begin());
   {
@@ -50,7 +50,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
@@ -58,7 +58,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
@@ -66,7 +66,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 }
 
 void TestAllOfDeviceSeq()
@@ -128,7 +128,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   v[1] = 0;
 
@@ -138,7 +138,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}, result.begin());
   {
@@ -146,7 +146,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}, result.begin());
   {
@@ -154,7 +154,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
@@ -162,7 +162,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
@@ -170,7 +170,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 }
 
 void TestAnyOfDeviceSeq()
@@ -232,7 +232,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   v[1] = 0;
 
@@ -242,7 +242,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}, result.begin());
   {
@@ -250,7 +250,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}, result.begin());
   {
@@ -258,7 +258,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
@@ -266,7 +266,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
@@ -274,7 +274,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 }
 
 void TestNoneOfDeviceSeq()

@@ -905,7 +905,7 @@ void TestVectorMove()
   const auto size2 = v2.size();
 
   // ensure v1 was left empty
-  ASSERT_EQUAL(true, v1.empty()); // NOLINT(bugprone-use-after-move)
+  REQUIRE(v1.empty()); // NOLINT(bugprone-use-after-move)
 
   // ensure v2 received the data from before
   Vector ref{0, 1, 2};
@@ -926,7 +926,7 @@ void TestVectorMove()
   const auto size4 = v2.size();
 
   // ensure v3 was left empty
-  ASSERT_EQUAL(true, v3.empty()); // NOLINT(bugprone-use-after-move)
+  REQUIRE(v3.empty()); // NOLINT(bugprone-use-after-move)
 
   // ensure v2 received the data from before
   ref = {3, 4, 5};

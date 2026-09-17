@@ -38,7 +38,7 @@ void TestReplaceDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace(sys, vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceDispatchExplicit);
 
@@ -107,7 +107,7 @@ void TestReplaceCopyDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_copy(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceCopyDispatchExplicit);
 
@@ -208,7 +208,7 @@ void TestReplaceIfDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_if(sys, vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceIfDispatchExplicit);
 
@@ -257,7 +257,7 @@ void TestReplaceIfStencilDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_if(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceIfStencilDispatchExplicit);
 
@@ -338,7 +338,7 @@ void TestReplaceCopyIfDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceCopyIfDispatchExplicit);
 
@@ -393,7 +393,7 @@ void TestReplaceCopyIfStencilDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceCopyIfStencilDispatchExplicit);
 

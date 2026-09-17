@@ -430,7 +430,7 @@ public:
 void TestReduceByKeyWithBigIndexesHelper(int magnitude)
 {
   const std::int64_t key_size_magnitude = 8;
-  ASSERT_EQUAL(true, key_size_magnitude < magnitude);
+  REQUIRE(key_size_magnitude < magnitude);
 
   const std::int64_t num_items       = 1ll << magnitude;
   const std::int64_t num_unique_keys = 1ll << key_size_magnitude;
@@ -463,7 +463,7 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
   //  result:       3       6     = sum(range(key_size)) + key_size * key_id
   thrust::reduce_by_key(keys_begin, keys_end, values_begin, output_keys.begin(), output_values.begin());
 
-  ASSERT_EQUAL(true, thrust::equal(output_keys.begin(), output_keys.end(), count_begin));
+  REQUIRE(thrust::equal(output_keys.begin(), output_keys.end(), count_begin));
 
   thrust::host_vector<std::int64_t> result = output_values;
 

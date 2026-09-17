@@ -349,7 +349,7 @@ void TestFillDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::fill(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestFillDispatchExplicit);
 
@@ -383,7 +383,7 @@ void TestFillNDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::fill_n(sys, vec.begin(), vec.size(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestFillNDispatchExplicit);
 
