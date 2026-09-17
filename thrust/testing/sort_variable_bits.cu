@@ -30,8 +30,8 @@ struct TestSortVariableBits
       thrust::sort(h_keys.begin(), h_keys.end());
       thrust::sort(d_keys.begin(), d_keys.end());
 
-      ASSERT_EQUAL(reference, h_keys);
-      ASSERT_EQUAL(h_keys, d_keys);
+      REQUIRE(reference == h_keys);
+      REQUIRE(h_keys == d_keys);
     }
   }
 };

@@ -55,7 +55,7 @@ void TestAllOfDispatchImplicit()
 
   thrust::all_of(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestAllOfDispatchImplicit);
 
@@ -110,7 +110,7 @@ void TestAnyOfDispatchImplicit()
 
   thrust::any_of(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestAnyOfDispatchImplicit);
 
@@ -165,6 +165,6 @@ void TestNoneOfDispatchImplicit()
 
   thrust::none_of(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestNoneOfDispatchImplicit);

@@ -21,7 +21,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
   all_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);
@@ -31,7 +31,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
   all_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -39,7 +39,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);
@@ -47,7 +47,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);
@@ -55,7 +55,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -63,7 +63,7 @@ void TestAllOfDevice(ExecutionPolicy exec)
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -125,7 +125,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
   any_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);
@@ -135,7 +135,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
   any_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);
@@ -143,7 +143,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -151,7 +151,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);
@@ -159,7 +159,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);
@@ -167,7 +167,7 @@ void TestAnyOfDevice(ExecutionPolicy exec)
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -229,7 +229,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
   none_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -239,7 +239,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
   none_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -247,7 +247,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);
@@ -255,7 +255,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -263,7 +263,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -271,7 +271,7 @@ void TestNoneOfDevice(ExecutionPolicy exec)
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);

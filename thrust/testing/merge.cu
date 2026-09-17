@@ -18,7 +18,7 @@ void TestMergeSimple()
   const auto end = thrust::merge(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestMergeSimple);
 
@@ -58,7 +58,7 @@ void TestMergeDispatchImplicit()
                 thrust::retag<my_tag>(vec.begin()),
                 thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestMergeDispatchImplicit);
 
@@ -91,7 +91,7 @@ void TestMerge(size_t n)
     h_result.resize(h_end - h_result.begin());
     d_result.resize(d_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestMerge);
@@ -138,7 +138,7 @@ void TestMergeDescending(size_t n)
   const auto d_end =
     thrust::merge(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
   REQUIRE(h_end == h_result.end());
   REQUIRE(d_end == d_result.end());
 }

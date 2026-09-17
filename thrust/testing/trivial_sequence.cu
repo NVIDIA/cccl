@@ -39,9 +39,9 @@ void TestTrivialSequence()
   test(thrust::make_zip_iterator(A.begin(), B.begin()), thrust::make_zip_iterator(A.end(), B.end()));
 
   Vector refA{0, 2, 1, 0, 1};
-  ASSERT_EQUAL(A, refA);
+  REQUIRE(A == refA);
   // ensure that values weren't modified
   Vector refB{11, 11, 13, 10, 12};
-  ASSERT_EQUAL(B, refB);
+  REQUIRE(B == refB);
 }
 DECLARE_VECTOR_UNITTEST(TestTrivialSequence);

@@ -26,7 +26,7 @@ void TestIsSortedDevice(ExecutionPolicy exec)
 
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -36,7 +36,7 @@ void TestIsSortedDevice(ExecutionPolicy exec)
   is_sorted_kernel<<<1, 1>>>(exec, v.begin(), v.end(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);

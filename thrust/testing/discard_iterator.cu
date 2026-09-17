@@ -38,24 +38,24 @@ void TestDiscardIteratorIncrement()
   thrust::discard_iterator<> lhs(0);
   const thrust::discard_iterator<> rhs(0);
 
-  ASSERT_EQUAL(0, lhs - rhs);
+  REQUIRE(0 == lhs - rhs);
 
   lhs++;
 
-  ASSERT_EQUAL(1, lhs - rhs);
+  REQUIRE(1 == lhs - rhs);
 
   lhs++;
   lhs++;
 
-  ASSERT_EQUAL(3, lhs - rhs);
+  REQUIRE(3 == lhs - rhs);
 
   lhs += 5;
 
-  ASSERT_EQUAL(8, lhs - rhs);
+  REQUIRE(8 == lhs - rhs);
 
   lhs -= 10;
 
-  ASSERT_EQUAL(-2, lhs - rhs);
+  REQUIRE(-2 == lhs - rhs);
 }
 DECLARE_UNITTEST(TestDiscardIteratorIncrement);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::discard_iterator<>>::value);
@@ -66,23 +66,23 @@ void TestDiscardIteratorComparison()
   thrust::discard_iterator<> iter1(0);
   thrust::discard_iterator<> iter2(0);
 
-  ASSERT_EQUAL(0, iter1 - iter2);
+  REQUIRE(0 == iter1 - iter2);
   REQUIRE(iter1 == iter2);
 
   iter1++;
 
-  ASSERT_EQUAL(1, iter1 - iter2);
+  REQUIRE(1 == iter1 - iter2);
   REQUIRE_FALSE(iter1 == iter2);
 
   iter2++;
 
-  ASSERT_EQUAL(0, iter1 - iter2);
+  REQUIRE(0 == iter1 - iter2);
   REQUIRE(iter1 == iter2);
 
   iter1 += 100;
   iter2 += 100;
 
-  ASSERT_EQUAL(0, iter1 - iter2);
+  REQUIRE(0 == iter1 - iter2);
   REQUIRE(iter1 == iter2);
 }
 DECLARE_UNITTEST(TestDiscardIteratorComparison);
@@ -97,7 +97,7 @@ void TestMakeDiscardIterator()
 
   *iter1 = 13;
 
-  ASSERT_EQUAL(6, iter0 - iter1);
+  REQUIRE(6 == iter0 - iter1);
 }
 DECLARE_UNITTEST(TestMakeDiscardIterator);
 
@@ -115,7 +115,7 @@ void TestZippedDiscardIterator()
     ;
   }
 
-  ASSERT_EQUAL(10, cuda::std::get<0>(z_iter1_first.get_iterator_tuple()) - thrust::make_discard_iterator());
+  REQUIRE(10 == cuda::std::get<0>(z_iter1_first.get_iterator_tuple()) - thrust::make_discard_iterator());
 
   using IteratorTuple2 = cuda::std::tuple<int*, thrust::discard_iterator<>>;
   using ZipIterator2   = thrust::zip_iterator<IteratorTuple2>;
@@ -128,6 +128,6 @@ void TestZippedDiscardIterator()
     ;
   }
 
-  ASSERT_EQUAL(10, cuda::std::get<1>(z_iter_first.get_iterator_tuple()) - thrust::make_discard_iterator());
+  REQUIRE(10 == cuda::std::get<1>(z_iter_first.get_iterator_tuple()) - thrust::make_discard_iterator());
 }
 DECLARE_UNITTEST(TestZippedDiscardIterator);

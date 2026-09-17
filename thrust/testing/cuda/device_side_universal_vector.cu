@@ -28,7 +28,7 @@ void test_universal_vector_access(VecInT& vec, VecOutT& out)
 {
   universal_vector_device_access_kernel<<<1, 1>>>(vec, out);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
   REQUIRE(out[0]);
 }
 #else

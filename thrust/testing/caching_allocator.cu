@@ -14,7 +14,7 @@ void test_implementation(Allocator alloc)
   Traits::deallocate(alloc, p, 123);
 
   const Ptr p2 = Traits::allocate(alloc, 123);
-  ASSERT_EQUAL(p, p2);
+  REQUIRE(p == p2);
 }
 
 void TestSingleDeviceTLSCachingAllocator()

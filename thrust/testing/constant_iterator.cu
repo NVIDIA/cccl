@@ -43,10 +43,10 @@ void TestConstantIteratorConstructFromConvertibleSystem()
   const thrust::constant_iterator<int> default_system(13);
 
   const thrust::constant_iterator<int, thrust::use_default, thrust::host_system_tag> host_system = default_system;
-  ASSERT_EQUAL(*default_system, *host_system);
+  REQUIRE(*default_system == *host_system);
 
   const thrust::constant_iterator<int, thrust::use_default, thrust::device_system_tag> device_system = default_system;
-  ASSERT_EQUAL(*default_system, *device_system);
+  REQUIRE(*default_system == *device_system);
 }
 DECLARE_UNITTEST(TestConstantIteratorConstructFromConvertibleSystem);
 
@@ -55,24 +55,24 @@ void TestConstantIteratorIncrement()
   thrust::constant_iterator<int> lhs(0, 0);
   const thrust::constant_iterator<int> rhs(0, 0);
 
-  ASSERT_EQUAL(0, lhs - rhs);
+  REQUIRE(0 == lhs - rhs);
 
   lhs++;
 
-  ASSERT_EQUAL(1, lhs - rhs);
+  REQUIRE(1 == lhs - rhs);
 
   lhs++;
   lhs++;
 
-  ASSERT_EQUAL(3, lhs - rhs);
+  REQUIRE(3 == lhs - rhs);
 
   lhs += 5;
 
-  ASSERT_EQUAL(8, lhs - rhs);
+  REQUIRE(8 == lhs - rhs);
 
   lhs -= 10;
 
-  ASSERT_EQUAL(-2, lhs - rhs);
+  REQUIRE(-2 == lhs - rhs);
 }
 DECLARE_UNITTEST(TestConstantIteratorIncrement);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::constant_iterator<int>>::value);
@@ -85,7 +85,7 @@ void TestConstantIteratorIncrementBig()
   const thrust::constant_iterator<long long int> begin(1);
   const thrust::constant_iterator<long long int> end = begin + n;
 
-  ASSERT_EQUAL(cuda::std::distance(begin, end), n);
+  REQUIRE(cuda::std::distance(begin, end) == n);
 }
 DECLARE_UNITTEST(TestConstantIteratorIncrementBig);
 
@@ -94,23 +94,23 @@ void TestConstantIteratorComparison()
   thrust::constant_iterator<int> iter1(0);
   thrust::constant_iterator<int> iter2(0);
 
-  ASSERT_EQUAL(0, iter1 - iter2);
+  REQUIRE(0 == iter1 - iter2);
   REQUIRE(iter1 == iter2);
 
   iter1++;
 
-  ASSERT_EQUAL(1, iter1 - iter2);
+  REQUIRE(1 == iter1 - iter2);
   REQUIRE_FALSE(iter1 == iter2);
 
   iter2++;
 
-  ASSERT_EQUAL(0, iter1 - iter2);
+  REQUIRE(0 == iter1 - iter2);
   REQUIRE(iter1 == iter2);
 
   iter1 += 100;
   iter2 += 100;
 
-  ASSERT_EQUAL(0, iter1 - iter2);
+  REQUIRE(0 == iter1 - iter2);
   REQUIRE(iter1 == iter2);
 }
 DECLARE_UNITTEST(TestConstantIteratorComparison);
@@ -120,20 +120,20 @@ void TestMakeConstantIterator()
   // test one argument version
   const thrust::constant_iterator<int> iter0 = thrust::make_constant_iterator<int>(13);
 
-  ASSERT_EQUAL(13, *iter0);
+  REQUIRE(13 == *iter0);
 
   // test two argument version
   const thrust::constant_iterator<int, cuda::std::intmax_t> iter1 =
     thrust::make_constant_iterator<int, cuda::std::intmax_t>(13, 7);
 
-  ASSERT_EQUAL(13, *iter1);
-  ASSERT_EQUAL(7, iter1 - iter0);
+  REQUIRE(13 == *iter1);
+  REQUIRE(7 == iter1 - iter0);
 
   // ensure CTAD words
   // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
   thrust::constant_iterator deduced_iter{42};
   static_assert(cuda::std::is_same_v<decltype(deduced_iter), thrust::constant_iterator<int>>);
-  ASSERT_EQUAL(42, *deduced_iter);
+  REQUIRE(42 == *deduced_iter);
 }
 DECLARE_UNITTEST(TestMakeConstantIterator);
 
@@ -150,7 +150,7 @@ void TestConstantIteratorCopy()
   thrust::copy(first, last, result.begin());
 
   Vector ref(4, 7);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(ref == result);
 };
 DECLARE_VECTOR_UNITTEST(TestConstantIteratorCopy);
 
@@ -169,12 +169,12 @@ void TestConstantIteratorTransform()
   thrust::transform(first1, last1, result.begin(), cuda::std::negate<T>());
 
   Vector ref(4, -7);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(ref == result);
 
   thrust::transform(first1, last1, first2, result.begin(), cuda::std::plus<T>());
 
   ref = Vector(4, 10);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(ref == result);
 };
 DECLARE_VECTOR_UNITTEST(TestConstantIteratorTransform);
 
@@ -188,6 +188,6 @@ void TestConstantIteratorReduce()
 
   const T sum = thrust::reduce(first, last);
 
-  ASSERT_EQUAL(sum, 4 * 7);
+  REQUIRE(sum == 4 * 7);
 };
 DECLARE_UNITTEST(TestConstantIteratorReduce);

@@ -161,7 +161,6 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
 }
 } // namespace unittest::detail
 
-#define ASSERT_EQUAL(X, Y)     REQUIRE((X) == (Y))
 #define ASSERT_NOT_EQUAL(X, Y) REQUIRE((X) != (Y))
 // The QUIET variants wrap the whole comparison in an extra pair of parentheses so that Catch2 does not decompose the
 // expression. This avoids stringifying the operands, which is required for types that are not streamable (e.g. vectors

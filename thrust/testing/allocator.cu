@@ -179,7 +179,7 @@ void TestAllocatorMinimal(size_t n)
   const thrust::host_vector<int> h_vec(vec.begin(), vec.end());
   const thrust::host_vector<int> ref(n, 13);
 
-  ASSERT_EQUAL(ref, h_vec);
+  REQUIRE(ref == h_vec);
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorMinimal);
 

@@ -96,7 +96,7 @@ void TestEqualDispatchImplicit()
   thrust::equal(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestEqualDispatchImplicit);
 
@@ -120,7 +120,7 @@ void TestEqualWithBigIndexesHelper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   const thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                               = false;

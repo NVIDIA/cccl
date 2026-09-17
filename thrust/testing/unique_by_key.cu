@@ -56,7 +56,7 @@ void TestUniqueByKeyDispatchImplicit()
   thrust::unique_by_key(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestUniqueByKeyDispatchImplicit);
 
@@ -103,7 +103,7 @@ void TestUniqueByKeyCopyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestUniqueByKeyCopyDispatchImplicit);
 
@@ -146,15 +146,15 @@ void TestUniqueByKeySimple()
 
   new_last = thrust::unique_by_key(keys.begin(), keys.end(), values.begin());
 
-  ASSERT_EQUAL(new_last.first - keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - values.begin(), 5);
+  REQUIRE(new_last.first - keys.begin() == 5);
+  REQUIRE(new_last.second - values.begin() == 5);
   keys.resize(5);
   values.resize(5);
   Vector keys_ref{11, 21, 20, 21, 37};
-  ASSERT_EQUAL(keys, keys_ref);
+  REQUIRE(keys == keys_ref);
 
   Vector values_ref{0, 2, 3, 4, 7};
-  ASSERT_EQUAL(values, values_ref);
+  REQUIRE(values == values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -162,17 +162,17 @@ void TestUniqueByKeySimple()
 
   new_last = thrust::unique_by_key(keys.begin(), keys.end(), values.begin(), is_equal_div_10_unique<T>());
 
-  ASSERT_EQUAL(new_last.first - keys.begin(), 3);
-  ASSERT_EQUAL(new_last.second - values.begin(), 3);
+  REQUIRE(new_last.first - keys.begin() == 3);
+  REQUIRE(new_last.second - values.begin() == 3);
   keys_ref.resize(3);
   keys.resize(3);
   keys_ref = {11, 21, 37};
-  ASSERT_EQUAL(keys, keys_ref);
+  REQUIRE(keys == keys_ref);
 
   values.resize(3);
   values_ref.resize(3);
   values_ref = {0, 2, 7};
-  ASSERT_EQUAL(values, values_ref);
+  REQUIRE(values == values_ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueByKeySimple);
 
@@ -196,15 +196,15 @@ void TestUniqueCopyByKeySimple()
   new_last =
     thrust::unique_by_key_copy(keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin());
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
+  REQUIRE(new_last.first - output_keys.begin() == 5);
+  REQUIRE(new_last.second - output_values.begin() == 5);
   output_keys.resize(5);
   output_values.resize(5);
   Vector keys_ref{11, 21, 20, 21, 37};
-  ASSERT_EQUAL(output_keys, keys_ref);
+  REQUIRE(output_keys == keys_ref);
 
   Vector values_ref{0, 2, 3, 4, 7};
-  ASSERT_EQUAL(output_values, values_ref);
+  REQUIRE(output_values == values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -213,16 +213,16 @@ void TestUniqueCopyByKeySimple()
   new_last = thrust::unique_by_key_copy(
     keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin(), is_equal_div_10_unique<T>());
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
+  REQUIRE(new_last.first - output_keys.begin() == 3);
+  REQUIRE(new_last.second - output_values.begin() == 3);
   output_keys.resize(3);
   output_values.resize(3);
   keys_ref = {11, 21, 37};
-  ASSERT_EQUAL(output_keys, keys_ref);
+  REQUIRE(output_keys == keys_ref);
 
   values_ref.resize(3);
   values_ref = {0, 2, 7};
-  ASSERT_EQUAL(output_values, values_ref);
+  REQUIRE(output_values == values_ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueCopyByKeySimple);
 
@@ -249,8 +249,8 @@ struct TestUniqueByKey
     const HostIteratorPair h_last   = thrust::unique_by_key(h_keys.begin(), h_keys.end(), h_vals.begin());
     const DeviceIteratorPair d_last = thrust::unique_by_key(d_keys.begin(), d_keys.end(), d_vals.begin());
 
-    ASSERT_EQUAL(h_last.first - h_keys.begin(), d_last.first - d_keys.begin());
-    ASSERT_EQUAL(h_last.second - h_vals.begin(), d_last.second - d_vals.begin());
+    REQUIRE(h_last.first - h_keys.begin() == d_last.first - d_keys.begin());
+    REQUIRE(h_last.second - h_vals.begin() == d_last.second - d_vals.begin());
 
     const size_t N = h_last.first - h_keys.begin();
 
@@ -259,8 +259,8 @@ struct TestUniqueByKey
     d_keys.resize(N);
     d_vals.resize(N);
 
-    ASSERT_EQUAL(h_keys, d_keys);
-    ASSERT_EQUAL(h_vals, d_vals);
+    REQUIRE(h_keys == d_keys);
+    REQUIRE(h_vals == d_vals);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueByKey, IntegralTypes);
@@ -295,8 +295,8 @@ struct TestUniqueCopyByKey
     const DeviceIteratorPair d_last = thrust::unique_by_key_copy(
       d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys_output.begin(), d_vals_output.begin());
 
-    ASSERT_EQUAL(h_last.first - h_keys_output.begin(), d_last.first - d_keys_output.begin());
-    ASSERT_EQUAL(h_last.second - h_vals_output.begin(), d_last.second - d_vals_output.begin());
+    REQUIRE(h_last.first - h_keys_output.begin() == d_last.first - d_keys_output.begin());
+    REQUIRE(h_last.second - h_vals_output.begin() == d_last.second - d_vals_output.begin());
 
     const size_t N = h_last.first - h_keys_output.begin();
 
@@ -305,8 +305,8 @@ struct TestUniqueCopyByKey
     d_keys_output.resize(N);
     d_vals_output.resize(N);
 
-    ASSERT_EQUAL(h_keys_output, d_keys_output);
-    ASSERT_EQUAL(h_vals_output, d_vals_output);
+    REQUIRE(h_keys_output == d_keys_output);
+    REQUIRE(h_vals_output == d_vals_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyByKey, IntegralTypes);
@@ -367,7 +367,7 @@ struct TestUniqueCopyByKeyToDiscardIterator
       cuda::std::make_pair(d_keys_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys),
                            thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
-    ASSERT_EQUAL(h_keys_output, d_keys_output);
+    REQUIRE(h_keys_output == d_keys_output);
     ASSERT_EQUAL_QUIET(h_reference2, h_result2);
     ASSERT_EQUAL_QUIET(d_reference2, d_result2);
 
@@ -388,7 +388,7 @@ struct TestUniqueCopyByKeyToDiscardIterator
       cuda::std::make_pair(thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)),
                            d_vals_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys));
 
-    ASSERT_EQUAL(h_vals_output, d_vals_output);
+    REQUIRE(h_vals_output == d_vals_output);
     ASSERT_EQUAL_QUIET(h_reference3, h_result3);
     ASSERT_EQUAL_QUIET(d_reference3, d_result3);
   }
@@ -423,12 +423,12 @@ struct TestUniqueCopyByKeyLargeInput
 
     // Ensure that we created the correct output
     auto const num_selected_out = ::cuda::std::distance(keys_out.begin(), selected_aut_end.first);
-    ASSERT_EQUAL(reference_keys.size(), static_cast<std::size_t>(num_selected_out));
-    ASSERT_EQUAL(num_selected_out, ::cuda::std::distance(values_out.begin(), selected_aut_end.second));
+    REQUIRE(reference_keys.size() == static_cast<std::size_t>(num_selected_out));
+    REQUIRE(num_selected_out == ::cuda::std::distance(values_out.begin(), selected_aut_end.second));
     keys_out.resize(num_selected_out);
     values_out.resize(num_selected_out);
-    ASSERT_EQUAL(reference_keys, keys_out);
-    ASSERT_EQUAL(reference_values, values_out);
+    REQUIRE(reference_keys == keys_out);
+    REQUIRE(reference_values == values_out);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyLargeInput, IntegralTypes);
@@ -451,8 +451,8 @@ struct TestUniqueCopyByKeyLargeOutCount
 
     // Ensure that we created the correct output
     auto const num_selected_out = ::cuda::std::distance(keys_out, selected_aut_end.first);
-    ASSERT_EQUAL(num_items, static_cast<std::size_t>(num_selected_out));
-    ASSERT_EQUAL(num_selected_out, ::cuda::std::distance(values_out, selected_aut_end.second));
+    REQUIRE(num_items == static_cast<std::size_t>(num_selected_out));
+    REQUIRE(num_selected_out == ::cuda::std::distance(values_out, selected_aut_end.second));
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyLargeOutCount, IntegralTypes);
@@ -503,17 +503,17 @@ void TestKeysWithoutEqualityOperator()
   auto unique_keys_h = thrust::host_vector<Key>(unique_keys);
   auto unique_data_h = thrust::host_vector<Entry>(unique_data);
 
-  ASSERT_EQUAL(unique_keys_h[0].first, k1.first);
-  ASSERT_EQUAL(unique_keys_h[0].second.a, k1.second.a);
-  ASSERT_EQUAL(unique_keys_h[0].second.b, k1.second.b);
-  ASSERT_EQUAL(unique_keys_h[1].first, k2.first);
-  ASSERT_EQUAL(unique_keys_h[1].second.a, k2.second.a);
-  ASSERT_EQUAL(unique_keys_h[1].second.b, k2.second.b);
+  REQUIRE(unique_keys_h[0].first == k1.first);
+  REQUIRE(unique_keys_h[0].second.a == k1.second.a);
+  REQUIRE(unique_keys_h[0].second.b == k1.second.b);
+  REQUIRE(unique_keys_h[1].first == k2.first);
+  REQUIRE(unique_keys_h[1].second.a == k2.second.a);
+  REQUIRE(unique_keys_h[1].second.b == k2.second.b);
 
-  ASSERT_EQUAL(unique_data_h[0].a, 0);
-  ASSERT_EQUAL(unique_data_h[0].b, 0);
-  ASSERT_EQUAL(unique_data_h[1].a, 3);
-  ASSERT_EQUAL(unique_data_h[1].b, 3);
+  REQUIRE(unique_data_h[0].a == 0);
+  REQUIRE(unique_data_h[0].b == 0);
+  REQUIRE(unique_data_h[1].a == 3);
+  REQUIRE(unique_data_h[1].b == 3);
 }
 DECLARE_UNITTEST(TestKeysWithoutEqualityOperator);
 #endif // !defined(__GNUC__) || __GNUC__ != 6

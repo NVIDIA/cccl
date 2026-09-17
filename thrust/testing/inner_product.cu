@@ -17,7 +17,7 @@ void TestInnerProductSimple()
 
   const T init   = 3;
   const T result = thrust::inner_product(v1.begin(), v1.end(), v2.begin(), init);
-  ASSERT_EQUAL(result, 7);
+  REQUIRE(result == 7);
 }
 DECLARE_VECTOR_UNITTEST(TestInnerProductSimple);
 
@@ -52,7 +52,7 @@ void TestInnerProductDispatchImplicit()
   const int result = thrust::inner_product(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, result);
+  REQUIRE(13 == result);
 }
 DECLARE_UNITTEST(TestInnerProductDispatchImplicit);
 
@@ -68,7 +68,7 @@ void TestInnerProductWithOperator()
   const T init   = 3;
   const T result = thrust::inner_product(
     v1.begin(), v1.end(), v2.begin(), init, ::cuda::std::multiplies<T>(), ::cuda::std::minus<T>());
-  ASSERT_EQUAL(result, 90);
+  REQUIRE(result == 90);
 }
 DECLARE_VECTOR_UNITTEST(TestInnerProductWithOperator);
 
@@ -88,7 +88,7 @@ struct TestInnerProduct
     T expected = thrust::inner_product(h_v1.begin(), h_v1.end(), h_v2.begin(), init);
     T result   = thrust::inner_product(d_v1.begin(), d_v1.end(), d_v2.begin(), init);
 
-    ASSERT_EQUAL(expected, result);
+    REQUIRE(expected == result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestInnerProduct, IntegralTypes);
@@ -113,15 +113,15 @@ void TestInnerProductWithBigIndexesHelper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   const thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                               = false;
 
   const only_set_when_both_expected fn = {(1ll << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
 
-  ASSERT_EQUAL(thrust::inner_product(thrust::device, begin, end, begin, 0ll, ::cuda::std::plus<long long>(), fn),
-               (1ll << magnitude));
+  REQUIRE(thrust::inner_product(thrust::device, begin, end, begin, 0ll, ::cuda::std::plus<long long>(), fn)
+          == (1ll << magnitude));
 
   const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);

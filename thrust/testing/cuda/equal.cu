@@ -29,7 +29,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
   equal_kernel<<<1, 1>>>(exec, d_data1.begin(), d_data1.begin(), d_data1.begin(), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(d_result[0]);
@@ -38,7 +38,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
   equal_kernel<<<1, 1>>>(exec, d_data1.begin(), d_data1.end(), d_data1.begin(), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(d_result[0]);
@@ -52,7 +52,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
     equal_kernel<<<1, 1>>>(exec, d_data1.begin(), d_data1.end(), d_data2.begin(), d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
 
     REQUIRE_FALSE(d_result[0]);
@@ -62,7 +62,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
       exec, d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::less<T>(), d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
 
     REQUIRE(d_result[0]);
@@ -71,7 +71,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
       exec, d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::greater<T>(), d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
 
     REQUIRE_FALSE(d_result[0]);

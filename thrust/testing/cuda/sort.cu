@@ -39,11 +39,11 @@ void TestComparisonSortDevice(ExecutionPolicy exec, const size_t n, Compare comp
 
   sort_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), comp);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::sort(h_data.begin(), h_data.end(), comp);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 };
 
 template <typename T>

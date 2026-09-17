@@ -57,14 +57,14 @@ void TestGetTemporaryBufferDeviceSeq()
   get_temporary_buffer_kernel<<<1, 1>>>(n, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ptr_and_sz_type ptr_and_sz = d_result[0];
 
   if (ptr_and_sz.second > 0)
   {
-    ASSERT_EQUAL(ptr_and_sz.second, n);
+    REQUIRE(ptr_and_sz.second == n);
 
     const int ref_val = 13;
     thrust::device_vector<int> ref(n, ref_val);
@@ -77,7 +77,7 @@ void TestGetTemporaryBufferDeviceSeq()
     return_temporary_buffer_kernel<<<1, 1>>>(ptr_and_sz.first, ptr_and_sz.second);
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
   }
 }
@@ -105,7 +105,7 @@ void TestMallocDeviceSeq()
   malloc_kernel<<<1, 1>>>(n, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   pointer ptr = d_result[0];
@@ -122,7 +122,7 @@ void TestMallocDeviceSeq()
     free_kernel<<<1, 1>>>(ptr);
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
   }
 }

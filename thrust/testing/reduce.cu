@@ -25,10 +25,10 @@ void TestReduceSimple()
   Vector v{1, -2, 3};
 
   // no initializer
-  ASSERT_EQUAL(thrust::reduce(v.begin(), v.end()), 2);
+  REQUIRE(thrust::reduce(v.begin(), v.end()) == 2);
 
   // with initializer
-  ASSERT_EQUAL(thrust::reduce(v.begin(), v.end(), (T) 10), 12);
+  REQUIRE(thrust::reduce(v.begin(), v.end(), (T) 10) == 12);
 }
 DECLARE_VECTOR_UNITTEST(TestReduceSimple);
 
@@ -62,7 +62,7 @@ void TestReduceDispatchImplicit()
 
   const int result = thrust::reduce(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
-  ASSERT_EQUAL(13, result);
+  REQUIRE(13 == result);
 }
 DECLARE_UNITTEST(TestReduceDispatchImplicit);
 
@@ -79,7 +79,7 @@ struct TestReduce
     T h_result = thrust::reduce(h_data.begin(), h_data.end(), init);
     T d_result = thrust::reduce(d_data.begin(), d_data.end(), init);
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduce, IntegralTypes);
@@ -93,10 +93,10 @@ void TestReduceMixedTypes()
   FloatVector float_input{1.5, 2.5, 3.5, 4.5};
 
   // float -> int should use using plus<int> operator by default
-  ASSERT_EQUAL(thrust::reduce(float_input.begin(), float_input.end(), (int) 0), 10);
+  REQUIRE(thrust::reduce(float_input.begin(), float_input.end(), (int) 0) == 10);
 
   // int -> float should use using plus<float> operator by default
-  ASSERT_EQUAL(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5), 10.5);
+  REQUIRE(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5) == 10.5);
 }
 void TestReduceMixedTypesHost()
 {
@@ -122,7 +122,7 @@ struct TestReduceWithOperator
     T cpu_result = thrust::reduce(h_data.begin(), h_data.end(), init, plus_mod_10<T>());
     T gpu_result = thrust::reduce(d_data.begin(), d_data.end(), init, plus_mod_10<T>());
 
-    ASSERT_EQUAL(cpu_result, gpu_result);
+    REQUIRE(cpu_result == gpu_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceWithOperator, UnsignedIntegralTypes);
@@ -154,7 +154,7 @@ void TestReduceWithIndirection()
 
   const T result = thrust::reduce(data.begin(), data.end(), T(0), plus_mod3<T>(thrust::raw_pointer_cast(&table[0])));
 
-  ASSERT_EQUAL(result, T(1));
+  REQUIRE(result == T(1));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestReduceWithIndirection);
 
@@ -182,11 +182,11 @@ void TestReduceWithBigIndexesHelper(int magnitude)
 {
   const cuda::constant_iterator<long long> begin(1);
   const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   const long long result = thrust::reduce(thrust::device, begin, end);
 
-  ASSERT_EQUAL(result, 1ll << magnitude);
+  REQUIRE(result == (1ll << magnitude));
 }
 
 void TestReduceWithBigIndexes()
