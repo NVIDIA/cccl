@@ -469,7 +469,7 @@ void TestCopyIfNonTrivial()
     *uninitialized = source;
 
     REQUIRE(42 == initialized.field);
-    ASSERT_NOT_EQUAL(42, uninitialized->field);
+    REQUIRE(42 != uninitialized->field);
   }
 
   // This test ensures that we use placement new instead of assigning

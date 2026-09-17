@@ -76,7 +76,7 @@ public:
       throw thrust::system::detail::bad_alloc("Dummy allocation failed: insufficient free bytes.");
     }
 
-    ASSERT_NOT_EQUAL(id_to_allocate, 0u);
+    REQUIRE(id_to_allocate != 0u);
     // Ensure that the allocation ID is unique
     ASSERT_EQUAL_QUIET(find(allocation_ids.begin(), allocation_ids.end(), id_to_allocate), allocation_ids.end());
 
