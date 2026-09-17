@@ -51,11 +51,6 @@ class stream_pool
 {
 public:
   //! @brief Number of streams used when none is requested
-  //!
-  //! Sixteen streams is enough to keep several independent streams of work in flight on a device
-  //! without saturating the hardware work queues, and matches the default of `rmm::cuda_stream_pool`
-  //! so code migrating from it keeps its behavior. Since streams are created lazily, an oversized pool
-  //! only costs the slots that are never handed out.
   static constexpr ::cuda::std::size_t default_size = 16;
 
   //! @brief Constructs a pool of streams on the primary context of a device
@@ -63,8 +58,7 @@ public:
   //! No stream is created until it is requested.
   //!
   //! @param[in] __device The device the streams are created on
-  //! @param[in] __size Number of streams in the pool, must be greater than zero; defaults to `default_size`,
-  //! see there for the rationale
+  //! @param[in] __size Number of streams in the pool, must be greater than zero, defaults to `default_size` (16)
   //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
   _CCCL_HOST_API explicit stream_pool(
     device_ref __device, ::cuda::std::size_t __size = default_size, int __priority = stream::default_priority)
@@ -77,8 +71,7 @@ public:
   //! outlive the pool.
   //!
   //! @param[in] __device The logical device the streams are created on
-  //! @param[in] __size Number of streams in the pool, must be greater than zero; defaults to `default_size`,
-  //! see there for the rationale
+  //! @param[in] __size Number of streams in the pool, must be greater than zero, defaults to `default_size` (16)
   //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
   _CCCL_HOST_API explicit stream_pool(
     __logical_device_ref __device, ::cuda::std::size_t __size = default_size, int __priority = stream::default_priority)
