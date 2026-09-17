@@ -81,7 +81,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_relaxed(uint2 const* ptr)
 
 static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long load_relaxed(unsigned long long const* ptr)
 {
-  unsigned long long retval;
+  unsigned long long retval; // NOLINT(cppcoreguidelines-init-variables)
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
                     (asm volatile("ld.relaxed.gpu.u64 %0, [%1];" : "=l"(retval) : "l"(ptr) : "memory");),
                     (asm volatile("ld.cg.u64 %0, [%1];" : "=l"(retval) : "l"(ptr) : "memory");));
