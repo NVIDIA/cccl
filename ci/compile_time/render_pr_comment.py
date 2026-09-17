@@ -210,7 +210,7 @@ def render_comment(
     if config.get("targets"):
         run_rows.append(f"| Targets | {md_code_span(', '.join(config['targets']))} |")
     run_rows.append(
-        f"| GPU / launch args | {md_code_span(config.get('gpu', ''))} / "
+        f"| Runner / launch args | {md_code_span(config.get('runner', ''))} / "
         f"{md_code_span(config.get('launch_args', ''))} |"
     )
 

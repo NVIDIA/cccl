@@ -1464,12 +1464,12 @@ compile_time:
     - id: cccl
       name: CCCL
       project: cccl
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
       targets: [cub.headers.base]
-      args: "-arch native"
+      args: "-arch 75"
       slices:
         - id: total-compilation
           title: TU total compilation
@@ -1508,6 +1508,8 @@ compile_time:
         self.assertNotIn("comment", include[0])
         self.assertNotIn("comment_header", include[0])
         self.assertEqual(include[0]["project"], "cccl")
+        self.assertEqual(include[0]["runner"], "linux-amd64-cpu32")
+        self.assertEqual(include[0]["args"], "-arch 75")
         self.assertEqual(json.loads(include[0]["targets_json"]), ["cub.headers.base"])
         self.assertEqual(
             json.loads(include[0]["slices_json"])["slices"][0]["id"],
@@ -1527,7 +1529,7 @@ compile_time:
     - id: matx
       name: MatX
       project: matx
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc14 --cuda-ext"
       baseline_ref: origin/main
       slices:
@@ -1557,10 +1559,11 @@ compile_time:
 
         config = json.loads(completed.stdout)["include"][0]
         self.assertEqual(config["project"], "matx")
+        self.assertEqual(config["runner"], "linux-amd64-cpu32")
         self.assertEqual(config["preset"], "")
         self.assertEqual(json.loads(config["targets_json"]), [])
 
-    def test_real_matrix_groups_primary_templates_only_for_third_party(self) -> None:
+    def test_real_matrix_compile_time_configs(self) -> None:
         completed = subprocess.run(
             [
                 sys.executable,
@@ -1577,12 +1580,14 @@ compile_time:
         configs = json.loads(completed.stdout)["include"]
         self.assertGreater(len(configs), 1)
         for config in configs:
+            self.assertEqual(config["runner"], "linux-amd64-cpu32")
             grouped_slices = [
                 slice_data
                 for slice_data in json.loads(config["slices_json"])["slices"]
                 if slice_data.get("group_by") == "primary-template"
             ]
             if config["project"] == "cccl":
+                self.assertEqual(config["args"], "-arch 75")
                 self.assertEqual(grouped_slices, [])
             else:
                 self.assertEqual(len(grouped_slices), 1)
@@ -1597,7 +1602,7 @@ compile_time:
     - id: rapids
       name: RAPIDS
       project: rapids
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host rapids-conda"
       baseline_ref: origin/main
       slices:
@@ -1636,7 +1641,7 @@ compile_time:
     - id: cccl
       name: CCCL
       project: cccl
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
@@ -1684,7 +1689,7 @@ compile_time:
     - id: cccl
       name: CCCL
       project: cccl
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
@@ -1969,7 +1974,7 @@ compile_time:
                     "baseline_ref": "origin/main",
                     "preset": "all-dev",
                     "targets": ["cub.headers.base"],
-                    "gpu": "rtx2080",
+                    "runner": "linux-amd64-cpu32",
                     "launch_args": "--cuda 13.3 --host gcc13",
                 }
             ),
@@ -1999,6 +2004,11 @@ compile_time:
         rendered = output.read_text(encoding="utf-8")
         self.assertIn("<!-- cccl-compile-time-bench: cccl -->", rendered)
         self.assertIn("| Project | `cccl` |", rendered)
+        self.assertIn(
+            "| Runner / launch args | `linux-amd64-cpu32` / "
+            "`--cuda 13.3 --host gcc13` |",
+            rendered,
+        )
         self.assertIn("Regressions", rendered)
         self.assertIn("Regression impact", rendered)
         self.assertIn(
@@ -2047,7 +2057,7 @@ compile_time:
                     "baseline_ref": "origin/main",
                     "preset": "all-dev",
                     "targets": ["cub.headers.base"],
-                    "gpu": "rtx2080",
+                    "runner": "linux-amd64-cpu32",
                     "launch_args": "--cuda 13.3 --host gcc13",
                 }
             ),
@@ -2092,7 +2102,7 @@ compile_time:
                 "project": "matx",
                 "baseline_ref": "origin/main",
                 "targets": [],
-                "gpu": "rtx2080",
+                "runner": "linux-amd64-cpu32",
                 "launch_args": "--cuda 13.3 --host gcc14 --cuda-ext",
             },
             artifacts_url="https://example.test/artifacts",
@@ -2165,7 +2175,7 @@ compile_time:
                     "baseline_ref": "origin/main",
                     "preset": "all-dev",
                     "targets": ["cub.headers.base"],
-                    "gpu": "rtx2080",
+                    "runner": "linux-amd64-cpu32",
                     "launch_args": "--cuda 13.3 --host gcc13",
                 }
             ),

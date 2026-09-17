@@ -186,7 +186,9 @@ def validate_config(
         "id": config_id,
         "name": require_string(require_field(data, "name", where), f"{where}.name"),
         "project": project,
-        "gpu": require_string(require_field(data, "gpu", where), f"{where}.gpu"),
+        "runner": require_string(
+            require_field(data, "runner", where), f"{where}.runner"
+        ),
         "launch_args": require_string(
             require_field(data, "launch_args", where), f"{where}.launch_args"
         ),
@@ -210,7 +212,7 @@ def matrix_entry(config: dict[str, Any]) -> dict[str, Any]:
         "id": config_id,
         "name": config["name"],
         "project": config["project"],
-        "gpu": config["gpu"],
+        "runner": config["runner"],
         "launch_args": config["launch_args"],
         "baseline_ref": config["baseline_ref"],
         "preset": config["preset"],

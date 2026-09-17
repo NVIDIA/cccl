@@ -542,7 +542,7 @@ jobs:
       id: ${{ matrix.id }}
       name: ${{ matrix.name }}
       project: ${{ matrix.project }}
-      gpu: ${{ matrix.gpu }}
+      runner: ${{ matrix.runner }}
       launch_args: ${{ matrix.launch_args }}
       baseline_ref: ${{ matrix.baseline_ref }}
       preset: ${{ matrix.preset }}

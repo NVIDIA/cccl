@@ -13,13 +13,13 @@ compile_time:
     - id: cccl-gcc13
       name: CCCL compile-time bench
       project: cccl
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
       targets:
         - cub.headers.base
-      args: "-arch native"
+      args: "-arch 75"
       slices:
         - id: total-compilation
           title: TU total compilation
@@ -30,11 +30,16 @@ compile_time:
           threshold: 0.001
 ```
 
-Required config fields are `id`, `name`, `project`, `gpu`, `launch_args`,
+Required config fields are `id`, `name`, `project`, `runner`, `launch_args`,
 `baseline_ref`, and `slices`. `project` is one of `cccl`, `pytorch`, `matx`, or
 `rapids`. CCCL configs also require `preset` and `targets`;
 RAPIDS configs require `targets`, which name the libraries to build. `args`,
 and `artifact_retention_days` are optional.
+
+`runner` is the full GitHub Actions runner label. Compile-time jobs use
+`linux-amd64-cpu32` runners with 500 GB of disk space. These jobs only build;
+CCCL configs specify an explicit CUDA architecture instead of `native` so they
+can run without a GPU.
 
 Required slice fields are `id`, `title`, `filter`, `timing`, `sort`, `top`, and
 `threshold`. Optional `group_by: primary-template` aggregates template

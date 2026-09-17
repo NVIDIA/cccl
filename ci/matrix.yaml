@@ -1,9 +1,10 @@
 compile_time:
   pull_request:
+    # Compile-time builds need the 500 GB disk on these CPU runners for build outputs and traces.
     - id: cccl-gcc13
       name: CCCL compile-time bench
       project: cccl
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
@@ -11,7 +12,7 @@ compile_time:
         - cub.headers.base
         - thrust.cpp.cuda.headers.base
         - libcudacxx.test.public_headers
-      args: "-arch native"
+      args: "-arch 75"
       slices:
         - &compile_time_total_compilation
           id: total-compilation
@@ -48,7 +49,7 @@ compile_time:
     - id: pytorch-gcc14
       name: PyTorch compile-time bench
       project: pytorch
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc14 --cuda-ext"
       baseline_ref: origin/main
       slices: &compile_time_third_party_slices
@@ -67,14 +68,14 @@ compile_time:
     - id: matx-gcc14
       name: MatX compile-time bench
       project: matx
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc14 --cuda-ext"
       baseline_ref: origin/main
       slices: *compile_time_third_party_slices
     - id: rapids-cudf
       name: RAPIDS cuDF compile-time bench
       project: rapids
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host rapids-conda"
       baseline_ref: origin/main
       targets: [rmm, ucxx, kvikio, cudf, cudf_kafka]
@@ -82,7 +83,7 @@ compile_time:
     - id: rapids-cuvs
       name: RAPIDS cuVS compile-time bench
       project: rapids
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host rapids-conda"
       baseline_ref: origin/main
       targets: [rmm, ucxx, raft, cuvs, nvforest, cuml]
@@ -90,7 +91,7 @@ compile_time:
     - id: rapids-cugraph
       name: RAPIDS cuGraph compile-time bench
       project: rapids
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host rapids-conda"
       baseline_ref: origin/main
       targets: [rmm, ucxx, raft, cuvs, cugraph, wholegraph]
@@ -98,7 +99,7 @@ compile_time:
     - id: rapids-cuopt
       name: RAPIDS cuOpt compile-time bench
       project: rapids
-      gpu: rtx2080
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host rapids-conda"
       baseline_ref: origin/main
       targets: [cuopt]
