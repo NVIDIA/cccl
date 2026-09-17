@@ -56,6 +56,7 @@ Checks:
   # Same as misc-anonymous-namespace-in-header
   - '-google-build-namespaces'
   - 'cppcoreguidelines-*'
+  - '-cppcoreguidelines-pro-bounds-pointer-arithmetic'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
