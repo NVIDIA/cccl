@@ -109,12 +109,15 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(pool.__logical_device().kind() == cuda::__logical_device_ref::kinds::device);
   }
 
-  SECTION("Construction creates no stream")
+  SECTION("Construction creates no stream, the first request creates all of them")
   {
-    // No stream exists yet, so the driver context stack was not touched by a stream creation.
     const cuda::stream_pool pool{device, 4};
     REQUIRE(pool.size() == 4);
+    REQUIRE(pool.streams().empty());
     REQUIRE(::test::count_driver_stack() == 0);
+
+    (void) pool.get_stream();
+    REQUIRE(pool.streams().size() == 4);
   }
 
   SECTION("Round-robin hands out every slot once before repeating")
@@ -232,29 +235,19 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     }
   }
 
-  SECTION("streams() lists only the created streams, in slot order")
+  SECTION("streams() is empty before the first request and lists every slot in order afterwards")
   {
     const cuda::stream_pool pool{device, 4};
     REQUIRE(pool.streams().empty());
 
     const cuda::stream_ref s2 = pool.get_stream(2);
-    REQUIRE(pool.streams().size() == 1);
-    REQUIRE(pool.streams()[0] == s2);
-
-    const cuda::stream_ref s0 = pool.get_stream(0);
-    const auto created        = pool.streams();
-    REQUIRE(created.size() == 2);
-    REQUIRE(created[0] == s0);
-    REQUIRE(created[1] == s2);
-
-    // A snapshot does not see streams created later.
-    (void) pool.get_stream(1);
-    REQUIRE(created.size() == 2);
-    REQUIRE(pool.streams().size() == 3);
-
-    // Once every slot was handed out, all of them are listed.
-    (void) pool.get_stream(3);
-    REQUIRE(pool.streams().size() == pool.size());
+    const auto all            = pool.streams();
+    REQUIRE(all.size() == pool.size());
+    REQUIRE(all[2] == s2);
+    for (cuda::std::size_t i = 0; i < all.size(); ++i)
+    {
+      REQUIRE(pool.get_stream(i) == all[i]);
+    }
   }
 
   SECTION("create_all_streams() creates every slot up front")
@@ -308,14 +301,14 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(defaulted.streams().size() == cuda::stream_pool::default_size);
   }
 
-  SECTION("create_all_streams() keeps the streams already handed out")
+  SECTION("create_all_streams() after a request is a no-op")
   {
     const cuda::stream_pool pool{device, 3};
     const cuda::stream_ref s1 = pool.get_stream(1);
+    const auto before         = pool.streams();
     pool.create_all_streams();
     REQUIRE(pool.get_stream(1) == s1);
-    REQUIRE(pool.streams().size() == 3);
-    REQUIRE(pool.streams()[1] == s1);
+    REQUIRE(pool.streams() == before);
   }
 
   SECTION("streams() can be used to wait for all outstanding work")
@@ -440,7 +433,7 @@ C2H_CCCLRT_TEST("Stream pool is usable from several threads", "[stream][stream_p
     thread.join();
   }
 
-  // Every handle handed out is one of the pool's slots, and every slot was created exactly once.
+  // Every handle handed out is one of the pool's slots, and the batch creation happened exactly once.
   std::set<cudaStream_t> slots;
   for (cuda::std::size_t i = 0; i < pool.size(); ++i)
   {
@@ -457,7 +450,7 @@ C2H_CCCLRT_TEST("Stream pool is usable from several threads", "[stream][stream_p
   }
 }
 
-C2H_CCCLRT_TEST("Stream pool fills a slot while the calling thread captures", "[stream][stream_pool][capture]")
+C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captures", "[stream][stream_pool][capture]")
 {
   const auto device = cuda::devices[0];
 
@@ -469,7 +462,7 @@ C2H_CCCLRT_TEST("Stream pool fills a slot while the calling thread captures", "[
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), c.mode) == ::CUDA_SUCCESS);
 
-    // First touch of both slots: the streams are created while this thread captures.
+    // First request: every stream of the pool is created while this thread captures.
     const cuda::stream_ref s0 = pool.get_stream();
     const cuda::stream_ref s1 = pool.get_stream();
     REQUIRE(s0 != s1);
@@ -488,7 +481,7 @@ C2H_CCCLRT_TEST("Stream pool fills a slot while the calling thread captures", "[
     REQUIRE(*value == 42);
   }
 
-  SECTION("The thread's capture mode is restored after the slot is filled")
+  SECTION("The thread's capture mode is restored after the streams are created")
   {
     const cuda::stream_pool pool{device, 1};
     const cuda::stream capturing{device};
@@ -583,7 +576,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
     REQUIRE(cuda::__driver::__streamGetCtx(str.get()) == device.__primary_context());
   }
 
-  SECTION("A slot is filled on the green context while the calling thread captures")
+  SECTION("The streams are created on the green context while the calling thread captures")
   {
     auto ldev = ::make_logical_device(device);
     const cuda::stream_pool pool{ldev, 1};

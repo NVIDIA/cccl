@@ -79,14 +79,15 @@ managing their lifetime.
 
 - ``get_stream()``: returns the next stream in round-robin order
 - ``get_stream(i)``: returns the stream in slot ``i % size()``
-- ``create_all_streams()``: creates every stream up front, for callers that must not pay creation on the hot path;
-  constructing with the leading ``cuda::stream_pool::eager`` tag does the same
-- ``streams()``: returns the streams created so far, which may be fewer than ``size()``
+- ``create_all_streams()``: creates the streams now instead of on the first request; constructing with the leading
+  ``cuda::stream_pool::eager`` tag does the same
+- ``streams()``: returns the streams of the pool, or nothing if none was requested or created yet
 - ``size()``, ``device()``, ``priority()``: the parameters given at construction
 
 Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool, including across a
-move of the pool. Streams are created on first use and destroyed with the pool. A pool can be moved but not copied,
-and all getters can be called concurrently from several threads.
+move of the pool. All streams are created together, in the constructor with the ``eager`` tag or otherwise on the
+first request, and destroyed with the pool. Once the streams exist, the getters take no lock. A pool can be moved but
+not copied, and all getters can be called concurrently from several threads.
 
 Availability: CCCL 3.6.0
 
@@ -96,11 +97,11 @@ Availability: CCCL 3.6.0
    #include <cuda/devices>
 
    int main() {
-     // 16 streams on device 0, none created yet
+     // 16 streams on device 0, created on the first request
      cuda::stream_pool pool{cuda::devices[0]};
 
      for (int i = 0; i < 64; ++i) {
-       // Cycles through the 16 streams, creating each one the first time it is handed out
+       // Cycles through the 16 streams
        cuda::stream_ref s = pool.get_stream();
        // Pass to a stream-ordered API
      }
@@ -108,7 +109,7 @@ Availability: CCCL 3.6.0
      // Always the same stream, for work that must stay ordered
      cuda::stream_ref fixed = pool.get_stream(3);
 
-     // Wait for everything submitted to the pool; slots never handed out carry no work
+     // Wait for everything submitted to the pool
      for (cuda::stream_ref s : pool.streams()) {
        s.sync();
      }

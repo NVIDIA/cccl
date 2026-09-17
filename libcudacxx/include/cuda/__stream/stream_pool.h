@@ -31,9 +31,9 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
 
+#  include <atomic>
 #  include <mutex>
 #  include <vector>
 
@@ -43,28 +43,31 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief A fixed-size pool of non-blocking streams on one device or green context.
 //!
-//! The pool owns its streams. Streams are created lazily on first use and destroyed with the pool.
-//! `get_stream()` hands out the streams in round-robin order; `get_stream(i)` addresses slot `i % size()`.
-//! Both return a `cuda::stream_ref` that stays valid for the lifetime of the pool, including across a
-//! move of the pool itself.
+//! The pool owns its streams and destroys them with the pool. `get_stream()` hands out the streams in
+//! round-robin order; `get_stream(i)` addresses slot `i % size()`. Both return a `cuda::stream_ref` that
+//! stays valid for the lifetime of the pool, including across a move of the pool itself.
+//!
+//! All streams are created together, either in the constructor when `stream_pool::eager` is passed, or
+//! otherwise on the first request for a stream. Once the streams exist, the getters take no lock and only
+//! perform an atomic load and, for round-robin, an atomic increment.
 class stream_pool
 {
 public:
   //! @brief Number of streams used when none is requested
   static constexpr ::cuda::std::size_t default_size = 16;
 
-  //! @brief Tag selecting the constructors that create every stream up front
+  //! @brief Tag selecting the constructors that create the streams in the constructor
   struct eager_t
   {
     explicit eager_t() = default;
   };
 
-  //! @brief Tag value selecting the constructors that create every stream up front, see `eager_t`
+  //! @brief Tag value selecting the constructors that create the streams in the constructor, see `eager_t`
   static constexpr eager_t eager{};
 
   //! @brief Constructs a pool of streams on the primary context of a device
   //!
-  //! No stream is created until it is requested.
+  //! No stream is created until one is requested; the first request creates all of them.
   //!
   //! @param[in] __device The device the streams are created on
   //! @param[in] __size Number of streams in the pool, must be greater than zero, defaults to `default_size` (16)
@@ -76,8 +79,8 @@ public:
 
   //! @brief Constructs a pool of streams on a logical device, that is a device or a green context
   //!
-  //! No stream is created until it is requested. The pool does not own the green context, which must
-  //! outlive the pool.
+  //! No stream is created until one is requested; the first request creates all of them. The pool does
+  //! not own the green context, which must outlive the pool.
   //!
   //! @param[in] __device The logical device the streams are created on
   //! @param[in] __size Number of streams in the pool, must be greater than zero, defaults to `default_size` (16)
@@ -148,7 +151,8 @@ public:
       : __device_{__other.__device_}
       , __priority_{__other.__priority_}
       , __streams_{::cuda::std::move(__other.__streams_)}
-      , __next_{::cuda::std::exchange(__other.__next_, 0)}
+      , __created_{__other.__created_.exchange(false)}
+      , __next_{__other.__next_.exchange(0)}
   {}
 
   //! @brief Move-assigns a pool
@@ -165,87 +169,75 @@ public:
       __device_   = __other.__device_;
       __priority_ = __other.__priority_;
       __streams_  = ::cuda::std::move(__other.__streams_);
-      __next_     = ::cuda::std::exchange(__other.__next_, 0);
+      __created_.store(__other.__created_.exchange(false));
+      __next_.store(__other.__next_.exchange(0));
     }
     return *this;
   }
 
-  //! @brief Returns the next stream in round-robin order, creating it on first use
+  //! @brief Returns the next stream in round-robin order
+  //!
+  //! Creates all streams of the pool if none exists yet. Otherwise takes no lock.
   //!
   //! @return A reference to a stream owned by the pool
   //!
-  //! @throws cuda_error if the stream has to be created and creation fails
+  //! @throws cuda_error if the streams have to be created and a creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref get_stream() const
   {
-    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
-    _CCCL_ASSERT(!__streams_.empty(), "cuda::stream_pool::get_stream called on an empty pool");
-    const ::cuda::std::size_t __index = __next_;
-    __next_                           = (__next_ + 1) % __streams_.size();
-    return __get_or_create(__index);
+    __ensure_created();
+    // Wrapping around the counter only perturbs the order once every 2^64 requests.
+    const ::cuda::std::size_t __ticket = __next_.fetch_add(1, ::std::memory_order_relaxed);
+    return __streams_[__ticket % __streams_.size()];
   }
 
-  //! @brief Returns the stream in slot `__index % size()`, creating it on first use
+  //! @brief Returns the stream in slot `__index % size()`
   //!
-  //! Requesting a slot does not advance the round-robin position.
+  //! Creates all streams of the pool if none exists yet. Otherwise takes no lock. Requesting a slot
+  //! does not advance the round-robin position.
   //!
   //! @param[in] __index Slot index, wraps around `size()`
   //!
   //! @return A reference to a stream owned by the pool
   //!
-  //! @throws cuda_error if the stream has to be created and creation fails
+  //! @throws cuda_error if the streams have to be created and a creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref get_stream(::cuda::std::size_t __index) const
   {
-    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
-    _CCCL_ASSERT(!__streams_.empty(), "cuda::stream_pool::get_stream called on an empty pool");
-    return __get_or_create(__index % __streams_.size());
+    __ensure_created();
+    return __streams_[__index % __streams_.size()];
   }
 
-  //! @brief Creates every stream of the pool that does not exist yet
+  //! @brief Creates every stream of the pool, if not done yet
   //!
-  //! Streams are created lazily, so by default the first `size()` calls to `get_stream()` each pay for
-  //! a stream creation. Call this once after construction, or construct with `stream_pool::eager`, when
-  //! that cost must not land on the hot path. Afterwards, `get_stream()` never creates a stream and
-  //! `streams()` has `size()` entries.
+  //! Without `stream_pool::eager`, the streams are created on the first request for a stream. Call this
+  //! once after construction, or construct with `stream_pool::eager`, when that cost must not land on the
+  //! hot path. Calling it again does nothing.
   //!
   //! @throws cuda_error if a stream creation fails
   _CCCL_HOST_API void create_all_streams() const
   {
-    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
-    for (::cuda::std::size_t __i = 0; __i < __streams_.size(); ++__i)
-    {
-      (void) __get_or_create(__i);
-    }
+    __ensure_created();
   }
 
-  //! @brief Returns the streams created so far, in slot order
+  //! @brief Returns the streams of the pool, in slot order
   //!
-  //! Streams are created lazily, so the result may have fewer than `size()` entries: only the slots that
-  //! were handed out at least once, or created by `create_all_streams()`, are included. No stream is
-  //! created by this call. The result is a snapshot and does not see streams created afterwards. Use it
-  //! to act on every stream that may carry work, for instance to synchronize the whole pool.
+  //! Returns an empty vector when no stream was requested yet and the pool was not constructed with
+  //! `stream_pool::eager`, otherwise `size()` entries. No stream is created by this call. Use it to act
+  //! on every stream that may carry work, for instance to synchronize the whole pool.
   //!
-  //! @return The references to the streams created so far
+  //! @return The references to the streams created so far, either none or all of them
   [[nodiscard]] _CCCL_HOST_API ::std::vector<stream_ref> streams() const
   {
-    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
     ::std::vector<stream_ref> __result{};
-    __result.reserve(__streams_.size());
-    for (const stream& __slot : __streams_)
+    if (__created_.load(::std::memory_order_acquire))
     {
-      if (__slot.get() != ::cuda::__invalid_stream())
-      {
-        __result.push_back(__slot);
-      }
+      __result.assign(__streams_.begin(), __streams_.end());
     }
     return __result;
   }
 
   //! @brief Number of streams in the pool
   //!
-  //! Streams are created lazily, so this is the number of slots and not the number of streams
-  //! created so far.
-  //!
-  //! @return The number of slots
+  //! @return The number of streams given at construction
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t size() const noexcept
   {
     return __streams_.size();
@@ -276,17 +268,31 @@ public:
   }
 
 private:
-  //! Returns the stream in slot `__index`, creating it if the slot is still empty. `__mutex_` must be held.
-  _CCCL_HOST_API stream_ref __get_or_create(::cuda::std::size_t __index) const
+  //! Creates every stream of the pool the first time it is called. Lock-free once the streams exist.
+  _CCCL_HOST_API void __ensure_created() const
   {
-    stream& __slot = __streams_[__index];
-    if (__slot.get() == ::cuda::__invalid_stream())
+    if (__created_.load(::std::memory_order_acquire))
     {
-      // Makes the stream creation capture-safe; a no-op when the calling thread is not capturing.
-      const __relaxed_capture_scope __relaxed{};
-      __slot = __create_stream();
+      return;
     }
-    return __slot;
+
+    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
+    if (__created_.load(::std::memory_order_relaxed))
+    {
+      return;
+    }
+
+    // Makes the stream creation capture-safe; a no-op when the calling thread is not capturing.
+    const __relaxed_capture_scope __relaxed{};
+    for (stream& __slot : __streams_)
+    {
+      // A previous attempt may have thrown half-way; keep the streams it did create.
+      if (__slot.get() == ::cuda::__invalid_stream())
+      {
+        __slot = __create_stream();
+      }
+    }
+    __created_.store(true, ::std::memory_order_release);
   }
 
   //! Creates one stream on the logical device of the pool.
@@ -304,7 +310,8 @@ private:
   int __priority_;
   mutable ::std::mutex __mutex_{};
   mutable ::std::vector<stream> __streams_{};
-  mutable ::cuda::std::size_t __next_{0};
+  mutable ::std::atomic<bool> __created_{false};
+  mutable ::std::atomic<::cuda::std::size_t> __next_{0};
 };
 
 _CCCL_END_NAMESPACE_CUDA
