@@ -34,6 +34,8 @@ Each guideline is a section of the form:
 - `<scope>` — which files/diffs the rule applies to.
 - The provenance comment lists the historical regressions the rule was distilled from
   (introducing PR → fixing PR); it is metadata for maintainers, not part of the rule.
+- Rules are grouped by area, in the order `build`, `correctness`, `api`, `abi`, `perf`,
+  `test`, `infra`, `docs`.
 
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
