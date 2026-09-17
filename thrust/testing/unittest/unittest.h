@@ -25,6 +25,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
 #include <unittest/random.h>
 #include <unittest/special_types.h>
@@ -186,8 +188,6 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
       REQUIRE_FALSE(::cuda::std::abs(a_ - b_) > 1e-4 * (::cuda::std::abs(a_) + ::cuda::std::abs(b_)) + 1e-4);         \
     }                                                                                                                 \
   }
-
-#define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) REQUIRE_THROWS_AS(EXPR, EXCEPTION_TYPE)
 
 namespace unittest
 {
