@@ -67,7 +67,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
     return first;
   }
 
-  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   while (wrapped_pred(*stencil_first))
   {
@@ -108,7 +108,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
     return first;
   }
 
-  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -149,7 +149,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   InputIterator stencil,
   Predicate pred)
 {
-  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -217,7 +217,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_par
   OutputIterator2 out_false,
   Predicate pred)
 {
-  thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   for (; first != last; ++first, (void) ++stencil)
   {

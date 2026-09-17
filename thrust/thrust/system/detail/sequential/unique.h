@@ -49,7 +49,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
 {
-  thrust::detail::wrapped_function<BinaryPredicate> wrapped_pred{binary_pred};
+  const thrust::detail::wrapped_function<BinaryPredicate> wrapped_pred{binary_pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
   thrust::detail::it_difference_t<ForwardIterator> count{};

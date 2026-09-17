@@ -19,8 +19,6 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
-#include <cuda/std/__numeric/accumulate.h>
-
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
@@ -33,8 +31,19 @@ _CCCL_HOST_DEVICE OutputType reduce(
   OutputType init,
   BinaryFunction binary_op)
 {
-  return ::cuda::std::accumulate(
-    begin, end, init, thrust::detail::wrapped_function<BinaryFunction, OutputType>{binary_op});
+  // wrap binary_op
+  const thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
+
+  // initialize the result
+  OutputType result = init;
+
+  while (begin != end)
+  {
+    result = wrapped_binary_op(result, *begin);
+    ++begin;
+  } // end while
+
+  return result;
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

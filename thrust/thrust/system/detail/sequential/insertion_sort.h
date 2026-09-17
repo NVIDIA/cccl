@@ -17,6 +17,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/copy_backward.h>
 
+#include <cuda/std/__utility/move.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
@@ -32,7 +34,7 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
   }
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
   for (RandomAccessIterator i = first + 1; i != last; ++i)
   {
@@ -43,7 +45,7 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
       // tmp is the smallest value encountered so far
       sequential::copy_backward(first, i, i + 1);
 
-      *first = tmp;
+      *first = ::cuda::std::move(tmp);
     }
     else
     {
@@ -58,7 +60,7 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
         --k;
       }
 
-      *j = tmp;
+      *j = ::cuda::std::move(tmp);
     }
   }
 }
@@ -77,7 +79,7 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
   }
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
   RandomAccessIterator1 i1 = first1 + 1;
   RandomAccessIterator2 i2 = first2 + 1;
@@ -93,8 +95,8 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
       sequential::copy_backward(first1, i1, i1 + 1);
       sequential::copy_backward(first2, i2, i2 + 1);
 
-      *first1 = tmp1;
-      *first2 = tmp2;
+      *first1 = ::cuda::std::move(tmp1);
+      *first2 = ::cuda::std::move(tmp2);
     }
     else
     {
@@ -117,8 +119,8 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
         --k2;
       }
 
-      *j1 = tmp1;
-      *j2 = tmp2;
+      *j1 = ::cuda::std::move(tmp1);
+      *j2 = ::cuda::std::move(tmp2);
     }
   }
 }

@@ -14,7 +14,7 @@
 #endif // no system header
 #include <thrust/detail/raw_reference_cast.h>
 
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -30,9 +30,9 @@ struct wrapped_function
   template <typename... Ts>
   inline _CCCL_HOST_DEVICE auto operator()(Ts&&... args) const
   {
-    if constexpr (::cuda::std::is_same_v<Result, void>)
+    if constexpr (::cuda::std::is_void_v<Result>)
     {
-      return m_f(thrust::raw_reference_cast(::cuda::std::forward<Ts>(args))...);
+      m_f(thrust::raw_reference_cast(::cuda::std::forward<Ts>(args))...);
     }
     else
     {
