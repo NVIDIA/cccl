@@ -36,6 +36,17 @@ Each guideline is a section of the form:
   (introducing PR → fixing PR); it is metadata for maintainers, not part of the rule.
 
 
+## correctness.pdl-restrict-aliasing (critical, CUDA kernels that call `_CCCL_PDL_GRID_DEPENDENCY_SYNC()` / `cudaGridDependencySynchronize()`)
+
+<!-- provenance: manually added -->
+
+Flag a kernel parameter marked both `const` and `_CCCL_RESTRICT` (or raw `__restrict`/`__restrict__`)
+whose pointee is read after a `_CCCL_PDL_GRID_DEPENDENCY_SYNC()`/`cudaGridDependencySynchronize()`
+call, when that memory is written by the preceding kernel. `const` + `restrict` together assert the
+memory is read-only *and* uniquely accessed through this pointer, licensing the compiler to reorder
+the load ahead of the sync. Acceptable only if a comment at the parameter explains why the memory can
+never be concurrently aliased (e.g. no producer kernel writes it).
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
