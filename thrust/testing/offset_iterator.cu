@@ -72,16 +72,16 @@ void TestOffsetIteratorCopyConstructorAndAssignment()
 #else // _CCCL_COMPILER(MSVC)
     const thrust::offset_iterator iter1(iter0);
 #endif // _CCCL_COMPILER(MSVC)
-    ASSERT_EQUAL(iter0 == iter1, true);
-    ASSERT_EQUAL(*iter0 == *iter1, true);
+    REQUIRE(iter0 == iter1);
+    REQUIRE(*iter0 == *iter1);
 
     thrust::offset_iterator iter2(v.begin() + 1);
-    ASSERT_EQUAL(iter0 != iter2, true);
-    ASSERT_EQUAL(*iter0 != *iter2, true);
+    REQUIRE(iter0 != iter2);
+    REQUIRE(*iter0 != *iter2);
 
     iter2 = iter0;
-    ASSERT_EQUAL(iter0 == iter2, true);
-    ASSERT_EQUAL(*iter0 == *iter2, true);
+    REQUIRE(iter0 == iter2);
+    REQUIRE(*iter0 == *iter2);
   }
 
   // indirect offset
@@ -94,16 +94,16 @@ void TestOffsetIteratorCopyConstructorAndAssignment()
 #else // _CCCL_COMPILER(MSVC)
     const thrust::offset_iterator iter1(iter0);
 #endif // _CCCL_COMPILER(MSVC)
-    ASSERT_EQUAL(iter0 == iter1, true);
-    ASSERT_EQUAL(*iter0 == *iter1, true);
+    REQUIRE(iter0 == iter1);
+    REQUIRE(*iter0 == *iter1);
 
     thrust::offset_iterator iter2(v.begin() + 1, &offset);
-    ASSERT_EQUAL(iter0 != iter2, true);
-    ASSERT_EQUAL(*iter0 != *iter2, true);
+    REQUIRE(iter0 != iter2);
+    REQUIRE(*iter0 != *iter2);
 
     iter2 = iter0;
-    ASSERT_EQUAL(iter0 == iter2, true);
-    ASSERT_EQUAL(*iter0 == *iter2, true);
+    REQUIRE(iter0 == iter2);
+    REQUIRE(*iter0 == *iter2);
   }
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorCopyConstructorAndAssignment);
@@ -162,28 +162,28 @@ template <typename Vector>
 void TestOffsetIteratorComparisonAndDistance()
 {
   auto test = [](auto iter1, auto iter2) {
-    ASSERT_EQUAL(iter1 == iter2, true);
+    REQUIRE(iter1 == iter2);
     ASSERT_EQUAL(iter1 - iter2, 0);
     ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 0);
 
     iter1++;
-    ASSERT_EQUAL(iter1 == iter2, false);
+    REQUIRE_FALSE(iter1 == iter2);
     ASSERT_EQUAL(iter1 - iter2, 1);
     ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), -1);
 
     iter2++;
-    ASSERT_EQUAL(iter1 == iter2, true);
+    REQUIRE(iter1 == iter2);
     ASSERT_EQUAL(iter1 - iter2, 0);
     ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 0);
 
     iter1 += 100;
     iter2 += 100;
-    ASSERT_EQUAL(iter1 == iter2, true);
+    REQUIRE(iter1 == iter2);
     ASSERT_EQUAL(iter1 - iter2, 0);
     ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 0);
 
     iter1 -= 5;
-    ASSERT_EQUAL(iter1 == iter2, false);
+    REQUIRE_FALSE(iter1 == iter2);
     ASSERT_EQUAL(iter1 - iter2, -5);
     ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 5);
   };

@@ -79,7 +79,7 @@ void TestWritingStridedIteratorToStructMember()
     auto arr  = data;
     auto iter = thrust::make_strided_iterator(&arr[0].second, stride);
     thrust::fill(iter, iter + 4, 1337);
-    ASSERT_EQUAL(arr == reference, true);
+    REQUIRE(arr == reference);
   }
 
   // iterate over all second elements (static stride)
@@ -87,7 +87,7 @@ void TestWritingStridedIteratorToStructMember()
     auto arr  = data;
     auto iter = thrust::make_strided_iterator<stride>(&arr[0].second);
     thrust::fill(iter, iter + 4, 1337);
-    ASSERT_EQUAL(arr == reference, true);
+    REQUIRE(arr == reference);
   }
 }
 DECLARE_UNITTEST(TestWritingStridedIteratorToStructMember);

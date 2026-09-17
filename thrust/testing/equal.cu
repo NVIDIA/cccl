@@ -14,17 +14,17 @@ void TestEqualSimple()
   Vector v1{5, 2, 0, 0, 0};
   Vector v2{5, 2, 0, 6, 1};
 
-  ASSERT_EQUAL(thrust::equal(v1.begin(), v1.end(), v1.begin()), true);
-  ASSERT_EQUAL(thrust::equal(v1.begin(), v1.end(), v2.begin()), false);
-  ASSERT_EQUAL(thrust::equal(v2.begin(), v2.end(), v2.begin()), true);
+  REQUIRE(thrust::equal(v1.begin(), v1.end(), v1.begin()));
+  REQUIRE_FALSE(thrust::equal(v1.begin(), v1.end(), v2.begin()));
+  REQUIRE(thrust::equal(v2.begin(), v2.end(), v2.begin()));
 
-  ASSERT_EQUAL(thrust::equal(v1.begin(), v1.begin() + 0, v1.begin()), true);
-  ASSERT_EQUAL(thrust::equal(v1.begin(), v1.begin() + 1, v1.begin()), true);
-  ASSERT_EQUAL(thrust::equal(v1.begin(), v1.begin() + 3, v2.begin()), true);
-  ASSERT_EQUAL(thrust::equal(v1.begin(), v1.begin() + 4, v2.begin()), false);
+  REQUIRE(thrust::equal(v1.begin(), v1.begin() + 0, v1.begin()));
+  REQUIRE(thrust::equal(v1.begin(), v1.begin() + 1, v1.begin()));
+  REQUIRE(thrust::equal(v1.begin(), v1.begin() + 3, v2.begin()));
+  REQUIRE_FALSE(thrust::equal(v1.begin(), v1.begin() + 4, v2.begin()));
 
-  ASSERT_EQUAL(thrust::equal(v1.begin(), v1.end(), v2.begin(), ::cuda::std::less_equal<T>()), true);
-  ASSERT_EQUAL(thrust::equal(v1.begin(), v1.end(), v2.begin(), ::cuda::std::greater<T>()), false);
+  REQUIRE(thrust::equal(v1.begin(), v1.end(), v2.begin(), ::cuda::std::less_equal<T>()));
+  REQUIRE_FALSE(thrust::equal(v1.begin(), v1.end(), v2.begin(), ::cuda::std::greater<T>()));
 }
 DECLARE_VECTOR_UNITTEST(TestEqualSimple);
 
@@ -37,12 +37,12 @@ void TestEqual(const size_t n)
   thrust::device_vector<T> d_data2 = h_data2;
 
   // empty ranges
-  ASSERT_EQUAL(thrust::equal(h_data1.begin(), h_data1.begin(), h_data1.begin()), true);
-  ASSERT_EQUAL(thrust::equal(d_data1.begin(), d_data1.begin(), d_data1.begin()), true);
+  REQUIRE(thrust::equal(h_data1.begin(), h_data1.begin(), h_data1.begin()));
+  REQUIRE(thrust::equal(d_data1.begin(), d_data1.begin(), d_data1.begin()));
 
   // symmetric cases
-  ASSERT_EQUAL(thrust::equal(h_data1.begin(), h_data1.end(), h_data1.begin()), true);
-  ASSERT_EQUAL(thrust::equal(d_data1.begin(), d_data1.end(), d_data1.begin()), true);
+  REQUIRE(thrust::equal(h_data1.begin(), h_data1.end(), h_data1.begin()));
+  REQUIRE(thrust::equal(d_data1.begin(), d_data1.end(), d_data1.begin()));
 
   if (n > 0)
   {
@@ -52,16 +52,14 @@ void TestEqual(const size_t n)
     d_data2[0] = 1;
 
     // different vectors
-    ASSERT_EQUAL(thrust::equal(h_data1.begin(), h_data1.end(), h_data2.begin()), false);
-    ASSERT_EQUAL(thrust::equal(d_data1.begin(), d_data1.end(), d_data2.begin()), false);
+    REQUIRE_FALSE(thrust::equal(h_data1.begin(), h_data1.end(), h_data2.begin()));
+    REQUIRE_FALSE(thrust::equal(d_data1.begin(), d_data1.end(), d_data2.begin()));
 
     // different predicates
-    ASSERT_EQUAL(thrust::equal(h_data1.begin(), h_data1.begin() + 1, h_data2.begin(), ::cuda::std::less<T>()), true);
-    ASSERT_EQUAL(thrust::equal(d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::less<T>()), true);
-    ASSERT_EQUAL(thrust::equal(h_data1.begin(), h_data1.begin() + 1, h_data2.begin(), ::cuda::std::greater<T>()),
-                 false);
-    ASSERT_EQUAL(thrust::equal(d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::greater<T>()),
-                 false);
+    REQUIRE(thrust::equal(h_data1.begin(), h_data1.begin() + 1, h_data2.begin(), ::cuda::std::less<T>()));
+    REQUIRE(thrust::equal(d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::less<T>()));
+    REQUIRE_FALSE(thrust::equal(h_data1.begin(), h_data1.begin() + 1, h_data2.begin(), ::cuda::std::greater<T>()));
+    REQUIRE_FALSE(thrust::equal(d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::greater<T>()));
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestEqual);
@@ -129,12 +127,12 @@ void TestEqualWithBigIndexesHelper(int magnitude)
 
   const only_set_when_both_expected fn = {(1ll << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
 
-  ASSERT_EQUAL(thrust::equal(thrust::device, begin, end, begin, fn), true);
+  REQUIRE(thrust::equal(thrust::device, begin, end, begin, fn));
 
   const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
-  ASSERT_EQUAL(has_executed_h, true);
+  REQUIRE(has_executed_h);
 }
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE

@@ -79,7 +79,7 @@ void TestDeviceDereferenceTransformIteratorInputConversion()
               thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
               output.begin());
 
-  ASSERT_EQUAL(input == output, true);
+  REQUIRE(input == output);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorInputConversion);
 
@@ -92,7 +92,7 @@ void TestDeviceDereferenceTransformIteratorOutputConversion()
               thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
               output.begin());
 
-  ASSERT_EQUAL(input == output, true);
+  REQUIRE(input == output);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorOutputConversion);
 

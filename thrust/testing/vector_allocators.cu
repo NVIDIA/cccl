@@ -136,13 +136,13 @@ void TestVectorAllocatorConstructors()
   Alloc::last_allocated = 0;
 
   Vector v3(10, 17, alloc1);
-  ASSERT_EQUAL((v3 == std::vector<int>(10, 17)), true);
+  REQUIRE(v3 == std::vector<int>(10, 17));
   ASSERT_EQUAL(v3.get_allocator(), alloc1);
   ASSERT_EQUAL(Alloc::last_allocated, 1);
   Alloc::last_allocated = 0;
 
   Vector v4(v3, alloc2);
-  ASSERT_EQUAL((v3 == v4), true);
+  REQUIRE(v3 == v4);
   ASSERT_EQUAL(v4.get_allocator(), alloc2);
   ASSERT_EQUAL(Alloc::last_allocated, 2);
   Alloc::last_allocated = 0;
@@ -156,7 +156,7 @@ void TestVectorAllocatorConstructors()
   // Alloc::last_allocated = 0;
 
   Vector v6(v4.begin(), v4.end(), alloc2);
-  ASSERT_EQUAL((v4 == v6), true);
+  REQUIRE(v4 == v6);
   ASSERT_EQUAL(v6.get_allocator(), alloc2);
   ASSERT_EQUAL(Alloc::last_allocated, 2);
 }
@@ -176,8 +176,7 @@ DECLARE_UNITTEST(TestVectorAllocatorConstructorsDevice);
 template <typename Vector>
 void TestVectorAllocatorPropagateOnCopyAssignment()
 {
-  ASSERT_EQUAL(
-    cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value, true);
+  REQUIRE(cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value);
 
   using Alloc = typename Vector::allocator_type;
   const Alloc alloc1(1);
@@ -187,7 +186,7 @@ void TestVectorAllocatorPropagateOnCopyAssignment()
   Vector v2(15, alloc2);
 
   v2 = v1;
-  ASSERT_EQUAL((v1 == v2), true);
+  REQUIRE(v1 == v2);
   ASSERT_EQUAL(v2.get_allocator(), alloc1);
   ASSERT_EQUAL(Alloc::last_allocated, 1);
   ASSERT_EQUAL(Alloc::last_deallocated, 2);
@@ -209,8 +208,7 @@ template <typename Vector>
 void TestVectorAllocatorPropagateOnMoveAssignment()
 {
   using Alloc = typename Vector::allocator_type;
-  ASSERT_EQUAL(
-    cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value, true);
+  REQUIRE(cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value);
 
   using Alloc = typename Vector::allocator_type;
   const Alloc alloc1(1);

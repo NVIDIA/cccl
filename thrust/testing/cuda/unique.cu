@@ -410,7 +410,7 @@ void TestUniqueWithMagnitude(int magnitude)
   // Ensure selected items are correct
   auto expected_out_it = thrust::make_transform_iterator(begin, multiply_n<offset_t>{run_length_of_equal_items});
   const bool all_results_correct = thrust::equal(unique_out.begin(), unique_out.end(), expected_out_it);
-  ASSERT_EQUAL(all_results_correct, true);
+  REQUIRE(all_results_correct);
 }
 
 void TestUniqueWithLargeNumberOfItems()
@@ -447,7 +447,7 @@ void TestUniqueWithCustomEqualityOp()
   ASSERT_EQUAL(num_selected_out, num_items);
   ASSERT_EQUAL(error_counter[0], ::cuda::std::uint32_t{0});
   const bool all_results_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), data);
-  ASSERT_EQUAL(all_results_correct, true);
+  REQUIRE(all_results_correct);
 }
 
 DECLARE_UNITTEST(TestUniqueWithCustomEqualityOp);

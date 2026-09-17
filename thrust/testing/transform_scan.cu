@@ -448,7 +448,7 @@ void TestTransformScanEdgeCases()
     thrust::device_vector<int> d_output(n);
     auto r = thrust::transform_inclusive_scan(
       d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<int>(), 2, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     // Verify with host scan
     thrust::host_vector<int> h_input = d_input;
@@ -469,7 +469,7 @@ void TestTransformScanEdgeCases()
     thrust::device_vector<int> d_output(n);
     auto r = thrust::transform_exclusive_scan(
       d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<int>(), 5, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
@@ -500,7 +500,7 @@ void TestTransformScanEdgeCases()
     thrust::device_vector<int> vec = {2, 3, 4, 5};
     auto r                         = thrust::transform_exclusive_scan(
       vec.begin(), vec.end(), vec.begin(), ::cuda::std::negate<int>(), 10, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((vec.end() == r), true);
+    REQUIRE(vec.end() == r);
 
     const thrust::device_vector<int> expected = {10, -20, 60, -240};
     ASSERT_EQUAL(vec, expected);
@@ -516,7 +516,7 @@ void TestTransformScanEdgeCases()
     thrust::device_vector<int> d_output(n);
     auto r = thrust::transform_inclusive_scan(
       d_input.begin(), d_input.end(), d_output.begin(), thrust::square<int>(), 1, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
@@ -533,7 +533,7 @@ void TestTransformScanEdgeCases()
 
     auto r = thrust::transform_inclusive_scan(
       d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<int>(), 2, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     const thrust::device_vector<int> expected = {-6, 42};
     ASSERT_EQUAL(d_output, expected);

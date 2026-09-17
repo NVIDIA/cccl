@@ -71,8 +71,7 @@ void TestGetTemporaryBufferDeviceSeq()
 
     thrust::fill_n(thrust::device, ptr_and_sz.first, n, ref_val);
 
-    ASSERT_EQUAL(
-      true,
+    REQUIRE(
       thrust::all_of(thrust::device, ptr_and_sz.first, ptr_and_sz.first + n, thrust::placeholders::_1 == ref_val));
 
     return_temporary_buffer_kernel<<<1, 1>>>(ptr_and_sz.first, ptr_and_sz.second);

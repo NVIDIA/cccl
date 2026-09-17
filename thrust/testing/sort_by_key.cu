@@ -146,7 +146,7 @@ void TestSortByKeyLongDouble()
 
   thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin());
 
-  ASSERT_EQUAL(thrust::is_sorted(h_keys.begin(), h_keys.end()), true);
+  REQUIRE(thrust::is_sorted(h_keys.begin(), h_keys.end()));
   ASSERT_EQUAL(h_values, h_values_expected);
 }
 DECLARE_UNITTEST(TestSortByKeyLongDouble);

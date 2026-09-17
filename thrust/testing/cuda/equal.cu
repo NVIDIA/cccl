@@ -32,7 +32,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(d_result[0], true);
+  REQUIRE(d_result[0]);
 
   // symmetric cases
   equal_kernel<<<1, 1>>>(exec, d_data1.begin(), d_data1.end(), d_data1.begin(), d_result.begin());
@@ -41,7 +41,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(d_result[0], true);
+  REQUIRE(d_result[0]);
 
   if (n > 0)
   {
@@ -55,7 +55,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
       ASSERT_EQUAL(cudaSuccess, err);
     }
 
-    ASSERT_EQUAL(d_result[0], false);
+    REQUIRE_FALSE(d_result[0]);
 
     // different predicates
     equal_kernel<<<1, 1>>>(
@@ -65,7 +65,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
       ASSERT_EQUAL(cudaSuccess, err);
     }
 
-    ASSERT_EQUAL(d_result[0], true);
+    REQUIRE(d_result[0]);
 
     equal_kernel<<<1, 1>>>(
       exec, d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::greater<T>(), d_result.begin());
@@ -74,7 +74,7 @@ void TestEqualDevice(ExecutionPolicy exec, const size_t n)
       ASSERT_EQUAL(cudaSuccess, err);
     }
 
-    ASSERT_EQUAL(d_result[0], false);
+    REQUIRE_FALSE(d_result[0]);
   }
 }
 
@@ -101,19 +101,17 @@ void TestEqualCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v1.begin()), true);
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin()), false);
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v2.begin(), v2.end(), v2.begin()), true);
+  REQUIRE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v1.begin()));
+  REQUIRE_FALSE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin()));
+  REQUIRE(thrust::equal(thrust::cuda::par.on(s), v2.begin(), v2.end(), v2.begin()));
 
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 0, v1.begin()), true);
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 1, v1.begin()), true);
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 3, v2.begin()), true);
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 4, v2.begin()), false);
+  REQUIRE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 0, v1.begin()));
+  REQUIRE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 1, v1.begin()));
+  REQUIRE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 3, v2.begin()));
+  REQUIRE_FALSE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.begin() + 4, v2.begin()));
 
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), ::cuda::std::less_equal<int>()),
-               true);
-  ASSERT_EQUAL(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), ::cuda::std::greater<int>()),
-               false);
+  REQUIRE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), ::cuda::std::less_equal<int>()));
+  REQUIRE_FALSE(thrust::equal(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), ::cuda::std::greater<int>()));
 
   cudaStreamDestroy(s);
 }

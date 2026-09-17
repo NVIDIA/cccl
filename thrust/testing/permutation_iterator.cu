@@ -52,7 +52,7 @@ void TestPermutationIteratorSimple()
   thrust::permutation_iterator<Iterator, Iterator> end(source.begin(), indices.end());
 
   ASSERT_EQUAL(end - begin, 4);
-  ASSERT_EQUAL((begin + 4) == end, true);
+  REQUIRE(begin + 4 == end);
 
   ASSERT_EQUAL((T) *begin, 4);
 

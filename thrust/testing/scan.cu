@@ -614,7 +614,7 @@ void TestInclusiveScanWithBigIndexesHelper(int magnitude)
   const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
-  ASSERT_EQUAL(has_executed_h, true);
+  REQUIRE(has_executed_h);
 }
 
 void TestInclusiveScanWithBigIndexes()
@@ -645,7 +645,7 @@ void TestExclusiveScanWithBigIndexesHelper(int magnitude)
   const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
-  ASSERT_EQUAL(has_executed_h, true);
+  REQUIRE(has_executed_h);
 }
 
 void TestExclusiveScanWithBigIndexes()
@@ -840,7 +840,7 @@ void TestScanBug6317()
     thrust::device_vector<T> s = unittest::random_integers<T>(n);
     thrust::device_vector<T> d(n);
     const auto r = thrust::inclusive_scan(s.cbegin(), s.cend(), d.begin(), ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d.end() == r), true);
+    REQUIRE(d.end() == r);
     std::partial_sum(s.cbegin(), s.cend(), s.begin(), std::multiplies<>{});
     ASSERT_EQUAL(s, d);
   }
@@ -848,7 +848,7 @@ void TestScanBug6317()
     thrust::device_vector<T> s = unittest::random_integers<T>(n);
     thrust::device_vector<T> d(n);
     const auto r = thrust::exclusive_scan(s.cbegin(), s.cend(), d.begin(), 42, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d.end() == r), true);
+    REQUIRE(d.end() == r);
     thrust::exclusive_scan(s.cbegin(), s.cend(), s.begin(), 42, ::cuda::std::multiplies<>{});
     ASSERT_EQUAL(s, d);
   }
@@ -868,7 +868,7 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     // Verify with host scan
     thrust::host_vector<int> h_input = d_input;
@@ -887,7 +887,7 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 10, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
@@ -905,7 +905,7 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
@@ -920,7 +920,7 @@ void TestScanEdgeCases()
     thrust::device_vector<int> d_output(2);
 
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     const thrust::device_vector<int> expected = {6, 42};
     ASSERT_EQUAL(d_output, expected);
@@ -935,7 +935,7 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
@@ -953,7 +953,7 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
@@ -968,7 +968,7 @@ void TestScanEdgeCases()
     thrust::device_vector<int> d_output(2);
 
     auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     const thrust::device_vector<int> expected = {3, 6};
     ASSERT_EQUAL(d_output, expected);

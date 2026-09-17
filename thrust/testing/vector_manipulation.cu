@@ -18,7 +18,7 @@ void TestVectorManipulation(size_t n)
   Vector test1(n, T(3));
   ASSERT_EQUAL(test0.size(), n);
   ASSERT_EQUAL(test1.size(), n);
-  ASSERT_EQUAL((test1 == std::vector<T>(n, T(3))), true);
+  REQUIRE(test1 == std::vector<T>(n, T(3)));
 
   // initializing from other vector
   std::vector<T> stl_vector(src.begin(), src.end());
@@ -39,7 +39,7 @@ void TestVectorManipulation(size_t n)
 
   vec1.resize(n + 20, T(11));
   Vector tail(vec1.begin() + n, vec1.end());
-  ASSERT_EQUAL((tail == std::vector<T>(20, T(11))), true);
+  REQUIRE(tail == std::vector<T>(20, T(11)));
 
   // shrinking a vector should not invalidate iterators
   const Iterator first = vec1.begin();
@@ -48,7 +48,7 @@ void TestVectorManipulation(size_t n)
 
   vec1.resize(0);
   ASSERT_EQUAL(vec1.size(), 0lu);
-  ASSERT_EQUAL(vec1.empty(), true);
+  REQUIRE(vec1.empty());
   vec1.resize(10);
   ASSERT_EQUAL(vec1.size(), 10lu);
   vec1.clear();

@@ -139,7 +139,7 @@ void TestMergeDescending(size_t n)
     thrust::merge(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL(h_result, d_result);
-  ASSERT_EQUAL(h_end == h_result.end(), true);
-  ASSERT_EQUAL(d_end == d_result.end(), true);
+  REQUIRE(h_end == h_result.end());
+  REQUIRE(d_end == d_result.end());
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeDescending);

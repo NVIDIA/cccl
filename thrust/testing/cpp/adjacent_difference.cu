@@ -62,7 +62,7 @@ void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
   const bool all_differences_correct_h = *all_differences_correct;
   thrust::device_free(all_differences_correct);
 
-  ASSERT_EQUAL(all_differences_correct_h, true);
+  REQUIRE(all_differences_correct_h);
 }
 
 void TestAdjacentDifferenceWithBigIndexes()

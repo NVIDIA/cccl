@@ -129,23 +129,23 @@ void TestCountingIteratorComparison()
   thrust::counting_iterator<int> iter2(0);
 
   ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
+  REQUIRE(iter1 == iter2);
 
   iter1++;
 
   ASSERT_EQUAL(iter1 - iter2, 1);
-  ASSERT_EQUAL(iter1 == iter2, false);
+  REQUIRE_FALSE(iter1 == iter2);
 
   iter2++;
 
   ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
+  REQUIRE(iter1 == iter2);
 
   iter1 += 100;
   iter2 += 100;
 
   ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
+  REQUIRE(iter1 == iter2);
 }
 DECLARE_UNITTEST(TestCountingIteratorComparison);
 
@@ -155,61 +155,61 @@ void TestCountingIteratorFloatComparison()
   thrust::counting_iterator<float> iter2(0);
 
   ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
-  ASSERT_EQUAL(iter1 < iter2, false);
-  ASSERT_EQUAL(iter2 < iter1, false);
+  REQUIRE(iter1 == iter2);
+  REQUIRE_FALSE(iter1 < iter2);
+  REQUIRE_FALSE(iter2 < iter1);
 
   iter1++;
 
   ASSERT_EQUAL(iter1 - iter2, 1);
-  ASSERT_EQUAL(iter1 == iter2, false);
-  ASSERT_EQUAL(iter2 < iter1, true);
-  ASSERT_EQUAL(iter1 < iter2, false);
+  REQUIRE_FALSE(iter1 == iter2);
+  REQUIRE(iter2 < iter1);
+  REQUIRE_FALSE(iter1 < iter2);
 
   iter2++;
 
   ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
-  ASSERT_EQUAL(iter1 < iter2, false);
-  ASSERT_EQUAL(iter2 < iter1, false);
+  REQUIRE(iter1 == iter2);
+  REQUIRE_FALSE(iter1 < iter2);
+  REQUIRE_FALSE(iter2 < iter1);
 
   iter1 += 100;
   iter2 += 100;
 
   ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
-  ASSERT_EQUAL(iter1 < iter2, false);
-  ASSERT_EQUAL(iter2 < iter1, false);
+  REQUIRE(iter1 == iter2);
+  REQUIRE_FALSE(iter1 < iter2);
+  REQUIRE_FALSE(iter2 < iter1);
 
   thrust::counting_iterator<float> iter3(0);
   thrust::counting_iterator<float> iter4(0.5);
 
   ASSERT_EQUAL(iter3 - iter4, 0);
-  ASSERT_EQUAL(iter3 == iter4, true);
-  ASSERT_EQUAL(iter3 < iter4, false);
-  ASSERT_EQUAL(iter4 < iter3, false);
+  REQUIRE(iter3 == iter4);
+  REQUIRE_FALSE(iter3 < iter4);
+  REQUIRE_FALSE(iter4 < iter3);
 
   iter3++; // iter3 = 1.0, iter4 = 0.5
 
   ASSERT_EQUAL(iter3 - iter4, 0);
-  ASSERT_EQUAL(iter3 == iter4, true);
-  ASSERT_EQUAL(iter3 < iter4, false);
-  ASSERT_EQUAL(iter4 < iter3, false);
+  REQUIRE(iter3 == iter4);
+  REQUIRE_FALSE(iter3 < iter4);
+  REQUIRE_FALSE(iter4 < iter3);
 
   iter4++; // iter3 = 1.0, iter4 = 1.5
 
   ASSERT_EQUAL(iter3 - iter4, 0);
-  ASSERT_EQUAL(iter3 == iter4, true);
-  ASSERT_EQUAL(iter3 < iter4, false);
-  ASSERT_EQUAL(iter4 < iter3, false);
+  REQUIRE(iter3 == iter4);
+  REQUIRE_FALSE(iter3 < iter4);
+  REQUIRE_FALSE(iter4 < iter3);
 
   iter4++; // iter3 = 1.0, iter4 = 2.5
 
   ASSERT_EQUAL(iter3 - iter4, -1);
   ASSERT_EQUAL(iter4 - iter3, 1);
-  ASSERT_EQUAL(iter3 == iter4, false);
-  ASSERT_EQUAL(iter3 < iter4, true);
-  ASSERT_EQUAL(iter4 < iter3, false);
+  REQUIRE_FALSE(iter3 == iter4);
+  REQUIRE(iter3 < iter4);
+  REQUIRE_FALSE(iter4 < iter3);
 }
 DECLARE_UNITTEST(TestCountingIteratorFloatComparison);
 
@@ -237,9 +237,9 @@ void TestCountingIteratorUnsignedType()
 
   ASSERT_EQUAL(iter1 - iter0, 5);
   ASSERT_EQUAL(iter0 - iter1, -5);
-  ASSERT_EQUAL(iter0 != iter1, true);
-  ASSERT_EQUAL(iter0 < iter1, true);
-  ASSERT_EQUAL(iter1 < iter0, false);
+  REQUIRE(iter0 != iter1);
+  REQUIRE(iter0 < iter1);
+  REQUIRE_FALSE(iter1 < iter0);
 }
 DECLARE_UNITTEST(TestCountingIteratorUnsignedType);
 

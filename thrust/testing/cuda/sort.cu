@@ -275,7 +275,7 @@ void TestSortWithMagnitude(int magnitude)
       thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<std::uint8_t>(num_items));
     const bool ok =
       thrust::equal(expected_result_it, expected_result_it + static_cast<std::ptrdiff_t>(num_items), vec.cbegin());
-    ASSERT_EQUAL(ok, true);
+    REQUIRE(ok);
   }
   catch (std::bad_alloc&)
   {

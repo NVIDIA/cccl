@@ -646,7 +646,7 @@ void TestPartitionIfWithMagnitude(int magnitude)
     // Ensure selected items are correct
     auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
     bool all_results_correct = thrust::equal(partitioned_out.begin(), partitioned_out.end(), expected_out_it);
-    ASSERT_EQUAL(all_results_correct, true);
+    REQUIRE(all_results_correct);
   }
 
   // Tests input is correctly dereferenced for large offsets and rejected items are correctly written
@@ -670,7 +670,7 @@ void TestPartitionIfWithMagnitude(int magnitude)
     // Ensure rejected items are correct
     auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
     bool all_results_correct = thrust::equal(partitioned_out.begin(), partitioned_out.end(), expected_out_it);
-    ASSERT_EQUAL(all_results_correct, true);
+    REQUIRE(all_results_correct);
   }
 }
 

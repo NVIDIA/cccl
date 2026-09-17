@@ -313,7 +313,7 @@ void TestCopyIfWithMagnitude(int magnitude)
   // Ensure selected items are correct
   auto expected_out_it           = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
   const bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
-  ASSERT_EQUAL(all_results_correct, true);
+  REQUIRE(all_results_correct);
 }
 
 void TestCopyIfWithLargeNumberOfItems()
@@ -350,7 +350,7 @@ void TestCopyIfStencilWithMagnitude(int magnitude)
   // Ensure selected items are correct
   auto expected_out_it           = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
   const bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
-  ASSERT_EQUAL(all_results_correct, true);
+  REQUIRE(all_results_correct);
 }
 
 void TestCopyIfStencilWithLargeNumberOfItems()

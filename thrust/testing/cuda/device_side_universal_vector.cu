@@ -29,14 +29,14 @@ void test_universal_vector_access(VecInT& vec, VecOutT& out)
   universal_vector_device_access_kernel<<<1, 1>>>(vec, out);
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
-  ASSERT_EQUAL(out[0], true);
+  REQUIRE(out[0]);
 }
 #else
 template <class VecInT, class VecOutT>
 void test_universal_vector_access(VecInT& vec, VecOutT& out)
 {
   universal_vector_access(vec, out);
-  ASSERT_EQUAL(out[0], true);
+  REQUIRE(out[0]);
 }
 #endif
 

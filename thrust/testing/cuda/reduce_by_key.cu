@@ -520,11 +520,11 @@ void TestReduceByKeyWithCustomEqualityOp()
 
   // Verify that unique keys are correct
   const bool all_keys_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), keys);
-  ASSERT_EQUAL(all_keys_correct, true);
+  REQUIRE(all_keys_correct);
 
   // Verify that the aggregates are correct
   const bool all_values_correct = thrust::equal(aggregates_out.cbegin(), aggregates_out.cend(), values);
-  ASSERT_EQUAL(all_values_correct, true);
+  REQUIRE(all_values_correct);
 }
 
 DECLARE_UNITTEST(TestReduceByKeyWithCustomEqualityOp);

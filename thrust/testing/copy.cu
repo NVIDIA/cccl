@@ -761,7 +761,7 @@ void TestCopyWithBigIndexesHelper(int magnitude)
   const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
-  ASSERT_EQUAL(has_executed_h, true);
+  REQUIRE(has_executed_h);
 }
 
 void TestCopyWithBigIndexes()

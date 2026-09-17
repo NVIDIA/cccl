@@ -49,22 +49,19 @@ struct TestAllocatorAttachment
   template <typename Expected, typename T>
   static void assert_correct(T)
   {
-    ASSERT_EQUAL(
-      (::cuda::std::is_same<
+    REQUIRE(
+      ::cuda::std::is_same<
         T,
-        typename PolicyInfo::template apply_base_second<thrust::detail::execute_with_allocator, Expected>::type>::value),
-      true);
+        typename PolicyInfo::template apply_base_second<thrust::detail::execute_with_allocator, Expected>::type>::value);
   }
 
   template <typename ExpectedResource, typename T>
   static void assert_npa_correct(T)
   {
-    ASSERT_EQUAL(
-      (::cuda::std::is_same<T,
-                            typename PolicyInfo::template apply_base_second<
-                              thrust::detail::execute_with_allocator,
-                              thrust::mr::allocator<cuda::std::max_align_t, ExpectedResource>>::type>::value),
-      true);
+    REQUIRE(::cuda::std::is_same<T,
+                                 typename PolicyInfo::template apply_base_second<
+                                   thrust::detail::execute_with_allocator,
+                                   thrust::mr::allocator<cuda::std::max_align_t, ExpectedResource>>::type>::value);
   }
 
   template <typename Policy>
