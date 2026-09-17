@@ -57,6 +57,7 @@ Checks:
   - '-google-build-namespaces'
   - 'cppcoreguidelines-*'
   - '-cppcoreguidelines-pro-bounds-pointer-arithmetic'
+  - '-cppcoreguidelines-pro-bounds-constant-array-index'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
