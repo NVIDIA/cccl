@@ -83,7 +83,10 @@ workflows:
     # runners and run them on a GPU.
     - {jobs: ['build'], project: ['libcudacxx', 'cudax'], std: 'minmax', ctk: '13.X', cxx: ['gcc', 'clang']}
     - {jobs: ['build'], project: 'libcudacxx', std: 17, ctk: '12.0', cxx: 'gcc12'}
-    - {jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: 'gcc', gpu: 'rtx2080',
+    # CUDA 12.9 devcontainers stop at gcc14, so 12.X cannot use the newest-gcc alias.
+    - {jobs: ['run_gpu'], project: 'target', ctk: '12.X', cxx: 'gcc14', gpu: 'rtx2080',
+       args: '--preset libcudacxx --build-targets "libcudacxx.test.cuda.ccclrt.stream.stream_pool.c2h libcudacxx.test.cuda.ccclrt.stream.logical_device_stream.c2h libcudacxx.test.cuda.ccclrt.stream.stream_smoke" --ctest-targets "libcudacxx.test.cuda.ccclrt.stream"'}
+    - {jobs: ['run_gpu'], project: 'target', ctk: '13.X', cxx: 'gcc', gpu: 'rtx2080',
        args: '--preset libcudacxx --build-targets "libcudacxx.test.cuda.ccclrt.stream.stream_pool.c2h libcudacxx.test.cuda.ccclrt.stream.logical_device_stream.c2h libcudacxx.test.cuda.ccclrt.stream.stream_smoke" --ctest-targets "libcudacxx.test.cuda.ccclrt.stream"'}
 
   pull_request:
