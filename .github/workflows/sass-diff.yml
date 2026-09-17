@@ -187,7 +187,7 @@ jobs:
       # job. The render step below adds the section only when this step wrote a file.
       - name: Triage the SASS differences
         id: triage
-        continue-on-error: false
+        continue-on-error: true
         uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1.11
         env:
           SASS_RESULT_DIR: ${{ github.workspace }}/${{ env.ARTIFACT_ROOT }}/result
@@ -223,7 +223,7 @@ jobs:
           if [[ "${TRIAGE_OUTCOME}" == "success" ]] && [[ -s "${ANALYSIS_FILE}" ]]; then
             analysis_args=(--analysis "${ANALYSIS_FILE}")
           else
-            echo "No SASS triage to render (outcome: ${TRIAGE_OUTCOME:-skipped})."
+            echo "No SASS triage to render (outcome: ${TRIAGE_OUTCOME})."
           fi
 
           python3 ci/sass/render_report.py \
