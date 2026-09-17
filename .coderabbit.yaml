@@ -67,29 +67,25 @@ reviews:
       instructions: |
         Focus on correctness, ABI/API stability, standard-library conformance, host/device availability,
         NVRTC compatibility, supported C++ standards, tests, and portability across supported CUDA toolchains.
-        For tests, use .agent/skills/cccl-test/SKILL.md as test context.
-        Avoid style comments unless the requirement is explicitly mentioned in
-        .agent/skills/cccl-style/SKILL.md.
+        For tests, use .agent/skills/cccl-test/SKILL.md as test context. Avoid style comments unless the
+        requirement is explicitly mentioned in the cccl-style skill or in the coding_guidelines.rst.
 
     - path: "cudax/**/*"
       instructions: |
         Focus on correctness, lifetime/resource ownership, stream ordering, host/device annotations, experimental
         API clarity, tests, and compatibility with the supported CUDA toolchains. Avoid style comments unless
-        the requirement is explicitly mentioned in .agent/skills/cccl-style/SKILL.md.
+        the requirement is explicitly mentioned in the cccl-style skill or in the coding_guidelines.rst.
 
     - path: "cub/**/*"
       instructions: |
         Focus on algorithm correctness, temporary-storage protocol, dispatch/policy selection, stream behavior,
         CUDA error handling, synchronization, memory access safety, performance regressions, and test coverage.
-        Prefer comments that catch real correctness, API, compile-time, or performance risks.
-        For arch-scoped tuning/policy changes and other SM-specific optimizations or perf changes, use
-        .agent/skills/cccl-style/references/cub.md (Arch/SM-Scoped Perf Changes section) as context.
 
     - path: "thrust/**/*"
       instructions: |
         Use docs/thrust/developer/systems.rst for execution policy and backend dispatch context. Focus on
         correctness, API compatibility, dispatch behavior, synchronization, iterator/system interactions, and
-        regressions. Avoid architecture commentary unless it affects behavior or maintainability.
+        regressions.
 
     - path: "c/**/*"
       instructions: |
