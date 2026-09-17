@@ -69,6 +69,11 @@ def _fast_data_pointer(arr):
     return getter(arr)
 
 
+# Sentinel for "stream not yet validated" -- distinct from None, which is
+# itself a valid stream argument (the null stream).
+_UNSET_STREAM = object()
+
+
 class _Reduce(Serializable):
     __slots__ = [
         "_bound_build_result",
@@ -118,6 +123,18 @@ class _Reduce(Serializable):
         # each call is equivalent to allocating fresh each time.
         "_d_in_ptr_obj",
         "_d_out_ptr_obj",
+        # Perf: validate_and_get_stream() re-derives the same int handle
+        # every call for a fixed stream object (its __cuda_stream__()
+        # protocol result can't change over that object's lifetime). Cache
+        # by identity, same pattern as _last_loaded_build_result/
+        # _last_stateless_op above. Uses a private sentinel (not None) as
+        # the "never validated yet" marker, because stream=None is itself a
+        # valid, meaningful input (the null stream) -- None can't double as
+        # both "unset" and "a real cached value" the way it does for the
+        # other caches above, where None is never a legitimate op/build
+        # result.
+        "_last_stream_obj",
+        "_last_stream_handle",
     ]
 
     __serialization_schema__ = (
@@ -157,6 +174,8 @@ class _Reduce(Serializable):
         # is reused rather than allocated fresh every call.
         self._d_in_ptr_obj = make_pointer_object(0, None) if self._d_in_is_ptr else None
         self._d_out_ptr_obj = make_pointer_object(0, None) if self._d_out_is_ptr else None
+        self._last_stream_obj = _UNSET_STREAM
+        self._last_stream_handle = None
 
         self.init_kind = get_init_kind(h_init)
 
@@ -227,6 +246,8 @@ class _Reduce(Serializable):
         self._d_out_is_ptr = self.d_out_cccl.is_kind_pointer()
         self._d_in_ptr_obj = make_pointer_object(0, None) if self._d_in_is_ptr else None
         self._d_out_ptr_obj = make_pointer_object(0, None) if self._d_out_is_ptr else None
+        self._last_stream_obj = _UNSET_STREAM
+        self._last_stream_handle = None
 
     def _bind_device_reduce_fn(self) -> None:
         # Derived from the loaded build result (not serialized); bound at __call__
@@ -327,7 +348,18 @@ class _Reduce(Serializable):
         else:
             set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        stream_handle = validate_and_get_stream(stream)
+        # Perf: validate_and_get_stream() re-derives the same int handle
+        # every call for a fixed stream object -- its __cuda_stream__()
+        # result can't change over that object's lifetime. Cache by
+        # identity (held reference, not id()), same as the other caches on
+        # this class; _UNSET_STREAM (not None) marks "never validated yet"
+        # since stream=None is itself a valid, meaningful input.
+        if stream is self._last_stream_obj:
+            stream_handle = self._last_stream_handle
+        else:
+            stream_handle = validate_and_get_stream(stream)
+            self._last_stream_obj = stream
+            self._last_stream_handle = stream_handle
 
         if temp_storage is None:
             temp_storage_bytes = 0
