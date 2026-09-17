@@ -75,8 +75,7 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
 :cpp:class:`cuda::stream_pool` owns a fixed number of non-blocking :cpp:struct:`cuda::stream` objects created on one
 device or green context. It is meant for code that wants to spread independent work over a few streams without
-managing their lifetime, and is a lightweight replacement for per-project stream pools such as
-``rmm::cuda_stream_pool``.
+managing their lifetime.
 
 - ``get_stream()``: returns the next stream in round-robin order
 - ``get_stream(i)``: returns the stream in slot ``i % size()``
