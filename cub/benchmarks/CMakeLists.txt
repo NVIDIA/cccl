@@ -80,6 +80,8 @@ function(get_bench_ranges src bench_name)
   register_cccl_tuning("${bench_name}" "${ranges}")
 endfunction()
 
+set(SASS_OBJECTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/objects")
+
 function(add_bench target_name bench_name bench_src)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
@@ -87,7 +89,7 @@ function(add_bench target_name bench_name bench_src)
   cccl_add_executable(${bench_target} SOURCES "${bench_src}")
   # Target objects exclude linked helper kernels from SASS comparisons.
   file(
-    GENERATE OUTPUT "${CMAKE_BINARY_DIR}/sass/${bench_target}.objects"
+    GENERATE OUTPUT "${SASS_OBJECTS_DIR}/${bench_target}.objects"
     CONTENT "$<JOIN:$<TARGET_OBJECTS:${bench_target}>,\n>\n"
   )
   target_link_libraries(

@@ -291,7 +291,7 @@ dump_side() {
     for object in "${objects[@]}"; do
       cuobjdump -sass -sort "$object"
     done | cu++filt > %q/{}.sass
-  ' "${preset_dir[${side}]}/sass" "${artifact_dir}/${side}"
+  ' "${preset_dir[${side}]}/cub/benchmarks/objects" "${artifact_dir}/${side}"
 
   printf '%s\n' "${targets[@]}" | xargs --verbose -P "$(nproc)" -I{} bash -c "${dump_cmd}"
 }
