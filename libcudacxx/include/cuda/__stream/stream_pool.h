@@ -47,12 +47,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! `get_stream()` hands out the streams in round-robin order; `get_stream(i)` addresses slot `i % size()`.
 //! Both return a `cuda::stream_ref` that stays valid for the lifetime of the pool, including across a
 //! move of the pool itself.
-//!
-//! Streams may be requested for the first time while the calling thread is capturing; the creation is
-//! capture-safe and leaves the capture valid.
-//!
-//! All member functions may be called concurrently from several threads. A move must not overlap with
-//! any other use of either pool, as for a `std::vector`.
 class stream_pool
 {
 public:
