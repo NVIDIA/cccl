@@ -37,7 +37,7 @@ void TestGenerateSimple()
   thrust::generate(result.begin(), result.end(), f);
 
   Vector ref(result.size(), value);
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestGenerateSimple);
 
@@ -70,7 +70,7 @@ void TestGenerateDispatchImplicit()
 
   thrust::generate(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestGenerateDispatchImplicit);
 
@@ -86,7 +86,7 @@ void TestGenerate(const size_t n)
   thrust::generate(h_result.begin(), h_result.end(), f);
   thrust::generate(d_result.begin(), d_result.end(), f);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestGenerate);
 
@@ -120,7 +120,7 @@ void TestGenerateNSimple()
   thrust::generate_n(result.begin(), result.size(), f);
 
   Vector ref(result.size(), value);
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestGenerateNSimple);
 
@@ -155,7 +155,7 @@ void TestGenerateNDispatchImplicit()
 
   thrust::generate_n(thrust::retag<my_tag>(vec.begin()), vec.size(), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestGenerateNDispatchImplicit);
 
@@ -192,8 +192,8 @@ void TestGenerateZipIterator()
 
   Vector ref1(3, 4);
   Vector ref2(3, 7);
-  ASSERT_EQUAL(v1, ref1);
-  ASSERT_EQUAL(v2, ref2);
+  REQUIRE(v1 == ref1);
+  REQUIRE(v2 == ref2);
 };
 DECLARE_VECTOR_UNITTEST(TestGenerateZipIterator);
 

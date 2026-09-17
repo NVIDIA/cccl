@@ -179,47 +179,38 @@ void TestAllocatorMinimal(size_t n)
   const thrust::host_vector<int> h_vec(vec.begin(), vec.end());
   const thrust::host_vector<int> ref(n, 13);
 
-  ASSERT_EQUAL(ref, h_vec);
+  REQUIRE(ref == h_vec);
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorMinimal);
 
 void TestAllocatorTraitsRebind()
 {
-  ASSERT_EQUAL(
-    (::cuda::std::is_same<
-      typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_traits<float>,
-      typename cuda::std::allocator_traits<thrust::device_malloc_allocator<float>>>::value),
-    true);
+  REQUIRE(::cuda::std::is_same<
+          typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_traits<float>,
+          typename cuda::std::allocator_traits<thrust::device_malloc_allocator<float>>>::value);
 
-  ASSERT_EQUAL(
-    (::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
-                          typename cuda::std::allocator_traits<my_minimal_allocator<float>>>::value),
-    true);
+  REQUIRE(
+    ::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
+                         typename cuda::std::allocator_traits<my_minimal_allocator<float>>>::value);
 }
 DECLARE_UNITTEST(TestAllocatorTraitsRebind);
 
 void TestAllocatorTraitsRebindCpp11()
 {
-  ASSERT_EQUAL(
-    (::cuda::std::is_same<
-      typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_alloc<float>,
-      thrust::device_malloc_allocator<float>>::value),
-    true);
+  REQUIRE(::cuda::std::is_same<
+          typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_alloc<float>,
+          thrust::device_malloc_allocator<float>>::value);
 
-  ASSERT_EQUAL(
-    (::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_alloc<float>,
-                          my_minimal_allocator<float>>::value),
-    true);
+  REQUIRE(
+    ::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_alloc<float>,
+                         my_minimal_allocator<float>>::value);
 
-  ASSERT_EQUAL(
-    (::cuda::std::is_same<
-      typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_traits<float>,
-      typename cuda::std::allocator_traits<thrust::device_malloc_allocator<float>>>::value),
-    true);
+  REQUIRE(::cuda::std::is_same<
+          typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_traits<float>,
+          typename cuda::std::allocator_traits<thrust::device_malloc_allocator<float>>>::value);
 
-  ASSERT_EQUAL(
-    (::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
-                          typename cuda::std::allocator_traits<my_minimal_allocator<float>>>::value),
-    true);
+  REQUIRE(
+    ::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
+                         typename cuda::std::allocator_traits<my_minimal_allocator<float>>>::value);
 }
 DECLARE_UNITTEST(TestAllocatorTraitsRebindCpp11);

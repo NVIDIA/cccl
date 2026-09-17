@@ -110,7 +110,7 @@ void TestFunctionalPlaceholdersBitNegate()
   bool_vector result(input.size());
   thrust::transform(input.begin(), input.end(), result.begin(), ~_1);
 
-  ASSERT_EQUAL(reference, result);
+  REQUIRE(reference == result);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestFunctionalPlaceholdersBitNegate);
 

@@ -21,7 +21,7 @@ void TestReplaceSimple()
 
   Vector result{4, 5, 4, 3, 5};
 
-  ASSERT_EQUAL(data, result);
+  REQUIRE(data == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceSimple);
 
@@ -54,7 +54,7 @@ void TestReplaceDispatchImplicit()
 
   thrust::replace(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceDispatchImplicit);
 
@@ -88,7 +88,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
   thrust::replace_copy(dest.begin(), dest.end(), dest.begin(), (T) 2, (T) 5);
 
   Vector result{4, 5, 4, 3, 5};
-  ASSERT_EQUAL(dest, result);
+  REQUIRE(dest == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopySimple);
 #endif
@@ -125,7 +125,7 @@ void TestReplaceCopyDispatchImplicit()
   thrust::replace_copy(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceCopyDispatchImplicit);
 
@@ -191,7 +191,7 @@ void TestReplaceIfSimple()
 
   Vector result{0, 0, 0, 6, 5};
 
-  ASSERT_EQUAL(data, result);
+  REQUIRE(data == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceIfSimple);
 
@@ -224,7 +224,7 @@ void TestReplaceIfDispatchImplicit()
 
   thrust::replace_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceIfDispatchImplicit);
 
@@ -240,7 +240,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencilSimple()
 
   Vector result{1, 0, 4, 0, 5};
 
-  ASSERT_EQUAL(data, result);
+  REQUIRE(data == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceIfStencilSimple);
 
@@ -274,7 +274,7 @@ void TestReplaceIfStencilDispatchImplicit()
   thrust::replace_if(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceIfStencilDispatchImplicit);
 
@@ -319,7 +319,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfSimple()
   thrust::replace_copy_if(data.begin(), data.end(), dest.begin(), less_than_five<T>(), (T) 0);
 
   Vector result{0, 0, 0, 6, 5};
-  ASSERT_EQUAL(dest, result);
+  REQUIRE(dest == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopyIfSimple);
 
@@ -356,7 +356,7 @@ void TestReplaceCopyIfDispatchImplicit()
   thrust::replace_copy_if(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceCopyIfDispatchImplicit);
 
@@ -374,7 +374,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilSimple()
 
   Vector result{0, 3, 0, 6, 5};
 
-  ASSERT_EQUAL(dest, result);
+  REQUIRE(dest == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopyIfStencilSimple);
 
@@ -417,7 +417,7 @@ void TestReplaceCopyIfStencilDispatchImplicit()
     0,
     0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceCopyIfStencilDispatchImplicit);
 

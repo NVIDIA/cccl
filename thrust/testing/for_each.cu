@@ -37,7 +37,7 @@ void TestForEachSimple()
   const typename Vector::iterator result = thrust::for_each(input.begin(), input.end(), f);
 
   Vector ref{0, 0, 1, 1, 1, 0, 1};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
   ASSERT_EQUAL_QUIET(result, input.end());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachSimple);
@@ -73,7 +73,7 @@ void TestForEachDispatchImplicit()
 
   thrust::for_each(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestForEachDispatchImplicit);
 
@@ -91,7 +91,7 @@ void TestForEachNSimple()
   const typename Vector::iterator result = thrust::for_each_n(input.begin(), input.size(), f);
 
   Vector ref{0, 0, 1, 1, 1, 0, 1};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
   ASSERT_EQUAL_QUIET(result, input.end());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachNSimple);
@@ -127,7 +127,7 @@ void TestForEachNDispatchImplicit()
 
   thrust::for_each_n(thrust::retag<my_tag>(vec.begin()), vec.size(), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestForEachNDispatchImplicit);
 
@@ -142,7 +142,7 @@ void TestForEachSimpleAnySystem()
     thrust::for_each(thrust::make_counting_iterator(0), thrust::make_counting_iterator(5), f);
 
   const thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
   ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
 }
 DECLARE_UNITTEST(TestForEachSimpleAnySystem);
@@ -157,7 +157,7 @@ void TestForEachNSimpleAnySystem()
   const thrust::counting_iterator<int> result = thrust::for_each_n(thrust::make_counting_iterator(0), 5, f);
 
   const thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
   ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
 }
 DECLARE_UNITTEST(TestForEachNSimpleAnySystem);
@@ -188,7 +188,7 @@ void TestForEach(const size_t n)
 
   const typename thrust::device_vector<T>::iterator d_result = thrust::for_each(d_input.begin(), d_input.end(), d_f);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
   ASSERT_EQUAL_QUIET(h_result, h_input.end());
   ASSERT_EQUAL_QUIET(d_result, d_input.end());
 }
@@ -220,7 +220,7 @@ void TestForEachN(const size_t n)
 
   const typename thrust::device_vector<T>::iterator d_result = thrust::for_each_n(d_input.begin(), d_input.size(), d_f);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
   ASSERT_EQUAL_QUIET(h_result, h_input.end());
   ASSERT_EQUAL_QUIET(d_result, d_input.end());
 }
@@ -343,7 +343,7 @@ void TestForEachWithBigIndexesHelper(int magnitude)
 {
   const thrust::counting_iterator<unsigned long long> begin(0);
   const thrust::counting_iterator<unsigned long long> end = begin + static_cast<std::ptrdiff_t>(1ull << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   const thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                               = false;
@@ -355,7 +355,7 @@ void TestForEachWithBigIndexesHelper(int magnitude)
   const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
-  ASSERT_EQUAL(has_executed_h, true);
+  REQUIRE(has_executed_h);
 }
 
 void TestForEachWithBigIndexes()

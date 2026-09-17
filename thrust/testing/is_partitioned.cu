@@ -91,6 +91,6 @@ void TestIsPartitionedDispatchImplicit()
 
   thrust::is_partitioned(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestIsPartitionedDispatchImplicit);

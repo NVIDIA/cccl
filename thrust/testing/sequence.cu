@@ -34,7 +34,7 @@ void TestSequenceDispatchImplicit()
 
   thrust::sequence(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestSequenceDispatchImplicit);
 
@@ -47,17 +47,17 @@ void TestSequenceSimple()
   thrust::sequence(v.begin(), v.end());
 
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::sequence(v.begin(), v.end(), value_type{10});
 
   ref = {10, 11, 12, 13, 14};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::sequence(v.begin(), v.end(), value_type{10}, value_type{2});
 
   ref = {10, 12, 14, 16, 18};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestSequenceSimple);
 
@@ -70,22 +70,22 @@ void TestSequence(size_t n)
   thrust::sequence(h_data.begin(), h_data.end());
   thrust::sequence(d_data.begin(), d_data.end());
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::sequence(h_data.begin(), h_data.end(), T(10));
   thrust::sequence(d_data.begin(), d_data.end(), T(10));
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::sequence(h_data.begin(), h_data.end(), T(10), T(2));
   thrust::sequence(d_data.begin(), d_data.end(), T(10), T(2));
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::sequence(h_data.begin(), h_data.end(), T(10), T(2));
   thrust::sequence(d_data.begin(), d_data.end(), T(10), T(2));
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 DECLARE_VARIABLE_UNITTEST(TestSequence);
 
@@ -152,8 +152,8 @@ void TestSequenceNoSizeTConversion()
   for (std::size_t i = 0; i < m.size(); ++i)
   {
     const ::Vector v = m[i];
-    ASSERT_EQUAL(static_cast<std::size_t>(v.x), i);
-    ASSERT_EQUAL(static_cast<std::size_t>(v.y), 2 * i);
+    REQUIRE(static_cast<std::size_t>(v.x) == i);
+    REQUIRE(static_cast<std::size_t>(v.y) == 2 * i);
   }
 }
 DECLARE_UNITTEST(TestSequenceNoSizeTConversion);

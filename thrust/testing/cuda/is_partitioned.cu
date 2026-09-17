@@ -38,7 +38,7 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
   is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -48,7 +48,7 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
   is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);

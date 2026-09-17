@@ -188,8 +188,8 @@ struct TestZipIteratorManipulation
     static_assert(cuda::std::is_same_v<decltype(thrust::zip_iterator{v0.begin(), v1.begin()}), ZipIterator>); // CTAD
 
     // test dereference
-    ASSERT_EQUAL(*v0.begin(), cuda::std::get<0>(*iter0));
-    ASSERT_EQUAL(*v1.begin(), cuda::std::get<1>(*iter0));
+    REQUIRE(*v0.begin() == cuda::std::get<0>(*iter0));
+    REQUIRE(*v1.begin() == cuda::std::get<1>(*iter0));
 
     // test equality
     const ZipIterator iter1 = iter0;
@@ -230,8 +230,8 @@ struct TestZipIteratorManipulation
     ASSERT_EQUAL_QUIET(v1.begin() + 1, cuda::std::get<1>(iter4.get_iterator_tuple()));
 
     // test difference
-    ASSERT_EQUAL(1, iter4 - iter0);
-    ASSERT_EQUAL(-1, iter0 - iter4);
+    REQUIRE(1 == iter4 - iter0);
+    REQUIRE(-1 == iter0 - iter4);
   }
 
   void operator()()
@@ -264,8 +264,8 @@ struct TestZipIteratorReference
     zip_iterator_reference_type1 test1(*h_variable.begin(), *h_variable.cbegin());
 
     ASSERT_EQUAL_QUIET(ref1, test1);
-    ASSERT_EQUAL(cuda::std::get<0>(ref1), cuda::std::get<0>(test1));
-    ASSERT_EQUAL(cuda::std::get<1>(ref1), cuda::std::get<1>(test1));
+    REQUIRE(cuda::std::get<0>(ref1) == cuda::std::get<0>(test1));
+    REQUIRE(cuda::std::get<1>(ref1) == cuda::std::get<1>(test1));
 
     // test device types
     using Iterator3      = typename thrust::device_vector<T>::iterator;
@@ -283,8 +283,8 @@ struct TestZipIteratorReference
     zip_iterator_reference_type2 test2(*d_variable.begin(), *d_variable.cbegin());
 
     ASSERT_EQUAL_QUIET(ref2, test2);
-    ASSERT_EQUAL(cuda::std::get<0>(ref2), cuda::std::get<0>(test2));
-    ASSERT_EQUAL(cuda::std::get<1>(ref2), cuda::std::get<1>(test2));
+    REQUIRE(cuda::std::get<0>(ref2) == cuda::std::get<0>(test2));
+    REQUIRE(cuda::std::get<1>(ref2) == cuda::std::get<1>(test2));
   } // end operator()()
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorReference, NumericTypes);
@@ -305,8 +305,8 @@ void TestZipIteratorCopy()
                thrust::make_zip_iterator(input0.end(), input1.end()),
                thrust::make_zip_iterator(output0.begin(), output1.begin()));
 
-  ASSERT_EQUAL(input0, output0);
-  ASSERT_EQUAL(input1, output1);
+  REQUIRE(input0 == output0);
+  REQUIRE(input1 == output1);
 }
 DECLARE_VECTOR_UNITTEST(TestZipIteratorCopy);
 
@@ -353,7 +353,7 @@ struct TestZipIteratorTransform
                       thrust::make_zip_iterator(d_data0.end(), d_data1.end()),
                       d_result.begin(),
                       SumTwoTuple());
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
 
     // Tuples with 3 elements
     thrust::transform(thrust::make_zip_iterator(h_data0.begin(), h_data1.begin(), h_data2.begin()),
@@ -364,7 +364,7 @@ struct TestZipIteratorTransform
                       thrust::make_zip_iterator(d_data0.end(), d_data1.end(), d_data2.end()),
                       d_result.begin(),
                       SumThreeTuple());
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorTransform, ThirtyTwoBitTypes);

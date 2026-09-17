@@ -2,9 +2,9 @@
 
 void TestAssertEqual()
 {
-  ASSERT_EQUAL(0, 0);
-  ASSERT_EQUAL(1, 1);
-  ASSERT_EQUAL(-15.0f, -15.0f);
+  REQUIRE(0 == 0);
+  REQUIRE(1 == 1);
+  REQUIRE(-15.0f == -15.0f);
 }
 DECLARE_UNITTEST(TestAssertEqual);
 
@@ -36,11 +36,11 @@ DECLARE_UNITTEST(TestAssertGreater);
 
 void TestTypeName()
 {
-  ASSERT_EQUAL(unittest::type_name<char>(), "char");
-  ASSERT_EQUAL(unittest::type_name<signed char>(), "signed char");
-  ASSERT_EQUAL(unittest::type_name<unsigned char>(), "unsigned char");
-  ASSERT_EQUAL(unittest::type_name<int>(), "int");
-  ASSERT_EQUAL(unittest::type_name<float>(), "float");
-  ASSERT_EQUAL(unittest::type_name<double>(), "double");
+  REQUIRE(unittest::type_name<char>() == "char");
+  REQUIRE(unittest::type_name<signed char>() == "signed char");
+  REQUIRE(unittest::type_name<unsigned char>() == "unsigned char");
+  REQUIRE(unittest::type_name<int>() == "int");
+  REQUIRE(unittest::type_name<float>() == "float");
+  REQUIRE(unittest::type_name<double>() == "double");
 }
 DECLARE_UNITTEST(TestTypeName);

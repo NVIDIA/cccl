@@ -23,10 +23,10 @@ void TestFillDevice(ExecutionPolicy exec, size_t n)
   fill_kernel<<<1, 1>>>(exec, d_data.begin() + std::min((size_t) 1, n), d_data.begin() + std::min((size_t) 3, n), (T) 0);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill(h_data.begin() + std::min((size_t) 117, n), h_data.begin() + std::min((size_t) 367, n), (T) 1);
 
@@ -34,10 +34,10 @@ void TestFillDevice(ExecutionPolicy exec, size_t n)
     exec, d_data.begin() + std::min((size_t) 117, n), d_data.begin() + std::min((size_t) 367, n), (T) 1);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill(h_data.begin() + std::min((size_t) 8, n), h_data.begin() + std::min((size_t) 259, n), (T) 2);
 
@@ -45,30 +45,30 @@ void TestFillDevice(ExecutionPolicy exec, size_t n)
     exec, d_data.begin() + std::min((size_t) 8, n), d_data.begin() + std::min((size_t) 259, n), (T) 2);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill(h_data.begin() + std::min((size_t) 3, n), h_data.end(), (T) 3);
 
   fill_kernel<<<1, 1>>>(exec, d_data.begin() + std::min((size_t) 3, n), d_data.end(), (T) 3);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill(h_data.begin(), h_data.end(), (T) 4);
 
   fill_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), (T) 4);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 
 template <typename T>
@@ -104,10 +104,10 @@ void TestFillNDevice(ExecutionPolicy exec, size_t n)
   fill_n_kernel<<<1, 1>>>(exec, d_data.begin() + begin_offset, std::min((size_t) 3, n) - begin_offset, (T) 0);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   begin_offset = std::min<size_t>(117, n);
 
@@ -116,10 +116,10 @@ void TestFillNDevice(ExecutionPolicy exec, size_t n)
   fill_n_kernel<<<1, 1>>>(exec, d_data.begin() + begin_offset, std::min((size_t) 367, n) - begin_offset, (T) 1);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   begin_offset = std::min<size_t>(8, n);
 
@@ -128,10 +128,10 @@ void TestFillNDevice(ExecutionPolicy exec, size_t n)
   fill_n_kernel<<<1, 1>>>(exec, d_data.begin() + begin_offset, std::min((size_t) 259, n) - begin_offset, (T) 2);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   begin_offset = std::min<size_t>(3, n);
 
@@ -140,20 +140,20 @@ void TestFillNDevice(ExecutionPolicy exec, size_t n)
   fill_n_kernel<<<1, 1>>>(exec, d_data.begin() + begin_offset, d_data.size() - begin_offset, (T) 3);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill_n(h_data.begin(), h_data.size(), (T) 4);
 
   fill_n_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.size(), (T) 4);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 
 template <typename T>
@@ -182,25 +182,25 @@ void TestFillCudaStreams()
   cudaStreamSynchronize(s);
 
   thrust::device_vector<int> ref{0, 7, 7, 7, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::fill(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 3, 8);
   cudaStreamSynchronize(s);
 
   ref = {8, 8, 8, 7, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::fill(thrust::cuda::par.on(s), v.begin() + 2, v.end(), 9);
   cudaStreamSynchronize(s);
 
   ref = {8, 8, 9, 9, 9};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::fill(thrust::cuda::par.on(s), v.begin(), v.end(), 1);
   cudaStreamSynchronize(s);
 
   ref = {1, 1, 1, 1, 1};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   cudaStreamDestroy(s);
 }
