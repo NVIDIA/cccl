@@ -70,7 +70,7 @@ non-default/non-primitive value types and every affected architecture.
 
 When a diff changes the implementation of a widely-reused low-level primitive (e.g. `ThreadReduce`,
 warp/block scan/reduce helpers) in a way that can affect the generated SASS (a new fast path, a
-refactor, a swapped helper function), flag it unless the PR shows a clean SASS diff or benchmarks
-across the primitive's consumers, not just its own microbenchmark. Cover non-standard binary
-operators, large value types, and every architecture the change affects: a change that helps one
-workload can silently regress a different algorithm layered on top of the primitive.
+refactor, a swapped helper function), flag it. Require a clean SASS diff for the entire PR, or
+benchmarks across the primitive's consumers (not just its own microbenchmark). Cover non-standard
+binary operators, large value types, and every architecture the change affects: a change that helps
+one workload can silently regress a different algorithm layered on top of the primitive.
