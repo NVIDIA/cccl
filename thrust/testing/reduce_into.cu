@@ -186,7 +186,7 @@ void TestReduceIntoCountingIterator()
 {
   size_t const n = 15 * sizeof(T);
 
-  ASSERT_LEQUAL(T(n), unittest::truncate_to_max_representable<T>(n));
+  REQUIRE(T(n) <= unittest::truncate_to_max_representable<T>(n));
 
   const thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
   const thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);

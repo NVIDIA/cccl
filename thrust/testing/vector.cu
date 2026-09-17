@@ -765,7 +765,7 @@ void TestVectorReserving()
 
   v.reserve(3);
 
-  ASSERT_GEQUAL(v.capacity(), 3lu);
+  REQUIRE(v.capacity() >= 3lu);
 
   const size_t old_capacity = v.capacity();
 
@@ -796,7 +796,7 @@ void TestVectorShrinkToFit()
 
   v.reserve(200);
 
-  ASSERT_GEQUAL(v.capacity(), 200lu);
+  REQUIRE(v.capacity() >= 200lu);
 
   v.push_back(1);
   v.push_back(2);
