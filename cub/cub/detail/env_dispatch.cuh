@@ -85,7 +85,8 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(const EnvT& env, A
       using policy_t = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
       using policy_selector =
         ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
-      return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
+      return ::cuda::std::forward<AlgorithmCallable>(
+        algorithm_callable)(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
     });
 }
 
@@ -110,7 +111,8 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(
   // Query tuning from environment
   const auto tuning = ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
 
-  return algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream.get());
+  return ::cuda::std::forward<AlgorithmCallable>(
+    algorithm_callable)(tuning, d_temp_storage, temp_storage_bytes, stream.get());
 }
 //! @endcond
 
@@ -127,7 +129,8 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
       using policy_t = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
       using policy_selector =
         ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
-      return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
+      return ::cuda::std::forward<AlgorithmCallable>(
+        algorithm_callable)(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
     });
 }
 //! @endcond
