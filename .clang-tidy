@@ -55,6 +55,7 @@ Checks:
   - '-google-runtime-float'
   # Same as misc-anonymous-namespace-in-header
   - '-google-build-namespaces'
+  - 'cppcoreguidelines-*'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
