@@ -152,6 +152,26 @@ public:
     return __get_or_create(__index % __streams_.size());
   }
 
+  //! @brief Returns every stream of the pool, in slot order
+  //!
+  //! Slots not yet handed out are created first, so the result always has `size()` entries. Use it to
+  //! act on the whole pool, for instance to synchronize every stream.
+  //!
+  //! @return The references to all streams of the pool
+  //!
+  //! @throws cuda_error if a stream has to be created and creation fails
+  [[nodiscard]] _CCCL_HOST_API ::std::vector<stream_ref> streams() const
+  {
+    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
+    ::std::vector<stream_ref> __result{};
+    __result.reserve(__streams_.size());
+    for (::cuda::std::size_t __i = 0; __i < __streams_.size(); ++__i)
+    {
+      __result.push_back(__get_or_create(__i));
+    }
+    return __result;
+  }
+
   //! @brief Number of streams in the pool
   //!
   //! Streams are created lazily, so this is the number of slots and not the number of streams

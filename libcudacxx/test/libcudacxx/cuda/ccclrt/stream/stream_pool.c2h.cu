@@ -218,6 +218,53 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     }
   }
 
+  SECTION("streams() returns every slot in order, creating the missing ones")
+  {
+    const cuda::stream_pool pool{device, 4};
+
+    const cuda::stream_ref s2 = pool.get_stream(2);
+    const auto all            = pool.streams();
+    REQUIRE(all.size() == pool.size());
+    REQUIRE(all[2] == s2);
+
+    // The other slots were created by the call and are handed out afterwards.
+    REQUIRE(pool.get_stream(0) == all[0]);
+    REQUIRE(pool.get_stream(1) == all[1]);
+    REQUIRE(pool.get_stream(3) == all[3]);
+
+    // Every entry is a distinct, valid stream.
+    for (cuda::std::size_t i = 0; i < all.size(); ++i)
+    {
+      REQUIRE(all[i].get() != nullptr);
+      for (cuda::std::size_t j = i + 1; j < all.size(); ++j)
+      {
+        REQUIRE(all[i] != all[j]);
+      }
+    }
+
+    // A second call reports the same streams.
+    REQUIRE(pool.streams() == all);
+  }
+
+  SECTION("streams() can be used to wait for all outstanding work")
+  {
+    const cuda::stream_pool pool{device, 3};
+    ::test::pinned<int> value0(0);
+    ::test::pinned<int> value1(0);
+    ::test::pinned<int> value2(0);
+    ::test::launch_kernel_single_thread(pool.get_stream(), ::test::assign_42{}, value0.get());
+    ::test::launch_kernel_single_thread(pool.get_stream(), ::test::assign_42{}, value1.get());
+    ::test::launch_kernel_single_thread(pool.get_stream(), ::test::assign_42{}, value2.get());
+
+    for (const cuda::stream_ref str : pool.streams())
+    {
+      str.sync();
+    }
+    REQUIRE(*value0 == 42);
+    REQUIRE(*value1 == 42);
+    REQUIRE(*value2 == 42);
+  }
+
   SECTION("Getting a stream leaves the driver context stack unchanged")
   {
     const cuda::stream_pool pool{device, 2};
