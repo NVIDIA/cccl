@@ -199,16 +199,10 @@ Further recommended reading for successful PR reviews:
 - `How to Do Code Reviews Like a Human (Part Two) <https://mtlynch.io/human-code-reviews-2/>`_
 
 We welcome the use of AI tools to assist in code authoring and code review.
-However, at the end of the day, the (human) CCCL maintainers need to understand a contribution
-and its impact in order to maintain it.
-Effectively, we need to own the change.
-Therefore, it is the responsibility of the author to motivate the change
-and help the (human) reviewer build a mental model of the proposed change.
-This may include additional resources, such as drawings, charts, benchmarks, slides, or talks,
-as well as more tests or documentation.
-We want to ship stable code of high quality and performance.
-The CUDA community relies on us.
-The review is our best chance to maintain a high bar long-term.
+However, the (human) CCCL maintainers must understand a contribution and its impact in order to own and maintain it.
+As the author, motivate your change and help the reviewer build a mental model of it,
+for example with drawings, benchmarks, or additional tests and documentation.
+Careful review is how we sustain the stability, quality, and performance the CUDA community relies on.
 
 Thank You
 -----------
