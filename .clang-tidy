@@ -55,6 +55,9 @@ Checks:
   - '-google-runtime-float'
   # Same as misc-anonymous-namespace-in-header
   - '-google-build-namespaces'
+  - # readability-* as a whole is not enabled yet; only turn on the specific sub-checks we have
+  - # vetted so far.
+  - 'readability-identifier-naming'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #

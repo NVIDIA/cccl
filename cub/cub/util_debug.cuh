@@ -164,8 +164,8 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
  * \brief Debug macro
  */
 #ifndef CubDebug
-#  define CubDebug(e) \
-    CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__) // NOLINT(readability-identifier-naming)
+#  define CubDebug(e) /* NOLINT(readability-identifier-naming) */ \
+    CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__)
 #endif
 
 /**
