@@ -37,7 +37,7 @@ void TestSwapRangesDispatchImplicit()
   thrust::swap_ranges(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestSwapRangesDispatchImplicit);
 
@@ -50,10 +50,10 @@ void TestSwapRangesSimple()
   thrust::swap_ranges(v1.begin(), v1.end(), v2.begin());
 
   Vector ref1{5, 6, 7, 8, 9};
-  ASSERT_EQUAL(v1, ref1);
+  REQUIRE(v1 == ref1);
 
   Vector ref2{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v2, ref2);
+  REQUIRE(v2 == ref2);
 }
 DECLARE_VECTOR_UNITTEST(TestSwapRangesSimple);
 
@@ -71,10 +71,10 @@ void TestSwapRanges(const size_t n)
   thrust::swap_ranges(h1.begin(), h1.end(), h2.begin());
   thrust::swap_ranges(d1.begin(), d1.end(), d2.begin());
 
-  ASSERT_EQUAL(h1, a2);
-  ASSERT_EQUAL(d1, a2);
-  ASSERT_EQUAL(h2, a1);
-  ASSERT_EQUAL(d2, a1);
+  REQUIRE(h1 == a2);
+  REQUIRE(d1 == a2);
+  REQUIRE(h2 == a1);
+  REQUIRE(d2 == a1);
 }
 DECLARE_VARIABLE_UNITTEST(TestSwapRanges);
 
@@ -88,12 +88,12 @@ void TestSwapRangesForcedIterator()
                       thrust::retag<thrust::cpp::tag>(A.end()),
                       thrust::retag<thrust::cpp::tag>(B.begin()));
 
-  ASSERT_EQUAL(A[0], 1);
-  ASSERT_EQUAL(A[1], 1);
-  ASSERT_EQUAL(A[2], 1);
-  ASSERT_EQUAL(B[0], 0);
-  ASSERT_EQUAL(B[1], 0);
-  ASSERT_EQUAL(B[2], 0);
+  REQUIRE(A[0] == 1);
+  REQUIRE(A[1] == 1);
+  REQUIRE(A[2] == 1);
+  REQUIRE(B[0] == 0);
+  REQUIRE(B[1] == 0);
+  REQUIRE(B[2] == 0);
 }
 DECLARE_UNITTEST(TestSwapRangesForcedIterator);
 #endif

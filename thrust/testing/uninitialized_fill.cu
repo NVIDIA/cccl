@@ -35,7 +35,7 @@ void TestUninitializedFillDispatchImplicit()
 
   thrust::uninitialized_fill(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestUninitializedFillDispatchImplicit);
 
@@ -51,28 +51,28 @@ void TestUninitializedFillPOD()
   thrust::uninitialized_fill(v.begin() + 1, v.begin() + 4, exemplar);
 
   Vector ref{0, exemplar, exemplar, exemplar, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   exemplar = 8;
 
   thrust::uninitialized_fill(v.begin() + 0, v.begin() + 3, exemplar);
 
   ref = {exemplar, exemplar, exemplar, 7, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   exemplar = 9;
 
   thrust::uninitialized_fill(v.begin() + 2, v.end(), exemplar);
 
   ref = {8, 8, exemplar, exemplar, 9};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   exemplar = 1;
 
   thrust::uninitialized_fill(v.begin(), v.end(), exemplar);
 
   ref = {exemplar, exemplar, exemplar, exemplar, exemplar};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedFillPOD);
 

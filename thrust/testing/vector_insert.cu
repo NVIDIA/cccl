@@ -28,10 +28,10 @@ struct TestVectorRangeInsertSimple
     v2.insert(v2.begin() + 1, v1.begin(), v1.end());
 
     Vector ref{0, 0, 1, 2, 3, 4, 1, 2};
-    ASSERT_EQUAL(ref, v2);
+    REQUIRE(ref == v2);
 
-    ASSERT_EQUAL(8lu, v2.size());
-    ASSERT_EQUAL(10lu, v2.capacity());
+    REQUIRE(8lu == v2.size());
+    REQUIRE(10lu == v2.capacity());
 
     // test when insertion range fits inside capacity
     // and the size of the insertion is equal to the number
@@ -49,10 +49,10 @@ struct TestVectorRangeInsertSimple
 
     v3.insert(v3.begin(), v1.begin(), v1.end());
     ref = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
-    ASSERT_EQUAL(ref, v3);
+    REQUIRE(ref == v3);
 
-    ASSERT_EQUAL(10lu, v3.size());
-    ASSERT_EQUAL(10lu, v3.capacity());
+    REQUIRE(10lu == v3.size());
+    REQUIRE(10lu == v3.capacity());
 
     // test when insertion range fits inside capacity
     // and the size of the insertion is less than the
@@ -71,10 +71,10 @@ struct TestVectorRangeInsertSimple
     v4.insert(v4.begin() + 1, v1.begin(), v1.begin() + 3);
 
     ref = {0, 0, 1, 2, 1, 2, 3, 4};
-    ASSERT_EQUAL(ref, v4);
+    REQUIRE(ref == v4);
 
-    ASSERT_EQUAL(8lu, v4.size());
-    ASSERT_EQUAL(10lu, v4.capacity());
+    REQUIRE(8lu == v4.size());
+    REQUIRE(10lu == v4.capacity());
 
     // test when insertion range does not fit inside capacity
     Vector v5(5);
@@ -87,9 +87,9 @@ struct TestVectorRangeInsertSimple
     v5.insert(v5.begin() + 1, v1.begin(), v1.end());
 
     ref = {0, 0, 1, 2, 3, 4, 1, 2, 3, 4};
-    ASSERT_EQUAL(ref, v5);
+    REQUIRE(ref == v5);
 
-    ASSERT_EQUAL(10lu, v5.size());
+    REQUIRE(10lu == v5.size());
   }
 }; // end TestVectorRangeInsertSimple
 DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
@@ -130,7 +130,7 @@ struct TestVectorRangeInsert
     // insert on device
     d_dst.insert(d_dst.begin() + position, d_src.begin() + begin, d_src.begin() + end);
 
-    ASSERT_EQUAL(h_dst, d_dst);
+    REQUIRE(h_dst == d_dst);
   }
 }; // end TestVectorRangeInsert
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorRangeInsert, IntegralTypes);
@@ -157,10 +157,10 @@ struct TestVectorFillInsertSimple
     v1.insert(v1.begin() + 1, insertion_size, 13);
 
     Vector ref{0, 13, 13, 13, 13, 13, 1, 2};
-    ASSERT_EQUAL(ref, v1);
+    REQUIRE(ref == v1);
 
-    ASSERT_EQUAL(8lu, v1.size());
-    ASSERT_EQUAL(10lu, v1.capacity());
+    REQUIRE(8lu == v1.size());
+    REQUIRE(10lu == v1.capacity());
 
     // test when insertion range fits inside capacity
     // and the size of the insertion is equal to the number
@@ -179,10 +179,10 @@ struct TestVectorFillInsertSimple
     v2.insert(v2.begin(), insertion_size, 13);
 
     ref = {13, 13, 13, 13, 13, 0, 1, 2, 3, 4};
-    ASSERT_EQUAL(ref, v2);
+    REQUIRE(ref == v2);
 
-    ASSERT_EQUAL(10lu, v2.size());
-    ASSERT_EQUAL(10lu, v2.capacity());
+    REQUIRE(10lu == v2.size());
+    REQUIRE(10lu == v2.capacity());
 
     // test when insertion range fits inside capacity
     // and the size of the insertion is less than the
@@ -201,10 +201,10 @@ struct TestVectorFillInsertSimple
     v3.insert(v3.begin() + 1, insertion_size, 13);
 
     ref = {0, 13, 13, 13, 1, 2, 3, 4};
-    ASSERT_EQUAL(ref, v3);
+    REQUIRE(ref == v3);
 
-    ASSERT_EQUAL(8lu, v3.size());
-    ASSERT_EQUAL(10lu, v3.capacity());
+    REQUIRE(8lu == v3.size());
+    REQUIRE(10lu == v3.capacity());
 
     // test when insertion range does not fit inside capacity
     Vector v4(5);
@@ -218,9 +218,9 @@ struct TestVectorFillInsertSimple
     v4.insert(v4.begin() + 1, insertion_size, 13);
 
     ref = {0, 13, 13, 13, 13, 13, 1, 2, 3, 4};
-    ASSERT_EQUAL(ref, v4);
+    REQUIRE(ref == v4);
 
-    ASSERT_EQUAL(10lu, v4.size());
+    REQUIRE(10lu == v4.size());
   }
 }; // end TestVectorFillInsertSimple
 DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
@@ -253,7 +253,7 @@ struct TestVectorFillInsert
     // insert on device
     d_dst.insert(d_dst.begin() + position, insertion_size, 13);
 
-    ASSERT_EQUAL(h_dst, d_dst);
+    REQUIRE(h_dst == d_dst);
   }
 }; // end TestVectorFillInsert
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorFillInsert, IntegralTypes);

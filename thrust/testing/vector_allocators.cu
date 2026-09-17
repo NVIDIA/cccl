@@ -127,24 +127,24 @@ void TestVectorAllocatorConstructors()
   const Alloc alloc2(2);
 
   Vector v1(alloc1);
-  ASSERT_EQUAL(v1.get_allocator(), alloc1);
+  REQUIRE(v1.get_allocator() == alloc1);
 
   Vector v2(10, alloc1);
-  ASSERT_EQUAL(v2.size(), 10u);
-  ASSERT_EQUAL(v2.get_allocator(), alloc1);
-  ASSERT_EQUAL(Alloc::last_allocated, 1);
+  REQUIRE(v2.size() == 10u);
+  REQUIRE(v2.get_allocator() == alloc1);
+  REQUIRE(Alloc::last_allocated == 1);
   Alloc::last_allocated = 0;
 
   Vector v3(10, 17, alloc1);
-  ASSERT_EQUAL((v3 == std::vector<int>(10, 17)), true);
-  ASSERT_EQUAL(v3.get_allocator(), alloc1);
-  ASSERT_EQUAL(Alloc::last_allocated, 1);
+  REQUIRE(v3 == std::vector<int>(10, 17));
+  REQUIRE(v3.get_allocator() == alloc1);
+  REQUIRE(Alloc::last_allocated == 1);
   Alloc::last_allocated = 0;
 
   Vector v4(v3, alloc2);
-  ASSERT_EQUAL((v3 == v4), true);
-  ASSERT_EQUAL(v4.get_allocator(), alloc2);
-  ASSERT_EQUAL(Alloc::last_allocated, 2);
+  REQUIRE(v3 == v4);
+  REQUIRE(v4.get_allocator() == alloc2);
+  REQUIRE(Alloc::last_allocated == 2);
   Alloc::last_allocated = 0;
 
   // FIXME: uncomment this after the vector_base(vector_base&&, const Alloc&)
@@ -156,9 +156,9 @@ void TestVectorAllocatorConstructors()
   // Alloc::last_allocated = 0;
 
   Vector v6(v4.begin(), v4.end(), alloc2);
-  ASSERT_EQUAL((v4 == v6), true);
-  ASSERT_EQUAL(v6.get_allocator(), alloc2);
-  ASSERT_EQUAL(Alloc::last_allocated, 2);
+  REQUIRE(v4 == v6);
+  REQUIRE(v6.get_allocator() == alloc2);
+  REQUIRE(Alloc::last_allocated == 2);
 }
 
 void TestVectorAllocatorConstructorsHost()
@@ -176,8 +176,7 @@ DECLARE_UNITTEST(TestVectorAllocatorConstructorsDevice);
 template <typename Vector>
 void TestVectorAllocatorPropagateOnCopyAssignment()
 {
-  ASSERT_EQUAL(
-    cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value, true);
+  REQUIRE(cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value);
 
   using Alloc = typename Vector::allocator_type;
   const Alloc alloc1(1);
@@ -187,10 +186,10 @@ void TestVectorAllocatorPropagateOnCopyAssignment()
   Vector v2(15, alloc2);
 
   v2 = v1;
-  ASSERT_EQUAL((v1 == v2), true);
-  ASSERT_EQUAL(v2.get_allocator(), alloc1);
-  ASSERT_EQUAL(Alloc::last_allocated, 1);
-  ASSERT_EQUAL(Alloc::last_deallocated, 2);
+  REQUIRE(v1 == v2);
+  REQUIRE(v2.get_allocator() == alloc1);
+  REQUIRE(Alloc::last_allocated == 1);
+  REQUIRE(Alloc::last_deallocated == 2);
 }
 
 void TestVectorAllocatorPropagateOnCopyAssignmentHost()
@@ -209,8 +208,7 @@ template <typename Vector>
 void TestVectorAllocatorPropagateOnMoveAssignment()
 {
   using Alloc = typename Vector::allocator_type;
-  ASSERT_EQUAL(
-    cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value, true);
+  REQUIRE(cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value);
 
   using Alloc = typename Vector::allocator_type;
   const Alloc alloc1(1);
@@ -221,12 +219,12 @@ void TestVectorAllocatorPropagateOnMoveAssignment()
     Vector v2(15, alloc2);
 
     v2 = std::move(v1);
-    ASSERT_EQUAL(v2.get_allocator(), alloc1);
-    ASSERT_EQUAL(Alloc::last_allocated, 2);
-    ASSERT_EQUAL(Alloc::last_deallocated, 2);
+    REQUIRE(v2.get_allocator() == alloc1);
+    REQUIRE(Alloc::last_allocated == 2);
+    REQUIRE(Alloc::last_deallocated == 2);
   }
 
-  ASSERT_EQUAL(Alloc::last_deallocated, 1);
+  REQUIRE(Alloc::last_deallocated == 1);
 }
 
 void TestVectorAllocatorPropagateOnMoveAssignmentHost()
@@ -253,8 +251,8 @@ void TestVectorAllocatorPropagateOnSwap()
   using ::cuda::std::swap;
   swap(v1, v2);
 
-  ASSERT_EQUAL(v1.size(), 17u);
-  ASSERT_EQUAL(v2.size(), 10u);
+  REQUIRE(v1.size() == 17u);
+  REQUIRE(v2.size() == 10u);
 
   Vector v3(15, alloc1);
   Vector v4(31, alloc2);

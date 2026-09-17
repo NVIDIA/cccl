@@ -27,7 +27,7 @@ void TestIsSortedUntilDevice(ExecutionPolicy exec)
   is_sorted_until_kernel<<<1, 1>>>(exec, v.begin(), v.end(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ASSERT_EQUAL_QUIET(v.begin() + 1, (iter_type) result[0]);
@@ -37,7 +37,7 @@ void TestIsSortedUntilDevice(ExecutionPolicy exec)
   is_sorted_until_kernel<<<1, 1>>>(exec, v.begin(), v.end(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ASSERT_EQUAL_QUIET(v.end(), (iter_type) result[0]);

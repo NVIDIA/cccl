@@ -38,7 +38,7 @@ void TestDeviceDereferenceDeviceVectorIterator()
 
   simple_copy(input.begin(), input.end(), output.begin());
 
-  ASSERT_EQUAL(input, output);
+  REQUIRE(input == output);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceDeviceVectorIterator);
 
@@ -53,7 +53,7 @@ void TestDeviceDereferenceDevicePtr()
 
   simple_copy(_first1, _last1, _first2);
 
-  ASSERT_EQUAL(input, output);
+  REQUIRE(input == output);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceDevicePtr);
 
@@ -66,7 +66,7 @@ void TestDeviceDereferenceTransformIterator()
               thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
               output.begin());
 
-  ASSERT_EQUAL(input, output);
+  REQUIRE(input == output);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformIterator);
 
@@ -79,7 +79,7 @@ void TestDeviceDereferenceTransformIteratorInputConversion()
               thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
               output.begin());
 
-  ASSERT_EQUAL(input == output, true);
+  REQUIRE(input == output);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorInputConversion);
 
@@ -92,7 +92,7 @@ void TestDeviceDereferenceTransformIteratorOutputConversion()
               thrust::make_transform_iterator(input.end(), ::cuda::std::identity{}),
               output.begin());
 
-  ASSERT_EQUAL(input == output, true);
+  REQUIRE(input == output);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorOutputConversion);
 
@@ -106,7 +106,7 @@ void TestDeviceDereferenceCountingIterator()
   simple_copy(first, last, output.begin());
 
   const thrust::device_vector<int> ref{1, 2, 3, 4, 5};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceCountingIterator);
 
@@ -122,7 +122,7 @@ void TestDeviceDereferenceTransformedCountingIterator()
               output.begin());
 
   const thrust::device_vector<int> ref{-1, -2, -3, -4, -5};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformedCountingIterator);
 

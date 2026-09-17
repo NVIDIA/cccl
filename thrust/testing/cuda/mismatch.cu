@@ -27,33 +27,33 @@ void TestMismatchDevice(ExecutionPolicy exec)
   mismatch_kernel<<<1, 1>>>(exec, a.begin(), a.end(), b.begin(), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(2, ((pair_type) d_result[0]).first - a.begin());
-  ASSERT_EQUAL(2, ((pair_type) d_result[0]).second - b.begin());
+  REQUIRE(2 == ((pair_type) d_result[0]).first - a.begin());
+  REQUIRE(2 == ((pair_type) d_result[0]).second - b.begin());
 
   b[2] = 3;
 
   mismatch_kernel<<<1, 1>>>(exec, a.begin(), a.end(), b.begin(), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(3, ((pair_type) d_result[0]).first - a.begin());
-  ASSERT_EQUAL(3, ((pair_type) d_result[0]).second - b.begin());
+  REQUIRE(3 == ((pair_type) d_result[0]).first - a.begin());
+  REQUIRE(3 == ((pair_type) d_result[0]).second - b.begin());
 
   b[3] = 4;
 
   mismatch_kernel<<<1, 1>>>(exec, a.begin(), a.end(), b.begin(), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(4, ((pair_type) d_result[0]).first - a.begin());
-  ASSERT_EQUAL(4, ((pair_type) d_result[0]).second - b.begin());
+  REQUIRE(4 == ((pair_type) d_result[0]).first - a.begin());
+  REQUIRE(4 == ((pair_type) d_result[0]).second - b.begin());
 }
 
 void TestMismatchDeviceSeq()
@@ -79,18 +79,18 @@ void TestMismatchCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).first - a.begin(), 2);
-  ASSERT_EQUAL(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).second - b.begin(), 2);
+  REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).first - a.begin() == 2);
+  REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).second - b.begin() == 2);
 
   b[2] = 3;
 
-  ASSERT_EQUAL(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).first - a.begin(), 3);
-  ASSERT_EQUAL(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).second - b.begin(), 3);
+  REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).first - a.begin() == 3);
+  REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).second - b.begin() == 3);
 
   b[3] = 4;
 
-  ASSERT_EQUAL(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).first - a.begin(), 4);
-  ASSERT_EQUAL(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).second - b.begin(), 4);
+  REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).first - a.begin() == 4);
+  REQUIRE(thrust::mismatch(thrust::cuda::par.on(s), a.begin(), a.end(), b.begin()).second - b.begin() == 4);
 
   cudaStreamDestroy(s);
 }

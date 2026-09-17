@@ -116,6 +116,6 @@ void TestIsSortedUntilImplicit()
 
   thrust::is_sorted_until(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestIsSortedUntilImplicit);

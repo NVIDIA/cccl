@@ -37,7 +37,7 @@ void TestTransformReduceDispatchImplicit()
 
   thrust::transform_reduce(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestTransformReduceDispatchImplicit);
 
@@ -52,7 +52,7 @@ void TestTransformReduceSimple()
   const T result =
     thrust::transform_reduce(data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>());
 
-  ASSERT_EQUAL(result, 8);
+  REQUIRE(result == 8);
 }
 DECLARE_VECTOR_UNITTEST(TestTransformReduceSimple);
 
@@ -101,6 +101,6 @@ void TestTransformReduceCountingIterator()
   const T result =
     thrust::transform_reduce(first, first + 3, ::cuda::std::negate<short>(), 0, ::cuda::std::plus<short>());
 
-  ASSERT_EQUAL(result, -6);
+  REQUIRE(result == -6);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformReduceCountingIterator);

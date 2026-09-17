@@ -38,7 +38,7 @@ void TestUninitializedCopyDispatchImplicit()
   thrust::uninitialized_copy(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestUninitializedCopyDispatchImplicit);
 
@@ -73,7 +73,7 @@ void TestUninitializedCopyNDispatchImplicit()
 
   thrust::uninitialized_copy_n(thrust::retag<my_tag>(vec.begin()), vec.size(), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestUninitializedCopyNDispatchImplicit);
 
@@ -86,7 +86,7 @@ void TestUninitializedCopySimplePOD()
   Vector v2(5);
   thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v2, ref);
+  REQUIRE(v2 == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedCopySimplePOD);
 
@@ -99,7 +99,7 @@ void TestUninitializedCopyNSimplePOD()
   Vector v2(5);
   thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v2, ref);
+  REQUIRE(v2 == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedCopyNSimplePOD);
 

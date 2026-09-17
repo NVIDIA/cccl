@@ -72,7 +72,7 @@ template <typename Pointer>
 void return_temporary_buffer(my_old_temporary_allocation_system, Pointer p)
 {
   using RP = typename cuda::std::pointer_traits<Pointer>::raw_pointer;
-  ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(4217));
+  REQUIRE(p.get() == reinterpret_cast<RP>(4217));
 }
 } // namespace my_old_namespace
 
@@ -102,8 +102,8 @@ template <typename Pointer>
 void return_temporary_buffer(my_new_temporary_allocation_system, Pointer p, std::ptrdiff_t n)
 {
   using RP = typename cuda::std::pointer_traits<Pointer>::raw_pointer;
-  ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(1742));
-  ASSERT_EQUAL(n, 413);
+  REQUIRE(p.get() == reinterpret_cast<RP>(1742));
+  REQUIRE(n == 413);
 }
 } // namespace my_new_namespace
 
@@ -166,7 +166,7 @@ void TestGetTemporaryBuffer()
   using pointer                                             = thrust::pointer<int, thrust::device_system_tag>;
   const cuda::std::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(dev_tag, n);
 
-  ASSERT_EQUAL(ptr_and_sz.second, n);
+  REQUIRE(ptr_and_sz.second == n);
 
   const int ref_val = 13;
   const thrust::device_vector<int> ref(n, ref_val);
@@ -253,7 +253,7 @@ void TestGetTemporaryBufferDispatchExplicit()
   using pointer                                             = thrust::pointer<int, thrust::device_system_tag>;
   const cuda::std::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(sys, n);
 
-  ASSERT_EQUAL(ptr_and_sz.second, n);
+  REQUIRE(ptr_and_sz.second == n);
   REQUIRE(sys.is_valid());
 
   const int ref_val = 13;
@@ -306,8 +306,8 @@ void TestTemporaryBufferOldCustomization()
     const pointer_and_size ps = thrust::get_temporary_buffer<int>(sys, 0);
 
     // The magic values are defined in `my_old_namespace` above.
-    ASSERT_EQUAL(ps.first.get(), reinterpret_cast<int*>(4217));
-    ASSERT_EQUAL(ps.second, 314);
+    REQUIRE(ps.first.get() == reinterpret_cast<int*>(4217));
+    REQUIRE(ps.second == 314);
 
     thrust::return_temporary_buffer(sys, ps.first, ps.second);
   }
@@ -326,8 +326,8 @@ void TestTemporaryBufferNewCustomization()
     const pointer_and_size ps = thrust::get_temporary_buffer<int>(sys, 0);
 
     // The magic values are defined in `my_new_namespace` above.
-    ASSERT_EQUAL(ps.first.get(), reinterpret_cast<int*>(1742));
-    ASSERT_EQUAL(ps.second, 413);
+    REQUIRE(ps.first.get() == reinterpret_cast<int*>(1742));
+    REQUIRE(ps.second == 413);
 
     thrust::return_temporary_buffer(sys, ps.first, ps.second);
   }

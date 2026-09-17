@@ -148,8 +148,8 @@ void TestTabulateOutputIterator()
     thrust::make_transform_iterator(thrust::make_counting_iterator(0), index_to_gather_index_op{select_every_nth});
   thrust::gather(gather_index_it, gather_index_it + expected_num_selected, input.cbegin(), expected_output.begin());
 
-  ASSERT_EQUAL(expected_num_selected, num_selected);
-  ASSERT_EQUAL(output, expected_output);
+  REQUIRE(expected_num_selected == num_selected);
+  REQUIRE(output == expected_output);
 }
 DECLARE_VECTOR_UNITTEST(TestTabulateOutputIterator);
 
@@ -164,15 +164,15 @@ void TestTabulateOutputIteratorSubscript()
 
   tabulate_out_it[1] = 2;
   vector_t ref{42, 2, 42, 42};
-  ASSERT_EQUAL(out, ref);
+  REQUIRE(out == ref);
 
   tabulate_out_it[3] = 0;
   ref                = {42, 2, 42, 0};
-  ASSERT_EQUAL(out, ref);
+  REQUIRE(out == ref);
 
   tabulate_out_it[1] = 4;
   ref                = {42, 4, 42, 0};
-  ASSERT_EQUAL(out, ref);
+  REQUIRE(out == ref);
 }
 
 DECLARE_UNITTEST(TestTabulateOutputIteratorSubscript);

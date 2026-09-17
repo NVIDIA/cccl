@@ -289,7 +289,7 @@ void TestEngineSaveRestore()
 
   // both should return the same result
 
-  ASSERT_EQUAL(e0(), e1());
+  REQUIRE(e0() == e1());
 }
 
 template <typename Engine>
@@ -748,7 +748,7 @@ void TestDistributionSaveRestore()
   Distribution d1;
   ss >> d1;
 
-  ASSERT_EQUAL(d0, d1);
+  REQUIRE(d0 == d1);
 }
 
 void TestUniformIntDistributionMin()

@@ -29,9 +29,9 @@ struct TestZipFunctionCtor
 {
   void operator()()
   {
-    ASSERT_EQUAL(thrust::zip_function<SumThree>()(cuda::std::tuple(1, 2, 3)), SumThree{}(1, 2, 3));
-    ASSERT_EQUAL(thrust::zip_function<SumThree>(SumThree{})(cuda::std::tuple(1, 2, 3)), SumThree{}(1, 2, 3));
-    ASSERT_EQUAL(thrust::zip_function(SumThree{})(cuda::std::tuple(1, 2, 3)), SumThree{}(1, 2, 3));
+    REQUIRE(thrust::zip_function<SumThree>()(cuda::std::tuple(1, 2, 3)) == SumThree{}(1, 2, 3));
+    REQUIRE(thrust::zip_function<SumThree>(SumThree{})(cuda::std::tuple(1, 2, 3)) == SumThree{}(1, 2, 3));
+    REQUIRE(thrust::zip_function(SumThree{})(cuda::std::tuple(1, 2, 3)) == SumThree{}(1, 2, 3));
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionCtor, unittest::type_list<int>);
@@ -69,8 +69,8 @@ struct TestZipFunctionTransform
                       d_result_zip.begin(),
                       thrust::make_zip_function(SumThree{}));
 
-    ASSERT_EQUAL(h_result_tuple, h_result_zip);
-    ASSERT_EQUAL(h_result_tuple, d_result_zip);
+    REQUIRE(h_result_tuple == h_result_zip);
+    REQUIRE(h_result_tuple == d_result_zip);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipFunctionTransform, ThirtyTwoBitTypes);
@@ -103,8 +103,8 @@ struct TestZipFunctionMixed
     vecB.resize(numEle);
     vecC.resize(numEle);
 
-    ASSERT_EQUAL(numEle, 2);
-    ASSERT_EQUAL(vecC, expected);
+    REQUIRE(numEle == 2);
+    REQUIRE(vecC == expected);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionMixed, unittest::type_list<int, float>);
@@ -144,7 +144,7 @@ struct TestNestedZipFunction
     const thrust::device_vector<bool> expected{false, false, true};
     thrust::transform(
       idAndSegIt, idAndSegIt + static_cast<std::ptrdiff_t>(SS.size()), isMH.begin(), NestedFunctionCall{});
-    ASSERT_EQUAL(isMH, expected);
+    REQUIRE(isMH == expected);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction, unittest::type_list<int, float>);

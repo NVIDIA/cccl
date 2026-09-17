@@ -36,26 +36,26 @@ template <typename Vector>
 void TestOffsetConstructor()
 {
   thrust::offset_iterator<int*> iter0;
-  ASSERT_EQUAL(iter0.base(), static_cast<int*>(nullptr));
-  ASSERT_EQUAL(iter0.offset(), 0);
+  REQUIRE(iter0.base() == static_cast<int*>(nullptr));
+  REQUIRE(iter0.offset() == 0);
 
   Vector v{42, 43};
   thrust::offset_iterator iter1(v.begin());
   ASSERT_EQUAL_QUIET(iter1.base(), v.begin());
-  ASSERT_EQUAL(iter1.offset(), 0);
-  ASSERT_EQUAL(*iter1, 42);
+  REQUIRE(iter1.offset() == 0);
+  REQUIRE(*iter1 == 42);
 
   thrust::offset_iterator iter2(v.begin(), 1);
   ASSERT_EQUAL_QUIET(iter2.base(), v.begin());
-  ASSERT_EQUAL(iter2.offset(), 1);
-  ASSERT_EQUAL(*iter2, 43);
+  REQUIRE(iter2.offset() == 1);
+  REQUIRE(*iter2 == 43);
 
   ptrdiff_t offset = 1;
   thrust::offset_iterator iter3(v.begin(), &offset);
   ASSERT_EQUAL_QUIET(iter3.base(), v.begin());
-  ASSERT_EQUAL(iter3.offset(), &offset);
-  ASSERT_EQUAL(*iter3.offset(), 1);
-  ASSERT_EQUAL(*iter3, 43);
+  REQUIRE(iter3.offset() == &offset);
+  REQUIRE(*iter3.offset() == 1);
+  REQUIRE(*iter3 == 43);
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetConstructor);
 
@@ -72,16 +72,16 @@ void TestOffsetIteratorCopyConstructorAndAssignment()
 #else // _CCCL_COMPILER(MSVC)
     const thrust::offset_iterator iter1(iter0);
 #endif // _CCCL_COMPILER(MSVC)
-    ASSERT_EQUAL(iter0 == iter1, true);
-    ASSERT_EQUAL(*iter0 == *iter1, true);
+    REQUIRE(iter0 == iter1);
+    REQUIRE(*iter0 == *iter1);
 
     thrust::offset_iterator iter2(v.begin() + 1);
-    ASSERT_EQUAL(iter0 != iter2, true);
-    ASSERT_EQUAL(*iter0 != *iter2, true);
+    REQUIRE(iter0 != iter2);
+    REQUIRE(*iter0 != *iter2);
 
     iter2 = iter0;
-    ASSERT_EQUAL(iter0 == iter2, true);
-    ASSERT_EQUAL(*iter0 == *iter2, true);
+    REQUIRE(iter0 == iter2);
+    REQUIRE(*iter0 == *iter2);
   }
 
   // indirect offset
@@ -94,16 +94,16 @@ void TestOffsetIteratorCopyConstructorAndAssignment()
 #else // _CCCL_COMPILER(MSVC)
     const thrust::offset_iterator iter1(iter0);
 #endif // _CCCL_COMPILER(MSVC)
-    ASSERT_EQUAL(iter0 == iter1, true);
-    ASSERT_EQUAL(*iter0 == *iter1, true);
+    REQUIRE(iter0 == iter1);
+    REQUIRE(*iter0 == *iter1);
 
     thrust::offset_iterator iter2(v.begin() + 1, &offset);
-    ASSERT_EQUAL(iter0 != iter2, true);
-    ASSERT_EQUAL(*iter0 != *iter2, true);
+    REQUIRE(iter0 != iter2);
+    REQUIRE(*iter0 != *iter2);
 
     iter2 = iter0;
-    ASSERT_EQUAL(iter0 == iter2, true);
-    ASSERT_EQUAL(*iter0 == *iter2, true);
+    REQUIRE(iter0 == iter2);
+    REQUIRE(*iter0 == *iter2);
   }
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorCopyConstructorAndAssignment);
@@ -112,16 +112,16 @@ template <typename Vector>
 void TestOffsetIteratorIncrement()
 {
   auto test = [](auto iter) {
-    ASSERT_EQUAL(*iter, 0);
+    REQUIRE(*iter == 0);
     iter++;
-    ASSERT_EQUAL(*iter, 1);
+    REQUIRE(*iter == 1);
     iter++;
     iter++;
-    ASSERT_EQUAL(*iter, 3);
+    REQUIRE(*iter == 3);
     iter += 5;
-    ASSERT_EQUAL(*iter, 8);
+    REQUIRE(*iter == 8);
     iter -= 10;
-    ASSERT_EQUAL(*iter, -2);
+    REQUIRE(*iter == -2);
   };
 
   const Vector v{-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8};
@@ -142,7 +142,7 @@ void TestOffsetIteratorMutation()
     *it = 43;
     ++it.offset();
     *it = 44;
-    ASSERT_EQUAL(v, (Vector{-2, -1, 42, 43, 44, 3, 4, 5, 6, 7, 8}));
+    REQUIRE(v == (Vector{-2, -1, 42, 43, 44, 3, 4, 5, 6, 7, 8}));
   }
   {
     Vector v{-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8};
@@ -153,7 +153,7 @@ void TestOffsetIteratorMutation()
     *it    = 43;
     offset = 2;
     *it    = 44;
-    ASSERT_EQUAL(v, (Vector{-2, -1, 42, 43, 44, 3, 4, 5, 6, 7, 8}));
+    REQUIRE(v == (Vector{-2, -1, 42, 43, 44, 3, 4, 5, 6, 7, 8}));
   }
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorMutation);
@@ -162,30 +162,30 @@ template <typename Vector>
 void TestOffsetIteratorComparisonAndDistance()
 {
   auto test = [](auto iter1, auto iter2) {
-    ASSERT_EQUAL(iter1 == iter2, true);
-    ASSERT_EQUAL(iter1 - iter2, 0);
-    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 0);
+    REQUIRE(iter1 == iter2);
+    REQUIRE(iter1 - iter2 == 0);
+    REQUIRE(::cuda::std::distance(iter1, iter2) == 0);
 
     iter1++;
-    ASSERT_EQUAL(iter1 == iter2, false);
-    ASSERT_EQUAL(iter1 - iter2, 1);
-    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), -1);
+    REQUIRE_FALSE(iter1 == iter2);
+    REQUIRE(iter1 - iter2 == 1);
+    REQUIRE(::cuda::std::distance(iter1, iter2) == -1);
 
     iter2++;
-    ASSERT_EQUAL(iter1 == iter2, true);
-    ASSERT_EQUAL(iter1 - iter2, 0);
-    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 0);
+    REQUIRE(iter1 == iter2);
+    REQUIRE(iter1 - iter2 == 0);
+    REQUIRE(::cuda::std::distance(iter1, iter2) == 0);
 
     iter1 += 100;
     iter2 += 100;
-    ASSERT_EQUAL(iter1 == iter2, true);
-    ASSERT_EQUAL(iter1 - iter2, 0);
-    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 0);
+    REQUIRE(iter1 == iter2);
+    REQUIRE(iter1 - iter2 == 0);
+    REQUIRE(::cuda::std::distance(iter1, iter2) == 0);
 
     iter1 -= 5;
-    ASSERT_EQUAL(iter1 == iter2, false);
-    ASSERT_EQUAL(iter1 - iter2, -5);
-    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 5);
+    REQUIRE_FALSE(iter1 == iter2);
+    REQUIRE(iter1 - iter2 == -5);
+    REQUIRE(::cuda::std::distance(iter1, iter2) == 5);
   };
 
   Vector v(101);
@@ -202,7 +202,7 @@ void TestOffsetIteratorLateValue()
   Vector v{0, 1, 2, 3, 4, 5, 6, 7, 8};
   const thrust::offset_iterator iter(v.begin(), &offset);
   offset = 2; // we provide the offset value **after** constructing the iterator
-  ASSERT_EQUAL(*iter, 2);
+  REQUIRE(*iter == 2);
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorLateValue);
 
@@ -215,6 +215,6 @@ void TestOffsetIteratorIndirectValueFancyIterator()
   thrust::device_vector<typename Vector::difference_type> offsets{2};
   auto it = thrust::make_transform_iterator(offsets.begin(), _1 * 3);
   const thrust::offset_iterator iter(v.begin(), it);
-  ASSERT_EQUAL(*iter, 6);
+  REQUIRE(*iter == 6);
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValueFancyIterator);

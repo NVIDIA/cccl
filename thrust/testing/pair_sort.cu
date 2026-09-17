@@ -43,7 +43,7 @@ struct TestPairStableSortByKey
     thrust::stable_sort_by_key(d_pairs.begin(), d_pairs.end(), d_values.begin());
 
     ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
-    ASSERT_EQUAL(h_values, d_values);
+    REQUIRE(h_values == d_values);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairStableSortByKey,

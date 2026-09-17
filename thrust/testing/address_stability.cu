@@ -94,7 +94,7 @@ void TestAddressStabilityLambda()
     };
     static_assert(!proclaims_copyable_arguments<decltype(l)>::value);
     auto pr_l = proclaim_copyable_arguments(l);
-    ASSERT_EQUAL(pr_l(3), 5);
+    REQUIRE(pr_l(3) == 5);
     static_assert(proclaims_copyable_arguments<decltype(pr_l)>::value);
   }
 
@@ -113,7 +113,7 @@ void TestAddressStabilityLambda()
     };
     static_assert(!proclaims_copyable_arguments<decltype(l)>::value);
     auto pr_l = proclaim_copyable_arguments(l);
-    ASSERT_EQUAL(pr_l(3), 5);
+    REQUIRE(pr_l(3) == 5);
     static_assert(proclaims_copyable_arguments<decltype(pr_l)>::value);
   }
 }

@@ -38,9 +38,9 @@ void TestScatterDevice(ExecutionPolicy exec)
 
   scatter_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_map.begin(), d_output.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 
 void TestScatterDeviceSeq()
@@ -115,9 +115,9 @@ void TestScatterIfDevice(ExecutionPolicy exec)
     d_output.begin(),
     is_even_scatter_if<unsigned int>());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 
 void TestScatterIfDeviceSeq()
@@ -149,7 +149,7 @@ void TestScatterCudaStreams()
   cudaStreamSynchronize(s);
 
   const Vector ref{0, 2, 4, 1, 0, 0, 0, 3};
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
 
   cudaStreamDestroy(s);
 }
@@ -171,7 +171,7 @@ void TestScatterIfCudaStreams()
   cudaStreamSynchronize(s);
 
   const Vector ref{0, 0, 0, 1, 0, 0, 0, 3};
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
 
   cudaStreamDestroy(s);
 }

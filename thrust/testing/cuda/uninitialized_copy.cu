@@ -21,10 +21,10 @@ void TestUninitializedCopyDevice(ExecutionPolicy exec)
   Vector v2(5);
   uninitialized_copy_kernel<<<1, 1>>>(exec, v1.begin(), v1.end(), v2.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v2, ref);
+  REQUIRE(v2 == ref);
 }
 
 void TestUninitializedCopyDeviceSeq()
@@ -55,7 +55,7 @@ void TestUninitializedCopyCudaStreams()
   thrust::uninitialized_copy(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(v2, v1);
+  REQUIRE(v2 == v1);
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestUninitializedCopyCudaStreams);
@@ -78,9 +78,9 @@ void TestUninitializedCopyNDevice(ExecutionPolicy exec)
   Vector v2(5);
   uninitialized_copy_n_kernel<<<1, 1>>>(exec, v1.begin(), v1.size(), v2.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(v2, v1);
+  REQUIRE(v2 == v1);
 }
 
 void TestUninitializedCopyNDeviceSeq()
@@ -110,7 +110,7 @@ void TestUninitializedCopyNCudaStreams()
 
   thrust::uninitialized_copy_n(thrust::cuda::par.on(s), v1.begin(), v1.size(), v2.begin());
   cudaStreamSynchronize(s);
-  ASSERT_EQUAL(v2, v1);
+  REQUIRE(v2 == v1);
 
   cudaStreamDestroy(s);
 }

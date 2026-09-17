@@ -41,7 +41,7 @@ void TestVectorLowerBoundDescendingSimple()
   ASSERT_EQUAL_QUIET(integral_output.end(), output_end);
 
   const IntVector ref{4, 4, 3, 3, 3, 2, 2, 1, 0, 0};
-  ASSERT_EQUAL(ref, integral_output);
+  REQUIRE(ref == integral_output);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorLowerBoundDescendingSimple);
 
@@ -65,7 +65,7 @@ void TestVectorUpperBoundDescendingSimple()
   ASSERT_EQUAL_QUIET(output_end, integral_output.end());
 
   const IntVector ref{5, 4, 4, 3, 3, 3, 2, 2, 1, 0};
-  ASSERT_EQUAL(ref, integral_output);
+  REQUIRE(ref == integral_output);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorUpperBoundDescendingSimple);
 
@@ -90,7 +90,7 @@ void TestVectorBinarySearchDescendingSimple()
   ASSERT_EQUAL_QUIET(bool_output_end, bool_output.end());
 
   const BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
-  ASSERT_EQUAL(bool_ref, bool_output);
+  REQUIRE(bool_ref == bool_output);
 
   // test with integral output type
   IntVector integral_output(10, 2);
@@ -101,7 +101,7 @@ void TestVectorBinarySearchDescendingSimple()
 
   const IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
 
-  ASSERT_EQUAL(int_ref, integral_output);
+  REQUIRE(int_ref == integral_output);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchDescendingSimple);
 
@@ -126,7 +126,7 @@ struct TestVectorLowerBoundDescending
     thrust::lower_bound(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::greater<T>());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBoundDescending, SignedIntegralTypes);
@@ -152,7 +152,7 @@ struct TestVectorUpperBoundDescending
     thrust::upper_bound(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::greater<T>());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBoundDescending, SignedIntegralTypes);
@@ -178,7 +178,7 @@ struct TestVectorBinarySearchDescending
     thrust::binary_search(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::greater<T>());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearchDescending, SignedIntegralTypes);

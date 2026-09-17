@@ -9,14 +9,14 @@ struct TestMin
   {
     // 2 < 3
     T two(2), three(3);
-    ASSERT_EQUAL(two, ::cuda::std::min(two, three));
-    ASSERT_EQUAL(two, ::cuda::std::min(two, three, ::cuda::std::less<T>()));
+    REQUIRE(two == ::cuda::std::min(two, three));
+    REQUIRE(two == ::cuda::std::min(two, three, ::cuda::std::less<T>()));
 
-    ASSERT_EQUAL(two, ::cuda::std::min(three, two));
-    ASSERT_EQUAL(two, ::cuda::std::min(three, two, ::cuda::std::less<T>()));
+    REQUIRE(two == ::cuda::std::min(three, two));
+    REQUIRE(two == ::cuda::std::min(three, two, ::cuda::std::less<T>()));
 
-    ASSERT_EQUAL(three, ::cuda::std::min(two, three, ::cuda::std::greater<T>()));
-    ASSERT_EQUAL(three, ::cuda::std::min(three, two, ::cuda::std::greater<T>()));
+    REQUIRE(three == ::cuda::std::min(two, three, ::cuda::std::greater<T>()));
+    REQUIRE(three == ::cuda::std::min(three, two, ::cuda::std::greater<T>()));
 
     using KV = key_value<T, T>;
     const KV two_and_two(two, two);
@@ -42,14 +42,14 @@ struct TestMax
   {
     // 2 < 3
     T two(2), three(3);
-    ASSERT_EQUAL(three, ::cuda::std::max(two, three));
-    ASSERT_EQUAL(three, ::cuda::std::max(two, three, ::cuda::std::less<T>()));
+    REQUIRE(three == ::cuda::std::max(two, three));
+    REQUIRE(three == ::cuda::std::max(two, three, ::cuda::std::less<T>()));
 
-    ASSERT_EQUAL(three, ::cuda::std::max(three, two));
-    ASSERT_EQUAL(three, ::cuda::std::max(three, two, ::cuda::std::less<T>()));
+    REQUIRE(three == ::cuda::std::max(three, two));
+    REQUIRE(three == ::cuda::std::max(three, two, ::cuda::std::less<T>()));
 
-    ASSERT_EQUAL(two, ::cuda::std::max(two, three, ::cuda::std::greater<T>()));
-    ASSERT_EQUAL(two, ::cuda::std::max(three, two, ::cuda::std::greater<T>()));
+    REQUIRE(two == ::cuda::std::max(two, three, ::cuda::std::greater<T>()));
+    REQUIRE(two == ::cuda::std::max(three, two, ::cuda::std::greater<T>()));
 
     using KV = key_value<T, T>;
     const KV two_and_two(two, two);

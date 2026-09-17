@@ -38,7 +38,7 @@ void TestPairStableSortDevice(ExecutionPolicy exec)
 
   stable_sort_kernel<<<1, 1>>>(exec, d_pairs.begin(), d_pairs.end());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   // sort on the host
   thrust::stable_sort(h_pairs.begin(), h_pairs.end());

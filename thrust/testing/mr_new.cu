@@ -7,7 +7,7 @@ template <typename MemoryResource>
 void TestAlignment(MemoryResource memres, std::size_t size, std::size_t alignment)
 {
   void* ptr = memres.do_allocate(size, alignment);
-  ASSERT_EQUAL(reinterpret_cast<std::size_t>(ptr) % alignment, 0u);
+  REQUIRE(reinterpret_cast<std::size_t>(ptr) % alignment == 0u);
 
   char* char_ptr = reinterpret_cast<char*>(ptr);
   thrust::fill(char_ptr, char_ptr + size, char{});

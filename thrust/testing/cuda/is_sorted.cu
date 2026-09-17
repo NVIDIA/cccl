@@ -26,7 +26,7 @@ void TestIsSortedDevice(ExecutionPolicy exec)
 
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE_FALSE(result[0]);
@@ -36,7 +36,7 @@ void TestIsSortedDevice(ExecutionPolicy exec)
   is_sorted_kernel<<<1, 1>>>(exec, v.begin(), v.end(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   REQUIRE(result[0]);
@@ -66,27 +66,26 @@ void TestIsSortedCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 0), true);
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 1), true);
+  REQUIRE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 0));
+  REQUIRE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 1));
 
   // the following line crashes gcc 4.3
 #if (__GNUC__ == 4) && (__GNUC_MINOR__ == 3)
   // do nothing
 #else
   // compile this line on other compilers
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 2), true);
+  REQUIRE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 2));
 #endif // GCC
 
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 3), true);
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 4), false);
+  REQUIRE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 3));
+  REQUIRE_FALSE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 4));
 
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 3, ::cuda::std::less<int>()), true);
+  REQUIRE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 3, ::cuda::std::less<int>()));
 
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 1, ::cuda::std::greater<int>()), true);
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 4, ::cuda::std::greater<int>()),
-               false);
+  REQUIRE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 1, ::cuda::std::greater<int>()));
+  REQUIRE_FALSE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 4, ::cuda::std::greater<int>()));
 
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.end()), false);
+  REQUIRE_FALSE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.end()));
 
   cudaStreamDestroy(s);
 }

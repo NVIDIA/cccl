@@ -73,7 +73,7 @@ void TestSetUnionByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestSetUnionByKeyDispatchImplicit);
 
@@ -100,8 +100,8 @@ void TestSetUnionByKeySimple()
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
   ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  REQUIRE(ref_key == result_key);
+  REQUIRE(ref_val == result_val);
 }
 DECLARE_VECTOR_UNITTEST(TestSetUnionByKeySimple);
 
@@ -168,8 +168,8 @@ void TestSetUnionByKey(const size_t n)
     d_result_keys.erase(d_end.first, d_result_keys.end());
     d_result_vals.erase(d_end.second, d_result_vals.end());
 
-    ASSERT_EQUAL(h_result_keys, d_result_keys);
-    ASSERT_EQUAL(h_result_vals, d_result_vals);
+    REQUIRE(h_result_keys == d_result_keys);
+    REQUIRE(h_result_vals == d_result_vals);
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionByKey);
@@ -225,8 +225,8 @@ void TestSetUnionByKeyEquivalentRanges(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionByKeyEquivalentRanges);
 
@@ -290,7 +290,7 @@ void TestSetUnionByKeyMultiset(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionByKeyMultiset);

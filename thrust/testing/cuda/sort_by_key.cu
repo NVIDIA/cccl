@@ -32,12 +32,12 @@ void TestComparisonSortByKeyDevice(ExecutionPolicy exec, const size_t n, Compare
 
   sort_by_key_kernel<<<1, 1>>>(exec, d_keys.begin(), d_keys.end(), d_values.begin(), comp);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), comp);
 
-  ASSERT_EQUAL(h_keys, d_keys);
-  ASSERT_EQUAL(h_values, d_values);
+  REQUIRE(h_keys == d_keys);
+  REQUIRE(h_values == d_values);
 };
 
 template <typename T>

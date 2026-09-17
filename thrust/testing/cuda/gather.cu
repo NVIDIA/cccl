@@ -41,10 +41,10 @@ void TestGatherDevice(ExecutionPolicy exec, const size_t n)
   gather_kernel<<<1, 1>>>(exec, d_map.begin(), d_map.end(), d_source.begin(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 
 template <typename T>
@@ -76,7 +76,7 @@ void TestGatherCudaStreams()
 
   const thrust::device_vector<int> ref = {6, 2, 1, 7, 2}; // destination vector
 
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestGatherCudaStreams);
@@ -160,10 +160,10 @@ void TestGatherIfDevice(ExecutionPolicy exec, const size_t n)
     is_even_gather_if<unsigned int>());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 
 template <typename T>
@@ -196,7 +196,7 @@ void TestGatherIfCudaStreams()
 
   const thrust::device_vector<int> ref{0, 2, 0, 7, 0}; // destination vector
 
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestGatherIfCudaStreams);

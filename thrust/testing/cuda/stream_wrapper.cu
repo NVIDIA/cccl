@@ -56,7 +56,7 @@ void TestOnStream(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(wrapper);
 
-  ASSERT_EQUAL(thrust::reduce(streampolicy, v.begin(), v.end()), 2);
+  REQUIRE(thrust::reduce(streampolicy, v.begin(), v.end()) == 2);
 
   cudaStreamDestroy(s);
 }

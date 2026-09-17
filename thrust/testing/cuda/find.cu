@@ -29,10 +29,10 @@ void TestFindDevice(ExecutionPolicy exec)
   find_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), int(0), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+  REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 
   for (size_t i = 1; i < n; i *= 2)
   {
@@ -43,10 +43,10 @@ void TestFindDevice(ExecutionPolicy exec)
     find_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), sample, d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
 
-    ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
   }
 }
 
@@ -87,10 +87,10 @@ void TestFindIfDevice(ExecutionPolicy exec)
   find_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 == 0, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+  REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 
   for (size_t i = 1; i < n; i *= 2)
   {
@@ -101,10 +101,10 @@ void TestFindIfDevice(ExecutionPolicy exec)
     find_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 == sample, d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
 
-    ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
   }
 }
 
@@ -144,10 +144,10 @@ void TestFindIfNotDevice(ExecutionPolicy exec)
   find_if_not_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 != 0, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+  REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 
   for (size_t i = 1; i < n; i *= 2)
   {
@@ -158,10 +158,10 @@ void TestFindIfNotDevice(ExecutionPolicy exec)
     find_if_not_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 != sample, d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
 
-    ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
   }
 }
 
@@ -185,12 +185,12 @@ void TestFindCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 0) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 1) - vec.begin(), 0);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 2) - vec.begin(), 1);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 3) - vec.begin(), 2);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 4) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 5) - vec.begin(), 4);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 0) - vec.begin() == 5);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 1) - vec.begin() == 0);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 2) - vec.begin() == 1);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 3) - vec.begin() == 2);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 4) - vec.begin() == 5);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 5) - vec.begin() == 4);
 
   cudaStreamDestroy(s);
 }

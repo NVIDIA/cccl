@@ -20,22 +20,22 @@ void TestFillSimple()
   thrust::fill(v.begin() + 1, v.begin() + 4, (T) 7);
 
   Vector ref{0, 7, 7, 7, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::fill(v.begin() + 0, v.begin() + 3, (T) 8);
 
   ref = {8, 8, 8, 7, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::fill(v.begin() + 2, v.end(), (T) 9);
 
   ref = {8, 8, 9, 9, 9};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::fill(v.begin(), v.end(), (T) 1);
 
   ref = Vector(5, 1);
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestFillSimple);
 
@@ -58,12 +58,12 @@ void TestFillMixedTypes()
   thrust::fill(v.begin(), v.end(), bool(true));
 
   Vector ref(4, 1);
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::fill(v.begin(), v.end(), char(20));
 
   ref = Vector(4, 20);
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestFillMixedTypes);
 
@@ -76,27 +76,27 @@ void TestFill(size_t n)
   thrust::fill(h_data.begin() + std::min((size_t) 1, n), h_data.begin() + std::min((size_t) 3, n), (T) 0);
   thrust::fill(d_data.begin() + std::min((size_t) 1, n), d_data.begin() + std::min((size_t) 3, n), (T) 0);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill(h_data.begin() + std::min((size_t) 117, n), h_data.begin() + std::min((size_t) 367, n), (T) 1);
   thrust::fill(d_data.begin() + std::min((size_t) 117, n), d_data.begin() + std::min((size_t) 367, n), (T) 1);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill(h_data.begin() + std::min((size_t) 8, n), h_data.begin() + std::min((size_t) 259, n), (T) 2);
   thrust::fill(d_data.begin() + std::min((size_t) 8, n), d_data.begin() + std::min((size_t) 259, n), (T) 2);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill(h_data.begin() + std::min((size_t) 3, n), h_data.end(), (T) 3);
   thrust::fill(d_data.begin() + std::min((size_t) 3, n), d_data.end(), (T) 3);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill(h_data.begin(), h_data.end(), (T) 4);
   thrust::fill(d_data.begin(), d_data.end(), (T) 4);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 DECLARE_VARIABLE_UNITTEST(TestFill);
 
@@ -110,28 +110,28 @@ void TestFillNSimple()
   typename Vector::iterator iter = thrust::fill_n(v.begin() + 1, 3, (T) 7);
 
   Vector ref{0, 7, 7, 7, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   ASSERT_EQUAL_QUIET(v.begin() + 4, iter);
 
   iter = thrust::fill_n(v.begin() + 0, 3, (T) 8);
 
   ref = {8, 8, 8, 7, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   ASSERT_EQUAL_QUIET(v.begin() + 3, iter);
 
   iter = thrust::fill_n(v.begin() + 2, 3, (T) 9);
 
   ref = {8, 8, 9, 9, 9};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   ASSERT_EQUAL_QUIET(v.end(), iter);
 
   iter = thrust::fill_n(v.begin(), v.size(), (T) 1);
 
   ref = Vector(5, 1);
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   ASSERT_EQUAL_QUIET(v.end(), iter);
 }
@@ -160,13 +160,13 @@ void TestFillNMixedTypes()
   typename Vector::iterator iter = thrust::fill_n(v.begin(), v.size(), bool(true));
 
   Vector ref(4, 1);
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
   ASSERT_EQUAL_QUIET(v.end(), iter);
 
   iter = thrust::fill_n(v.begin(), v.size(), char(20));
 
   ref = Vector(4, 20);
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
   ASSERT_EQUAL_QUIET(v.end(), iter);
 }
 DECLARE_VECTOR_UNITTEST(TestFillNMixedTypes);
@@ -181,30 +181,30 @@ void TestFillN(size_t n)
   thrust::fill_n(h_data.begin() + begin_offset, std::min((size_t) 3, n) - begin_offset, (T) 0);
   thrust::fill_n(d_data.begin() + begin_offset, std::min((size_t) 3, n) - begin_offset, (T) 0);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   begin_offset = std::min<size_t>(117, n);
   thrust::fill_n(h_data.begin() + begin_offset, std::min((size_t) 367, n) - begin_offset, (T) 1);
   thrust::fill_n(d_data.begin() + begin_offset, std::min((size_t) 367, n) - begin_offset, (T) 1);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   begin_offset = std::min<size_t>(8, n);
   thrust::fill_n(h_data.begin() + begin_offset, std::min((size_t) 259, n) - begin_offset, (T) 2);
   thrust::fill_n(d_data.begin() + begin_offset, std::min((size_t) 259, n) - begin_offset, (T) 2);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   begin_offset = std::min<size_t>(3, n);
   thrust::fill_n(h_data.begin() + begin_offset, h_data.size() - begin_offset, (T) 3);
   thrust::fill_n(d_data.begin() + begin_offset, d_data.size() - begin_offset, (T) 3);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::fill_n(h_data.begin(), h_data.size(), (T) 4);
   thrust::fill_n(d_data.begin(), d_data.size(), (T) 4);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 DECLARE_VARIABLE_UNITTEST(TestFillN);
 
@@ -222,13 +222,13 @@ void TestFillZipIterator()
                cuda::std::tuple<T, T, T>(4, 7, 13));
 
   Vector ref1{4, 4, 4};
-  ASSERT_EQUAL(ref1, v1);
+  REQUIRE(ref1 == v1);
 
   Vector ref2{7, 7, 7};
-  ASSERT_EQUAL(ref2, v2);
+  REQUIRE(ref2 == v2);
 
   Vector ref3{13, 13, 13};
-  ASSERT_EQUAL(ref3, v3);
+  REQUIRE(ref3 == v3);
 };
 DECLARE_VECTOR_UNITTEST(TestFillZipIterator);
 
@@ -259,12 +259,12 @@ void TestFillWithTrivialAssignment()
   thrust::host_vector<T> h(1);
   thrust::device_vector<T> d(1);
 
-  ASSERT_EQUAL(h[0].x, 0);
-  ASSERT_EQUAL(h[0].y, 0);
-  ASSERT_EQUAL(h[0].z, 0);
-  ASSERT_EQUAL(static_cast<T>(d[0]).x, 0);
-  ASSERT_EQUAL(static_cast<T>(d[0]).y, 0);
-  ASSERT_EQUAL(static_cast<T>(d[0]).z, 0);
+  REQUIRE(h[0].x == 0);
+  REQUIRE(h[0].y == 0);
+  REQUIRE(h[0].z == 0);
+  REQUIRE(static_cast<T>(d[0]).x == 0);
+  REQUIRE(static_cast<T>(d[0]).y == 0);
+  REQUIRE(static_cast<T>(d[0]).z == 0);
 
   T val;
   val.x = 10;
@@ -274,12 +274,12 @@ void TestFillWithTrivialAssignment()
   thrust::fill(h.begin(), h.end(), val);
   thrust::fill(d.begin(), d.end(), val);
 
-  ASSERT_EQUAL(h[0].x, 10);
-  ASSERT_EQUAL(h[0].y, 20);
-  ASSERT_EQUAL(h[0].z, -1);
-  ASSERT_EQUAL(static_cast<T>(d[0]).x, 10);
-  ASSERT_EQUAL(static_cast<T>(d[0]).y, 20);
-  ASSERT_EQUAL(static_cast<T>(d[0]).z, -1);
+  REQUIRE(h[0].x == 10);
+  REQUIRE(h[0].y == 20);
+  REQUIRE(h[0].z == -1);
+  REQUIRE(static_cast<T>(d[0]).x == 10);
+  REQUIRE(static_cast<T>(d[0]).y == 20);
+  REQUIRE(static_cast<T>(d[0]).z == -1);
 };
 DECLARE_UNITTEST(TestFillWithTrivialAssignment);
 
@@ -312,12 +312,12 @@ void TestFillWithNonTrivialAssignment()
   thrust::host_vector<T> h(1);
   thrust::device_vector<T> d(1);
 
-  ASSERT_EQUAL(h[0].x, 0);
-  ASSERT_EQUAL(h[0].y, 0);
-  ASSERT_EQUAL(h[0].z, 0);
-  ASSERT_EQUAL(static_cast<T>(d[0]).x, 0);
-  ASSERT_EQUAL(static_cast<T>(d[0]).y, 0);
-  ASSERT_EQUAL(static_cast<T>(d[0]).z, 0);
+  REQUIRE(h[0].x == 0);
+  REQUIRE(h[0].y == 0);
+  REQUIRE(h[0].z == 0);
+  REQUIRE(static_cast<T>(d[0]).x == 0);
+  REQUIRE(static_cast<T>(d[0]).y == 0);
+  REQUIRE(static_cast<T>(d[0]).z == 0);
 
   T val;
   val.x = 10;
@@ -327,12 +327,12 @@ void TestFillWithNonTrivialAssignment()
   thrust::fill(h.begin(), h.end(), val);
   thrust::fill(d.begin(), d.end(), val);
 
-  ASSERT_EQUAL(h[0].x, 10);
-  ASSERT_EQUAL(h[0].y, 20);
-  ASSERT_EQUAL(h[0].z, 30);
-  ASSERT_EQUAL(static_cast<T>(d[0]).x, 10);
-  ASSERT_EQUAL(static_cast<T>(d[0]).y, 20);
-  ASSERT_EQUAL(static_cast<T>(d[0]).z, 30);
+  REQUIRE(h[0].x == 10);
+  REQUIRE(h[0].y == 20);
+  REQUIRE(h[0].z == 30);
+  REQUIRE(static_cast<T>(d[0]).x == 10);
+  REQUIRE(static_cast<T>(d[0]).y == 20);
+  REQUIRE(static_cast<T>(d[0]).z == 30);
 };
 DECLARE_UNITTEST(TestFillWithNonTrivialAssignment);
 
@@ -365,7 +365,7 @@ void TestFillDispatchImplicit()
 
   thrust::fill(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestFillDispatchImplicit);
 
@@ -400,7 +400,7 @@ void TestFillNDispatchImplicit()
 
   thrust::fill_n(thrust::retag<my_tag>(vec.begin()), vec.size(), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestFillNDispatchImplicit);
 

@@ -61,7 +61,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformOutputIterator()
 
   Vector gold_output{1, 4, 9, 16};
 
-  ASSERT_EQUAL(output, gold_output);
+  REQUIRE(output == gold_output);
 }
 DECLARE_VECTOR_UNITTEST(TestTransformOutputIterator);
 
@@ -81,7 +81,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformOutputIterator()
   thrust::copy(input.begin(), input.end(), thrust::make_transform_output_iterator(output.begin(), UnaryFunction()));
 
   Vector gold_output{1, 4, 9, 16};
-  ASSERT_EQUAL(output, gold_output);
+  REQUIRE(output == gold_output);
 }
 DECLARE_VECTOR_UNITTEST(TestMakeTransformOutputIterator);
 
@@ -104,7 +104,7 @@ struct TestTransformOutputIteratorScan
     thrust::inclusive_scan(
       d_data.begin(), d_data.end(), thrust::make_transform_output_iterator(d_result.begin(), ::cuda::std::negate<T>()));
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformOutputIteratorScan, SignedIntegralTypes);
