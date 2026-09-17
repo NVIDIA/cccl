@@ -2194,16 +2194,6 @@ cdef class DeviceRadixSortBuildResult:
 # --------------------------------------------
 #   DeviceUnaryTransform/DeviceBinaryTransform
 # --------------------------------------------
-include "_bindings_transform_diagnostics.pxi"
-
-
-cdef _raise_transform_error(str message):
-    detail = _transform_diagnostic()
-    if detail:
-        raise RuntimeError(f"{message}: {detail}")
-    raise RuntimeError(message)
-
-
 cdef extern from "cccl/c/transform.h":
     cdef struct cccl_device_transform_build_result_t:
         const char* payload
@@ -2290,7 +2280,7 @@ cdef class DeviceUnaryTransform:
                 _cfg,
             )
         if status != 0:
-            _raise_transform_error("Failed to build unary transform")
+            raise RuntimeError("Failed to build unary transform")
 
     def __dealloc__(DeviceUnaryTransform self):
         cdef CUresult status = -1
@@ -2387,7 +2377,7 @@ cdef class DeviceBinaryTransform:
                 _cfg,
             )
         if status != 0:
-            _raise_transform_error("Failed to build binary transform")
+            raise RuntimeError("Failed to build binary transform")
 
     def __dealloc__(DeviceBinaryTransform self):
         cdef CUresult status = -1
