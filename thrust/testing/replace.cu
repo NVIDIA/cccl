@@ -4,14 +4,6 @@
 
 #include <unittest/unittest.h>
 
-// There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 11)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
 // New GCC, new miscompile. 13 + TBB this time.
 #if _CCCL_COMPILER(GCC, ==, 13) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_TBB
 #  define THRUST_GCC13_TBB_MISCOMPILE
@@ -43,7 +35,7 @@ void TestReplaceDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace(sys, vec.begin(), vec.begin(), 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -112,7 +104,7 @@ void TestReplaceCopyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_copy(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -166,13 +158,13 @@ void TestReplaceCopyToDiscardIterator(const size_t n)
   T old_value = 0;
   T new_value = 1;
 
-  thrust::discard_iterator<> h_result =
+  const thrust::discard_iterator<> h_result =
     thrust::replace_copy(h_data.begin(), h_data.end(), thrust::make_discard_iterator(), old_value, new_value);
 
-  thrust::discard_iterator<> d_result =
+  const thrust::discard_iterator<> d_result =
     thrust::replace_copy(d_data.begin(), d_data.end(), thrust::make_discard_iterator(), old_value, new_value);
 
-  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -213,7 +205,7 @@ void TestReplaceIfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_if(sys, vec.begin(), vec.begin(), 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -262,7 +254,7 @@ void TestReplaceIfStencilDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_if(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -343,7 +335,7 @@ void TestReplaceCopyIfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -398,7 +390,7 @@ void TestReplaceCopyIfStencilDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -452,13 +444,13 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfToDiscardIterator(con
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
 
-  thrust::discard_iterator<> h_result =
+  const thrust::discard_iterator<> h_result =
     thrust::replace_copy_if(h_data.begin(), h_data.end(), thrust::make_discard_iterator(), less_than_five<T>(), T{0});
 
-  thrust::discard_iterator<> d_result =
+  const thrust::discard_iterator<> d_result =
     thrust::replace_copy_if(d_data.begin(), d_data.end(), thrust::make_discard_iterator(), less_than_five<T>(), T{0});
 
-  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -494,13 +486,13 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilToDiscardItera
   thrust::host_vector<T> h_stencil   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_stencil = h_stencil;
 
-  thrust::discard_iterator<> h_result = thrust::replace_copy_if(
+  const thrust::discard_iterator<> h_result = thrust::replace_copy_if(
     h_data.begin(), h_data.end(), h_stencil.begin(), thrust::make_discard_iterator(), less_than_five<T>(), T{0});
 
-  thrust::discard_iterator<> d_result = thrust::replace_copy_if(
+  const thrust::discard_iterator<> d_result = thrust::replace_copy_if(
     d_data.begin(), d_data.end(), d_stencil.begin(), thrust::make_discard_iterator(), less_than_five<T>(), T{0});
 
-  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);

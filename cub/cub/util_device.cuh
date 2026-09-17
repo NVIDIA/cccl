@@ -124,7 +124,7 @@ CUB_RUNTIME_FUNCTION inline int device_count_uncached()
 // TODO(bgruber): remove in CCCL 4.0
 _CCCL_HOST inline int device_count_cached_value()
 {
-  static int count = device_count_uncached();
+  static const int count = device_count_uncached();
   return count;
 }
 
@@ -302,7 +302,7 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
   // it can be called.
   [[maybe_unused]] const auto empty_kernel = detail::EmptyKernel<T>;
 
-  cudaError_t result = cudaSuccess;
+  cudaError_t result = cudaSuccess; // NOLINT(misc-const-correctness)
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     ({
                       cudaFuncAttributes empty_kernel_attrs;
@@ -319,7 +319,7 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
 template <class T = void>
 _CCCL_HOST cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
-  SwitchDevice sd(device);
+  const SwitchDevice sd(device);
   return PtxVersionUncached<T>(ptx_version);
 }
 
@@ -396,19 +396,6 @@ CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 {
   int ptx_version = 0;
   if (const auto error = PtxVersion<T>(ptx_version))
-  {
-    return error;
-  }
-  cc = ::cuda::compute_capability{ptx_version / 10};
-  return cudaSuccess;
-}
-
-//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
-template <class T = void>
-_CCCL_HOST_API cudaError_t ptx_compute_cap(::cuda::compute_capability& cc, int device)
-{
-  int ptx_version = 0;
-  if (const auto error = PtxVersion<T>(ptx_version, device))
   {
     return error;
   }

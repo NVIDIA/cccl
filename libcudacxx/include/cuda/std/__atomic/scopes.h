@@ -42,15 +42,17 @@ enum thread_scope
   thread_scope_thread = __ATOMIC_THREAD
 };
 
-struct __thread_scope_thread_tag
+struct __thread_scope_tag
 {};
-struct __thread_scope_block_tag
+struct __thread_scope_thread_tag : __thread_scope_tag
 {};
-struct __thread_scope_cluster_tag
+struct __thread_scope_block_tag : __thread_scope_tag
 {};
-struct __thread_scope_device_tag
+struct __thread_scope_cluster_tag : __thread_scope_tag
 {};
-struct __thread_scope_system_tag
+struct __thread_scope_device_tag : __thread_scope_tag
+{};
+struct __thread_scope_system_tag : __thread_scope_tag
 {};
 
 template <int _Scope>

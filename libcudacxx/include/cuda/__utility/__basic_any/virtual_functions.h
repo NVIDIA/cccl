@@ -47,7 +47,7 @@ template <class _Tp, auto _Override>
 struct __override_tag_;
 
 template <class _Tp, auto _Override>
-using __override_tag _CCCL_NODEBUG_ALIAS = __override_tag_<_Tp, _Override>*;
+using __override_tag _CCCL_NODEBUG = __override_tag_<_Tp, _Override>*;
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wstrict-aliasing")
@@ -56,7 +56,7 @@ template <class _Fn, class _Cp>
 _CCCL_HOST_DEVICE_API auto __class_of_(_Fn _Cp::*) -> _Cp;
 
 template <class _Fn>
-using __class_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::__class_of_(_Fn()));
+using __class_of _CCCL_NODEBUG = decltype(::cuda::__class_of_(_Fn()));
 
 //! We use a C-style cast instead of a static_cast because a C-style cast will
 //! ignore accessibility, letting us cast to a private base class.
@@ -76,7 +76,7 @@ template <class _Tp, class _FnType, class _Ret, bool _IsConst, bool _IsNothrow, 
   [[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
   [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
-  using __value_type _CCCL_NODEBUG_ALIAS = ::cuda::std::__maybe_const<_IsConst, _Tp>;
+  using __value_type _CCCL_NODEBUG = ::cuda::std::__maybe_const<_IsConst, _Tp>;
 
   if constexpr (::cuda::std::is_same_v<_Tp, void>)
   {
@@ -174,8 +174,8 @@ _CCCL_HOST_DEVICE_API auto __is_virtual_const(_Ret (*)(void const*, _Args...)) -
 template <auto _Fn>
 struct __virtual_fn
 {
-  using __function_t _CCCL_NODEBUG_ALIAS = decltype(__virtual_override_fn<decltype(_Fn)>);
-  using __result_t _CCCL_NODEBUG_ALIAS   = decltype(__get_virtual_result(__function_t{}));
+  using __function_t _CCCL_NODEBUG = decltype(__virtual_override_fn<decltype(_Fn)>);
+  using __result_t _CCCL_NODEBUG   = decltype(__get_virtual_result(__function_t{}));
 
   static constexpr bool __const_fn   = decltype(::cuda::__is_virtual_const(__function_t{}))::value;
   static constexpr bool __nothrow_fn = noexcept(::cuda::__get_virtual_result(__function_t{}));

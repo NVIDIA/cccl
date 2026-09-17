@@ -7,6 +7,8 @@ CCCL Development Guide
    :hidden:
    :maxdepth: 1
 
+   coding_guidelines
+   review_guidelines
    macro
    testing
    build_and_bisect_tools
@@ -17,6 +19,8 @@ This living document serves to describe the internal details and the development
 
 Documentation:
 
+- :doc:`CCCL C++ Coding Guidelines <coding_guidelines>`
+- :doc:`CCCL Review Guidelines <review_guidelines>`
 - :doc:`CCCL Internal Macros <macro>`
 - :doc:`CCCL Testing Utilities <testing>`
 - :doc:`CCCL Bisect And Targeted Build/Test Helpers <build_and_bisect_tools>`

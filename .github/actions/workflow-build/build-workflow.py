@@ -278,7 +278,37 @@ def get_gpu(gpu_string):
     if "testing" not in result:
         result["testing"] = False
 
+    if "gpu_count" not in result:
+        result["gpu_count"] = 1
+
+    # runner_id defaults to the GPU key. Used in runner label templates as {gpu_id}.
+    if "runner_id" not in result:
+        result["runner_id"] = gpu_string
+
     return result
+
+
+@static_result
+def get_runner_label_config():
+    """Return the runner label templates from matrix.yaml, with defaults."""
+    runner_labels = matrix_yaml.get("runner_labels", {})
+    return {
+        "cpu": runner_labels.get("cpu", "{os}-{cpu}-cpu16"),
+        "gpu": runner_labels.get(
+            "gpu", "{os}-{cpu}-gpu-{gpu_runner}-{gpu_count}{gpu_testing}"
+        ),
+    }
+
+
+@static_result
+def get_devcontainer_image_config():
+    """Return devcontainer image config from matrix.yaml, with defaults."""
+    return {
+        "image": matrix_yaml.get("devcontainer_image", "rapidsai/devcontainers"),
+        "includes_version": matrix_yaml.get(
+            "devcontainer_image_includes_version", True
+        ),
+    }
 
 
 @memoize_result
@@ -335,6 +365,19 @@ def get_job_type_info(job):
 
 
 @memoize_result
+def get_codegen_target(codegen_target):
+    if codegen_target not in matrix_yaml["codegen_targets"]:
+        raise Exception(
+            f"Unknown codegen target '{codegen_target}'. Valid options are: "
+            + ", ".join(matrix_yaml["codegen_targets"].keys())
+        )
+
+    result = matrix_yaml["codegen_targets"][codegen_target]
+    result["id"] = codegen_target
+    return result
+
+
+@memoize_result
 def get_tag_info(tag):
     if tag not in matrix_yaml["tags"].keys():
         raise Exception(
@@ -364,6 +407,7 @@ def get_all_matrix_job_tags_sorted():
     sorted_important_tags = [
         "project",
         "jobs",
+        "codegen_target",
         "cudacxx",
         "cxx",
         "ctk",
@@ -432,6 +476,10 @@ def generate_dispatch_group_name(matrix_job):
 
 def generate_dispatch_job_name(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
+    job_name = job_info["name"]
+    if "codegen_target" in matrix_job:
+        codegen_target = get_codegen_target(matrix_job["codegen_target"])
+        job_name += f" {codegen_target['name']}"
     cpu_str = matrix_job["cpu"]
     if job_info["gpu"]:
         gpu = get_gpu(matrix_job["gpu"])
@@ -470,21 +518,31 @@ def generate_dispatch_job_name(matrix_job, job_type):
         else ""
     )
 
-    return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
+    return f"[{config_tag}] {job_name}({cpu_str}{gpu_str}){extra_info}"
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
     runner_os = "windows" if is_windows(matrix_job) else "linux"
     cpu = matrix_job["cpu"]
 
+    runner_config = get_runner_label_config()
+
     job_info = get_job_type_info(job_type)
     if not job_info["gpu"]:
-        return f"{runner_os}-{cpu}-cpu16"
+        return runner_config["cpu"].format(os=runner_os, cpu=cpu)
 
     gpu = get_gpu(matrix_job["gpu"])
-    suffix = "-testing" if gpu["testing"] else ""
+    gpu_testing = "-testing" if gpu["testing"] else ""
 
-    return f"{runner_os}-{cpu}-gpu-{gpu['runner']}{suffix}"
+    return runner_config["gpu"].format(
+        os=runner_os,
+        cpu=cpu,
+        gpu_id=gpu["runner_id"],
+        gpu_runner=gpu["runner"],
+        gpu_count=gpu["gpu_count"],
+        gpu_name=gpu["name"],
+        gpu_testing=gpu_testing,
+    )
 
 
 def generate_dispatch_job_ctk_version(matrix_job, job_type):
@@ -500,6 +558,12 @@ def generate_dispatch_job_host_compiler(matrix_job, job_type):
 
 def generate_dispatch_job_image(matrix_job, job_type):
     devcontainer_version = matrix_yaml["devcontainer_version"]
+    image_config = get_devcontainer_image_config()
+    image_repo = image_config["image"]
+    version_prefix = (
+        f"{devcontainer_version}-" if image_config["includes_version"] else ""
+    )
+
     ctk = matrix_job["ctk"]
     host_compiler = generate_dispatch_job_host_compiler(matrix_job, job_type)
 
@@ -507,12 +571,12 @@ def generate_dispatch_job_image(matrix_job, job_type):
     ctk_suffix = "ext" if job_info["cuda_ext"] else ""
 
     if is_windows(matrix_job):
-        return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}{ctk_suffix}-{host_compiler}"
+        return f"{image_repo}:{version_prefix}cuda{ctk}{ctk_suffix}-{host_compiler}"
 
     if is_nvhpc(matrix_job):
-        return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}"
+        return f"{image_repo}:{version_prefix}cpp-{host_compiler}"
 
-    return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
+    return f"{image_repo}:{version_prefix}cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
 
 def generate_dispatch_job_environment(matrix_job, job_type):
@@ -556,6 +620,13 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f' -py-version "{py_version}"'
     if py_ctk_mode:
         command += f' -ctk-mode "{py_ctk_mode}"'
+    if "codegen_target" in matrix_job:
+        codegen_target = get_codegen_target(matrix_job["codegen_target"])
+        command += f' -target "{codegen_target["cmake_target"]}"'
+        command += (
+            " -cmake-options "
+            f'"-DLIBCUDACXX_CODEGEN_FILECHECK_TESTS={codegen_target["id"]}"'
+        )
     if extra_args:
         command += f" {extra_args}"
 
@@ -599,12 +670,23 @@ def generate_dispatch_job_origin(matrix_job, job_type):
     if "args" in origin_job and not origin_job["args"]:
         del origin_job["args"]
 
+    if "codegen_target" in origin_job:
+        origin_job["codegen_target"] = get_codegen_target(origin_job["codegen_target"])[
+            "name"
+        ]
+
     origin["matrix_job"] = origin_job
 
     return origin
 
 
 def generate_dispatch_job_json(matrix_job, job_type):
+    job_info = get_job_type_info(job_type)
+    gpu_count = 0
+    if job_info["gpu"]:
+        gpu = get_gpu(matrix_job["gpu"])
+        gpu_count = gpu["gpu_count"]
+
     return {
         "cuda": generate_dispatch_job_ctk_version(matrix_job, job_type),
         "host": generate_dispatch_job_host_compiler(matrix_job, job_type),
@@ -614,6 +696,8 @@ def generate_dispatch_job_json(matrix_job, job_type):
         "environment": generate_dispatch_job_environment(matrix_job, job_type),
         "command": generate_dispatch_job_command(matrix_job, job_type),
         "origin": generate_dispatch_job_origin(matrix_job, job_type),
+        "os": "windows" if is_windows(matrix_job) else "linux",
+        "gpu_count": gpu_count,
     }
 
 
@@ -1053,6 +1137,33 @@ def validate_tags(matrix_job, ignore_required=False):
             raise Exception(
                 error_message_with_matrix_job(matrix_job, f"Unknown tag '{tag}'")
             )
+
+    jobs = matrix_job.get("jobs", [])
+    jobs = jobs if isinstance(jobs, list) else [jobs]
+    has_codegen_job = "codegen_filecheck" in jobs
+    if has_codegen_job and "codegen_target" not in matrix_job:
+        raise Exception(
+            error_message_with_matrix_job(
+                matrix_job,
+                "The codegen_filecheck job requires a codegen_target tag.",
+            )
+        )
+    if "codegen_target" in matrix_job and any(
+        job != "codegen_filecheck" for job in jobs
+    ):
+        raise Exception(
+            error_message_with_matrix_job(
+                matrix_job,
+                "The codegen_target tag is only valid for codegen_filecheck jobs.",
+            )
+        )
+    if "codegen_target" in matrix_job:
+        codegen_targets = matrix_job["codegen_target"]
+        codegen_targets = (
+            codegen_targets if isinstance(codegen_targets, list) else [codegen_targets]
+        )
+        for codegen_target in codegen_targets:
+            get_codegen_target(codegen_target)
 
     if "gpu" in matrix_job:
         gpus = (

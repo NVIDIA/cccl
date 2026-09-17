@@ -54,7 +54,7 @@ void TestTransformIterator()
   thrust::sequence(input.begin(), input.end(), 1);
 
   // construct transform_iterator
-  thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
+  const thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
 
   thrust::copy(iter, iter + 4, output.begin());
 
@@ -64,7 +64,7 @@ void TestTransformIterator()
 DECLARE_VECTOR_UNITTEST(TestTransformIterator);
 
 template <class Vector>
-void TestMakeTransformIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformIterator()
 {
   using T = typename Vector::value_type;
 
@@ -78,7 +78,7 @@ void TestMakeTransformIterator()
   thrust::sequence(input.begin(), input.end(), 1);
 
   // construct transform_iterator
-  thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
+  const thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
 
   thrust::copy(thrust::make_transform_iterator(input.begin(), UnaryFunction()),
                thrust::make_transform_iterator(input.end(), UnaryFunction()),
@@ -108,7 +108,7 @@ struct TestTransformIteratorReduce
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestTransformIteratorReduce, IntegralTypes> TestTransformIteratorReduceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformIteratorReduce, IntegralTypes);
 
 struct ExtractValue
 {

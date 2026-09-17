@@ -148,7 +148,7 @@ void TestScatterCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  Vector ref{0, 2, 4, 1, 0, 0, 0, 3};
+  const Vector ref{0, 2, 4, 1, 0, 0, 0, 3};
   ASSERT_EQUAL(dst, ref);
 
   cudaStreamDestroy(s);
@@ -170,7 +170,7 @@ void TestScatterIfCudaStreams()
   thrust::scatter_if(thrust::cuda::par.on(s), src.begin(), src.end(), map.begin(), flg.begin(), dst.begin());
   cudaStreamSynchronize(s);
 
-  Vector ref{0, 0, 0, 1, 0, 0, 0, 3};
+  const Vector ref{0, 0, 0, 1, 0, 0, 0, 3};
   ASSERT_EQUAL(dst, ref);
 
   cudaStreamDestroy(s);

@@ -124,10 +124,10 @@ private:
 
 C2H_CCCLRT_TEST("Host launch", "")
 {
-  cuda::device_ref device{0};
+  const cuda::device_ref device{0};
   device.init();
 
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   SECTION("Ordinary function without arguments returning void")
   {
@@ -217,7 +217,7 @@ C2H_CCCLRT_TEST("Host launch", "")
 
   SECTION("Confirm no const added to the callable")
   {
-    lambda_wrapper wrapped_lambda([&]() {
+    lambda_wrapper wrapped_lambda([&]() { // NOLINT(misc-const-correctness)
       i = 21;
     });
 
@@ -289,14 +289,14 @@ C2H_CCCLRT_TEST("Host launch uses the stream device when current device differs"
     return;
   }
 
-  cuda::device_ref current_device{0};
-  cuda::device_ref explicit_device{1};
+  const cuda::device_ref current_device{0};
+  const cuda::device_ref explicit_device{1};
 
-  cuda::stream stream{explicit_device};
+  const cuda::stream stream{explicit_device};
   int value = 0;
 
   {
-    cuda::__ensure_current_context guard(current_device);
+    const cuda::__ensure_current_context guard(current_device);
     cuda::host_launch(stream, [&value]() {
       value = 42;
     });

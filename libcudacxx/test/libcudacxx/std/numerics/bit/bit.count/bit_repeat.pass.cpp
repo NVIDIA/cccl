@@ -72,6 +72,8 @@ TEST_FUNC constexpr void test()
     {
       test_bit_repeat(value, width);
     }
+
+    test_bit_repeat(value, cuda::std::numeric_limits<int>::max());
   }
 }
 

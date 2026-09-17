@@ -117,8 +117,8 @@ __global__ void TestOffsetIteratorDevice(thrust::offset_iterator<device_only_ite
 void TestOffsetIteratorWithDeviceOnlyIterator()
 {
   thrust::device_vector<int> v{1, 2, 3, 4, 5};
-  device_only_iterator base(thrust::raw_pointer_cast(v.data()));
-  thrust::offset_iterator iter(base);
+  const device_only_iterator base(thrust::raw_pointer_cast(v.data()));
+  const thrust::offset_iterator iter(base);
   TestOffsetIteratorBoth(iter);
   TestOffsetIteratorDevice<<<1, 1>>>(iter);
 }

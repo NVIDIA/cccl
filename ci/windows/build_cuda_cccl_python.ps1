@@ -276,8 +276,9 @@ function Build-CudaCcclWheel {
     # Run pip wheel to build the wheel.
     $pythonArgs = @(
         '-m', 'pip', 'wheel',
+        '--no-deps',
         '-w', $outDir,
-        ".[${extra}]",
+        '.',
         '-v'
     ) + $pipConfigArgs
 

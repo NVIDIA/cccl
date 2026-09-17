@@ -17,8 +17,8 @@ int main()
 
   // fuse gather with reduction:
   //   sum = source[map[0]] + source[map[1]] + ...
-  int sum = thrust::reduce(thrust::make_permutation_iterator(source.begin(), map.begin()),
-                           thrust::make_permutation_iterator(source.begin(), map.end()));
+  const int sum = thrust::reduce(thrust::make_permutation_iterator(source.begin(), map.begin()),
+                                 thrust::make_permutation_iterator(source.begin(), map.end()));
 
   // print sum
   std::cout << "sum is " << sum << '\n';

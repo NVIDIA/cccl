@@ -7,14 +7,6 @@
 
 #include <unittest/unittest.h>
 
-// There is an unfortunate miscompilation of the gcc-12/gcc-13 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 12)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else // _CCCL_COMPILER(GCC, <, 12)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
 // ensure that we properly support thrust::transform_input_output_iterator from cuda::std
 void TestTransformInputOutputIteratorTraits()
 {
@@ -62,6 +54,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
   thrust::sequence(input.begin(), input.end(), 1);
 
   // construct transform_iterator
+  // NOLINTNEXTLINE(misc-const-correctness)
   thrust::transform_input_output_iterator<InputFunction, OutputFunction, Iterator> transform_iter(
     squared.begin(), InputFunction(), OutputFunction());
 
@@ -141,4 +134,4 @@ struct TestTransformInputOutputIteratorScan
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestTransformInputOutputIteratorScan, IntegralTypes> TestTransformInputOutputIteratorScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformInputOutputIteratorScan, IntegralTypes);

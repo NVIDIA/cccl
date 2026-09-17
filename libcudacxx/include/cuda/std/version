@@ -29,7 +29,7 @@
 #  include <ciso646> // otherwise go for the smallest possible header
 #endif // _CCCL_HOSTED()
 
-#define __cccl_lib_bitops                       201907L
+#define __cccl_lib_bitops                       202607L
 #define __cccl_lib_bool_constant                201505L
 #define __cccl_lib_bounded_array_traits         201902L
 #define __cccl_lib_byte                         201603L
@@ -86,6 +86,7 @@
 #define __cccl_lib_make_reverse_iterator 201402L
 // # define __cccl_lib_make_unique                          201304L
 #define __cccl_lib_mdspan         202207L
+#define __cccl_lib_mdspan_copy    202606L
 #define __cccl_lib_null_iterators 201304L
 #define __cccl_lib_optional       202506L
 // # define __cccl_lib_quoted_string_io                     201304L

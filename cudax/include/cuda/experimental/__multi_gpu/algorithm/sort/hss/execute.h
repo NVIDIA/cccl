@@ -42,7 +42,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__hss_sort
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hss_sort
 {
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
@@ -54,14 +55,14 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _Policy, class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
-  const __result_policy_base<_Policy>&,
+  const ::cuda::experimental::__result_policy_base<_Policy>&,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputIterRange&& __input_iters,
   _SizeTRange&& __num_items_range,
   _BinaryOp __cmp)
 {
-  static_assert(::cuda::std::same_as<_Policy, distributed_t>,
+  static_assert(::cuda::std::same_as<_Policy, ::cuda::experimental::distributed_t>,
                 "Only distributed results are currently supported. Please open an issue at "
                 "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
   static_assert(::cuda::std::ranges::sized_range<_CommRange>);
@@ -85,16 +86,15 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
   // First and foremost, kick off the local sorts...
   {
     const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
-    auto __comm_it                = ::cuda::std::ranges::begin(__comms);
     auto __env_it                 = ::cuda::std::ranges::begin(__envs);
     auto __input_it               = ::cuda::std::ranges::begin(__input_iters);
     auto __num_items_it           = ::cuda::std::ranges::begin(__num_items_range);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it, (void) ++__num_items_it)
+         (void) ++__idx, (void) ++__env_it, (void) ++__input_it, (void) ++__num_items_it)
     {
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm_it->logical_device(),
+        ::cuda::get_stream(*__env_it),
         CUB_NS_QUALIFIER::DeviceMergeSort::SortKeys,
         *__input_it,
         *__num_items_it,
@@ -129,7 +129,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__execute(
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental::__detail::__hss_sort
+} // namespace __detail::__hss_sort
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

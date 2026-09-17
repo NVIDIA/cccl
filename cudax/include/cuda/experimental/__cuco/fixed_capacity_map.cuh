@@ -109,7 +109,7 @@ private:
   mapped_type __empty_value_sentinel;
 
   //! @brief Synchronizes the CUDA stream.
-  static void __sync(::cuda::stream_ref __stream)
+  _CCCL_HOST_API static void __sync(::cuda::stream_ref __stream)
   {
     __stream.sync();
   }
@@ -279,7 +279,7 @@ public:
   //! returns zero.
   //!
   //! @param __stream CUDA stream this operation is executed in
-  void clear_async(::cuda::stream_ref __stream) noexcept
+  void clear_async(::cuda::stream_ref __stream)
   {
     __impl->clear_async(__stream);
   }
@@ -315,7 +315,7 @@ public:
   //! @param __first Beginning of the sequence of keys
   //! @param __last End of the sequence of keys
   template <class _InputIt>
-  void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last) noexcept
+  void insert_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
     __impl->insert_async(__stream, __first, __last, ref());
   }
@@ -400,10 +400,72 @@ public:
   //! @param __last End of the sequence of keys
   //! @param __output_begin Beginning of the output sequence of booleans
   template <class _InputIt, class _OutputIt>
-  void contains_async(
-    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
+  void contains_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
   {
     __impl->contains_async(__stream, __first, __last, __output_begin, ref());
+  }
+
+  //! @brief Indicates whether each selected key in `[__first, __last)` is contained in the map.
+  //!
+  //! For each key `__first[i]`, writes whether the key is present when `__pred(__stencil[i])` is
+  //! true; otherwise writes false.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `contains_if_async`.
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator
+  //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
+  //! `_Predicate`'s argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @tparam _OutputIt Device accessible random access output iterator assignable from `bool`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __stencil Beginning of the stencil sequence
+  //! @param __pred Predicate applied to the stencil to determine which keys to query
+  //! @param __output_begin Beginning of the output sequence of booleans
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  _CCCL_HOST_API void contains_if(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin) const
+  {
+    contains_if_async(__stream, __first, __last, __stencil, __pred, __output_begin);
+    __sync(__stream);
+  }
+
+  //! @brief Asynchronously indicates whether each selected key in `[__first, __last)` is contained
+  //! in the map.
+  //!
+  //! For each key `__first[i]`, writes whether the key is present when `__pred(__stencil[i])` is
+  //! true; otherwise writes false.
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator
+  //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
+  //! `_Predicate`'s argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @tparam _OutputIt Device accessible random access output iterator assignable from `bool`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __stencil Beginning of the stencil sequence
+  //! @param __pred Predicate applied to the stencil to determine which keys to query
+  //! @param __output_begin Beginning of the output sequence of booleans
+  template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt>
+  _CCCL_HOST_API void contains_if_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _OutputIt __output_begin) const
+  {
+    __impl->contains_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
   }
 
   // ===== Find =====
@@ -438,8 +500,7 @@ public:
   //! @param __last End of the sequence of keys
   //! @param __output_begin Beginning of the output sequence of payloads
   template <class _InputIt, class _OutputIt>
-  void
-  find_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
+  void find_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
   {
     __impl->find_async(__stream, __first, __last, __output_begin, ref());
   }
@@ -494,9 +555,58 @@ public:
     _InputIt __last,
     _StencilIt __stencil,
     _Predicate __pred,
-    _OutputIt __output_begin) const noexcept
+    _OutputIt __output_begin) const
   {
     __impl->find_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
+  }
+
+  // ===== For Each =====
+
+  //! @brief Applies `__callback_op` to a copy of every element whose key is equivalent to a key in
+  //! `[__first, __last)`.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use `for_each_async`.
+  //! @note Keys in `[__first, __last)` that are not present in the map contribute no callback invocation.
+  //! @note The callback is invoked with a copy of the matching slot, so mutating its argument does
+  //! not modify the map.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @note The order in which matches are visited is implementation-defined.
+  //!
+  //! @tparam _InputIt Device accessible input iterator
+  //! @tparam _CallbackOp Unary callable invocable with `value_type`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __callback_op Function to apply to every matching element
+  template <class _InputIt, class _CallbackOp>
+  _CCCL_HOST_API void
+  for_each(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op) const
+  {
+    for_each_async(__stream, __first, __last, __callback_op);
+    __sync(__stream);
+  }
+
+  //! @brief Asynchronous version of `for_each`.
+  //!
+  //! @note Keys in `[__first, __last)` that are not present in the map contribute no callback invocation.
+  //! @note The callback is invoked with a copy of the matching slot, so mutating its argument does
+  //! not modify the map.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @note The order in which matches are visited is implementation-defined.
+  //!
+  //! @tparam _InputIt Device accessible input iterator
+  //! @tparam _CallbackOp Unary callable invocable with `value_type`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __callback_op Function to apply to every matching element
+  template <class _InputIt, class _CallbackOp>
+  _CCCL_HOST_API void
+  for_each_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op) const
+  {
+    __impl->for_each_async(__stream, __first, __last, __callback_op, ref());
   }
 
   // ===== Retrieve All =====
@@ -529,7 +639,82 @@ public:
     return {__keys_out + __num_out, __values_out + __num_out};
   }
 
+  // ===== Rehash =====
+
+  //! @brief Rebuilds the map in new storage without changing its capacity.
+  //!
+  //! Only occupied slots are reinserted, removing erased-key sentinels from the storage.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `rehash_async`.
+  //!
+  //! @param __stream CUDA stream used for this operation
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream)
+  {
+    rehash_async(__stream);
+    __sync(__stream);
+  }
+
+  //! @brief Changes the map's capacity and rebuilds it in new storage.
+  //!
+  //! Changes the capacity to the smallest valid value that is not less than `__capacity`. Only
+  //! occupied slots are reinserted, removing erased-key sentinels from the storage.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `rehash_async`.
+  //! @note Behavior is undefined if `__capacity` is insufficient to store all contained elements.
+  //! @note This overload is only available for dynamically sized containers.
+  //!
+  //! @param __stream CUDA stream used for this operation
+  //! @param __capacity Requested new capacity
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    rehash_async(__stream, __capacity);
+    __sync(__stream);
+  }
+
+  //! @brief Asynchronously rebuilds the map in new storage without changing its capacity.
+  //!
+  //! Only occupied slots are reinserted, removing erased-key sentinels from the storage.
+  //!
+  //! @param __stream CUDA stream used for this operation
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream)
+  {
+    __impl->rehash_async(__stream, *this);
+  }
+
+  //! @brief Asynchronously changes the map's capacity and rebuilds it in new storage.
+  //!
+  //! Changes the capacity to the smallest valid value that is not less than `__capacity`. Only
+  //! occupied slots are reinserted, removing erased-key sentinels from the storage.
+  //!
+  //! @note Behavior is undefined if `__capacity` is insufficient to store all contained elements.
+  //! @note This overload is only available for dynamically sized containers.
+  //!
+  //! @param __stream CUDA stream used for this operation
+  //! @param __capacity Requested new capacity
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    __impl->rehash_async(__stream, __capacity, *this);
+  }
+
   // ===== Accessors =====
+
+  //! @brief Gets the number of elements in the map.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @param __stream CUDA stream used to get the number of elements
+  //!
+  //! @return The number of elements in the map
+  [[nodiscard]] _CCCL_HOST_API size_type size(::cuda::stream_ref __stream) const
+  {
+    return __impl->size(__stream);
+  }
 
   //! @brief Returns the total number of slots the map can hold (the prime/stride-adjusted capacity).
   //!
@@ -615,5 +800,4 @@ public:
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
-
 #endif // _CUDAX___CUCO_FIXED_CAPACITY_MAP_CUH

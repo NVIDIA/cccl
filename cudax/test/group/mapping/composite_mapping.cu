@@ -32,6 +32,7 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
 
   // Test construction from 2 mappings.
   {
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     cudax::composite_mapping mapping{mapping1, mapping2};
     static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Mapping1, Mapping2>
@@ -57,7 +58,7 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
   {
     const cudax::this_warp parent_group{config};
     const ThreadsInWarpMappingResult prev_mapping_result;
-    const cudax::composite_mapping mapping{mapping1, mapping2};
+    cudax::composite_mapping mapping{mapping1, mapping2};
 
     static_assert(
       cudax::__group_mapping_result<decltype(mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result))>);

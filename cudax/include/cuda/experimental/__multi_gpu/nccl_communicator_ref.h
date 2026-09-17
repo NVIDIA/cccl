@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/device_ref.h>
+#include <cuda/__device/logical_device_ref.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/stream_ref.h>
@@ -31,15 +33,14 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__nccl/nccl_api.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+
 //! @brief The `nccl_transportable` concept verifies that a particular type is transportable by
 //! NCCL.
 //!
@@ -70,7 +71,7 @@ _CCCL_CONCEPT nccl_reducible =
 //! @brief A non-owning wrapper around a NCCL communicator (`ncclComm_t`).
 //!
 //! `nccl_communicator_ref` adapts a previously-created NCCL communicator to the
-//! `cuda::experimental` communicator model, exposing NCCL's point-to-point and collective
+//! `cuda::mgmn` communicator model, exposing NCCL's point-to-point and collective
 //! operations as member functions. It does not own the underlying communicator: the caller
 //! is responsible for creating it (e.g. via `ncclCommInitRank`) and destroying it once it is
 //! no longer in use, and for keeping it alive for the lifetime of this object.
@@ -126,7 +127,8 @@ public:
   //! @throws std::invalid_argument If `__comm` is `NCCL_COMM_NULL`.
   _CCCL_HOST_API nccl_communicator_ref(native_handle_type __comm)
       : nccl_communicator_ref{
-          __comm, ::cuda::experimental::logical_device{::cuda::experimental::__nccl::__ncclCommCuDevice(__comm)}}
+          __comm,
+          ::cuda::__logical_device_ref{::cuda::device_ref{::cuda::experimental::__nccl::__ncclCommCuDevice(__comm)}}}
   {}
 
   //! @brief Construct a communicator from an existing NCCL communicator handle.
@@ -139,7 +141,7 @@ public:
   //!
   //! @throws std::invalid_argument If `__comm` is `NCCL_COMM_NULL`.
   //! @throws std::runtime_error If the device reported by NCCL does not match `__device`.
-  _CCCL_HOST_API nccl_communicator_ref(native_handle_type __comm, logical_device __device)
+  _CCCL_HOST_API nccl_communicator_ref(native_handle_type __comm, ::cuda::__logical_device_ref __device)
       : __comm_{[&] {
         if (__comm == ::cuda::experimental::__nccl::__NCCL_COMM_NULL)
         {
@@ -199,7 +201,7 @@ public:
   //! @brief Retrieve the logical device this communicator is associated with.
   //!
   //! @return A reference to the logical device passed at construction.
-  [[nodiscard]] _CCCL_HOST_API constexpr const ::cuda::experimental::logical_device& logical_device() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr const ::cuda::__logical_device_ref& logical_device() const noexcept
   {
     return __device_;
   }
@@ -838,7 +840,7 @@ private:
 
   _CCCL_HOST_API nccl_communicator_ref(
     native_handle_type __comm,
-    ::cuda::experimental::logical_device __device,
+    ::cuda::__logical_device_ref __device,
     ::cuda::std::int32_t __rank,
     ::cuda::std::int32_t __size) noexcept
       : __comm_{__comm}
@@ -848,15 +850,16 @@ private:
   {}
 
   native_handle_type __comm_{};
-  ::cuda::experimental::logical_device __device_;
+  ::cuda::__logical_device_ref __device_;
   // Cache these so we can make the accessors noexcept
   ::cuda::std::int32_t __rank_{};
   ::cuda::std::int32_t __size_{};
 };
-} // namespace cuda::experimental
 
-#include <cuda/std/__cccl/epilogue.h>
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_EXPERIMENTAL___MULTI_GPU_NCCL_COMMUNICATOR_REF_H

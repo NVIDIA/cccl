@@ -257,7 +257,7 @@ public:
       : _DynamicValues{}
   {
     static_assert((sizeof...(_DynVals) == __size_), "Invalid number of values.");
-    _TDynamic __values[__size_] = {static_cast<_TDynamic>(__vals)...};
+    const _TDynamic __values[__size_] = {static_cast<_TDynamic>(__vals)...};
     for (size_t __i = 0; __i < __size_; __i++)
     {
       _TStatic __static_val = _StaticValues::__get(__i);

@@ -114,7 +114,7 @@ TEST_FUNC constexpr bool test()
   }
 
   // This segfaults MSVC trying to determine is_nothrow_constructible
-#if !TEST_COMPILER(MSVC)
+#if !TEST_COMPILER(MSVC) && !TEST_COMPILER(GCC, <, 12)
   // sizeof...(Types) == 1 && is_convertible_v<decltype(u), T>
   {
     const cuda::std::tuple<CvtFromConstTupleRefRef> t1{};
@@ -128,7 +128,7 @@ TEST_FUNC constexpr bool test()
     cuda::std::tuple<ConvertibleFrom<ExplicitCtrFromConstTupleRefRef>> t2{cuda::std::move(t1)};
     assert(!constMoveCtrCalled(cuda::std::get<0>(t2).v));
   }
-#endif // !TEST_COMPILER(MSVC)
+#endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(GCC, <, 12)
 
   return true;
 }

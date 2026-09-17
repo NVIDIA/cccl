@@ -3,6 +3,7 @@ import logging
 
 class Logger:
     _instance = None
+    logger: logging.Logger
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:

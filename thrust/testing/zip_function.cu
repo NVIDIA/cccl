@@ -36,7 +36,7 @@ struct TestZipFunctionCtor
     ASSERT_EQUAL(thrust::zip_function(SumThree{})(cuda::std::tuple(1, 2, 3)), SumThree{}(1, 2, 3));
   }
 };
-SimpleUnitTest<TestZipFunctionCtor, type_list<int>> TestZipFunctionCtorInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionCtor, type_list<int>);
 
 template <typename T>
 struct TestZipFunctionTransform
@@ -75,7 +75,7 @@ struct TestZipFunctionTransform
     ASSERT_EQUAL(h_result_tuple, d_result_zip);
   }
 };
-VariableUnitTest<TestZipFunctionTransform, ThirtyTwoBitTypes> TestZipFunctionTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipFunctionTransform, ThirtyTwoBitTypes);
 
 struct RemovePred
 {
@@ -92,7 +92,7 @@ struct TestZipFunctionMixed
     thrust::device_vector<uint32_t> vecA{0, 0, 2, 0};
     thrust::device_vector<uint32_t> vecB{0, 2, 2, 2};
     thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
-    thrust::device_vector<float> expected{88.0f, 89.0f};
+    const thrust::device_vector<float> expected{88.0f, 89.0f};
 
     auto inputKeyItBegin =
       thrust::make_zip_iterator(thrust::make_zip_iterator(vecA.begin(), vecB.begin()), vecC.begin());
@@ -109,7 +109,7 @@ struct TestZipFunctionMixed
     ASSERT_EQUAL(vecC, expected);
   }
 };
-SimpleUnitTest<TestZipFunctionMixed, type_list<int, float>> TestZipFunctionMixedInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionMixed, type_list<int, float>);
 
 struct NestedFunctionCall
 {
@@ -132,7 +132,7 @@ struct TestNestedZipFunction
     thrust::device_vector<int> PY{0, 1, 2, 2};
     thrust::device_vector<uint32_t> SS{0, 1, 2};
     thrust::device_vector<uint32_t> ST{1, 2, 3};
-    thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
+    const thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
 
     auto segIt = thrust::make_zip_iterator(
       thrust::make_zip_iterator(thrust::make_permutation_iterator(PX.begin(), SS.begin()),
@@ -142,13 +142,13 @@ struct TestNestedZipFunction
     auto idAndSegIt = thrust::make_zip_iterator(thrust::make_counting_iterator(0u), segIt);
 
     thrust::device_vector<bool> isMH{false, false, false};
-    thrust::device_vector<bool> expected{false, false, true};
+    const thrust::device_vector<bool> expected{false, false, true};
     thrust::transform(
       idAndSegIt, idAndSegIt + static_cast<std::ptrdiff_t>(SS.size()), isMH.begin(), NestedFunctionCall{});
     ASSERT_EQUAL(isMH, expected);
   }
 };
-SimpleUnitTest<TestNestedZipFunction, type_list<int, float>> TestNestedZipFunctionInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction, type_list<int, float>);
 
 struct SortPred
 {
@@ -173,4 +173,4 @@ struct TestNestedZipFunction2
     thrust::sort(nestedTupleIt, nestedTupleIt + static_cast<std::ptrdiff_t>(n), SortPred{});
   }
 };
-SimpleUnitTest<TestNestedZipFunction2, type_list<int, float>> TestNestedZipFunctionInstance2;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction2, type_list<int, float>);

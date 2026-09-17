@@ -7,10 +7,10 @@
 
 int main()
 {
-  size_t N = 10;
+  const size_t N = 10;
 
   // create a device_ptr
-  thrust::device_ptr<int> dev_ptr = thrust::device_malloc<int>(N);
+  const thrust::device_ptr<int> dev_ptr = thrust::device_malloc<int>(N);
 
   // extract raw pointer from device_ptr
   int* raw_ptr = thrust::raw_pointer_cast(dev_ptr);

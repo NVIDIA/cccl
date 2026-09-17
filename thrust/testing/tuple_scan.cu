@@ -5,10 +5,6 @@
 
 #include <unittest/unittest.h>
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <unittest/cuda/testframework.h>
-#endif
-
 using namespace unittest;
 
 struct SumTupleFunctor
@@ -44,7 +40,7 @@ struct TestTupleScan
     thrust::device_vector<cuda::std::tuple<T, T>> d_input = h_input;
 
     // allocate output
-    cuda::std::tuple<T, T> zero(0, 0);
+    const cuda::std::tuple<T, T> zero(0, 0);
     thrust::host_vector<cuda::std::tuple<T, T>> h_output(n, zero);
     thrust::device_vector<cuda::std::tuple<T, T>> d_output(n, zero);
 
@@ -61,4 +57,4 @@ struct TestTupleScan
     ASSERT_EQUAL_QUIET(h_output, d_output);
   }
 };
-VariableUnitTest<TestTupleScan, IntegralTypes> TestTupleScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleScan, IntegralTypes);

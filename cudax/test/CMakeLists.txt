@@ -99,17 +99,6 @@ cudax_add_catch2_test(test_target fill_bytes
     fill_bytes/fill_bytes_mdspan_example.cu
 )
 
-cudax_add_catch2_test(test_target copy
-    copy/copy.cu
-    copy/copy_edge_cases.cu
-    copy/copy_vectorize.cu
-    copy/copy_vectorize_5d.cu
-    copy/copy_llm.cu
-    copy/copy_nvmath.cu
-    copy/copy_nvmath_transpose.cu
-    copy/copy_shared_memory.cu
-)
-
 add_subdirectory(cuco)
 
 cudax_add_catch2_test(test_target green_context
@@ -156,6 +145,9 @@ cudax_add_catch2_test(test_target group.mapping.take
 cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
     group/synchronizer/barrier_synchronizer.cu
 )
+cudax_add_catch2_test(test_target group.synchronizer.interwarp_synchronizer
+    group/synchronizer/interwarp_synchronizer.cu
+)
 cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu
 )
@@ -166,16 +158,34 @@ cudax_add_catch2_test(test_target group.cooperative_algorithm
     group/cooperative_algorithm.cu
 )
 cudax_add_catch2_test(test_target group.group
-    group/group.cu
+    group/generic_group.cu
+)
+cudax_add_catch2_test(test_target group.group_stacking
+    group/group_stacking.cu
+)
+cudax_add_catch2_test(test_target group.virtual_group
+    group/virtual_group.cu
+)
+cudax_add_catch2_test(test_target group.virtual_group_stacking
+    group/virtual_group_stacking.cu
+)
+cudax_add_catch2_test(test_target group.group_view
+    group/group_view.cu
 )
 cudax_add_catch2_test(test_target group.make_this_group
     group/make_this_group.cu
+)
+cudax_add_catch2_test(test_target group.implicit_hierarchy
+    group/implicit_hierarchy.cu
 )
 cudax_add_catch2_test(test_target group.segmented_algorithm
     group/segmented_algorithm.cu
 )
 cudax_add_catch2_test(test_target group.this_group
     group/this_group.cu
+)
+cudax_add_catch2_test(test_target group.coalesced_group
+    group/coalesced_group.cu
 )
 cudax_add_catch2_test(test_target group.invoke_one
     group/invoke_one.cu

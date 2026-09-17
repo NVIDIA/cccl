@@ -25,7 +25,8 @@ pip install cuda-cccl[sysctk13]  # For CUDA 13.x (system CUDA toolkit)
 pip install cuda-cccl[sysctk12]  # For CUDA 12.x (system CUDA toolkit)
 ```
 
-For a minimal install without Numba (useful when supplying pre-compiled operators):
+For a minimal install without the JIT backend (useful when supplying
+pre-compiled operators):
 
 ```bash
 pip install cuda-cccl[minimal-cu13]      # pip-installed cuda-toolkit

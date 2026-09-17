@@ -61,11 +61,11 @@ __copy_mdspan_bytes(::cuda::stream_ref __stream, _MDSpanIn&& __mdspan_in, _MDSpa
   {
     ::cuda::copy_bytes(__stream, __mdspan_in, __mdspan_out);
   }
+#if _CCCL_HOSTED()
   _CCCL_CATCH (const ::cuda::cuda_error& __e)
   {
     return __e.status();
   }
-#if _CCCL_HOSTED()
   _CCCL_CATCH (const ::std::invalid_argument& __e)
   {
     static_cast<void>(__e);

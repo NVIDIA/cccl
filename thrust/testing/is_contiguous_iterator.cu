@@ -5,6 +5,10 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/declval.h>
+
 #include <array>
 #include <deque>
 #include <iterator>
@@ -13,115 +17,119 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <unittest/unittest.h>
 
-static_assert(thrust::is_contiguous_iterator_v<std::string::iterator>);
-static_assert(thrust::is_contiguous_iterator_v<std::wstring::iterator>);
-static_assert(thrust::is_contiguous_iterator_v<std::string_view::iterator>);
-static_assert(thrust::is_contiguous_iterator_v<std::wstring_view::iterator>);
-static_assert(!thrust::is_contiguous_iterator_v<std::vector<bool>::iterator>);
-
-template <typename T>
-_CCCL_HOST void test_is_contiguous_iterator()
+template <typename Iterator, bool Expected>
+void check_is_contiguous()
 {
-  static_assert(thrust::is_contiguous_iterator_v<T*>);
-  static_assert(thrust::is_contiguous_iterator_v<T const*>);
-  static_assert(thrust::is_contiguous_iterator_v<thrust::device_ptr<T>>);
-  static_assert(thrust::is_contiguous_iterator_v<typename std::vector<T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::vector<T>::reverse_iterator>);
-  static_assert(thrust::is_contiguous_iterator_v<typename std::array<T, 1>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::list<T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::deque<T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::set<T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::multiset<T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::map<T, T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::multimap<T, T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::unordered_set<T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::unordered_multiset<T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::unordered_map<T, T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<typename std::unordered_multimap<T, T>::iterator>);
-  static_assert(!thrust::is_contiguous_iterator_v<std::istream_iterator<T>>);
-  static_assert(!thrust::is_contiguous_iterator_v<std::ostream_iterator<T>>);
+  STATIC_REQUIRE(thrust::is_contiguous_iterator_v<Iterator> == Expected);
+  if constexpr (Expected)
+  {
+    STATIC_REQUIRE(cuda::std::__can_to_address<Iterator> == Expected);
+  }
 }
-DECLARE_GENERIC_UNITTEST(test_is_contiguous_iterator);
 
-template <typename T>
-_CCCL_HOST void test_is_contiguous_iterator_cvref()
+TEST_CASE("is_contiguous_iterator extra", "[iterators]")
 {
-  static_assert(thrust::is_contiguous_iterator_v<T* const>);
-  static_assert(thrust::is_contiguous_iterator_v<T* volatile>);
-  static_assert(thrust::is_contiguous_iterator_v<T*&>);
-  static_assert(thrust::is_contiguous_iterator_v<T* const&>);
-  static_assert(thrust::is_contiguous_iterator_v<T* volatile&>);
-
-  static_assert(!thrust::is_contiguous_iterator_v<std::vector<bool>::iterator const>);
-  static_assert(!thrust::is_contiguous_iterator_v<std::vector<bool>::iterator volatile>);
-  static_assert(!thrust::is_contiguous_iterator_v<std::vector<bool>::iterator&>);
-  static_assert(!thrust::is_contiguous_iterator_v<std::vector<bool>::iterator const&>);
-  static_assert(!thrust::is_contiguous_iterator_v<std::vector<bool>::iterator volatile&>);
+  check_is_contiguous<std::string::iterator, true>();
+  check_is_contiguous<std::wstring::iterator, true>();
+  check_is_contiguous<std::string_view::iterator, true>();
+  check_is_contiguous<std::wstring_view::iterator, true>();
+  check_is_contiguous<std::vector<bool>::iterator, false>();
 }
-DECLARE_GENERIC_UNITTEST(test_is_contiguous_iterator_cvref);
 
-template <typename Vector>
-_CCCL_HOST void test_is_contiguous_iterator_vectors()
+TEMPLATE_LIST_TEST_CASE("is_contiguous_iterator", "[iterators]", generic_list)
 {
-  static_assert(thrust::is_contiguous_iterator_v<typename Vector::iterator>);
+  using T = TestType;
+  check_is_contiguous<T*, true>();
+  check_is_contiguous<T const*, true>();
+  check_is_contiguous<thrust::device_ptr<T>, true>();
+  check_is_contiguous<typename std::vector<T>::iterator, true>();
+  check_is_contiguous<typename std::vector<T>::reverse_iterator, false>();
+  check_is_contiguous<typename std::array<T, 1>::iterator, true>();
+  check_is_contiguous<typename std::list<T>::iterator, false>();
+  check_is_contiguous<typename std::deque<T>::iterator, false>();
+  check_is_contiguous<typename std::set<T>::iterator, false>();
+  check_is_contiguous<typename std::multiset<T>::iterator, false>();
+  check_is_contiguous<typename std::map<T, T>::iterator, false>();
+  check_is_contiguous<typename std::multimap<T, T>::iterator, false>();
+  check_is_contiguous<typename std::unordered_set<T>::iterator, false>();
+  check_is_contiguous<typename std::unordered_multiset<T>::iterator, false>();
+  check_is_contiguous<typename std::unordered_map<T, T>::iterator, false>();
+  check_is_contiguous<typename std::unordered_multimap<T, T>::iterator, false>();
+  check_is_contiguous<std::istream_iterator<T>, false>();
+  check_is_contiguous<std::ostream_iterator<T>, false>();
 }
-DECLARE_VECTOR_UNITTEST(test_is_contiguous_iterator_vectors);
 
-struct expect_pointer
-{};
-struct expect_passthrough
-{};
+TEMPLATE_LIST_TEST_CASE("is_contiguous_iterator cvref", "[iterators]", generic_list)
+{
+  using T = TestType;
+  check_is_contiguous<T* const, true>();
+  check_is_contiguous<T* volatile, true>();
+  check_is_contiguous<T*&, true>();
+  check_is_contiguous<T* const&, true>();
+  check_is_contiguous<T* volatile&, true>();
 
-template <typename IteratorT, typename PointerT, typename expected_unwrapped_type /* = expect_[pointer|passthrough] */>
-struct check_unwrapped_iterator
+  check_is_contiguous<std::vector<bool>::iterator const, false>();
+  check_is_contiguous<std::vector<bool>::iterator volatile, false>();
+  check_is_contiguous<std::vector<bool>::iterator&, false>();
+  check_is_contiguous<std::vector<bool>::iterator const&, false>();
+  check_is_contiguous<std::vector<bool>::iterator volatile&, false>();
+}
+
+TEMPLATE_LIST_TEST_CASE("is_contiguous_iterator vectors", "[iterators]", vector_list)
+{
+  check_is_contiguous<typename TestType::iterator, true>();
+}
+
+template <typename IteratorT, typename PointerT, bool CanUnwrap>
+void check_iterator_unwrapping()
 {
   using unwrapped_t =
     ::cuda::std::remove_reference_t<decltype(thrust::try_unwrap_contiguous_iterator(cuda::std::declval<IteratorT>()))>;
 
-  static constexpr bool value =
-    std::is_same_v<expected_unwrapped_type, expect_pointer>
-      ? std::is_same_v<unwrapped_t, PointerT>
-      : std::is_same_v<unwrapped_t, IteratorT>;
-};
-
-template <typename T>
-void test_try_unwrap_contiguous_iterator()
-{
-  // Raw pointers should pass whether expecting pointers or passthrough.
-  static_assert(check_unwrapped_iterator<T*, T*, expect_pointer>::value);
-  static_assert(check_unwrapped_iterator<T*, T*, expect_passthrough>::value);
-  static_assert(check_unwrapped_iterator<T const*, T const*, expect_pointer>::value);
-  static_assert(check_unwrapped_iterator<T const*, T const*, expect_passthrough>::value);
-
-  static_assert(check_unwrapped_iterator<thrust::device_ptr<T>, T*, expect_pointer>::value);
-  static_assert(check_unwrapped_iterator<thrust::device_ptr<T const>, T const*, expect_pointer>::value);
-  static_assert(check_unwrapped_iterator<typename std::vector<T>::iterator, T*, expect_pointer>::value);
-  static_assert(check_unwrapped_iterator<typename std::vector<T>::reverse_iterator, T*, expect_passthrough>::value);
-  static_assert(check_unwrapped_iterator<typename std::array<T, 1>::iterator, T*, expect_pointer>::value);
-  static_assert(check_unwrapped_iterator<typename std::array<T const, 1>::iterator, T const*, expect_pointer>::value);
-  static_assert(check_unwrapped_iterator<typename std::list<T>::iterator, T*, expect_passthrough>::value);
-  static_assert(check_unwrapped_iterator<typename std::deque<T>::iterator, T*, expect_passthrough>::value);
-  static_assert(check_unwrapped_iterator<typename std::set<T>::iterator, T*, expect_passthrough>::value);
-  static_assert(check_unwrapped_iterator<typename std::multiset<T>::iterator, T*, expect_passthrough>::value);
-  static_assert(
-    check_unwrapped_iterator<typename std::map<T, T>::iterator, std::pair<T const, T>*, expect_passthrough>::value);
-  static_assert(
-    check_unwrapped_iterator<typename std::multimap<T, T>::iterator, std::pair<T const, T>*, expect_passthrough>::value);
-  static_assert(check_unwrapped_iterator<typename std::unordered_set<T>::iterator, T*, expect_passthrough>::value);
-  static_assert(check_unwrapped_iterator<typename std::unordered_multiset<T>::iterator, T*, expect_passthrough>::value);
-  static_assert(
-    check_unwrapped_iterator<typename std::unordered_map<T, T>::iterator, std::pair<T const, T>*, expect_passthrough>::
-      value);
-  static_assert(check_unwrapped_iterator<typename std::unordered_multimap<T, T>::iterator,
-                                         std::pair<T const, T>*,
-                                         expect_passthrough>::value);
-  static_assert(check_unwrapped_iterator<std::istream_iterator<T>, T*, expect_passthrough>::value);
-  static_assert(check_unwrapped_iterator<std::ostream_iterator<T>, void, expect_passthrough>::value);
+  if constexpr (CanUnwrap)
+  {
+    STATIC_REQUIRE(std::is_same_v<unwrapped_t, PointerT>);
+    STATIC_REQUIRE(cuda::std::__can_to_address<IteratorT>);
+  }
+  else
+  {
+    STATIC_REQUIRE(std::is_same_v<unwrapped_t, IteratorT>);
+  }
 }
-DECLARE_GENERIC_UNITTEST(test_try_unwrap_contiguous_iterator);
+
+TEMPLATE_LIST_TEST_CASE("try_unwrap_contiguous_iterator", "[iterators]", generic_list)
+{
+  using T = TestType;
+  // Raw pointers should pass whether expecting pointers or passthrough.
+  check_iterator_unwrapping<T*, T*, true>();
+  check_iterator_unwrapping<T*, T*, false>();
+  check_iterator_unwrapping<T const*, T const*, true>();
+  check_iterator_unwrapping<T const*, T const*, false>();
+
+  check_iterator_unwrapping<thrust::device_ptr<T>, T*, true>();
+  check_iterator_unwrapping<thrust::device_ptr<T const>, T const*, true>();
+  check_iterator_unwrapping<typename std::vector<T>::iterator, T*, true>();
+  check_iterator_unwrapping<typename std::vector<T>::reverse_iterator, T*, false>();
+  check_iterator_unwrapping<typename std::array<T, 1>::iterator, T*, true>();
+  check_iterator_unwrapping<typename std::array<T const, 1>::iterator, T const*, true>();
+  check_iterator_unwrapping<typename std::list<T>::iterator, T*, false>();
+  check_iterator_unwrapping<typename std::deque<T>::iterator, T*, false>();
+  check_iterator_unwrapping<typename std::set<T>::iterator, T*, false>();
+  check_iterator_unwrapping<typename std::multiset<T>::iterator, T*, false>();
+  check_iterator_unwrapping<typename std::map<T, T>::iterator, std::pair<T const, T>*, false>();
+  check_iterator_unwrapping<typename std::multimap<T, T>::iterator, std::pair<T const, T>*, false>();
+  check_iterator_unwrapping<typename std::unordered_set<T>::iterator, T*, false>();
+  check_iterator_unwrapping<typename std::unordered_multiset<T>::iterator, T*, false>();
+  check_iterator_unwrapping<typename std::unordered_map<T, T>::iterator, std::pair<T const, T>*, false>();
+  check_iterator_unwrapping<typename std::unordered_multimap<T, T>::iterator, std::pair<T const, T>*, false>();
+  check_iterator_unwrapping<std::istream_iterator<T>, T*, false>();
+  check_iterator_unwrapping<std::ostream_iterator<T>, void, false>();
+}

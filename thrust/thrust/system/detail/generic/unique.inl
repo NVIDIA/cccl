@@ -67,7 +67,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   OutputIterator output,
   BinaryPredicate binary_pred)
 {
-  thrust::detail::head_flags<InputIterator, BinaryPredicate> stencil(first, last, binary_pred);
+  const thrust::detail::head_flags<InputIterator, BinaryPredicate> stencil(first, last, binary_pred);
 
   using namespace thrust::placeholders;
 
@@ -81,7 +81,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   ForwardIterator last,
   BinaryPredicate binary_pred)
 {
-  thrust::detail::head_flags<ForwardIterator, BinaryPredicate> stencil(first, last, binary_pred);
+  const thrust::detail::head_flags<ForwardIterator, BinaryPredicate> stencil(first, last, binary_pred);
 
   using namespace thrust::placeholders;
 
