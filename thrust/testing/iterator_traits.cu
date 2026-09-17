@@ -124,14 +124,12 @@ template <typename Iterator>
 inline constexpr bool has_random_access_traversal =
   cuda::std::is_same_v<thrust::iterator_traversal_t<Iterator>, thrust::random_access_traversal_tag>;
 
-using cuda::std::__type_cartesian_product;
-using cuda::std::__type_list;
-
-using make_counting_t    = __type_list<cuda_make_counting_iterator, thrust_make_counting_iterator>;
-using make_transform_t   = __type_list<cuda_make_transform_iterator, thrust_make_transform_iterator>;
-using make_zip_t         = __type_list<cuda_make_zip_iterator, thrust_make_zip_iterator>;
-using make_permutation_t = __type_list<cuda_make_permutation_iterator, thrust_make_permutation_iterator>;
-using make_it_t          = __type_cartesian_product<make_counting_t, make_transform_t, make_zip_t, make_permutation_t>;
+using make_counting_t    = cuda::std::__type_list<cuda_make_counting_iterator, thrust_make_counting_iterator>;
+using make_transform_t   = cuda::std::__type_list<cuda_make_transform_iterator, thrust_make_transform_iterator>;
+using make_zip_t         = cuda::std::__type_list<cuda_make_zip_iterator, thrust_make_zip_iterator>;
+using make_permutation_t = cuda::std::__type_list<cuda_make_permutation_iterator, thrust_make_permutation_iterator>;
+using make_it_t =
+  cuda::std::__type_cartesian_product<make_counting_t, make_transform_t, make_zip_t, make_permutation_t>;
 TEMPLATE_LIST_TEST_CASE("iterator system and traversal propagation - any system", "[iterators]", make_it_t)
 {
   using namespace cuda::std;
@@ -161,8 +159,8 @@ auto expected_tag(thrust::device_vector<int>) -> thrust::device_system_tag;
 auto expected_tag(thrust::host_vector<int>) -> thrust::host_system_tag;
 auto expected_tag(std::vector<int>) -> thrust::host_system_tag;
 
-using vectors           = __type_list<thrust::device_vector<int>, thrust::host_vector<int>, std::vector<int>>;
-using make_vec_and_it_t = __type_cartesian_product<vectors, make_transform_t, make_zip_t>;
+using vectors = cuda::std::__type_list<thrust::device_vector<int>, thrust::host_vector<int>, std::vector<int>>;
+using make_vec_and_it_t = cuda::std::__type_cartesian_product<vectors, make_transform_t, make_zip_t>;
 TEMPLATE_LIST_TEST_CASE("iterator system and traversal propagation - vectors", "[iterators]", make_vec_and_it_t)
 {
   using namespace cuda::std;
@@ -186,7 +184,7 @@ TEMPLATE_LIST_TEST_CASE("iterator system and traversal propagation - vectors", "
   STATIC_REQUIRE(has_random_access_traversal<decltype(zip_it)>);
 }
 
-using make_vec_count_zip_it_t = __type_cartesian_product<vectors, make_counting_t, make_zip_t>;
+using make_vec_count_zip_it_t = cuda::std::__type_cartesian_product<vectors, make_counting_t, make_zip_t>;
 TEMPLATE_LIST_TEST_CASE(
   "iterator system and traversal propagation - vectors and any system", "[iterators]", make_vec_count_zip_it_t)
 {

@@ -5,8 +5,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 struct SumTupleFunctor
 {
   template <typename Tuple>

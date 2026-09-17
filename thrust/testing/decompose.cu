@@ -2,10 +2,10 @@
 
 #include <unittest/unittest.h>
 
-using thrust::system::detail::internal::uniform_decomposition;
-
 void TestUniformDecomposition()
 {
+  using thrust::system::detail::internal::uniform_decomposition;
+
   {
     const uniform_decomposition<int> ud(10, 10, 1);
 
