@@ -20,7 +20,14 @@ Top-level keys
      - Map of workflow name to a list of job entries. Holds ``override``, ``pull_request``,
        ``pull_request_lite``, ``nightly``, ``weekly``, etc.
    * - ``devcontainer_version``
-     - Image version tag for ``rapidsai/devcontainers``.
+     - Version prefix for generated devcontainer image tags.
+   * - ``devcontainer_image``
+     - Default image repository for generated references, including Linux CI and local
+       devcontainers.
+   * - ``windows_devcontainer_image``
+     - Optional image repository override for generated Windows CI references.
+   * - ``devcontainer_image_includes_version``
+     - Whether generated image tags include the ``devcontainer_version`` prefix.
    * - ``cuda99_gcc_version``, ``cuda99_clang_version``
      - Compiler versions used for internal cuda99.X builds.
    * - ``all_stds``
@@ -119,6 +126,9 @@ Computed internally, not user-specified:
 - ``gpu`` requirement, ``cuda_ext``, ``name``, and ``invoke`` script details - also taken from the ``jobs`` section.
 - ``force_producer_ctk`` — set in the ``jobs`` section to pin a producer build's CTK independent
   of the consumer's ``ctk`` tag. Used mainly for python packaging special cases.
+- ``windows_image_dependencies`` — maps environment variables to devcontainer tag overrides.
+  The generated Windows job pre-pulls each resolved image and injects its reference through the
+  named environment variable for nested Docker commands.
 
 Annotated example
 ~~~~~~~~~~~~~~~~~
