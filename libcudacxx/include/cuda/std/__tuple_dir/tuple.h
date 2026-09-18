@@ -391,26 +391,29 @@ public:
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _Tuple,
-            enable_if_t<_DisambiguateTupleLike<_Tuple>::value, int>    = 0,
-            class _Constraints                                         = _TupleLikeConstructible<_Tuple>,
-            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
+            enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_Tuple>>, int> = 0,
+            enable_if_t<_DisambiguateTupleLike<_Tuple>::value, int>        = 0,
+            class _Constraints                                             = _TupleLikeConstructible<_Tuple>,
+            enable_if_t<_Constraints::__can_construct_implicitly, int>     = 0>
   _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLikeConstructible<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
-            enable_if_t<_DisambiguateTupleLike<_Tuple>::value, int>    = 0,
-            class _Constraints                                         = _TupleLikeConstructible<_Tuple>,
-            enable_if_t<_Constraints::__can_construct_explicitly, int> = 0>
+            enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_Tuple>>, int> = 0,
+            enable_if_t<_DisambiguateTupleLike<_Tuple>::value, int>        = 0,
+            class _Constraints                                             = _TupleLikeConstructible<_Tuple>,
+            enable_if_t<_Constraints::__can_construct_explicitly, int>     = 0>
   _CCCL_API explicit constexpr tuple(_Tuple&& __t) noexcept(_NothrowTupleLikeConstructible<_Tuple>::value)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _Tuple,
-            enable_if_t<_DisambiguateTupleLike<_Tuple>::value, int> = 0,
-            class _Constraints                                      = _TupleLikeConstructible<_Tuple>,
-            enable_if_t<_Constraints::__is_deleted, int>            = 0>
+            enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_Tuple>>, int> = 0,
+            enable_if_t<_DisambiguateTupleLike<_Tuple>::value, int>        = 0,
+            class _Constraints                                             = _TupleLikeConstructible<_Tuple>,
+            enable_if_t<_Constraints::__is_deleted, int>                   = 0>
   constexpr tuple(_Tuple&&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   // NOLINTEND(bugprone-forwarding-reference-overload)
