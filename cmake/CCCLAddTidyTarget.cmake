@@ -1,5 +1,19 @@
 include_guard(GLOBAL)
 
+#[=======================================================================[.rst:
+_cccl_create_tidy_plugins
+-------------------------
+
+Provide the plugin targets that :command:`cccl_tidy_init` needs to configure
+``clang-tidy`` with CCCL checks.
+
+Arguments
+^^^^^^^^^
+
+``ret_var``
+  The variable in which to store the plugin target list in the parent scope.
+
+#]=======================================================================]
 function(_cccl_create_tidy_plugins ret_var)
   list(APPEND CMAKE_MESSAGE_CONTEXT "create_tidy_plugins")
 

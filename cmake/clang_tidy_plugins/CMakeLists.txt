@@ -32,6 +32,24 @@ llvm_map_components_to_libnames(CCCL_LLVM_LIBS core)
 
 define_property(GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
 
+#[=======================================================================[.rst:
+cccl_create_clang_tidy_plugin
+-----------------------------
+
+Define a plugin that extends ``clang-tidy`` with CCCL checks.
+
+Use this function to make custom checks available to the CCCL ``clang-tidy`` targets.
+
+Arguments
+^^^^^^^^^
+
+``TARGET``
+  The name of the plugin target to create.
+
+``SOURCES``
+  List of source files for the plugin.
+
+#]=======================================================================]
 function(cccl_create_clang_tidy_plugin TARGET)
   list(APPEND CMAKE_MESSAGE_CONTEXT "create_clang_tidy_plugin")
 
