@@ -15,7 +15,10 @@ from cuda.coop._core.api._payload import _validate_common_temp_storage
 from cuda.coop._core.thread_group import ThreadGroup as CommonThreadGroup
 
 from ._thread_data import ThreadData
-from ._thread_group import _resolve_primitive_group_from_launch
+from ._thread_group import (
+    _require_complete_warp_partition,
+    _resolve_primitive_group_from_launch,
+)
 
 _SCOPE = "cuda.coop.cutlass"
 _MAX_STATIC_OFFSET = (1 << 63) - 1
@@ -24,9 +27,13 @@ _MAX_STATIC_OFFSET = (1 << 63) - 1
 def _resolve_group(group, algorithm, temp_storage, operation):
     if not isinstance(group, CommonThreadGroup):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
-    if group.kind != "block":
+    if group.kind not in {"block", "warp"}:
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} currently supports block groups"
+            f"{_SCOPE}.{operation} requires a block or physical warp group"
+        )
+    if group.kind == "warp" and temp_storage is not None:
+        raise NotImplementedError(
+            f"{_SCOPE}.{operation} explicit TempStorage is supported only for block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
     if temp_storage is not None:
@@ -35,6 +42,9 @@ def _resolve_group(group, algorithm, temp_storage, operation):
 
     launch = current_kernel_launch_facts()
     resolved = _resolve_primitive_group_from_launch(group, launch, feature=operation)
+    _require_complete_warp_partition(
+        resolved, feature=operation, exact_block_dim=launch.exact_block_dim
+    )
     return resolved, launch, algorithm
 
 
@@ -50,7 +60,7 @@ def load(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> None:
-    """Load a contiguous block tile into a writable per-thread payload.
+    """Load a contiguous group tile into a writable per-thread payload.
 
     The payload is populated in place. Beyond ``valid_items``, initialized
     slots keep their values unless ``oob_default`` is supplied. DIRECT, STRIPED,
@@ -91,7 +101,7 @@ def store(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> None:
-    """Store per-thread values into a contiguous block tile.
+    """Store per-thread values into a contiguous group tile.
 
     ``valid_items`` limits the written prefix; ``offset`` is in elements.
     The value dtype must match the destination. Transpose algorithms use shared

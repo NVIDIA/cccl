@@ -52,8 +52,22 @@ class _CubLoadStoreRequest:
 
     def __post_init__(self):
         self.plan.require_supported()
-        if self.plan.target is not GroupLoweringTarget.CUB_BLOCK:
-            raise NotImplementedError("CUTLASS Load/Store currently requires a block")
+        if self.plan.target not in {
+            GroupLoweringTarget.CUB_BLOCK,
+            GroupLoweringTarget.CUB_WARP,
+        }:
+            raise NotImplementedError(
+                "CUTLASS Load/Store requires a CUB block or warp plan"
+            )
+        if self.plan.target is GroupLoweringTarget.CUB_WARP:
+            if self.plan.resolved_group.kind != "warp":
+                raise NotImplementedError(
+                    "CUTLASS Warp Load/Store currently requires physical warps"
+                )
+            if self.plan.temp_storage.ownership is StorageOwnership.CALLER:
+                raise NotImplementedError(
+                    "explicit TempStorage is supported only for block groups"
+                )
         if not isinstance(self.plan.implementation, AlgorithmSpec):
             raise TypeError("Load/Store requires a shared AlgorithmSpec")
         if self.operation.dtype is not self.value_type:
@@ -67,17 +81,18 @@ class _CubLoadStoreRequest:
             raise ValueError(
                 "storage-free Load/Store must not introduce a reuse barrier"
             )
+        expected_scope = (
+            SynchronizationScope.WARP if self.is_warp else SynchronizationScope.BLOCK
+        )
         if (
             self.uses_scratch
             and self.plan.synchronization.storage_reuse_barrier
             not in {
-                SynchronizationScope.BLOCK,
+                expected_scope,
                 SynchronizationScope.NONE,
             }
         ):
-            raise ValueError(
-                "block Load/Store requires block-scoped reuse synchronization"
-            )
+            raise ValueError("Load/Store scratch reuse must synchronize its group")
         if self.operation.oob_default.kind is BindingKind.STATIC:
             _validate_static_oob_default(
                 self.operation.oob_default.value, self.value_type
@@ -103,6 +118,18 @@ class _CubLoadStoreRequest:
         return self.plan.participation.exact_block_dim
 
     @property
+    def is_warp(self):
+        return self.plan.target is GroupLoweringTarget.CUB_WARP
+
+    @property
+    def group_instances(self):
+        if not self.is_warp:
+            return 1
+        if self.block_dim is None:
+            raise ValueError("Warp Load/Store requires exact block dimensions")
+        return math.prod(self.block_dim) // self.plan.resolved_group.static_size
+
+    @property
     def uses_scratch(self):
         return self.plan.temp_storage.ownership is not StorageOwnership.NONE
 
@@ -116,7 +143,11 @@ class _CubLoadStoreRequest:
 
     @property
     def scratch_requirement_key(self):
-        return ("cub_load_store_layout", self.implementation.semantic_key)
+        return (
+            "cub_load_store_layout",
+            self.implementation.semantic_key,
+            self.group_instances,
+        )
 
     @property
     def semantic_key(self):
@@ -169,18 +200,27 @@ def _render_cub_load_store(request):
         f"void {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
     ]
+    if request.is_warp:
+        bx, by, _ = request.block_dim
+        width = request.plan.resolved_group.static_size
+        lines.extend(
+            [
+                f"  unsigned int linear_tid = threadIdx.x + {bx}u * (threadIdx.y + {by}u * threadIdx.z);",
+                f"  unsigned int group_index = linear_tid / {width}u;",
+            ]
+        )
     storage = ""
     if request.uses_scratch:
         lines.extend(
             [
                 "  using storage_type = typename implementation_type::TempStorage;",
-                "  if (temp_storage_bytes < sizeof(storage_type) ||",
+                f"  if (temp_storage_bytes < {request.group_instances}u * sizeof(storage_type) ||",
                 "      (temp_storage_smem_addr & (alignof(storage_type) - 1)) != 0) {",
                 '    asm volatile("trap;");',
                 "  }",
                 "  unsigned long long generic_addr;",
                 '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : "l"(static_cast<unsigned long long>(temp_storage_smem_addr)));',
-                "  auto& storage = *reinterpret_cast<storage_type*>(generic_addr);",
+                f"  auto& storage = reinterpret_cast<storage_type*>(generic_addr)[{'group_index' if request.is_warp else '0'}];",
             ]
         )
         storage = "storage"
@@ -190,9 +230,23 @@ def _render_cub_load_store(request):
             f'  if (valid_items < 0 || valid_items > {count}) {{ asm volatile("trap;"); }}'
         )
     if operation.offset.kind is BindingKind.RUNTIME:
-        lines.append('  if (offset < 0) { asm volatile("trap;"); }')
+        condition = next(
+            item
+            for item in request.plan.participation.argument_preconditions
+            if item.name == "offset"
+        )
+        lines.append(
+            f'  if (offset < {condition.minimum}ll || offset > {condition.maximum}ll) {{ asm volatile("trap;"); }}'
+        )
     offset = _binding_expr(request, operation.offset, runtime_name="offset")
     lines.append(f"  auto* tile_ptr = base{'' if offset is None else ' + ' + offset};")
+    if request.is_warp:
+        tile_items = (
+            request.plan.resolved_group.static_size * operation.items_per_thread
+        )
+        lines.append(
+            f"  tile_ptr += static_cast<long long>(group_index) * {tile_items}ll;"
+        )
     if is_load:
         preserve = (
             operation.valid_items.kind is not BindingKind.OMITTED
@@ -227,7 +281,8 @@ def _render_cub_load_store(request):
             for i in range(operation.items_per_thread)
         )
     if request.uses_scratch:
-        lines.append("  if (temp_storage_auto_sync != 0) { __syncthreads(); }")
+        barrier = "__syncwarp(0xffffffffu)" if request.is_warp else "__syncthreads()"
+        lines.append(f"  if (temp_storage_auto_sync != 0) {{ {barrier}; }}")
     return [*lines, "}"]
 
 
@@ -792,7 +847,7 @@ def _scratch_layout_probe(request):
         return None
     return _rendering.make_scratch_layout_probe(
         request.scratch_requirement_key,
-        f"typename {request.cpp_type}::TempStorage",
+        f"typename {request.cpp_type}::TempStorage[{request.group_instances}]",
     )
 
 
@@ -803,10 +858,14 @@ _rendering.register_bundle_renderer(
     include_lines=(
         "#include <cub/block/block_load.cuh>",
         "#include <cub/block/block_store.cuh>",
+        "#include <cub/warp/warp_load.cuh>",
+        "#include <cub/warp/warp_store.cuh>",
         "#include <cuda/std/cstdint>",
     ),
     cccl_headers=(
         ("cub/block/block_load.cuh", "cub/block/block_load.cuh"),
         ("cub/block/block_store.cuh", "cub/block/block_store.cuh"),
+        ("cub/warp/warp_load.cuh", "cub/warp/warp_load.cuh"),
+        ("cub/warp/warp_store.cuh", "cub/warp/warp_store.cuh"),
     ),
 )

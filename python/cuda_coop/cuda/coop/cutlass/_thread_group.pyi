@@ -22,9 +22,12 @@ class ThreadGroup(CommonThreadGroup[_GroupKindT_co], Generic[_GroupKindT_co]):
     """A common group descriptor consumed by CUTLASS primitives."""
 
 BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
-MemoryGroup: TypeAlias = BlockGroup
+WarpGroup: TypeAlias = ThreadGroup[Literal["warp"]]
+MemoryGroup: TypeAlias = BlockGroup | WarpGroup
 
 def this_block() -> BlockGroup:
     """Describe the current CUDA thread block."""
 
-__all__ = ["Hierarchy", "ThreadGroup", "ThreadHierarchy", "this_block"]
+__all__ = ["Hierarchy", "ThreadGroup", "ThreadHierarchy", "this_block", "this_warp"]
+
+def this_warp() -> WarpGroup: ...
