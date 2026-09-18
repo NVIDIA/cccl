@@ -79,8 +79,9 @@ assignments. The vendor headers compile these out when a user defines
 equivalents), so such code silently fails to build for those configurations. Use the explicit
 intrinsics instead (`__float2half`/`__half2float`, `__hadd`/`__hgt`, …). `__nv_bfloat16`
 arithmetic/comparison intrinsics require SM80 while CCCL supports sm75+: gate them with
-`NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, …)` and a float round-trip fallback. Candidate for a
-pre-commit grep.
+`NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, …)` and a float round-trip fallback via the explicit conversion
+intrinsics (`__bfloat162float`/`__float2bfloat16_rn`; for `__nv_bfloat162`,
+`__bfloat1622float2`/`__float22bfloat162_rn`). Candidate for a pre-commit grep.
 
 ## correctness.pdl-restrict-aliasing (critical, CUDA kernels that call `_CCCL_PDL_GRID_DEPENDENCY_SYNC()` / `cudaGridDependencySynchronize()`)
 
