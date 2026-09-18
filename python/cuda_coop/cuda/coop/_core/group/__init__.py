@@ -36,6 +36,9 @@ from .load_store import (
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
 )
+from .merge_sort import (
+    GroupMergeSortSemantics,
+)
 from .reduce import GroupReduceSemantics
 from .scan import GroupScanMode, GroupScanSemantics
 
@@ -47,6 +50,7 @@ __all__ = [
     "GroupLoadStoreSemantics",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
+    "GroupMergeSortSemantics",
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
