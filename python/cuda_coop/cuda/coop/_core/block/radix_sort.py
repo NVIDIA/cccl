@@ -10,11 +10,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from .._algorithm import Algorithm, AlgorithmSpec
+from .._algorithm import Algorithm, AlgorithmSpec, TypeDefinition
 from .._bindings import ArgumentBinding
 from .._symbols import semantic_token
 from .._types import (
-    INT32,
+    INT64,
     Array,
     Dependency,
     RuntimeValue,
@@ -133,8 +133,8 @@ def _method_parameters(
     if with_bits:
         parameters.extend(
             (
-                Value(INT32, name="begin_bit"),
-                Value(INT32, name="end_bit"),
+                Value(INT64, name="begin_bit"),
+                Value(INT64, name="end_bit"),
             )
         )
     return tuple(parameters)
@@ -355,12 +355,17 @@ def make_block_radix_sort_spec(
         bit_policy=bit_policy,
     )
     specialization = Algorithm(
-        struct_name="BlockRadixSort",
+        struct_name="CudaCoopBlockRadixSort"
+        if call.bit_policy.includes_explicit
+        else "BlockRadixSort",
         method_name=call.method_name,
         c_name="block_radix_sort",
         includes=("cub/block/block_radix_sort.cuh",),
         template_parameters=_TEMPLATE_PARAMETERS,
         parameters=call.parameters,
+        type_definitions=(_CHECKED_RADIX_SORT,)
+        if call.bit_policy.includes_explicit
+        else (),
     ).specialize(
         {
             "KeyT": key_dtype,
@@ -390,6 +395,53 @@ def make_block_radix_sort_spec(
         call=call,
         block_dim=block_dim,
     )
+
+
+def _checked_radix_sort_type() -> TypeDefinition:
+    methods = []
+    for method in (
+        "Sort",
+        "SortDescending",
+        "SortBlockedToStriped",
+        "SortDescendingBlockedToStriped",
+    ):
+        methods.append(f"  using PrimitiveT::{method};")
+        for pairs in (False, True):
+            values_parameter = ", ValueT (&values)[ItemsPerThread]" if pairs else ""
+            values_argument = ", values" if pairs else ""
+            methods.append(f"""
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void {method}(
+    KeyT (&keys)[ItemsPerThread]{values_parameter}, long long begin_bit, long long end_bit)
+  {{
+    if (begin_bit < 0 || end_bit <= begin_bit || end_bit > sizeof(KeyT) * 8)
+    {{
+      asm volatile("trap;");
+      return;
+    }}
+    PrimitiveT::{method}(keys{values_argument}, static_cast<int>(begin_bit), static_cast<int>(end_bit));
+  }}
+""")
+    return TypeDefinition(
+        name="cuda_coop_checked_block_radix_sort",
+        code="""
+namespace cub {
+template <typename KeyT, int BlockDimX, int ItemsPerThread, typename ValueT,
+          int RadixBits, bool MemoizeOuterScan, BlockScanAlgorithm InnerScanAlgorithm,
+          cudaSharedMemConfig SMemConfig, int BlockDimY, int BlockDimZ>
+struct CudaCoopBlockRadixSort : BlockRadixSort<
+  KeyT, BlockDimX, ItemsPerThread, ValueT, RadixBits, MemoizeOuterScan,
+  InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>
+{
+  using PrimitiveT = BlockRadixSort<KeyT, BlockDimX, ItemsPerThread, ValueT,
+    RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>;
+  using PrimitiveT::PrimitiveT;
+"""
+        + "\n".join(methods)
+        + "\n};\n}\n",
+    )
+
+
+_CHECKED_RADIX_SORT = _checked_radix_sort_type()
 
 
 __all__ = [
