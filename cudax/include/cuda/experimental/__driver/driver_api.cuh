@@ -44,8 +44,6 @@ namespace cuda::experimental::__driver
 {
 // ── Virtual memory management ───────────────────────────────────────────────
 
-#  if _CCCL_CTK_AT_LEAST(10, 2)
-
 [[nodiscard]]
 _CCCL_HOST_API inline ::CUdeviceptr __memAddressReserve(::cuda::std::size_t __size, ::cuda::std::size_t __alignment)
 {
@@ -110,8 +108,6 @@ __memGetAllocationGranularity(const ::CUmemAllocationProp* __prop, ::CUmemAlloca
     __driver_fn, "Failed to get memory allocation granularity", &__granularity, __prop, __option);
   return __granularity;
 }
-
-#  endif // _CCCL_CTK_AT_LEAST(10, 2)
 
 // ── Graph: polymorphic add node ─────────────────────────────────────────────
 
