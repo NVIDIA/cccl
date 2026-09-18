@@ -45,6 +45,7 @@ from .radix_sort import (
 )
 from .reduce import GroupReduceSemantics
 from .scan import GroupScanMode, GroupScanSemantics
+from .topk import GroupTopKSemantics
 
 __all__ = [
     "ArgumentPrecondition",
@@ -63,6 +64,7 @@ __all__ = [
     "GroupReduceSemantics",
     "GroupScanMode",
     "GroupScanSemantics",
+    "GroupTopKSemantics",
     "GroupTopologyRequirements",
     "ImplementationProvenance",
     "LogicalResultContract",

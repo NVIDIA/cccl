@@ -8,19 +8,20 @@ Import this qualified API on the host before compiling kernels. Importing it
 loads the supported compiler runtime and registers the whole-function
 planner. Primitive calls and ThreadData are kernel constructs. Group
 descriptors can also be created on the host and used as kernel globals.
-Construct TempStorage inside each kernel. During compilation, the compiler
-rebuilds the descriptor from its compile-time constant arguments and
-validates them. The compiler rejects a descriptor that comes from a module
-global. The ``local`` and ``shared`` namespaces and the Reduce, Sum, Scan,
-Merge Sort, Radix Sort, and Radix Rank markers load on first access.
+StatefulFunction descriptors are created on the host and used as kernel
+constants. Construct TempStorage inside each kernel. During compilation, the
+compiler rebuilds the descriptor from its compile-time constant arguments
+and validates them. The compiler rejects a descriptor that comes from a
+module global. The ``local`` and ``shared`` namespaces,
+``StatefulFunction``, and the Exchange, Shuffle, Reduce, Sum, Scan, Merge
+Sort, Radix Sort, and Radix Rank markers load on first access.
 """
 
 import importlib
-from typing import TYPE_CHECKING
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import _initialize_runtime_hooks
-from ._group._load_store import load, store
+from ._group_load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -34,23 +35,6 @@ from ._thread_group import (
     this_warp,
 )
 
-if TYPE_CHECKING:
-    from ._group._merge_sort import merge_sort_keys, merge_sort_pairs
-    from ._group._radix_sort import (
-        radix_rank_keys,
-        radix_sort_keys,
-        radix_sort_pairs,
-    )
-    from ._group._reduce import reduce, sum
-    from ._group._scan import (
-        exclusive_scan,
-        exclusive_sum,
-        inclusive_scan,
-        inclusive_sum,
-        scan,
-    )
-    from ._thread_data import local, shared
-
 __all__ = [
     "Hierarchy",
     "TempStorage",
@@ -59,32 +43,36 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
-    "exclusive_scan",
-    "exclusive_sum",
-    "inclusive_scan",
-    "inclusive_sum",
-    "load",
-    "local",
-    "merge_sort_keys",
-    "merge_sort_pairs",
-    "radix_rank_keys",
-    "radix_sort_keys",
-    "radix_sort_pairs",
-    "reduce",
-    "scan",
-    "shared",
-    "store",
-    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
     "this_thread",
     "this_warp",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
+    "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
+    "reduce",
+    "scan",
+    "store",
+    "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
+    "local",
+    "shared",
 ]
 
 
 def __getattr__(name):
-    """Load operation markers and allocation namespaces.
+    """Load operation markers, allocation namespaces, and state descriptors.
 
     Resolve these exports on first use and cache each object in this module.
     This keeps their imports out of basic namespace initialization.
@@ -94,7 +82,7 @@ def __getattr__(name):
     if name in {
         "merge_sort_keys",
         "merge_sort_pairs",
-        "radix_rank_keys",
+        "radix_rank",
         "radix_sort_keys",
         "radix_sort_pairs",
         "exclusive_scan",
@@ -104,20 +92,28 @@ def __getattr__(name):
         "reduce",
         "scan",
         "sum",
+        "topk_max_keys",
+        "topk_max_pairs",
+        "topk_min_keys",
+        "topk_min_pairs",
     }:
         module_name = {
-            "merge_sort_keys": "_group._merge_sort",
-            "merge_sort_pairs": "_group._merge_sort",
-            "radix_rank_keys": "_group._radix_sort",
-            "radix_sort_keys": "_group._radix_sort",
-            "radix_sort_pairs": "_group._radix_sort",
-            "exclusive_scan": "_group._scan",
-            "exclusive_sum": "_group._scan",
-            "inclusive_scan": "_group._scan",
-            "inclusive_sum": "_group._scan",
-            "reduce": "_group._reduce",
-            "scan": "_group._scan",
-            "sum": "_group._reduce",
+            "merge_sort_keys": "_group_merge_sort",
+            "merge_sort_pairs": "_group_merge_sort",
+            "radix_rank": "_group_radix",
+            "radix_sort_keys": "_group_radix",
+            "radix_sort_pairs": "_group_radix",
+            "exclusive_scan": "_group_scan",
+            "exclusive_sum": "_group_scan",
+            "inclusive_scan": "_group_scan",
+            "inclusive_sum": "_group_scan",
+            "reduce": "_group_reduce",
+            "scan": "_group_scan",
+            "sum": "_group_reduce",
+            "topk_max_keys": "_group_topk",
+            "topk_max_pairs": "_group_topk",
+            "topk_min_keys": "_group_topk",
+            "topk_min_pairs": "_group_topk",
         }[name]
         value = getattr(
             importlib.import_module(f"{__name__}.{module_name}"), name
