@@ -31,10 +31,14 @@ update_devcontainer() {
     local compiler_version="$8"
     local devcontainer_version="$9"
     local internal="${10}"
+    local tidy_ext="${11:-false}"
 
     local cuda_suffix=""
     if $cuda_ext; then
-        local cuda_suffix="ext"
+        cuda_suffix="ext"
+    fi
+    if $tidy_ext; then
+        cuda_suffix="tidy"
     fi
 
     # NVHPC SDK comes with its own bundled toolkit
@@ -78,10 +82,14 @@ make_name() {
     local cuda_ext="$2"
     local compiler_name="$3"
     local compiler_version="$4"
+    local tidy_ext="${5:-false}"
 
     local cuda_suffix=""
     if $cuda_ext; then
-        local cuda_suffix="ext"
+        cuda_suffix="ext"
+    fi
+    if $tidy_ext; then
+        cuda_suffix="tidy"
     fi
 
     echo "cuda${cuda_version}${cuda_suffix}-${compiler_name}${compiler_version}"
@@ -183,6 +191,7 @@ make_compiler_entry() {
     echo "{
         \"cuda\": \"$cuda_version\",
         \"cuda_ext\": $cuda_ext,
+        \"tidy_ext\": false,
         \"compiler_name\": \"$compiler_name\",
         \"compiler_exe\": \"$compiler_exe\",
         \"compiler_version\": \"$compiler_version\",
@@ -204,16 +213,17 @@ readonly all_comb="$combinations $cuda99_9_gcc $cuda99_8_gcc $cuda99_9_llvm $cud
 for combination in $all_comb; do
     cuda_version=$(echo "$combination" | jq -r '.cuda')
     cuda_ext=$(echo "$combination" | jq -r '.cuda_ext')
+    tidy_ext=$(echo "$combination" | jq -r '.tidy_ext')
     compiler_name=$(echo "$combination" | jq -r '.compiler_name')
     compiler_exe=$(echo "$combination" | jq -r '.compiler_exe')
     compiler_version=$(echo "$combination" | jq -r '.compiler_version')
     internal=$(echo "$combination" | jq -r '.internal')
 
-    name=$(make_name "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_version")
+    name=$(make_name "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_version" "$tidy_ext")
     mkdir -p "$name"
     new_devcontainer_file="$name/devcontainer.json"
 
-    update_devcontainer "$base_devcontainer_file" "$new_devcontainer_file" "$name" "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_exe" "$compiler_version" "$DEVCONTAINER_VERSION" "$internal"
+    update_devcontainer "$base_devcontainer_file" "$new_devcontainer_file" "$name" "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_exe" "$compiler_version" "$DEVCONTAINER_VERSION" "$internal" "$tidy_ext"
     echo "Created $new_devcontainer_file"
 
     # Add the subdirectory name to the valid_subdirs array

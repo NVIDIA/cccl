@@ -569,6 +569,8 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
     job_info = get_job_type_info(job_type)
     ctk_suffix = "ext" if job_info["cuda_ext"] else ""
+    if get_project(matrix_job["project"]).get("tidy_ext"):
+        ctk_suffix = "tidy"
 
     if is_windows(matrix_job):
         return f"{image_repo}:{version_prefix}{host_compiler}-cuda{ctk}{ctk_suffix}"
@@ -1461,13 +1463,13 @@ def print_devcontainer_info(args):
     for workflow_name in workflow_names:
         matrix_jobs.extend(parse_workflow_matrix_jobs(workflow_name))
 
-    # Explode jobs to ensure that the cuda_ext tags are correctly handled:
+    # Explode jobs to preserve their image requirements:
     exploded_jobs = []
     for matrix_job in matrix_jobs:
         exploded_jobs.extend(explode_tags(matrix_job, "jobs"))
     matrix_jobs = exploded_jobs
 
-    # Check if the extended cuda images are needed:
+    # Check if specialized images are needed:
     for matrix_job in matrix_jobs:
         cuda_ext = False
         job = matrix_job["jobs"]
@@ -1475,9 +1477,12 @@ def print_devcontainer_info(args):
         if job_info["cuda_ext"]:
             cuda_ext = True
         matrix_job["cuda_ext"] = cuda_ext
+        matrix_job["tidy_ext"] = get_project(matrix_job["project"]).get(
+            "tidy_ext", False
+        )
 
     # Remove all but the following keys from the matrix jobs:
-    keep_keys = ["ctk", "cxx", "cuda_ext"]
+    keep_keys = ["ctk", "cxx", "cuda_ext", "tidy_ext"]
     combinations = [{key: job[key] for key in keep_keys} for job in matrix_jobs]
 
     # Remove duplicates and filter out windows jobs:

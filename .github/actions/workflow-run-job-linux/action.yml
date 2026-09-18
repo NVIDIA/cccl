@@ -195,6 +195,9 @@ runs:
         if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+ext ]]; then
           cuda_ext_request="--cuda-ext"
         fi
+        if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+tidy ]]; then
+          tidy_ext_request="--tidy-ext"
+        fi
 
         # Initialize artifact paths, vars, etc shared with the devcontainer:
         source ci/util/artifacts/common.sh
@@ -208,6 +211,7 @@ runs:
             --cuda $JOB_CUDA \
             --host $JOB_HOST \
             ${cuda_ext_request:-} \
+            ${tidy_ext_request:-} \
             "${gpu_request[@]}" \
             ${aws_arn:-} \
             --env "CI=true" \

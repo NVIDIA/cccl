@@ -13,6 +13,7 @@ print_help() {
     echo "Options:"
     echo "  -c, --cuda               Specify the CUDA version. E.g., 12.2"
     echo "  --cuda-ext               Use a docker image with extended CTK libraries."
+    echo "  --tidy-ext               Use a docker image with Clang/LLVM development libraries."
     echo "  -H, --host               Specify the host compiler. E.g., gcc12"
     echo "  -d, --docker             Launch the development environment in Docker directly without using VSCode."
     echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)."
@@ -69,7 +70,7 @@ parse_options() {
     set -- "${@:1:$#-1}";
 
     local OPTIONS=c:e:H:dhv:
-    local LONG_OPTIONS=cuda:,cuda-ext,env:,host:,gpus:,volume:,ulimit:,docker,help
+    local LONG_OPTIONS=cuda:,cuda-ext,tidy-ext,env:,host:,gpus:,volume:,ulimit:,docker,help
     # shellcheck disable=SC2155
     local PARSED_OPTIONS="$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")"
 
@@ -97,6 +98,10 @@ parse_options() {
                 ;;
             --cuda-ext)
                 cuda_ext=true
+                shift
+                ;;
+            --tidy-ext)
+                tidy_ext=true
                 shift
                 ;;
             -e|--env)
@@ -360,6 +365,9 @@ main() {
 
         if ${cuda_ext:-false}; then
           cuda_suffix="ext"
+        fi
+        if ${tidy_ext:-false}; then
+          cuda_suffix="tidy"
         fi
         path=".devcontainer/cuda${cuda_version}${cuda_suffix:-}-${host_compiler}"
         if [[ ! -f "${path}/devcontainer.json" ]]; then
