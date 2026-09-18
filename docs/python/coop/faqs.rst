@@ -45,8 +45,8 @@ Importing a qualified namespace also registers its backend. Common and
 qualified calls for the same compiler can appear in one kernel and follow the
 shared contracts. Kernel launch syntax and other DSL code still need
 adaptation when moving between compilers; compiler-owned payloads cannot cross
-that boundary. See the :ref:`operation support table
-<coop-backend-operation-support>` for the families each backend implements.
+that boundary. The :ref:`coverage table <coop-backends>` lists the families
+implemented by each backend.
 
 .. _i-only-use-numba-cuda-mlir-can-i-import-its-namespace-as-coop:
 .. _coop-faq-numba-only:
@@ -236,9 +236,9 @@ No. It selects the smallest or largest keys and places them in a blocked
 output prefix without promising their order. Only the first
 ``min(k, valid_items)`` positions are defined. When keys tie at the selection
 boundary, any of the tied keys may fill the remaining positions. Pair variants
-keep each selected key attached to its value. Use a sorting primitive when
-you need ordered output. See the :ref:`Numba TopK example <coop-topk>` and
-current :ref:`backend operation support <coop-backend-operation-support>`.
+keep each selected key attached to its value. Use a sorting primitive when you
+need ordered output. See the :ref:`Numba TopK example <coop-topk>` and current
+:ref:`backend coverage <coop-backends>`.
 
 .. _coop-faq-global-sort:
 
