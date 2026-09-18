@@ -97,7 +97,7 @@ kernel provides the required barriers itself, including across loop
 iterations. Separate slices do not remove the need to protect reuse.
 
 Explicit descriptors control scratch for block transpose-family
-Load/Store and Block Scan.
+Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, and TopK.
 Storage-free block Load/Store accept and validate a descriptor but do not
 use it. Warp operations reject explicit descriptors. The compiler allocates
 any scratch required by CUB operations. See :ref:`temporary storage
@@ -123,3 +123,26 @@ Use ``coop.register("numba-cuda-mlir")`` to state that intent explicitly.
 It works regardless of import order, is safe to repeat, and also accepts
 ``"numba_cuda_mlir"``. The backend dependencies must already be installed.
 See :ref:`backend registration <coop-backend-registration>`.
+
+.. _coop-faq-topk-order:
+
+Does TopK return sorted results?
+-------------------------------
+
+No. It selects the smallest or largest keys and places them in a blocked
+output prefix without promising their order. Only the first
+``min(k, valid_items)`` positions are defined. When keys tie at the selection
+boundary, any of the tied keys may fill the remaining positions. Pair
+variants keep each selected key attached to its value. Use a sorting
+primitive when you need ordered output.
+See :ref:`the TopK example <coop-topk>`.
+
+.. _coop-faq-global-sort:
+
+Does sorting each block sort the whole array?
+--------------------------------------------
+
+Each call sorts only the selected group's tile. Several blocks therefore
+produce independently sorted tiles. A globally sorted array requires an
+algorithm that combines those tiles. Warp and logical-warp Merge Sort
+likewise sort each participating group's tile independently.
