@@ -28,12 +28,12 @@
 #include <cuda/std/__simd/reductions.h>
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
 #if _CCCL_HAS_SIMD_IDOT()
 #  include <cuda/__simd/simd_intrinsics_array.h>
 #  include <cuda/std/__simd/specializations/simd_intrinsics_array.h>
+#  include <cuda/std/__type_traits/is_integer.h>
+#  include <cuda/std/__type_traits/is_signed.h>
+#  include <cuda/std/__type_traits/is_unsigned.h>
 #endif // _CCCL_HAS_SIMD_IDOT()
 
 #include <nv/target>

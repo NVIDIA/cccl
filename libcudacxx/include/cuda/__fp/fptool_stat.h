@@ -268,7 +268,7 @@
 //! meant for analysis runs rather than production ones.
 
 #include <cuda/__fp/fpmp.h>
-#include <cuda/__fp/fpmp_limits.h>
+#include <cuda/__fp/fpmp_limits.h> // IWYU pragma: keep
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -278,7 +278,7 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
+#include <cuda/std/limits> // IWYU pragma: keep
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 // The host side of the record: a stream-ordered copy to and from the device global

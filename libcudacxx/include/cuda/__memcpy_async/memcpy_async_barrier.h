@@ -23,8 +23,6 @@
 #endif // no system header
 
 #include <cuda/__barrier/barrier.h>
-#include <cuda/__barrier/barrier_block_scope.h>
-#include <cuda/__barrier/barrier_thread_scope.h>
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/dispatch_memcpy_async.h>
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>
@@ -34,7 +32,7 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>

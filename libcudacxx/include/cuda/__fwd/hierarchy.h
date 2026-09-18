@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 
 #include <cuda/std/__cccl/prologue.h>

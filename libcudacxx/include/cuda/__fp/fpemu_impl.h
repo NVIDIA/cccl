@@ -42,8 +42,8 @@
 //! platforms and compilers.
 #if !defined(__CUDA_LIBDEVICE__)
 #  include <cuda/std/cstdint>
-#  include <cuda/std/cstdlib>
-#  include <cuda/std/cstring>
+#  include <cuda/std/cstdlib> // IWYU pragma: keep
+#  include <cuda/std/cstring> // IWYU pragma: keep
 #endif
 
 #include <cuda/__fp/fpemu_common.h>

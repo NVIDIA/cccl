@@ -27,13 +27,13 @@
 // second umbrella would buy them little.
 
 // fp_custom: a drop-in `double` with a configurable exponent and mantissa size.
-#include <cuda/__fp/fptool_custom.h>
+#include <cuda/__fp/fptool_custom.h> // IWYU pragma: export
 // fpmp2_stat: a drop-in fpmp2 that counts the arithmetic it performs.
-#include <cuda/__fp/fptool_stat.h>
+#include <cuda/__fp/fptool_stat.h> // IWYU pragma: export
 // Math functions for fpmp2_stat (exp, log, pow, sin, cos, ...). These rest on
 // <cuda/fpmp_math>, which is what makes this header cost about a fifth more to include
 // than the types alone. fp_custom needs no counterpart: its math functions are the
 // standard spellings on `double` and come with the type.
-#include <cuda/__fp/fptool_stat_math.h>
+#include <cuda/__fp/fptool_stat_math.h> // IWYU pragma: export
 
 #endif // _CUDA_FPTOOL

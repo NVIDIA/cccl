@@ -87,24 +87,24 @@
     [5] Fukuda et al. (2010). FPAN: A Fast Pairwise Addition Normalization Algorithm. SC '10.
 */
 
-#include <cuda/__fp/fpmp_common.h>
+#include <cuda/__fp/fpmp_common.h> // IWYU pragma: keep
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cccl/preprocessor.h> // _CCCL_PP_FOR_EACH, to fold __CUDA_ARCH_LIST__
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__cccl/preprocessor.h> // IWYU pragma: keep
+#include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_arithmetic.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/make_nbit_int.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cfloat> // LDBL_* , to recognize a binary128 long double
-#include <cuda/std/cmath>
+#include <cuda/std/cfloat> // IWYU pragma: keep
+#include <cuda/std/cmath> // IWYU pragma: keep
 #include <cuda/std/cstdint>
-#include <cuda/std/cstring>
+#include <cuda/std/cstring> // IWYU pragma: keep
 
 #include <nv/target>
 

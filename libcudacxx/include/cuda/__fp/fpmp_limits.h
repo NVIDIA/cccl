@@ -47,7 +47,7 @@
 */
 
 #include <cuda/__fp/fpmp.h>
-#include <cuda/std/limits>
+#include <cuda/std/limits> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
