@@ -28,8 +28,8 @@ void TestMergeByKeySimple()
     result_key.begin(),
     result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), ends.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), ends.second);
+  REQUIRE(result_key.end() == ends.first);
+  REQUIRE(result_val.end() == ends.second);
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }
@@ -244,10 +244,10 @@ void TestMergeByKeyToDiscardIterator(size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result.first);
-  ASSERT_EQUAL_QUIET(reference, h_result.second);
-  ASSERT_EQUAL_QUIET(reference, d_result.first);
-  ASSERT_EQUAL_QUIET(reference, d_result.second);
+  REQUIRE(reference == h_result.first);
+  REQUIRE(reference == h_result.second);
+  REQUIRE(reference == d_result.first);
+  REQUIRE(reference == d_result.second);
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeByKeyToDiscardIterator);
 

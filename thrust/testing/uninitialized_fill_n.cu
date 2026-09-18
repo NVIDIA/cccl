@@ -61,28 +61,32 @@ void TestUninitializedFillNPOD()
   typename Vector::iterator iter = thrust::uninitialized_fill_n(v.begin() + 1, 3, exemplar);
 
   Vector ref{0, exemplar, exemplar, exemplar, 4};
-  ASSERT_EQUAL_QUIET(v.begin() + 4, iter);
+  REQUIRE(v.begin() + 4 == iter);
+  REQUIRE(v == ref);
 
   exemplar = 8;
 
   iter = thrust::uninitialized_fill_n(v.begin() + 0, 3, exemplar);
 
   ref = {exemplar, exemplar, exemplar, 7, 4};
-  ASSERT_EQUAL_QUIET(v.begin() + 3, iter);
+  REQUIRE(v.begin() + 3 == iter);
+  REQUIRE(v == ref);
 
   exemplar = 9;
 
   iter = thrust::uninitialized_fill_n(v.begin() + 2, 3, exemplar);
 
   ref = {8, 8, exemplar, exemplar, 9};
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v.end() == iter);
+  REQUIRE(v == ref);
 
   exemplar = 1;
 
   iter = thrust::uninitialized_fill_n(v.begin(), v.size(), exemplar);
 
   ref = {exemplar, exemplar, exemplar, exemplar, exemplar};
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v.end() == iter);
+  REQUIRE(v == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedFillNPOD);
 
