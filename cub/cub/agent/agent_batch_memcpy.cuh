@@ -302,6 +302,8 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
     const char* in_aligned_begin = aligned_range.in_begin + thread_rank * sizeof(VectorT);
     while (aligned_range_begin < aligned_range.out_end)
     {
+      // LoadVector fills the output object before it is copied.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       VectorT data_in;
       LoadVector(in_aligned_begin, data_in);
       *aligned_range_begin = data_in;

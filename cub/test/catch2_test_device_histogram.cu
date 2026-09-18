@@ -84,7 +84,7 @@ __attribute__((optimize("no-tree-vectorize")))
 auto cast_if_half(array<half_t, N> a)
 {
   const __half* p = cast_if_half_pointer(a.data()); // cast to avoid ambiguous conversion from half_t -> __half
-  array<__half, N> r;
+  array<__half, N> r{};
   for (size_t i = 0; i < N; i++)
   {
     r[i] = p[i];
@@ -116,7 +116,7 @@ auto to_caller_vector_of_ptrs(array<c2h::device_vector<T>, N>& in)
 template <typename T, size_t N>
 auto to_array_of_ptrs(array<c2h::device_vector<T>, N>& in)
 {
-  array<decltype(cast_if_half_pointer(cs::declval<T*>())), N> r;
+  array<decltype(cast_if_half_pointer(cs::declval<T*>())), N> r{};
   for (size_t i = 0; i < N; i++)
   {
     r[i] = cast_if_half_pointer(thrust::raw_pointer_cast(in[i].data()));
@@ -127,7 +127,7 @@ auto to_array_of_ptrs(array<c2h::device_vector<T>, N>& in)
 template <typename T, size_t N>
 auto to_array_of_const_ptrs(array<c2h::device_vector<T>, N>& in)
 {
-  array<decltype(cast_if_half_pointer(cs::declval<const T*>())), N> r;
+  array<decltype(cast_if_half_pointer(cs::declval<const T*>())), N> r{};
   for (size_t i = 0; i < N; i++)
   {
     r[i] = cast_if_half_pointer(thrust::raw_pointer_cast(in[i].data()));
@@ -204,7 +204,7 @@ template <size_t ActiveChannels, typename LevelT>
 auto setup_bin_levels_for_even(const array<int, ActiveChannels>& num_levels, LevelT max_level, int max_level_count)
   -> array<array<LevelT, ActiveChannels>, 2>
 {
-  array<array<LevelT, ActiveChannels>, 2> levels;
+  array<array<LevelT, ActiveChannels>, 2> levels{};
   auto& lower_level = levels[0];
   auto& upper_level = levels[1];
 

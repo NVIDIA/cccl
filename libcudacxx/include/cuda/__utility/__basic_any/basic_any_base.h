@@ -65,8 +65,10 @@ template <class _Interface, int = __extension_of<_Interface, __imovable<>> + __e
 struct __basic_any_base;
 
 template <class _Interface>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable interfaces
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   __basic_any_base() = default;
 
   _CCCL_HOST_DEVICE_API __basic_any_base(__basic_any_base&& __other) noexcept
