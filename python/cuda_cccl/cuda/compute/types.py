@@ -196,7 +196,13 @@ def from_numpy_dtype(dtype: np.dtype | type) -> TypeDescriptor:
             field_info = dtype.fields[name]
             field_dtype = field_info[0]
             fields[name] = from_numpy_dtype(field_dtype)
-        return struct(fields)  # type: ignore[arg-type]
+        td = struct(fields)  # type: ignore[arg-type]
+        if dtype != td.dtype:
+            raise ValueError(
+                f"structured dtype layout {dtype} does not match "
+                f"cuda.compute native layout {td.dtype}"
+            )
+        return td
 
     # Some other NumPy type (e.g., complex64) for which we don't
     # have a specific TypeDescriptor. Use STORAGE and preserve the original dtype.
