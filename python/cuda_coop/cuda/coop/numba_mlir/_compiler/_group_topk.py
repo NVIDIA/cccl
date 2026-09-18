@@ -80,9 +80,11 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
         dtype = context.dtype(value)
         if dtype is None:
             dtype = context.payload_write_dtype(value)
-        dtypes.append(
-            _validate_common_numeric_dtype(dtype, operation=operation, parameter=name)
+        dtype = _validate_common_numeric_dtype(
+            dtype, operation=operation, parameter=name
         )
+        context.record_thread_data_dtype(value, dtype)
+        dtypes.append(dtype)
     bindings = {}
     for name in ("k", "valid_items"):
         binding = context.planning_binding(bound.arguments[name])
