@@ -16,7 +16,9 @@
  *        lanes own stable, distinct communicator groups that the verbs run
  *        over (environments from elsewhere get a per-call group); the sharded
  *        verbs whose engine is an MGMN algorithm (reduce, reduce_into_lanes,
- *        inclusive/exclusive scan, transform) agree with host references —
+ *        inclusive/exclusive scan) and the MGMN-engine reference transforms
+ *        (`reserved::mgmn_engine`, `mgmn_transform.cuh`) agree with host
+ *        references and with the live direct transforms —
  *        on a locality-domain group and on a single-place group, at
  *        divisible and non-divisible sizes, with custom operators and
  *        initial values; the environment's memory resource is the one
@@ -26,6 +28,7 @@
 
 #include <cuda/__runtime/ensure_current_context.h>
 
+#include <cuda/experimental/__sharded/mgmn_transform.cuh>
 #include <cuda/experimental/sharded.cuh>
 
 #include <algorithm>
@@ -41,6 +44,7 @@ using cuda::experimental::places::exec_place;
 using cuda::experimental::places::make_locality_domain_grid;
 using cuda::experimental::places::place_group;
 using cuda::experimental::places::place_memory_resource;
+namespace mgmn_engine = cuda::experimental::sharded::reserved::mgmn_engine;
 
 // ---------------------------------------------------------------------------
 // Compile-time: the communicator models the MGMN concepts, and the adapted
@@ -512,11 +516,11 @@ void test_verbs(place_group& group, size_t n)
   }
 
   // transform (out of place through zip_transform, and in place): the
-  // sharded verbs, whose engine is the MGMN transform, vs host
+  // MGMN-engine reference transforms vs the live direct transform and host
   {
     data.copy_from_host(input.data());
     ref.copy_from_host(input.data());
-    zip_transform(out, times_three_op{}, data);
+    mgmn_engine::zip_transform(out, times_three_op{}, data);
     transform(ref, times_three_op{});
     const auto h = host_of(out);
     const auto r = host_of(ref);
@@ -525,7 +529,7 @@ void test_verbs(place_group& group, size_t n)
       EXPECT(h[i] == 3 * input[i]);
       EXPECT(h[i] == r[i]);
     }
-    transform(data, times_three_op{});
+    mgmn_engine::transform(data, times_three_op{});
     const auto d = host_of(data);
     for (size_t i = 0; i < n; i++)
     {

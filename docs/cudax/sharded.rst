@@ -108,11 +108,14 @@ environment selects the contract):
   ``iota``, ``tabulate``, ``generate``, ``for_each``, ``transform``
   (in place); ``zip_transform`` is the out-of-place spelling for any arity
   (``out[i] = op(in1[i], in2[i], ...)``, in-place into an input supported,
-  co-partitioning checked). ``transform`` and ``zip_transform`` are executed
-  by the MGMN transform engine (``cuda::experimental::mgmn::transform``,
-  see the MGMN algorithms built on ``__multi_gpu``) over an in-process
-  communicator, one rank per shard; the sharded signatures and contract are
-  unchanged, and the engine is not visible to the caller;
+  co-partitioning checked). ``transform`` and ``zip_transform`` are direct
+  per-shard CUB launches (``thrust::transform`` / ``cub::DeviceTransform``
+  on the shard's stream): the map family never communicates, so it does
+  not go through the communicator-based engines. An implementation of the
+  same two verbs on the MGMN transform engine exists internally
+  (``reserved::mgmn_engine``, ``__sharded/mgmn_transform.cuh``, not part of
+  the API) as the comparison point for the interfacing cost of those
+  engines;
 - ``reduce`` / ``sum`` / ``min`` / ``max``, ``reduce_into``,
   ``reduce_into_lanes``: the MGMN reduce (``cuda::experimental::mgmn::reduce``:
   per-shard CUB ``DeviceReduce``, then an all-reduce of the P partials
@@ -201,7 +204,7 @@ calling thread — device currency — derived from the stream itself; see
 ``test/sharded/stream_scope.cu``).
 
 ``cuda/experimental/__sharded/legacy/`` holds the previous hand-written
-bodies of the reductions, scans and transforms as a *temporary* reference for
+bodies of the reductions and scans as a *temporary* reference for
 parity and overhead measurement (``reserved::legacy``); it is not part of the
 API, not included by the umbrella header, and will be removed.
 

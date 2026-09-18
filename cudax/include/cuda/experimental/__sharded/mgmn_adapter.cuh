@@ -33,8 +33,9 @@
  * `places::get_lane_id`, one rank per shard in place order); environments
  * from elsewhere (foreign streams, foreign environment types) get a group
  * created for the call. `__mgmn_map` is its map-family spelling (rank-local
- * engines: `transform`, `zip_transform`; the shard environments themselves
- * when the engine accepts them, empty shards skipped); the combine family
+ * engines — the `reserved::mgmn_engine` reference transforms of
+ * `mgmn_transform.cuh`; the shard environments themselves when the engine
+ * accepts them, empty shards skipped); the combine family
  * (`reduce.cuh`, `scan.cuh`) drives it with allocating environments that
  * also carry the determinism requirement (`__mgmn_alloc_env`), one rank per
  * shard, empty shards included (their partial is the identity).

@@ -22,6 +22,7 @@ set(
   algorithms/mgmn_adapter.cu
   algorithms/mgmn_std_execution.cu
   algorithms/legacy_parity.cu
+  algorithms/engine_parity.cu
   algorithms/bit_determinism.cu
   graph_capture/elementwise_pipeline.cu
   graph_capture/reduce_scan_capture.cu
@@ -109,7 +110,10 @@ endif()
 ## no header silently depends on a name another header happens to introduce
 ## first. One compile-only target per header, each including just that one.
 ## (`__sharded/legacy/` — the temporary reference implementations — is not
-## enumerated: the glob is not recursive; `legacy_parity.cu` compiles them.)
+## enumerated: the glob is not recursive; `legacy_parity.cu` compiles them.
+## `mgmn_transform.cuh`, the MGMN-engine reference transform, is a sibling
+## header and gets its target like any other; the umbrella does not include
+## it.)
 file(
   GLOB sharded_headers
   RELATIVE

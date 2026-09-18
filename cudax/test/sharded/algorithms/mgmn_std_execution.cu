@@ -14,7 +14,8 @@
  * @brief Regression: a translation unit that includes `<cuda/std/execution>`
  *        ahead of the sharded headers and drives CUB's environment dispatch
  *        with a `place_memory_resource` — through the sharded scans in their
- *        synchronous and stream-bearing forms — must
+ *        synchronous and stream-bearing forms, and through the MGMN-engine
+ *        reference transform (`reserved::mgmn_engine`) — must
  *        compile under relocatable device code. CUB reaches the resource
  *        from `CUB_RUNTIME_FUNCTION` (`__host__ __device__`) code there; a
  *        host-only `allocate`/`deallocate` was nvcc error #20011.
@@ -22,6 +23,7 @@
 
 #include <cuda/std/execution>
 
+#include <cuda/experimental/__sharded/mgmn_transform.cuh>
 #include <cuda/experimental/sharded.cuh>
 
 #include <vector>
@@ -29,6 +31,7 @@
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::make_locality_domain_grid;
 using cuda::experimental::places::place_group;
+namespace mgmn_engine = cuda::experimental::sharded::reserved::mgmn_engine;
 
 namespace
 {
@@ -58,7 +61,7 @@ int main()
 
   // The stream-bearing forms, lane-ordered behind a fork/join
   data.fork_from(origin);
-  transform(data, envs, twice_op{}, ce);
+  mgmn_engine::transform(data, envs, twice_op{}, ce);
   inclusive_sum(data, envs, ce);
   inclusive_scan(data, envs, ::cuda::std::plus<long long>{}, 0LL, ce);
   data.join_into(origin);

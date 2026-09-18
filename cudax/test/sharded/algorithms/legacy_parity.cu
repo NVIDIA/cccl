@@ -13,8 +13,8 @@
  *
  * @brief Parity of the live sharded verbs (MGMN engines) against the legacy
  *        reference implementations of `__sharded/legacy/`: `reduce`,
- *        `reduce_into`, `reduce_into_lanes`, the scans, the sums, and the
- *        transforms are compared BITWISE (bit patterns, never floating-point
+ *        `reduce_into`, `reduce_into_lanes`, the scans and the sums are
+ *        compared BITWISE (bit patterns, never floating-point
  *        `==`) on the locality-domain group and on a single-place group, at
  *        small, non-divisible and large sizes (empty shards included), for
  *        `int` and `double`, with known-identity and custom operators and
@@ -22,11 +22,12 @@
  *        integer-valued, so every association of the fold is exact and the
  *        comparison is meaningful; the run-to-run determinism of the live
  *        verbs on fractional data is the subject of `bit_determinism.cu`.
+ *        (The transforms are direct per-shard launches; their parity with
+ *        the MGMN-engine reference is `engine_parity.cu`.)
  */
 
 #include <cuda/experimental/__sharded/legacy/reduce.cuh>
 #include <cuda/experimental/__sharded/legacy/scan.cuh>
-#include <cuda/experimental/__sharded/legacy/transform.cuh>
 #include <cuda/experimental/sharded.cuh>
 
 #include <cstring>
@@ -58,24 +59,6 @@ struct sum_fn
   __host__ __device__ T operator()(T a, T b) const
   {
     return a + b;
-  }
-};
-
-template <class T>
-struct affine_fn
-{
-  __host__ __device__ T operator()(T x) const
-  {
-    return static_cast<T>(3) * x - static_cast<T>(1);
-  }
-};
-
-template <class T>
-struct fma_fn
-{
-  __host__ __device__ T operator()(T a, T b) const
-  {
-    return a * static_cast<T>(2) + b;
   }
 };
 
@@ -218,30 +201,6 @@ void compare_sums(place_group& group, size_t n, T init)
   EXPECT(bits_equal(max(live), legacy::max(ref)));
 }
 
-//! Live vs legacy transforms.
-template <class T>
-void compare_transforms(place_group& group, size_t n)
-{
-  const auto a_in = make_input<T>(n, 4);
-  const auto b_in = make_input<T>(n, 5);
-  auto live       = sharded_array<T>::allocate(group, n);
-  auto ref        = sharded_array<T>::allocate(group, n);
-  auto other      = sharded_array<T>::allocate(group, n);
-  other.copy_from_host(b_in.data());
-
-  live.copy_from_host(a_in.data());
-  ref.copy_from_host(a_in.data());
-  transform(live, affine_fn<T>{});
-  legacy::transform(ref, affine_fn<T>{});
-  EXPECT(bits_equal(host_of(live), host_of(ref)));
-
-  auto out_live = sharded_array<T>::allocate(group, n);
-  auto out_ref  = sharded_array<T>::allocate(group, n);
-  zip_transform(out_live, fma_fn<T>{}, live, other);
-  legacy::zip_transform(out_ref, fma_fn<T>{}, ref, other);
-  EXPECT(bits_equal(host_of(out_live), host_of(out_ref)));
-}
-
 template <class T>
 void run_type(place_group& group, size_t n, cudaStream_t cs)
 {
@@ -258,7 +217,6 @@ void run_type(place_group& group, size_t n, cudaStream_t cs)
   compare_scans<T>(group, n, max_fn<T>{}, static_cast<T>(-9), lowest);
   compare_scans<T>(group, n, sum_fn<T>{}, static_cast<T>(7), static_cast<T>(0));
   compare_sums<T>(group, n, static_cast<T>(11));
-  compare_transforms<T>(group, n);
 }
 } // namespace
 

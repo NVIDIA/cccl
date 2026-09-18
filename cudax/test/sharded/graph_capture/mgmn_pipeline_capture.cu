@@ -13,7 +13,9 @@
  *
  * @brief A back-to-back pipeline over one sharded array — transform,
  *        reduce_into_lanes, inclusive_sum, exclusive_sum, transform, all on
- *        their MGMN engines — with no host synchronization between the
+ *        MGMN engines (the transforms through the `reserved::mgmn_engine`
+ *        reference, so it stays covered under capture) — with no host
+ *        synchronization between the
  *        calls: (a) eagerly, lane-ordered, with a single final join, and
  *        (b) captured into ONE CUDA graph through the fork_from/join_into
  *        pattern, instantiated, and replayed with inputs mutated between
@@ -21,6 +23,7 @@
  *        under capture, while the stream-bearing forms capture.
  */
 
+#include <cuda/experimental/__sharded/mgmn_transform.cuh>
 #include <cuda/experimental/sharded.cuh>
 
 #include <stdexcept>
@@ -29,6 +32,7 @@
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::make_locality_domain_grid;
 using cuda::experimental::places::place_group;
+namespace mgmn_engine = cuda::experimental::sharded::reserved::mgmn_engine;
 
 namespace
 {
@@ -57,11 +61,11 @@ template <class CallEnv>
 void enqueue_pipeline(sharded_array<long long>& data, long long* lane_outs, const CallEnv& call_env)
 {
   const auto envs = default_envs(data);
-  transform(data, envs, twice_op{}, call_env);
+  mgmn_engine::transform(data, envs, twice_op{}, call_env);
   reduce_into_lanes(data, envs, lane_outs, ::cuda::std::plus<long long>{}, 0LL);
   inclusive_sum(data, envs, call_env);
   exclusive_sum(data, envs, exclusive_init, call_env);
-  transform(data, envs, plus_one_op{}, call_env);
+  mgmn_engine::transform(data, envs, plus_one_op{}, call_env);
 }
 
 // Host reference of the pipeline: returns the array and the reduce value
