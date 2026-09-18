@@ -426,7 +426,7 @@ This split maps directly onto how tests are organized:
 Recommended minimum checklist for a new single-phase API overload's ``_env.cu`` file:
 
 1. ``"<algorithm> works with default environment"`` — the algorithm is called without an
-   environment argument at all, and still works correctly.
+   environment argument at all, using a minimal example, and checked for a correct output.
 2. ``"<algorithm> uses environment"`` — an environment carrying only
    ``expected_allocation_size(...)`` is honored: the algorithm neither over- nor under-allocates
    temporary storage compared to the two-phase API.
