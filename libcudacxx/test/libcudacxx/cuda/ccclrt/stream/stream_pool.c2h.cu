@@ -65,8 +65,8 @@ C2H_CCCLRT_TEST("Stream pool type properties", "[stream][stream_pool]")
 {
   STATIC_REQUIRE(!cuda::std::is_copy_constructible_v<cuda::stream_pool>);
   STATIC_REQUIRE(!cuda::std::is_copy_assignable_v<cuda::stream_pool>);
-  STATIC_REQUIRE(cuda::std::is_nothrow_move_constructible_v<cuda::stream_pool>);
-  STATIC_REQUIRE(cuda::std::is_nothrow_move_assignable_v<cuda::stream_pool>);
+  STATIC_REQUIRE(!cuda::std::is_move_constructible_v<cuda::stream_pool>);
+  STATIC_REQUIRE(!cuda::std::is_move_assignable_v<cuda::stream_pool>);
 
   // A pool must never be created by accident from a device in an argument list.
   STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::device_ref, cuda::stream_pool>);
@@ -92,17 +92,17 @@ C2H_CCCLRT_TEST("Stream pool type properties", "[stream][stream_pool]")
 
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>().get_stream()), cuda::stream_ref>);
-  STATIC_REQUIRE(cuda::stream_pool::default_size == 16);
+  STATIC_REQUIRE(cuda::stream_pool::default_capacity == 16);
 }
 
 C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 {
   const auto device = cuda::devices[0];
 
-  SECTION("The default pool has default_size slots and reports its device and priority")
+  SECTION("The default pool has default_capacity slots and reports its device and priority")
   {
     const cuda::stream_pool pool{device};
-    REQUIRE(pool.size() == cuda::stream_pool::default_size);
+    REQUIRE(pool.capacity() == cuda::stream_pool::default_capacity);
     REQUIRE(pool.device() == device);
     REQUIRE(pool.priority() == cuda::stream::default_priority);
     REQUIRE(pool.__logical_device() == cuda::__logical_device_ref{device});
@@ -112,7 +112,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
   SECTION("Construction creates no stream, the first request creates all of them")
   {
     const cuda::stream_pool pool{device, 4};
-    REQUIRE(pool.size() == 4);
+    REQUIRE(pool.capacity() == 4);
     REQUIRE(pool.streams().empty());
     REQUIRE(::test::count_driver_stack() == 0);
 
@@ -166,7 +166,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
   {
     const cuda::stream_pool pool{device, 2};
 
-    for (cuda::std::size_t i = 0; i < 2 * pool.size(); ++i)
+    for (cuda::std::size_t i = 0; i < 2 * pool.capacity(); ++i)
     {
       const cuda::stream_ref str = pool.get_stream();
       REQUIRE(str.device() == device);
@@ -242,7 +242,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
     const cuda::stream_ref s2 = pool.get_stream(2);
     const auto all            = pool.streams();
-    REQUIRE(all.size() == pool.size());
+    REQUIRE(all.size() == pool.capacity());
     REQUIRE(all[2] == s2);
     for (cuda::std::size_t i = 0; i < all.size(); ++i)
     {
@@ -257,7 +257,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
     pool.create_all_streams();
     const auto all = pool.streams();
-    REQUIRE(all.size() == pool.size());
+    REQUIRE(all.size() == pool.capacity());
 
     // Every entry is a distinct, valid stream on the device.
     for (cuda::std::size_t i = 0; i < all.size(); ++i)
@@ -283,7 +283,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
   SECTION("The eager constructor creates every slot")
   {
     const cuda::stream_pool pool{cuda::stream_pool::eager, device, 3};
-    REQUIRE(pool.size() == 3);
+    REQUIRE(pool.capacity() == 3);
     REQUIRE(pool.device() == device);
     REQUIRE(pool.priority() == cuda::stream::default_priority);
 
@@ -297,8 +297,8 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
     // Defaults still apply with the tag.
     const cuda::stream_pool defaulted{cuda::stream_pool::eager, device};
-    REQUIRE(defaulted.size() == cuda::stream_pool::default_size);
-    REQUIRE(defaulted.streams().size() == cuda::stream_pool::default_size);
+    REQUIRE(defaulted.capacity() == cuda::stream_pool::default_capacity);
+    REQUIRE(defaulted.streams().size() == cuda::stream_pool::default_capacity);
   }
 
   SECTION("create_all_streams() after a request is a no-op")
@@ -342,71 +342,6 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
   }
 }
 
-C2H_CCCLRT_TEST("Stream pool move semantics", "[stream][stream_pool]")
-{
-  const auto device = cuda::devices[0];
-
-  SECTION("Move construction keeps the streams and the round-robin position")
-  {
-    cuda::stream_pool source{device, 3};
-    const cuda::stream_ref s0 = source.get_stream();
-    const cuda::stream_ref s1 = source.get_stream();
-
-    const cuda::stream_pool destination{cuda::std::move(source)};
-    REQUIRE(destination.size() == 3);
-    REQUIRE(destination.device() == device);
-    REQUIRE(destination.get_stream(0) == s0);
-    REQUIRE(destination.get_stream(1) == s1);
-
-    // The next round-robin pick is slot 2, then back to slot 0.
-    const cuda::stream_ref s2 = destination.get_stream();
-    REQUIRE(s2 != s0);
-    REQUIRE(s2 != s1);
-    REQUIRE(destination.get_stream() == s0);
-
-    // The moved-from pool is empty.
-    REQUIRE(source.size() == 0); // NOLINT(bugprone-use-after-move)
-  }
-
-  SECTION("Move assignment replaces the streams of the target")
-  {
-    cuda::stream_pool source{device, 2};
-    cuda::stream_pool target{device, 5};
-    const cuda::stream_ref s0 = source.get_stream();
-    (void) target.get_stream();
-
-    target = cuda::std::move(source);
-    REQUIRE(target.size() == 2);
-    REQUIRE(target.get_stream(0) == s0);
-    REQUIRE(source.size() == 0); // NOLINT(bugprone-use-after-move)
-  }
-
-  SECTION("Stream references stay valid across a move")
-  {
-    cuda::stream_pool source{device, 2};
-    const cuda::stream_ref str = source.get_stream();
-
-    const cuda::stream_pool destination{cuda::std::move(source)};
-
-    ::test::pinned<int> value(0);
-    ::test::launch_kernel_single_thread(str, ::test::assign_42{}, value.get());
-    str.sync();
-    REQUIRE(*value == 42);
-    REQUIRE(destination.get_stream(0) == str);
-  }
-
-  SECTION("Self move assignment is a no-op")
-  {
-    cuda::stream_pool pool{device, 2};
-    const cuda::stream_ref s0 = pool.get_stream();
-
-    cuda::stream_pool& alias = pool;
-    pool                     = cuda::std::move(alias);
-    REQUIRE(pool.size() == 2);
-    REQUIRE(pool.get_stream(0) == s0);
-  }
-}
-
 C2H_CCCLRT_TEST("Stream pool is usable from several threads", "[stream][stream_pool]")
 {
   const auto device = cuda::devices[0];
@@ -435,11 +370,11 @@ C2H_CCCLRT_TEST("Stream pool is usable from several threads", "[stream][stream_p
 
   // Every handle handed out is one of the pool's slots, and the batch creation happened exactly once.
   std::set<cudaStream_t> slots;
-  for (cuda::std::size_t i = 0; i < pool.size(); ++i)
+  for (cuda::std::size_t i = 0; i < pool.capacity(); ++i)
   {
     slots.insert(pool.get_stream(i).get());
   }
-  REQUIRE(slots.size() == pool.size());
+  REQUIRE(slots.size() == pool.capacity());
 
   for (const auto& thread_picks : picks)
   {
@@ -538,7 +473,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
     auto ldev = ::make_logical_device(device);
     const cuda::stream_pool pool{ldev, 2};
 
-    for (cuda::std::size_t i = 0; i < pool.size(); ++i)
+    for (cuda::std::size_t i = 0; i < pool.capacity(); ++i)
     {
       const cuda::stream_ref str = pool.get_stream();
       REQUIRE(str.device() == device);

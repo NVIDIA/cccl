@@ -78,16 +78,20 @@ device or green context. It is meant for code that wants to spread independent w
 managing their lifetime.
 
 - ``get_stream()``: returns the next stream in round-robin order
-- ``get_stream(i)``: returns the stream in slot ``i % size()``
+- ``get_stream(i)``: returns the stream in slot ``i % capacity()``
 - ``create_all_streams()``: creates the streams now instead of on the first request; constructing with the leading
   ``cuda::stream_pool::eager`` tag does the same
 - ``streams()``: returns the streams of the pool, or nothing if none was requested or created yet
-- ``size()``, ``device()``, ``priority()``: the parameters given at construction
+- ``capacity()``, ``device()``, ``priority()``: the parameters given at construction
 
-Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool, including across a
-move of the pool. All streams are created together, in the constructor with the ``eager`` tag or otherwise on the
-first request, and destroyed with the pool. Once the streams exist, the getters take no lock. A pool can be moved but
-not copied, and all getters can be called concurrently from several threads.
+Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool. All streams are
+created together, in the constructor with the ``eager`` tag or otherwise on the first request, and destroyed with the
+pool. Once the streams exist, the getters take no lock, and all getters can be called concurrently from several
+threads.
+
+A pool can be neither copied nor moved. Code that needs to hand a pool around, store it in a container, or share it
+between several owners should allocate it with ``std::make_unique`` or ``std::make_shared`` and pass the
+``std::unique_ptr`` or ``std::shared_ptr`` instead.
 
 Availability: CCCL 3.6.0
 
