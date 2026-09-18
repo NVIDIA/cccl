@@ -243,6 +243,7 @@ function(
     endif()
 
     if ("${test_target}" MATCHES "nvrtc")
+      list(GET CUDAToolkit_INCLUDE_DIRS 0 NVRTC_CTK_INCLUDE_DIR)
       configure_file(
         "cmake/nvrtc_args.h.in"
         "${CMAKE_CURRENT_BINARY_DIR}/nvrtc_args.h"
