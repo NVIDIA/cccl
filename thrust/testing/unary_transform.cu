@@ -186,41 +186,37 @@ TEST_CASE("UnaryDispatchImplicit", "[transform_if]")
 
 TEMPLATE_LIST_TEST_CASE("Unary", "[transform]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
-    thrust::device_vector<T> d_input = h_input;
+  using T                          = TestType;
+  const size_t n                   = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
+  thrust::device_vector<T> d_input = h_input;
 
-    thrust::host_vector<T> h_output(n);
-    thrust::device_vector<T> d_output(n);
+  thrust::host_vector<T> h_output(n);
+  thrust::device_vector<T> d_output(n);
 
-    thrust::transform(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<T>());
-    thrust::transform(d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<T>());
+  thrust::transform(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<T>());
+  thrust::transform(d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<T>());
 
-    CHECK(h_output == d_output);
-  }
+  CHECK(h_output == d_output);
 }
 
 TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIterator", "[transform]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
-    thrust::device_vector<T> d_input = h_input;
+  using T                          = TestType;
+  const size_t n                   = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
+  thrust::device_vector<T> d_input = h_input;
 
-    const thrust::discard_iterator<> h_result =
-      thrust::transform(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>());
+  const thrust::discard_iterator<> h_result =
+    thrust::transform(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>());
 
-    const thrust::discard_iterator<> d_result =
-      thrust::transform(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>());
+  const thrust::discard_iterator<> d_result =
+    thrust::transform(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>());
 
-    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-    CHECK((reference == h_result));
-    CHECK((reference == d_result));
-  }
+  CHECK((reference == h_result));
+  CHECK((reference == d_result));
 }
 
 struct repeat2
@@ -234,38 +230,36 @@ struct repeat2
 
 TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIteratorZipped", "[transform]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
-    thrust::device_vector<T> d_input = h_input;
+  using T                          = TestType;
+  const size_t n                   = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
+  thrust::device_vector<T> d_input = h_input;
 
-    thrust::host_vector<T> h_output(n);
-    thrust::device_vector<T> d_output(n);
+  thrust::host_vector<T> h_output(n);
+  thrust::device_vector<T> d_output(n);
 
-    using Iterator1 = typename thrust::host_vector<T>::iterator;
-    using Iterator2 = typename thrust::device_vector<T>::iterator;
+  using Iterator1 = typename thrust::host_vector<T>::iterator;
+  using Iterator2 = typename thrust::device_vector<T>::iterator;
 
-    using Tuple1 = cuda::std::tuple<Iterator1, thrust::discard_iterator<>>;
-    using Tuple2 = cuda::std::tuple<Iterator2, thrust::discard_iterator<>>;
+  using Tuple1 = cuda::std::tuple<Iterator1, thrust::discard_iterator<>>;
+  using Tuple2 = cuda::std::tuple<Iterator2, thrust::discard_iterator<>>;
 
-    using ZipIterator1 = thrust::zip_iterator<Tuple1>;
-    using ZipIterator2 = thrust::zip_iterator<Tuple2>;
+  using ZipIterator1 = thrust::zip_iterator<Tuple1>;
+  using ZipIterator2 = thrust::zip_iterator<Tuple2>;
 
-    const ZipIterator1 z1(cuda::std::tuple(h_output.begin(), thrust::make_discard_iterator()));
-    const ZipIterator2 z2(cuda::std::tuple(d_output.begin(), thrust::make_discard_iterator()));
+  const ZipIterator1 z1(cuda::std::tuple(h_output.begin(), thrust::make_discard_iterator()));
+  const ZipIterator2 z2(cuda::std::tuple(d_output.begin(), thrust::make_discard_iterator()));
 
-    const ZipIterator1 h_result = thrust::transform(h_input.begin(), h_input.end(), z1, repeat2());
+  const ZipIterator1 h_result = thrust::transform(h_input.begin(), h_input.end(), z1, repeat2());
 
-    const ZipIterator2 d_result = thrust::transform(d_input.begin(), d_input.end(), z2, repeat2());
+  const ZipIterator2 d_result = thrust::transform(d_input.begin(), d_input.end(), z2, repeat2());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-    CHECK(h_output == d_output);
+  CHECK(h_output == d_output);
 
-    CHECK(reference == cuda::std::get<1>(h_result.get_iterator_tuple()));
-    CHECK(reference == cuda::std::get<1>(d_result.get_iterator_tuple()));
-  }
+  CHECK(reference == cuda::std::get<1>(h_result.get_iterator_tuple()));
+  CHECK(reference == cuda::std::get<1>(d_result.get_iterator_tuple()));
 }
 
 struct is_positive
@@ -279,77 +273,71 @@ struct is_positive
 
 TEMPLATE_LIST_TEST_CASE("UnaryNoStencil", "[transform_if]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input  = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_output = unittest::random_integers<T>(n);
+  using T                         = TestType;
+  const size_t n                  = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input  = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_output = unittest::random_integers<T>(n);
 
-    thrust::device_vector<T> d_input  = h_input;
-    thrust::device_vector<T> d_output = h_output;
+  thrust::device_vector<T> d_input  = h_input;
+  thrust::device_vector<T> d_output = h_output;
 
-    thrust::transform_if(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<T>(), is_positive());
-    thrust::transform_if(d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<T>(), is_positive());
+  thrust::transform_if(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<T>(), is_positive());
+  thrust::transform_if(d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<T>(), is_positive());
 
-    CHECK(h_output == d_output);
-  }
+  CHECK(h_output == d_output);
 }
 
 TEMPLATE_LIST_TEST_CASE("Unary", "[transform_if]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_stencil = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_output  = unittest::random_integers<T>(n);
+  using T                          = TestType;
+  const size_t n                   = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_stencil = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_output  = unittest::random_integers<T>(n);
 
-    thrust::device_vector<T> d_input   = h_input;
-    thrust::device_vector<T> d_stencil = h_stencil;
-    thrust::device_vector<T> d_output  = h_output;
+  thrust::device_vector<T> d_input   = h_input;
+  thrust::device_vector<T> d_stencil = h_stencil;
+  thrust::device_vector<T> d_output  = h_output;
 
-    thrust::transform_if(
-      h_input.begin(), h_input.end(), h_stencil.begin(), h_output.begin(), ::cuda::std::negate<T>(), is_positive());
+  thrust::transform_if(
+    h_input.begin(), h_input.end(), h_stencil.begin(), h_output.begin(), ::cuda::std::negate<T>(), is_positive());
 
-    thrust::transform_if(
-      d_input.begin(), d_input.end(), d_stencil.begin(), d_output.begin(), ::cuda::std::negate<T>(), is_positive());
+  thrust::transform_if(
+    d_input.begin(), d_input.end(), d_stencil.begin(), d_output.begin(), ::cuda::std::negate<T>(), is_positive());
 
-    CHECK(h_output == d_output);
-  }
+  CHECK(h_output == d_output);
 }
 
 TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIterator", "[transform_if]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_stencil = unittest::random_integers<T>(n);
+  using T                          = TestType;
+  const size_t n                   = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_stencil = unittest::random_integers<T>(n);
 
-    thrust::device_vector<T> d_input   = h_input;
-    thrust::device_vector<T> d_stencil = h_stencil;
+  thrust::device_vector<T> d_input   = h_input;
+  thrust::device_vector<T> d_stencil = h_stencil;
 
-    const thrust::discard_iterator<> h_result = thrust::transform_if(
-      h_input.begin(),
-      h_input.end(),
-      h_stencil.begin(),
-      thrust::make_discard_iterator(),
-      ::cuda::std::negate<T>(),
-      is_positive());
+  const thrust::discard_iterator<> h_result = thrust::transform_if(
+    h_input.begin(),
+    h_input.end(),
+    h_stencil.begin(),
+    thrust::make_discard_iterator(),
+    ::cuda::std::negate<T>(),
+    is_positive());
 
-    const thrust::discard_iterator<> d_result = thrust::transform_if(
-      d_input.begin(),
-      d_input.end(),
-      d_stencil.begin(),
-      thrust::make_discard_iterator(),
-      ::cuda::std::negate<T>(),
-      is_positive());
+  const thrust::discard_iterator<> d_result = thrust::transform_if(
+    d_input.begin(),
+    d_input.end(),
+    d_stencil.begin(),
+    thrust::make_discard_iterator(),
+    ::cuda::std::negate<T>(),
+    is_positive());
 
-    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-    CHECK((reference == h_result));
-    CHECK((reference == d_result));
-  }
+  CHECK((reference == h_result));
+  CHECK((reference == d_result));
 }
 
 TEMPLATE_LIST_TEST_CASE("UnaryCountingIterator", "[transform]", generic_list)
