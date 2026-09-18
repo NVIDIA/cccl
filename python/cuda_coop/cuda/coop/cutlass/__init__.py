@@ -6,6 +6,7 @@
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import register_trace_context
+from ._group_exchange import exchange
 from ._group_load_store import load, store
 from ._group_reduce import reduce, sum
 from ._group_scan import (
@@ -15,6 +16,7 @@ from ._group_scan import (
     inclusive_sum,
     scan,
 )
+from ._group_shuffle import shuffle
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -29,27 +31,29 @@ from ._thread_group import (
 )
 
 __all__ = [
-    "Hierarchy",
     "TempStorage",
     "TempStorageLike",
+    "Hierarchy",
     "ThreadData",
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
-    "exclusive_scan",
-    "exclusive_sum",
-    "inclusive_scan",
-    "inclusive_sum",
-    "load",
-    "reduce",
-    "scan",
-    "store",
-    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
     "this_thread",
     "this_warp",
+    "load",
+    "store",
+    "reduce",
+    "sum",
+    "scan",
+    "exclusive_scan",
+    "inclusive_scan",
+    "exclusive_sum",
+    "inclusive_sum",
+    "shuffle",
+    "exchange",
 ]
 
 

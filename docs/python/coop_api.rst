@@ -15,11 +15,7 @@ Common API
 
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi``
-files are authoritative for overload and result typing. Implemented
-operations follow these common contracts; see
-:ref:`backend coverage <coop-backends>` for each integration.
-The :ref:`calling conventions <coop-common-calling-conventions>` explain
-positional operands and keyword-only controls for both DSLs.
+files are authoritative for overload and result typing.
 
 .. currentmodule:: cuda.coop
 
@@ -33,8 +29,8 @@ See :ref:`registering a backend <coop-backend-registration>`.
 Thread groups
 ^^^^^^^^^^^^^
 
-See :ref:`thread groups <coop-common-groups>` and
-:ref:`participation and synchronization <coop-common-participation>` for the shared
+See :ref:`thread groups <coop-thread-groups>` and
+:ref:`participation and synchronization <coop-participation>` for the shared
 execution model. A descriptor's availability does not imply that every
 primitive supports that group.
 
@@ -89,7 +85,7 @@ Memory operations
 Reduction
 ^^^^^^^^^
 
-See :ref:`reduction and result ownership <coop-common-results>`.
+See :ref:`reduction and result ownership <coop-reductions>`.
 
 .. autofunction:: reduce
 .. autofunction:: sum
@@ -98,8 +94,7 @@ See :ref:`reduction and result ownership <coop-common-results>`.
 Scan
 ^^^^
 
-See Scan in the :ref:`Numba guide <coop-scans>` and
-:ref:`CUTLASS guide <coop-cutlass-scan>`.
+See :ref:`scan operators and prefixes <coop-scans>`.
 
 .. autofunction:: scan
 .. autofunction:: exclusive_sum
@@ -110,7 +105,7 @@ See Scan in the :ref:`Numba guide <coop-scans>` and
 Data rearrangement
 ^^^^^^^^^^^^^^^^^^
 
-See :ref:`blocked and striped layouts <coop-common-layouts>`.
+See :ref:`blocked and striped layouts <coop-data-layouts>`.
 
 .. autofunction:: exchange
 .. autofunction:: shuffle
@@ -118,7 +113,7 @@ See :ref:`blocked and striped layouts <coop-common-layouts>`.
 Comparison sorting
 ^^^^^^^^^^^^^^^^^^
 
-See the :ref:`Numba Merge Sort examples <coop-merge-sort>`.
+See :ref:`sorting keys and associated values <coop-merge-sort>`.
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
@@ -126,7 +121,7 @@ See the :ref:`Numba Merge Sort examples <coop-merge-sort>`.
 Radix sorting and ranking
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-See the :ref:`Numba Radix Sort and Rank examples <coop-radix>`.
+See :ref:`radix sorting and digit ranks <coop-radix>`.
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
@@ -135,7 +130,7 @@ See the :ref:`Numba Radix Sort and Rank examples <coop-radix>`.
 Top-k selection
 ^^^^^^^^^^^^^^^
 
-See the :ref:`Numba TopK examples <coop-topk>`.
+See :ref:`selecting the smallest or largest keys <coop-topk>`.
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys
@@ -173,39 +168,18 @@ Numba-CUDA-MLIR-qualified API
 
 .. py:module:: cuda.coop.numba_mlir
 
-This module includes every common kernel operation and the Numba extensions
-below. Shared parameters and behavior follow the
-:ref:`Common API <coop-common-api>`. The
-:ref:`comparison table <coop-programming-api-choice>` in the
-:doc:`Numba-CUDA-MLIR Programming Guide <coop/programming_guide>` explains
-when to choose qualified calls. The
-:doc:`Numba-CUDA-MLIR Developer Guide <coop/developer_overview>` follows
-their compiler implementation.
+Use this module for the extensions below. Shared parameters and behavior
+follow the :ref:`Common API <coop-common-api>`.
 
 .. code-block:: python
 
-   import cuda.coop.numba_mlir as numba_coop
+   import cuda.coop.numba_mlir as coop
 
 Qualified calls also accept fixed-size, one-dimensional local arrays where
 the operation accepts per-thread payloads. ``local`` and ``shared`` expose
 Numba-CUDA-MLIR's memory namespaces.
 
 .. currentmodule:: cuda.coop.numba_mlir
-
-Payloads and temporary storage
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: ThreadData
-
-.. autoclass:: TempStorage
-   :no-members:
-   :no-special-members:
-
-Memory operations
-^^^^^^^^^^^^^^^^^
-
-.. autofunction:: load
-.. autofunction:: store
 
 Reduction
 ^^^^^^^^^
@@ -277,55 +251,16 @@ CUTLASS-qualified API
 
 .. py:module:: cuda.coop.cutlass
 
-This module includes the implemented common operations, CuTe register
-conversions, and the extensions documented below:
-
-.. code-block:: python
-
-   import cuda.coop.cutlass as cutlass_coop
-
-Group construction, synchronization, Load/Store, and temporary storage follow
-the :ref:`Common API <coop-common-api>`. Qualified operations also accept CuTe
-register payloads where specified. Scalar results are CuTe values; multi-item
-results are ``ThreadData`` objects unless stated otherwise. A NumPy dtype
-selector does not change the compiler that owns a result.
-
-The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
-between common and qualified calls. Custom operators and Scan prefix
-callbacks are not supported; recognized ``operator`` and NumPy aliases select
-built-in operators. See :ref:`CUTLASS-specific behavior and limits
-<coop-cutlass-differences>` for participation and launch requirements, and the
-:doc:`CUTLASS Developer Guide <coop/cutlass_developer_guide>` for compilation,
-linking, and debugging.
-
-.. currentmodule:: cuda.coop.cutlass
-
-Per-thread payloads and CuTe conversion
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: ThreadData
-   :no-members:
-   :no-special-members:
-
-.. automethod:: ThreadData.from_values
-.. automethod:: ThreadData.from_fn
-.. automethod:: ThreadData.from_register_tensor
-.. automethod:: ThreadData.from_vector
-.. automethod:: ThreadData.from_payload
-.. automethod:: ThreadData.to_tensor_ssa
-.. automethod:: ThreadData.to_register_tensor
-
-Reduction
-^^^^^^^^^
-
-.. autofunction:: reduce
-.. autofunction:: sum
-
-Scan
-^^^^
-
-.. autofunction:: scan
-.. autofunction:: exclusive_sum
-.. autofunction:: inclusive_sum
-.. autofunction:: exclusive_scan
-.. autofunction:: inclusive_scan
+The qualified CUTLASS surface provides hierarchy queries and supported group
+synchronization, Block and Warp ``load``/``store``, built-in Reduce and Scan,
+Block and Warp Exchange, and Block Shuffle. Warp operations include supported
+logical subgroups. Load returns
+``None`` and fills its destination payload; the other operations preserve their
+input payloads. ``ThreadData`` adds conversions to and from CuTe
+register-memory tensors and immutable register values. See
+:doc:`coop_cutlass` for algorithms, result ownership, runtime requirements,
+and executable examples. Qualified Scan adds valid-prefix and aggregate-output
+controls. Qualified Exchange adds block warp-striped layouts and scatter;
+qualified Shuffle adds scalar Offset and Rotate. Custom operators and Scan
+prefix callbacks are not supported. The installed ``.pyi`` files declare the
+supported signatures.
