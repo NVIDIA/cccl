@@ -95,8 +95,6 @@ cooperative calls, including when only part of the tile is valid.
 The :doc:`programming concepts <coop/concepts>` explain participation,
 data layouts, operation results, and temporary storage.
 
-.. _coop-backends:
-
 Common API and compiler extensions
 ----------------------------------
 
@@ -130,41 +128,22 @@ To work on the integration, follow a kernel through the
 
 .. raw:: html
 
-   <span id="backend-coverage"></span>
    <span id="block-prefix-callbacks"></span>
    <span id="build-time-cmake-variables"></span>
-   <span id="calling-conventions"></span>
-   <span id="common-and-qualified-apis"></span>
    <span id="compilation-and-headers"></span>
    <span id="configuration"></span>
-   <span id="coop-api-namespaces"></span>
    <span id="coop-backend-registration"></span>
-   <span id="coop-common-calling-conventions"></span>
-   <span id="coop-common-groups"></span>
-   <span id="coop-common-layouts"></span>
-   <span id="coop-common-participation"></span>
-   <span id="coop-common-payloads"></span>
-   <span id="coop-common-results"></span>
-   <span id="coop-common-storage"></span>
    <span id="coop-numba-context-lifetime"></span>
    <span id="coop-numba-validation"></span>
    <span id="cuda-devices-and-context-lifetime"></span>
    <span id="exchange-semantics"></span>
    <span id="groups-and-thread-data"></span>
-   <span id="groups-and-tiles"></span>
    <span id="installation"></span>
    <span id="kernel-api"></span>
-   <span id="layouts-and-operation-order"></span>
    <span id="load-and-store-semantics"></span>
    <span id="numba-cuda-mlir-validation-scope"></span>
-   <span id="participation-and-valid-prefixes"></span>
-   <span id="per-thread-payloads"></span>
-   <span id="portable-and-qualified-apis"></span>
    <span id="registering-a-backend"></span>
-   <span id="result-ownership"></span>
    <span id="runtime-environment-variables"></span>
    <span id="scan-semantics"></span>
-   <span id="scratch-allocation-and-reuse"></span>
-   <span id="shared-execution-model"></span>
    <span id="shuffle-semantics"></span>
    <span id="temporary-storage"></span>

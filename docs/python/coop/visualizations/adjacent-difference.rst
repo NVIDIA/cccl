@@ -7,7 +7,7 @@ Adjacent Difference
 ===================
 
 This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-operation support <coop-backend-operation-support>` for CUTLASS availability.
+coverage <coop-backends>` for CUTLASS availability.
 
 :func:`cuda.coop.adjacent_difference` subtracts a neighboring item from
 each item in a block tile. The result has the input's dtype, extent, and

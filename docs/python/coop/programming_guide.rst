@@ -191,10 +191,9 @@ with a separate common API reduction, but the qualified call is useful when
 you already need a scan and want its aggregate as well.
 
 Implemented common operations follow the documented group, dtype, and
-participation requirements; see :ref:`backend operation support
-<coop-backend-operation-support>`. The kernels here also contain Numba
-launch and indexing code; porting a complete kernel to CuTe requires
-adapting those parts too.
+participation requirements; see :ref:`backend coverage <coop-backends>`. The
+kernels here also contain Numba launch and indexing code; porting a complete
+kernel to CuTe requires adapting those parts too.
 
 Registering the compiler backend
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
