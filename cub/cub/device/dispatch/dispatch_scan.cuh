@@ -1036,7 +1036,10 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 #else // CUB_DEBUG_LOG
-  detail::log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+  detail::log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n",
+              init_grid_size,
+              init_kernel_threads,
+              reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
   // Invoke init_kernel to initialize tile descriptors
@@ -1100,7 +1103,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
       start_tile,
       scan_grid_size,
       active_policy.threads_per_block,
-      (long long) stream,
+      reinterpret_cast<long long>(stream),
       active_policy.items_per_thread,
       scan_sm_occupancy);
 #endif // CUB_DEBUG_LOG
@@ -1281,8 +1284,10 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
             init_kernel_threads,
             (long long) stream);
 #  else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+    detail::log("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
+                init_grid_size,
+                init_kernel_threads,
+                reinterpret_cast<long long>(stream));
 #  endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
@@ -1314,8 +1319,11 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     _CubLog(
       "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
 #  else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
+    detail::log("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n",
+                scan_grid_dim,
+                block_dim,
+                smem_size,
+                reinterpret_cast<long long>(stream));
 #  endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(

@@ -630,7 +630,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         "%d items per thread, %d SM occupancy\n",
         (long long) num_current_segments,
         active_policy.large_reduce.threads_per_block,
-        (long long) stream,
+        reinterpret_cast<long long>(stream),
         active_policy.large_reduce.items_per_thread,
         sm_occupancy);
 #endif // CUB_DEBUG_LOG

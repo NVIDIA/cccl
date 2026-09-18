@@ -614,7 +614,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 #else // CUB_DEBUG_LOG
     detail::log(
-      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
     // Invoke init_kernel to initialize tile descriptors
@@ -685,7 +685,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         scan_grid_size.y,
         scan_grid_size.z,
         threads_per_block,
-        (long long) stream,
+        reinterpret_cast<long long>(stream),
         items_per_thread,
         sweep_sm_occupancy);
     }

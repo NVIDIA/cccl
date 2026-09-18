@@ -790,7 +790,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 #else // CUB_DEBUG_LOG
-    log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+    log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
@@ -864,7 +864,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
           start_tile,
           scan_grid_size,
           threads_per_block,
-          (long long) stream,
+          reinterpret_cast<long long>(stream),
           items_per_thread,
           reduce_by_key_sm_occupancy);
 #endif // CUB_DEBUG_LOG

@@ -1010,7 +1010,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
     _CubLog(
       "Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 #else // CUB_DEBUG_LOG
-    log("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+    log("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
+        init_grid_size,
+        init_kernel_threads,
+        reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
@@ -1088,7 +1091,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
           "%lld>>>(), %d items per thread, %d SM occupancy\n",
           current_num_tiles,
           threads_per_block,
-          (long long) stream,
+          reinterpret_cast<long long>(stream),
           items_per_thread,
           range_select_sm_occupancy);
     }

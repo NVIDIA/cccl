@@ -817,7 +817,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
           "current segment offset %lld, current bit %d, bit_grain %d\n",
           (long long) num_current_segments,
           (long long) config.threads_per_block,
-          (long long) stream,
+          reinterpret_cast<long long>(stream),
           (long long) config.items_per_thread,
           (long long) config.sm_occupancy,
           (long long) current_segment_offset,

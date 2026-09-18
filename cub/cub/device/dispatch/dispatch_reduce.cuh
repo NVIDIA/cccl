@@ -797,7 +797,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
       "per thread, %d SM occupancy\n",
       (unsigned long) reduce_grid_size,
       active_policy.multi_tile.threads_per_block,
-      (long long) stream,
+      reinterpret_cast<long long>(stream),
       active_policy.multi_tile.items_per_thread,
       sm_occupancy);
 #endif // CUB_DEBUG_LOG
@@ -852,7 +852,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
         "%d items per thread\n",
         active_policy.single_tile.threads_per_block,
-        (long long) stream,
+        reinterpret_cast<long long>(stream),
         active_policy.single_tile.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
@@ -1044,7 +1044,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         log("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
             "%d items per thread\n",
             active_policy.single_tile.threads_per_block,
-            (long long) stream,
+            reinterpret_cast<long long>(stream),
             active_policy.single_tile.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
