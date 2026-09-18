@@ -28,6 +28,17 @@ _WHEEL_VALIDATOR = importlib.util.module_from_spec(_VALIDATOR_SPEC)
 _VALIDATOR_SPEC.loader.exec_module(_WHEEL_VALIDATOR)
 
 _REQUIRED_PACKAGE_MEMBERS = {
+    "cuda/coop/_core/api/radix.py",
+    "cuda/coop/_core/api/radix.pyi",
+    "cuda/coop/_core/block/radix.py",
+    "cuda/coop/_core/block/radix_rank.py",
+    "cuda/coop/_core/block/radix_sort.py",
+    "cuda/coop/_core/group/radix.py",
+    "cuda/coop/numba_mlir/_compiler/_group_radix.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite_radix.py",
+    "cuda/coop/numba_mlir/_group_radix.py",
+    "cuda/coop/numba_mlir/_group_radix.pyi",
+    "cuda/coop/numba_mlir/_lowering/_radix.py",
     "cuda/coop/__init__.py",
     "cuda/coop/__init__.pyi",
     "cuda/coop/_typing.pyi",
@@ -104,6 +115,8 @@ _REQUIRED_PACKAGE_MEMBERS = {
 }
 
 _REQUIRED_HEADER_MEMBERS = {
+    "cuda/coop/_headers/include/cub/block/block_radix_sort.cuh",
+    "cuda/coop/_headers/include/cub/block/block_radix_rank.cuh",
     "cuda/coop/_headers/cccl-bundle-provenance.json",
     "cuda/coop/_headers/include/cub/version.cuh",
     "cuda/coop/_headers/include/cub/block/block_exchange.cuh",

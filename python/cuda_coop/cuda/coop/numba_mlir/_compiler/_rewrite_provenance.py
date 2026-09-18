@@ -10,6 +10,8 @@ ordering remain in the rewrite orchestrator.
 
 from enum import Enum
 
+from numba_cuda_mlir import types
+
 from cuda.coop._core import StorageOwnership, SynchronizationScope
 
 from ..._core.api._payload import _normalize_alignment
@@ -412,9 +414,9 @@ class _ProvenanceRewrite:
             raise CoopSinglePhaseRewriteError(
                 "typed group payload array-kind must be a compile-time bool"
             )
-        from ._group_planner_support import _PAYLOAD_DTYPE_LIKE
+        from ._group_planner_support import _PAYLOAD_DTYPE_INT32, _PAYLOAD_DTYPE_LIKE
 
-        if dtype_policy != _PAYLOAD_DTYPE_LIKE:
+        if dtype_policy not in {_PAYLOAD_DTYPE_LIKE, _PAYLOAD_DTYPE_INT32}:
             raise CoopSinglePhaseRewriteError(
                 f"unknown typed group payload dtype policy {dtype_policy!r}"
             )
@@ -443,6 +445,8 @@ class _ProvenanceRewrite:
         dtype = prototype_spec.dtype if prototype_spec is not None else None
         if dtype is None:
             dtype = self._resolve_var_dtype(prototype)
+        if dtype_policy == _PAYLOAD_DTYPE_INT32:
+            dtype = types.int32
         return _ThreadDataSpec(
             items_per_thread=items_per_thread,
             dtype=dtype,

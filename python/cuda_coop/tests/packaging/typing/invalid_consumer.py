@@ -570,3 +570,22 @@ coop.merge_sort_keys(  # expected-error: [call-overload]
 coop.merge_sort_pairs(  # expected-error: [call-overload]
     qualified_block, values, values, oob_default=99
 )
+
+
+radix_keys = portable.ThreadData(2, np.int32)
+radix_float = portable.ThreadData(2, np.float32)
+portable.radix_sort_keys(portable.this_warp(), radix_keys)  # expected-error: [arg-type]
+portable.radix_sort_keys(  # expected-error: [type-var]
+    portable.this_block(), radix_float
+)
+portable.radix_sort_keys(  # expected-error: [call-arg]
+    portable.this_block(), radix_keys, blocked_to_striped=True
+)
+portable.radix_rank(  # expected-error: [call-arg]
+    portable.this_block(), radix_keys, exclusive_digit_prefix=radix_keys
+)
+portable.radix_sort_keys(
+    portable.this_block(),
+    radix_keys,
+    descending="yes",  # expected-error: [arg-type]
+)
