@@ -15,11 +15,7 @@ Common API
 
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi`` files are
-authoritative for overload and result typing. Implemented operations follow
-these common contracts; see :ref:`backend operation support
-<coop-backend-operation-support>` for each integration. The :ref:`calling
-conventions <coop-common-calling-conventions>` explain positional operands and
-keyword-only controls for both DSLs.
+authoritative for overload and result typing.
 
 .. currentmodule:: cuda.coop
 
@@ -33,8 +29,8 @@ See :ref:`registering a backend <coop-backend-registration>`.
 Thread groups
 ^^^^^^^^^^^^^
 
-See :ref:`thread groups <coop-common-groups>` and :ref:`participation and
-synchronization <coop-common-participation>` for the shared execution model. ``ThreadGroup`` and ``ThreadHierarchy`` describe which
+See :ref:`thread groups <coop-thread-groups>` and :ref:`participation and
+synchronization <coop-participation>` for the shared execution model. ``ThreadGroup`` and ``ThreadHierarchy`` describe which
 threads cooperate. A descriptor's availability does not imply that every primitive supports that
 group.
 
@@ -92,7 +88,7 @@ Memory operations
 Reduction
 ^^^^^^^^^
 
-See :ref:`reduction and result ownership <coop-common-results>`.
+See :ref:`reduction and result ownership <coop-reductions>`.
 
 .. autofunction:: reduce
 .. autofunction:: sum
@@ -101,7 +97,7 @@ See :ref:`reduction and result ownership <coop-common-results>`.
 Scan
 ^^^^
 
-See Scan in the :ref:`Numba guide <coop-scans>`.
+See :ref:`scan operators and prefixes <coop-scans>`.
 
 .. autofunction:: scan
 .. autofunction:: exclusive_sum
@@ -112,7 +108,7 @@ See Scan in the :ref:`Numba guide <coop-scans>`.
 Data rearrangement
 ^^^^^^^^^^^^^^^^^^
 
-See :ref:`blocked and striped layouts <coop-common-layouts>`.
+See :ref:`blocked and striped layouts <coop-data-layouts>`.
 
 .. autofunction:: exchange
 .. autofunction:: shuffle
@@ -120,7 +116,7 @@ See :ref:`blocked and striped layouts <coop-common-layouts>`.
 Comparison sorting
 ^^^^^^^^^^^^^^^^^^
 
-See the :ref:`Numba Merge Sort examples <coop-merge-sort>`.
+See :ref:`sorting keys and associated values <coop-merge-sort>`.
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
@@ -128,7 +124,7 @@ See the :ref:`Numba Merge Sort examples <coop-merge-sort>`.
 Radix sorting and ranking
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-See the :ref:`Numba Radix Sort and Rank examples <coop-radix>`.
+See :ref:`radix sorting and digit ranks <coop-radix>`.
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
@@ -137,7 +133,7 @@ See the :ref:`Numba Radix Sort and Rank examples <coop-radix>`.
 Top-k selection
 ^^^^^^^^^^^^^^^
 
-See the :ref:`Numba TopK examples <coop-topk>`.
+See :ref:`selecting the smallest or largest keys <coop-topk>`.
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys
@@ -176,18 +172,12 @@ Numba-CUDA-MLIR-qualified API
 
 .. py:module:: cuda.coop.numba_mlir
 
-This module includes every common kernel operation and the Numba extensions
-below. Shared parameters and behavior follow the
-:ref:`Common API <coop-common-api>`. The
-:ref:`comparison table <coop-programming-api-choice>` in the
-:doc:`Numba-CUDA-MLIR Programming Guide <coop/programming_guide>` explains
-when to choose qualified calls. The
-:doc:`Numba-CUDA-MLIR Developer Guide <coop/developer_overview>` follows
-their compiler implementation.
+Use this module for the extensions below. Shared parameters and behavior
+follow the :ref:`Common API <coop-common-api>`.
 
 .. code-block:: python
 
-   import cuda.coop.numba_mlir as numba_coop
+   import cuda.coop.numba_mlir as coop
 
 Qualified calls also accept fixed-size, one-dimensional local arrays where
 the operation accepts per-thread payloads. ``local`` and ``shared`` expose
@@ -195,26 +185,10 @@ Numba-CUDA-MLIR's memory namespaces.
 
 .. currentmodule:: cuda.coop.numba_mlir
 
-Payloads and temporary storage
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: ThreadData
-
-.. autoclass:: TempStorage
-   :no-members:
-   :no-special-members:
-
-Memory operations
-^^^^^^^^^^^^^^^^^
-
-.. autofunction:: load
-.. autofunction:: store
-
 Reduction
 ^^^^^^^^^
 
 .. autofunction:: reduce
-.. autofunction:: sum
 .. autofunction:: reduce_batched
 
 Scan
@@ -281,44 +255,12 @@ CUTLASS-qualified API
 
 .. py:module:: cuda.coop.cutlass
 
-This module includes the implemented common operations, CuTe register
-conversions, and the extensions documented below:
-
-.. code-block:: python
-
-   import cuda.coop.cutlass as cutlass_coop
-
-Block construction and Load/Store follow the :ref:`Common API
-<coop-common-api>`. Use the qualified ``ThreadData`` conversion methods below
-to move values between CuTe register tensors or vectors and payloads, for
-example before Store or after Load. Payload items are CuTe values. A NumPy
-dtype selector does not change the compiler that owns them.
-
-The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
-between common and qualified calls. See :ref:`CUTLASS-specific behavior and
-limits <coop-cutlass-differences>` for supported operations, participation and
-launch requirements, and the :doc:`CUTLASS Developer Guide
-<coop/cutlass_developer_guide>` for compilation, linking and debugging.
-
-.. currentmodule:: cuda.coop.cutlass
-
-Per-thread payloads and CuTe conversion
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: ThreadData
-   :no-members:
-   :no-special-members:
-
-.. automethod:: ThreadData.from_values
-.. automethod:: ThreadData.from_fn
-.. automethod:: ThreadData.from_register_tensor
-.. automethod:: ThreadData.from_vector
-.. automethod:: ThreadData.from_payload
-.. automethod:: ThreadData.to_tensor_ssa
-.. automethod:: ThreadData.to_register_tensor
-
-Memory operations
-^^^^^^^^^^^^^^^^^
-
-.. autofunction:: load
-.. autofunction:: store
+The qualified CUTLASS surface currently provides ``this_block``,
+``this_warp``, ``ThreadData``, ``TempStorage``, all six block
+``load``/``store`` algorithms, and four algorithms for physical and logical
+warps. Explicit temporary storage is block-only. It accepts the common
+``valid_items``, ``offset``, and load-only ``oob_default`` controls. Load
+returns ``None`` and mutates its destination payload. ``ThreadData`` adds
+conversions to and from CuTe register-memory tensors and immutable register
+values. See :doc:`coop_cutlass` for runtime requirements and an executable
+example. The installed ``.pyi`` files declare the supported signatures.

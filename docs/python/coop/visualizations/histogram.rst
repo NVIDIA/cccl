@@ -7,7 +7,7 @@ Histogram
 =========
 
 This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-operation support <coop-backend-operation-support>` for CUTLASS availability.
+coverage <coop-backends>` for CUTLASS availability.
 
 :func:`cuda.coop.histogram` counts how many samples fall in each bin. Each
 sample is already an integer bin index; the operation does not divide a
