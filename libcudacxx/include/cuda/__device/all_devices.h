@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__device/physical_device.h>
 #  include <cuda/__driver/driver_api.h>
@@ -30,21 +31,20 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/span>
-
-#  include <vector>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] _CCCL_HOST_API inline ::std::vector<device_ref> __make_devices()
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::__simple_vector<device_ref> __make_devices()
 {
-  ::std::vector<device_ref> __ret{};
-  __ret.reserve(::cuda::__physical_devices().size());
+  ::cuda::__simple_vector<device_ref> __ret{::cuda::__physical_devices().size(), ::cuda::no_init};
+  auto* __current = __ret.data();
   for (::cuda::std::size_t __i = 0; __i < ::cuda::__physical_devices().size(); ++__i)
   {
-    __ret.emplace_back(static_cast<int>(__i));
+    ::cuda::std::__construct_at(__current + __i, static_cast<int>(__i));
   }
   return __ret;
 }
