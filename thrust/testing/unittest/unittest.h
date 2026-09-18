@@ -284,8 +284,7 @@ using integral_vector_list = cuda::std::__type_list<
 using generic_list =
   cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float>;
 #define DECLARE_GENERIC_UNITTEST(TEST) _THRUST_DECLARE_TYPE_LIST_UNITTEST(TEST, generic_list)
-
-#undef _THRUST_DECLARE_TYPE_LIST_UNITTEST
+// _THRUST_DECLARE_TYPE_LIST_UNITTEST must stay defined: the DECLARE_* macros above expand it at their call sites.
 
 namespace unittest::detail
 {
@@ -331,8 +330,7 @@ using variable_list =
 using integral_variable_list =
   cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int>;
 #define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST) _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, integral_variable_list)
-
-#undef _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST
+// _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST must stay defined: the DECLARE_* macros above expand it at their call sites.
 
 namespace unittest::detail
 {
