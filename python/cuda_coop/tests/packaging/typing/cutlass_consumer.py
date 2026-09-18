@@ -15,6 +15,10 @@ import cuda.coop.cutlass as cutlass_coop
 from cuda import coop as common_coop
 
 
+def register_cutlass() -> None:
+    assert_type(common_coop.register("cutlass"), None)
+
+
 def check_cutlass_surface(source: object, destination: object) -> None:
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(2, np.int32, alignment=16)
