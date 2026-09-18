@@ -21,6 +21,7 @@ Each guideline is a section of the form:
 
 <!-- provenance:
   #<introducing PR>→#<fixing PR> <short note>;
+  review feedback on #<PR> (<link>) <short note>;
   ...
 -->
 
@@ -32,8 +33,9 @@ Each guideline is a section of the form:
 - `<severity>` — `critical` (must be addressed), `important` (not addressing requires a justification),
   or `suggestion` (worth considering, no action required).
 - `<scope>` — which files/diffs the rule applies to.
-- The provenance comment lists the historical regressions the rule was distilled from
-  (introducing PR → fixing PR); it is metadata for maintainers, not part of the rule.
+- The provenance comment lists what the rule was distilled from: historical regressions
+  (introducing PR → fixing PR) or review feedback that prevented a defect from shipping
+  (link to the review comment); it is metadata for maintainers, not part of the rule.
 - Rules are grouped by area, in the order `build`, `correctness`, `api`, `abi`, `perf`,
   `test`, `infra`, `docs`.
 
@@ -138,3 +140,18 @@ since callers assume that memory starts uninitialized. Does not apply when the v
 being overwritten, or when the initial values are semantically required (e.g. an accumulator seed, or a
 vector only partially written). When the element type is not trivially default-constructible,
 or generic (e.g., in a template context), use `thrust::default_init` instead.
+
+## correctness.shared-memory-overalignment (critical, `extern __shared__` storage or alignment of types placed in dynamic shared memory)
+
+<!-- provenance:
+  review feedback on #7868 (https://github.com/NVIDIA/cccl/pull/7868#discussion_r2880385130)
+-->
+
+Flag any `extern __shared__` storage (dynamic shared memory) with alignment greater than 16,
+including indirectly via `alignas` on a type or data member placed in such storage. Before nvcc 13.1,
+compiler bugs failed to retain alignment higher than 16 bytes in some cases, producing misaligned
+accesses. Independently, a dynamic shared memory declaration with alignment > 16 increases the static
+shared-memory padding for the entire translation unit, which can reduce occupancy of unrelated
+kernels, including in downstream user code. CCCL code must not introduce any `extern __shared__`
+storage with alignment above 16. A different design is required instead, e.g., manual alignment of a
+byte buffer. Static shared memory with alignment > 16 is fine.
