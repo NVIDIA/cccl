@@ -34,7 +34,7 @@
 #  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/span>
-#  include <cuda/std/string_view> // IWYU pragma: keep
+#  include <cuda/std/string_view>
 
 #  include <cuda/std/__cccl/prologue.h>
 
