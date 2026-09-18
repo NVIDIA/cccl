@@ -22,7 +22,7 @@ function(_cccl_create_tidy_plugins ret_var)
   # the plugins directly to clang-tidy, we need a stable directory where they will be
   # output.
   add_subdirectory(
-    "${CCCL_SOURCE_DIR}/cmake/clang_tidy_plugins"
+    "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang_tidy_plugins"
     "${CCCL_BINARY_DIR}/cccl_clang_tidy_plugins"
   )
 
