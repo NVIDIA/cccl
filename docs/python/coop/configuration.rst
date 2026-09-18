@@ -17,11 +17,10 @@ Install ``cuda-coop`` without adding Python package dependencies:
    python -m pip install cuda-coop
 
 The wheel includes the common API, every shipped DSL integration (including
-``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``), type declarations, and a
-matching bundle of CUB, Thrust, and libcu++ headers. The base install
-declares no Python package dependencies. You can import ``cuda.coop`` without
-a compiler or GPU; using an integration requires its backend dependencies to
-be installed.
+``cuda.coop.numba_mlir``), type declarations, and a matching bundle of CUB,
+Thrust, and libcu++ headers. The base install declares no Python
+package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
+using an integration requires its backend dependencies to be installed.
 
 For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
 
@@ -35,10 +34,6 @@ integrations. The extra only adds the dependency requirements declared in
 ``pyproject.toml`` so pip installs the supported Numba-CUDA-MLIR stack for
 the selected CUDA major version. The current integration requires
 ``numba-cuda-mlir>=0.5.0,<0.6``.
-For CUTLASS / CuTe DSL, install the base wheel alongside a runtime meeting
-the :ref:`CUTLASS requirements <coop-cutlass-requirements>`. A public CUTLASS
-extra and minimum version await qualification of an official artifact.
-
 Installing an extra does not register a backend in a running Python process;
 see :ref:`installation versus registration <coop-faq-installed-extra>`.
 
@@ -71,35 +66,24 @@ and leading and trailing whitespace is ignored. An unset variable is false.
    source.
 
 ``CUDA_COOP_ENABLE_CACHE``
-   A truthy value enables the Numba-CUDA-MLIR persistent compiler cache.
-   Read when the Numba backend cache module is imported.
+   A truthy value enables the persistent compiler cache. The value is read
+   when the backend cache module is imported.
 
 ``XDG_CACHE_HOME``
-   For the Numba backend on Linux and other POSIX systems, sets the cache
-   base directory; entries are stored in ``<value>/cccl``. Unset, empty, or
-   relative values fall back to ``~/.cache/cccl``. Read when the backend
-   cache module is imported.
+   On Linux and other POSIX systems, sets the cache base directory; entries
+   are stored in ``<value>/cccl``. Unset, empty, or relative values fall back
+   to ``~/.cache/cccl``. Read when the backend cache module is imported.
 
 ``LOCALAPPDATA``
-   For the Numba backend on Windows, sets the cache base directory; entries
-   are stored in ``<value>\cccl``. Unset, empty, or relative values fall back to
+   On Windows, sets the cache base directory; entries are stored in
+   ``<value>\cccl``. Unset, empty, or relative values fall back to
    ``~\AppData\Local\cccl``. Read when the backend cache module is imported.
-
-``CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR``
-   Selects the CUTLASS provider artifact cache directory. The default is a
-   user-specific directory under the system temporary directory. CUTLASS
-   always writes provider artifacts for the linker; ``CUDA_COOP_ENABLE_CACHE``
-   does not disable this cache. The cache must be a real directory owned by
-   the current user where ownership checks are available. The backend sets
-   its permissions to ``0700``, including for a configured directory.
-   See the :doc:`CUTLASS Developer Guide <cutlass_developer_guide>` for
-   artifact lifetime and cache validation.
 
 ``CUDA_COOP_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
    Files use ``cuda_coop_<backend>_<hash>.cu`` names so different backends can
-   share a directory. Set it before compiling; both backends also write
-   the source when their provider compilation cache is hit. Unset or empty
+   share a directory. Set it before compiling; the Numba backend also writes
+   the source when its provider compilation cache is hit. Unset or empty
    disables dumping.
 
 ``CUDA_PATH``
@@ -140,12 +124,11 @@ Compilation and headers
 -----------------------
 
 ``cuda-coop`` compiles providers against its configured CCCL root, the active
-source checkout during in-tree development, or its installed header bundle,
-in that order. It never substitutes the CUDA Toolkit's copy of CUB. CUDA
-headers and compiler/linker libraries must resolve to a compatible toolkit.
-Shared planner decisions describe the primitive; each backend adapts its
-compiler's values and lifecycle to those decisions.
+source checkout during in-tree development, or its installed header bundle, in
+that order. It never substitutes the CUDA Toolkit's copy of CUB. CUDA headers,
+NVRTC, ``nvrtc-builtins``, and nvJitLink must resolve to a compatible toolkit
+root. The resulting compiler artifacts and caches include the launch
+dimensions, dtype and item extent, storage ABI, compute capability, compiler
+options, ordered header identity, and toolkit-library identity.
 
-Follow a kernel through the implementation in the
-:doc:`Numba-CUDA-MLIR Developer Guide <developer_overview>` or
-:doc:`CUTLASS Developer Guide <cutlass_developer_guide>`.
+See :doc:`../coop_api` for the public API reference.
