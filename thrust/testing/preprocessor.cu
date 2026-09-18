@@ -7,124 +7,58 @@
 // clang-format off
 void test_pp_stringize()
 {
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(int))
-  , "int"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(int)) == "int");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(hello world))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(hello world)) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(hello  world))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(hello  world)) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE( hello  world))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE( hello  world)) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(hello  world ))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(hello  world )) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE( hello  world ))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE( hello  world )) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(hello
-                                    world))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(hello
+                                    world)) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE("hello world"))
-  , "\"hello world\""
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE("hello world")) == "\"hello world\"");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE('hello world'))
-  , "'hello world'"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE('hello world')) == "'hello world'");
 
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_CLANG("-Wdollar-in-identifier-extension")
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE($%!&<->))
-  , "$%!&<->"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE($%!&<->)) == "$%!&<->");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE($%!&""<->))
-  , "$%!&\"\"<->"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE($%!&""<->)) == "$%!&\"\"<->");
   _CCCL_DIAG_POP
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_STRINGIZE))
-  , "THRUST_PP_STRINGIZE"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_STRINGIZE)) == "THRUST_PP_STRINGIZE");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_STRINGIZE(int)))
-  , "\"int\""
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_STRINGIZE(int))) == "\"int\"");
 }
 DECLARE_UNITTEST(test_pp_stringize);
 
 void test_pp_cat2()
 {
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(i, nt)))
-  , "int"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(i, nt))) == "int");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello, world)))
-  , "helloworld"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello, world))) == "helloworld");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello , world)))
-  , "helloworld"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello , world))) == "helloworld");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2( hello, world)))
-  , "helloworld"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2( hello, world))) == "helloworld");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello,  world)))
-  , "helloworld"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello,  world))) == "helloworld");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello, world )))
-  , "helloworld"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello, world ))) == "helloworld");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello,
-                                                   world )))
-  , "helloworld"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello,
+                                                   world ))) == "helloworld");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello world, from thrust!)))
-  , "hello worldfrom thrust!"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(hello world, from thrust!))) == "hello worldfrom thrust!");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(-, >)))
-  , "->"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(-, >))) == "->");
 }
 DECLARE_UNITTEST(test_pp_cat2);
 
@@ -134,88 +68,43 @@ DECLARE_UNITTEST(test_pp_cat2);
 
 void test_pp_expand()
 {
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(int)))
-  , "int"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(int))) == "int");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(hello world)))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(hello world))) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(hello  world)))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(hello  world))) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND( hello  world)))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND( hello  world))) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(hello  world )))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(hello  world ))) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND( hello  world )))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND( hello  world ))) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(hello
-                                    world)))
-  , "hello world"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(hello
+                                    world))) == "hello world");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND("hello world")))
-  , "\"hello world\""
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND("hello world"))) == "\"hello world\"");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND('hello world')))
-  , "'hello world'"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND('hello world'))) == "'hello world'");
 
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_CLANG("-Wdollar-in-identifier-extension")
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND($%!&<->)))
-  , "$%!&<->"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND($%!&<->))) == "$%!&<->");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND($%!&""<->)))
-  , "$%!&\"\"<->"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND($%!&""<->))) == "$%!&\"\"<->");
   _CCCL_DIAG_POP
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(THRUST_PP_EXPAND)))
-  , "THRUST_PP_EXPAND"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(THRUST_PP_EXPAND))) == "THRUST_PP_EXPAND");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(THRUST_PP_EXPAND(int))))
-  , "int"
-  );
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(THRUST_PP_EXPAND(int)))) == "int");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(
       THRUST_PP_CAT2(THRUST_TEST_, PP_EXPAND_TARGET)()
-    )))
-  , "success"
-  );
+    ))) == "success");
 
-  ASSERT_EQUAL(
-    std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(
+  REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(
       THRUST_TEST_PP_EXPAND_TARGET THRUST_TEST_PP_EXPAND_ARGS()
-    )))
-  , "success"
-  );
+    ))) == "success");
 }
 DECLARE_UNITTEST(test_pp_expand);
 
@@ -225,10 +114,7 @@ DECLARE_UNITTEST(test_pp_expand);
 
 void test_pp_arity()
 {
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY()
-  , 0
-  );
+  REQUIRE(THRUST_PP_ARITY() == 0);
 
   /* This bash script was used to generate these tests:
 
@@ -244,445 +130,256 @@ void test_pp_arity()
     done
   */
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0
-    )
-  , 1
-  );
+    ) == 1);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1
-    )
-  , 2
-  );
+    ) == 2);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2
-    )
-  , 3
-  );
-ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+    ) == 3);
+REQUIRE(THRUST_PP_ARITY(
       0,1,2,3
-    )
-  , 4
-  );
+    ) == 4);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4
-    )
-  , 5
-  );
+    ) == 5);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5
-    )
-  , 6
-  );
+    ) == 6);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6
-    )
-  , 7
-  );
+    ) == 7);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7
-    )
-  , 8
-  );
+    ) == 8);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8
-    )
-  , 9
-  );
+    ) == 9);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9
-    )
-  , 10
-  );
+    ) == 10);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10
-    )
-  , 11
-  );
+    ) == 11);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11
-    )
-  , 12
-  );
+    ) == 12);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12
-    )
-  , 13
-  );
+    ) == 13);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13
-    )
-  , 14
-  );
+    ) == 14);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
-    )
-  , 15
-  );
+    ) == 15);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
-    )
-  , 16
-  );
+    ) == 16);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
-    )
-  , 17
-  );
+    ) == 17);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
-    )
-  , 18
-  );
+    ) == 18);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
-    )
-  , 19
-  );
+    ) == 19);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
-    )
-  , 20
-  );
+    ) == 20);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20
-    )
-  , 21
-  );
+    ) == 21);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
-    )
-  , 22
-  );
+    ) == 22);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22
-    )
-  , 23
-  );
+    ) == 23);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23
-    )
-  , 24
-  );
+    ) == 24);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24
-    )
-  , 25
-  );
+    ) == 25);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
-    )
-  , 26
-  );
+    ) == 26);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26
-    )
-  , 27
-  );
+    ) == 27);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27
-    )
-  , 28
-  );
+    ) == 28);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28
-    )
-  , 29
-  );
+    ) == 29);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29
-    )
-  , 30
-  );
+    ) == 30);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
-    )
-  , 31
-  );
+    ) == 31);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
-    )
-  , 32
-  );
+    ) == 32);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32
-    )
-  , 33
-  );
+    ) == 33);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33
-    )
-  , 34
-  );
+    ) == 34);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34
-    )
-  , 35
-  );
+    ) == 35);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35
-    )
-  , 36
-  );
+    ) == 36);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36
-    )
-  , 37
-  );
+    ) == 37);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37
-    )
-  , 38
-  );
+    ) == 38);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38
-    )
-  , 39
-  );
+    ) == 39);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39
-    )
-  , 40
-  );
+    ) == 40);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40
-    )
-  , 41
-  );
+    ) == 41);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41
-    )
-  , 42
-  );
+    ) == 42);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42
-    )
-  , 43
-  );
+    ) == 43);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43
-    )
-  , 44
-  );
+    ) == 44);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44
-    )
-  , 45
-  );
+    ) == 45);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45
-    )
-  , 46
-  );
+    ) == 46);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46
-    )
-  , 47
-  );
+    ) == 47);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47
-    )
-  , 48
-  );
+    ) == 48);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48
-    )
-  , 49
-  );
+    ) == 49);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49
-    )
-  , 50
-  );
+    ) == 50);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50
-    )
-  , 51
-  );
+    ) == 51);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51
-    )
-  , 52
-  );
+    ) == 52);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52
-    )
-  , 53
-  );
+    ) == 53);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53
-    )
-  , 54
-  );
+    ) == 54);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54
-    )
-  , 55
-  );
+    ) == 55);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55
-    )
-  , 56
-  );
+    ) == 56);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56
-    )
-  , 57
-  );
+    ) == 57);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57
-    )
-  , 58
-  );
+    ) == 58);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58
-    )
-  , 59
-  );
+    ) == 59);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59
-    )
-  , 60
-  );
+    ) == 60);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60
-    )
-  , 61
-  );
+    ) == 61);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61
-    )
-  , 62
-  );
+    ) == 62);
 
-  ASSERT_EQUAL(
-    THRUST_PP_ARITY(
+  REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62
-    )
-  , 63
-  );
+    ) == 63);
 }
 DECLARE_UNITTEST(test_pp_arity);
 
@@ -696,25 +393,13 @@ DECLARE_UNITTEST(test_pp_arity);
 
 void test_pp_dispatch()
 {
-  ASSERT_EQUAL(
-    THRUST_TEST_PP_DISPATCH_PLUS()
-  , 0
-  );
+  REQUIRE(THRUST_TEST_PP_DISPATCH_PLUS() == 0);
 
-  ASSERT_EQUAL(
-    THRUST_TEST_PP_DISPATCH_PLUS(0)
-  , 0
-  );
+  REQUIRE(THRUST_TEST_PP_DISPATCH_PLUS(0) == 0);
 
-  ASSERT_EQUAL(
-    THRUST_TEST_PP_DISPATCH_PLUS(1, 2)
-  , 3
-  );
+  REQUIRE(THRUST_TEST_PP_DISPATCH_PLUS(1, 2) == 3);
 
-  ASSERT_EQUAL(
-    THRUST_TEST_PP_DISPATCH_PLUS(1, 2, 3)
-  , 6
-  );
+  REQUIRE(THRUST_TEST_PP_DISPATCH_PLUS(1, 2, 3) == 6);
 }
 DECLARE_UNITTEST(test_pp_dispatch);
 // clang-format on

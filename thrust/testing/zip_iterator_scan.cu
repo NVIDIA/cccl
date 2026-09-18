@@ -3,8 +3,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 template <typename Tuple>
 struct TuplePlus
 {
@@ -42,7 +40,7 @@ struct TestZipIteratorScan
       thrust::make_zip_iterator(d_data0.end(), d_data1.end()),
       d_result.begin(),
       TuplePlus<Tuple>());
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE((h_result == d_result));
 
     // exclusive_scan (tuple output)
     thrust::exclusive_scan(
@@ -57,7 +55,7 @@ struct TestZipIteratorScan
       d_result.begin(),
       cuda::std::make_tuple<T, T>(0, 0),
       TuplePlus<Tuple>());
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE((h_result == d_result));
 
     thrust::host_vector<T> h_result0(n);
     thrust::host_vector<T> h_result1(n);
@@ -75,8 +73,8 @@ struct TestZipIteratorScan
       thrust::make_zip_iterator(d_data0.end(), d_data1.end()),
       thrust::make_zip_iterator(d_result0.begin(), d_result1.begin()),
       TuplePlus<Tuple>());
-    ASSERT_EQUAL_QUIET(h_result0, d_result0);
-    ASSERT_EQUAL_QUIET(h_result1, d_result1);
+    REQUIRE((h_result0 == d_result0));
+    REQUIRE((h_result1 == d_result1));
 
     // exclusive_scan (zip_iterator output)
     thrust::exclusive_scan(
@@ -91,8 +89,8 @@ struct TestZipIteratorScan
       thrust::make_zip_iterator(d_result0.begin(), d_result1.begin()),
       cuda::std::make_tuple<T, T>(0, 0),
       TuplePlus<Tuple>());
-    ASSERT_EQUAL_QUIET(h_result0, d_result0);
-    ASSERT_EQUAL_QUIET(h_result1, d_result1);
+    REQUIRE((h_result0 == d_result0));
+    REQUIRE((h_result1 == d_result1));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorScan, SignedIntegralTypes);

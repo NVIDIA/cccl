@@ -33,10 +33,10 @@ void TestMaxElementDevice(ExecutionPolicy exec)
   max_element_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_max - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+  REQUIRE(h_max - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 
   typename thrust::host_vector<int>::iterator h_min =
     thrust::max_element(h_data.begin(), h_data.end(), ::cuda::std::greater<int>());
@@ -44,10 +44,10 @@ void TestMaxElementDevice(ExecutionPolicy exec)
   max_element_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), ::cuda::std::greater<int>(), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_min - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+  REQUIRE(h_min - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 }
 
 void TestMaxElementDeviceSeq()
@@ -88,12 +88,11 @@ void TestMaxElementCudaStreams(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(s);
 
-  ASSERT_EQUAL(*thrust::max_element(streampolicy, data.begin(), data.end()), 5);
-  ASSERT_EQUAL(thrust::max_element(streampolicy, data.begin(), data.end()) - data.begin(), 1);
+  REQUIRE(*thrust::max_element(streampolicy, data.begin(), data.end()) == 5);
+  REQUIRE(thrust::max_element(streampolicy, data.begin(), data.end()) - data.begin() == 1);
 
-  ASSERT_EQUAL(*thrust::max_element(streampolicy, data.begin(), data.end(), ::cuda::std::greater<T>()), 1);
-  ASSERT_EQUAL(thrust::max_element(streampolicy, data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin(),
-               2);
+  REQUIRE(*thrust::max_element(streampolicy, data.begin(), data.end(), ::cuda::std::greater<T>()) == 1);
+  REQUIRE(thrust::max_element(streampolicy, data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin() == 2);
 
   cudaStreamDestroy(s);
 }
@@ -125,7 +124,7 @@ void TestMaxElementDevicePointer()
 
   T* raw_ptr     = thrust::raw_pointer_cast(data.data());
   const size_t n = data.size();
-  ASSERT_EQUAL(thrust::max_element(thrust::device, raw_ptr, raw_ptr + n) - raw_ptr, 1);
-  ASSERT_EQUAL(thrust::max_element(thrust::device, raw_ptr, raw_ptr + n, ::cuda::std::greater<T>()) - raw_ptr, 2);
+  REQUIRE(thrust::max_element(thrust::device, raw_ptr, raw_ptr + n) - raw_ptr == 1);
+  REQUIRE(thrust::max_element(thrust::device, raw_ptr, raw_ptr + n, ::cuda::std::greater<T>()) - raw_ptr == 2);
 }
 DECLARE_UNITTEST(TestMaxElementDevicePointer);

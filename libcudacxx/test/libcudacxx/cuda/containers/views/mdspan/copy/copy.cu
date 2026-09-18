@@ -22,6 +22,7 @@
 // dst: (16):(1)
 TEST_CASE("copy d2d 1D", "[copy][d2d][1d]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 16;
   test_copy<layout_right>(make_iota<int>(N), N);
 }
@@ -34,6 +35,7 @@ TEST_CASE("copy d2d 1D", "[copy][d2d][1d]")
 // dst: (4,8):(8,1)
 TEST_CASE("copy d2d 2D row-major to row-major", "[copy][d2d][2d][basic]")
 {
+  using cuda::std::layout_right;
   constexpr int M = 4;
   constexpr int N = 8;
   test_copy<layout_right>(make_iota<int>(M * N), M, N);
@@ -43,6 +45,7 @@ TEST_CASE("copy d2d 2D row-major to row-major", "[copy][d2d][2d][basic]")
 // dst: (4,8):(1,4)
 TEST_CASE("copy d2d 2D column-major to column-major", "[copy][d2d][2d][basic]")
 {
+  using cuda::std::layout_left;
   constexpr int M = 4;
   constexpr int N = 8;
   test_copy<layout_left>(make_iota<int>(M * N), M, N);
@@ -52,6 +55,8 @@ TEST_CASE("copy d2d 2D column-major to column-major", "[copy][d2d][2d][basic]")
 // dst: (4,8):(1,4)
 TEST_CASE("copy d2d 2D row-major to column-major", "[copy][d2d][2d][basic]")
 {
+  using cuda::std::layout_left;
+  using cuda::std::layout_right;
   constexpr int M = 4;
   constexpr int N = 8;
   auto data       = make_iota<int>(M * N);
@@ -70,6 +75,8 @@ TEST_CASE("copy d2d 2D row-major to column-major", "[copy][d2d][2d][basic]")
 // dst: (4,8):(8,1)
 TEST_CASE("copy d2d 2D column-major to row-major", "[copy][d2d][2d][basic]")
 {
+  using cuda::std::layout_left;
+  using cuda::std::layout_right;
   constexpr int M = 4;
   constexpr int N = 8;
   auto data       = make_iota<int>(M * N);
@@ -88,6 +95,7 @@ TEST_CASE("copy d2d 2D column-major to row-major", "[copy][d2d][2d][basic]")
 // dst: (1280,2564):(2564,1)
 TEST_CASE("copy d2d 2D large", "[copy][d2d][2d][large]")
 {
+  using cuda::std::layout_right;
   constexpr int M = 1280;
   constexpr int N = 2564;
   test_copy<layout_right>(make_iota<int>(M * N), M, N);
@@ -101,6 +109,7 @@ TEST_CASE("copy d2d 2D large", "[copy][d2d][2d][large]")
 // dst: (2,3,4):(12,4,1)
 TEST_CASE("copy d2d 3D row-major", "[copy][d2d][3d]")
 {
+  using cuda::std::layout_right;
   constexpr int D0 = 2;
   constexpr int D1 = 3;
   constexpr int D2 = 4;
@@ -111,6 +120,8 @@ TEST_CASE("copy d2d 3D row-major", "[copy][d2d][3d]")
 // dst: (2,3,4):(1,2,6)
 TEST_CASE("copy d2d 3D row-major to column-major", "[copy][d2d][3d]")
 {
+  using cuda::std::layout_left;
+  using cuda::std::layout_right;
   constexpr int D0    = 2;
   constexpr int D1    = 3;
   constexpr int D2    = 4;
@@ -255,6 +266,7 @@ TEST_CASE("copy d2d 3D strided different stride order", "[copy][d2d][3d][stride]
 // dst: (1024):(1)
 TEST_CASE("copy d2d 1D double", "[copy][d2d][types][double]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 1024;
   thrust::host_vector<double> data(N);
   for (int i = 0; i < N; ++i)
@@ -268,6 +280,7 @@ TEST_CASE("copy d2d 1D double", "[copy][d2d][types][double]")
 // dst: (2048):(1)
 TEST_CASE("copy d2d 1D short", "[copy][d2d][types][short]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 2048;
   thrust::host_vector<short> data(N);
   for (int i = 0; i < N; ++i)
@@ -281,6 +294,7 @@ TEST_CASE("copy d2d 1D short", "[copy][d2d][types][short]")
 // dst: (4096):(1)
 TEST_CASE("copy d2d 1D char", "[copy][d2d][types][char]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 4096;
   thrust::host_vector<char> data(N);
   for (int i = 0; i < N; ++i)
@@ -298,6 +312,7 @@ TEST_CASE("copy d2d 1D char", "[copy][d2d][types][char]")
 // dst: (100000):(1)
 TEST_CASE("copy d2d 1D large", "[copy][d2d][1d][large]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 100000;
   test_copy<layout_right>(make_iota<float>(N), N);
 }
@@ -306,6 +321,8 @@ TEST_CASE("copy d2d 1D large", "[copy][d2d][1d][large]")
 // dst: (13,17):(1,13)
 TEST_CASE("copy d2d 2D transposition non-tile-divisible", "[copy][d2d][2d][boundary]")
 {
+  using cuda::std::layout_left;
+  using cuda::std::layout_right;
   constexpr int M = 13;
   constexpr int N = 17;
   auto data       = make_iota<float>(M * N);
@@ -324,6 +341,8 @@ TEST_CASE("copy d2d 2D transposition non-tile-divisible", "[copy][d2d][2d][bound
 // dst: (100,200):(1,100)
 TEST_CASE("copy d2d 2D large transposition", "[copy][d2d][2d][large][transpose]")
 {
+  using cuda::std::layout_left;
+  using cuda::std::layout_right;
   constexpr int M = 100;
   constexpr int N = 200;
   auto data       = make_iota<int>(M * N);

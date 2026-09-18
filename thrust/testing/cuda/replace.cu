@@ -32,7 +32,7 @@ void TestReplaceDevice(ExecutionPolicy exec, const size_t n)
 
   replace_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), old_value, new_value);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
@@ -75,7 +75,7 @@ void TestReplaceCopyDevice(ExecutionPolicy exec)
 
   replace_copy_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_dest.begin(), old_value, new_value);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
@@ -110,7 +110,7 @@ void TestReplaceIfDevice(ExecutionPolicy exec)
 
   replace_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), less_than_five<int>(), 0);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
@@ -148,7 +148,7 @@ void TestReplaceIfStencilDevice(ExecutionPolicy exec)
 
   replace_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_stencil.begin(), less_than_five<int>(), 0);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
@@ -186,7 +186,7 @@ void TestReplaceCopyIfDevice(ExecutionPolicy exec)
 
   replace_copy_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_dest.begin(), less_than_five<int>(), 0);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
@@ -240,7 +240,7 @@ void TestReplaceCopyIfStencilDevice(ExecutionPolicy exec)
   replace_copy_if_kernel<<<1, 1>>>(
     exec, d_data.begin(), d_data.end(), d_stencil.begin(), d_dest.begin(), less_than_five<int>(), 0);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
@@ -276,7 +276,7 @@ void TestReplaceCudaStreams()
 
   const Vector result{4, 5, 4, 3, 5};
 
-  ASSERT_EQUAL(data, result);
+  REQUIRE(data == result);
 
   cudaStreamDestroy(s);
 }

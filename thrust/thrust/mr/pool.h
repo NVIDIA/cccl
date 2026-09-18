@@ -244,7 +244,9 @@ public:
     m_cached_oversized = oversized_block_descriptor_ptr();
   }
 
-  [[nodiscard]] void_ptr do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  [[nodiscard]] void_ptr do_allocate( // NOLINT(google-default-arguments)
+    std::size_t bytes,
+    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     bytes = (std::max) (bytes, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));
@@ -423,7 +425,9 @@ public:
     return static_cast<void_ptr>(static_cast<char_ptr>(static_cast<void_ptr>(block)) - bytes);
   }
 
-  void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
+                     std::size_t n,
+                     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     n = (std::max) (n, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));

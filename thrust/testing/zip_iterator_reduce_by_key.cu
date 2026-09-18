@@ -3,8 +3,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 template <typename Tuple>
 struct TuplePlus
 {
@@ -59,9 +57,9 @@ struct TestZipIteratorReduceByKey
         cuda::std::equal_to<T>(),
         TuplePlus<Tuple>());
 
-      ASSERT_EQUAL(h_data3, d_data3);
-      ASSERT_EQUAL(h_data4, d_data4);
-      ASSERT_EQUAL(h_data5, d_data5);
+      REQUIRE(h_data3 == d_data3);
+      REQUIRE(h_data4 == d_data4);
+      REQUIRE(h_data5 == d_data5);
     }
 
     // tuple key, tuple value
@@ -95,10 +93,10 @@ struct TestZipIteratorReduceByKey
         cuda::std::equal_to<Tuple>(),
         TuplePlus<Tuple>());
 
-      ASSERT_EQUAL(h_data3, d_data3);
-      ASSERT_EQUAL(h_data4, d_data4);
-      ASSERT_EQUAL(h_data5, d_data5);
-      ASSERT_EQUAL(h_data6, d_data6);
+      REQUIRE(h_data3 == d_data3);
+      REQUIRE(h_data4 == d_data4);
+      REQUIRE(h_data5 == d_data5);
+      REQUIRE(h_data6 == d_data6);
     }
 
     // const inputs, see #1527
@@ -142,10 +140,10 @@ struct TestZipIteratorReduceByKey
         thrust::make_zip_iterator(d_begin4, d_begin5),
         d_begin6);
 
-      ASSERT_EQUAL(h_data3, d_data3);
-      ASSERT_EQUAL(h_data4, d_data4);
-      ASSERT_EQUAL(h_data5, d_data5);
-      ASSERT_EQUAL(h_data6, d_data6);
+      REQUIRE(h_data3 == d_data3);
+      REQUIRE(h_data4 == d_data4);
+      REQUIRE(h_data5 == d_data5);
+      REQUIRE(h_data6 == d_data6);
     }
   }
 };

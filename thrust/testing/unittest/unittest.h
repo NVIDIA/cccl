@@ -25,6 +25,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
 #include <unittest/random.h>
 #include <unittest/special_types.h>
@@ -161,17 +163,9 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
 }
 } // namespace unittest::detail
 
-#define ASSERT_EQUAL(X, Y)     REQUIRE((X) == (Y))
-#define ASSERT_NOT_EQUAL(X, Y) REQUIRE((X) != (Y))
 // The QUIET variants wrap the whole comparison in an extra pair of parentheses so that Catch2 does not decompose the
 // expression. This avoids stringifying the operands, which is required for types that are not streamable (e.g. vectors
 // of tuples or other types without an ostream operator<<).
-#define ASSERT_EQUAL_QUIET(X, Y)     REQUIRE((X == Y))
-#define ASSERT_NOT_EQUAL_QUIET(X, Y) REQUIRE((X != Y))
-#define ASSERT_LEQUAL(X, Y)          REQUIRE((X) <= (Y))
-#define ASSERT_GEQUAL(X, Y)          REQUIRE((X) >= (Y))
-#define ASSERT_LESS(X, Y)            REQUIRE((X) < (Y))
-#define ASSERT_GREATER(X, Y)         REQUIRE((X) > (Y))
 #define ASSERT_ALMOST_EQUAL(X, Y)                                                                                     \
   {                                                                                                                   \
     const auto vec_ref = ::unittest::detail::to_approx(::unittest::detail::to_vec(X));                                \
@@ -188,8 +182,6 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
       REQUIRE_FALSE(::cuda::std::abs(a_ - b_) > 1e-4 * (::cuda::std::abs(a_) + ::cuda::std::abs(b_)) + 1e-4);         \
     }                                                                                                                 \
   }
-
-#define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) REQUIRE_THROWS_AS(EXPR, EXCEPTION_TYPE)
 
 namespace unittest
 {
@@ -253,45 +245,19 @@ using BuiltinNumericTypes = unittest::type_list<
   float,
   double>;
 
+// The array sizes exercised by size-parameterized tests. Sizes larger than the former default_threshold (64K) are
+// omitted to keep test runtime reasonable, but kept here for reference:
+//   65539, 123456, 131072, 731588, 1048575, 1048576,
+//   3398570, 9760840, (1 << 24) - 1, (1 << 24),
+//   (1 << 24) + 1, (1 << 25) - 1, (1 << 25), (1 << 25) + 1, (1 << 26) - 1, 1 << 26,
+//   (1 << 26) + 1, (1 << 27) - 1, (1 << 27)
 // clang-format off
-inline constexpr size_t standard_test_sizes[] =
-{
-  0, 1, 2, 3, 4, 5, 8, 10, 13, 16, 17, 19, 27, 30, 31, 32,
-  33, 35, 42, 53, 58, 63, 64, 65, 72, 97, 100, 127, 128, 129, 142, 183, 192, 201, 240, 255, 256,
-  257, 302, 511, 512, 513, 687, 900, 1023, 1024, 1025, 1565, 1786, 1973, 2047, 2048, 2049, 3050, 4095, 4096,
-  4097, 5030, 7791, 10000, 10027, 12345, 16384, 17354, 26255, 32768, 43718, 65533, 65536,
-  65539, 123456, 131072, 731588, 1048575, 1048576,
-  3398570, 9760840, (1 << 24) - 1, (1 << 24),
-  (1 << 24) + 1, (1 << 25) - 1, (1 << 25), (1 << 25) + 1, (1 << 26) - 1, 1 << 26,
-  (1 << 26) + 1, (1 << 27) - 1, (1 << 27)
-};
+#define GENERATE_THRUST_TEST_SIZES()                                                                            \
+  GENERATE(0, 1, 2, 3, 4, 5, 8, 10, 13, 16, 17, 19, 27, 30, 31, 32,                                             \
+           33, 35, 42, 53, 58, 63, 64, 65, 72, 97, 100, 127, 128, 129, 142, 183, 192, 201, 240, 255, 256,       \
+           257, 302, 511, 512, 513, 687, 900, 1023, 1024, 1025, 1565, 1786, 1973, 2047, 2048, 2049, 3050, 4095, \
+           4096, 4097, 5030, 7791, 10000, 10027, 12345, 16384, 17354, 26255, 32768, 43718, 65533, 65536)
 // clang-format on
-
-inline constexpr size_t tiny_threshold    = 1 << 5; //   32
-inline constexpr size_t small_threshold   = 1 << 8; //  256
-inline constexpr size_t medium_threshold  = 1 << 12; //   4K
-inline constexpr size_t default_threshold = 1 << 16; //  64K
-inline constexpr size_t large_threshold   = 1 << 20; //   1M
-inline constexpr size_t huge_threshold    = 1 << 24; //  16M
-inline constexpr size_t epic_threshold    = 1 << 26; //  64M
-inline constexpr size_t max_threshold     = (::cuda::std::numeric_limits<size_t>::max)();
-
-inline std::vector<size_t> test_sizes = [] {
-  std::vector<size_t> v;
-  for (const size_t s : standard_test_sizes)
-  {
-    if (s <= default_threshold)
-    {
-      v.push_back(s);
-    }
-  }
-  return v;
-}();
-
-inline const std::vector<size_t>& get_test_sizes()
-{
-  return test_sizes;
-}
 
 // Macro to create a single unittest
 #define DECLARE_UNITTEST(TEST)                    \
@@ -375,44 +341,38 @@ void for_each_type(L<Ts...>, Args&&... args)
 }
 } // namespace unittest::detail
 
-#define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TEST, ...)   \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))              \
-  {                                                            \
-    for (const size_t s : get_test_sizes())                    \
-    {                                                          \
-      unittest::detail::for_each_type<TEST>(__VA_ARGS__{}, s); \
-    }                                                          \
+#define DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TEST, ...) \
+  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))            \
+  {                                                          \
+    const size_t s = GENERATE_THRUST_TEST_SIZES();           \
+    unittest::detail::for_each_type<TEST>(__VA_ARGS__{}, s); \
   }
 
 // Macro to create instances of a test for several data types and array sizes
-#define DECLARE_VARIABLE_UNITTEST(TEST)           \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__)) \
-  {                                               \
-    for (const size_t s : get_test_sizes())       \
-    {                                             \
-      TEST<signed char>(s);                       \
-      TEST<unsigned char>(s);                     \
-      TEST<short>(s);                             \
-      TEST<unsigned short>(s);                    \
-      TEST<int>(s);                               \
-      TEST<unsigned int>(s);                      \
-      TEST<float>(s);                             \
-      TEST<double>(s);                            \
-    }                                             \
+#define DECLARE_VARIABLE_UNITTEST(TEST)            \
+  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))  \
+  {                                                \
+    const size_t s = GENERATE_THRUST_TEST_SIZES(); \
+    TEST<signed char>(s);                          \
+    TEST<unsigned char>(s);                        \
+    TEST<short>(s);                                \
+    TEST<unsigned short>(s);                       \
+    TEST<int>(s);                                  \
+    TEST<unsigned int>(s);                         \
+    TEST<float>(s);                                \
+    TEST<double>(s);                               \
   }
 
-#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST)  \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__)) \
-  {                                               \
-    for (const size_t s : get_test_sizes())       \
-    {                                             \
-      TEST<signed char>(s);                       \
-      TEST<unsigned char>(s);                     \
-      TEST<short>(s);                             \
-      TEST<unsigned short>(s);                    \
-      TEST<int>(s);                               \
-      TEST<unsigned int>(s);                      \
-    }                                             \
+#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST)   \
+  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))  \
+  {                                                \
+    const size_t s = GENERATE_THRUST_TEST_SIZES(); \
+    TEST<signed char>(s);                          \
+    TEST<unsigned char>(s);                        \
+    TEST<short>(s);                                \
+    TEST<unsigned short>(s);                       \
+    TEST<int>(s);                                  \
+    TEST<unsigned int>(s);                         \
   }
 
 namespace unittest::detail
