@@ -23,8 +23,12 @@ reducer = cuda.compute.make_reduce_into(
     d_in=d_input, d_out=d_output, op=OpKind.PLUS, h_init=h_init
 )
 temp_storage_size = reducer(
-    temp_storage=None, d_in=d_input, d_out=d_output,
-    num_items=d_input.size, op=OpKind.PLUS, h_init=h_init,
+    temp_storage=None,
+    d_in=d_input,
+    d_out=d_output,
+    num_items=d_input.size,
+    op=OpKind.PLUS,
+    h_init=h_init,
 )
 d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
@@ -38,8 +42,12 @@ batches = [d_input * (i + 1) for i in range(5)]
 # ---------------------------------------------------------------------------
 for batch in batches:
     reducer(
-        temp_storage=d_temp_storage, d_in=batch, d_out=d_output,
-        num_items=batch.size, op=OpKind.PLUS, h_init=h_init,
+        temp_storage=d_temp_storage,
+        d_in=batch,
+        d_out=d_output,
+        num_items=batch.size,
+        op=OpKind.PLUS,
+        h_init=h_init,
     )
     assert float(d_output.get()) == float(cp.sum(batch).get())
 
@@ -56,7 +64,9 @@ for batch in batches:
 # ---------------------------------------------------------------------------
 for batch in batches:
     reducer.execute(
-        temp_storage=d_temp_storage, d_in=batch, d_out=d_output,
+        temp_storage=d_temp_storage,
+        d_in=batch,
+        d_out=d_output,
         num_items=batch.size,
     )
     assert float(d_output.get()) == float(cp.sum(batch).get())
@@ -65,9 +75,11 @@ for batch in batches:
 # reset), signal it explicitly -- this is the one line execute() needs that
 # __call__ didn't:
 h_init[...] = 10.0
-reducer.set_h_init(h_init)      # <-- required; execute() alone would miss this
+reducer.set_h_init(h_init)  # <-- required; execute() alone would miss this
 reducer.execute(
-    temp_storage=d_temp_storage, d_in=d_input, d_out=d_output,
+    temp_storage=d_temp_storage,
+    d_in=d_input,
+    d_out=d_output,
     num_items=d_input.size,
 )
 

@@ -41,7 +41,6 @@ from ..typing import (
     _Struct,
 )
 
-
 # Perf: get_data_pointer() (_utils/protocols.py) is a generic fallback chain
 # -- for a CuPy array it unconditionally tries arr.data_ptr() (PyTorch's
 # convention) FIRST, which raises AttributeError every single call before
@@ -173,9 +172,11 @@ class _Reduce(Serializable):
         # the first execute() call -- see the __slots__ comment for why this
         # is reused rather than allocated fresh every call.
         self._d_in_ptr_obj = make_pointer_object(0, None) if self._d_in_is_ptr else None
-        self._d_out_ptr_obj = make_pointer_object(0, None) if self._d_out_is_ptr else None
+        self._d_out_ptr_obj = (
+            make_pointer_object(0, None) if self._d_out_is_ptr else None
+        )
         self._last_stream_obj = _UNSET_STREAM
-        self._last_stream_handle = None
+        self._last_stream_handle: int | None = None
 
         self.init_kind = get_init_kind(h_init)
 
@@ -210,7 +211,7 @@ class _Reduce(Serializable):
         # loaded_build_result / device_reduce_fn are bound lazily on the first
         # __call__ (see _bind_device_reduce_fn).
         self._last_loaded_build_result = None
-        self._last_stateless_op = None
+        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceReduceBuildResult,
             d_in,
@@ -245,7 +246,9 @@ class _Reduce(Serializable):
         self._d_in_is_ptr = self.d_in_cccl.is_kind_pointer()
         self._d_out_is_ptr = self.d_out_cccl.is_kind_pointer()
         self._d_in_ptr_obj = make_pointer_object(0, None) if self._d_in_is_ptr else None
-        self._d_out_ptr_obj = make_pointer_object(0, None) if self._d_out_is_ptr else None
+        self._d_out_ptr_obj = (
+            make_pointer_object(0, None) if self._d_out_is_ptr else None
+        )
         self._last_stream_obj = _UNSET_STREAM
         self._last_stream_handle = None
 
@@ -338,11 +341,15 @@ class _Reduce(Serializable):
         # Pointer wrapper instead of allocating a new one via
         # make_pointer_object -> Pointer.__cinit__.
         if self._d_in_is_ptr:
+            # _d_in_ptr_obj is only None when _d_in_is_ptr is False (see
+            # __init__/_after_deserialize), so it's always a Pointer here.
+            assert self._d_in_ptr_obj is not None
             self._d_in_ptr_obj.rebind(_fast_data_pointer(d_in), d_in)
             self.d_in_cccl.state = self._d_in_ptr_obj
         else:
             set_cccl_iterator_state(self.d_in_cccl, d_in)
         if self._d_out_is_ptr:
+            assert self._d_out_ptr_obj is not None
             self._d_out_ptr_obj.rebind(_fast_data_pointer(d_out), d_out)
             self.d_out_cccl.state = self._d_out_ptr_obj
         else:
@@ -351,9 +358,9 @@ class _Reduce(Serializable):
         # Perf: validate_and_get_stream() re-derives the same int handle
         # every call for a fixed stream object -- its __cuda_stream__()
         # result can't change over that object's lifetime. Cache by
-        # identity (held reference, not id()), same as the other caches on
-        # this class; _UNSET_STREAM (not None) marks "never validated yet"
-        # since stream=None is itself a valid, meaningful input.
+        # identity, same as the other caches on this class; _UNSET_STREAM
+        # (not None) marks "never validated yet" since stream=None is
+        # itself a valid, meaningful input.
         if stream is self._last_stream_obj:
             stream_handle = self._last_stream_handle
         else:
