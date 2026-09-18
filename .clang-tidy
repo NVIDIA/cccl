@@ -73,6 +73,8 @@ Checks:
   - '-cppcoreguidelines-pro-type-vararg'
   # This does not understand the concept macros
   - '-cppcoreguidelines-missing-std-forward'
+  # Unions are used far too much in CUB for this to be useful
+  - '-cppcoreguidelines-pro-type-union-access'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #

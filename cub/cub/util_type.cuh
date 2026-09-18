@@ -35,6 +35,9 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/in_place.h>
+#include <cuda/std/__variant/get.h>
+#include <cuda/std/__variant/variant.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -259,40 +262,22 @@ struct InputValue
   using iterator_type = IterT;
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const
   {
-    if (m_is_future)
+    if (m_value.index() == 1)
     {
-      return m_future_value;
+      return ::cuda::std::get<1>(m_value);
     }
-    return m_immediate_value;
+    return ::cuda::std::get<0>(m_value);
   }
   explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(T immediate_value)
-      : m_is_future(false)
-      , m_immediate_value(immediate_value)
+      : m_value(::cuda::std::in_place_index<0>, immediate_value)
   {}
   explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(FutureValue<T, IterT> future_value)
-      : m_is_future(true)
-      , m_future_value(future_value)
+      : m_value(::cuda::std::in_place_index<1>, future_value)
   {}
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(const InputValue& other)
-      : m_is_future(other.m_is_future)
-  {
-    if (m_is_future)
-    {
-      m_future_value = other.m_future_value;
-    }
-    else
-    {
-      detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
-    }
-  }
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(const InputValue& other) = default;
 
 private:
-  bool m_is_future;
-  union
-  {
-    FutureValue<T, IterT> m_future_value;
-    T m_immediate_value;
-  };
+  ::cuda::std::variant<T, FutureValue<T, IterT>> m_value;
 };
 } // namespace detail
 
