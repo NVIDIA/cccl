@@ -19,6 +19,10 @@ from ._scan import exclusive_scan as exclusive_scan
 from ._scan import inclusive_scan as inclusive_scan
 from ._scan import make_exclusive_scan as make_exclusive_scan
 from ._scan import make_inclusive_scan as make_inclusive_scan
+from ._scan_by_key import exclusive_scan_by_key as exclusive_scan_by_key
+from ._scan_by_key import inclusive_scan_by_key as inclusive_scan_by_key
+from ._scan_by_key import make_exclusive_scan_by_key as make_exclusive_scan_by_key
+from ._scan_by_key import make_inclusive_scan_by_key as make_inclusive_scan_by_key
 from ._segmented_reduce import make_segmented_reduce as make_segmented_reduce
 from ._segmented_reduce import segmented_reduce
 from ._select import make_select as make_select

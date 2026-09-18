@@ -53,7 +53,7 @@ constexpr std::string_view binary_op_template = R"XXX(
 
 constexpr std::string_view stateless_binary_op_template = R"XXX(
 extern "C" __device__ void OP_NAME(const void* lhs, const void* rhs, void* out);
-struct op_wrapper {{
+struct {1} {{
   __device__ {0} operator()(const LHS_T& lhs, const RHS_T& rhs) const {{
     {0} ret;
     OP_NAME(&lhs, &rhs, &ret);
@@ -67,7 +67,7 @@ struct __align__(OP_ALIGNMENT) op_state {{
   char data[OP_SIZE];
 }};
 extern "C" __device__ void OP_NAME(void* state, const void* lhs, const void* rhs, void* out);
-struct op_wrapper {{
+struct {1} {{
   op_state state;
   __device__ {0} operator()(const LHS_T& lhs, const RHS_T& rhs) {{
     {0} ret;
@@ -78,7 +78,11 @@ struct op_wrapper {{
 )XXX";
 
 std::string make_kernel_binary_operator_full_source(
-  std::string_view lhs_t, std::string_view rhs_t, cccl_op_t operation, std::string_view return_type)
+  std::string_view lhs_t,
+  std::string_view rhs_t,
+  cccl_op_t operation,
+  std::string_view return_type,
+  std::string_view wrapper_name)
 {
   if (lhs_t == rhs_t && (return_type == lhs_t || return_type == "bool"))
   {
@@ -94,7 +98,8 @@ std::string make_kernel_binary_operator_full_source(
       }
 
       std::string ret =
-        std::format("#include <cuda/std/functional>\nusing op_wrapper = {};\n", std::format(desc->name, lhs_t.data()));
+        std::format(
+          "#include <cuda/std/functional>\nusing {} = {};\n", wrapper_name, std::format(desc->name, lhs_t.data()));
       if (!primitive_types.contains(lhs_t))
       {
         std::string_view type_names[] = {return_type, lhs_t, rhs_t};
@@ -116,19 +121,24 @@ std::string make_kernel_binary_operator_full_source(
     op_alignment,
     op_size,
     operation.type == cccl_op_kind_t::CCCL_STATEFUL
-      ? std::format(stateful_binary_op_template, return_type)
-      : std::format(stateless_binary_op_template, return_type));
+      ? std::format(stateful_binary_op_template, return_type, wrapper_name)
+      : std::format(stateless_binary_op_template, return_type, wrapper_name));
 }
 
 std::string make_kernel_user_binary_operator(
-  std::string_view lhs_t, std::string_view rhs_t, std::string_view output_t, cccl_op_t operation)
+  std::string_view lhs_t,
+  std::string_view rhs_t,
+  std::string_view output_t,
+  cccl_op_t operation,
+  std::string_view wrapper_name)
 {
-  return make_kernel_binary_operator_full_source(lhs_t, rhs_t, operation, output_t);
+  return make_kernel_binary_operator_full_source(lhs_t, rhs_t, operation, output_t, wrapper_name);
 }
 
-std::string make_kernel_user_comparison_operator(std::string_view input_t, cccl_op_t operation)
+std::string make_kernel_user_comparison_operator(
+  std::string_view input_t, cccl_op_t operation, std::string_view wrapper_name)
 {
-  return make_kernel_binary_operator_full_source(input_t, input_t, operation, "bool");
+  return make_kernel_binary_operator_full_source(input_t, input_t, operation, "bool", wrapper_name);
 }
 
 std::string make_kernel_user_unary_operator(std::string_view input_t, std::string_view output_t, cccl_op_t operation)

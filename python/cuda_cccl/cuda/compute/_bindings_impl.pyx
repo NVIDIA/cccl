@@ -3072,4 +3072,199 @@ cdef class DeviceSegmentedSortBuildResult:
             return
         _load_once(self, _segmented_sort_load)
 
+# -----------------
+#   DeviceScanByKey
+# -----------------
+
+
+cdef extern from "cccl/c/scan_by_key.h":
+
+    cdef struct cccl_device_scan_by_key_build_result_t 'cccl_device_scan_by_key_build_result_t':
+        const char* payload
+        size_t payload_size
+
+    cdef CUresult cccl_device_scan_by_key_build_ex(
+        cccl_device_scan_by_key_build_result_t*,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_op_t,
+        cccl_op_t,
+        cccl_type_info,
+        _Bool,
+        cccl_init_kind_t,
+        int, int, const char*, const char*, const char*, const char*,
+        cccl_build_config*
+    ) nogil
+
+    cdef CUresult cccl_device_inclusive_scan_by_key(
+        cccl_device_scan_by_key_build_result_t,
+        void *,
+        size_t *,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_op_t,
+        cccl_op_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_exclusive_scan_by_key(
+        cccl_device_scan_by_key_build_result_t,
+        void *,
+        size_t *,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_op_t,
+        cccl_op_t,
+        cccl_value_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_scan_by_key_cleanup(
+        cccl_device_scan_by_key_build_result_t*
+    ) nogil
+
+
+cdef class DeviceScanByKeyBuildResult:
+    cdef cccl_device_scan_by_key_build_result_t build_data
+    cdef public bint _loaded
+
+    def __cinit__(self, *args, **kwargs):
+        memset(&self.build_data, 0, sizeof(cccl_device_scan_by_key_build_result_t))
+        self._loaded = False
+
+    def __init__(
+        DeviceScanByKeyBuildResult self,
+        Iterator d_keys_in,
+        Iterator d_values_in,
+        Iterator d_values_out,
+        Op op,
+        Op equality_op,
+        TypeInfo init_type,
+        bint force_inclusive,
+        cccl_init_kind_t init_kind,
+        CommonData common_data
+    ):
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
+        with nogil:
+            status = cccl_device_scan_by_key_build_ex(
+                &self.build_data,
+                d_keys_in.iter_data,
+                d_values_in.iter_data,
+                d_values_out.iter_data,
+                op.op_data,
+                equality_op.op_data,
+                init_type.type_info,
+                force_inclusive,
+                init_kind,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+                _cfg,
+            )
+        if status != 0:
+            raise RuntimeError(f"Error {status} building scan_by_key")
+
+    def __dealloc__(DeviceScanByKeyBuildResult self):
+        cdef CUresult status = -1
+        with nogil:
+            status = cccl_device_scan_by_key_cleanup(&self.build_data)
+        if (status != 0):
+            print(f"Return code {status} encountered during scan_by_key result cleanup")
+
+    cpdef size_t compute_inclusive(
+        DeviceScanByKeyBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_keys_in,
+        Iterator d_values_in,
+        Iterator d_values_out,
+        size_t num_items,
+        Op op,
+        Op equality_op,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_inclusive_scan_by_key(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_keys_in.iter_data,
+                d_values_in.iter_data,
+                d_values_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                equality_op.op_data,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing inclusive scan_by_key, error code: {status}"
+            )
+        return storage_sz
+
+    cpdef size_t compute_exclusive(
+        DeviceScanByKeyBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_keys_in,
+        Iterator d_values_in,
+        Iterator d_values_out,
+        size_t num_items,
+        Op op,
+        Op equality_op,
+        Value init_value,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_exclusive_scan_by_key(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_keys_in.iter_data,
+                d_values_in.iter_data,
+                d_values_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                equality_op.op_data,
+                init_value.value_data,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing exclusive scan_by_key, error code: {status}"
+            )
+        return storage_sz
+
+
+# -------------------
+#   DeviceReduceByKey
+# -------------------
+
 include "_bindings_serialization.pxi"
