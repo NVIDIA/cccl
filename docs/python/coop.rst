@@ -10,6 +10,7 @@
    Overview <self>
    coop/programming_guide
    coop/neighbor-operations
+   coop_cutlass
    coop/developer_overview
    coop/visualizations/index
    coop/glossary
@@ -34,9 +35,9 @@ with :doc:`Run Length Decode <coop/visualizations/run-length-decode>`.
 an independent reduction for each per-thread payload slot.
 
 The common ``cuda.coop`` API describes those operations independently of a
-kernel compiler. Numba-CUDA-MLIR is the first supported backend; CUTLASS
-support is planned. The backend namespace adds features specific to its
-compiler. See :ref:`Which namespace should I use? <coop-faq-namespaces>`.
+kernel compiler. Numba-CUDA-MLIR is the first supported backend. The optional
+:doc:`CUTLASS backend <coop_cutlass>` currently implements Block DIRECT Load
+and Store. The backend namespace adds features specific to its compiler. See :ref:`Which namespace should I use? <coop-faq-namespaces>`.
 
 Start with the :doc:`Programming Guide <coop/programming_guide>` to write a
 kernel. The :doc:`Visualizations <coop/visualizations/index>` show where each
