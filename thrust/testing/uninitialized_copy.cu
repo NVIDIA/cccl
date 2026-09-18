@@ -13,7 +13,7 @@ ForwardIterator uninitialized_copy(my_system& system, InputIterator, InputIterat
   return result;
 }
 
-void TestUninitializedCopyDispatchExplicit()
+TEST_CASE("TestUninitializedCopyDispatchExplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -22,7 +22,6 @@ void TestUninitializedCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedCopyDispatchExplicit);
 
 template <typename InputIterator, typename ForwardIterator>
 ForwardIterator uninitialized_copy(my_tag, InputIterator, InputIterator, ForwardIterator result)
@@ -31,7 +30,7 @@ ForwardIterator uninitialized_copy(my_tag, InputIterator, InputIterator, Forward
   return result;
 }
 
-void TestUninitializedCopyDispatchImplicit()
+TEST_CASE("TestUninitializedCopyDispatchImplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -40,7 +39,6 @@ void TestUninitializedCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUninitializedCopyDispatchImplicit);
 
 template <typename InputIterator, typename Size, typename ForwardIterator>
 ForwardIterator uninitialized_copy_n(my_system& system, InputIterator, Size, ForwardIterator result)
@@ -49,7 +47,7 @@ ForwardIterator uninitialized_copy_n(my_system& system, InputIterator, Size, For
   return result;
 }
 
-void TestUninitializedCopyNDispatchExplicit()
+TEST_CASE("TestUninitializedCopyNDispatchExplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -58,7 +56,6 @@ void TestUninitializedCopyNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDispatchExplicit);
 
 template <typename InputIterator, typename Size, typename ForwardIterator>
 ForwardIterator uninitialized_copy_n(my_tag, InputIterator, Size, ForwardIterator result)
@@ -67,7 +64,7 @@ ForwardIterator uninitialized_copy_n(my_tag, InputIterator, Size, ForwardIterato
   return result;
 }
 
-void TestUninitializedCopyNDispatchImplicit()
+TEST_CASE("TestUninitializedCopyNDispatchImplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -75,7 +72,6 @@ void TestUninitializedCopyNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDispatchImplicit);
 
 template <class Vector>
 void TestUninitializedCopySimplePOD()
@@ -143,7 +139,10 @@ struct TestUninitializedCopyNonPODDevice
     REQUIRE_FALSE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNonPODDevice);
+TEST_CASE("TestUninitializedCopyNonPODDevice", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNonPODDevice();
+}
 
 struct TestUninitializedCopyNNonPODDevice
 {
@@ -168,7 +167,10 @@ struct TestUninitializedCopyNNonPODDevice
     REQUIRE_FALSE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNNonPODDevice);
+TEST_CASE("TestUninitializedCopyNNonPODDevice", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNNonPODDevice();
+}
 
 struct TestUninitializedCopyNonPODHost
 {
@@ -193,7 +195,10 @@ struct TestUninitializedCopyNonPODHost
     REQUIRE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNonPODHost);
+TEST_CASE("TestUninitializedCopyNonPODHost", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNonPODHost();
+}
 
 struct TestUninitializedCopyNNonPODHost
 {
@@ -218,4 +223,7 @@ struct TestUninitializedCopyNNonPODHost
     REQUIRE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNNonPODHost);
+TEST_CASE("TestUninitializedCopyNNonPODHost", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNNonPODHost();
+}
