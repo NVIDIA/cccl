@@ -10,6 +10,7 @@ groups, DIRECT, memory layout, and dtype.
 
 from typing import Any
 
+from .._core.api import TempStorageLike
 from .._core.api.thread_group import ThreadGroup
 from ._thread_data import ThreadData
 
@@ -23,7 +24,7 @@ def load(
     valid_items: Any = None,
     oob_default: Any = None,
     offset: Any = None,
-    temp_storage: Any = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> None: ...
 def store(
     group: ThreadGroup,
@@ -34,5 +35,5 @@ def store(
     algorithm: Any = "direct",
     valid_items: Any = None,
     offset: Any = None,
-    temp_storage: Any = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> None: ...
