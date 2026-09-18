@@ -6,71 +6,52 @@
 .. warning::
    ``cuda.coop`` is an experimental API and is subject to change.
 
-.. _coop-portable-api:
-.. _portable-api:
-.. _coop-common-api:
+Portable API
+------------
 
-Common API
-----------
-
-The primitive functions below are compiler markers; ``register`` is a
-host-side configuration function. The installed ``.pyi``
+The portable functions below are compiler markers. The installed ``.pyi``
 files are authoritative for overload and result typing.
 
-.. currentmodule:: cuda.coop
-
-Backend registration
-^^^^^^^^^^^^^^^^^^^^
-
-See :ref:`registering a backend <coop-backend-registration>`.
-
-.. autofunction:: register
-
-Thread groups
-^^^^^^^^^^^^^
-
-See :ref:`thread groups <coop-thread-groups>` and
-:ref:`participation and synchronization <coop-participation>` for the shared
-execution model. A descriptor's availability does not imply that every
-primitive supports that group.
-
-.. autofunction:: this_thread
-.. autofunction:: this_warp
-.. autofunction:: this_block
-.. autofunction:: this_cluster
-.. autofunction:: this_grid
-
-.. autoclass:: ThreadGroup
-   :no-members:
+.. automodule:: cuda.coop
+   :members:
+   :exclude-members: __version__
+   :imported-members:
+   :no-undoc-members:
    :no-special-members:
 
-   .. automethod:: group_by
+Numba-CUDA-MLIR-qualified API
+-----------------------------
 
-.. autoclass:: ThreadHierarchy
-   :no-members:
-   :no-special-members:
+.. py:module:: cuda.coop.numba_mlir
 
-.. py:class:: Hierarchy
+The qualified module provides the matching Block, physical Warp, and logical
+Warp Load and Store entry points, group descriptors, ``ThreadData``, and
+``TempStorage``. It additionally exposes backend memory namespaces. Both
+constructors accept the portable ``alignment`` keyword for minimum payload
+storage alignment. Portable and qualified calls use the same lowercase string
+selectors. Block calls support ``direct``, ``striped``, ``vectorize``,
+``transpose``, ``warp_transpose``, and ``warp_transpose_timesliced``. Physical
+and logical Warp calls support ``direct``, ``striped``, ``vectorize``, and
+``transpose``. Use ``this_warp()`` for the
+physical width of 32 or ``this_warp().group_by(width)`` for a logical width of
+1, 2, 4, 8, 16, or 32. The enclosing block must contain a multiple of 32
+threads.
 
-   Alias for :class:`ThreadHierarchy`.
+``direct``, ``striped``, and ``vectorize`` are storage-free at both scopes.
+Warp ``transpose``
+uses compiler-owned storage with one disjoint slice per physical or logical
+group and a masked ``syncwarp`` reuse barrier. Explicit ``TempStorage`` is
+rejected for every Warp algorithm. Transpose Store operations preserve their
+caller-owned input payload while CUB performs its internal reordering.
 
-Payloads and temporary storage
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Each Warp group receives an automatic memory origin of
+``group_index * (group_size * items_per_thread)`` before the caller's element
+offset is applied, where the index is the x-major linear thread rank divided by
+the group size. Its ``valid_items`` count is relative to that group tile.
+``ThreadGroup`` values are descriptor-only; runtime query, membership, and
+synchronization methods are not part of this release.
 
-.. autofunction:: ThreadData
-
-.. autoclass:: ThreadDataLike
-   :no-members:
-   :no-special-members:
-
-.. autofunction:: TempStorage
-
-.. autoclass:: TempStorageLike
-   :no-members:
-   :no-special-members:
-
-Memory operations
-^^^^^^^^^^^^^^^^^
-
-.. autofunction:: load
-.. autofunction:: store
+See the :github:`Numba-CUDA-MLIR type declarations
+<python/cuda_coop/cuda/coop/numba_mlir/__init__.pyi>` for the complete overload
+contract. Importing this qualified module requires the matching
+Numba-CUDA-MLIR extra.
