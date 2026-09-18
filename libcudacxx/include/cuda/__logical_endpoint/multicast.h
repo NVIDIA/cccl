@@ -106,7 +106,9 @@ public:
   //! @return The required bind alignment and maximum endpoint size.
   [[nodiscard]] _CCCL_HOST_API logical_endpoint_limits limits() const
   {
-    return ::cuda::__detail::__get_logical_endpoint_limits(__as_prop(0));
+    const auto __prop   = __as_prop(0);
+    const auto __limits = ::cuda::__driver::__logicalEndpointGetLimits(&__prop);
+    return {__limits.first, __limits.second};
   }
 };
 
@@ -201,7 +203,7 @@ public:
     ::cuda::std::uint64_t __bytes)
       : __base()
   {
-    const auto __id = ::cuda::__detail::__checked_logical_endpoint_id(__range, __index);
+    const auto __id = __range.at(__index);
     this->__create_endpoint(__id, __spec.__as_prop(__bytes));
     this->__retain_id_range(__range);
   }

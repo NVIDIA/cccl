@@ -15,7 +15,6 @@
 
 #include <cuda/launch>
 #include <cuda/logical_endpoint>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/cstdint>
@@ -44,6 +43,15 @@ struct has_bitwise_or : cuda::std::false_type
 
 template <class _Tp>
 struct has_bitwise_or<_Tp, cuda::std::void_t<decltype(cuda::std::declval<_Tp>() | cuda::std::declval<_Tp>())>>
+    : cuda::std::true_type
+{};
+
+template <class _Tp, class = void>
+struct has_bitwise_and : cuda::std::false_type
+{};
+
+template <class _Tp>
+struct has_bitwise_and<_Tp, cuda::std::void_t<decltype(cuda::std::declval<_Tp>() & cuda::std::declval<_Tp>())>>
     : cuda::std::true_type
 {};
 
@@ -138,7 +146,9 @@ static_assert(has_add_device<cuda::multicast_logical_endpoint_ref>::value);
 static_assert(!has_add_device<cuda::unicast_logical_endpoint>::value);
 static_assert(has_add_device<cuda::multicast_logical_endpoint>::value);
 static_assert(has_bitwise_or<cuda::logical_endpoint_flag>::value);
+static_assert(has_bitwise_and<cuda::logical_endpoint_flag>::value);
 static_assert(!has_bitwise_or<cuda::logical_endpoint_ipc_handle_type>::value);
+static_assert(!has_bitwise_and<cuda::logical_endpoint_ipc_handle_type>::value);
 static_assert(!has_is_ready<cuda::logical_endpoint_id_range>::value);
 static_assert(!has_wait_ready_for<cuda::logical_endpoint_id_range>::value);
 
@@ -175,6 +185,8 @@ constexpr bool test_endpoint_flags()
     cuda::logical_endpoint_flag::none | cuda::logical_endpoint_flag::counted_ops;
 
   assert(cuda::std::to_underlying(flags) == cuda::std::to_underlying(cuda::logical_endpoint_flag::counted_ops));
+  assert((flags & cuda::logical_endpoint_flag::counted_ops) == cuda::logical_endpoint_flag::counted_ops);
+  assert((flags & cuda::logical_endpoint_flag::none) == cuda::logical_endpoint_flag::none);
 
   return true;
 }
