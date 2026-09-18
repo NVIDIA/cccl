@@ -966,7 +966,7 @@ static cccl_op_t make_well_known_greater_equal_binary_predicate()
 template <class ValueT, class StateT>
 struct iterator_t
 {
-  StateT state;
+  StateT state{};
   std::string state_name;
   operation_t advance;
   operation_t dereference;

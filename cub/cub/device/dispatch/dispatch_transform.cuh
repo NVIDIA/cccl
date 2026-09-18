@@ -467,7 +467,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   Offset num_items;
   Predicate pred;
   TransformOp op;
-  cudaStream_t stream;
+  cudaStream_t stream = nullptr;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
   ::cuda::compute_capability cc;

@@ -61,7 +61,7 @@ using thrust::complex;
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
 {
-  complex<double> result;
+  complex<double> result{};
   double a, b;
   double t;
   int scale;
