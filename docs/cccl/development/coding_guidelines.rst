@@ -12,6 +12,8 @@ General
 
 #. Use the latest C++ features available.
    The repository supports C++17 but many newer library features are available through backports.
+   Exception: the headers under ``libcudacxx/include/nv/`` must keep compiling as C++11 for
+   downstream consumers.
 #. All user-defined names for entities should use ``snake_case``, except for template parameters, which
    use ``PascalCase``, and macros, which use ``ALL_CAPS``.
 #. Headers must use ``#pragma once`` over include guards, except for libcudacxx and cudax.
