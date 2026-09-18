@@ -19,6 +19,8 @@ else:
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_.-]*$")
 TIMINGS = {"inclusive", "exclusive"}
 SORTS = {"total", "avg", "avg-root-tu", "max"}
+GROUPINGS = {"event", "primary-template"}
+PROJECTS = {"cccl", "pytorch", "matx", "rapids"}
 
 
 def die(message: str) -> None:
@@ -53,19 +55,15 @@ def require_id(value: Any, where: str) -> str:
     return text
 
 
-def require_string_list(value: Any, where: str) -> list[str]:
-    if not isinstance(value, list) or not value:
+def require_string_list(value: Any, where: str, *, nonempty: bool = True) -> list[str]:
+    if not isinstance(value, list):
+        die(f"{where} must be a list")
+    if nonempty and not value:
         die(f"{where} must be a non-empty list")
     strings: list[str] = []
     for index, item in enumerate(value):
         strings.append(require_string(item, f"{where}[{index}]"))
     return strings
-
-
-def require_bool(value: Any, where: str) -> bool:
-    if not isinstance(value, bool):
-        die(f"{where} must be a boolean")
-    return value
 
 
 def require_positive_int(value: Any, where: str) -> int:
@@ -117,11 +115,13 @@ def validate_slice(
         "top": top,
         "threshold": threshold,
     }
-    for optional in ("scope_filter", "exclusive_scope"):
+    for optional in ("scope_filter", "exclusive_scope", "group_by"):
         if optional in data:
             result[optional] = require_string(
                 data[optional], f"{where}.{optional}", nonempty=False
             )
+    if result.get("group_by", "event") not in GROUPINGS:
+        die(f"{where}.group_by must be one of {sorted(GROUPINGS)}")
 
     children = data.get("children", [])
     if not isinstance(children, list):
@@ -147,9 +147,27 @@ def validate_config(
         die(f"duplicate compile_time config id '{config_id}'")
     seen_ids.add(config_id)
 
+    project = require_string(require_field(data, "project", where), f"{where}.project")
+    if project not in PROJECTS:
+        die(f"{where}.project must be one of {sorted(PROJECTS)}")
+
+    preset = require_string(data.get("preset", ""), f"{where}.preset", nonempty=False)
     targets = require_string_list(
-        require_field(data, "targets", where), f"{where}.targets"
+        data.get("targets", []), f"{where}.targets", nonempty=False
     )
+    if project == "cccl":
+        if not preset:
+            die(f"{where}.preset must be non-empty for cccl")
+        if not targets:
+            die(f"{where}.targets must be non-empty for cccl")
+    elif preset:
+        die(f"{where}.preset is only valid for cccl")
+    elif project == "rapids":
+        if not targets:
+            die(f"{where}.targets must be non-empty for rapids")
+    elif targets:
+        die(f"{where}.targets is only valid for cccl and rapids")
+
     slices = require_field(data, "slices", where)
     if not isinstance(slices, list) or not slices:
         die(f"{where}.slices must be a non-empty list")
@@ -167,6 +185,7 @@ def validate_config(
     return {
         "id": config_id,
         "name": require_string(require_field(data, "name", where), f"{where}.name"),
+        "project": project,
         "gpu": require_string(require_field(data, "gpu", where), f"{where}.gpu"),
         "launch_args": require_string(
             require_field(data, "launch_args", where), f"{where}.launch_args"
@@ -174,12 +193,9 @@ def validate_config(
         "baseline_ref": require_string(
             require_field(data, "baseline_ref", where), f"{where}.baseline_ref"
         ),
-        "preset": require_string(
-            require_field(data, "preset", where), f"{where}.preset"
-        ),
+        "preset": preset,
         "targets": targets,
         "args": require_string(data.get("args", ""), f"{where}.args", nonempty=False),
-        "comment": require_bool(data.get("comment", True), f"{where}.comment"),
         "artifact_retention_days": require_positive_int(
             data.get("artifact_retention_days", 14),
             f"{where}.artifact_retention_days",
@@ -193,6 +209,7 @@ def matrix_entry(config: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": config_id,
         "name": config["name"],
+        "project": config["project"],
         "gpu": config["gpu"],
         "launch_args": config["launch_args"],
         "baseline_ref": config["baseline_ref"],
@@ -200,9 +217,7 @@ def matrix_entry(config: dict[str, Any]) -> dict[str, Any]:
         "targets_json": json.dumps(config["targets"], separators=(",", ":")),
         "args": config["args"],
         "slices_json": json.dumps({"slices": config["slices"]}, separators=(",", ":")),
-        "comment": str(config["comment"]).lower(),
         "artifact_retention_days": config["artifact_retention_days"],
-        "comment_header": f"compile-time-bench-{config_id}",
     }
 
 
