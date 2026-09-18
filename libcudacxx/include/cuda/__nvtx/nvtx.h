@@ -86,6 +86,7 @@ struct __nvtx_cccl_domain
 using __nvtx_cccl_range = ::nvtx3::v1::scoped_range_in<__nvtx_cccl_domain>;
 
 // this type ensures that no NVTX range code is emitted in device code
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __nvtx_cccl_optional_range_host_only
 {
   bool __engaged = false;

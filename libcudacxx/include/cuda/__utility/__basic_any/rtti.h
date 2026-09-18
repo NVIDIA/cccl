@@ -92,11 +92,13 @@ struct __rtti_base : __immovable
 static_assert(sizeof(__rtti_base) == sizeof(uint64_t) + sizeof(void*));
 
 // Used to map an interface typeid to a pointer to the vtable for that interface.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __base_info
 {
   using __cast_fn_t = auto(__rtti const*) noexcept -> __base_vptr;
 
   ::cuda::std::__type_info_ptr __typeid_;
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   union
   {
     __cast_fn_t* __cast_fn_; // used when __basic_any_version >= 1,
@@ -121,6 +123,7 @@ inline constexpr size_t __half_size_t_bits = sizeof(size_t) * CHAR_BIT / 2;
 
 // The metadata for the type-erased object. All vtables have an rtti sub-object,
 // which contains a sub-object of this type.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __object_metadata
 {
   size_t __size_  : __half_size_t_bits;

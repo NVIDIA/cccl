@@ -387,8 +387,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
   {
     SegmentedKernelT segmented_kernel;
     detail::KernelConfig segmented_config;
-    int radix_bits;
-    int radix_digits;
+    int radix_bits{};
+    int radix_digits{};
 
     /// Initialize pass configuration
     template <typename SegmentedPolicyT>

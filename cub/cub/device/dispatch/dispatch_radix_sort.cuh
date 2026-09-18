@@ -490,9 +490,9 @@ public:
     detail::KernelConfig scan_config;
     DownsweepKernelT downsweep_kernel;
     detail::KernelConfig downsweep_config;
-    int radix_bits;
-    int radix_digits;
-    int max_downsweep_grid_size;
+    int radix_bits{};
+    int radix_digits{};
+    int max_downsweep_grid_size{};
     GridEvenShare<OffsetT> even_share;
 
     // TODO(bgruber): Remove in CCCL 4.0
@@ -1305,9 +1305,9 @@ struct pass_config
   KernelConfig scan_config;
   DownsweepKernelT downsweep_kernel;
   KernelConfig downsweep_config;
-  int radix_bits;
-  int radix_digits;
-  int max_downsweep_grid_size;
+  int radix_bits{};
+  int radix_digits{};
+  int max_downsweep_grid_size{};
   GridEvenShare<OffsetT> even_share;
 
   template <typename KernelLauncherFactory>

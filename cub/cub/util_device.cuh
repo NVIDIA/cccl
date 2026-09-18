@@ -84,6 +84,7 @@ public:
   //! @p target_device
   SwitchDevice(const int target_device)
       : target_device_(target_device)
+      , original_device_(target_device)
   {
     CubDebug(cudaGetDevice(&original_device_));
     if (original_device_ != target_device_)
