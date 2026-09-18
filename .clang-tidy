@@ -369,4 +369,5 @@ CheckOptions:
   performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
   bugprone-exception-escape.CheckMain: false
   cppcoreguidelines-missing-std-forward.ForwardFunction: '::cuda::std::forward'
+  cppcoreguidelines-missing-std-forward.MoveFunction: '::cuda::std::move'
 ...
