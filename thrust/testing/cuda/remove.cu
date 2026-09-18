@@ -89,16 +89,16 @@ void TestRemoveDevice(ExecutionPolicy exec)
 
   remove_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), 0, d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_result[0] - d_data.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_data.resize(h_size);
   d_data.resize(d_size);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 
 void TestRemoveDeviceSeq()
@@ -127,16 +127,16 @@ void TestRemoveIfDevice(ExecutionPolicy exec)
 
   remove_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), is_true<int>(), d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_result[0] - d_data.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_data.resize(h_size);
   d_data.resize(d_size);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 
 void TestRemoveIfDeviceSeq()
@@ -168,16 +168,16 @@ void TestRemoveIfStencilDevice(ExecutionPolicy exec)
 
   remove_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_stencil.begin(), is_true<int>(), d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_result[0] - d_data.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_data.resize(h_size);
   d_data.resize(d_size);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 
 void TestRemoveIfStencilDeviceSeq()
@@ -209,16 +209,16 @@ void TestRemoveCopyDevice(ExecutionPolicy exec)
 
   remove_copy_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin(), 0, d_new_end.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_new_end[0] - d_result.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_result.resize(h_size);
   d_result.resize(d_size);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
 void TestRemoveCopyDeviceSeq()
@@ -252,16 +252,16 @@ void TestRemoveCopyIfDevice(ExecutionPolicy exec)
   remove_copy_if_kernel<<<1, 1>>>(
     exec, d_data.begin(), d_data.end(), d_result.begin(), is_true<int>(), d_new_end.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_new_end[0] - d_result.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_result.resize(h_size);
   d_result.resize(d_size);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
 void TestRemoveCopyIfDeviceSeq()
@@ -299,16 +299,16 @@ void TestRemoveCopyIfStencilDevice(ExecutionPolicy exec)
   remove_copy_if_kernel<<<1, 1>>>(
     exec, d_data.begin(), d_data.end(), d_stencil.begin(), d_result.begin(), is_true<int>(), d_new_end.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_new_end[0] - d_result.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_result.resize(h_size);
   d_result.resize(d_size);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
 void TestRemoveCopyIfStencilDeviceSeq()
@@ -336,11 +336,11 @@ void TestRemoveCudaStreams()
 
   const Vector::iterator end = thrust::remove(thrust::cuda::par.on(s), data.begin(), data.end(), (T) 2);
 
-  ASSERT_EQUAL(end - data.begin(), 3);
+  REQUIRE(end - data.begin() == 3);
   data.erase(end, data.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   cudaStreamDestroy(s);
 }
@@ -361,11 +361,11 @@ void TestRemoveCopyCudaStreams()
   const Vector::iterator end =
     thrust::remove_copy(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), (T) 2);
 
-  ASSERT_EQUAL(end - result.begin(), 3);
+  REQUIRE(end - result.begin() == 3);
   result.erase(end, result.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 
   cudaStreamDestroy(s);
 }
@@ -383,11 +383,11 @@ void TestRemoveIfCudaStreams()
 
   const Vector::iterator end = thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), is_even<T>());
 
-  ASSERT_EQUAL(end - data.begin(), 3);
+  REQUIRE(end - data.begin() == 3);
   data.erase(end, data.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   cudaStreamDestroy(s);
 }
@@ -408,11 +408,11 @@ void TestRemoveIfStencilCudaStreams()
   const Vector::iterator end =
     thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), stencil.begin(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(end - data.begin(), 3);
+  REQUIRE(end - data.begin() == 3);
   data.erase(end, data.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   cudaStreamDestroy(s);
 }
@@ -433,11 +433,11 @@ void TestRemoveCopyIfCudaStreams()
   const Vector::iterator end =
     thrust::remove_copy_if(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), is_even<T>());
 
-  ASSERT_EQUAL(end - result.begin(), 3);
+  REQUIRE(end - result.begin() == 3);
   result.erase(end, result.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 
   cudaStreamDestroy(s);
 }
@@ -460,11 +460,11 @@ void TestRemoveCopyIfStencilCudaStreams()
   const Vector::iterator end = thrust::remove_copy_if(
     thrust::cuda::par.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(end - result.begin(), 3);
+  REQUIRE(end - result.begin() == 3);
   result.erase(end, result.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 
   cudaStreamDestroy(s);
 }

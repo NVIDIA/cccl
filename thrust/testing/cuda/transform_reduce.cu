@@ -25,9 +25,9 @@ void TestTransformReduceDevice(ExecutionPolicy exec)
   transform_reduce_kernel<<<1, 1>>>(
     exec, data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>(), result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(8, (T) result[0]);
+  REQUIRE(8 == (T) result[0]);
 }
 
 void TestTransformReduceDeviceSeq()
@@ -58,7 +58,7 @@ void TestTransformReduceCudaStreams()
     thrust::cuda::par.on(s), data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(8, result);
+  REQUIRE(8 == result);
 
   cudaStreamDestroy(s);
 }

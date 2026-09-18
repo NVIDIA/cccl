@@ -103,15 +103,15 @@ public:
 
   ~tracked_resource() override // NOLINT(bugprone-exception-escape)
   {
-    ASSERT_EQUAL(id_to_allocate, 0u);
-    ASSERT_EQUAL(id_to_deallocate, 0u);
+    REQUIRE(id_to_allocate == 0u);
+    REQUIRE(id_to_deallocate == 0u);
   }
 
   tracked_pointer<void> do_allocate( // NOLINT(google-default-arguments)
     std::size_t n,
     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    ASSERT_EQUAL(id_to_allocate || id_to_allocate == -1u, true);
+    REQUIRE((id_to_allocate || id_to_allocate == -1u));
 
     void* raw = upstream.do_allocate(n, alignment);
     tracked_pointer<void> ret(raw);
@@ -131,12 +131,12 @@ public:
                      std::size_t n,
                      std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    ASSERT_GEQUAL(p.size, n);
-    ASSERT_GEQUAL(p.alignment, alignment);
+    REQUIRE(p.size >= n);
+    REQUIRE(p.alignment >= alignment);
 
     if (id_to_deallocate != 0)
     {
-      ASSERT_EQUAL(p.id, id_to_deallocate);
+      REQUIRE(p.id == id_to_deallocate);
       id_to_deallocate = 0;
     }
 
@@ -171,53 +171,53 @@ void TestPool()
 
   // first allocation
   const tracked_pointer<void> a1 = pool->do_allocate(12, THRUST_MR_DEFAULT_ALIGNMENT);
-  ASSERT_EQUAL(a1.id, 1u);
+  REQUIRE(a1.id == 1u);
 
   // due to chunking, the above allocation should be enough for the next one too
   const tracked_pointer<void> a2 = pool->do_allocate(16, THRUST_MR_DEFAULT_ALIGNMENT);
-  ASSERT_EQUAL(a2.id, 1u);
+  REQUIRE(a2.id == 1u);
 
   // deallocating and allocating back should give the same resource back
   pool->do_deallocate(a1, 12, THRUST_MR_DEFAULT_ALIGNMENT);
   const tracked_pointer<void> a3 = pool->do_allocate(12, THRUST_MR_DEFAULT_ALIGNMENT);
-  ASSERT_EQUAL(a1.id, a3.id);
-  ASSERT_EQUAL(a1.size, a3.size);
-  ASSERT_EQUAL(a1.alignment, a3.alignment);
-  ASSERT_EQUAL(a1.offset, a3.offset);
+  REQUIRE(a1.id == a3.id);
+  REQUIRE(a1.size == a3.size);
+  REQUIRE(a1.alignment == a3.alignment);
+  REQUIRE(a1.offset == a3.offset);
 
   // allocating over-aligned memory should give non-cached results
   // unlike with the disjoint version, nothing sensible can be said about the chunk size
   upstream.id_to_allocate        = 2;
   const tracked_pointer<void> a4 = pool->do_allocate(32, THRUST_MR_DEFAULT_ALIGNMENT * 2);
-  ASSERT_EQUAL(a4.id, 2u);
-  ASSERT_EQUAL(a4.alignment, (std::size_t) THRUST_MR_DEFAULT_ALIGNMENT * 2);
+  REQUIRE(a4.id == 2u);
+  REQUIRE(a4.alignment == (std::size_t) THRUST_MR_DEFAULT_ALIGNMENT * 2);
 
   // and deallocating it should return it back to upstream
   upstream.id_to_deallocate = 2;
   pool->do_deallocate(a4, 32u, THRUST_MR_DEFAULT_ALIGNMENT * 2);
-  ASSERT_EQUAL(upstream.id_to_deallocate, 0u);
+  REQUIRE(upstream.id_to_deallocate == 0u);
 
   // release actually returns properly sized memory to upstream
   upstream.id_to_deallocate = 1;
   pool->release();
-  ASSERT_EQUAL(upstream.id_to_deallocate, 0u);
+  REQUIRE(upstream.id_to_deallocate == 0u);
 
   // and does the same for oversized/overaligned memory
   upstream.id_to_allocate        = 3;
   const tracked_pointer<void> a5 = pool->do_allocate(1024, THRUST_MR_DEFAULT_ALIGNMENT * 2);
-  ASSERT_EQUAL(upstream.id_to_allocate, 0u);
-  ASSERT_EQUAL(a5.id, 3u);
+  REQUIRE(upstream.id_to_allocate == 0u);
+  REQUIRE(a5.id == 3u);
 
   upstream.id_to_deallocate = 3;
   pool->release();
-  ASSERT_EQUAL(upstream.id_to_deallocate, 0u);
+  REQUIRE(upstream.id_to_deallocate == 0u);
 
   // and after that, the formerly cached memory isn't used anymore,
   // so new memory from upstream is returned back
   upstream.id_to_allocate        = 4;
   const tracked_pointer<void> a6 = pool->do_allocate(16, THRUST_MR_DEFAULT_ALIGNMENT);
-  ASSERT_EQUAL(upstream.id_to_allocate, 0u);
-  ASSERT_EQUAL(a6.id, 4u);
+  REQUIRE(upstream.id_to_allocate == 0u);
+  REQUIRE(a6.id == 4u);
 
   // destruction also returns memory
   upstream.id_to_deallocate = 4;
@@ -225,7 +225,7 @@ void TestPool()
   // actually destroy the pool; reasons why RAII is not used outlined at the beginning
   // of this function
   delete pool;
-  ASSERT_EQUAL(upstream.id_to_deallocate, 0u);
+  REQUIRE(upstream.id_to_deallocate == 0u);
 }
 
 void TestUnsynchronizedPool()
@@ -257,21 +257,21 @@ void TestPoolCachingOversized()
 
   upstream.id_to_allocate        = 1;
   const tracked_pointer<void> a1 = pool.do_allocate(2048, 32);
-  ASSERT_EQUAL(a1.id, 1u);
+  REQUIRE(a1.id == 1u);
 
   upstream.id_to_allocate        = 2;
   const tracked_pointer<void> a2 = pool.do_allocate(64, 32);
-  ASSERT_EQUAL(a2.id, 2u);
+  REQUIRE(a2.id == 2u);
 
   pool.do_deallocate(a2, 64, 32);
   pool.do_deallocate(a1, 2048, 32);
 
   // make sure a good fit is used from the cache
   const tracked_pointer<void> a3 = pool.do_allocate(32, 32);
-  ASSERT_EQUAL(a3.id, 2u);
+  REQUIRE(a3.id == 2u);
 
   const tracked_pointer<void> a4 = pool.do_allocate(1024, 32);
-  ASSERT_EQUAL(a4.id, 1u);
+  REQUIRE(a4.id == 1u);
 
   pool.do_deallocate(a4, 1024, 32);
 
@@ -279,18 +279,18 @@ void TestPoolCachingOversized()
   // the required alignment
   upstream.id_to_allocate        = 3;
   const tracked_pointer<void> a5 = pool.do_allocate(32, 64);
-  ASSERT_EQUAL(a5.id, 3u);
+  REQUIRE(a5.id == 3u);
 
   pool.release();
 
   // make sure that release actually clears caches
   upstream.id_to_allocate        = 4;
   const tracked_pointer<void> a6 = pool.do_allocate(32, 64);
-  ASSERT_EQUAL(a6.id, 4u);
+  REQUIRE(a6.id == 4u);
 
   upstream.id_to_allocate        = 5;
   const tracked_pointer<void> a7 = pool.do_allocate(2048, 1024);
-  ASSERT_EQUAL(a7.id, 5u);
+  REQUIRE(a7.id == 5u);
 
   pool.do_deallocate(a7, 2048, 1024);
 
@@ -298,13 +298,13 @@ void TestPoolCachingOversized()
   // is respected
   upstream.id_to_allocate        = 6;
   const tracked_pointer<void> a8 = pool.do_allocate(24, 1024);
-  ASSERT_EQUAL(a8.id, 6u);
+  REQUIRE(a8.id == 6u);
 
   // make sure that the 'ridiculousness' factor for alignment (options.cached_alignment_cutoff_factor)
   // is respected
   upstream.id_to_allocate        = 7;
   const tracked_pointer<void> a9 = pool.do_allocate(2048, 32);
-  ASSERT_EQUAL(a9.id, 7u);
+  REQUIRE(a9.id == 7u);
 
   // make sure that reusing a larger oversized block for a smaller allocation works
   // this is NVIDIA/cccl#585
@@ -312,7 +312,7 @@ void TestPoolCachingOversized()
   const tracked_pointer<void> a10 = pool.do_allocate(2048 + 16, THRUST_MR_DEFAULT_ALIGNMENT);
   pool.do_deallocate(a10, 2048 + 16, THRUST_MR_DEFAULT_ALIGNMENT);
   const tracked_pointer<void> a11 = pool.do_allocate(2048, THRUST_MR_DEFAULT_ALIGNMENT);
-  ASSERT_EQUAL(a11.ptr, a10.ptr);
+  REQUIRE(a11.ptr == a10.ptr);
   pool.do_deallocate(a11, 2048, THRUST_MR_DEFAULT_ALIGNMENT);
 
   // original minimized reproducer from NVIDIA/cccl#585:
@@ -354,7 +354,7 @@ void TestGlobalPool()
 {
   using Pool = PoolTemplate<thrust::mr::new_delete_resource>;
 
-  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != nullptr, true);
+  REQUIRE(thrust::mr::get_global_resource<Pool>() != nullptr);
 }
 
 void TestUnsynchronizedGlobalPool()

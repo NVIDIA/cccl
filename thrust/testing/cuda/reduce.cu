@@ -26,9 +26,9 @@ void TestReduceDevice(ExecutionPolicy exec, const size_t n)
 
   reduce_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), init, d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_result, d_result[0]);
+  REQUIRE(h_result == d_result[0]);
 }
 
 template <typename T>
@@ -78,10 +78,10 @@ void TestReduceCudaStreams(ExecutionPolicy policy)
   auto streampolicy = policy.on(s);
 
   // no initializer
-  ASSERT_EQUAL(thrust::reduce(streampolicy, v.begin(), v.end()), 2);
+  REQUIRE(thrust::reduce(streampolicy, v.begin(), v.end()) == 2);
 
   // with initializer
-  ASSERT_EQUAL(thrust::reduce(streampolicy, v.begin(), v.end(), 10), 12);
+  REQUIRE(thrust::reduce(streampolicy, v.begin(), v.end(), 10) == 12);
 
   cudaStreamDestroy(s);
 }
@@ -110,9 +110,9 @@ void TestReduceLargeInput()
 
   reduce_kernel<<<1, 1>>>(thrust::device, d_data, d_data + num_items, T{}, d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(num_items, d_result[0]);
+  REQUIRE(num_items == d_result[0]);
 }
 DECLARE_UNITTEST(TestReduceLargeInput);
 #endif

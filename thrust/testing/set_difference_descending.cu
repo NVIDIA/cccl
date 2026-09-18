@@ -19,7 +19,7 @@ void TestSetDifferenceDescendingSimple()
     thrust::set_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetDifferenceDescendingSimple);
 
@@ -51,6 +51,6 @@ void TestSetDifferenceDescending(const size_t n)
 
   d_result.resize(d_end - d_result.begin());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetDifferenceDescending);

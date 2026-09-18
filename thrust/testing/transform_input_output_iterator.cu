@@ -63,14 +63,14 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
 
   Vector gold_squared{1, 4, 9, 16};
 
-  ASSERT_EQUAL(squared, gold_squared);
+  REQUIRE(squared == gold_squared);
 
   // negated value read from transform_iter
   thrust::copy_n(transform_iter, squared.size(), negated.begin());
 
   Vector gold_negated{-1, -4, -9, -16};
 
-  ASSERT_EQUAL(negated, gold_negated);
+  REQUIRE(negated == gold_negated);
 }
 DECLARE_VECTOR_UNITTEST(TestTransformInputOutputIterator);
 
@@ -96,7 +96,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformInputOutputIterator()
 
   Vector gold_negated{-1, -2, -3, -4};
 
-  ASSERT_EQUAL(negated, gold_negated);
+  REQUIRE(negated == gold_negated);
 
   // squared value written by transform iterator
   thrust::copy(negated.begin(),
@@ -105,7 +105,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformInputOutputIterator()
 
   Vector gold_squared{1, 4, 9, 16};
 
-  ASSERT_EQUAL(squared, gold_squared);
+  REQUIRE(squared == gold_squared);
 }
 DECLARE_VECTOR_UNITTEST(TestMakeTransformInputOutputIterator);
 
@@ -131,7 +131,7 @@ struct TestTransformInputOutputIteratorScan
       d_data.end(),
       thrust::make_transform_input_output_iterator(d_result.begin(), thrust::square<T>(), ::cuda::std::negate<T>()));
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformInputOutputIteratorScan, IntegralTypes);

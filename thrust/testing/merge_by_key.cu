@@ -30,8 +30,8 @@ void TestMergeByKeySimple()
 
   ASSERT_EQUAL_QUIET(result_key.end(), ends.first);
   ASSERT_EQUAL_QUIET(result_val.end(), ends.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  REQUIRE(ref_key == result_key);
+  REQUIRE(ref_val == result_val);
 }
 DECLARE_VECTOR_UNITTEST(TestMergeByKeySimple);
 
@@ -64,7 +64,7 @@ void TestMergeByKeyDispatchExplicit()
   thrust::merge_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestMergeByKeyDispatchExplicit);
 
@@ -103,7 +103,7 @@ void TestMergeByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 
 template <typename T, typename CompareOp, typename... Args>
@@ -192,12 +192,12 @@ void TestMergeByKey(size_t n)
     d_result_keys.erase(d_end.first, d_result_keys.end());
     d_result_vals.erase(d_end.second, d_result_vals.end());
 
-    ASSERT_EQUAL(h_result_keys, d_result_keys);
-    ASSERT_EQUAL(h_result_vals, d_result_vals);
-    ASSERT_EQUAL(true, h_end.first == h_result_keys.end());
-    ASSERT_EQUAL(true, h_end.second == h_result_vals.end());
-    ASSERT_EQUAL(true, d_end.first == d_result_keys.end());
-    ASSERT_EQUAL(true, d_end.second == d_result_vals.end());
+    REQUIRE(h_result_keys == d_result_keys);
+    REQUIRE(h_result_vals == d_result_vals);
+    REQUIRE(h_end.first == h_result_keys.end());
+    REQUIRE(h_end.second == h_result_vals.end());
+    REQUIRE(d_end.first == d_result_keys.end());
+    REQUIRE(d_end.second == d_result_vals.end());
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeByKey);
@@ -317,7 +317,7 @@ void TestMergeByKeyFromCuDFDremel()
   thrust::device_vector<std::uint8_t> reference_def_level(max_vals_size);
   thrust::fill(reference_def_level.begin(), reference_def_level.begin() + empties_size, 13 + 10);
 
-  ASSERT_EQUAL(reference_rep_level, rep_level);
-  ASSERT_EQUAL(reference_def_level, def_level);
+  REQUIRE(reference_rep_level == rep_level);
+  REQUIRE(reference_def_level == def_level);
 }
 DECLARE_UNITTEST(TestMergeByKeyFromCuDFDremel);

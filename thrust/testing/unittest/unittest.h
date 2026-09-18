@@ -25,6 +25,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
 #include <unittest/random.h>
 #include <unittest/special_types.h>
@@ -161,17 +163,11 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
 }
 } // namespace unittest::detail
 
-#define ASSERT_EQUAL(X, Y)     REQUIRE((X) == (Y))
-#define ASSERT_NOT_EQUAL(X, Y) REQUIRE((X) != (Y))
 // The QUIET variants wrap the whole comparison in an extra pair of parentheses so that Catch2 does not decompose the
 // expression. This avoids stringifying the operands, which is required for types that are not streamable (e.g. vectors
 // of tuples or other types without an ostream operator<<).
 #define ASSERT_EQUAL_QUIET(X, Y)     REQUIRE((X == Y))
 #define ASSERT_NOT_EQUAL_QUIET(X, Y) REQUIRE((X != Y))
-#define ASSERT_LEQUAL(X, Y)          REQUIRE((X) <= (Y))
-#define ASSERT_GEQUAL(X, Y)          REQUIRE((X) >= (Y))
-#define ASSERT_LESS(X, Y)            REQUIRE((X) < (Y))
-#define ASSERT_GREATER(X, Y)         REQUIRE((X) > (Y))
 #define ASSERT_ALMOST_EQUAL(X, Y)                                                                                     \
   {                                                                                                                   \
     const auto vec_ref = ::unittest::detail::to_approx(::unittest::detail::to_vec(X));                                \
@@ -188,8 +184,6 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
       REQUIRE_FALSE(::cuda::std::abs(a_ - b_) > 1e-4 * (::cuda::std::abs(a_) + ::cuda::std::abs(b_)) + 1e-4);         \
     }                                                                                                                 \
   }
-
-#define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) REQUIRE_THROWS_AS(EXPR, EXCEPTION_TYPE)
 
 namespace unittest
 {

@@ -21,9 +21,9 @@ void TestReverseDevice(ExecutionPolicy exec)
 
   reverse_kernel<<<1, 1>>>(exec, raw_pointer_cast(d_data.data()), raw_pointer_cast(d_data.data() + d_data.size()));
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 };
 
 void TestReverseDeviceSeq()
@@ -58,9 +58,9 @@ void TestReverseCopyDevice(ExecutionPolicy exec)
 
   reverse_copy_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 };
 
 void TestReverseCopyDeviceSeq()
@@ -90,7 +90,7 @@ void TestReverseCudaStreams()
 
   const Vector ref{5, 4, 3, 2, 1};
 
-  ASSERT_EQUAL(ref, data);
+  REQUIRE(ref == data);
 
   cudaStreamDestroy(s);
 }
@@ -112,7 +112,7 @@ void TestReverseCopyCudaStreams()
 
   const Vector ref{5, 4, 3, 2, 1};
 
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(ref == result);
 
   cudaStreamDestroy(s);
 }

@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // clang-format off
-// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:device=tsd,GPU,non_block:system=tss,SYS,non_block
+// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:cluster=tsc,GPU,non_block:device=tsd,GPU,non_block:system=tss,SYS,non_block
 // %PARAM% TYPE type i128:u128
 // %PARAM% ORDER order mor:moa:mosc
 // clang-format on

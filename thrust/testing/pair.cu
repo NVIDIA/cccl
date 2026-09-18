@@ -13,34 +13,34 @@ struct TestPairManipulation
 
     // test null constructor
     P p1;
-    ASSERT_EQUAL(T(0), p1.first);
-    ASSERT_EQUAL(T(0), p1.second);
+    REQUIRE(T(0) == p1.first);
+    REQUIRE(T(0) == p1.second);
 
     // test individual value manipulation
     p1.first  = T(1);
     p1.second = T(2);
-    ASSERT_EQUAL(T(1), p1.first);
-    ASSERT_EQUAL(T(2), p1.second);
+    REQUIRE(T(1) == p1.first);
+    REQUIRE(T(2) == p1.second);
 
     // test copy constructor
     P p2(p1);
-    ASSERT_EQUAL(p1.first, p2.first);
-    ASSERT_EQUAL(p1.second, p2.second);
+    REQUIRE(p1.first == p2.first);
+    REQUIRE(p1.second == p2.second);
 
     // test copy from std::pair constructor
     std::pair<T, T> sp(p1.first, p1.second);
-    ASSERT_EQUAL(p1.first, sp.first);
-    ASSERT_EQUAL(p1.second, sp.second);
+    REQUIRE(p1.first == sp.first);
+    REQUIRE(p1.second == sp.second);
 
     // test initialization
     const P p3 = p2; // NOLINT(performance-unnecessary-copy-initialization)
-    ASSERT_EQUAL(p2.first, p3.first);
-    ASSERT_EQUAL(p2.second, p3.second);
+    REQUIRE(p2.first == p3.first);
+    REQUIRE(p2.second == p3.second);
 
     // test initialization from std::pair
     P p4 = sp;
-    ASSERT_EQUAL(sp.first, p4.first);
-    ASSERT_EQUAL(sp.second, p4.second);
+    REQUIRE(sp.first == p4.first);
+    REQUIRE(sp.second == p4.second);
 
     // test copy from pair
     p4.first  = T(2);
@@ -48,8 +48,8 @@ struct TestPairManipulation
 
     P p5;
     p5 = p4;
-    ASSERT_EQUAL(p4.first, p5.first);
-    ASSERT_EQUAL(p4.second, p5.second);
+    REQUIRE(p4.first == p5.first);
+    REQUIRE(p4.second == p5.second);
 
     // test copy from std::pair
     sp.first  = T(4);
@@ -57,18 +57,18 @@ struct TestPairManipulation
 
     P p6;
     p6 = sp;
-    ASSERT_EQUAL(sp.first, p6.first);
-    ASSERT_EQUAL(sp.second, p6.second);
+    REQUIRE(sp.first == p6.first);
+    REQUIRE(sp.second == p6.second);
 
     // test initialization from make_pair
     P p7 = thrust::make_pair(T(6), T(7));
-    ASSERT_EQUAL(T(6), p7.first);
-    ASSERT_EQUAL(T(7), p7.second);
+    REQUIRE(T(6) == p7.first);
+    REQUIRE(T(7) == p7.second);
 
     // test copy from make_pair
     p7 = thrust::make_pair(T(8), T(9));
-    ASSERT_EQUAL(T(8), p7.first);
-    ASSERT_EQUAL(T(9), p7.second);
+    REQUIRE(T(8) == p7.first);
+    REQUIRE(T(9) == p7.second);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairManipulation, NumericTypes);
@@ -84,141 +84,141 @@ struct TestPairComparison
 
     // test operator ==
     x.first = x.second = y.first = y.second = T(0);
-    ASSERT_EQUAL(true, x == y);
-    ASSERT_EQUAL(true, y == x);
+    REQUIRE(x == y);
+    REQUIRE(y == x);
 
     x.first = y.first = y.second = T(0);
     x.second                     = T(1);
-    ASSERT_EQUAL(false, x == y);
-    ASSERT_EQUAL(false, y == x);
+    REQUIRE_FALSE(x == y);
+    REQUIRE_FALSE(y == x);
 
     // test operator<
     x.first  = T(0);
     x.second = T(0);
     y.first  = T(0);
     y.second = T(0);
-    ASSERT_EQUAL(false, x < y);
-    ASSERT_EQUAL(false, y < x);
+    REQUIRE_FALSE(x < y);
+    REQUIRE_FALSE(y < x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(2);
     y.second = T(3);
-    ASSERT_EQUAL(true, x < y);
-    ASSERT_EQUAL(false, y < x);
+    REQUIRE(x < y);
+    REQUIRE_FALSE(y < x);
 
     x.first  = T(0);
     x.second = T(0);
     y.first  = T(0);
     y.second = T(1);
-    ASSERT_EQUAL(true, x < y);
-    ASSERT_EQUAL(false, y < x);
+    REQUIRE(x < y);
+    REQUIRE_FALSE(y < x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(0);
     y.second = T(2);
-    ASSERT_EQUAL(true, x < y);
-    ASSERT_EQUAL(false, y < x);
+    REQUIRE(x < y);
+    REQUIRE_FALSE(y < x);
 
     // test operator!=
     x.first = y.first = y.second = T(0);
     x.second                     = T(1);
-    ASSERT_EQUAL(true, x != y);
-    ASSERT_EQUAL(true, y != x);
+    REQUIRE(x != y);
+    REQUIRE(y != x);
 
     x.first = x.second = y.first = y.second = T(0);
-    ASSERT_EQUAL(false, x != y);
-    ASSERT_EQUAL(false, y != x);
+    REQUIRE_FALSE(x != y);
+    REQUIRE_FALSE(y != x);
 
     // test operator>
     x.first  = T(0);
     x.second = T(0);
     y.first  = T(0);
     y.second = T(0);
-    ASSERT_EQUAL(false, x > y);
-    ASSERT_EQUAL(false, y > x);
+    REQUIRE_FALSE(x > y);
+    REQUIRE_FALSE(y > x);
 
     x.first  = T(2);
     x.second = T(3);
     y.first  = T(0);
     y.second = T(1);
-    ASSERT_EQUAL(true, x > y);
-    ASSERT_EQUAL(false, y > x);
+    REQUIRE(x > y);
+    REQUIRE_FALSE(y > x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(0);
     y.second = T(0);
-    ASSERT_EQUAL(true, x > y);
-    ASSERT_EQUAL(false, y > x);
+    REQUIRE(x > y);
+    REQUIRE_FALSE(y > x);
 
     x.first  = T(0);
     x.second = T(2);
     y.first  = T(0);
     y.second = T(1);
-    ASSERT_EQUAL(true, x > y);
-    ASSERT_EQUAL(false, y > x);
+    REQUIRE(x > y);
+    REQUIRE_FALSE(y > x);
 
     // test operator <=
     x.first = x.second = y.first = y.second = T(0);
-    ASSERT_EQUAL(true, x <= y);
-    ASSERT_EQUAL(true, y <= x);
+    REQUIRE(x <= y);
+    REQUIRE(y <= x);
 
     x.first = y.first = y.second = T(0);
     x.second                     = T(1);
-    ASSERT_EQUAL(false, x <= y);
+    REQUIRE_FALSE(x <= y);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(2);
     y.second = T(3);
-    ASSERT_EQUAL(true, x <= y);
-    ASSERT_EQUAL(false, y <= x);
+    REQUIRE(x <= y);
+    REQUIRE_FALSE(y <= x);
 
     x.first  = T(0);
     x.second = T(0);
     y.first  = T(0);
     y.second = T(1);
-    ASSERT_EQUAL(true, x <= y);
-    ASSERT_EQUAL(false, y <= x);
+    REQUIRE(x <= y);
+    REQUIRE_FALSE(y <= x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(0);
     y.second = T(2);
-    ASSERT_EQUAL(true, x <= y);
-    ASSERT_EQUAL(false, y <= x);
+    REQUIRE(x <= y);
+    REQUIRE_FALSE(y <= x);
 
     // test operator >=
     x.first = x.second = y.first = y.second = T(0);
-    ASSERT_EQUAL(true, x >= y);
-    ASSERT_EQUAL(true, y >= x);
+    REQUIRE(x >= y);
+    REQUIRE(y >= x);
 
     x.first = x.second = y.first = T(0);
     y.second                     = T(1);
-    ASSERT_EQUAL(false, x >= y);
+    REQUIRE_FALSE(x >= y);
 
     x.first  = T(2);
     x.second = T(3);
     y.first  = T(0);
     y.second = T(1);
-    ASSERT_EQUAL(true, x >= y);
-    ASSERT_EQUAL(false, y >= x);
+    REQUIRE(x >= y);
+    REQUIRE_FALSE(y >= x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(0);
     y.second = T(0);
-    ASSERT_EQUAL(true, x >= y);
-    ASSERT_EQUAL(false, y >= x);
+    REQUIRE(x >= y);
+    REQUIRE_FALSE(y >= x);
 
     x.first  = T(0);
     x.second = T(2);
     y.first  = T(0);
     y.second = T(1);
-    ASSERT_EQUAL(true, x >= y);
-    ASSERT_EQUAL(false, y >= x);
+    REQUIRE(x >= y);
+    REQUIRE_FALSE(y >= x);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairComparison, NumericTypes);
@@ -232,8 +232,8 @@ struct TestPairGet
 
     thrust::pair<T, T> p(data[0], data[1]);
 
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(p));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(p));
+    REQUIRE(data[0] == cuda::std::get<0>(p));
+    REQUIRE(data[1] == cuda::std::get<1>(p));
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairGet, BuiltinNumericTypes);
@@ -246,7 +246,7 @@ struct TestPairTupleSize
 {
   void operator()()
   {
-    ASSERT_EQUAL(2, static_cast<int>(thrust::tuple_size<Pair>::value));
+    REQUIRE(2 == static_cast<int>(thrust::tuple_size<Pair>::value));
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairTupleSize, PairConstVolatileTypes);
@@ -289,10 +289,10 @@ void TestPairSwap()
   using ::cuda::std::swap;
   swap(a, b);
 
-  ASSERT_EQUAL(z, a.first);
-  ASSERT_EQUAL(w, a.second);
-  ASSERT_EQUAL(x, b.first);
-  ASSERT_EQUAL(y, b.second);
+  REQUIRE(z == a.first);
+  REQUIRE(w == a.second);
+  REQUIRE(x == b.first);
+  REQUIRE(y == b.second);
 
   using swappable_pair = thrust::pair<user_swappable, user_swappable>;
 
@@ -318,8 +318,8 @@ void TestPairStructuredBindings()
   thrust::pair<int, int> p(a, b);
 
   auto [a2, b2] = p;
-  ASSERT_EQUAL(a, a2);
-  ASSERT_EQUAL(b, b2);
+  REQUIRE(a == a2);
+  REQUIRE(b == b2);
 }
 DECLARE_UNITTEST(TestPairStructuredBindings);
 
@@ -330,7 +330,7 @@ void TestPairCTAD()
   thrust::pair p(a, b);
 
   auto [a2, b2] = p;
-  ASSERT_EQUAL(a, a2);
-  ASSERT_EQUAL(b, b2);
+  REQUIRE(a == a2);
+  REQUIRE(b == b2);
 }
 DECLARE_UNITTEST(TestPairCTAD);
