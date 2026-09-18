@@ -60,6 +60,7 @@ Checks:
   - '-cppcoreguidelines-pro-bounds-constant-array-index'
   - '-cppcoreguidelines-avoid-do-while'
   - '-cppcoreguidelines-pro-bounds-array-to-pointer-decay'
+  - '-cppcoreguidelines-special-member-functions'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
