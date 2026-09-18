@@ -278,3 +278,50 @@ raise AssertionError("invalid radix interval did not trap")
         error in output
         for error in ("CUDA_ERROR_ILLEGAL_INSTRUCTION", "CUDA_ERROR_LAUNCH_FAILED")
     ), output
+
+
+@pytest.mark.parametrize("qualified", [False, True])
+@pytest.mark.parametrize("pairs", [False, True])
+def test_chained_sorts_and_ranks_infer_dtypes_from_indexed_writes(qualified, pairs):
+    api = numba_coop if qualified else coop
+
+    @cuda.jit
+    def kernel(source, payload, output, associated, ordered_ranks, preserved):
+        block = api.this_block()
+        keys = api.ThreadData(_ITEMS)
+        values = api.ThreadData(_ITEMS)
+        for item in range(_ITEMS):
+            index = cuda.threadIdx.x * _ITEMS + item
+            keys[item] = source[index]
+            values[item] = payload[index]
+        if pairs:
+            first_keys, first_values = api.radix_sort_pairs(
+                block, keys, values, descending=True
+            )
+            chosen, chosen_values = api.radix_sort_pairs(
+                block, first_keys, first_values
+            )
+            api.store(block, associated, chosen_values)
+        else:
+            first = api.radix_sort_keys(block, keys, descending=True)
+            chosen = api.radix_sort_keys(block, first)
+        ranks = api.radix_rank(block, chosen, radix_bits=8)
+        sorted_ranks = api.radix_sort_keys(block, ranks)
+        api.store(block, ordered_ranks, sorted_ranks)
+        api.store(block, output, chosen)
+        api.store(block, preserved, keys)
+
+    source = ((np.arange(_THREADS * _ITEMS) * 17) % 43 - 21).astype(np.int64)
+    payload = np.arange(source.size, dtype=np.float32) + np.float32(0.25)
+    output = np.empty_like(source)
+    associated = np.empty_like(payload)
+    ordered_ranks = np.empty(source.size, dtype=np.int32)
+    preserved = np.empty_like(source)
+    kernel[1, _THREADS](source, payload, output, associated, ordered_ranks, preserved)
+    cuda.synchronize()
+    permutation = np.argsort(source, kind="stable")
+    np.testing.assert_array_equal(output, source[permutation])
+    np.testing.assert_array_equal(preserved, source)
+    np.testing.assert_array_equal(ordered_ranks, np.arange(source.size, dtype=np.int32))
+    if pairs:
+        np.testing.assert_array_equal(associated, payload[permutation])
