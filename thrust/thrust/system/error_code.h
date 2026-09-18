@@ -51,7 +51,7 @@ namespace errc
 {
 /*! An enum containing common error codes.
  */
-enum errc_t
+enum errc_t // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   address_family_not_supported       = detail::eafnosupport,
   address_in_use                     = detail::eaddrinuse,

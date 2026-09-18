@@ -235,7 +235,7 @@ struct AgentSelectIf
   using FlagT = it_value_t<FlagsInputIteratorT>;
 
   // Constants
-  enum
+  enum class selection_method
   {
     USE_SELECT_OP,
     USE_SELECT_FLAGS,
@@ -252,10 +252,10 @@ struct AgentSelectIf
   static constexpr bool has_flags_it        = (!::cuda::std::is_same_v<FlagT, NullType>);
   static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
   static constexpr auto SELECT_METHOD =
-    use_stencil_with_op ? USE_STENCIL_WITH_OP
-    : has_select_op     ? USE_SELECT_OP
-    : has_flags_it      ? USE_SELECT_FLAGS
-                        : USE_DISCONTINUITY;
+    use_stencil_with_op ? selection_method::USE_STENCIL_WITH_OP
+    : has_select_op     ? selection_method::USE_SELECT_OP
+    : has_flags_it      ? selection_method::USE_SELECT_FLAGS
+                        : selection_method::USE_DISCONTINUITY;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for items
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
@@ -430,7 +430,7 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD])
   {
     constexpr bool can_initialize_before_items =
-      SELECT_METHOD == USE_SELECT_FLAGS || SELECT_METHOD == USE_STENCIL_WITH_OP;
+      SELECT_METHOD == selection_method::USE_SELECT_FLAGS || SELECT_METHOD == selection_method::USE_STENCIL_WITH_OP;
     constexpr bool prefetch_before_items =
       can_initialize_before_items && AgentSelectIfPolicyT::LOAD_PREFETCH != LoadPrefetch::none;
 
@@ -473,7 +473,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_SELECT_OP> /*select_method*/)
+    constant_t<selection_method::USE_SELECT_OP> /*select_method*/)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -497,7 +497,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_STENCIL_WITH_OP> /*select_method*/)
+    constant_t<selection_method::USE_STENCIL_WITH_OP> /*select_method*/)
   {
     FlagT flags[ITEMS_PER_THREAD];
     if (IS_LAST_TILE)
@@ -537,7 +537,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_SELECT_FLAGS> /*select_method*/)
+    constant_t<selection_method::USE_SELECT_FLAGS> /*select_method*/)
   {
     FlagT flags[ITEMS_PER_THREAD];
 
@@ -569,7 +569,7 @@ struct AgentSelectIf
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_DISCONTINUITY> /*select_method*/)
+    constant_t<selection_method::USE_DISCONTINUITY> /*select_method*/)
   {
     // We previously invoked the equality operator on out-of-bounds items
     // While fixing that issue there were some performance regressions that we had to work around
@@ -1095,7 +1095,7 @@ struct AgentSelectIf
     // TODO (elstehle): replacing this term with just `blockIdx.x` degrades perf for partition. Once we get to re-tune
     // the algorithm, we want to replace this term with `blockIdx.x`
     int tile_idx{};
-    if constexpr (SELECT_METHOD != USE_DISCONTINUITY)
+    if constexpr (SELECT_METHOD != selection_method::USE_DISCONTINUITY)
     {
       tile_idx = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
     }

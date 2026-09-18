@@ -51,7 +51,7 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileStates);
 #endif // !_CCCL_CUDA_COMPILER(NVHPC)
 }
 
-enum scan_state : ::cuda::std::uint32_t
+enum class scan_state : ::cuda::std::uint32_t
 {
   empty          = 0,
   tile_aggregate = 1,
@@ -97,7 +97,7 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
   {
     ThreadStore<STORE_CG>(&ptrTileStates[index].value, aggr);
     using state_int = ::cuda::std::underlying_type_t<scan_state>;
-    store_release(reinterpret_cast<state_int*>(&ptrTileStates[index].state), scanState);
+    store_release(reinterpret_cast<state_int*>(&ptrTileStates[index].state), static_cast<state_int>(scanState));
   }
 }
 

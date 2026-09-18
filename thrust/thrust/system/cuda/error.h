@@ -34,7 +34,7 @@ namespace cuda::errc
 {
 /*! \p errc_t enumerates the kinds of CUDA Runtime errors.
  */
-enum errc_t
+enum errc_t // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   // from cuda/include/driver_types.h
   // mirror their order

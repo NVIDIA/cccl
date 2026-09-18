@@ -610,7 +610,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
 
 //! @brief cub::BlockLoadAlgorithm enumerates alternative algorithms for cub::BlockLoad to read a linear segment of data
 //!        from memory into a blocked arrangement across a CUDA thread block.
-enum BlockLoadAlgorithm
+enum BlockLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   //! @rst
   //! Overview

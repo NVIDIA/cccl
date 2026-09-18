@@ -420,7 +420,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
 
 //! cub::BlockStoreAlgorithm enumerates alternative algorithms for cub::BlockStore to write a
 //! blocked arrangement of items across a CUDA thread block to a linear segment of memory.
-enum BlockStoreAlgorithm
+enum BlockStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   //! @rst
   //! Overview

@@ -52,7 +52,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // Figure out what the underlying type for `memory_order` would be if it were
 // declared as an unscoped enum (accounting for -fshort-enums). Use this result
 // to pin the underlying type in C++20.
-enum __legacy_memory_order
+enum __legacy_memory_order // NOLINT(cppcoreguidelines-use-enum-class)
 {
   __mo_relaxed,
   __mo_consume,
@@ -85,7 +85,7 @@ inline constexpr auto memory_order_seq_cst = memory_order::seq_cst;
 
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
 
-using memory_order = enum memory_order {
+using memory_order = enum memory_order { // NOLINT(cppcoreguidelines-use-enum-class) - Required by C++17.
   memory_order_relaxed = __mo_relaxed,
   memory_order_consume = __mo_consume,
   memory_order_acquire = __mo_acquire,

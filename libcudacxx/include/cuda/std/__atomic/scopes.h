@@ -34,7 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define __ATOMIC_THREAD 10
 #endif //__ATOMIC_BLOCK
 
-enum thread_scope
+enum thread_scope // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   thread_scope_system = __ATOMIC_SYSTEM,
   thread_scope_device = __ATOMIC_DEVICE,

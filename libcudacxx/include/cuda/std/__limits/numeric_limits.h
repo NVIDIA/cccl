@@ -33,7 +33,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-enum float_round_style
+enum float_round_style // NOLINT(cppcoreguidelines-use-enum-class) - Required by the standard.
 {
   round_indeterminate       = -1,
   round_toward_zero         = 0,
@@ -42,7 +42,8 @@ enum float_round_style
   round_toward_neg_infinity = 3
 };
 
-enum _CCCL_DEPRECATED_IN_CXX23 float_denorm_style
+enum _CCCL_DEPRECATED_IN_CXX23 float_denorm_style // NOLINT(cppcoreguidelines-use-enum-class) - Required by the
+                                                  // standard.
 {
   denorm_indeterminate = -1,
   denorm_absent        = 0,
