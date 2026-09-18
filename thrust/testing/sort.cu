@@ -10,7 +10,7 @@ void sort(my_system& system, RandomAccessIterator, RandomAccessIterator)
   system.validate_dispatch();
 }
 
-void TestSortDispatchExplicit()
+TEST_CASE("TestSortDispatchExplicit", "[sort]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -19,10 +19,6 @@ void TestSortDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestSortDispatchExplicit", "[sort]")
-{
-  TestSortDispatchExplicit();
-}
 
 template <typename RandomAccessIterator>
 void sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
@@ -30,17 +26,13 @@ void sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
   *first = 13;
 }
 
-void TestSortDispatchImplicit()
+TEST_CASE("TestSortDispatchImplicit", "[sort]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::sort(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestSortDispatchImplicit", "[sort]")
-{
-  TestSortDispatchImplicit();
 }
 
 template <class Vector>
@@ -80,7 +72,7 @@ void TestSortAscendingKey(const size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestSortAscendingKey);
 
-void TestSortDescendingKey()
+TEST_CASE("TestSortDescendingKey", "[sort]")
 {
   const size_t n = 10027;
 
@@ -92,12 +84,8 @@ void TestSortDescendingKey()
 
   REQUIRE(h_data == d_data);
 }
-TEST_CASE("TestSortDescendingKey", "[sort]")
-{
-  TestSortDescendingKey();
-}
 
-void TestSortBool()
+TEST_CASE("TestSortBool", "[sort]")
 {
   const size_t n = 10027;
 
@@ -109,12 +97,8 @@ void TestSortBool()
 
   REQUIRE(h_data == d_data);
 }
-TEST_CASE("TestSortBool", "[sort]")
-{
-  TestSortBool();
-}
 
-void TestSortBoolDescending()
+TEST_CASE("TestSortBoolDescending", "[sort]")
 {
   const size_t n = 10027;
 
@@ -126,21 +110,13 @@ void TestSortBoolDescending()
 
   REQUIRE(h_data == d_data);
 }
-TEST_CASE("TestSortBoolDescending", "[sort]")
-{
-  TestSortBoolDescending();
-}
 
 // See also: https://github.com/NVIDIA/cccl/issues/4919
-void TestSortTrivial()
+TEST_CASE("TestSortTrivial", "[sort]")
 {
   thrust::host_vector<int> h_data    = {1, 0, -1, -2, -3};
   const thrust::host_vector<int> ref = {-3, -2, -1, 0, 1};
 
   thrust::sort(h_data.begin(), h_data.end());
   REQUIRE(h_data == ref);
-}
-TEST_CASE("TestSortTrivial", "[sort]")
-{
-  TestSortTrivial();
 }

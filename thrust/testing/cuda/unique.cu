@@ -96,31 +96,19 @@ void TestUniqueDevice(ExecutionPolicy exec)
   REQUIRE(data == ref);
 }
 
-void TestUniqueDeviceSeq()
+TEST_CASE("TestUniqueDeviceSeq", "[unique]")
 {
   TestUniqueDevice(thrust::seq);
 }
-TEST_CASE("TestUniqueDeviceSeq", "[unique]")
-{
-  TestUniqueDeviceSeq();
-}
 
-void TestUniqueDeviceDevice()
+TEST_CASE("TestUniqueDeviceDevice", "[unique]")
 {
   TestUniqueDevice(thrust::device);
 }
-TEST_CASE("TestUniqueDeviceDevice", "[unique]")
-{
-  TestUniqueDeviceDevice();
-}
 
-void TestUniqueDeviceNoSync()
-{
-  TestUniqueDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueDeviceNoSync", "[unique]")
 {
-  TestUniqueDeviceNoSync();
+  TestUniqueDevice(thrust::cuda::par_nosync);
 }
 #endif
 
@@ -159,22 +147,14 @@ void TestUniqueCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestUniqueCudaStreamsSync()
+TEST_CASE("TestUniqueCudaStreamsSync", "[unique]")
 {
   TestUniqueCudaStreams(thrust::cuda::par);
 }
-TEST_CASE("TestUniqueCudaStreamsSync", "[unique]")
-{
-  TestUniqueCudaStreamsSync();
-}
 
-void TestUniqueCudaStreamsNoSync()
-{
-  TestUniqueCudaStreams(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueCudaStreamsNoSync", "[unique]")
 {
-  TestUniqueCudaStreamsNoSync();
+  TestUniqueCudaStreams(thrust::cuda::par_nosync);
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -233,31 +213,19 @@ void TestUniqueCopyDevice(ExecutionPolicy exec)
   REQUIRE(data == ref);
 }
 
-void TestUniqueCopyDeviceSeq()
+TEST_CASE("TestUniqueCopyDeviceSeq", "[unique]")
 {
   TestUniqueCopyDevice(thrust::seq);
 }
-TEST_CASE("TestUniqueCopyDeviceSeq", "[unique]")
-{
-  TestUniqueCopyDeviceSeq();
-}
 
-void TestUniqueCopyDeviceDevice()
+TEST_CASE("TestUniqueCopyDeviceDevice", "[unique]")
 {
   TestUniqueCopyDevice(thrust::device);
 }
-TEST_CASE("TestUniqueCopyDeviceDevice", "[unique]")
-{
-  TestUniqueCopyDeviceDevice();
-}
 
-void TestUniqueCopyDeviceNoSync()
-{
-  TestUniqueCopyDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueCopyDeviceNoSync", "[unique]")
 {
-  TestUniqueCopyDeviceNoSync();
+  TestUniqueCopyDevice(thrust::cuda::par_nosync);
 }
 #endif
 
@@ -298,22 +266,14 @@ void TestUniqueCopyCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestUniqueCopyCudaStreamsSync()
+TEST_CASE("TestUniqueCopyCudaStreamsSync", "[unique]")
 {
   TestUniqueCopyCudaStreams(thrust::cuda::par);
 }
-TEST_CASE("TestUniqueCopyCudaStreamsSync", "[unique]")
-{
-  TestUniqueCopyCudaStreamsSync();
-}
 
-void TestUniqueCopyCudaStreamsNoSync()
-{
-  TestUniqueCopyCudaStreams(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueCopyCudaStreamsNoSync", "[unique]")
 {
-  TestUniqueCopyCudaStreamsNoSync();
+  TestUniqueCopyCudaStreams(thrust::cuda::par_nosync);
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -357,31 +317,19 @@ void TestUniqueCountDevice(ExecutionPolicy exec)
   REQUIRE(output[0] == 3);
 }
 
-void TestUniqueCountDeviceSeq()
+TEST_CASE("TestUniqueCountDeviceSeq", "[unique]")
 {
   TestUniqueCountDevice(thrust::seq);
 }
-TEST_CASE("TestUniqueCountDeviceSeq", "[unique]")
-{
-  TestUniqueCountDeviceSeq();
-}
 
-void TestUniqueCountDeviceDevice()
+TEST_CASE("TestUniqueCountDeviceDevice", "[unique]")
 {
   TestUniqueCountDevice(thrust::device);
 }
-TEST_CASE("TestUniqueCountDeviceDevice", "[unique]")
-{
-  TestUniqueCountDeviceDevice();
-}
 
-void TestUniqueCountDeviceNoSync()
-{
-  TestUniqueCountDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueCountDeviceNoSync", "[unique]")
 {
-  TestUniqueCountDeviceNoSync();
+  TestUniqueCountDevice(thrust::cuda::par_nosync);
 }
 #endif
 
@@ -411,22 +359,14 @@ void TestUniqueCountCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestUniqueCountCudaStreamsSync()
+TEST_CASE("TestUniqueCountCudaStreamsSync", "[unique]")
 {
   TestUniqueCountCudaStreams(thrust::cuda::par);
 }
-TEST_CASE("TestUniqueCountCudaStreamsSync", "[unique]")
-{
-  TestUniqueCountCudaStreamsSync();
-}
 
-void TestUniqueCountCudaStreamsNoSync()
-{
-  TestUniqueCountCudaStreams(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueCountCudaStreamsNoSync", "[unique]")
 {
-  TestUniqueCountCudaStreamsNoSync();
+  TestUniqueCountCudaStreams(thrust::cuda::par_nosync);
 }
 
 void TestUniqueWithMagnitude(int magnitude)
@@ -458,25 +398,23 @@ void TestUniqueWithMagnitude(int magnitude)
   REQUIRE(all_results_correct);
 }
 
-void TestUniqueWithLargeNumberOfItems()
-try
-{
-  for (const int mag : {30, 31, 32, 33})
-  {
-    TestUniqueWithMagnitude(mag);
-  }
-}
-catch (std::bad_alloc&)
-{
-  // if we run out of memory, just skip the test
-  return;
-}
 TEST_CASE("TestUniqueWithLargeNumberOfItems", "[unique]")
 {
-  TestUniqueWithLargeNumberOfItems();
+  try
+  {
+    for (const int mag : {30, 31, 32, 33})
+    {
+      TestUniqueWithMagnitude(mag);
+    }
+  }
+  catch (std::bad_alloc&)
+  {
+    // if we run out of memory, just skip the test
+    return;
+  }
 }
 
-void TestUniqueWithCustomEqualityOp()
+TEST_CASE("TestUniqueWithCustomEqualityOp", "[unique]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -498,11 +436,6 @@ void TestUniqueWithCustomEqualityOp()
   REQUIRE(all_results_correct);
 }
 
-TEST_CASE("TestUniqueWithCustomEqualityOp", "[unique]")
-{
-  TestUniqueWithCustomEqualityOp();
-}
-
 template <typename F>
 struct NonConstAdapter
 {
@@ -518,15 +451,10 @@ struct NonConstAdapter
   }
 };
 
-void TestUniqueWithCustomEqualityOpMutable()
+TEST_CASE("TestUniqueWithCustomEqualityOpMutable", "[unique]")
 {
   using Vector = thrust::device_vector<int>;
 
   thrust::device_vector<int> in = {1, 1, 2, 3, 4, 4, 5};
   thrust::unique(thrust::cuda::par, in.begin(), in.end(), NonConstAdapter(cuda::std::equal_to<>{}));
-}
-
-TEST_CASE("TestUniqueWithCustomEqualityOpMutable", "[unique]")
-{
-  TestUniqueWithCustomEqualityOpMutable();
 }

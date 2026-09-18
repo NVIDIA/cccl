@@ -40,7 +40,7 @@ void reduce_into(my_system& system, InputIterator, InputIterator, OutputIterator
   *output = 13;
 }
 
-void TestReduceIntoDispatchExplicit()
+TEST_CASE("TestReduceIntoDispatchExplicit", "[reduce_into]")
 {
   thrust::device_vector<int> i;
   thrust::device_vector<int> o(1);
@@ -51,10 +51,6 @@ void TestReduceIntoDispatchExplicit()
   REQUIRE(sys.is_valid());
   REQUIRE(o[0] == 13);
 }
-TEST_CASE("TestReduceIntoDispatchExplicit", "[reduce_into]")
-{
-  TestReduceIntoDispatchExplicit();
-}
 
 template <typename InputIterator, typename OutputIterator>
 void reduce_into(my_tag, InputIterator, InputIterator, OutputIterator output)
@@ -62,7 +58,7 @@ void reduce_into(my_tag, InputIterator, InputIterator, OutputIterator output)
   *output = 13;
 }
 
-void TestReduceIntoDispatchImplicit()
+TEST_CASE("TestReduceIntoDispatchImplicit", "[reduce_into]")
 {
   thrust::device_vector<int> i;
   thrust::device_vector<int> o(1);
@@ -71,10 +67,6 @@ void TestReduceIntoDispatchImplicit()
     thrust::retag<my_tag>(i.begin()), thrust::retag<my_tag>(i.end()), thrust::retag<my_tag>(o.begin()));
 
   REQUIRE(o[0] == 13);
-}
-TEST_CASE("TestReduceIntoDispatchImplicit", "[reduce_into]")
-{
-  TestReduceIntoDispatchImplicit();
 }
 
 template <typename T>
@@ -97,7 +89,7 @@ struct TestReduceInto
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceInto, IntegralTypes);
 
-void TestReduceIntoMixedTypesHost()
+TEST_CASE("TestReduceIntoMixedTypesHost", "[reduce_into]")
 {
   // make sure we get types for default args and operators correct
   thrust::host_vector<int> int_input{1, 2, 3, 4};
@@ -114,11 +106,7 @@ void TestReduceIntoMixedTypesHost()
   thrust::reduce_into(int_input.begin(), int_input.end(), float_output.begin(), float(0.5));
   REQUIRE(float_output[0] == 10.5);
 }
-TEST_CASE("TestReduceIntoMixedTypesHost", "[reduce_into]")
-{
-  TestReduceIntoMixedTypesHost();
-}
-void TestReduceIntoMixedTypesDevice()
+TEST_CASE("TestReduceIntoMixedTypesDevice", "[reduce_into]")
 {
   // make sure we get types for default args and operators correct
   thrust::device_vector<int> int_input{1, 2, 3, 4};
@@ -134,10 +122,6 @@ void TestReduceIntoMixedTypesDevice()
   thrust::device_vector<float> float_output(1);
   thrust::reduce_into(int_input.begin(), int_input.end(), float_output.begin(), float(0.5));
   REQUIRE(float_output[0] == 10.5);
-}
-TEST_CASE("TestReduceIntoMixedTypesDevice", "[reduce_into]")
-{
-  TestReduceIntoMixedTypesDevice();
 }
 
 template <typename T>

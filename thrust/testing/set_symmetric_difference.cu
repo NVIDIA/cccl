@@ -14,7 +14,7 @@ OutputIterator set_symmetric_difference(
   return result;
 }
 
-void TestSetSymmetricDifferenceDispatchExplicit()
+TEST_CASE("TestSetSymmetricDifferenceDispatchExplicit", "[set_symmetric_difference]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -22,10 +22,6 @@ void TestSetSymmetricDifferenceDispatchExplicit()
   thrust::set_symmetric_difference(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestSetSymmetricDifferenceDispatchExplicit", "[set_symmetric_difference]")
-{
-  TestSetSymmetricDifferenceDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -36,7 +32,7 @@ set_symmetric_difference(my_tag, InputIterator1, InputIterator1, InputIterator2,
   return result;
 }
 
-void TestSetSymmetricDifferenceDispatchImplicit()
+TEST_CASE("TestSetSymmetricDifferenceDispatchImplicit", "[set_symmetric_difference]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -48,10 +44,6 @@ void TestSetSymmetricDifferenceDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestSetSymmetricDifferenceDispatchImplicit", "[set_symmetric_difference]")
-{
-  TestSetSymmetricDifferenceDispatchImplicit();
 }
 
 template <typename Vector>

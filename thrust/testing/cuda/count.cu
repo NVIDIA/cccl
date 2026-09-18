@@ -87,7 +87,7 @@ void TestCountIfDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestCountIfDeviceDevice);
 #endif
 
-void TestCountCudaStreams()
+TEST_CASE("TestCountCudaStreams", "[count]")
 {
   thrust::device_vector<int> data{1, 1, 0, 0, 1};
 
@@ -99,8 +99,4 @@ void TestCountCudaStreams()
   REQUIRE(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 2) == 0);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestCountCudaStreams", "[count]")
-{
-  TestCountCudaStreams();
 }

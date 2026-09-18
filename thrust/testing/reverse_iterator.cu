@@ -8,7 +8,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::reverse_iterator from cuda::std
-void TestReverseIteratorTraits()
+TEST_CASE("TestReverseIteratorTraits", "[reverse_iterator]")
 {
   using base_it = thrust::host_vector<int>::iterator;
 
@@ -33,12 +33,8 @@ void TestReverseIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-TEST_CASE("TestReverseIteratorTraits", "[reverse_iterator]")
-{
-  TestReverseIteratorTraits();
-}
 
-void TestReverseIteratorCopyConstructor()
+TEST_CASE("TestReverseIteratorCopyConstructor", "[reverse_iterator]")
 {
   thrust::host_vector<int> h_v(1, 13);
 
@@ -56,14 +52,10 @@ void TestReverseIteratorCopyConstructor()
   REQUIRE(d_iter2 == d_iter3);
   REQUIRE(*d_iter2 == *d_iter3);
 }
-TEST_CASE("TestReverseIteratorCopyConstructor", "[reverse_iterator]")
-{
-  TestReverseIteratorCopyConstructor();
-}
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::reverse_iterator<int*>>::value);
 static_assert(cuda::std::is_trivially_copyable<thrust::reverse_iterator<int*>>::value);
 
-void TestReverseIteratorIncrement()
+TEST_CASE("TestReverseIteratorIncrement", "[reverse_iterator]")
 {
   thrust::host_vector<int> h_v(4);
   thrust::sequence(h_v.begin(), h_v.end());
@@ -97,10 +89,6 @@ void TestReverseIteratorIncrement()
   d_iter++;
   REQUIRE(*d_iter == 0);
 }
-TEST_CASE("TestReverseIteratorIncrement", "[reverse_iterator]")
-{
-  TestReverseIteratorIncrement();
-}
 
 template <typename Vector>
 void TestReverseIteratorCopy()
@@ -118,7 +106,7 @@ void TestReverseIteratorCopy()
 }
 DECLARE_VECTOR_UNITTEST(TestReverseIteratorCopy);
 
-void TestReverseIteratorExclusiveScanSimple()
+TEST_CASE("TestReverseIteratorExclusiveScanSimple", "[reverse_iterator]")
 {
   using T        = int;
   const size_t n = 10;
@@ -138,10 +126,6 @@ void TestReverseIteratorExclusiveScanSimple()
     thrust::make_reverse_iterator(d_data.end()), thrust::make_reverse_iterator(d_data.begin()), d_result.begin());
 
   REQUIRE(h_result == d_result);
-}
-TEST_CASE("TestReverseIteratorExclusiveScanSimple", "[reverse_iterator]")
-{
-  TestReverseIteratorExclusiveScanSimple();
 }
 
 template <typename T>

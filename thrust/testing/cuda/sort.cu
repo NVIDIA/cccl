@@ -96,7 +96,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortDeviceDevice,
                                           unittest::type_list<unittest::int8_t, unittest::int32_t>);
 #endif
 
-void TestSortCudaStreams()
+TEST_CASE("TestSortCudaStreams", "[sort]")
 {
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
@@ -110,12 +110,8 @@ void TestSortCudaStreams()
 
   cudaStreamDestroy(s);
 }
-TEST_CASE("TestSortCudaStreams", "[sort]")
-{
-  TestSortCudaStreams();
-}
 
-void TestComparisonSortCudaStreams()
+TEST_CASE("TestComparisonSortCudaStreams", "[sort]")
 {
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
@@ -128,10 +124,6 @@ void TestComparisonSortCudaStreams()
   REQUIRE(thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestComparisonSortCudaStreams", "[sort]")
-{
-  TestComparisonSortCudaStreams();
 }
 
 template <typename T>
@@ -289,7 +281,7 @@ void TestSortWithMagnitude(int magnitude)
   }
 }
 
-void TestSortWithLargeNumberOfItems()
+TEST_CASE("TestSortWithLargeNumberOfItems", "[sort]")
 {
   TestSortWithMagnitude(30);
   // These still require 64-bit dispatches when magnitude < 32.
@@ -299,10 +291,6 @@ void TestSortWithLargeNumberOfItems()
   TestSortWithMagnitude(33);
   TestSortWithMagnitude(39);
 #endif
-}
-TEST_CASE("TestSortWithLargeNumberOfItems", "[sort]")
-{
-  TestSortWithLargeNumberOfItems();
 }
 
 template <typename T>

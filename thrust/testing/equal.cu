@@ -71,7 +71,7 @@ bool equal(my_system& system, InputIterator1 /*first*/, InputIterator1, InputIte
   return false;
 }
 
-void TestEqualDispatchExplicit()
+TEST_CASE("TestEqualDispatchExplicit", "[equal]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -79,10 +79,6 @@ void TestEqualDispatchExplicit()
   thrust::equal(sys, vec.begin(), vec.end(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestEqualDispatchExplicit", "[equal]")
-{
-  TestEqualDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2>
@@ -92,7 +88,7 @@ bool equal(my_tag, InputIterator1 first, InputIterator1, InputIterator2)
   return false;
 }
 
-void TestEqualDispatchImplicit()
+TEST_CASE("TestEqualDispatchImplicit", "[equal]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -100,10 +96,6 @@ void TestEqualDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestEqualDispatchImplicit", "[equal]")
-{
-  TestEqualDispatchImplicit();
 }
 
 struct only_set_when_both_expected
@@ -142,15 +134,11 @@ void TestEqualWithBigIndexesHelper(int magnitude)
 }
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-void TestEqualWithBigIndexes()
+TEST_CASE("TestEqualWithBigIndexes", "[equal]")
 {
   TestEqualWithBigIndexesHelper(30);
   TestEqualWithBigIndexesHelper(31);
   TestEqualWithBigIndexesHelper(32);
   TestEqualWithBigIndexesHelper(33);
-}
-TEST_CASE("TestEqualWithBigIndexes", "[equal]")
-{
-  TestEqualWithBigIndexes();
 }
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE

@@ -43,26 +43,18 @@ void TestIsSortedUntilDevice(ExecutionPolicy exec)
   REQUIRE(v.end() == (iter_type) result[0]);
 }
 
-void TestIsSortedUntilDeviceSeq()
+TEST_CASE("TestIsSortedUntilDeviceSeq", "[is_sorted_until]")
 {
   TestIsSortedUntilDevice(thrust::seq);
 }
-TEST_CASE("TestIsSortedUntilDeviceSeq", "[is_sorted_until]")
-{
-  TestIsSortedUntilDeviceSeq();
-}
 
-void TestIsSortedUntilDeviceDevice()
+TEST_CASE("TestIsSortedUntilDeviceDevice", "[is_sorted_until]")
 {
   TestIsSortedUntilDevice(thrust::device);
 }
-TEST_CASE("TestIsSortedUntilDeviceDevice", "[is_sorted_until]")
-{
-  TestIsSortedUntilDeviceDevice();
-}
 #endif
 
-void TestIsSortedUntilCudaStreams()
+TEST_CASE("TestIsSortedUntilCudaStreams", "[is_sorted_until]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -122,8 +114,4 @@ void TestIsSortedUntilCudaStreams()
   REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::greater<T>()));
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestIsSortedUntilCudaStreams", "[is_sorted_until]")
-{
-  TestIsSortedUntilCudaStreams();
 }

@@ -25,7 +25,7 @@ void reverse(my_system& system, BidirectionalIterator, BidirectionalIterator)
   system.validate_dispatch();
 }
 
-void TestReverseDispatchExplicit()
+TEST_CASE("TestReverseDispatchExplicit", "[reverse]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -34,10 +34,6 @@ void TestReverseDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestReverseDispatchExplicit", "[reverse]")
-{
-  TestReverseDispatchExplicit();
-}
 
 template <typename BidirectionalIterator>
 void reverse(my_tag, BidirectionalIterator first, BidirectionalIterator)
@@ -45,17 +41,13 @@ void reverse(my_tag, BidirectionalIterator first, BidirectionalIterator)
   *first = 13;
 }
 
-void TestReverseDispatchImplicit()
+TEST_CASE("TestReverseDispatchImplicit", "[reverse]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::reverse(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestReverseDispatchImplicit", "[reverse]")
-{
-  TestReverseDispatchImplicit();
 }
 
 template <typename Vector>
@@ -82,7 +74,7 @@ OutputIterator reverse_copy(my_system& system, BidirectionalIterator, Bidirectio
   return result;
 }
 
-void TestReverseCopyDispatchExplicit()
+TEST_CASE("TestReverseCopyDispatchExplicit", "[reverse]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -90,10 +82,6 @@ void TestReverseCopyDispatchExplicit()
   thrust::reverse_copy(sys, vec.begin(), vec.end(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestReverseCopyDispatchExplicit", "[reverse]")
-{
-  TestReverseCopyDispatchExplicit();
 }
 
 template <typename BidirectionalIterator, typename OutputIterator>
@@ -103,7 +91,7 @@ OutputIterator reverse_copy(my_tag, BidirectionalIterator, BidirectionalIterator
   return result;
 }
 
-void TestReverseCopyDispatchImplicit()
+TEST_CASE("TestReverseCopyDispatchImplicit", "[reverse]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -111,10 +99,6 @@ void TestReverseCopyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestReverseCopyDispatchImplicit", "[reverse]")
-{
-  TestReverseCopyDispatchImplicit();
 }
 
 template <typename T>
@@ -174,7 +158,7 @@ struct TestReverseCopyToDiscardIterator
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopyToDiscardIterator, ReverseTypes);
 
-void TestReverseZippedHost()
+TEST_CASE("TestReverseZippedHost", "[reverse]")
 {
   thrust::host_vector<int> a{1, 2, 3, 4};
   thrust::host_vector<int> b{10, 20, 30, 40};
@@ -186,8 +170,4 @@ void TestReverseZippedHost()
 
   REQUIRE(a == expected_a);
   REQUIRE(b == expected_b);
-}
-TEST_CASE("TestReverseZippedHost", "[reverse]")
-{
-  TestReverseZippedHost();
 }

@@ -55,26 +55,18 @@ void TestSequenceDevice(ExecutionPolicy exec)
   REQUIRE(v == ref);
 }
 
-void TestSequenceDeviceSeq()
+TEST_CASE("TestSequenceDeviceSeq", "[sequence]")
 {
   TestSequenceDevice(thrust::seq);
 }
-TEST_CASE("TestSequenceDeviceSeq", "[sequence]")
-{
-  TestSequenceDeviceSeq();
-}
 
-void TestSequenceDeviceDevice()
+TEST_CASE("TestSequenceDeviceDevice", "[sequence]")
 {
   TestSequenceDevice(thrust::device);
 }
-TEST_CASE("TestSequenceDeviceDevice", "[sequence]")
-{
-  TestSequenceDeviceDevice();
-}
 #endif
 
-void TestSequenceCudaStreams()
+TEST_CASE("TestSequenceCudaStreams", "[sequence]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -102,8 +94,4 @@ void TestSequenceCudaStreams()
   REQUIRE(v == ref);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestSequenceCudaStreams", "[sequence]")
-{
-  TestSequenceCudaStreams();
 }

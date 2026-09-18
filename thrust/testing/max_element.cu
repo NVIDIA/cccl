@@ -66,7 +66,7 @@ ForwardIterator max_element(my_system& system, ForwardIterator first, ForwardIte
   return first;
 }
 
-void TestMaxElementDispatchExplicit()
+TEST_CASE("TestMaxElementDispatchExplicit", "[max_element]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -74,10 +74,6 @@ void TestMaxElementDispatchExplicit()
   thrust::max_element(sys, vec.begin(), vec.end());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestMaxElementDispatchExplicit", "[max_element]")
-{
-  TestMaxElementDispatchExplicit();
 }
 
 template <typename ForwardIterator>
@@ -87,17 +83,13 @@ ForwardIterator max_element(my_tag, ForwardIterator first, ForwardIterator)
   return first;
 }
 
-void TestMaxElementDispatchImplicit()
+TEST_CASE("TestMaxElementDispatchImplicit", "[max_element]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::max_element(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestMaxElementDispatchImplicit", "[max_element]")
-{
-  TestMaxElementDispatchImplicit();
 }
 
 void TestMaxElementWithBigIndexesHelper(int magnitude)
@@ -109,7 +101,7 @@ void TestMaxElementWithBigIndexesHelper(int magnitude)
   REQUIRE(*thrust::max_element(thrust::device, begin, end) == (1ll << magnitude));
 }
 
-void TestMaxElementWithBigIndexes()
+TEST_CASE("TestMaxElementWithBigIndexes", "[max_element]")
 {
   TestMaxElementWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -118,17 +110,9 @@ void TestMaxElementWithBigIndexes()
   TestMaxElementWithBigIndexesHelper(33);
 #endif
 }
-TEST_CASE("TestMaxElementWithBigIndexes", "[max_element]")
-{
-  TestMaxElementWithBigIndexes();
-}
 
-void TestMaxElementCudaIterator()
+TEST_CASE("TestMaxElementCudaIterator", "[max_element]")
 {
   auto pos = thrust::max_element(thrust::device, cuda::counting_iterator{0}, cuda::counting_iterator{0} + 100);
   REQUIRE(*pos == 99);
-}
-TEST_CASE("TestMaxElementCudaIterator", "[max_element]")
-{
-  TestMaxElementCudaIterator();
 }

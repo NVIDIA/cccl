@@ -206,7 +206,7 @@ void TestFunctionIsBijectionIterator(size_t m)
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijection);
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijectionIterator);
 
-void TestFeistelBijectionLength()
+TEST_CASE("TestFeistelBijectionLength", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -222,12 +222,8 @@ void TestFeistelBijectionLength()
   f = thrust::detail::feistel_bijection(m, g);
   REQUIRE(f.size() == uint64_t(256));
 }
-TEST_CASE("TestFeistelBijectionLength", "[shuffle]")
-{
-  TestFeistelBijectionLength();
-}
 
-void TestShuffleIteratorConstructibleFromBijection()
+TEST_CASE("TestShuffleIteratorConstructibleFromBijection", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -244,12 +240,8 @@ void TestShuffleIteratorConstructibleFromBijection()
   REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it2));
   REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it3));
 }
-TEST_CASE("TestShuffleIteratorConstructibleFromBijection", "[shuffle]")
-{
-  TestShuffleIteratorConstructibleFromBijection();
-}
 
-void TestShuffleAndPermutationIterator()
+TEST_CASE("TestShuffleAndPermutationIterator", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -265,12 +257,8 @@ void TestShuffleAndPermutationIterator()
 
   REQUIRE(thrust::equal(permute_it, permute_it + 32, premute_vec.begin()));
 }
-TEST_CASE("TestShuffleAndPermutationIterator", "[shuffle]")
-{
-  TestShuffleAndPermutationIterator();
-}
 
-void TestShuffleIteratorStateless()
+TEST_CASE("TestShuffleIteratorStateless", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -280,10 +268,6 @@ void TestShuffleIteratorStateless()
   REQUIRE(*(it + 1) == *(it + 1));
   ++it;
   REQUIRE(*(it - 1) == *(it - 1));
-}
-TEST_CASE("TestShuffleIteratorStateless", "[shuffle]")
-{
-  TestShuffleIteratorStateless();
 }
 
 double inverse_erf(double x)

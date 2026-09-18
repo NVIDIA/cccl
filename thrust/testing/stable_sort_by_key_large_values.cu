@@ -45,13 +45,9 @@ void _TestStableSortByKeyWithLargeValues()
   REQUIRE((h_vals == d_vals));
 }
 
-void TestStableSortByKeyWithLargeValues()
+TEST_CASE("TestStableSortByKeyWithLargeValues", "[stable_sort_by_key_large_values]")
 {
   _TestStableSortByKeyWithLargeValues<4>();
   _TestStableSortByKeyWithLargeValues<8>();
   _TestStableSortByKeyWithLargeValues<16>();
-}
-TEST_CASE("TestStableSortByKeyWithLargeValues", "[stable_sort_by_key_large_values]")
-{
-  TestStableSortByKeyWithLargeValues();
 }

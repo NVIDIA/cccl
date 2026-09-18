@@ -207,7 +207,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestReduceByKeyDispatchExplicit()
+TEST_CASE("TestReduceByKeyDispatchExplicit", "[reduce_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -215,10 +215,6 @@ void TestReduceByKeyDispatchExplicit()
   thrust::reduce_by_key(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestReduceByKeyDispatchExplicit", "[reduce_by_key]")
-{
-  TestReduceByKeyDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
@@ -229,7 +225,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestReduceByKeyDispatchImplicit()
+TEST_CASE("TestReduceByKeyDispatchImplicit", "[reduce_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -241,8 +237,4 @@ void TestReduceByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestReduceByKeyDispatchImplicit", "[reduce_by_key]")
-{
-  TestReduceByKeyDispatchImplicit();
 }

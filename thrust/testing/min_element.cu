@@ -64,7 +64,7 @@ ForwardIterator min_element(my_system& system, ForwardIterator first, ForwardIte
   return first;
 }
 
-void TestMinElementDispatchExplicit()
+TEST_CASE("TestMinElementDispatchExplicit", "[min_element]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -72,10 +72,6 @@ void TestMinElementDispatchExplicit()
   thrust::min_element(sys, vec.begin(), vec.end());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestMinElementDispatchExplicit", "[min_element]")
-{
-  TestMinElementDispatchExplicit();
 }
 
 template <typename ForwardIterator>
@@ -85,17 +81,13 @@ ForwardIterator min_element(my_tag, ForwardIterator first, ForwardIterator)
   return first;
 }
 
-void TestMinElementDispatchImplicit()
+TEST_CASE("TestMinElementDispatchImplicit", "[min_element]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::min_element(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestMinElementDispatchImplicit", "[min_element]")
-{
-  TestMinElementDispatchImplicit();
 }
 
 void TestMinElementWithBigIndexesHelper(int magnitude)
@@ -107,7 +99,7 @@ void TestMinElementWithBigIndexesHelper(int magnitude)
   REQUIRE(*thrust::min_element(thrust::device, begin, end, ::cuda::std::greater<long long>()) == (1ll << magnitude));
 }
 
-void TestMinElementWithBigIndexes()
+TEST_CASE("TestMinElementWithBigIndexes", "[min_element]")
 {
   TestMinElementWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -116,17 +108,9 @@ void TestMinElementWithBigIndexes()
   TestMinElementWithBigIndexesHelper(33);
 #endif
 }
-TEST_CASE("TestMinElementWithBigIndexes", "[min_element]")
-{
-  TestMinElementWithBigIndexes();
-}
 
-void TestMinElementCudaIterator()
+TEST_CASE("TestMinElementCudaIterator", "[min_element]")
 {
   auto pos = thrust::min_element(thrust::device, cuda::counting_iterator{0}, cuda::counting_iterator{0} + 100);
   REQUIRE(*pos == 0);
-}
-TEST_CASE("TestMinElementCudaIterator", "[min_element]")
-{
-  TestMinElementCudaIterator();
 }

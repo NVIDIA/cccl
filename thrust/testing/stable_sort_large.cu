@@ -24,13 +24,9 @@ void _TestStableSortWithLargeKeys()
   REQUIRE((h_keys == d_keys));
 }
 
-void TestStableSortWithLargeKeys()
+TEST_CASE("TestStableSortWithLargeKeys", "[stable_sort_large]")
 {
   _TestStableSortWithLargeKeys<int, 2>();
   _TestStableSortWithLargeKeys<int, 17>();
   _TestStableSortWithLargeKeys<int, 128>();
-}
-TEST_CASE("TestStableSortWithLargeKeys", "[stable_sort_large]")
-{
-  TestStableSortWithLargeKeys();
 }

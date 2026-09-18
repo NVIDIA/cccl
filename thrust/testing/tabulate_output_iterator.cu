@@ -79,7 +79,7 @@ struct index_to_gather_index_op
 };
 
 // ensure that we properly support thrust::tabulate_output_iterator from cuda::std
-void TestTabulateOutputIteratorTraits()
+TEST_CASE("TestTabulateOutputIteratorTraits", "[tabulate_output_iterator]")
 {
   using base_it = thrust::host_vector<int>::iterator;
   using Op      = host_write_op<base_it>;
@@ -107,10 +107,6 @@ void TestTabulateOutputIteratorTraits()
   static_assert(!cuda::std::bidirectional_iterator<it>);
   static_assert(!cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
-}
-TEST_CASE("TestTabulateOutputIteratorTraits", "[tabulate_output_iterator]")
-{
-  TestTabulateOutputIteratorTraits();
 }
 
 template <class Vector>
@@ -156,7 +152,7 @@ void TestTabulateOutputIterator()
 }
 DECLARE_VECTOR_UNITTEST(TestTabulateOutputIterator);
 
-void TestTabulateOutputIteratorSubscript()
+TEST_CASE("TestTabulateOutputIteratorSubscript", "[tabulate_output_iterator]")
 {
   using vector_t = thrust::host_vector<int>;
   using vec_it_t = typename vector_t::iterator;
@@ -176,9 +172,4 @@ void TestTabulateOutputIteratorSubscript()
   tabulate_out_it[1] = 4;
   ref                = {42, 4, 42, 0};
   REQUIRE(out == ref);
-}
-
-TEST_CASE("TestTabulateOutputIteratorSubscript", "[tabulate_output_iterator]")
-{
-  TestTabulateOutputIteratorSubscript();
 }

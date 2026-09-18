@@ -36,26 +36,18 @@ void TestSetDifferenceDevice(ExecutionPolicy exec)
   test_runtime::assert_equal(stream, result, {2, 5});
 }
 
-void TestSetDifferenceDeviceSeq()
+TEST_CASE("TestSetDifferenceDeviceSeq", "[set_difference]")
 {
   TestSetDifferenceDevice(thrust::seq);
 }
-TEST_CASE("TestSetDifferenceDeviceSeq", "[set_difference]")
-{
-  TestSetDifferenceDeviceSeq();
-}
 
-void TestSetDifferenceDeviceDevice()
+TEST_CASE("TestSetDifferenceDeviceDevice", "[set_difference]")
 {
   TestSetDifferenceDevice(thrust::device);
 }
-TEST_CASE("TestSetDifferenceDeviceDevice", "[set_difference]")
-{
-  TestSetDifferenceDeviceDevice();
-}
 #endif
 
-void TestSetDifferenceCudaStreams()
+TEST_CASE("TestSetDifferenceCudaStreams", "[set_difference]")
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -69,8 +61,4 @@ void TestSetDifferenceCudaStreams()
 
   REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {2, 5});
-}
-TEST_CASE("TestSetDifferenceCudaStreams", "[set_difference]")
-{
-  TestSetDifferenceCudaStreams();
 }

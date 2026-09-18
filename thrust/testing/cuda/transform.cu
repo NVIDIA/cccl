@@ -39,22 +39,14 @@ void TestTransformUnaryDevice(ExecutionPolicy exec)
   REQUIRE(output == result);
 }
 
-void TestTransformUnaryDeviceSeq()
+TEST_CASE("TestTransformUnaryDeviceSeq", "[transform]")
 {
   TestTransformUnaryDevice(thrust::seq);
 }
-TEST_CASE("TestTransformUnaryDeviceSeq", "[transform]")
-{
-  TestTransformUnaryDeviceSeq();
-}
 
-void TestTransformUnaryDeviceDevice()
-{
-  TestTransformUnaryDevice(thrust::device);
-}
 TEST_CASE("TestTransformUnaryDeviceDevice", "[transform]")
 {
-  TestTransformUnaryDeviceDevice();
+  TestTransformUnaryDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy,
@@ -106,22 +98,14 @@ void TestTransformIfUnaryNoStencilDevice(ExecutionPolicy exec)
   REQUIRE(output == result);
 }
 
-void TestTransformIfUnaryNoStencilDeviceSeq()
+TEST_CASE("TestTransformIfUnaryNoStencilDeviceSeq", "[transform]")
 {
   TestTransformIfUnaryNoStencilDevice(thrust::seq);
 }
-TEST_CASE("TestTransformIfUnaryNoStencilDeviceSeq", "[transform]")
-{
-  TestTransformIfUnaryNoStencilDeviceSeq();
-}
 
-void TestTransformIfUnaryNoStencilDeviceDevice()
-{
-  TestTransformIfUnaryNoStencilDevice(thrust::device);
-}
 TEST_CASE("TestTransformIfUnaryNoStencilDeviceDevice", "[transform]")
 {
-  TestTransformIfUnaryNoStencilDeviceDevice();
+  TestTransformIfUnaryNoStencilDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy,
@@ -177,22 +161,14 @@ void TestTransformIfUnaryDevice(ExecutionPolicy exec)
   REQUIRE(output == result);
 }
 
-void TestTransformIfUnaryDeviceSeq()
+TEST_CASE("TestTransformIfUnaryDeviceSeq", "[transform]")
 {
   TestTransformIfUnaryDevice(thrust::seq);
 }
-TEST_CASE("TestTransformIfUnaryDeviceSeq", "[transform]")
-{
-  TestTransformIfUnaryDeviceSeq();
-}
 
-void TestTransformIfUnaryDeviceDevice()
-{
-  TestTransformIfUnaryDevice(thrust::device);
-}
 TEST_CASE("TestTransformIfUnaryDeviceDevice", "[transform]")
 {
-  TestTransformIfUnaryDeviceDevice();
+  TestTransformIfUnaryDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy,
@@ -239,22 +215,14 @@ void TestTransformBinaryDevice(ExecutionPolicy exec)
   REQUIRE(output == result);
 }
 
-void TestTransformBinaryDeviceSeq()
+TEST_CASE("TestTransformBinaryDeviceSeq", "[transform]")
 {
   TestTransformBinaryDevice(thrust::seq);
 }
-TEST_CASE("TestTransformBinaryDeviceSeq", "[transform]")
-{
-  TestTransformBinaryDeviceSeq();
-}
 
-void TestTransformBinaryDeviceDevice()
-{
-  TestTransformBinaryDevice(thrust::device);
-}
 TEST_CASE("TestTransformBinaryDeviceDevice", "[transform]")
 {
-  TestTransformBinaryDeviceDevice();
+  TestTransformBinaryDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy,
@@ -316,26 +284,18 @@ void TestTransformIfBinaryDevice(ExecutionPolicy exec)
   REQUIRE(output == result);
 }
 
-void TestTransformIfBinaryDeviceSeq()
+TEST_CASE("TestTransformIfBinaryDeviceSeq", "[transform]")
 {
   TestTransformIfBinaryDevice(thrust::seq);
 }
-TEST_CASE("TestTransformIfBinaryDeviceSeq", "[transform]")
-{
-  TestTransformIfBinaryDeviceSeq();
-}
 
-void TestTransformIfBinaryDeviceDevice()
+TEST_CASE("TestTransformIfBinaryDeviceDevice", "[transform]")
 {
   TestTransformIfBinaryDevice(thrust::device);
 }
-TEST_CASE("TestTransformIfBinaryDeviceDevice", "[transform]")
-{
-  TestTransformIfBinaryDeviceDevice();
-}
 #endif
 
-void TestTransformUnaryCudaStreams()
+TEST_CASE("TestTransformUnaryCudaStreams", "[transform]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -358,12 +318,8 @@ void TestTransformUnaryCudaStreams()
 
   cudaStreamDestroy(s);
 }
-TEST_CASE("TestTransformUnaryCudaStreams", "[transform]")
-{
-  TestTransformUnaryCudaStreams();
-}
 
-void TestTransformBinaryCudaStreams()
+TEST_CASE("TestTransformBinaryCudaStreams", "[transform]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -386,10 +342,6 @@ void TestTransformBinaryCudaStreams()
   REQUIRE(output == result);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestTransformBinaryCudaStreams", "[transform]")
-{
-  TestTransformBinaryCudaStreams();
 }
 
 struct sum_five
@@ -431,7 +383,7 @@ private:
 THRUST_NAMESPACE_END
 
 // test that the cuda_cub backend of Thrust unwraps zip_iterators/zip_functions into their input streams
-void TestTransformThrustZipIteratorUnwrapping()
+TEST_CASE("TestTransformThrustZipIteratorUnwrapping", "[transform]")
 {
   constexpr int num_items = 100;
   thrust::device_vector<std::int8_t> a(num_items, 1);
@@ -463,10 +415,6 @@ void TestTransformThrustZipIteratorUnwrapping()
     const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     REQUIRE(reference == result);
   }
-}
-TEST_CASE("TestTransformThrustZipIteratorUnwrapping", "[transform]")
-{
-  TestTransformThrustZipIteratorUnwrapping();
 }
 
 // we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
@@ -505,7 +453,7 @@ public:
 _CCCL_END_NAMESPACE_CUDA
 
 // test that the cuda_cub backend of Thrust unwraps zip_iterators/zip_functions into their input streams
-void TestTransformCudaZipIteratorUnwrapping()
+TEST_CASE("TestTransformCudaZipIteratorUnwrapping", "[transform]")
 {
   constexpr int num_items = 100;
   thrust::device_vector<std::int8_t> a(num_items, 1);
@@ -535,8 +483,4 @@ void TestTransformCudaZipIteratorUnwrapping()
     const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     REQUIRE(reference == result);
   }
-}
-TEST_CASE("TestTransformCudaZipIteratorUnwrapping", "[transform]")
-{
-  TestTransformCudaZipIteratorUnwrapping();
 }

@@ -11,7 +11,7 @@ void tabulate(my_system& system, ForwardIterator, ForwardIterator, UnaryOperatio
   system.validate_dispatch();
 }
 
-void TestTabulateDispatchExplicit()
+TEST_CASE("TestTabulateDispatchExplicit", "[tabulate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -20,10 +20,6 @@ void TestTabulateDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestTabulateDispatchExplicit", "[tabulate]")
-{
-  TestTabulateDispatchExplicit();
-}
 
 template <typename ForwardIterator, typename UnaryOperation>
 void tabulate(my_tag, ForwardIterator first, ForwardIterator, UnaryOperation)
@@ -31,17 +27,13 @@ void tabulate(my_tag, ForwardIterator first, ForwardIterator, UnaryOperation)
   *first = 13;
 }
 
-void TestTabulateDispatchImplicit()
+TEST_CASE("TestTabulateDispatchImplicit", "[tabulate]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::tabulate(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestTabulateDispatchImplicit", "[tabulate]")
-{
-  TestTabulateDispatchImplicit();
 }
 
 template <class Vector>

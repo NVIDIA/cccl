@@ -81,22 +81,14 @@ void TestReplaceCopyDevice(ExecutionPolicy exec)
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
 }
 
-void TestReplaceCopyDeviceSeq()
+TEST_CASE("TestReplaceCopyDeviceSeq", "[replace]")
 {
   TestReplaceCopyDevice(thrust::seq);
 }
-TEST_CASE("TestReplaceCopyDeviceSeq", "[replace]")
-{
-  TestReplaceCopyDeviceSeq();
-}
 
-void TestReplaceCopyDeviceDevice()
-{
-  TestReplaceCopyDevice(thrust::device);
-}
 TEST_CASE("TestReplaceCopyDeviceDevice", "[replace]")
 {
-  TestReplaceCopyDeviceDevice();
+  TestReplaceCopyDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename T>
@@ -121,22 +113,14 @@ void TestReplaceIfDevice(ExecutionPolicy exec)
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
 
-void TestReplaceIfDeviceSeq()
+TEST_CASE("TestReplaceIfDeviceSeq", "[replace]")
 {
   TestReplaceIfDevice(thrust::seq);
 }
-TEST_CASE("TestReplaceIfDeviceSeq", "[replace]")
-{
-  TestReplaceIfDeviceSeq();
-}
 
-void TestReplaceIfDeviceDevice()
-{
-  TestReplaceIfDevice(thrust::device);
-}
 TEST_CASE("TestReplaceIfDeviceDevice", "[replace]")
 {
-  TestReplaceIfDeviceDevice();
+  TestReplaceIfDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename T>
@@ -165,22 +149,14 @@ void TestReplaceIfStencilDevice(ExecutionPolicy exec)
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
 
-void TestReplaceIfStencilDeviceSeq()
+TEST_CASE("TestReplaceIfStencilDeviceSeq", "[replace]")
 {
   TestReplaceIfStencilDevice(thrust::seq);
 }
-TEST_CASE("TestReplaceIfStencilDeviceSeq", "[replace]")
-{
-  TestReplaceIfStencilDeviceSeq();
-}
 
-void TestReplaceIfStencilDeviceDevice()
-{
-  TestReplaceIfStencilDevice(thrust::device);
-}
 TEST_CASE("TestReplaceIfStencilDeviceDevice", "[replace]")
 {
-  TestReplaceIfStencilDeviceDevice();
+  TestReplaceIfStencilDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename T>
@@ -210,22 +186,14 @@ void TestReplaceCopyIfDevice(ExecutionPolicy exec)
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
 }
 
-void TestReplaceCopyIfDeviceSeq()
+TEST_CASE("TestReplaceCopyIfDeviceSeq", "[replace]")
 {
   TestReplaceCopyIfDevice(thrust::seq);
 }
-TEST_CASE("TestReplaceCopyIfDeviceSeq", "[replace]")
-{
-  TestReplaceCopyIfDeviceSeq();
-}
 
-void TestReplaceCopyIfDeviceDevice()
-{
-  TestReplaceCopyIfDevice(thrust::device);
-}
 TEST_CASE("TestReplaceCopyIfDeviceDevice", "[replace]")
 {
-  TestReplaceCopyIfDeviceDevice();
+  TestReplaceCopyIfDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy,
@@ -270,26 +238,18 @@ void TestReplaceCopyIfStencilDevice(ExecutionPolicy exec)
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
 }
 
-void TestReplaceCopyIfStencilDeviceSeq()
+TEST_CASE("TestReplaceCopyIfStencilDeviceSeq", "[replace]")
 {
   TestReplaceCopyIfStencilDevice(thrust::seq);
 }
-TEST_CASE("TestReplaceCopyIfStencilDeviceSeq", "[replace]")
-{
-  TestReplaceCopyIfStencilDeviceSeq();
-}
 
-void TestReplaceCopyIfStencilDeviceDevice()
+TEST_CASE("TestReplaceCopyIfStencilDeviceDevice", "[replace]")
 {
   TestReplaceCopyIfStencilDevice(thrust::device);
 }
-TEST_CASE("TestReplaceCopyIfStencilDeviceDevice", "[replace]")
-{
-  TestReplaceCopyIfStencilDeviceDevice();
-}
 #endif
 
-void TestReplaceCudaStreams()
+TEST_CASE("TestReplaceCudaStreams", "[replace]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -309,8 +269,4 @@ void TestReplaceCudaStreams()
   REQUIRE(data == result);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestReplaceCudaStreams", "[replace]")
-{
-  TestReplaceCudaStreams();
 }

@@ -55,7 +55,7 @@ ForwardIterator partition_point(my_system& system, ForwardIterator first, Forwar
   return first;
 }
 
-void TestPartitionPointDispatchExplicit()
+TEST_CASE("TestPartitionPointDispatchExplicit", "[partition_point]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -63,10 +63,6 @@ void TestPartitionPointDispatchExplicit()
   thrust::partition_point(sys, vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestPartitionPointDispatchExplicit", "[partition_point]")
-{
-  TestPartitionPointDispatchExplicit();
 }
 
 template <typename ForwardIterator, typename Predicate>
@@ -76,17 +72,13 @@ ForwardIterator partition_point(my_tag, ForwardIterator first, ForwardIterator, 
   return first;
 }
 
-void TestPartitionPointDispatchImplicit()
+TEST_CASE("TestPartitionPointDispatchImplicit", "[partition_point]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::partition_point(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestPartitionPointDispatchImplicit", "[partition_point]")
-{
-  TestPartitionPointDispatchImplicit();
 }
 
 struct test_less_than
@@ -112,15 +104,11 @@ void TestPartitionPointWithBigIndexesHelper(int magnitude)
 }
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-void TestPartitionPointWithBigIndexes()
+TEST_CASE("TestPartitionPointWithBigIndexes", "[partition_point]")
 {
   TestPartitionPointWithBigIndexesHelper(30);
   TestPartitionPointWithBigIndexesHelper(31);
   TestPartitionPointWithBigIndexesHelper(32);
   TestPartitionPointWithBigIndexesHelper(33);
-}
-TEST_CASE("TestPartitionPointWithBigIndexes", "[partition_point]")
-{
-  TestPartitionPointWithBigIndexes();
 }
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE

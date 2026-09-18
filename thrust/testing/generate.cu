@@ -47,7 +47,7 @@ void generate(my_system& system, ForwardIterator /*first*/, ForwardIterator, Gen
   system.validate_dispatch();
 }
 
-void TestGenerateDispatchExplicit()
+TEST_CASE("TestGenerateDispatchExplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -56,10 +56,6 @@ void TestGenerateDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestGenerateDispatchExplicit", "[generate]")
-{
-  TestGenerateDispatchExplicit();
-}
 
 template <typename ForwardIterator, typename Generator>
 void generate(my_tag, ForwardIterator first, ForwardIterator, Generator)
@@ -67,17 +63,13 @@ void generate(my_tag, ForwardIterator first, ForwardIterator, Generator)
   *first = 13;
 }
 
-void TestGenerateDispatchImplicit()
+TEST_CASE("TestGenerateDispatchImplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::generate(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestGenerateDispatchImplicit", "[generate]")
-{
-  TestGenerateDispatchImplicit();
 }
 
 template <typename T>
@@ -137,7 +129,7 @@ ForwardIterator generate_n(my_system& system, ForwardIterator first, Size, Gener
   return first;
 }
 
-void TestGenerateNDispatchExplicit()
+TEST_CASE("TestGenerateNDispatchExplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -145,10 +137,6 @@ void TestGenerateNDispatchExplicit()
   thrust::generate_n(sys, vec.begin(), vec.size(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestGenerateNDispatchExplicit", "[generate]")
-{
-  TestGenerateNDispatchExplicit();
 }
 
 template <typename ForwardIterator, typename Size, typename Generator>
@@ -158,17 +146,13 @@ ForwardIterator generate_n(my_tag, ForwardIterator first, Size, Generator)
   return first;
 }
 
-void TestGenerateNDispatchImplicit()
+TEST_CASE("TestGenerateNDispatchImplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::generate_n(thrust::retag<my_tag>(vec.begin()), vec.size(), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestGenerateNDispatchImplicit", "[generate]")
-{
-  TestGenerateNDispatchImplicit();
 }
 
 template <typename T>
@@ -209,7 +193,7 @@ void TestGenerateZipIterator()
 };
 DECLARE_VECTOR_UNITTEST(TestGenerateZipIterator);
 
-void TestGenerateTuple()
+TEST_CASE("TestGenerateTuple", "[generate]")
 {
   using T     = int;
   using Tuple = cuda::std::tuple<T, T>;
@@ -221,10 +205,6 @@ void TestGenerateTuple()
   thrust::generate(d.begin(), d.end(), return_value<Tuple>(Tuple(4, 7)));
 
   REQUIRE((h == d));
-};
-TEST_CASE("TestGenerateTuple", "[generate]")
-{
-  TestGenerateTuple();
 }
 
 _CCCL_DIAG_POP

@@ -14,7 +14,7 @@ set_difference(my_system& system, InputIterator1, InputIterator1, InputIterator2
   return result;
 }
 
-void TestSetDifferenceDispatchExplicit()
+TEST_CASE("TestSetDifferenceDispatchExplicit", "[set_difference]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -22,10 +22,6 @@ void TestSetDifferenceDispatchExplicit()
   thrust::set_difference(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestSetDifferenceDispatchExplicit", "[set_difference]")
-{
-  TestSetDifferenceDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -36,7 +32,7 @@ set_difference(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIter
   return result;
 }
 
-void TestSetDifferenceDispatchImplicit()
+TEST_CASE("TestSetDifferenceDispatchImplicit", "[set_difference]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -48,10 +44,6 @@ void TestSetDifferenceDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestSetDifferenceDispatchImplicit", "[set_difference]")
-{
-  TestSetDifferenceDispatchImplicit();
 }
 
 template <typename Vector>
@@ -193,7 +185,7 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
   REQUIRE(result == expected);
 }
 
-void TestSetDifferenceWithBigIndexes()
+TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_difference]")
 {
 #  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestSetDifferenceWithBigIndexesHelper(30);
@@ -201,10 +193,6 @@ void TestSetDifferenceWithBigIndexes()
   TestSetDifferenceWithBigIndexesHelper(32);
   TestSetDifferenceWithBigIndexesHelper(33);
 #  endif
-}
-TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_difference]")
-{
-  TestSetDifferenceWithBigIndexes();
 }
 
 #endif

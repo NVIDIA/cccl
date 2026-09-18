@@ -78,7 +78,7 @@ int count(my_system& system, InputIterator, InputIterator, EqualityComparable x)
   return x;
 }
 
-void TestCountDispatchExplicit()
+TEST_CASE("TestCountDispatchExplicit", "[count]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -87,10 +87,6 @@ void TestCountDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestCountDispatchExplicit", "[count]")
-{
-  TestCountDispatchExplicit();
-}
 
 template <typename InputIterator, typename EqualityComparable>
 int count(my_tag, InputIterator /*first*/, InputIterator, EqualityComparable x)
@@ -98,17 +94,13 @@ int count(my_tag, InputIterator /*first*/, InputIterator, EqualityComparable x)
   return x;
 }
 
-void TestCountDispatchImplicit()
+TEST_CASE("TestCountDispatchImplicit", "[count]")
 {
   thrust::device_vector<int> vec(1);
 
   auto result = thrust::count(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 13);
 
   REQUIRE(13 == result);
-}
-TEST_CASE("TestCountDispatchImplicit", "[count]")
-{
-  TestCountDispatchImplicit();
 }
 
 void TestCountWithBigIndexesHelper(int magnitude)
@@ -122,7 +114,7 @@ void TestCountWithBigIndexesHelper(int magnitude)
   REQUIRE(result == 1);
 }
 
-void TestCountWithBigIndexes()
+TEST_CASE("TestCountWithBigIndexes", "[count]")
 {
   TestCountWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -130,8 +122,4 @@ void TestCountWithBigIndexes()
   TestCountWithBigIndexesHelper(32);
   TestCountWithBigIndexesHelper(33);
 #endif
-}
-TEST_CASE("TestCountWithBigIndexes", "[count]")
-{
-  TestCountWithBigIndexes();
 }

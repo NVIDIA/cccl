@@ -7,7 +7,7 @@
 
 #include <unittest/unittest.h>
 
-void TestEqualRangeOnStream()
+TEST_CASE("TestEqualRangeOnStream", "[binary_search]")
 { // Regression test for GH issue #921 (nvbug 2173437)
   using vector_t   = typename thrust::device_vector<int>;
   using iterator_t = typename vector_t::iterator;
@@ -20,8 +20,4 @@ void TestEqualRangeOnStream()
 
   REQUIRE(5 == ::cuda::std::distance(input.begin(), result.first));
   REQUIRE(6 == ::cuda::std::distance(input.begin(), result.second));
-}
-TEST_CASE("TestEqualRangeOnStream", "[binary_search]")
-{
-  TestEqualRangeOnStream();
 }

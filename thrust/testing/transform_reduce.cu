@@ -13,7 +13,7 @@ transform_reduce(my_system& system, InputIterator, InputIterator, UnaryFunction,
   return init;
 }
 
-void TestTransformReduceDispatchExplicit()
+TEST_CASE("TestTransformReduceDispatchExplicit", "[transform_reduce]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -21,10 +21,6 @@ void TestTransformReduceDispatchExplicit()
   thrust::transform_reduce(sys, vec.begin(), vec.begin(), 0, 0, 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestTransformReduceDispatchExplicit", "[transform_reduce]")
-{
-  TestTransformReduceDispatchExplicit();
 }
 
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
@@ -34,17 +30,13 @@ OutputType transform_reduce(my_tag, InputIterator first, InputIterator, UnaryFun
   return init;
 }
 
-void TestTransformReduceDispatchImplicit()
+TEST_CASE("TestTransformReduceDispatchImplicit", "[transform_reduce]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::transform_reduce(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0, 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestTransformReduceDispatchImplicit", "[transform_reduce]")
-{
-  TestTransformReduceDispatchImplicit();
 }
 
 template <class Vector>

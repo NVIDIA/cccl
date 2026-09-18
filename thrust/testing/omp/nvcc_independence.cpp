@@ -7,7 +7,7 @@
 
 #include <unittest/unittest.h>
 
-void TestNvccIndependenceTransform()
+TEST_CASE("TestNvccIndependenceTransform", "[nvcc_independence]")
 {
   using T     = int;
   const int n = 10;
@@ -23,12 +23,8 @@ void TestNvccIndependenceTransform()
 
   REQUIRE(h_output == d_output);
 }
-TEST_CASE("TestNvccIndependenceTransform", "[nvcc_independence]")
-{
-  TestNvccIndependenceTransform();
-}
 
-void TestNvccIndependenceReduce()
+TEST_CASE("TestNvccIndependenceReduce", "[nvcc_independence]")
 {
   using T     = int;
   const int n = 10;
@@ -43,12 +39,8 @@ void TestNvccIndependenceReduce()
 
   ASSERT_ALMOST_EQUAL(h_result, d_result);
 }
-TEST_CASE("TestNvccIndependenceReduce", "[nvcc_independence]")
-{
-  TestNvccIndependenceReduce();
-}
 
-void TestNvccIndependenceExclusiveScan()
+TEST_CASE("TestNvccIndependenceExclusiveScan", "[nvcc_independence]")
 {
   using T     = int;
   const int n = 10;
@@ -63,12 +55,8 @@ void TestNvccIndependenceExclusiveScan()
   thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
   REQUIRE(d_output == h_output);
 }
-TEST_CASE("TestNvccIndependenceExclusiveScan", "[nvcc_independence]")
-{
-  TestNvccIndependenceExclusiveScan();
-}
 
-void TestNvccIndependenceSort()
+TEST_CASE("TestNvccIndependenceSort", "[nvcc_independence]")
 {
   using T     = int;
   const int n = 10;
@@ -80,8 +68,4 @@ void TestNvccIndependenceSort()
   thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::less<T>());
 
   REQUIRE(h_data == d_data);
-}
-TEST_CASE("TestNvccIndependenceSort", "[nvcc_independence]")
-{
-  TestNvccIndependenceSort();
 }

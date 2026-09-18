@@ -183,7 +183,7 @@ void TestAllocatorMinimal(size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorMinimal);
 
-void TestAllocatorTraitsRebind()
+TEST_CASE("TestAllocatorTraitsRebind", "[allocator]")
 {
   REQUIRE(::cuda::std::is_same<
           typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_traits<float>,
@@ -193,12 +193,8 @@ void TestAllocatorTraitsRebind()
     ::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
                          typename cuda::std::allocator_traits<my_minimal_allocator<float>>>::value);
 }
-TEST_CASE("TestAllocatorTraitsRebind", "[allocator]")
-{
-  TestAllocatorTraitsRebind();
-}
 
-void TestAllocatorTraitsRebindCpp11()
+TEST_CASE("TestAllocatorTraitsRebindCpp11", "[allocator]")
 {
   REQUIRE(::cuda::std::is_same<
           typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_alloc<float>,
@@ -215,8 +211,4 @@ void TestAllocatorTraitsRebindCpp11()
   REQUIRE(
     ::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
                          typename cuda::std::allocator_traits<my_minimal_allocator<float>>>::value);
-}
-TEST_CASE("TestAllocatorTraitsRebindCpp11", "[allocator]")
-{
-  TestAllocatorTraitsRebindCpp11();
 }

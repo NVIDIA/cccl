@@ -14,7 +14,7 @@ ForwardIterator unique(my_system& system, ForwardIterator first, ForwardIterator
   return first;
 }
 
-void TestUniqueDispatchExplicit()
+TEST_CASE("TestUniqueDispatchExplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -22,10 +22,6 @@ void TestUniqueDispatchExplicit()
   thrust::unique(sys, vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestUniqueDispatchExplicit", "[unique]")
-{
-  TestUniqueDispatchExplicit();
 }
 
 template <typename ForwardIterator>
@@ -35,17 +31,13 @@ ForwardIterator unique(my_tag, ForwardIterator first, ForwardIterator)
   return first;
 }
 
-void TestUniqueDispatchImplicit()
+TEST_CASE("TestUniqueDispatchImplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::unique(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestUniqueDispatchImplicit", "[unique]")
-{
-  TestUniqueDispatchImplicit();
 }
 
 template <typename InputIterator, typename OutputIterator>
@@ -55,7 +47,7 @@ OutputIterator unique_copy(my_system& system, InputIterator, InputIterator, Outp
   return result;
 }
 
-void TestUniqueCopyDispatchExplicit()
+TEST_CASE("TestUniqueCopyDispatchExplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -63,10 +55,6 @@ void TestUniqueCopyDispatchExplicit()
   thrust::unique_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestUniqueCopyDispatchExplicit", "[unique]")
-{
-  TestUniqueCopyDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator>
@@ -76,7 +64,7 @@ OutputIterator unique_copy(my_tag, InputIterator, InputIterator, OutputIterator 
   return result;
 }
 
-void TestUniqueCopyDispatchImplicit()
+TEST_CASE("TestUniqueCopyDispatchImplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -84,10 +72,6 @@ void TestUniqueCopyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestUniqueCopyDispatchImplicit", "[unique]")
-{
-  TestUniqueCopyDispatchImplicit();
 }
 
 template <typename ForwardIterator>
@@ -98,7 +82,7 @@ unique_count(my_system& system, ForwardIterator, ForwardIterator)
   return 0;
 }
 
-void TestUniqueCountDispatchExplicit()
+TEST_CASE("TestUniqueCountDispatchExplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -106,10 +90,6 @@ void TestUniqueCountDispatchExplicit()
   thrust::unique_count(sys, vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestUniqueCountDispatchExplicit", "[unique]")
-{
-  TestUniqueCountDispatchExplicit();
 }
 
 template <typename ForwardIterator>
@@ -119,17 +99,13 @@ unique_count(my_tag, ForwardIterator, ForwardIterator)
   return 13;
 }
 
-void TestUniqueCountDispatchImplicit()
+TEST_CASE("TestUniqueCountDispatchImplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
   auto result = thrust::unique_count(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == result);
-}
-TEST_CASE("TestUniqueCountDispatchImplicit", "[unique]")
-{
-  TestUniqueCountDispatchImplicit();
 }
 
 template <typename T>

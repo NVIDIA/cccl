@@ -38,7 +38,7 @@ public:
   }
 };
 
-void TestMemoryResourceIdentityEquality()
+TEST_CASE("TestMemoryResourceIdentityEquality", "[mr_memory_resource]")
 {
   identity_resource first;
   identity_resource second;
@@ -59,12 +59,8 @@ void TestMemoryResourceIdentityEquality()
   REQUIRE_FALSE(first_allocator == second_allocator);
   REQUIRE_FALSE(second_allocator == first_allocator);
 }
-TEST_CASE("TestMemoryResourceIdentityEquality", "[mr_memory_resource]")
-{
-  TestMemoryResourceIdentityEquality();
-}
 
-void TestMemoryResourceEquivalentEquality()
+TEST_CASE("TestMemoryResourceEquivalentEquality", "[mr_memory_resource]")
 {
   always_equal_resource first;
   always_equal_resource second;
@@ -81,8 +77,4 @@ void TestMemoryResourceEquivalentEquality()
   REQUIRE(first_allocator == second_allocator);
   REQUIRE(second_allocator == first_allocator);
   REQUIRE_FALSE(first_allocator != second_allocator);
-}
-TEST_CASE("TestMemoryResourceEquivalentEquality", "[mr_memory_resource]")
-{
-  TestMemoryResourceEquivalentEquality();
 }

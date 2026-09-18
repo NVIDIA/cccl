@@ -934,7 +934,7 @@ ForwardIterator partition(my_system& system, ForwardIterator first, ForwardItera
   return first;
 }
 
-void TestPartitionDispatchExplicit()
+TEST_CASE("TestPartitionDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -942,10 +942,6 @@ void TestPartitionDispatchExplicit()
   thrust::partition(sys, vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestPartitionDispatchExplicit", "[partition]")
-{
-  TestPartitionDispatchExplicit();
 }
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
@@ -955,7 +951,7 @@ ForwardIterator partition(my_system& system, ForwardIterator first, ForwardItera
   return first;
 }
 
-void TestPartitionStencilDispatchExplicit()
+TEST_CASE("TestPartitionStencilDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -963,10 +959,6 @@ void TestPartitionStencilDispatchExplicit()
   thrust::partition(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestPartitionStencilDispatchExplicit", "[partition]")
-{
-  TestPartitionStencilDispatchExplicit();
 }
 
 template <typename ForwardIterator, typename Predicate>
@@ -976,17 +968,13 @@ ForwardIterator partition(my_tag, ForwardIterator first, ForwardIterator, Predic
   return first;
 }
 
-void TestPartitionDispatchImplicit()
+TEST_CASE("TestPartitionDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::partition(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestPartitionDispatchImplicit", "[partition]")
-{
-  TestPartitionDispatchImplicit();
 }
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
@@ -996,7 +984,7 @@ ForwardIterator partition(my_tag, ForwardIterator first, ForwardIterator, InputI
   return first;
 }
 
-void TestPartitionStencilDispatchImplicit()
+TEST_CASE("TestPartitionStencilDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1004,10 +992,6 @@ void TestPartitionStencilDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestPartitionStencilDispatchImplicit", "[partition]")
-{
-  TestPartitionStencilDispatchImplicit();
 }
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
@@ -1018,7 +1002,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestPartitionCopyDispatchExplicit()
+TEST_CASE("TestPartitionCopyDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1026,10 +1010,6 @@ void TestPartitionCopyDispatchExplicit()
   thrust::partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestPartitionCopyDispatchExplicit", "[partition]")
-{
-  TestPartitionCopyDispatchExplicit();
 }
 
 template <typename InputIterator1,
@@ -1050,7 +1030,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestPartitionCopyStencilDispatchExplicit()
+TEST_CASE("TestPartitionCopyStencilDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1058,10 +1038,6 @@ void TestPartitionCopyStencilDispatchExplicit()
   thrust::partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestPartitionCopyStencilDispatchExplicit", "[partition]")
-{
-  TestPartitionCopyStencilDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
@@ -1072,7 +1048,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestPartitionCopyDispatchImplicit()
+TEST_CASE("TestPartitionCopyDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1084,10 +1060,6 @@ void TestPartitionCopyDispatchImplicit()
     0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestPartitionCopyDispatchImplicit", "[partition]")
-{
-  TestPartitionCopyDispatchImplicit();
 }
 
 template <typename InputIterator1,
@@ -1108,7 +1080,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestPartitionCopyStencilDispatchImplicit()
+TEST_CASE("TestPartitionCopyStencilDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1121,10 +1093,6 @@ void TestPartitionCopyStencilDispatchImplicit()
     0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestPartitionCopyStencilDispatchImplicit", "[partition]")
-{
-  TestPartitionCopyStencilDispatchImplicit();
 }
 
 template <typename ForwardIterator, typename Predicate>
@@ -1134,7 +1102,7 @@ ForwardIterator stable_partition(my_system& system, ForwardIterator first, Forwa
   return first;
 }
 
-void TestStablePartitionDispatchExplicit()
+TEST_CASE("TestStablePartitionDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1142,10 +1110,6 @@ void TestStablePartitionDispatchExplicit()
   thrust::stable_partition(sys, vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestStablePartitionDispatchExplicit", "[partition]")
-{
-  TestStablePartitionDispatchExplicit();
 }
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
@@ -1155,7 +1119,7 @@ ForwardIterator stable_partition(my_system& system, ForwardIterator first, Forwa
   return first;
 }
 
-void TestStablePartitionStencilDispatchExplicit()
+TEST_CASE("TestStablePartitionStencilDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1163,10 +1127,6 @@ void TestStablePartitionStencilDispatchExplicit()
   thrust::stable_partition(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestStablePartitionStencilDispatchExplicit", "[partition]")
-{
-  TestStablePartitionStencilDispatchExplicit();
 }
 
 template <typename ForwardIterator, typename Predicate>
@@ -1176,17 +1136,13 @@ ForwardIterator stable_partition(my_tag, ForwardIterator first, ForwardIterator,
   return first;
 }
 
-void TestStablePartitionDispatchImplicit()
+TEST_CASE("TestStablePartitionDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::stable_partition(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestStablePartitionDispatchImplicit", "[partition]")
-{
-  TestStablePartitionDispatchImplicit();
 }
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
@@ -1196,7 +1152,7 @@ ForwardIterator stable_partition(my_tag, ForwardIterator first, ForwardIterator,
   return first;
 }
 
-void TestStablePartitionStencilDispatchImplicit()
+TEST_CASE("TestStablePartitionStencilDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1204,10 +1160,6 @@ void TestStablePartitionStencilDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestStablePartitionStencilDispatchImplicit", "[partition]")
-{
-  TestStablePartitionStencilDispatchImplicit();
 }
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
@@ -1218,7 +1170,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestStablePartitionCopyDispatchExplicit()
+TEST_CASE("TestStablePartitionCopyDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1226,10 +1178,6 @@ void TestStablePartitionCopyDispatchExplicit()
   thrust::stable_partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestStablePartitionCopyDispatchExplicit", "[partition]")
-{
-  TestStablePartitionCopyDispatchExplicit();
 }
 
 template <typename InputIterator1,
@@ -1250,7 +1198,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestStablePartitionCopyStencilDispatchExplicit()
+TEST_CASE("TestStablePartitionCopyStencilDispatchExplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1258,10 +1206,6 @@ void TestStablePartitionCopyStencilDispatchExplicit()
   thrust::stable_partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestStablePartitionCopyStencilDispatchExplicit", "[partition]")
-{
-  TestStablePartitionCopyStencilDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
@@ -1272,7 +1216,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestStablePartitionCopyDispatchImplicit()
+TEST_CASE("TestStablePartitionCopyDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1284,10 +1228,6 @@ void TestStablePartitionCopyDispatchImplicit()
     0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestStablePartitionCopyDispatchImplicit", "[partition]")
-{
-  TestStablePartitionCopyDispatchImplicit();
 }
 
 template <typename InputIterator1,
@@ -1308,7 +1248,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return cuda::std::make_pair(out_true, out_false);
 }
 
-void TestStablePartitionCopyStencilDispatchImplicit()
+TEST_CASE("TestStablePartitionCopyStencilDispatchImplicit", "[partition]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -1321,8 +1261,4 @@ void TestStablePartitionCopyStencilDispatchImplicit()
     0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestStablePartitionCopyStencilDispatchImplicit", "[partition]")
-{
-  TestStablePartitionCopyStencilDispatchImplicit();
 }

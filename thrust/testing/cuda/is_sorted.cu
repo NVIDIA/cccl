@@ -42,26 +42,18 @@ void TestIsSortedDevice(ExecutionPolicy exec)
   REQUIRE(result[0]);
 }
 
-void TestIsSortedDeviceSeq()
+TEST_CASE("TestIsSortedDeviceSeq", "[is_sorted]")
 {
   TestIsSortedDevice(thrust::seq);
 }
-TEST_CASE("TestIsSortedDeviceSeq", "[is_sorted]")
-{
-  TestIsSortedDeviceSeq();
-}
 
-void TestIsSortedDeviceDevice()
+TEST_CASE("TestIsSortedDeviceDevice", "[is_sorted]")
 {
   TestIsSortedDevice(thrust::device);
 }
-TEST_CASE("TestIsSortedDeviceDevice", "[is_sorted]")
-{
-  TestIsSortedDeviceDevice();
-}
 #endif
 
-void TestIsSortedCudaStreams()
+TEST_CASE("TestIsSortedCudaStreams", "[is_sorted]")
 {
   thrust::device_vector<int> v(4);
   v[0] = 0;
@@ -94,8 +86,4 @@ void TestIsSortedCudaStreams()
   REQUIRE_FALSE(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.end()));
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestIsSortedCudaStreams", "[is_sorted]")
-{
-  TestIsSortedCudaStreams();
 }

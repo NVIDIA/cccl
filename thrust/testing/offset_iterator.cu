@@ -6,7 +6,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::counting_iterator from cuda::std
-void TestOffsetIteratorTraits()
+TEST_CASE("TestOffsetIteratorTraits", "[offset_iterator]")
 {
   using base_it    = thrust::host_vector<int>::iterator;
   using it         = thrust::offset_iterator<base_it>;
@@ -29,10 +29,6 @@ void TestOffsetIteratorTraits()
   static_assert(cuda::std::bidirectional_iterator<it>);
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
-}
-TEST_CASE("TestOffsetIteratorTraits", "[offset_iterator]")
-{
-  TestOffsetIteratorTraits();
 }
 
 template <typename Vector>

@@ -26,22 +26,14 @@ void TestReverseDevice(ExecutionPolicy exec)
   REQUIRE(h_data == d_data);
 };
 
-void TestReverseDeviceSeq()
+TEST_CASE("TestReverseDeviceSeq", "[reverse]")
 {
   TestReverseDevice(thrust::seq);
 }
-TEST_CASE("TestReverseDeviceSeq", "[reverse]")
-{
-  TestReverseDeviceSeq();
-}
 
-void TestReverseDeviceDevice()
-{
-  TestReverseDevice(thrust::device);
-}
 TEST_CASE("TestReverseDeviceDevice", "[reverse]")
 {
-  TestReverseDeviceDevice();
+  TestReverseDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2>
@@ -69,26 +61,18 @@ void TestReverseCopyDevice(ExecutionPolicy exec)
   REQUIRE(h_result == d_result);
 };
 
-void TestReverseCopyDeviceSeq()
+TEST_CASE("TestReverseCopyDeviceSeq", "[reverse]")
 {
   TestReverseCopyDevice(thrust::seq);
 }
-TEST_CASE("TestReverseCopyDeviceSeq", "[reverse]")
-{
-  TestReverseCopyDeviceSeq();
-}
 
-void TestReverseCopyDeviceDevice()
+TEST_CASE("TestReverseCopyDeviceDevice", "[reverse]")
 {
   TestReverseCopyDevice(thrust::device);
 }
-TEST_CASE("TestReverseCopyDeviceDevice", "[reverse]")
-{
-  TestReverseCopyDeviceDevice();
-}
 #endif
 
-void TestReverseCudaStreams()
+TEST_CASE("TestReverseCudaStreams", "[reverse]")
 {
   using Vector = thrust::device_vector<int>;
   Vector data{1, 2, 3, 4, 5};
@@ -106,12 +90,8 @@ void TestReverseCudaStreams()
 
   cudaStreamDestroy(s);
 }
-TEST_CASE("TestReverseCudaStreams", "[reverse]")
-{
-  TestReverseCudaStreams();
-}
 
-void TestReverseCopyCudaStreams()
+TEST_CASE("TestReverseCopyCudaStreams", "[reverse]")
 {
   using Vector = thrust::device_vector<int>;
   Vector data{1, 2, 3, 4, 5};
@@ -130,8 +110,4 @@ void TestReverseCopyCudaStreams()
   REQUIRE(ref == result);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestReverseCopyCudaStreams", "[reverse]")
-{
-  TestReverseCopyCudaStreams();
 }

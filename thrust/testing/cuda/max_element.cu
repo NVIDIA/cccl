@@ -50,31 +50,19 @@ void TestMaxElementDevice(ExecutionPolicy exec)
   REQUIRE(h_min - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 }
 
-void TestMaxElementDeviceSeq()
+TEST_CASE("TestMaxElementDeviceSeq", "[max_element]")
 {
   TestMaxElementDevice(thrust::seq);
 }
-TEST_CASE("TestMaxElementDeviceSeq", "[max_element]")
-{
-  TestMaxElementDeviceSeq();
-}
 
-void TestMaxElementDeviceDevice()
+TEST_CASE("TestMaxElementDeviceDevice", "[max_element]")
 {
   TestMaxElementDevice(thrust::device);
 }
-TEST_CASE("TestMaxElementDeviceDevice", "[max_element]")
-{
-  TestMaxElementDeviceDevice();
-}
 
-void TestMaxElementDeviceNoSync()
-{
-  TestMaxElementDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestMaxElementDeviceNoSync", "[max_element]")
 {
-  TestMaxElementDeviceNoSync();
+  TestMaxElementDevice(thrust::cuda::par_nosync);
 }
 #endif
 
@@ -106,25 +94,17 @@ void TestMaxElementCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestMaxElementCudaStreamsSync()
+TEST_CASE("TestMaxElementCudaStreamsSync", "[max_element]")
 {
   TestMaxElementCudaStreams(thrust::cuda::par);
 }
-TEST_CASE("TestMaxElementCudaStreamsSync", "[max_element]")
-{
-  TestMaxElementCudaStreamsSync();
-}
 
-void TestMaxElementCudaStreamsNoSync()
+TEST_CASE("TestMaxElementCudaStreamsNoSync", "[max_element]")
 {
   TestMaxElementCudaStreams(thrust::cuda::par_nosync);
 }
-TEST_CASE("TestMaxElementCudaStreamsNoSync", "[max_element]")
-{
-  TestMaxElementCudaStreamsNoSync();
-}
 
-void TestMaxElementDevicePointer()
+TEST_CASE("TestMaxElementDevicePointer", "[max_element]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -141,8 +121,4 @@ void TestMaxElementDevicePointer()
   const size_t n = data.size();
   REQUIRE(thrust::max_element(thrust::device, raw_ptr, raw_ptr + n) - raw_ptr == 1);
   REQUIRE(thrust::max_element(thrust::device, raw_ptr, raw_ptr + n, ::cuda::std::greater<T>()) - raw_ptr == 2);
-}
-TEST_CASE("TestMaxElementDevicePointer", "[max_element]")
-{
-  TestMaxElementDevicePointer();
 }
