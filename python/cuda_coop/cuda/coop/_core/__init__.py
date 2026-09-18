@@ -69,6 +69,14 @@ from .block import (
     normalize_block_reduce_algorithm,
     normalize_block_scan_algorithm,
 )
+from .block.merge_sort import (
+    BlockMergeSortPayload,
+    BlockMergeSortSemantics,
+    BlockMergeSortSpecialization,
+    BlockMergeSortTilePolicy,
+    make_block_merge_sort_semantics,
+    make_block_merge_sort_specialization,
+)
 from .group import (
     ArgumentPrecondition,
     GroupExchangeMode,
@@ -104,6 +112,9 @@ from .group import (
     make_group_primitive_call,
     plan_group_primitive,
     resolve_thread_group,
+)
+from .group.merge_sort import (
+    GroupMergeSortSemantics,
 )
 from .launch import (
     Dim3,
@@ -156,6 +167,12 @@ from .warp import (
     make_warp_reduce_specialization,
     make_warp_scan_specialization,
 )
+from .warp.merge_sort import (
+    WarpMergeSortPayload,
+    WarpMergeSortSpecialization,
+    WarpMergeSortTilePolicy,
+    make_warp_merge_sort_specialization,
+)
 
 __all__ = [
     "COMPLETE_WARP_GROUP_KINDS",
@@ -184,6 +201,10 @@ __all__ = [
     "BlockExchangeSemantics",
     "BlockExchangeSpecialization",
     "BlockExchangeValueForm",
+    "BlockMergeSortPayload",
+    "BlockMergeSortSemantics",
+    "BlockMergeSortSpecialization",
+    "BlockMergeSortTilePolicy",
     "BlockReduceAlgorithm",
     "BlockReduceOperation",
     "BlockReduceSemantics",
@@ -212,6 +233,7 @@ __all__ = [
     "GroupLoadStoreSemantics",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
+    "GroupMergeSortSemantics",
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
@@ -262,6 +284,9 @@ __all__ = [
     "WarpExchangeMode",
     "WarpExchangeSpecialization",
     "WarpExchangeValueForm",
+    "WarpMergeSortPayload",
+    "WarpMergeSortSpecialization",
+    "WarpMergeSortTilePolicy",
     "WarpReduceOperation",
     "WarpReduceSpecialization",
     "WarpScanMode",
@@ -273,6 +298,8 @@ __all__ = [
     "lower_method_parameters",
     "make_block_exchange_semantics",
     "make_block_exchange_specialization",
+    "make_block_merge_sort_semantics",
+    "make_block_merge_sort_specialization",
     "make_block_reduce_semantics",
     "make_block_reduce_specialization",
     "make_block_scan_specialization",
@@ -283,6 +310,7 @@ __all__ = [
     "make_scan_semantics",
     "make_thread_group",
     "make_warp_exchange_specialization",
+    "make_warp_merge_sort_specialization",
     "make_warp_reduce_specialization",
     "make_warp_scan_specialization",
     "merge_launch_facts",
