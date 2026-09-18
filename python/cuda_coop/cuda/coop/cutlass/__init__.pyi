@@ -6,6 +6,8 @@ from .._core.api import TempStorageLike as TempStorageLike
 from .._core.api import ThreadDataLike as ThreadDataLike
 from ._group_load_store import load as load
 from ._group_load_store import store as store
+from ._group_reduce import reduce as reduce
+from ._group_reduce import sum as sum
 from ._temp_storage import TempStorage as TempStorage
 from ._thread_data import ThreadData as ThreadData
 from ._thread_group import (
@@ -20,4 +22,7 @@ from ._thread_group import (
 from ._thread_group import (
     this_block as this_block,
 )
+from ._thread_group import this_cluster as this_cluster
+from ._thread_group import this_grid as this_grid
+from ._thread_group import this_thread as this_thread
 from ._thread_group import this_warp as this_warp
