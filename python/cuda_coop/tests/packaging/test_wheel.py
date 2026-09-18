@@ -39,6 +39,16 @@ _REQUIRED_PACKAGE_MEMBERS = {
     "cuda/coop/_core/api/thread_group.pyi",
     "cuda/coop/_core/warp/__init__.py",
     "cuda/coop/_core/warp/load_store.py",
+    "cuda/coop/numba_mlir/__init__.py",
+    "cuda/coop/numba_mlir/__init__.pyi",
+    "cuda/coop/numba_mlir/_group_load_store.py",
+    "cuda/coop/numba_mlir/_group_load_store.pyi",
+    "cuda/coop/numba_mlir/_temp_storage.py",
+    "cuda/coop/numba_mlir/_temp_storage.pyi",
+    "cuda/coop/numba_mlir/_thread_data.py",
+    "cuda/coop/numba_mlir/_thread_data.pyi",
+    "cuda/coop/numba_mlir/_thread_group.py",
+    "cuda/coop/numba_mlir/_thread_group.pyi",
 }
 
 _REQUIRED_HEADER_MEMBERS = {
@@ -57,6 +67,8 @@ _REQUIRED_HEADER_MEMBERS = {
 
 _FORBIDDEN_PACKAGE_MEMBERS = {
     "cuda/coop/_aot_cli.py",
+    "cuda/coop/numba_mlir/_enums.py",
+    "cuda/coop/numba_mlir/_enums.pyi",
     "cuda/coop/_core/api/reduce.py",
     "cuda/coop/_core/api/reduce.pyi",
     "cuda/coop/_core/api/scan.py",
@@ -65,6 +77,15 @@ _FORBIDDEN_PACKAGE_MEMBERS = {
     "cuda/coop/_core/block/scan.py",
     "cuda/coop/_core/group/reduce.py",
     "cuda/coop/_core/group/scan.py",
+    "cuda/coop/numba_mlir/_dataclass.py",
+    "cuda/coop/numba_mlir/_stateful_function.py",
+    "cuda/coop/numba_mlir/_group_reduce.py",
+    "cuda/coop/numba_mlir/_group_scan.py",
+    "cuda/coop/numba_mlir/_lowering/_reduce.py",
+    "cuda/coop/numba_mlir/_lowering/_scan.py",
+    "cuda/coop/numba_mlir/_lowering/_thread_group.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite_reduce.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite_scan.py",
 }
 
 _ALLOWED_WARP_PACKAGE_MEMBERS = {
@@ -169,13 +190,14 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
         )
         assert metadata["Requires-Python"] == ">=3.10"
         assert set(metadata.get_all("Provides-Extra", [])) == {
+            "numba-cuda-mlir-cu12",
+            "numba-cuda-mlir-cu13",
             "test",
         }
         assert not any(
             "cutlass" in requirement.lower()
             for requirement in metadata.get_all("Requires-Dist", [])
         )
-
         for value in metadata.get_all("Requires-Dist", []):
             requirement = Requirement(value)
             assert requirement.marker is not None
