@@ -24,20 +24,23 @@ from ._thread_group import (
 
 __all__ = [
     "Hierarchy",
-    "StatefulFunction",
     "TempStorage",
     "TempStorageLike",
     "ThreadData",
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "this_block",
+    "this_cluster",
+    "this_grid",
+    "this_thread",
+    "this_warp",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
     "load",
-    "local",
     "merge_sort_keys",
     "merge_sort_pairs",
     "radix_rank",
@@ -45,15 +48,16 @@ __all__ = [
     "radix_sort_pairs",
     "reduce",
     "scan",
-    "shared",
     "shuffle",
     "store",
     "sum",
-    "this_block",
-    "this_cluster",
-    "this_grid",
-    "this_thread",
-    "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
+    "StatefulFunction",
+    "local",
+    "shared",
 ]
 
 
@@ -73,6 +77,10 @@ def __getattr__(name):
         "scan",
         "shuffle",
         "sum",
+        "topk_max_keys",
+        "topk_max_pairs",
+        "topk_min_keys",
+        "topk_min_pairs",
     }:
         module_name = {
             "merge_sort_keys": "_group_merge_sort",
@@ -89,6 +97,10 @@ def __getattr__(name):
             "scan": "_group_scan",
             "shuffle": "_group_shuffle",
             "sum": "_group_reduce",
+            "topk_max_keys": "_group_topk",
+            "topk_max_pairs": "_group_topk",
+            "topk_min_keys": "_group_topk",
+            "topk_min_pairs": "_group_topk",
         }[name]
         value = getattr(importlib.import_module(f"{__name__}.{module_name}"), name)
         globals()[name] = value
