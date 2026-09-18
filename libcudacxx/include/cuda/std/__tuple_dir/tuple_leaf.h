@@ -29,6 +29,7 @@
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
@@ -63,15 +64,13 @@ enum class __tuple_leaf_specialization
 
 //! @brief Detects whether we need to synthesize the assignment operator for reference types or can use EBCO
 template <class _Tp>
-_CCCL_API constexpr __tuple_leaf_specialization __tuple_leaf_choose()
-{
-  return is_empty_v<_Tp> && !is_final_v<_Tp> ? __tuple_leaf_specialization::__empty_non_final
-       : __must_synthesize_assignment_v<_Tp>
-         ? __tuple_leaf_specialization::__synthesize_assignment
-         : __tuple_leaf_specialization::__default;
-}
+inline constexpr __tuple_leaf_specialization __tuple_leaf_choose =
+  is_empty_v<_Tp> && !is_final_v<_Tp> ? __tuple_leaf_specialization::__empty_non_final
+  : __must_synthesize_assignment_v<_Tp>
+    ? __tuple_leaf_specialization::__synthesize_assignment
+    : __tuple_leaf_specialization::__default;
 
-template <size_t _Ip, class _Hp, __tuple_leaf_specialization = __tuple_leaf_choose<_Hp>()>
+template <size_t _Ip, class _Hp, __tuple_leaf_specialization = __tuple_leaf_choose<_Hp>>
 class __tuple_leaf;
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -409,8 +408,8 @@ template <size_t... _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
     : public __tuple_leaf<_Indx, _Tp>...
     , public __tuple_impl_sfinae_helper<__tuple_impl<__tuple_indices<_Indx...>, _Tp...>,
-                                        __tuple_all_copy_assignable_v<_Tp...>,
-                                        __tuple_all_move_assignable_v<_Tp...>>
+                                        __tuple_constraints<_Tp...>::__all_copy_assignable,
+                                        __tuple_constraints<_Tp...>::__all_move_assignable>
 {
   _CCCL_HIDE_FROM_ABI constexpr __tuple_impl() = default;
 
@@ -446,7 +445,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   {}
 
   template <class _Tuple, size_t _Indx2>
-  using __tuple_elem_at = tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>;
+  using __tuple_elem_at = __copy_cvref_t<_Tuple, tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple>

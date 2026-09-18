@@ -157,11 +157,7 @@ CUB_TEST(
   c2h::host_vector<data_t> h_output_gpu = d_output;
   constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
-// MSVC error: C3546: '...': there are no parameter packs available to expand in
-//             make_tuple_types.h:__make_tuple_types_flat
-#if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output_expected == h_output_gpu);
-#endif // !_CCCL_COMPILER(MSVC)
 }
 
 CUB_TEST("DeviceFor::ForEachInLayout 3D dynamic",
