@@ -168,10 +168,6 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
 // of tuples or other types without an ostream operator<<).
 #define ASSERT_EQUAL_QUIET(X, Y)     REQUIRE((X == Y))
 #define ASSERT_NOT_EQUAL_QUIET(X, Y) REQUIRE((X != Y))
-#define ASSERT_LEQUAL(X, Y)          REQUIRE((X) <= (Y))
-#define ASSERT_GEQUAL(X, Y)          REQUIRE((X) >= (Y))
-#define ASSERT_LESS(X, Y)            REQUIRE((X) < (Y))
-#define ASSERT_GREATER(X, Y)         REQUIRE((X) > (Y))
 #define ASSERT_ALMOST_EQUAL(X, Y)                                                                                     \
   {                                                                                                                   \
     const auto vec_ref = ::unittest::detail::to_approx(::unittest::detail::to_vec(X));                                \

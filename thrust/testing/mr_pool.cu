@@ -131,8 +131,8 @@ public:
                      std::size_t n,
                      std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    ASSERT_GEQUAL(p.size, n);
-    ASSERT_GEQUAL(p.alignment, alignment);
+    REQUIRE(p.size >= n);
+    REQUIRE(p.alignment >= alignment);
 
     if (id_to_deallocate != 0)
     {
