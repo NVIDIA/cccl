@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Strict consumer of the qualified CUTLASS Block Load/Store surface."""
+"""Strict consumer of qualified CUTLASS Block and Warp Load/Store."""
 
 from __future__ import annotations
 
@@ -88,3 +88,28 @@ def check_cutlass_surface(source: object, destination: object) -> None:
     vector = values.to_tensor_ssa()
     restored_vector = cutlass_coop.ThreadData.from_vector(vector, dtype=np.int32)
     assert_type(restored_vector, cutlass_coop.ThreadData[np.int32])
+
+
+def check_cutlass_warp_surface(source: object, destination: object) -> None:
+    warp = cutlass_coop.this_warp()
+    values = cutlass_coop.ThreadData(2, np.int32)
+    assert_type(warp, cutlass_coop.ThreadGroup[Literal["warp"]])
+    assert_type(cutlass_coop.load(warp, source, values), None)
+    assert_type(cutlass_coop.store(warp, destination, values), None)
+    for algorithm in ("direct", "striped", "vectorize", "transpose"):
+        cutlass_coop.load(
+            warp,
+            source,
+            values,
+            algorithm=algorithm,
+            valid_items=61,
+            oob_default=-1,
+            offset=4,
+        )
+        cutlass_coop.store(
+            warp, destination, values, algorithm=algorithm, valid_items=61
+        )
+    common_coop.load(warp, source, values)
+    common_coop.store(warp, destination, values)
+    cutlass_coop.load(common_coop.this_warp(), source, values)
+    cutlass_coop.store(common_coop.this_warp(), destination, values)

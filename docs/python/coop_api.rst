@@ -251,9 +251,10 @@ CUTLASS-qualified API
 
 .. py:module:: cuda.coop.cutlass
 
-The qualified CUTLASS surface currently provides ``this_block``,
-``ThreadData``, ``TempStorage``, and all six block ``load``/``store``
-algorithms. It accepts the portable
+The qualified CUTLASS surface currently provides ``this_block``, ``this_warp``,
+``ThreadData``, ``TempStorage``, all six block ``load``/``store`` algorithms,
+and four physical-warp algorithms. Explicit temporary storage is block-only.
+It accepts the portable
 ``valid_items``, ``offset``, and load-only ``oob_default`` controls. Load
 returns ``None`` and mutates its destination payload. ``ThreadData`` adds
 conversions to and from CuTe register-memory tensors and immutable register

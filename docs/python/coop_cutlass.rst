@@ -3,12 +3,13 @@
 ``cuda.coop.cutlass``: CuTe DSL integration
 ===========================================
 
-The CUTLASS backend provides Block Load and Store inside CuTe DSL kernels.
+The CUTLASS backend provides Block and physical Warp Load and Store inside
+CuTe DSL kernels.
 It uses the same group-first calls and in-place
 payload contract as :mod:`cuda.coop`: ``load`` fills an existing
 ``ThreadData`` and returns ``None``; ``store`` leaves its input payload
-unchanged. Other primitive families and Warp operations are not yet available
-through this backend.
+unchanged. Logical subgroups and other primitive families are not yet
+available through this backend.
 
 Runtime requirements
 --------------------
@@ -114,8 +115,8 @@ barrier, including when passed a ``TempStorage`` descriptor.
 ``ThreadData(alignment=...)`` requests a minimum payload alignment; it does
 not change the logical item layout.
 
-Shared scratch and reuse
-------------------------
+Block scratch and reuse
+-----------------------
 
 Transpose algorithms allocate scratch implicitly unless passed
 ``temp_storage``. Construct one ``TempStorage`` inside the kernel to share
@@ -142,6 +143,43 @@ also supports exclusive slices and manual synchronization.
    :start-after: docs: start cutlass-block-storage
    :end-before: docs: end cutlass-block-storage
 
+Physical Warp Load and Store
+----------------------------
+
+``this_warp()`` selects the calling thread's complete 32-lane warp. The block
+size must be divisible by 32, and all lanes in each participating warp must
+call the operation with uniform controls. Different warps may use different
+``valid_items``, ``oob_default``, and ``offset`` values.
+
+The four warp algorithms use the same layouts as their block counterparts:
+``direct`` and ``vectorize`` use blocked layout without scratch, ``striped``
+uses striped layout without scratch, and ``transpose`` uses blocked layout
+with independent scratch for each warp. Transpose scratch is allocated
+implicitly, with automatic warp synchronization for reuse. Explicit
+``temp_storage`` is rejected for every warp algorithm.
+
+Each warp addresses a consecutive tile within the block. For ``I`` items per
+thread and linear thread rank ``t``, the compiler adds
+``(t // 32) * 32 * I`` to the user-provided ``offset``. The linear rank flattens
+the exact block dimensions in CUDA order: ``x + block_x * (y + block_y * z)``.
+Do not add the within-block warp origin yourself. An offset for a different
+block or a later loop iteration remains the caller's responsibility.
+
+``valid_items`` counts the valid prefix of each warp's tile, from zero through
+``32 * I``. As with Block Load, a partial load preserves initialized payload
+items outside that prefix unless ``oob_default`` is supplied. Store writes
+only the valid prefix and preserves its input payload.
+
+This example uses two physical warps in an ``(8, 4, 2)`` block and checks the
+independent partial tiles against a CPU reference.
+:download:`Download the Warp example
+<../../python/cuda_coop/examples/cutlass/warp_load_store.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/warp_load_store.py
+   :language: python
+   :start-after: docs: start cutlass-warp-load-store
+   :end-before: docs: end cutlass-warp-load-store
+
 Qualified register payloads
 ---------------------------
 
@@ -155,6 +193,11 @@ An initialized ``ThreadData`` can cross CuTe runtime loops and branches while
 retaining its fixed item count, dtype, and requested alignment. Initialize
 every item in every participating thread before carrying the payload across
 a runtime control-flow boundary.
+
+Load and Store infer the memory element type from the CuTe operand. If a
+producer or tensor adapter loses the intended unsigned element type, use
+``cute.recast_tensor`` to restore that type before passing the tensor to
+``load`` or ``store``.
 
 .. code-block:: python
 

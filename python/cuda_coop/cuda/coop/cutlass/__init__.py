@@ -9,7 +9,13 @@ from ._compiler._activation import register_trace_context
 from ._group_load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
-from ._thread_group import Hierarchy, ThreadGroup, ThreadHierarchy, this_block
+from ._thread_group import (
+    Hierarchy,
+    ThreadGroup,
+    ThreadHierarchy,
+    this_block,
+    this_warp,
+)
 
 __all__ = [
     "TempStorage",
@@ -20,6 +26,7 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "this_block",
+    "this_warp",
     "load",
     "store",
 ]
