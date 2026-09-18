@@ -34,10 +34,6 @@
 #include <cuda/experimental/__group/synchronizer/level_synchronizer.cuh>
 #include <cuda/experimental/__group/traits.cuh>
 
-#if _CCCL_HAS_COOPERATIVE_GROUPS()
-#  include <cooperative_groups.h>
-#endif // _CCCL_HAS_COOPERATIVE_GROUPS()
-
 #include <cuda/std/__cccl/prologue.h>
 
 #if !defined(_CCCL_DOXYGEN_INVOKED)
