@@ -43,6 +43,10 @@ from .load_store import (
 from .merge_sort import (
     GroupMergeSortSemantics,
 )
+from .radix import (
+    GroupRadixRankSemantics,
+    GroupRadixSortSemantics,
+)
 from .reduce import GroupReduceSemantics
 from .scan import GroupScanMode, GroupScanSemantics
 from .shuffle import GroupShuffleSemantics
@@ -62,6 +66,8 @@ __all__ = [
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
+    "GroupRadixRankSemantics",
+    "GroupRadixSortSemantics",
     "GroupReduceSemantics",
     "GroupScanMode",
     "GroupScanSemantics",
