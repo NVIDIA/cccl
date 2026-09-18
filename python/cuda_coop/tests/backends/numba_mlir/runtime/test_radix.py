@@ -5,6 +5,10 @@
 
 """Stable radix ordering against independent host oracles."""
 
+import subprocess
+import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -213,3 +217,64 @@ def test_qualified_scalar_sort_and_rank():
     kernel[1, _THREADS](source, sorted_out, rank_out)
     np.testing.assert_array_equal(sorted_out, np.sort(source))
     np.testing.assert_array_equal(rank_out, source)
+
+
+@pytest.mark.parametrize("pairs", [False, True])
+@pytest.mark.parametrize(
+    "begin,end,unsigned",
+    [
+        (-1, 32, False),
+        (0, 33, False),
+        (8, 4, False),
+        (4, 4, False),
+        (2**32, 2**32 + 8, False),
+        (0, 2**32 - 1, True),
+    ],
+)
+def test_invalid_runtime_bit_intervals_trap_before_narrowing(
+    pairs, begin, end, unsigned
+):
+    # Device traps poison their context; keep each invalid launch in a child.
+    script = f"""
+import numpy as np
+from pathlib import Path
+from numba_cuda_mlir import cuda, types
+import cuda.coop.numba_mlir as numba_coop
+from cuda import coop
+assert Path(numba_coop.__file__).resolve() == Path({str(Path(numba_coop.__file__).resolve())!r})
+@cuda.jit
+def kernel(source, output, begin, end):
+    keys = coop.ThreadData(2, dtype=types.int32)
+    keys[0] = source[cuda.threadIdx.x * 2]
+    keys[1] = source[cuda.threadIdx.x * 2 + 1]
+    if {pairs!r}:
+        result, values = coop.radix_sort_pairs(coop.this_block(), keys, keys, begin_bit=begin, end_bit=end)
+    else:
+        result = coop.radix_sort_keys(coop.this_block(), keys, begin_bit=begin, end_bit=end)
+    output[cuda.threadIdx.x] = result[0]
+source = np.arange(128, dtype=np.int32)
+output = np.empty(64, dtype=np.int32)
+dtype = np.uint32 if {unsigned!r} else np.int64
+kernel[1, 64](source, output, dtype({begin}), dtype({end}))
+cuda.synchronize()
+raise AssertionError("invalid radix interval did not trap")
+"""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-P" if sys.version_info >= (3, 11) else "-I",
+            "-B",
+            "-c",
+            script,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=180,
+        check=False,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode != 0, output
+    assert any(
+        error in output
+        for error in ("CUDA_ERROR_ILLEGAL_INSTRUCTION", "CUDA_ERROR_LAUNCH_FAILED")
+    ), output
