@@ -79,15 +79,20 @@ managing their lifetime.
 
 - ``get_stream()``: returns the next stream in round-robin order
 - ``get_stream(i)``: returns the stream in slot ``i % capacity()``
-- ``create_all_streams()``: creates the streams now instead of on the first request; constructing with the leading
-  ``cuda::stream_pool::eager`` tag does the same
-- ``streams()``: returns the streams of the pool, or nothing if none was requested or created yet
+- ``create_all_streams()``: creates the streams of a lazy pool that do not exist yet
+- ``streams()``: returns the streams created so far, in slot order
 - ``capacity()``, ``device()``, ``priority()``: the parameters given at construction
 
-Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool. All streams are
-created together, in the constructor with the ``eager`` tag or otherwise on the first request, and destroyed with the
-pool. Once the streams exist, the getters take no lock, and all getters can be called concurrently from several
-threads.
+Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool. The streams are
+destroyed with the pool. When they are created depends on a leading tag:
+
+- ``cuda::stream_pool::lazy``, the default: a stream is created the first time its slot is requested. The getters
+  take a mutex to do so, and ``streams()`` returns only the streams created so far. Constructing the pool touches
+  nothing on the device, which suits a pool per device where some devices may never be used.
+- ``cuda::stream_pool::eager``: every stream is created in the constructor. The getters take no lock at all, and
+  ``streams()`` always returns all of them.
+
+All getters can be called concurrently from several threads.
 
 A pool can be neither copied nor moved. Code that needs to hand a pool around, store it in a container, or share it
 between several owners should allocate it with ``std::make_unique`` or ``std::make_shared`` and pass the
@@ -101,7 +106,7 @@ Availability: CCCL 3.6.0
    #include <cuda/devices>
 
    int main() {
-     // 16 streams on device 0, created on the first request
+     // 16 stream slots on device 0, each stream created on the first request for its slot
      cuda::stream_pool pool{cuda::devices[0]};
 
      for (int i = 0; i < 64; ++i) {
