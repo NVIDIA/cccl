@@ -46,7 +46,7 @@ from cuda.coop._core import (
 
 from .._compiler import _rendering, _state, _types
 from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECIFICATIONS
-from .._thread_data import ThreadData, _make_rmem_tensor
+from .._thread_data import _UNSET, ThreadData, _make_rmem_tensor
 from .._thread_group import ThreadGroup
 from ._load_store_layout import contiguous_layout_reason, static_layout_elements
 
@@ -74,8 +74,22 @@ class _CubLoadStoreRequest:
         """Reject plans whose contracts cannot use this wrapper ABI."""
 
         self.plan.require_supported()
-        if self.plan.target is not GroupLoweringTarget.CUB_BLOCK:
-            raise NotImplementedError("CUTLASS Load/Store requires a block")
+        if self.plan.target not in {
+            GroupLoweringTarget.CUB_BLOCK,
+            GroupLoweringTarget.CUB_WARP,
+        }:
+            raise NotImplementedError(
+                "CUTLASS Load/Store requires a CUB block or warp plan"
+            )
+        if self.plan.target is GroupLoweringTarget.CUB_WARP:
+            if self.plan.resolved_group.kind != "warp":
+                raise NotImplementedError(
+                    "CUTLASS Warp Load/Store currently requires physical warps"
+                )
+            if self.plan.temp_storage.ownership is StorageOwnership.CALLER:
+                raise NotImplementedError(
+                    "explicit TempStorage is supported only for block groups"
+                )
         if not isinstance(self.plan.implementation, Algorithm):
             raise TypeError("Load/Store requires a shared Algorithm")
         if self.operation.dtype is not self.value_type:
@@ -91,16 +105,21 @@ class _CubLoadStoreRequest:
             raise ValueError(
                 "storage-free Load/Store must not introduce a reuse barrier"
             )
+        expected_scope = (
+            SynchronizationScope.WARP
+            if self.is_warp
+            else SynchronizationScope.BLOCK
+        )
         if (
             self.uses_scratch
             and self.plan.synchronization.storage_reuse_barrier
             not in {
-                SynchronizationScope.BLOCK,
+                expected_scope,
                 SynchronizationScope.NONE,
             }
         ):
             raise ValueError(
-                "block Load/Store requires block-scoped reuse synchronization"
+                "Load/Store scratch reuse must synchronize its group"
             )
         if self.operation.oob_default.kind is BindingKind.STATIC:
             _validate_static_oob_default(
@@ -127,6 +146,18 @@ class _CubLoadStoreRequest:
         return self.plan.participation.exact_block_dim
 
     @property
+    def is_warp(self):
+        return self.plan.target is GroupLoweringTarget.CUB_WARP
+
+    @property
+    def group_instances(self):
+        if not self.is_warp:
+            return 1
+        if self.block_dim is None:
+            raise ValueError("Warp Load/Store requires exact block dimensions")
+        return math.prod(self.block_dim) // self.plan.resolved_group.static_size
+
+    @property
     def uses_scratch(self):
         return self.plan.temp_storage.ownership is not StorageOwnership.NONE
 
@@ -140,7 +171,11 @@ class _CubLoadStoreRequest:
 
     @property
     def scratch_requirement_key(self):
-        return ("cub_load_store_layout", self.implementation.semantic_key)
+        return (
+            "cub_load_store_layout",
+            self.implementation.semantic_key,
+            self.group_instances,
+        )
 
     @property
     def semantic_key(self):
@@ -213,31 +248,27 @@ def _render_cub_load_store(request):
         f"void {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
     ]
+    if request.is_warp:
+        bx, by, _ = request.block_dim
+        width = request.plan.resolved_group.static_size
+        lines.extend(
+            [
+                f"  unsigned int linear_tid = threadIdx.x + {bx}u * (threadIdx.y + {by}u * threadIdx.z);",
+                f"  unsigned int group_index = linear_tid / {width}u;",
+            ]
+        )
     storage = ""
     if request.uses_scratch:
         lines.extend(
             [
-                (
-                    "  using storage_type = typename "
-                    "implementation_type::TempStorage;"
-                ),
-                "  if (temp_storage_bytes < sizeof(storage_type) ||",
-                (
-                    "      (temp_storage_smem_addr & "
-                    "(alignof(storage_type) - 1)) != 0) {"
-                ),
+                "  using storage_type = typename implementation_type::TempStorage;",
+                f"  if (temp_storage_bytes < {request.group_instances}u * sizeof(storage_type) ||",
+                "      (temp_storage_smem_addr & (alignof(storage_type) - 1)) != 0) {",
                 '    asm volatile("trap;");',
                 "  }",
                 "  unsigned long long generic_addr;",
-                (
-                    '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : '
-                    '"l"(static_cast<unsigned long long>'
-                    "(temp_storage_smem_addr)));"
-                ),
-                (
-                    "  auto& storage = "
-                    "*reinterpret_cast<storage_type*>(generic_addr);"
-                ),
+                '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : "l"(static_cast<unsigned long long>(temp_storage_smem_addr)));',
+                f"  auto& storage = reinterpret_cast<storage_type*>(generic_addr)[{'group_index' if request.is_warp else '0'}];",
             ]
         )
         storage = "storage"
@@ -246,23 +277,47 @@ def _render_cub_load_store(request):
             request.plan.resolved_group.static_size * operation.items_per_thread
         )
         lines.append(
-            f"  if (valid_items < 0 || valid_items > {count}) {{ "
-            'asm volatile("trap;"); }'
+            f'  if (valid_items < 0 || valid_items > {count}) {{ asm volatile("trap;"); }}'
         )
     if operation.offset.kind is BindingKind.RUNTIME:
-        lines.append('  if (offset < 0) { asm volatile("trap;"); }')
+        condition = next(
+            item
+            for item in request.plan.participation.argument_preconditions
+            if item.name == "offset"
+        )
+        lines.append(
+            f'  if (offset < {condition.minimum}ll || offset > {condition.maximum}ll) {{ asm volatile("trap;"); }}'
+        )
     offset = _binding_expr(request, operation.offset, runtime_name="offset")
     lines.append(
         f"  auto* tile_ptr = base{'' if offset is None else ' + ' + offset};"
     )
-    initial = (
-        ""
-        if is_load
-        else ", ".join(f"item{i}" for i in range(operation.items_per_thread))
-    )
+    if request.is_warp:
+        tile_items = (
+            request.plan.resolved_group.static_size * operation.items_per_thread
+        )
+        lines.append(
+            f"  tile_ptr += static_cast<long long>(group_index) * {tile_items}ll;"
+        )
+    if is_load:
+        preserve = (
+            operation.valid_items.kind is not BindingKind.OMITTED
+            and operation.oob_default.kind is BindingKind.OMITTED
+        )
+        initial = (
+            ", ".join(
+                f"result_items[{i}]" for i in range(operation.items_per_thread)
+            )
+            if preserve
+            else ""
+        )
+    else:
+        initial = ", ".join(
+            f"item{i}" for i in range(operation.items_per_thread)
+        )
     lines.append(
-        f"  {type_specification.cpp_type} items[{operation.items_per_thread}] "
-        f"= {{{initial}}};"
+        f"  {type_specification.cpp_type} items["
+        f"{operation.items_per_thread}] = {{{initial}}};"
     )
     args = ["tile_ptr", "items"]
     for binding, name in (
@@ -278,8 +333,7 @@ def _render_cub_load_store(request):
         if expression is not None:
             args.append(expression)
     lines.append(
-        f"  implementation_type({storage})."
-        f"{request.implementation.method_name}({', '.join(args)});"
+        f"  implementation_type({storage}).{request.implementation.method_name}({', '.join(args)});"
     )
     if is_load:
         lines.extend(
@@ -287,7 +341,10 @@ def _render_cub_load_store(request):
             for i in range(operation.items_per_thread)
         )
     if request.uses_scratch:
-        lines.append("  if (temp_storage_auto_sync != 0) { __syncthreads(); }")
+        barrier = (
+            "__syncwarp(0xffffffffu)" if request.is_warp else "__syncthreads()"
+        )
+        lines.append(f"  if (temp_storage_auto_sync != 0) {{ {barrier}; }}")
     return [*lines, "}"]
 
 
@@ -424,6 +481,9 @@ def provider_load(
     result = _make_rmem_tensor(
         output.items_per_thread, value_type, output.alignment
     )
+    if valid_items is not None and oob_default is None:
+        for i, value in enumerate(output._values):
+            result[i] = value_type(0) if value is _UNSET else value_type(value)
     snapshot = _state.snapshot_active_session_state()
     try:
         _state.register_request(request)
@@ -521,8 +581,7 @@ def provider_store(
         is not value_type
     ):
         raise TypeError(
-            "cuda.coop.cutlass.store destination dtype does not match "
-            "value dtype"
+            "cuda.coop.cutlass.store destination dtype does not match value dtype"
         )
     request = _make_request(
         group=group,
@@ -737,13 +796,11 @@ def _is_local_memory_space(value: Any) -> bool:
     try:
         if int(value) == _LLVM_LOCAL_ADDRESS_SPACE:
             return True
-    except Exception:  # noqa: BLE001, S110
-        # Foreign memory-space values may only support symbolic names.
+    except Exception:  # noqa: BLE001, S110 - Foreign memory-space values may only support symbolic names.
         pass
     try:
         name = str(getattr(value, "name", value)).strip().lower()
-    except Exception:  # noqa: BLE001
-        # Uninspectable metadata cannot prove a memory space.
+    except Exception:  # noqa: BLE001 - Uninspectable metadata cannot prove a memory space.
         return False
     return name in {"local", "local_memory", "rmem"}
 
@@ -755,8 +812,7 @@ def _uses_local_memory(value: Any) -> bool:
     for name in ("iterator", "pointer", "ptr", "_pointer", "_ptr"):
         try:
             candidate = getattr(value, name)
-        except Exception:  # noqa: BLE001, S112
-            # Optional pointer metadata may reject access.
+        except Exception:  # noqa: BLE001, S112 - Optional pointer metadata may reject access.
             continue
         if candidate is not None:
             candidates.append(candidate)
@@ -764,8 +820,7 @@ def _uses_local_memory(value: Any) -> bool:
         for name in ("memspace", "space", "address_space"):
             try:
                 memory_space = getattr(candidate, name)
-            except Exception:  # noqa: BLE001, S112
-                # Optional memory-space metadata may reject access.
+            except Exception:  # noqa: BLE001, S112 - Optional memory-space metadata may reject access.
                 continue
             if _is_local_memory_space(memory_space):
                 return True
@@ -784,8 +839,7 @@ def _try_raw_memory_pointer(value: Any) -> Any | None:
     if callable(data_ptr):
         try:
             candidates.append(data_ptr())
-        except Exception:  # noqa: BLE001, S110
-            # Try other pointer protocols if this optional conversion fails.
+        except Exception:  # noqa: BLE001, S110 - Try other pointer protocols if this optional conversion fails.
             pass
     for name in ("iterator", "pointer", "ptr", "_pointer", "_ptr"):
         try:
@@ -805,9 +859,7 @@ def _try_raw_memory_pointer(value: Any) -> Any | None:
             continue
         try:
             pointer_type = llvm.PointerType(pointer.type)
-        except Exception:  # noqa: BLE001, S112
-            # A non-pointer candidate does not establish raw-pointer
-            # eligibility.
+        except Exception:  # noqa: BLE001, S112 - A non-pointer candidate does not establish raw-pointer eligibility.
             continue
         if pointer_type.address_space == _LLVM_LOCAL_ADDRESS_SPACE:
             return None
@@ -1070,7 +1122,7 @@ def _scratch_layout_probe(request):
         return None
     return _rendering.make_scratch_layout_probe(
         request.scratch_requirement_key,
-        f"typename {request.cpp_type}::TempStorage",
+        f"typename {request.cpp_type}::TempStorage[{request.group_instances}]",
     )
 
 
@@ -1081,11 +1133,15 @@ _rendering.register_bundle_renderer(
     include_lines=(
         "#include <cub/block/block_load.cuh>",
         "#include <cub/block/block_store.cuh>",
+        "#include <cub/warp/warp_load.cuh>",
+        "#include <cub/warp/warp_store.cuh>",
         "#include <cuda/std/cstdint>",
     ),
     cccl_headers=(
         ("cub/block/block_load.cuh", "cub/block/block_load.cuh"),
         ("cub/block/block_store.cuh", "cub/block/block_store.cuh"),
+        ("cub/warp/warp_load.cuh", "cub/warp/warp_load.cuh"),
+        ("cub/warp/warp_store.cuh", "cub/warp/warp_store.cuh"),
     ),
 )
 
