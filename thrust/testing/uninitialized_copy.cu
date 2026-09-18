@@ -143,7 +143,11 @@ struct TestUninitializedCopyNonPODDevice
     REQUIRE_FALSE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNonPODDevice);
+TEST_CASE("TestUninitializedCopyNonPODDevice", "[uninitialized_copy]")
+{
+  const size_t s = GENERATE_THRUST_TEST_SIZES();
+  TestUninitializedCopyNonPODDevice{}(s);
+}
 
 struct TestUninitializedCopyNNonPODDevice
 {
@@ -168,7 +172,11 @@ struct TestUninitializedCopyNNonPODDevice
     REQUIRE_FALSE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNNonPODDevice);
+TEST_CASE("TestUninitializedCopyNNonPODDevice", "[uninitialized_copy]")
+{
+  const size_t s = GENERATE_THRUST_TEST_SIZES();
+  TestUninitializedCopyNNonPODDevice{}(s);
+}
 
 struct TestUninitializedCopyNonPODHost
 {
@@ -193,7 +201,11 @@ struct TestUninitializedCopyNonPODHost
     REQUIRE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNonPODHost);
+TEST_CASE("TestUninitializedCopyNonPODHost", "[uninitialized_copy]")
+{
+  const size_t s = GENERATE_THRUST_TEST_SIZES();
+  TestUninitializedCopyNonPODHost{}(s);
+}
 
 struct TestUninitializedCopyNNonPODHost
 {
@@ -218,4 +230,8 @@ struct TestUninitializedCopyNNonPODHost
     REQUIRE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNNonPODHost);
+TEST_CASE("TestUninitializedCopyNNonPODHost", "[uninitialized_copy]")
+{
+  const size_t s = GENERATE_THRUST_TEST_SIZES();
+  TestUninitializedCopyNNonPODHost{}(s);
+}
