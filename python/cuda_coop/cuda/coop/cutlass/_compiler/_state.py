@@ -15,6 +15,7 @@ from typing import Any
 from cutlass.base_dsl.common import DSLRuntimeError
 
 from ._rendering import canonical_bundle_requests
+from ._types import DeferredTempStorageEvent
 
 _SESSION_SCOPE = "cuda.coop.cutlass"
 _TRACE_HOOK_DISPATCHER_ATTR = "_cuda_coop_cutlass_provider_trace_finalize_dispatcher"
@@ -34,6 +35,7 @@ class BundleSession:
     def __init__(self, trace_module_op=None):
         self.trace_module_op = trace_module_op
         self.requests = set()
+        self._deferred_temp_storage_events: list[DeferredTempStorageEvent] = []
         self._lock = threading.RLock()
 
     def add(self, request):
@@ -42,20 +44,33 @@ class BundleSession:
 
     def snapshot(self):
         with self._lock:
-            return self.trace_module_op, set(self.requests)
+            return (
+                self.trace_module_op,
+                set(self.requests),
+                list(self._deferred_temp_storage_events),
+            )
 
     def restore(self, snapshot):
         with self._lock:
-            self.trace_module_op, requests = snapshot
+            self.trace_module_op, requests, events = snapshot
             self.requests = set(requests)
+            self._deferred_temp_storage_events = list(events)
 
     def request_list(self):
         with self._lock:
             return list(canonical_bundle_requests(self.requests))
 
+    def add_deferred_temp_storage_event(self, event: DeferredTempStorageEvent) -> None:
+        with self._lock:
+            self._deferred_temp_storage_events.append(event)
+
+    def deferred_temp_storage_event_list(self) -> list[DeferredTempStorageEvent]:
+        with self._lock:
+            return list(self._deferred_temp_storage_events)
+
     def is_empty(self):
         with self._lock:
-            return not self.requests
+            return not self.requests and not self._deferred_temp_storage_events
 
     def belongs_to_trace_module(self, module):
         with self._lock:

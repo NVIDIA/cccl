@@ -3,8 +3,8 @@
 ``cuda.coop.cutlass``: CuTe DSL integration
 ===========================================
 
-The CUTLASS backend provides Block Load and Store with ``algorithm="direct"``
-inside CuTe DSL kernels. It uses the same group-first calls and in-place
+The CUTLASS backend provides Block Load and Store inside CuTe DSL kernels.
+It uses the same group-first calls and in-place
 payload contract as :mod:`cuda.coop`: ``load`` fills an existing
 ``ThreadData`` and returns ``None``; ``store`` leaves its input payload
 unchanged. Other primitive families and Warp operations are not yet available
@@ -68,14 +68,79 @@ compatible compiler:
 Block Load and Store use the exact launch dimensions supplied by CuTe,
 including multidimensional blocks. ``offset`` selects the beginning of the
 block's tile and ``valid_items`` specifies the number of valid items in that
-tile. Load
-may fill its out-of-bounds items with ``oob_default``. Without that default,
+tile. Load may fill its out-of-bounds items with ``oob_default``. Without that default,
 initialize any items that the valid prefix will not overwrite before reading
 them. All threads in the block must call the operation with uniform controls.
 
-DIRECT Load and Store require no temporary shared storage. They emit no
-storage pointer or reuse barrier. ``ThreadData(alignment=...)`` requests a
-minimum payload alignment; it does not change the logical item layout.
+Block algorithms
+----------------
+
+The six block algorithms use these register layouts. For linear thread rank
+``t``, item index ``i``, block size ``B``, and ``I`` items per thread, blocked
+layout accesses tile index ``t * I + i``; striped layout accesses
+``t + i * B``.
+
+.. list-table:: Block Load and Store algorithms
+   :header-rows: 1
+
+   * - ``algorithm``
+     - Register layout
+     - Shared scratch
+   * - ``direct``
+     - Blocked
+     - None
+   * - ``striped``
+     - Striped
+     - None
+   * - ``vectorize``
+     - Blocked
+     - None
+   * - ``transpose``
+     - Blocked
+     - Required
+   * - ``warp_transpose``
+     - Blocked
+     - Required
+   * - ``warp_transpose_timesliced``
+     - Blocked
+     - Required
+
+The two warp-transpose block algorithms require a block size divisible by 32.
+``vectorize`` uses vector accesses when the type, item count, and address
+alignment permit them, with direct accesses as a fallback.
+
+Direct, striped, and vectorized operations emit no storage pointer or reuse
+barrier, including when passed a ``TempStorage`` descriptor.
+``ThreadData(alignment=...)`` requests a minimum payload alignment; it does
+not change the logical item layout.
+
+Shared scratch and reuse
+------------------------
+
+Transpose algorithms allocate scratch implicitly unless passed
+``temp_storage``. Construct one ``TempStorage`` inside the kernel to share
+capacity across calls. An omitted size is determined from the operations'
+exact C++ storage layouts; an explicit byte capacity must accommodate all
+uses. ``alignment`` is a minimum: the allocation also satisfies the C++
+operations' alignment requirements.
+
+``sharing="shared"`` reuses one slice across call sites. With
+``sharing="exclusive"``, distinct call sites receive separate slices.
+Both policies insert trailing reuse synchronization by default because a
+single call site can execute repeatedly in a loop. Set ``auto_sync=False``
+only when the kernel calls ``storage.sync()`` before reusing that storage,
+including on the next loop iteration.
+
+The following example transforms eight independent tiles. Its default is a
+shared descriptor with automatic synchronization; the executable example
+also supports exclusive slices and manual synchronization.
+:download:`Download the storage example
+<../../python/cuda_coop/examples/cutlass/block_storage.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/block_storage.py
+   :language: python
+   :start-after: docs: start cutlass-block-storage
+   :end-before: docs: end cutlass-block-storage
 
 Qualified register payloads
 ---------------------------

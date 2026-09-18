@@ -10,17 +10,19 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
-from ._types import BundleRenderer
+from ._types import BundleRenderer, ScratchLayoutProbe
 
 _FEATURE_DEFINE_RE = re.compile(r"^#define\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s|\(|$)")
 _BUNDLE_RENDERERS: dict[str, BundleRenderer] = {}
 
 
-def register_bundle_renderer(kind, *, render, include_lines=(), cccl_headers=()):
+def register_bundle_renderer(
+    kind, *, render, include_lines=(), cccl_headers=(), scratch_layout_probe=None
+):
     if kind in _BUNDLE_RENDERERS:
         raise ValueError(f"bundle renderer {kind!r} is already registered")
     _BUNDLE_RENDERERS[kind] = BundleRenderer(
-        tuple(include_lines), tuple(cccl_headers), render
+        tuple(include_lines), tuple(cccl_headers), render, scratch_layout_probe
     )
 
 
@@ -95,9 +97,46 @@ def registered_bundle_headers() -> dict[str, str]:
     return {include: headers[include] for include in sorted(headers)}
 
 
-def render_bundle_source(requests):
-    lines = [*bundle_include_lines(requests), 'extern "C" {']
+def make_scratch_layout_probe(requirement_key, cpp_type):
+    return ScratchLayoutProbe(
+        requirement_key, f"sizeof({cpp_type})", f"alignof({cpp_type})"
+    )
+
+
+def bundle_scratch_layout_probes(requests):
+    probes = {}
     for request in canonical_bundle_requests(requests):
+        renderer = bundle_renderer_for(request)
+        if renderer is None or renderer.scratch_layout_probe is None:
+            continue
+        probe = renderer.scratch_layout_probe(request)
+        if probe is None:
+            continue
+        existing = probes.get(probe.requirement_key)
+        if existing is not None and existing != probe:
+            raise ValueError("scratch requirement has conflicting C++ layouts")
+        probes[probe.requirement_key] = probe
+    return probes
+
+
+def render_bundle_source(requests):
+    requests = canonical_bundle_requests(requests)
+    definitions = {}
+    for request in requests:
+        implementation = getattr(request, "implementation", None)
+        for definition in getattr(implementation, "type_definitions", ()):
+            existing = definitions.get(definition.name)
+            if existing is not None and existing != definition.code:
+                raise ValueError(
+                    f"conflicting provider type definition {definition.name!r}"
+                )
+            definitions[definition.name] = definition.code
+    lines = [
+        *bundle_include_lines(requests),
+        *(definitions[name] for name in sorted(definitions)),
+        'extern "C" {',
+    ]
+    for request in requests:
         renderer = bundle_renderer_for(request)
         if renderer is None:
             raise ValueError(f"No CUTLASS provider renderer for {request.kind!r}")
