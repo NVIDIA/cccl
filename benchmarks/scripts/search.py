@@ -38,6 +38,23 @@ PARENT_PID = os.getpid()
 Lane = collections.namedtuple("Lane", ["gpu", "directory", "lock"])
 
 
+# Exit status the shim uses for "the base would not build", to tell it apart
+# from a variant that would not build and from the shim dying some other way.
+BASE_BUILD_FAILED = 42
+
+
+class BaseBuildFailure(BaseException):
+    """The base benchmark would not build in one of the lanes.
+
+    Deliberately not an `Exception`: compileiq wraps the objective in
+    `except Exception` and turns whatever it catches into an invalid score, and
+    `cccl.bench.search.run_benches` would then move on to the next algorithm.
+    A variant that does not build is a fact about that point in the space, but a
+    base that does not build says the benchmark is broken, and every score
+    measured against it is meaningless.
+    """
+
+
 def pool_cull_sizes(num_genes, num_objectives, variant_space_size, cull=0.75):
     if not (0.05 <= cull <= 0.95):
         raise ValueError("cull must be between 0.05 and 0.95, got {}".format(cull))
@@ -201,10 +218,13 @@ def evaluate(request_path):
     )
 
     # The base binary answers the device query behind every cache lookup, and is
-    # a no-op once this lane has built it.
+    # a no-op once this lane has built it. The base carries no tuning parameters,
+    # so it either builds or the benchmark is broken; report that as its own exit
+    # status rather than scoring, which would hide the breakage behind a search
+    # where every variant merely looks invalid.
     if not variant.get_base().build():
-        print("SCORE {}".format(INVALID_SCORE))
-        return
+        sys.stderr.write("base build failed for {}\n".format(request["algname"]))
+        sys.exit(BASE_BUILD_FAILED)
 
     estimator = bench.MedianCenterEstimator()
     ct_workload = request["ct_workload"]
@@ -239,6 +259,7 @@ class LaneObjective:
         parameter_space,
         lanes,
         lane_queue,
+        abort,
     ):
         self.algname = algname
         self.ct_workload = list(ct_workload)
@@ -246,6 +267,7 @@ class LaneObjective:
         self.parameter_space = parameter_space
         self.lanes = lanes
         self.lane_queue = lane_queue
+        self.abort = abort
 
     def request(self, lane, config):
         return {
@@ -265,6 +287,12 @@ class LaneObjective:
 
     def __call__(self, config):
         lane = claim_lane(self.lane_queue, self.lanes)
+
+        # Another lane already found the base broken. Nothing left to measure,
+        # and the pool still queued behind this call drains in an instant.
+        if self.abort.is_set():
+            raise BaseBuildFailure("base build failed in another lane")
+
         request = self.request(lane, config)
 
         handle, request_path = tempfile.mkstemp(suffix=".json")
@@ -283,18 +311,30 @@ class LaneObjective:
         finally:
             os.remove(request_path)
 
-        score: str | float = INVALID_SCORE
-        for line in completed.stdout.splitlines():
-            if line.startswith("SCORE "):
-                score = line.split(" ", 1)[1].strip()
+        if completed.returncode == BASE_BUILD_FAILED:
+            self.abort.set()
+            message = "base build failed in {}:\n{}".format(
+                lane.directory, completed.stderr
+            )
+            # compileiq reports a worker that dies on a BaseException without its
+            # traceback, so the reason has to be printed here to survive.
+            sys.stderr.write(message)
+            raise BaseBuildFailure(message)
 
-        if not any(line.startswith("SCORE ") for line in completed.stdout.splitlines()):
+        scores = [
+            line.split(" ", 1)[1].strip()
+            for line in completed.stdout.splitlines()
+            if line.startswith("SCORE ")
+        ]
+
+        if not scores:
             # The shim died before scoring; without this its traceback is lost and
             # every variant just looks invalid.
             sys.stderr.write(
                 "evaluation failed in {}:\n{}".format(lane.directory, completed.stderr)
             )
 
+        score: str | float = scores[-1] if scores else INVALID_SCORE
         if score != INVALID_SCORE:
             score = float(score)
 
@@ -305,11 +345,17 @@ class LaneObjective:
 
 
 class CompileIQSeeker:
-    def __init__(self, lanes, lane_queue):
+    def __init__(self, lanes, lane_queue, abort):
         self.lanes = lanes
         self.lane_queue = lane_queue
+        self.abort = abort
 
     def __call__(self, algname, ct_workload_space, rt_workload_space):
+        # run_benches catches per algorithm, so the flag is what stops the run
+        # rather than just the algorithm that tripped over the broken base.
+        if self.abort.is_set():
+            raise BaseBuildFailure("base build failed in an earlier lane")
+
         config = bench.Config()
         parameter_space = config.benchmarks[algname]
         variant_space_size = config.variant_space_size(algname)
@@ -341,6 +387,7 @@ class CompileIQSeeker:
                 parameter_space,
                 self.lanes,
                 self.lane_queue,
+                self.abort,
             )
 
             tuner = Search(
@@ -370,10 +417,18 @@ def main():
     configure_lanes(lanes, cmake_args)
     os.chdir(lanes[0].directory)
 
-    LaneWorker.lane_queue = multiprocessing.Manager().Queue()
+    manager = multiprocessing.Manager()
+    LaneWorker.lane_queue = manager.Queue()
     LaneWorker.num_lanes = len(lanes)
 
-    bench.search(CompileIQSeeker(lanes, LaneWorker.lane_queue))
+    # Workers are separate processes, so the alarm one of them raises has to
+    # travel through the manager to be seen here.
+    abort = manager.Event()
+
+    bench.search(CompileIQSeeker(lanes, LaneWorker.lane_queue, abort))
+
+    if abort.is_set():
+        sys.exit("search cancelled: the base benchmark does not build")
 
 
 if __name__ == "__main__":
