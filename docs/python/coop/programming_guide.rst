@@ -693,7 +693,7 @@ allocation. Its contents are opaque; keep application values in
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
    * - Block transpose-family Load/Store; Block Scan; Block Merge Sort;
-       Block Radix Sort
+       Block Radix Sort; TopK
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
@@ -1162,6 +1162,47 @@ bin indexing, including descending ranking.
 All radix calls are block-only; physical and logical warp groups are
 unsupported. Radix Sort accepts an explicit ``temp_storage`` descriptor;
 Radix Rank uses compiler-owned scratch.
+
+.. _coop-topk:
+
+Selecting the smallest or largest keys
+-------------------------------------
+
+:func:`~cuda.coop.topk_max_keys` selects a block's largest keys, and
+:func:`~cuda.coop.topk_min_keys` selects its smallest keys. The pair variants
+carry an associated value with each selected key. All return new payloads
+and preserve the inputs.
+
+TopK returns an unordered selection in the first ``min(k, valid_items)``
+positions of the blocked output tile. Omitted ``valid_items`` means the
+full tile. The remaining slots are unspecified: do not read or store them.
+When several keys tie at the selection boundary, the operation chooses
+enough to fill the requested result without a tie-order guarantee.
+
+Here one block selects the eight largest keys from a partial tile and
+returns their original indices:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
+   :language: python
+   :start-after: # topk-example-begin
+   :end-before: # topk-example-end
+   :dedent: 4
+
+The example knows that at least eight keys are valid. A general kernel
+must compute ``min(k, valid_items)`` and use that as Store's valid count.
+Both controls count elements across the block, not elements per thread.
+They may be runtime integers, must be uniform across the block, and must
+lie between zero and the tile's capacity. Zero produces no defined output.
+
+The current backend supports one-dimensional blocks. Warp and logical-warp
+TopK are unsupported. Calls use automatic scratch or an explicit
+``temp_storage`` descriptor with the usual reuse synchronization.
+Bit-range selection is unavailable in the current TopK API.
+
+Use a sorting primitive when the result must be ordered. TopK can avoid
+ordering elements that the kernel will discard; it does not promise that
+its selected prefix is already sorted. See :ref:`the TopK FAQ
+<coop-faq-topk-order>`.
 
 Checking and tuning a kernel
 ---------------------------

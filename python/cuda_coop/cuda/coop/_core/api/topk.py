@@ -27,13 +27,54 @@ def topk_min_keys(
     valid_items: Any = None,
     temp_storage: Any = None,
 ) -> Any:
-    """Return the minimum keys in an unsorted blocked prefix.
+    """Select the smallest keys in a block.
 
-    Inputs are preserved. Only the first ``min(k, valid_items)`` positions
-    are defined; omitted ``valid_items`` means the full tile. Ties have
-    unspecified order and selection. Every block member participates with
-    uniform integer controls in ``[0, block_threads * items_per_thread]``.
-    Invalid runtime controls trap before narrowing to CUB's integer ABI.
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete one-dimensional block, obtained with ``this_block()``.
+        Every thread in the block must call this operation.
+    keys : ThreadData
+        Fixed-size per-thread keys in blocked order. Supported dtypes
+        are signed and unsigned 8-, 16-, 32-, and 64-bit integers,
+        float32, and float64.
+    k : int
+        Requested number of selected items. May be static or runtime,
+        must be uniform across the block, and must lie in ``[0, N]``,
+        where ``N = block_threads * items_per_thread``.
+    valid_items : int, optional
+        Number of valid input items in the blocked tile prefix.
+        Defaults to ``N`` and has the same range and uniformity
+        requirements as ``k``. If ``k > valid_items``, all valid
+        items are selected.
+    temp_storage : TempStorage, optional
+        Shared scratch descriptor. Omit it to let the compiler allocate
+        storage. With ``auto_sync=False``, synchronize the block before
+        reusing the descriptor in another collective.
+
+    Returns
+    -------
+    selected_keys : per-thread payload
+        A new payload with the input dtype and per-thread extent.
+        Only the first ``min(k, valid_items)`` blocked tile positions
+        are defined. Position ``thread_rank * items_per_thread + i``
+        belongs to element ``i`` of that thread. Remaining positions
+        must not be read or stored.
+
+    Notes
+    -----
+    Selection preserves the input payloads. Results are unsorted;
+    selection and ordering among equal keys are unspecified.
+    Zero ``k`` or ``valid_items`` produces no defined output items.
+    Positive and negative floating-point zero compare as equal, and
+    selected keys retain their original bits. NaNs have no guaranteed
+    numeric ordering.
+
+    Call this operation inside a kernel compiled by a registered
+    backend. The Numba-CUDA-MLIR implementation accepts signed
+    runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    It rejects invalid static counts during compilation and traps
+    on invalid runtime counts.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -64,13 +105,59 @@ def topk_min_pairs(
     valid_items: Any = None,
     temp_storage: Any = None,
 ) -> Any:
-    """Return the minimum pairs in an unsorted blocked prefix.
+    """Select the smallest key/value pairs in a block.
 
-    Inputs are preserved. Only the first ``min(k, valid_items)`` positions
-    are defined; omitted ``valid_items`` means the full tile. Ties have
-    unspecified order and selection. Every block member participates with
-    uniform integer controls in ``[0, block_threads * items_per_thread]``.
-    Invalid runtime controls trap before narrowing to CUB's integer ABI.
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete one-dimensional block, obtained with ``this_block()``.
+        Every thread in the block must call this operation.
+    keys : ThreadData
+        Fixed-size per-thread keys in blocked order. Supported dtypes
+        are signed and unsigned 8-, 16-, 32-, and 64-bit integers,
+        float32, and float64.
+    values : ThreadData
+        Values paired with ``keys``, with the same per-thread extent.
+        The value dtype may differ from the key dtype and must be in
+        the same supported numeric profile.
+    k : int
+        Requested number of selected items. May be static or runtime,
+        must be uniform across the block, and must lie in ``[0, N]``,
+        where ``N = block_threads * items_per_thread``.
+    valid_items : int, optional
+        Number of valid input items in the blocked tile prefix.
+        Defaults to ``N`` and has the same range and uniformity
+        requirements as ``k``. If ``k > valid_items``, all valid
+        items are selected.
+    temp_storage : TempStorage, optional
+        Shared scratch descriptor. Omit it to let the compiler allocate
+        storage. With ``auto_sync=False``, synchronize the block before
+        reusing the descriptor in another collective.
+
+    Returns
+    -------
+    selected_keys, selected_values : tuple of per-thread payloads
+        New payloads with the input dtypes and per-thread extent.
+        Only the first ``min(k, valid_items)`` blocked tile positions
+        are defined. Position ``thread_rank * items_per_thread + i``
+        belongs to element ``i`` of that thread. Remaining positions
+        must not be read or stored.
+
+    Notes
+    -----
+    Selection preserves the input payloads. Results are unsorted;
+    selection and ordering among equal keys are unspecified.
+    Each selected value remains paired with its original key.
+    Zero ``k`` or ``valid_items`` produces no defined output items.
+    Positive and negative floating-point zero compare as equal, and
+    selected keys retain their original bits. NaNs have no guaranteed
+    numeric ordering.
+
+    Call this operation inside a kernel compiled by a registered
+    backend. The Numba-CUDA-MLIR implementation accepts signed
+    runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    It rejects invalid static counts during compilation and traps
+    on invalid runtime counts.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -108,13 +195,54 @@ def topk_max_keys(
     valid_items: Any = None,
     temp_storage: Any = None,
 ) -> Any:
-    """Return the maximum keys in an unsorted blocked prefix.
+    """Select the largest keys in a block.
 
-    Inputs are preserved. Only the first ``min(k, valid_items)`` positions
-    are defined; omitted ``valid_items`` means the full tile. Ties have
-    unspecified order and selection. Every block member participates with
-    uniform integer controls in ``[0, block_threads * items_per_thread]``.
-    Invalid runtime controls trap before narrowing to CUB's integer ABI.
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete one-dimensional block, obtained with ``this_block()``.
+        Every thread in the block must call this operation.
+    keys : ThreadData
+        Fixed-size per-thread keys in blocked order. Supported dtypes
+        are signed and unsigned 8-, 16-, 32-, and 64-bit integers,
+        float32, and float64.
+    k : int
+        Requested number of selected items. May be static or runtime,
+        must be uniform across the block, and must lie in ``[0, N]``,
+        where ``N = block_threads * items_per_thread``.
+    valid_items : int, optional
+        Number of valid input items in the blocked tile prefix.
+        Defaults to ``N`` and has the same range and uniformity
+        requirements as ``k``. If ``k > valid_items``, all valid
+        items are selected.
+    temp_storage : TempStorage, optional
+        Shared scratch descriptor. Omit it to let the compiler allocate
+        storage. With ``auto_sync=False``, synchronize the block before
+        reusing the descriptor in another collective.
+
+    Returns
+    -------
+    selected_keys : per-thread payload
+        A new payload with the input dtype and per-thread extent.
+        Only the first ``min(k, valid_items)`` blocked tile positions
+        are defined. Position ``thread_rank * items_per_thread + i``
+        belongs to element ``i`` of that thread. Remaining positions
+        must not be read or stored.
+
+    Notes
+    -----
+    Selection preserves the input payloads. Results are unsorted;
+    selection and ordering among equal keys are unspecified.
+    Zero ``k`` or ``valid_items`` produces no defined output items.
+    Positive and negative floating-point zero compare as equal, and
+    selected keys retain their original bits. NaNs have no guaranteed
+    numeric ordering.
+
+    Call this operation inside a kernel compiled by a registered
+    backend. The Numba-CUDA-MLIR implementation accepts signed
+    runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    It rejects invalid static counts during compilation and traps
+    on invalid runtime counts.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -145,13 +273,59 @@ def topk_max_pairs(
     valid_items: Any = None,
     temp_storage: Any = None,
 ) -> Any:
-    """Return the maximum pairs in an unsorted blocked prefix.
+    """Select the largest key/value pairs in a block.
 
-    Inputs are preserved. Only the first ``min(k, valid_items)`` positions
-    are defined; omitted ``valid_items`` means the full tile. Ties have
-    unspecified order and selection. Every block member participates with
-    uniform integer controls in ``[0, block_threads * items_per_thread]``.
-    Invalid runtime controls trap before narrowing to CUB's integer ABI.
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete one-dimensional block, obtained with ``this_block()``.
+        Every thread in the block must call this operation.
+    keys : ThreadData
+        Fixed-size per-thread keys in blocked order. Supported dtypes
+        are signed and unsigned 8-, 16-, 32-, and 64-bit integers,
+        float32, and float64.
+    values : ThreadData
+        Values paired with ``keys``, with the same per-thread extent.
+        The value dtype may differ from the key dtype and must be in
+        the same supported numeric profile.
+    k : int
+        Requested number of selected items. May be static or runtime,
+        must be uniform across the block, and must lie in ``[0, N]``,
+        where ``N = block_threads * items_per_thread``.
+    valid_items : int, optional
+        Number of valid input items in the blocked tile prefix.
+        Defaults to ``N`` and has the same range and uniformity
+        requirements as ``k``. If ``k > valid_items``, all valid
+        items are selected.
+    temp_storage : TempStorage, optional
+        Shared scratch descriptor. Omit it to let the compiler allocate
+        storage. With ``auto_sync=False``, synchronize the block before
+        reusing the descriptor in another collective.
+
+    Returns
+    -------
+    selected_keys, selected_values : tuple of per-thread payloads
+        New payloads with the input dtypes and per-thread extent.
+        Only the first ``min(k, valid_items)`` blocked tile positions
+        are defined. Position ``thread_rank * items_per_thread + i``
+        belongs to element ``i`` of that thread. Remaining positions
+        must not be read or stored.
+
+    Notes
+    -----
+    Selection preserves the input payloads. Results are unsorted;
+    selection and ordering among equal keys are unspecified.
+    Each selected value remains paired with its original key.
+    Zero ``k`` or ``valid_items`` produces no defined output items.
+    Positive and negative floating-point zero compare as equal, and
+    selected keys retain their original bits. NaNs have no guaranteed
+    numeric ordering.
+
+    Call this operation inside a kernel compiled by a registered
+    backend. The Numba-CUDA-MLIR implementation accepts signed
+    runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    It rejects invalid static counts during compilation and traps
+    on invalid runtime counts.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
