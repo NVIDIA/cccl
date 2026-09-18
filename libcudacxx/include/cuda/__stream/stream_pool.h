@@ -44,8 +44,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! The pool owns its streams and destroys them with the pool. `get_stream()` hands out the streams in
 //! round-robin order; `get_stream(i)` addresses slot `i % capacity()`. Both return a `cuda::stream_ref` that
-//! stays valid for the lifetime of the pool. The pool can be neither copied nor moved; to hand it around or share
-//! it, allocate it with `std::make_unique` or `std::make_shared`.
+//! stays valid for the lifetime of the pool. Destroying the pool destroys the streams; it is the caller's
+//! responsibility to synchronize the work submitted to them first. The pool can be neither copied nor moved; to
+//! hand it around or share it, allocate it with `std::make_unique` or `std::make_shared`.
 //!
 //! By default, and with the `stream_pool::lazy` tag, a stream is created the first time its slot is requested,
 //! and the getters take a mutex to do so. With the `stream_pool::eager` tag, every stream is created in the
@@ -242,38 +243,10 @@ public:
     }
   }
 
-  //! @brief Returns the streams created so far, in slot order
-  //!
-  //! Slots that were never requested have no stream and are skipped, so the result holds between zero and
-  //! `capacity()` entries; after `create_all_streams()` or in an eager pool it holds all of them. No stream
-  //! is created by this call. Use it to act on every stream that may carry work, for instance to synchronize
-  //! the whole pool.
-  //!
-  //! @return The references to the streams created so far
-  [[nodiscard]] _CCCL_HOST_API ::std::vector<stream_ref> streams() const
-  {
-    if (!__lazy_)
-    {
-      return ::std::vector<stream_ref>(__streams_.begin(), __streams_.end());
-    }
-
-    ::std::vector<stream_ref> __result{};
-    __result.reserve(__streams_.size());
-    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
-    for (const stream& __slot : __streams_)
-    {
-      if (__slot.get() != ::cuda::__invalid_stream())
-      {
-        __result.push_back(__slot);
-      }
-    }
-    return __result;
-  }
-
   //! @brief Number of stream slots in the pool
   //!
-  //! Fixed at construction; every stream the pool ever hands out comes from one of these slots. Whether the
-  //! streams have been created yet does not change this value, see `streams()` for that.
+  //! Fixed at construction; every stream the pool ever hands out comes from one of these slots, whether or not
+  //! its stream has been created yet.
   //!
   //! @return The capacity given at construction
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t capacity() const noexcept

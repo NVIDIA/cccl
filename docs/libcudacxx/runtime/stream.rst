@@ -80,17 +80,16 @@ managing their lifetime.
 - ``get_stream()``: returns the next stream in round-robin order
 - ``get_stream(i)``: returns the stream in slot ``i % capacity()``
 - ``create_all_streams()``: creates the streams of a lazy pool that do not exist yet
-- ``streams()``: returns the streams created so far, in slot order
 - ``capacity()``, ``device()``, ``priority()``: the parameters given at construction
 
 Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool. The streams are
-destroyed with the pool. When they are created depends on a leading tag:
+destroyed with the pool, so the work submitted to them must be synchronized before the pool goes away; the pool does
+not do it. When the streams are created depends on a leading tag:
 
-- ``cuda::stream_pool::lazy``, the default: a stream is created the first time its slot is requested. The getters
-  take a mutex to do so, and ``streams()`` returns only the streams created so far. Constructing the pool touches
-  nothing on the device, which suits a pool per device where some devices may never be used.
-- ``cuda::stream_pool::eager``: every stream is created in the constructor. The getters take no lock at all, and
-  ``streams()`` always returns all of them.
+- ``cuda::stream_pool::lazy``, the default: a stream is created the first time its slot is requested, and the
+  getters take a mutex to do so. Constructing the pool touches nothing on the device, which suits a pool per device
+  where some devices may never be used.
+- ``cuda::stream_pool::eager``: every stream is created in the constructor, and the getters take no lock at all.
 
 All getters can be called concurrently from several threads.
 
@@ -118,8 +117,8 @@ Availability: CCCL 3.6.0
      // Always the same stream, for work that must stay ordered
      cuda::stream_ref fixed = pool.get_stream(3);
 
-     // Wait for everything submitted to the pool
-     for (cuda::stream_ref s : pool.streams()) {
-       s.sync();
+     // Wait for everything submitted to the pool before it goes away
+     for (std::size_t i = 0; i < pool.capacity(); ++i) {
+       pool.get_stream(i).sync();
      }
    } // All streams are destroyed here
