@@ -7,9 +7,11 @@ import json
 import math
 import multiprocessing
 import os
+import queue
 import subprocess
 import sys
 import tempfile
+from typing import Any
 
 # compileiq defaults to forkserver, which pickles the objective into a clean
 # interpreter. Fork lets workers inherit the parent, which is what the pid-keyed
@@ -162,8 +164,8 @@ def claim_lane(lane_queue, lanes):
 class LaneWorker(MultiProcessWorker):
     """Hands out lane ids to the process pool compileiq builds each generation."""
 
-    lane_queue = None
-    num_lanes = 1
+    lane_queue: queue.Queue[Any]
+    num_lanes: int = 1
 
     def run(self, **kwargs):
         while not LaneWorker.lane_queue.empty():
@@ -281,7 +283,7 @@ class LaneObjective:
         finally:
             os.remove(request_path)
 
-        score = INVALID_SCORE
+        score: str | float = INVALID_SCORE
         for line in completed.stdout.splitlines():
             if line.startswith("SCORE "):
                 score = line.split(" ", 1)[1].strip()
