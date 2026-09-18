@@ -149,6 +149,9 @@
 #define __cccl_lib_ranges_indices 202506L
 
 #define __cccl_lib_saturation_arithmetic 202603L
+#if defined(_CCCL_BUILTIN_IS_IMPLICIT_LIFETIME)
+#  define __cccl_lib_is_implicit_lifetime 202302L
+#endif // _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
 
 #if _CCCL_STD_VER >= 2020
 #  undef __cccl_lib_array_constexpr
