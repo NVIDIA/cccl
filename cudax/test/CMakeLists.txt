@@ -206,6 +206,10 @@ cudax_add_catch2_test(test_target group.invoke_one
 cudax_add_catch2_test(test_target group.cg_interop
     group/cg_interop.cu
 )
+cudax_add_catch2_test(test_target group.no_cooperative_groups_interop
+    group/no_cooperative_groups_interop.cu
+    group/no_cooperative_groups_interop_group.cu
+)
 
 cudax_add_catch2_test(test_target coop.any_of.this_thread
     coop/any_of/this_thread.cu
