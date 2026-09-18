@@ -119,8 +119,8 @@ struct TestUninitializedFillNNonPOD
     REQUIRE_FALSE(exemplar.copy_constructed_on_host);
 
     const T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
-    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
-    REQUIRE(exemplar.copy_constructed_on_host);
+    REQUIRE_FALSE(host_copy_of_exemplar.copy_constructed_on_device);
+    REQUIRE(host_copy_of_exemplar.copy_constructed_on_host);
 
     // copy construct v from the exemplar
     thrust::uninitialized_fill_n(v, 1, exemplar);
@@ -136,4 +136,8 @@ struct TestUninitializedFillNNonPOD
     thrust::device_free(v);
   }
 };
-DECLARE_UNITTEST(TestUninitializedFillNNonPOD);
+TEST_CASE("TestUninitializedFillNNonPOD", "[uninitialized_fill_n]")
+{
+  const size_t s = GENERATE_THRUST_TEST_SIZES();
+  TestUninitializedFillNNonPOD{}(s);
+}
