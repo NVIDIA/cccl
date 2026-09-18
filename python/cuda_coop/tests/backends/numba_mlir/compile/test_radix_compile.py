@@ -153,3 +153,21 @@ def test_invalid_radix_contracts_fail_before_device_code(failure):
         match="block|dtype|int32|width|bool|items_per_thread|items per thread",
     ):
         _compile(kernel, types.void(types.int32[::1], types.int32[::1]))
+
+
+def test_unsigned_64_bit_runtime_controls_are_rejected():
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination, begin, end):
+        keys = coop.ThreadData(2, dtype=types.int32)
+        keys[0] = source[0]
+        keys[1] = source[1]
+        result = coop.radix_sort_keys(
+            coop.this_block(), keys, begin_bit=begin, end_bit=end
+        )
+        destination[0] = result[0]
+
+    with pytest.raises(TypeError, match="unsigned integer up to 32 bits"):
+        _compile(
+            kernel,
+            types.void(types.int32[::1], types.int32[::1], types.uint64, types.uint64),
+        )
