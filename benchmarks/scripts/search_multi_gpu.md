@@ -78,7 +78,7 @@ a `Worker` subclass overrides `run` to refill an id queue with `1..B-1` before d
 `os.getpid()`, so a forked child notices it inherited the parent's id and draws its own. No
 per-evaluation negotiation.
 
-**Cache first.** The shim asks for the score before it builds anything: `Bench.is_cached` checks
+**Cache first.** The shim asks for the score before it builds anything: `Bench.is_score_cached` checks
 whether the stored results already cover this variant and its base, and on a hit `score` reads
 them straight out of the lane's database - no compile, no GPU, no lock. This matters because the
 search re-proposes survivors every generation: one measured run scored 194 distinct variants in

@@ -212,7 +212,7 @@ def evaluate(request_path):
 
     # Ask for the score first: a variant this lane already measured is served
     # from its database, so there is nothing to compile and nothing to run.
-    if variant.is_cached(ct_workload, rt_workload_space):
+    if variant.is_score_cached(ct_workload, rt_workload_space):
         score = variant.score(ct_workload, rt_workload_space, estimator, estimator)
     else:
         if not variant.build():

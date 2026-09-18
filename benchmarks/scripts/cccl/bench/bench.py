@@ -851,7 +851,7 @@ class Bench:
         runs_cache.push_run(self, result.code, result.elapsed)
         return bench_cache.push_bench_centers(self, result, estimator)
 
-    def is_cached(self, ct_workload_point, rt_values):
+    def is_score_cached(self, ct_workload_point, rt_values):
         """Whether the score can be derived from stored results alone.
 
         A hit means `score` touches neither the compiler nor the GPU, so callers
@@ -864,8 +864,10 @@ class Bench:
             return False
 
         if self.is_base():
+            # baseline's score is always 1.0
             return True
 
+        # variant's center is not enough, need base to know the score
         return bool(
             bench_cache.pull_bench_centers(
                 self.get_base(), ct_workload_point, rt_values
