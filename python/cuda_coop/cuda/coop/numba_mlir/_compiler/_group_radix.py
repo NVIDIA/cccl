@@ -52,7 +52,9 @@ def _dtype(context, operation, parameter, value):
         raise GroupRewriteError(
             f"cuda.coop.{operation} could not infer {parameter} dtype"
         )
-    return normalize_dtype_param(dtype)
+    dtype = normalize_dtype_param(dtype)
+    context.record_thread_data_dtype(value, dtype)
+    return dtype
 
 
 def _bool(context, operation, name, value):
