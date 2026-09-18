@@ -49,7 +49,8 @@ enum class stream_id : unsigned long long
 class stream_ref
 {
 protected:
-  ::cudaStream_t __stream{nullptr};
+  // The owning stream class manages this handle directly.
+  ::cudaStream_t __stream{nullptr}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 public:
   using value_type = ::cudaStream_t;
