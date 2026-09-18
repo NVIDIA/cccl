@@ -74,6 +74,18 @@ memory is read-only *and* uniquely accessed through this pointer, licensing the 
 the load ahead of the sync. Acceptable only if a comment at the parameter explains why the memory can
 never be concurrently aliased (e.g. no producer kernel writes it).
 
+## correctness.pdl-cc-gate (important, CUB dispatch code in `cub/device/dispatch/*.cuh` and launcher factories launching kernels with programmatic dependent launch)
+
+<!-- provenance:
+  #9134→#9163 PDL enabled unconditionally (dependent_launch/use_pdl hardcoded to true) in five dispatch files, attempting PDL on PTX/SASS that never targeted sm_90+
+-->
+
+When a kernel is launched with PDL enabled (either directly or via a launcher factory like
+`TripleChevronFactory` or `CudaDriverLauncherFactory`), flag any argument for
+`dependent_launch`/`use_pdl` that does not consider the current device's compute capability queried
+via `cub::detail::ptx_compute_cap`. PDL may only be enabled if
+`cc >= ::cuda::compute_capability{9, 0}` (see `dispatch_find.cuh`).
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
