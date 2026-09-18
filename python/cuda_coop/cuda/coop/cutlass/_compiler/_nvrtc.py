@@ -18,6 +18,9 @@ from cuda.coop._headers._toolkit import (
     validate_nvrtc_version,
 )
 
+from ._layout import _decode_layout_probe_name, _PreparedLayoutProbes
+from ._types import ScratchLayout
+
 
 @dataclass(frozen=True)
 class CompileContext:
@@ -38,9 +41,7 @@ def _load_nvrtc():
     return nvrtc
 
 
-def resolve_compile_context(
-    required_headers: tuple[str, ...],
-) -> CompileContext:
+def resolve_compile_context(required_headers: tuple[str, ...]) -> CompileContext:
     paths = resolve_include_paths(
         start=Path(__file__),
         configured_roots=(os.environ.get("CUDA_COOP_CCCL_ROOT"),),
@@ -75,10 +76,7 @@ def compiler_options(context: CompileContext, arch: str) -> tuple[bytes, ...]:
         b"-dlto",
         b"-DCCCL_DISABLE_BF16_SUPPORT",
         f"--gpu-architecture={arch}".encode("ascii"),
-        *(
-            os.fsencode(f"--include-path={path}")
-            for path in context.include_dirs
-        ),
+        *(os.fsencode(f"--include-path={path}") for path in context.include_dirs),
     )
 
 
@@ -94,36 +92,61 @@ def _program_log(nvrtc: Any, program: Any) -> str:
 
 
 def compile_ltoir(source: str, options: tuple[bytes, ...]) -> bytes:
+    return _compile_ltoir(source, options)[0]
+
+
+def compile_ltoir_with_layouts(
+    prepared: _PreparedLayoutProbes, options: tuple[bytes, ...]
+) -> tuple[bytes, dict[str, ScratchLayout]]:
+    """Recover all requested layouts from the same program as its LTO-IR."""
+
+    return _compile_ltoir(prepared.source, options, prepared)
+
+
+def _compile_ltoir(
+    source: str,
+    options: tuple[bytes, ...],
+    prepared: _PreparedLayoutProbes | None = None,
+) -> tuple[bytes, dict[str, ScratchLayout]]:
     nvrtc = _load_nvrtc()
     error, program = nvrtc.nvrtcCreateProgram(
         source.encode("utf-8"), b"cuda_coop_cutlass_bundle.cu", 0, [], []
     )
     if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-        raise RuntimeError(
-            f"Cannot create CUTLASS provider NVRTC program: {error}"
-        )
+        raise RuntimeError(f"Cannot create CUTLASS provider NVRTC program: {error}")
     failed = False
     try:
-        error = nvrtc.nvrtcCompileProgram(program, len(options), list(options))[
-            0
-        ]
+        expressions = () if prepared is None else prepared.expressions
+        for expression in expressions:
+            error = nvrtc.nvrtcAddNameExpression(program, expression.encode())[0]
+            if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                raise RuntimeError(
+                    f"Cannot register NVRTC storage layout probe: {error}"
+                )
+        error = nvrtc.nvrtcCompileProgram(program, len(options), list(options))[0]
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             raise RuntimeError(
-                "CUTLASS provider compilation failed:\n"
-                f"{_program_log(nvrtc, program)}"
+                f"CUTLASS provider compilation failed:\n{_program_log(nvrtc, program)}"
+            )
+        layouts: dict[str, ScratchLayout] = {}
+        for expression in expressions:
+            error, name = nvrtc.nvrtcGetLoweredName(program, expression.encode())
+            if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                raise RuntimeError(
+                    f"Cannot retrieve NVRTC storage layout probe: {error}"
+                )
+            assert prepared is not None
+            layouts[expression] = _decode_layout_probe_name(
+                name, symbol=prepared.symbol, expression=expression
             )
         error, size = nvrtc.nvrtcGetLTOIRSize(program)
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS or size <= 0:
-            raise RuntimeError(
-                f"Cannot retrieve CUTLASS provider LTO-IR size: {error}"
-            )
+            raise RuntimeError(f"Cannot retrieve CUTLASS provider LTO-IR size: {error}")
         blob = bytearray(size)
         error = nvrtc.nvrtcGetLTOIR(program, blob)[0]
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            raise RuntimeError(
-                f"Cannot retrieve CUTLASS provider LTO-IR: {error}"
-            )
-        return bytes(blob)
+            raise RuntimeError(f"Cannot retrieve CUTLASS provider LTO-IR: {error}")
+        return bytes(blob), layouts
     except BaseException:
         failed = True
         raise

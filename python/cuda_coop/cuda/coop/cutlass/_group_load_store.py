@@ -24,19 +24,15 @@ def _resolve_group(group, algorithm, temp_storage, operation):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
     if group.kind != "block":
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} supports only block groups"
+            f"{_SCOPE}.{operation} currently supports block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
-    if algorithm is not GroupLoadStoreAlgorithm.DIRECT:
-        raise NotImplementedError(f"{_SCOPE}.{operation} supports only DIRECT")
     if temp_storage is not None:
         _validate_common_temp_storage(operation, temp_storage)
     from ._compiler._launch import current_kernel_launch_facts
 
     launch = current_kernel_launch_facts()
-    resolved = _resolve_primitive_group_from_launch(
-        group, launch, feature=operation
-    )
+    resolved = _resolve_primitive_group_from_launch(group, launch, feature=operation)
     return resolved, launch, algorithm
 
 
@@ -54,19 +50,16 @@ def load(
 ) -> None:
     """Load a contiguous block tile into a writable per-thread payload.
 
-    The payload is populated in place. Beyond ``valid_items``, slots have
-    unspecified values unless ``oob_default`` is supplied, even if initialized
-    before Load. DIRECT requires no shared scratch or synchronization.
-    ``offset`` is measured in elements.
+    The payload is populated in place. Beyond ``valid_items``, initialized
+    slots keep their values unless ``oob_default`` is supplied. DIRECT, STRIPED,
+    and VECTORIZE require no shared scratch or synchronization. ``offset`` is measured in elements.
     """
 
     if not isinstance(output, ThreadData):
         raise TypeError(f"{_SCOPE}.load output must be ThreadData")
     if oob_default is not None and valid_items is None:
         raise ValueError(f"{_SCOPE}.load oob_default requires valid_items")
-    group, launch, algorithm = _resolve_group(
-        group, algorithm, temp_storage, "load"
-    )
+    group, launch, algorithm = _resolve_group(group, algorithm, temp_storage, "load")
     from ._lowering._load_store import provider_load
 
     provider_load(
@@ -76,13 +69,12 @@ def load(
         output=output,
         algorithm=algorithm,
         valid_items=valid_items,
-        valid_items_binding=_classify_integer_binding(
-            valid_items, name="valid_items"
-        ),
+        valid_items_binding=_classify_integer_binding(valid_items, name="valid_items"),
         oob_default=oob_default,
         oob_default_binding=_classify_oob_default(oob_default),
         offset=offset,
         offset_binding=_classify_integer_binding(offset, name="offset"),
+        temp_storage=temp_storage,
     )
 
 
@@ -100,12 +92,11 @@ def store(
     """Store per-thread values into a contiguous block tile.
 
     ``valid_items`` limits the written prefix; ``offset`` is in elements.
-    The value dtype must match the destination. DIRECT needs no shared scratch.
+    The value dtype must match the destination. Transpose algorithms use shared
+    scratch; an optional TempStorage descriptor controls allocation and reuse.
     """
 
-    group, launch, algorithm = _resolve_group(
-        group, algorithm, temp_storage, "store"
-    )
+    group, launch, algorithm = _resolve_group(group, algorithm, temp_storage, "store")
     from ._lowering._load_store import provider_store
 
     provider_store(
@@ -115,11 +106,10 @@ def store(
         value=value,
         algorithm=algorithm,
         valid_items=valid_items,
-        valid_items_binding=_classify_integer_binding(
-            valid_items, name="valid_items"
-        ),
+        valid_items_binding=_classify_integer_binding(valid_items, name="valid_items"),
         offset=offset,
         offset_binding=_classify_integer_binding(offset, name="offset"),
+        temp_storage=temp_storage,
     )
 
 
@@ -170,8 +160,7 @@ def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
     if isinstance(value, Integer):
         return ArgumentBinding.runtime()
     raise TypeError(
-        f"{_SCOPE}.load/store {name} must be an integer, "
-        f"not {type(value).__name__}"
+        f"{_SCOPE}.load/store {name} must be an integer, not {type(value).__name__}"
     )
 
 
@@ -179,9 +168,7 @@ def _classify_oob_default(value: Any) -> ArgumentBinding:
     if value is None:
         return ArgumentBinding.omitted()
     if _is_boolean(value):
-        raise TypeError(
-            f"{_SCOPE}.load oob_default must be numeric, not boolean"
-        )
+        raise TypeError(f"{_SCOPE}.load oob_default must be numeric, not boolean")
     if isinstance(value, Integral):
         return ArgumentBinding.static(int(value))
     if isinstance(value, Real):
