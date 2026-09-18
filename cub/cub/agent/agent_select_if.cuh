@@ -57,7 +57,7 @@ template <int ThreadsPerBlock,
           LoadPrefetch PrefetchLevel = LoadPrefetch::none>
 struct agent_select_if_policy
 {
-  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
+  static constexpr int block_threads                 = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
@@ -243,9 +243,9 @@ struct AgentSelectIf
     USE_STENCIL_WITH_OP
   };
 
-  static constexpr ::cuda::std::int32_t BLOCK_THREADS    = AgentSelectIfPolicyT::BLOCK_THREADS;
+  static constexpr ::cuda::std::int32_t block_threads    = AgentSelectIfPolicyT::block_threads;
   static constexpr ::cuda::std::int32_t ITEMS_PER_THREAD = AgentSelectIfPolicyT::ITEMS_PER_THREAD;
-  static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr ::cuda::std::int32_t TILE_ITEMS       = block_threads * ITEMS_PER_THREAD;
   static constexpr bool TWO_PHASE_SCATTER                = (ITEMS_PER_THREAD > 1);
 
   static constexpr bool has_select_op       = (!::cuda::std::is_same_v<SelectOpT, NullType>);
@@ -274,16 +274,16 @@ struct AgentSelectIf
                      FlagsInputIteratorT>;
 
   // Parameterized BlockLoad type for input data
-  using BlockLoadT = BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadT = BlockLoad<InputT, block_threads, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockLoad type for flags
-  using BlockLoadFlags = BlockLoad<FlagT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadFlags = BlockLoad<FlagT, block_threads, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for items
-  using BlockDiscontinuityT = BlockDiscontinuity<InputT, BLOCK_THREADS>;
+  using BlockDiscontinuityT = BlockDiscontinuity<InputT, block_threads>;
 
   // Parameterized BlockScan type
-  using BlockScanT = BlockScan<OffsetT, BLOCK_THREADS, AgentSelectIfPolicyT::SCAN_ALGORITHM>;
+  using BlockScanT = BlockScan<OffsetT, block_threads, AgentSelectIfPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
@@ -436,7 +436,7 @@ struct AgentSelectIf
 
     if constexpr (prefetch_before_items)
     {
-      BlockPrefetch<BLOCK_THREADS, AgentSelectIfPolicyT::LOAD_PREFETCH>::Prefetch(
+      BlockPrefetch<block_threads, AgentSelectIfPolicyT::LOAD_PREFETCH>::Prefetch(
         (GetInputIterator() + streaming_context.input_offset()) + tile_offset, num_tile_items);
 
       InitializeSelections<IS_FIRST_TILE, IS_LAST_TILE>(
@@ -714,7 +714,7 @@ struct AgentSelectIf
 
     __syncthreads();
 
-    for (int item = static_cast<int>(threadIdx.x); item < num_tile_selections; item += BLOCK_THREADS)
+    for (int item = static_cast<int>(threadIdx.x); item < num_tile_selections; item += block_threads)
     {
       *((d_selected_out + streaming_context.num_previously_selected())
         + (num_selections_prefix + item)) = // NOLINT(bugprone-misplaced-widening-cast)
@@ -754,7 +754,7 @@ struct AgentSelectIf
   {
     // Do a two-phase scatter if two-phase is enabled and the average number of selection_flags items per thread is
     // greater than one
-    if (TWO_PHASE_SCATTER && (num_tile_selections > BLOCK_THREADS))
+    if (TWO_PHASE_SCATTER && (num_tile_selections > block_threads))
     {
       ScatterSelectedTwoPhase<IS_LAST_TILE>(
         items, selection_flags, selection_indices, num_tile_selections, num_selections_prefix);
@@ -839,7 +839,7 @@ struct AgentSelectIf
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      const int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      const int item_idx      = (ITEM * block_threads) + threadIdx.x;
       const int rejection_idx = item_idx;
       const int selection_idx = item_idx - tile_num_rejections;
       const OffsetT scatter_offset =
@@ -879,7 +879,7 @@ struct AgentSelectIf
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      const int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      const int item_idx      = (ITEM * block_threads) + threadIdx.x;
       const int rejection_idx = item_idx;
       const int selection_idx = item_idx - tile_num_rejections;
       const total_offset_t scatter_offset =

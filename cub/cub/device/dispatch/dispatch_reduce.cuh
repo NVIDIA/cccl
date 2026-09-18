@@ -139,14 +139,14 @@ struct policy_selector_from_hub
     using ap_single_tile = typename ap::SingleTilePolicy;
     return ReducePolicy{
       ReducePassPolicy{
-        ap_reduce::BLOCK_THREADS,
+        ap_reduce::block_threads,
         ap_reduce::ITEMS_PER_THREAD,
         ap_reduce::VECTOR_LOAD_LENGTH,
         ap_reduce::BLOCK_ALGORITHM,
         ap_reduce::LOAD_MODIFIER,
       },
       ReducePassPolicy{
-        ap_single_tile::BLOCK_THREADS,
+        ap_single_tile::block_threads,
         ap_single_tile::ITEMS_PER_THREAD,
         ap_single_tile::VECTOR_LOAD_LENGTH,
         ap_single_tile::BLOCK_ALGORITHM,

@@ -104,13 +104,13 @@ class BlockDiscontinuity
 {
 private:
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Shared memory storage layout type (last element from each thread's input)
   struct _TempStorage
   {
-    T first_items[BLOCK_THREADS];
-    T last_items[BLOCK_THREADS];
+    T first_items[block_threads];
+    T last_items[block_threads];
   };
 
   /// Internal storage allocator
@@ -513,7 +513,7 @@ public:
   //!   ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where `next-item` is either the next item
   //!   in the same thread or the first item in the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is always flagged.
+  //! - For *thread*\ :sub:`block_threads - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is always flagged.
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
@@ -584,7 +584,7 @@ public:
 
     // Set flag for last thread-item
     tail_flags[ITEMS_PER_THREAD - 1] =
-      (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
+      (linear_tid == block_threads - 1) ? 1 : // Last thread
         ApplyOp<FlagOp>::FlagT(
           flag_op,
           input[ITEMS_PER_THREAD - 1],
@@ -604,7 +604,7 @@ public:
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where ``next-item`` is either the next item in the same thread or the first item in
   //!   the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is compared against
+  //! - For *thread*\ :sub:`block_threads - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is compared against
   //!   ``tile_successor_item``.
   //! - @blocked
   //! - @granularity
@@ -673,9 +673,9 @@ public:
   //!
   //! @param[in] tile_successor_item
   //!   @rst
-  //!   *thread*\ :sub:`BLOCK_THREADS - 1` only item with which to
+  //!   *thread*\ :sub:`block_threads - 1` only item with which to
   //!   compare the last tile item (``input[ITEMS_PER_THREAD - 1]`` from
-  //!   *thread*\ :sub:`BLOCK_THREADS - 1`).
+  //!   *thread*\ :sub:`block_threads - 1`).
   //!   @endrst
   template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -687,7 +687,7 @@ public:
     __syncthreads();
 
     // Set flag for last thread-item
-    T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
+    T successor_item = (linear_tid == block_threads - 1) ? tile_successor_item : // Last thread
                          temp_storage.first_items[linear_tid + 1];
 
     tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
@@ -714,7 +714,7 @@ public:
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where next-item is either the next item in the same thread or the first item in
   //!   the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is always flagged.
+  //! - For *thread*\ :sub:`block_threads - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is always flagged.
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
@@ -809,7 +809,7 @@ public:
 
     // Set flag for last thread-item
     tail_flags[ITEMS_PER_THREAD - 1] =
-      (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
+      (linear_tid == block_threads - 1) ? 1 : // Last thread
         ApplyOp<FlagOp>::FlagT(
           flag_op,
           input[ITEMS_PER_THREAD - 1],
@@ -835,7 +835,7 @@ public:
   //! - For *thread*\ :sub:`0`, item ``input[0]`` is always flagged.
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when ``flag_op(input[i], next-item)`` returns ``true``
   //!   (where ``next-item`` is either the next item in the same thread or the first item in the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is compared
+  //! - For *thread*\ :sub:`block_threads - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is compared
   //!   against ``tile_predecessor_item``.
   //! - @blocked
   //! - @granularity
@@ -905,9 +905,9 @@ public:
   //!
   //! @param[in] tile_successor_item
   //!   @rst
-  //!   *thread*\ :sub:`BLOCK_THREADS - 1` only item with which to compare
+  //!   *thread*\ :sub:`block_threads - 1` only item with which to compare
   //!   the last tile item (``input[ITEMS_PER_THREAD - 1]`` from
-  //!   *thread*\ :sub:`BLOCK_THREADS - 1`).
+  //!   *thread*\ :sub:`block_threads - 1`).
   //!   @endrst
   //!
   //! @param[in] input
@@ -943,7 +943,7 @@ public:
     }
 
     // Set flag for last thread-item
-    T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
+    T successor_item = (linear_tid == block_threads - 1) ? tile_successor_item : // Last thread
                          temp_storage.first_items[linear_tid + 1];
 
     tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
@@ -969,7 +969,7 @@ public:
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when
   //!   ``flag_op(input[i], next-item)`` returns ``true`` (where ``next-item`` is either the next item
   //!   in the same thread or the first item in the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item
+  //! - For *thread*\ :sub:`block_threads - 1`, item
   //!   ``input[ITEMS_PER_THREAD - 1]`` is always flagged.
   //! - @blocked
   //! - @granularity
@@ -1075,7 +1075,7 @@ public:
 
     // Set flag for last thread-item
     tail_flags[ITEMS_PER_THREAD - 1] =
-      (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
+      (linear_tid == block_threads - 1) ? 1 : // Last thread
         ApplyOp<FlagOp>::FlagT(
           flag_op,
           input[ITEMS_PER_THREAD - 1],
@@ -1102,7 +1102,7 @@ public:
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where ``next-item`` is either the next item in the same thread or the first item in
   //!   the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is compared
+  //! - For *thread*\ :sub:`block_threads - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is compared
   //!   against ``tile_successor_item``.
   //! - @blocked
   //! - @granularity
@@ -1182,8 +1182,8 @@ public:
   //!
   //! @param[in] tile_successor_item
   //!   @rst
-  //!   *thread*\ :sub:`BLOCK_THREADS - 1` only item with which to compare the last tile item
-  //!   (``input[ITEMS_PER_THREAD - 1]`` from *thread*\ :sub:`BLOCK_THREADS - 1`).
+  //!   *thread*\ :sub:`block_threads - 1` only item with which to compare the last tile item
+  //!   (``input[ITEMS_PER_THREAD - 1]`` from *thread*\ :sub:`block_threads - 1`).
   //!   @endrst
   //!
   //! @param[in] input
@@ -1215,7 +1215,7 @@ public:
     head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
 
     // Set flag for last thread-item
-    T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
+    T successor_item = (linear_tid == block_threads - 1) ? tile_successor_item : // Last thread
                          temp_storage.first_items[linear_tid + 1];
 
     tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(

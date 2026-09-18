@@ -51,7 +51,7 @@ template <uint32_t ThreadsPerBlock,
           class BlockDelayConstructor>
 struct agent_batch_memcpy_policy
 {
-  static constexpr uint32_t BLOCK_THREADS         = ThreadsPerBlock;
+  static constexpr uint32_t block_threads         = ThreadsPerBlock;
   static constexpr uint32_t BUFFERS_PER_THREAD    = BuffersPerThread;
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = TlevBytesPerThread;
   static constexpr uint32_t PREFER_POW2_BITS      = PreferPow2Bits;
@@ -506,7 +506,7 @@ private:
   // CONFIGS / CONSTANTS
   //---------------------------------------------------------------------
   // Tuning policy-based configurations
-  static constexpr uint32_t BLOCK_THREADS         = AgentMemcpySmallBuffersPolicyT::BLOCK_THREADS;
+  static constexpr uint32_t block_threads         = AgentMemcpySmallBuffersPolicyT::block_threads;
   static constexpr uint32_t BUFFERS_PER_THREAD    = AgentMemcpySmallBuffersPolicyT::BUFFERS_PER_THREAD;
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = AgentMemcpySmallBuffersPolicyT::TLEV_BYTES_PER_THREAD;
   static constexpr prefer_power_of_two_bits_option PREFER_POW2_BITS =
@@ -516,7 +516,7 @@ private:
   static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = AgentMemcpySmallBuffersPolicyT::BLOCK_LEVEL_TILE_SIZE;
 
   // Derived configs
-  static constexpr uint32_t BUFFERS_PER_BLOCK       = BUFFERS_PER_THREAD * BLOCK_THREADS;
+  static constexpr uint32_t BUFFERS_PER_BLOCK       = BUFFERS_PER_THREAD * block_threads;
   static constexpr uint32_t TLEV_BUFFERS_PER_THREAD = BUFFERS_PER_THREAD;
   static constexpr uint32_t BLEV_BUFFERS_PER_THREAD = BUFFERS_PER_THREAD;
 
@@ -585,7 +585,7 @@ private:
   // small, medium, and large buffers, otherwise load them in a blocked arrangement
   using BufferLoadT =
     BlockLoad<BufferSizeT,
-              static_cast<int32_t>(BLOCK_THREADS),
+              static_cast<int32_t>(block_threads),
               static_cast<int32_t>(BUFFERS_PER_THREAD),
               BUFFER_STABLE_PARTITION ? BLOCK_LOAD_WARP_TRANSPOSE : BLOCK_LOAD_STRIPED>;
 
@@ -600,22 +600,22 @@ private:
   using VectorizedSizeClassCounterT = bit_packed_counter<NUM_SIZE_CLASSES, BUFFERS_PER_BLOCK, PREFER_POW2_BITS>;
 
   // Block-level scan used to compute the write offsets
-  using BlockSizeClassScanT = cub::BlockScan<VectorizedSizeClassCounterT, static_cast<int32_t>(BLOCK_THREADS)>;
+  using BlockSizeClassScanT = cub::BlockScan<VectorizedSizeClassCounterT, static_cast<int32_t>(block_threads)>;
 
   //
-  using BlockBLevTileCountScanT = cub::BlockScan<BlockOffsetT, static_cast<int32_t>(BLOCK_THREADS)>;
+  using BlockBLevTileCountScanT = cub::BlockScan<BlockOffsetT, static_cast<int32_t>(block_threads)>;
 
   // Block-level run-length decode algorithm to evenly distribute work of all buffers requiring
   // thread-level collaboration
   using BlockRunLengthDecodeT =
     cub::BlockRunLengthDecode<BlockBufferOffsetT,
-                              static_cast<int32_t>(BLOCK_THREADS),
+                              static_cast<int32_t>(block_threads),
                               static_cast<int32_t>(TLEV_BUFFERS_PER_THREAD),
                               static_cast<int32_t>(TLEV_BYTES_PER_THREAD)>;
 
   using BlockExchangeTLevT =
     cub::BlockExchange<ZippedTLevByteAssignment,
-                       static_cast<int32_t>(BLOCK_THREADS),
+                       static_cast<int32_t>(block_threads),
                        static_cast<int32_t>(TLEV_BYTES_PER_THREAD)>;
 
   using BLevBuffScanPrefixCallbackOpT =
@@ -748,7 +748,7 @@ private:
     // arrangement, otherwise they are in a striped arrangement
     BlockBufferOffsetT buffer_id = BUFFER_STABLE_PARTITION ? (BUFFERS_PER_THREAD * threadIdx.x) : (threadIdx.x);
     constexpr BlockBufferOffsetT BUFFER_STRIDE =
-      BUFFER_STABLE_PARTITION ? static_cast<BlockBufferOffsetT>(1) : static_cast<BlockBufferOffsetT>(BLOCK_THREADS);
+      BUFFER_STABLE_PARTITION ? static_cast<BlockBufferOffsetT>(1) : static_cast<BlockBufferOffsetT>(block_threads);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BUFFERS_PER_THREAD; i++)
@@ -848,7 +848,7 @@ private:
     BlockBufferOffsetT num_wlev_buffers)
   {
     const int32_t warp_id              = static_cast<int32_t>(threadIdx.x / warp_threads);
-    constexpr uint32_t warps_per_block = BLOCK_THREADS / warp_threads;
+    constexpr uint32_t warps_per_block = block_threads / warp_threads;
 
     for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += warps_per_block)
     {
@@ -935,7 +935,7 @@ private:
         .BlockedToStriped(zipped_byte_assignment, zipped_byte_assignment);
 
       // Read in the bytes that this thread is assigned to
-      constexpr uint32_t WINDOW_SIZE = (TLEV_BYTES_PER_THREAD * BLOCK_THREADS);
+      constexpr uint32_t WINDOW_SIZE = (TLEV_BYTES_PER_THREAD * block_threads);
       const bool is_full_window      = decoded_window_offset + WINDOW_SIZE < num_total_tlev_bytes;
       if (is_full_window)
       {
@@ -947,7 +947,7 @@ private:
         {
           src_byte[i] = read_item<IsMemcpy, AliasT, InputBufferT>(
             tile_buffer_srcs[zipped_byte_assignment[i].tile_buffer_id], zipped_byte_assignment[i].buffer_byte_offset);
-          absolute_tlev_byte_offset += BLOCK_THREADS;
+          absolute_tlev_byte_offset += block_threads;
         }
 
         _CCCL_PRAGMA_UNROLL_FULL()
@@ -975,7 +975,7 @@ private:
               zipped_byte_assignment[i].buffer_byte_offset,
               src_byte);
           }
-          absolute_tlev_byte_offset += BLOCK_THREADS;
+          absolute_tlev_byte_offset += block_threads;
         }
       }
 

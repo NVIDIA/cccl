@@ -102,13 +102,13 @@ class BlockAdjacentDifference
 {
 private:
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Shared memory storage layout type (last element from each thread's input)
   struct _TempStorage
   {
-    T first_items[BLOCK_THREADS];
-    T last_items[BLOCK_THREADS];
+    T first_items[block_threads];
+    T last_items[block_threads];
   };
 
   /// Internal storage allocator
@@ -744,7 +744,7 @@ public:
       output[item] = difference_op(input[item], input[item + 1]);
     }
 
-    if (linear_tid == BLOCK_THREADS - 1)
+    if (linear_tid == block_threads - 1)
     {
       output[ITEMS_PER_THREAD - 1] = input[ITEMS_PER_THREAD - 1];
     }
@@ -827,8 +827,8 @@ public:
   //!
   //! @param[in] tile_successor_item
   //!   @rst
-  //!   *thread*\ :sub:`BLOCK_THREADS` only item which is going to be subtracted from the last tile item
-  //!   (*input*\ :sub:`ITEMS_PER_THREAD` from *thread*\ :sub:`BLOCK_THREADS`).
+  //!   *thread*\ :sub:`block_threads` only item which is going to be subtracted from the last tile item
+  //!   (*input*\ :sub:`ITEMS_PER_THREAD` from *thread*\ :sub:`block_threads`).
   //!   @endrst
   template <int ITEMS_PER_THREAD, typename OutputT, typename DifferenceOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SubtractRight(
@@ -843,7 +843,7 @@ public:
     __syncthreads();
 
     // Set flag for last thread-item
-    T successor_item = (linear_tid == BLOCK_THREADS - 1)
+    T successor_item = (linear_tid == block_threads - 1)
                        ? tile_successor_item // Last thread
                        : temp_storage.first_items[linear_tid + 1];
 

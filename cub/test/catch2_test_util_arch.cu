@@ -23,11 +23,11 @@ void check_mem_bound_scaling()
   }
   STATIC_REQUIRE(mbs::ITEMS_PER_THREAD == ExpectedItemsPerThread);
 
-  if constexpr (mbs::BLOCK_THREADS != ExpectedThreadsPerBlock)
+  if constexpr (mbs::block_threads != ExpectedThreadsPerBlock)
   {
-    show<mbs::BLOCK_THREADS>::asdf();
+    show<mbs::block_threads>::asdf();
   }
-  STATIC_REQUIRE(mbs::BLOCK_THREADS == ExpectedThreadsPerBlock);
+  STATIC_REQUIRE(mbs::block_threads == ExpectedThreadsPerBlock);
 }
 
 CUB_TEST("MemBoundScaling", "[util][arch]", CUB_SMALL)
@@ -77,11 +77,11 @@ void check_reg_bound_scaling()
   }
   STATIC_REQUIRE(mbs::ITEMS_PER_THREAD == ExpectedItemsPerThread);
 
-  if constexpr (mbs::BLOCK_THREADS != ExpectedThreadsPerBlock)
+  if constexpr (mbs::block_threads != ExpectedThreadsPerBlock)
   {
-    show<mbs::BLOCK_THREADS>::asdf();
+    show<mbs::block_threads>::asdf();
   }
-  STATIC_REQUIRE(mbs::BLOCK_THREADS == ExpectedThreadsPerBlock);
+  STATIC_REQUIRE(mbs::block_threads == ExpectedThreadsPerBlock);
 }
 
 CUB_TEST("RegBoundScaling", "[util][arch]", CUB_SMALL)

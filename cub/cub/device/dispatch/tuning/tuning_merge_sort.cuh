@@ -34,9 +34,9 @@ template <int ThreadsPerBlock,
           cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
 struct agent_merge_sort_policy
 {
-  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
+  static constexpr int block_threads    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = block_threads * ITEMS_PER_THREAD;
 
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
@@ -185,7 +185,7 @@ struct policy_selector_from_hub
     using ap = typename PolicyHub::MaxPolicy::ActivePolicy;
     using mp = typename ap::MergeSortPolicy;
     return MergeSortPolicy{
-      mp::BLOCK_THREADS, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
+      mp::block_threads, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
   }
 };
 } // namespace detail::merge_sort

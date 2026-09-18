@@ -214,7 +214,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //! @striped
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam BlockThreads
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -235,7 +235,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //!
 //! @param[in] items
 //!   Data to store
-template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
+template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
@@ -245,7 +245,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
+    thread_itr[(ITEM * BlockThreads)] = items[ITEM];
   }
 }
 
@@ -259,7 +259,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! @striped
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam BlockThreads
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -283,7 +283,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //!
 //! @param[in] valid_items
 //!   Number of valid items to write
-template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
+template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
@@ -293,9 +293,9 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    if ((ITEM * BLOCK_THREADS) + linear_tid < valid_items)
+    if ((ITEM * BlockThreads) + linear_tid < valid_items)
     {
-      thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
+      thread_itr[(ITEM * BlockThreads)] = items[ITEM];
     }
   }
 }
@@ -507,7 +507,7 @@ enum BlockStoreAlgorithm
   //! Usage Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - BLOCK_THREADS must be a multiple of WARP_THREADS
+  //! - block_threads must be a multiple of WARP_THREADS
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -533,7 +533,7 @@ enum BlockStoreAlgorithm
   //! Usage Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - BLOCK_THREADS must be a multiple of WARP_THREADS
+  //! - block_threads must be a multiple of WARP_THREADS
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -698,14 +698,14 @@ template <typename T,
 class BlockStore
 {
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   // transposing store algorithms need a BlockExchange
   using block_exchange =
     BlockExchange<T, BlockDimX, ItemsPerThread, Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BlockDimY, BlockDimZ>;
 
   static_assert((Algorithm != BLOCK_STORE_WARP_TRANSPOSE && Algorithm != BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
-                  || (BLOCK_THREADS % detail::warp_threads == 0),
+                  || (block_threads % detail::warp_threads == 0),
                 "Threads per block must be a multiple of warp_threads for this BlockStoreAlgorithm");
 
   _CCCL_HOST_DEVICE_API static constexpr auto temp_storage_helper()
@@ -836,7 +836,7 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+      StoreDirectStriped<block_threads>(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
@@ -852,7 +852,7 @@ public:
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
       block_exchange(temp_storage).BlockedToStriped(items);
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+      StoreDirectStriped<block_threads>(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
@@ -922,7 +922,7 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
+      StoreDirectStriped<block_threads>(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
@@ -933,7 +933,7 @@ public:
         temp_storage.valid_items = valid_items;
       }
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
+      StoreDirectStriped<block_threads>(linear_tid, block_itr, items, temp_storage.valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
@@ -955,7 +955,7 @@ public:
 template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockStoreType
 {
-  using type = cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;
+  using type = cub::BlockStore<T, Policy::block_threads, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;
 };
 #endif // _CCCL_DOXYGEN_INVOKED
 

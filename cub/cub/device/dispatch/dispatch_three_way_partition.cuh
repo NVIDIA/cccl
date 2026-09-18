@@ -80,7 +80,7 @@ struct policy_selector_from_hub
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::ThreeWayPartitionPolicy;
     return ThreeWayPartitionPolicy{
       ThreeWayPartitionAlgorithm::lookback,
-      {active_policy::BLOCK_THREADS,
+      {active_policy::block_threads,
        active_policy::ITEMS_PER_THREAD,
        active_policy::LOAD_ALGORITHM,
        active_policy::LOAD_MODIFIER,

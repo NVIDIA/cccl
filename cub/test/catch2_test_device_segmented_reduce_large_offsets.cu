@@ -198,7 +198,7 @@ struct dispatch_helper
   {
     thresholds = {+ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE,
                   +ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE,
-                  +ActivePolicyT::ReducePolicy::BLOCK_THREADS * +ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD};
+                  +ActivePolicyT::ReducePolicy::block_threads * +ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD};
     return cudaSuccess;
   }
 

@@ -58,10 +58,10 @@ struct BlockScanRaking
   //---------------------------------------------------------------------
 
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Layout type for padded thread block raking grid
-  using BlockRakingLayout = BlockRakingLayout<T, BLOCK_THREADS>;
+  using BlockRakingLayout = BlockRakingLayout<T, block_threads>;
 
   /// Constants
   /// Number of raking threads
@@ -71,7 +71,7 @@ struct BlockScanRaking
   static constexpr int SEGMENT_LENGTH = BlockRakingLayout::SEGMENT_LENGTH;
 
   /// Cooperative work can be entirely warp synchronous
-  static constexpr bool WARP_SYNCHRONOUS = (BLOCK_THREADS == RAKING_THREADS);
+  static constexpr bool WARP_SYNCHRONOUS = (block_threads == RAKING_THREADS);
 
   ///  WarpScan utility type
   using WarpScan = WarpScan<T, RAKING_THREADS>;
@@ -122,7 +122,7 @@ struct BlockScanRaking
   _CCCL_DEVICE _CCCL_FORCEINLINE T
   GuardedReduce(T* raking_ptr, ScanOp scan_op, T raking_partial, constant_t<ITERATION> /*iteration*/)
   {
-    if ((BlockRakingLayout::UNGUARDED) || (((linear_tid * SEGMENT_LENGTH) + ITERATION) < BLOCK_THREADS))
+    if ((BlockRakingLayout::UNGUARDED) || (((linear_tid * SEGMENT_LENGTH) + ITERATION) < block_threads))
     {
       T addend       = raking_ptr[ITERATION];
       raking_partial = scan_op(raking_partial, addend);

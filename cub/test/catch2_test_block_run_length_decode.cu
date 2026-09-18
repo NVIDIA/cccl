@@ -46,8 +46,8 @@ template <typename ItemItT,
 class AgentTestBlockRunLengthDecode
 {
 public:
-  static constexpr uint32_t BLOCK_THREADS     = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
-  static constexpr uint32_t RUNS_PER_BLOCK    = RUNS_PER_THREAD * BLOCK_THREADS;
+  static constexpr uint32_t block_threads     = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
+  static constexpr uint32_t RUNS_PER_BLOCK    = RUNS_PER_THREAD * block_threads;
   static constexpr bool TEST_RELATIVE_OFFSETS = TEST_RELATIVE_OFFSETS_;
 
 private:
@@ -217,7 +217,7 @@ public:
           .Store(d_block_rel_out + decoded_window_offset, relative_offsets, num_valid_items);
       }
 
-      decoded_window_offset += DECODED_ITEMS_PER_THREAD * BLOCK_THREADS;
+      decoded_window_offset += DECODED_ITEMS_PER_THREAD * block_threads;
     }
     return decoded_size;
   }
@@ -231,7 +231,7 @@ template <typename AgentTestBlockRunLengthDecode,
           typename RunLengthsItT,
           typename OffsetT,
           typename DecodedSizesOutT>
-__launch_bounds__(AgentTestBlockRunLengthDecode::BLOCK_THREADS) __global__ void BlockRunLengthDecodeGetSizeKernel(
+__launch_bounds__(AgentTestBlockRunLengthDecode::block_threads) __global__ void BlockRunLengthDecodeGetSizeKernel(
   const ItemItT d_unique_items,
   const RunLengthsItT d_run_lengths,
   const OffsetT num_runs,
@@ -261,7 +261,7 @@ template <typename AgentTestBlockRunLengthDecode,
           typename OffsetT,
           typename DecodedItemsOutItT,
           typename RelativeOffsetOutItT>
-__launch_bounds__(AgentTestBlockRunLengthDecode::BLOCK_THREADS) __global__ void BlockRunLengthDecodeTestKernel(
+__launch_bounds__(AgentTestBlockRunLengthDecode::block_threads) __global__ void BlockRunLengthDecodeTestKernel(
   const ItemItT d_unique_items,
   const RunLengthsItT d_run_lengths,
   const DecodedSizesOutT d_decoded_offsets,

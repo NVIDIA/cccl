@@ -35,11 +35,11 @@ template <int ThreadsPerBlock,
           cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
 struct agent_sub_warp_merge_sort_policy
 {
-  static constexpr int BLOCK_THREADS      = ThreadsPerBlock;
+  static constexpr int block_threads      = ThreadsPerBlock;
   static constexpr int WARP_THREADS       = WarpThreadsArg;
   static constexpr int ITEMS_PER_THREAD   = ItemsPerThreadArg;
   static constexpr int ITEMS_PER_TILE     = WARP_THREADS * ITEMS_PER_THREAD;
-  static constexpr int SEGMENTS_PER_BLOCK = BLOCK_THREADS / WARP_THREADS;
+  static constexpr int SEGMENTS_PER_BLOCK = block_threads / WARP_THREADS;
 
   static constexpr cub::WarpLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithmArg;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LoadModifierArg;

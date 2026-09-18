@@ -230,7 +230,7 @@ struct policy_selector_from_hub
     return RleNonTrivialRunsPolicy{
       RleNonTrivialRunsAlgorithm::lookback,
       {
-        RleSweepPolicyT::BLOCK_THREADS,
+        RleSweepPolicyT::block_threads,
         RleSweepPolicyT::ITEMS_PER_THREAD,
         RleSweepPolicyT::LOAD_ALGORITHM,
         RleSweepPolicyT::LOAD_MODIFIER,
@@ -368,7 +368,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
   {
     cudaError error = cudaSuccess;
 
-    constexpr int threads_per_block = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
+    constexpr int threads_per_block = ActivePolicyT::RleSweepPolicyT::block_threads;
     constexpr int items_per_thread  = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
     constexpr auto tile_size        = static_cast<global_offset_t>(threads_per_block * items_per_thread);
 

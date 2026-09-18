@@ -52,7 +52,7 @@ template <int ThreadsPerBlock,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct agent_rle_policy
 {
-  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
+  static constexpr int block_threads                 = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
   static constexpr bool STORE_WARP_TIME_SLICING      = StoreWarpTimeSlicing;
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
@@ -145,11 +145,11 @@ struct AgentRle
 
   // Constants
   static constexpr int WARP_THREADS     = warp_threads;
-  static constexpr int BLOCK_THREADS    = AgentRlePolicyT::BLOCK_THREADS;
+  static constexpr int block_threads    = AgentRlePolicyT::block_threads;
   static constexpr int ITEMS_PER_THREAD = AgentRlePolicyT::ITEMS_PER_THREAD;
   static constexpr int WARP_ITEMS       = WARP_THREADS * ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
+  static constexpr int TILE_ITEMS       = block_threads * ITEMS_PER_THREAD;
+  static constexpr int WARPS            = (block_threads + WARP_THREADS - 1) / WARP_THREADS;
 
   /// Whether or not to sync after loading data
   static constexpr bool SYNC_AFTER_LOAD = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT);
@@ -200,10 +200,10 @@ struct AgentRle
 
   // Parameterized BlockLoad type for data
   using BlockLoadT =
-    BlockLoad<T, AgentRlePolicyT::BLOCK_THREADS, AgentRlePolicyT::ITEMS_PER_THREAD, AgentRlePolicyT::LOAD_ALGORITHM>;
+    BlockLoad<T, AgentRlePolicyT::block_threads, AgentRlePolicyT::ITEMS_PER_THREAD, AgentRlePolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for data
-  using BlockDiscontinuityT = BlockDiscontinuity<T, BLOCK_THREADS>;
+  using BlockDiscontinuityT = BlockDiscontinuity<T, block_threads>;
 
   // Parameterized WarpScan type
   using WarpScanPairs = WarpScan<LengthOffsetPair>;
@@ -360,7 +360,7 @@ struct AgentRle
 
       // Get the first item from the next tile
       T tile_successor_item;
-      if (threadIdx.x == BLOCK_THREADS - 1)
+      if (threadIdx.x == block_threads - 1)
       {
         tile_successor_item = d_in[tile_offset + TILE_ITEMS]; // NOLINT(bugprone-misplaced-widening-cast)
       }
@@ -386,7 +386,7 @@ struct AgentRle
     {
       // Get the first item from the next tile
       T tile_successor_item;
-      if (threadIdx.x == BLOCK_THREADS - 1)
+      if (threadIdx.x == block_threads - 1)
       {
         tile_successor_item = d_in[tile_offset + TILE_ITEMS]; // NOLINT(bugprone-misplaced-widening-cast)
       }
@@ -698,7 +698,7 @@ struct AgentRle
     OffsetT (&thread_num_runs_exclusive_in_warp)[ITEMS_PER_THREAD],
     LengthOffsetPair (&lengths_and_offsets)[ITEMS_PER_THREAD])
   {
-    if ((ITEMS_PER_THREAD == 1) || (tile_num_runs_aggregate < BLOCK_THREADS))
+    if ((ITEMS_PER_THREAD == 1) || (tile_num_runs_aggregate < block_threads))
     {
       // Direct scatter if the warp has any items
       if (warp_num_runs_aggregate)

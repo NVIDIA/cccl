@@ -21,8 +21,8 @@ template <typename PolicyT, int BLOCK_THREADS_, int ITEMS_PER_THREAD_ = PolicyT:
 struct policy_wrapper_t : PolicyT
 {
   static constexpr int ITEMS_PER_THREAD = ITEMS_PER_THREAD_;
-  static constexpr int BLOCK_THREADS    = BLOCK_THREADS_;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int block_threads    = BLOCK_THREADS_;
+  static constexpr int ITEMS_PER_TILE   = block_threads * ITEMS_PER_THREAD;
 };
 } // namespace detail
 

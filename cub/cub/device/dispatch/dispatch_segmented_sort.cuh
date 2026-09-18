@@ -319,7 +319,7 @@ struct policy_selector_from_hub
 
     return SegmentedSortPolicy{
       SegmentedSortRadixSortPolicy{
-        lp::BLOCK_THREADS,
+        lp::block_threads,
         lp::ITEMS_PER_THREAD,
         lp::LOAD_ALGORITHM,
         lp::LOAD_MODIFIER,
@@ -327,14 +327,14 @@ struct policy_selector_from_hub
         lp::SCAN_ALGORITHM,
         lp::RADIX_BITS},
       SegmentedSortSubWarpMergeSortPolicy{
-        mp::BLOCK_THREADS,
+        mp::block_threads,
         mp::WARP_THREADS,
         mp::ITEMS_PER_THREAD,
         mp::LOAD_ALGORITHM,
         mp::LOAD_MODIFIER,
         mp::STORE_ALGORITHM},
       SegmentedSortSubWarpMergeSortPolicy{
-        sp::BLOCK_THREADS,
+        sp::block_threads,
         sp::WARP_THREADS,
         sp::ITEMS_PER_THREAD,
         sp::LOAD_ALGORITHM,

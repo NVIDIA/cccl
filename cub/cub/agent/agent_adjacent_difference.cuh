@@ -33,9 +33,9 @@ template <int ThreadsPerBlock,
           cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
 struct agent_adjacent_difference_policy
 {
-  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
+  static constexpr int block_threads    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = block_threads * ITEMS_PER_THREAD;
 
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
@@ -70,7 +70,7 @@ struct AgentDifference
   using BlockLoad  = typename cub::BlockLoadType<Policy, LoadIt>::type;
   using BlockStore = typename cub::BlockStoreType<Policy, OutputIteratorT, OutputT>::type;
 
-  using BlockAdjacentDifferenceT = cub::BlockAdjacentDifference<InputT, Policy::BLOCK_THREADS>;
+  using BlockAdjacentDifferenceT = cub::BlockAdjacentDifference<InputT, Policy::block_threads>;
 
   union _TempStorage
   {
@@ -83,7 +83,7 @@ struct AgentDifference
   struct TempStorage : Uninitialized<_TempStorage>
   {};
 
-  static constexpr int BLOCK_THREADS      = Policy::BLOCK_THREADS;
+  static constexpr int block_threads      = Policy::block_threads;
   static constexpr int ITEMS_PER_THREAD   = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE     = Policy::ITEMS_PER_TILE;
   static constexpr int SHARED_MEMORY_SIZE = static_cast<int>(sizeof(TempStorage));
@@ -220,7 +220,7 @@ struct AgentDifference
 template <typename InputIteratorT, typename InputT, typename OffsetT, bool ReadLeft>
 struct AgentDifferenceInit
 {
-  static constexpr int BLOCK_THREADS = 128;
+  static constexpr int block_threads = 128;
 
   static _CCCL_DEVICE _CCCL_FORCEINLINE void
   Process(int tile_idx, InputIteratorT first, InputT* result, OffsetT num_tiles, int items_per_tile)

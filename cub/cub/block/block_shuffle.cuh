@@ -53,14 +53,14 @@ template <typename T, int BlockDimX, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockShuffle
 {
 private:
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   static constexpr int LOG_WARP_THREADS = detail::log2_warp_threads;
   static constexpr int WARP_THREADS     = 1 << LOG_WARP_THREADS;
-  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
+  static constexpr int WARPS            = (block_threads + WARP_THREADS - 1) / WARP_THREADS;
 
   /// Shared memory storage layout type (last element from each thread's input)
-  using _TempStorage = T[BLOCK_THREADS];
+  using _TempStorage = T[block_threads];
 
 public:
   /// \smemstorage{BlockShuffle}
@@ -137,7 +137,7 @@ public:
   //!   The ``input`` item from the successor (or predecessor) thread
   //!   *thread*\ :sub:`i + distance` (may be aliased to ``input``).
   //!   This value is only updated for for *thread*\ :sub:`i` when
-  //!   ``0 <= (i + distance) < BLOCK_THREADS - 1``
+  //!   ``0 <= (i + distance) < block_threads - 1``
   //!   @endrst
   //!
   //! @param[in] distance
@@ -149,7 +149,7 @@ public:
     __syncthreads();
 
     const int offset_tid = static_cast<int>(linear_tid) + distance;
-    if ((offset_tid >= 0) && (offset_tid < BLOCK_THREADS))
+    if ((offset_tid >= 0) && (offset_tid < block_threads))
     {
       output = temp_storage[static_cast<size_t>(offset_tid)];
     }
@@ -170,12 +170,12 @@ public:
   //! @param[out] output
   //!   @rst
   //!   The ``input`` item from thread
-  //!   *thread*\ :sub:`(i + distance>) % BLOCK_THREADS` (may be aliased to ``input``).
-  //!   This value is not updated for *thread*\ :sub:`BLOCK_THREADS - 1`.
+  //!   *thread*\ :sub:`(i + distance>) % block_threads` (may be aliased to ``input``).
+  //!   This value is not updated for *thread*\ :sub:`block_threads - 1`.
   //!   @endrst
   //!
   //! @param[in] distance
-  //!   Offset distance (`0 < distance < `BLOCK_THREADS`)
+  //!   Offset distance (`0 < distance < `block_threads`)
   _CCCL_DEVICE _CCCL_FORCEINLINE void Rotate(T input, T& output, unsigned int distance = 1)
   {
     temp_storage[linear_tid] = input;
@@ -183,9 +183,9 @@ public:
     __syncthreads();
 
     unsigned int offset = linear_tid + distance;
-    if (offset >= BLOCK_THREADS)
+    if (offset >= block_threads)
     {
-      offset -= BLOCK_THREADS;
+      offset -= block_threads;
     }
 
     output = temp_storage[offset];
@@ -233,7 +233,7 @@ public:
   //! @rst
   //! The thread block rotates its :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of ``input`` items, shifting it up by one item. All threads receive the ``input`` provided by
-  //! *thread*\ :sub:`BLOCK_THREADS - 1`.
+  //! *thread*\ :sub:`block_threads - 1`.
   //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
@@ -254,13 +254,13 @@ public:
   //!
   //! @param[out] block_suffix
   //!   @rst
-  //!   The item ``input[ITEMS_PER_THREAD - 1]`` from *thread*\ :sub:`BLOCK_THREADS - 1`, provided to all threads
+  //!   The item ``input[ITEMS_PER_THREAD - 1]`` from *thread*\ :sub:`block_threads - 1`, provided to all threads
   //!   @endrst
   template <int ITEMS_PER_THREAD>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Up(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD], T& block_suffix)
   {
     Up(input, prev);
-    block_suffix = temp_storage[BLOCK_THREADS - 1];
+    block_suffix = temp_storage[block_threads - 1];
   }
 
   //! @rst
@@ -281,7 +281,7 @@ public:
   //! @param[out] prev
   //!   @rst
   //!   The corresponding predecessor items (may be aliased to ``input``).
-  //!   The value ``prev[0]`` is not updated for *thread*\ :sub:`BLOCK_THREADS - 1`.
+  //!   The value ``prev[0]`` is not updated for *thread*\ :sub:`block_threads - 1`.
   //!   @endrst
   template <int ITEMS_PER_THREAD>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Down(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD])
@@ -296,7 +296,7 @@ public:
       prev[ITEM] = input[ITEM + 1];
     }
 
-    if (linear_tid < BLOCK_THREADS - 1)
+    if (linear_tid < block_threads - 1)
     {
       prev[ITEMS_PER_THREAD - 1] = temp_storage[linear_tid + 1];
     }
@@ -320,7 +320,7 @@ public:
   //! @param[out] prev
   //!   @rst
   //!   The corresponding predecessor items (may be aliased to ``input``).
-  //!   The value ``prev[0]`` is not updated for *thread*\ :sub:`BLOCK_THREADS - 1`.
+  //!   The value ``prev[0]`` is not updated for *thread*\ :sub:`block_threads - 1`.
   //!   @endrst
   //!
   //! @param[out] block_prefix

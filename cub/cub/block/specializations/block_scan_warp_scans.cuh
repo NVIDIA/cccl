@@ -54,10 +54,10 @@ struct BlockScanWarpScans
   static constexpr int WARP_THREADS = warp_threads;
 
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Number of active warps
-  static constexpr int WARPS = ::cuda::ceil_div(BLOCK_THREADS, WARP_THREADS);
+  static constexpr int WARPS = ::cuda::ceil_div(block_threads, WARP_THREADS);
 
   ///  WarpScan utility type
   using WarpScanT = WarpScan<T, WARP_THREADS>;

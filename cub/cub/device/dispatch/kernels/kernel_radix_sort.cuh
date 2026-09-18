@@ -346,14 +346,14 @@ __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block
 {
   // Constants
   static constexpr RadixSortPolicy policy = current_policy<PolicySelector>();
-  static constexpr int BLOCK_THREADS      = policy.single_tile.threads_per_block;
+  static constexpr int block_threads      = policy.single_tile.threads_per_block;
   static constexpr int ITEMS_PER_THREAD   = policy.single_tile.items_per_thread;
   static constexpr bool KEYS_ONLY         = ::cuda::std::is_same_v<ValueT, NullType>;
 
   // BlockRadixSort type
   using BlockRadixSortT =
     BlockRadixSort<KeyT,
-                   BLOCK_THREADS,
+                   block_threads,
                    ITEMS_PER_THREAD,
                    ValueT,
                    policy.single_tile.radix_bits,
@@ -361,10 +361,10 @@ __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block
                    policy.single_tile.scan_algorithm>;
 
   // BlockLoad type (keys)
-  using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.single_tile.load_algorithm>;
+  using BlockLoadKeys = BlockLoad<KeyT, block_threads, ITEMS_PER_THREAD, policy.single_tile.load_algorithm>;
 
   // BlockLoad type (values)
-  using BlockLoadValues = BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.single_tile.load_algorithm>;
+  using BlockLoadValues = BlockLoad<ValueT, block_threads, ITEMS_PER_THREAD, policy.single_tile.load_algorithm>;
 
   // Unsigned word for key bits
   using traits           = detail::radix::traits_t<KeyT>;
@@ -421,7 +421,7 @@ __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
   {
-    const int item_offset = ITEM * BLOCK_THREADS + threadIdx.x;
+    const int item_offset = ITEM * block_threads + threadIdx.x;
     if (item_offset < num_items)
     {
       d_keys_out[item_offset] = keys[ITEM];
@@ -566,9 +566,9 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_
   static constexpr RadixSortExclusiveSumPolicy policy = current_policy<PolicySelector>().exclusive_sum;
   constexpr int RADIX_BITS                            = policy.radix_bits;
   constexpr int RADIX_DIGITS                          = 1 << RADIX_BITS;
-  constexpr int BLOCK_THREADS                         = policy.threads_per_block;
-  constexpr int BINS_PER_THREAD                       = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
-  using BlockScan                                     = cub::BlockScan<OffsetT, BLOCK_THREADS>;
+  constexpr int block_threads                         = policy.threads_per_block;
+  constexpr int BINS_PER_THREAD                       = (RADIX_DIGITS + block_threads - 1) / block_threads;
+  using BlockScan                                     = cub::BlockScan<OffsetT, block_threads>;
   __shared__ typename BlockScan::TempStorage temp_storage;
 
   // Make sure the histograms are done

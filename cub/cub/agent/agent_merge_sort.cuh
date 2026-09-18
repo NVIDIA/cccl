@@ -44,24 +44,24 @@ struct AgentBlockSort
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   static constexpr MergeSortPolicy policy = PolicyGetter{}();
-  static constexpr int BLOCK_THREADS      = policy.threads_per_block;
+  static constexpr int block_threads      = policy.threads_per_block;
   static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
-  static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE     = block_threads * ITEMS_PER_THREAD;
 
-  using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT, 1, 1, policy.unroll>;
+  using BlockMergeSortT = BlockMergeSort<KeyT, block_threads, ITEMS_PER_THREAD, ValueT, 1, 1, policy.unroll>;
 
   using KeysLoadIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyInputIteratorT>;
   using ItemsLoadIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueInputIteratorT>;
 
-  using BlockLoadKeys  = BlockLoad<it_value_t<KeysLoadIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.load_algorithm>;
-  using BlockLoadItems = BlockLoad<it_value_t<ItemsLoadIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.load_algorithm>;
+  using BlockLoadKeys  = BlockLoad<it_value_t<KeysLoadIt>, block_threads, ITEMS_PER_THREAD, policy.load_algorithm>;
+  using BlockLoadItems = BlockLoad<it_value_t<ItemsLoadIt>, block_threads, ITEMS_PER_THREAD, policy.load_algorithm>;
 
   using BlockStoreKeysIt =
-    BlockStore<it_value_t<KeyIteratorT>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+    BlockStore<it_value_t<KeyIteratorT>, block_threads, ITEMS_PER_THREAD, policy.store_algorithm>;
   using BlockStoreItemsIt =
-    BlockStore<it_value_t<ValueIteratorT>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
-  using BlockStoreKeysRaw  = BlockStore<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
-  using BlockStoreItemsRaw = BlockStore<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+    BlockStore<it_value_t<ValueIteratorT>, block_threads, ITEMS_PER_THREAD, policy.store_algorithm>;
+  using BlockStoreKeysRaw  = BlockStore<KeyT, block_threads, ITEMS_PER_THREAD, policy.store_algorithm>;
+  using BlockStoreItemsRaw = BlockStore<ValueT, block_threads, ITEMS_PER_THREAD, policy.store_algorithm>;
 
   union _TempStorage
   {
@@ -321,10 +321,10 @@ struct AgentPartition
 /**
  * \brief Concatenates up to ITEMS_PER_THREAD elements from input{1,2} into output array
  *
- * Reads data in a coalesced fashion [BLOCK_THREADS * item + tid] and
+ * Reads data in a coalesced fashion [BlockThreads * item + tid] and
  * stores the result in output[item].
  */
-template <int BLOCK_THREADS, bool IS_FULL_TILE, int ITEMS_PER_THREAD, class T, class It1, class It2>
+template <int BlockThreads, bool IS_FULL_TILE, int ITEMS_PER_THREAD, class T, class It1, class It2>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
 {
@@ -333,7 +333,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
-      const int idx = BLOCK_THREADS * item + threadIdx.x;
+      const int idx = BlockThreads * item + threadIdx.x;
       // It1 and It2 could have different value types. Convert after load.
       output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
     }
@@ -343,7 +343,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
-      const int idx = BLOCK_THREADS * item + threadIdx.x;
+      const int idx = BlockThreads * item + threadIdx.x;
       if (idx < count1 + count2)
       {
         output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -352,14 +352,14 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
   }
 }
 
-/// \brief Stores data in a coalesced fashion in[item] -> out[BLOCK_THREADS * item + tid]
-template <int BLOCK_THREADS, int ITEMS_PER_THREAD, class T, class It>
+/// \brief Stores data in a coalesced fashion in[item] -> out[BlockThreads * item + tid]
+template <int BlockThreads, int ITEMS_PER_THREAD, class T, class It>
 _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
-    const int idx = BLOCK_THREADS * item + threadIdx.x;
+    const int idx = BlockThreads * item + threadIdx.x;
     output[idx]   = input[item];
   }
 }
@@ -381,9 +381,9 @@ struct AgentMerge
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   static constexpr MergeSortPolicy policy = PolicyGetter{}();
-  static constexpr int BLOCK_THREADS      = policy.threads_per_block;
+  static constexpr int block_threads      = policy.threads_per_block;
   static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
-  static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE     = block_threads * ITEMS_PER_THREAD;
 
   using KeysLoadPingIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyIteratorT>;
   using ItemsLoadPingIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueIteratorT>;
@@ -396,14 +396,14 @@ struct AgentMerge
   using ItemsOutputPingIt = ValueT*;
 
   using BlockStoreKeysPong =
-    BlockStore<it_value_t<KeysOutputPongIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+    BlockStore<it_value_t<KeysOutputPongIt>, block_threads, ITEMS_PER_THREAD, policy.store_algorithm>;
   using BlockStoreItemsPong =
-    BlockStore<it_value_t<ItemsOutputPongIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+    BlockStore<it_value_t<ItemsOutputPongIt>, block_threads, ITEMS_PER_THREAD, policy.store_algorithm>;
 
   using BlockStoreKeysPing =
-    BlockStore<it_value_t<KeysOutputPingIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+    BlockStore<it_value_t<KeysOutputPingIt>, block_threads, ITEMS_PER_THREAD, policy.store_algorithm>;
   using BlockStoreItemsPing =
-    BlockStore<it_value_t<ItemsOutputPingIt>, BLOCK_THREADS, ITEMS_PER_THREAD, policy.store_algorithm>;
+    BlockStore<it_value_t<ItemsOutputPingIt>, block_threads, ITEMS_PER_THREAD, policy.store_algorithm>;
 
   /// Parameterized BlockReduce primitive
 
@@ -499,15 +499,15 @@ struct AgentMerge
     KeyT keys_local[ITEMS_PER_THREAD];
     if (ping)
     {
-      gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+      gmem_to_reg<block_threads, IS_FULL_TILE>(
         keys_local, keys_in_ping + start + keys1_beg, keys_in_ping + start + size + keys2_beg, num_keys1, num_keys2);
     }
     else
     {
-      gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+      gmem_to_reg<block_threads, IS_FULL_TILE>(
         keys_local, keys_in_pong + start + keys1_beg, keys_in_pong + start + size + keys2_beg, num_keys1, num_keys2);
     }
-    reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
+    reg_to_shared<block_threads>(&storage.keys_shared[0], keys_local);
 
     // preload items into registers already
     //
@@ -516,7 +516,7 @@ struct AgentMerge
     {
       if (ping)
       {
-        gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+        gmem_to_reg<block_threads, IS_FULL_TILE>(
           items_local,
           items_in_ping + start + keys1_beg,
           items_in_ping + start + size + keys2_beg,
@@ -525,7 +525,7 @@ struct AgentMerge
       }
       else
       {
-        gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+        gmem_to_reg<block_threads, IS_FULL_TILE>(
           items_local,
           items_in_pong + start + keys1_beg,
           items_in_pong + start + size + keys2_beg,
@@ -598,7 +598,7 @@ struct AgentMerge
     {
       __syncthreads();
 
-      reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
+      reg_to_shared<block_threads>(&storage.items_shared[0], items_local);
 
       __syncthreads();
 

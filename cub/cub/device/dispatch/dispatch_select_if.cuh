@@ -346,7 +346,7 @@ __launch_bounds__(int(
                     SelectOpT,
                     EqualityOpT,
                     OffsetT,
-                    StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
+                    StreamingContextT>::type::agent_policy_t::block_threads))
   _CCCL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
     const InputIteratorT d_in,
     const FlagsInputIteratorT d_flags,
@@ -398,7 +398,7 @@ struct policy_selector_from_hub
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::SelectIfPolicyT;
     return SelectPolicy{
       SelectAlgorithm::lookback,
-      {active_policy::BLOCK_THREADS,
+      {active_policy::block_threads,
        active_policy::ITEMS_PER_THREAD,
        active_policy::LOAD_ALGORITHM,
        active_policy::LOAD_MODIFIER,
@@ -606,7 +606,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
       streaming_context_t>;
     cudaError error = cudaSuccess;
 
-    constexpr auto threads_per_block = VsmemHelperT::agent_policy_t::BLOCK_THREADS;
+    constexpr auto threads_per_block = VsmemHelperT::agent_policy_t::block_threads;
     constexpr auto items_per_thread  = VsmemHelperT::agent_policy_t::ITEMS_PER_THREAD;
     constexpr auto tile_size         = OffsetT{threads_per_block * items_per_thread};
 
@@ -946,7 +946,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
     per_partition_offset_t,
     streaming_context_t>::type;
 
-  constexpr auto threads_per_block = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
+  constexpr auto threads_per_block = vsmem_helper_t::agent_policy_t::block_threads;
   constexpr auto items_per_thread  = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
   constexpr auto tile_size         = OffsetT{threads_per_block * items_per_thread};
 

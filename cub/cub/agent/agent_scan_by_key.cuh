@@ -51,7 +51,7 @@ template <int ThreadsPerBlock,
           typename DelayConstructorT         = detail::fixed_delay_constructor_t<350, 450>>
 struct agent_scan_by_key_policy
 {
-  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
+  static constexpr int block_threads    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
@@ -146,9 +146,9 @@ struct AgentScanByKey
   // Constants
   // Inclusive scan if no init_value type is provided
   static constexpr int IS_INCLUSIVE     = ::cuda::std::is_same_v<InitValueT, NullType>;
-  static constexpr int BLOCK_THREADS    = AgentScanByKeyPolicyT::BLOCK_THREADS;
+  static constexpr int block_threads    = AgentScanByKeyPolicyT::block_threads;
   static constexpr int ITEMS_PER_THREAD = AgentScanByKeyPolicyT::ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = block_threads * ITEMS_PER_THREAD;
 
   using WrappedKeysInputIteratorT =
     ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
@@ -160,19 +160,19 @@ struct AgentScanByKey
                      CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      ValuesInputIteratorT>;
 
-  using BlockLoadKeysT = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadKeysT = BlockLoad<KeyT, block_threads, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
 
-  using BlockLoadValuesT = BlockLoad<AccumT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadValuesT = BlockLoad<AccumT, block_threads, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
 
-  using BlockStoreValuesT = BlockStore<AccumT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::STORE_ALGORITHM>;
+  using BlockStoreValuesT = BlockStore<AccumT, block_threads, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::STORE_ALGORITHM>;
 
-  using BlockDiscontinuityKeysT = BlockDiscontinuity<KeyT, BLOCK_THREADS, 1, 1>;
+  using BlockDiscontinuityKeysT = BlockDiscontinuity<KeyT, block_threads, 1, 1>;
 
   using DelayConstructorT = typename AgentScanByKeyPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackT =
     TilePrefixCallbackOp<FlagValuePairT, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
 
-  using BlockScanT = BlockScan<FlagValuePairT, BLOCK_THREADS, AgentScanByKeyPolicyT::SCAN_ALGORITHM, 1, 1>;
+  using BlockScanT = BlockScan<FlagValuePairT, block_threads, AgentScanByKeyPolicyT::SCAN_ALGORITHM, 1, 1>;
 
   union TempStorage_
   {

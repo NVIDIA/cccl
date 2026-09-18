@@ -756,7 +756,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
 {
   using ap = typename ActivePolicy::AgentHistogramPolicyT;
   return HistogramPolicy{
-    ap::BLOCK_THREADS,
+    ap::block_threads,
     ap::PIXELS_PER_THREAD,
     ap::VEC_SIZE,
     ap::LOAD_ALGORITHM,

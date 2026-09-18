@@ -432,13 +432,13 @@ struct policy_hub
     using SegmentedReducePolicy = ReducePolicy;
 
     using ReduceNondeterministicPolicy =
-      agent_reduce_policy<ReducePolicy::BLOCK_THREADS,
+      agent_reduce_policy<ReducePolicy::block_threads,
                           ReducePolicy::ITEMS_PER_THREAD,
                           AccumT,
                           ReducePolicy::VECTOR_LOAD_LENGTH,
                           BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
                           ReducePolicy::LOAD_MODIFIER,
-                          NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
+                          NoScaling<ReducePolicy::block_threads, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
   struct Policy600 : detail::chained_policy<600, Policy600, Policy500>
@@ -460,13 +460,13 @@ struct policy_hub
     using SegmentedReducePolicy = ReducePolicy;
 
     using ReduceNondeterministicPolicy =
-      agent_reduce_policy<ReducePolicy::BLOCK_THREADS,
+      agent_reduce_policy<ReducePolicy::block_threads,
                           ReducePolicy::ITEMS_PER_THREAD,
                           AccumT,
                           ReducePolicy::VECTOR_LOAD_LENGTH,
                           BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
                           ReducePolicy::LOAD_MODIFIER,
-                          NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
+                          NoScaling<ReducePolicy::block_threads, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy600>
@@ -495,13 +495,13 @@ struct policy_hub
     using SegmentedReducePolicy = ReducePolicy;
 
     using ReduceNondeterministicPolicy =
-      agent_reduce_policy<ReducePolicy::BLOCK_THREADS,
+      agent_reduce_policy<ReducePolicy::block_threads,
                           ReducePolicy::ITEMS_PER_THREAD,
                           AccumT,
                           ReducePolicy::VECTOR_LOAD_LENGTH,
                           BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
                           ReducePolicy::LOAD_MODIFIER,
-                          NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
+                          NoScaling<ReducePolicy::block_threads, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
   using MaxPolicy = Policy1000;

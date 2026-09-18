@@ -42,7 +42,7 @@ template <int ThreadsPerBlock,
           typename DelayConstructorT            = detail::fixed_delay_constructor_t<350, 450>>
 struct agent_unique_by_key_policy
 {
-  static constexpr int BLOCK_THREADS                      = ThreadsPerBlock;
+  static constexpr int block_threads                      = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD                   = ItemsPerThread;
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
@@ -117,9 +117,9 @@ struct AgentUniqueByKey
   using ScanTileStateT = ScanTileState<OffsetT>;
 
   // Constants
-  static constexpr int BLOCK_THREADS    = AgentUniqueByKeyPolicyT::BLOCK_THREADS;
+  static constexpr int block_threads    = AgentUniqueByKeyPolicyT::block_threads;
   static constexpr int ITEMS_PER_THREAD = AgentUniqueByKeyPolicyT::ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = block_threads * ITEMS_PER_THREAD;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
   using WrappedKeyInputIteratorT = ::cuda::std::conditional_t<
@@ -138,16 +138,16 @@ struct AgentUniqueByKey
     ValueInputIteratorT>; // Directly use the supplied input iterator type
 
   // Parameterized BlockLoad type for input data
-  using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadKeys = BlockLoad<KeyT, block_threads, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockLoad type for flags
-  using BlockLoadValues = BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadValues = BlockLoad<ValueT, block_threads, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for items
-  using BlockDiscontinuityKeys = cub::BlockDiscontinuity<KeyT, BLOCK_THREADS>;
+  using BlockDiscontinuityKeys = cub::BlockDiscontinuity<KeyT, block_threads>;
 
   // Parameterized BlockScan type
-  using BlockScanT = cub::BlockScan<OffsetT, BLOCK_THREADS, AgentUniqueByKeyPolicyT::SCAN_ALGORITHM>;
+  using BlockScanT = cub::BlockScan<OffsetT, block_threads, AgentUniqueByKeyPolicyT::SCAN_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for items
   using DelayConstructorT  = typename AgentUniqueByKeyPolicyT::detail::delay_constructor_t;
@@ -266,7 +266,7 @@ struct AgentUniqueByKey
     // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
     // types
     _CCCL_PRAGMA_NOUNROLL()
-    for (int item = static_cast<int>(threadIdx.x); item < num_tile_selections; item += BLOCK_THREADS)
+    for (int item = static_cast<int>(threadIdx.x); item < num_tile_selections; item += block_threads)
     {
       items_out[num_selections_prefix + item] = GetShared(tag)[item]; // NOLINT(bugprone-misplaced-widening-cast)
     }

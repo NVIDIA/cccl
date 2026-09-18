@@ -120,18 +120,18 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int BlockDimX, int ItemsPerThread, bool WarpTimeSlicing = false, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockExchange
 {
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ; ///< The thread block size in threads
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ; ///< The thread block size in threads
   static constexpr int WARP_THREADS  = detail::warp_threads;
-  static constexpr int WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS; // TODO(bgruber): use ceil_div in
+  static constexpr int WARPS = (block_threads + WARP_THREADS - 1) / WARP_THREADS; // TODO(bgruber): use ceil_div in
                                                                                   // C++14
   static constexpr int LOG_SMEM_BANKS = detail::log2_smem_banks;
 
-  static constexpr int TILE_ITEMS  = BLOCK_THREADS * ItemsPerThread;
+  static constexpr int TILE_ITEMS  = block_threads * ItemsPerThread;
   static constexpr int TIME_SLICES = WarpTimeSlicing ? WARPS : 1;
   static constexpr int TIME_SLICED_THREADS =
-    WarpTimeSlicing ? ::cuda::std::min(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
+    WarpTimeSlicing ? ::cuda::std::min(block_threads, WARP_THREADS) : block_threads;
   static constexpr int TIME_SLICED_ITEMS        = TIME_SLICED_THREADS * ItemsPerThread;
-  static constexpr int WARP_TIME_SLICED_THREADS = ::cuda::std::min(BLOCK_THREADS, WARP_THREADS);
+  static constexpr int WARP_TIME_SLICED_THREADS = ::cuda::std::min(block_threads, WARP_THREADS);
   static constexpr int WARP_TIME_SLICED_ITEMS   = WARP_TIME_SLICED_THREADS * ItemsPerThread;
 
   // Insert padding to avoid bank conflicts during raking when items per thread is a power of two and > 4 (otherwise
@@ -195,7 +195,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = i * block_threads + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -248,8 +248,8 @@ private:
       for (int i = 0; i < ItemsPerThread; i++)
       {
         // Read a strip of items
-        const int strip_offset = i * BLOCK_THREADS;
-        const int strip_oob    = strip_offset + BLOCK_THREADS;
+        const int strip_offset = i * block_threads;
+        const int strip_oob    = strip_offset + block_threads;
 
         if (slice_offset < strip_oob && slice_oob > strip_offset)
         {
@@ -405,7 +405,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = i * block_threads + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -457,8 +457,8 @@ private:
       for (int i = 0; i < ItemsPerThread; i++)
       {
         // Write a strip of items
-        const int strip_offset = i * BLOCK_THREADS;
-        const int strip_oob    = strip_offset + BLOCK_THREADS;
+        const int strip_offset = i * block_threads;
+        const int strip_oob    = strip_offset + block_threads;
 
         if (slice_offset < strip_oob && slice_oob > strip_offset)
         {
@@ -726,7 +726,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = i * block_threads + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -782,8 +782,8 @@ private:
       for (int i = 0; i < ItemsPerThread; i++)
       {
         // Read a strip of items
-        const int strip_offset = i * BLOCK_THREADS;
-        const int strip_oob    = strip_offset + BLOCK_THREADS;
+        const int strip_offset = i * block_threads;
+        const int strip_oob    = strip_offset + block_threads;
 
         if (slice_offset < strip_oob && slice_oob > strip_offset)
         {
@@ -1270,7 +1270,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = i * block_threads + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -1357,7 +1357,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = i * block_threads + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;

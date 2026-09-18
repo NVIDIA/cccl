@@ -94,7 +94,7 @@ template <int ThreadsPerBlock,
 struct agent_histogram_policy
 {
   /// Threads per thread block
-  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
+  static constexpr int block_threads = ThreadsPerBlock;
   /// Pixels per thread (per tile of input)
   static constexpr int PIXELS_PER_THREAD = PixelsPerThread;
 
@@ -199,7 +199,7 @@ template <typename AgentHistogramPolicyT,
 struct AgentHistogram
 {
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
-  static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
+  static constexpr int threads_per_block           = AgentHistogramPolicyT::block_threads;
   static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
   static constexpr int samples_per_thread          = pixels_per_thread * NumChannels;
   static constexpr int vecs_per_thread             = samples_per_thread / vec_size;
