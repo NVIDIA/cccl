@@ -21,13 +21,13 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <path d="M135 98.10000000000001V153.10000000000002" marker-end="url(#cutlass-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
   <rect x="73.80078125" y="118.10000000000002" width="122.3984375" height="21" fill="#ffffff"/>
   <text x="135" y="132.10000000000002" text-anchor="middle" font-family="sans-serif" font-size="12px" font-weight="400" fill="#172b3a">Types + LaunchFacts</text>
-  <g data-node="GroupLoweringPlan" role="group" aria-label="cuda.coop. Plan and provider-request records. GroupLoweringPlan. _CubLoadStoreRequest. Record the provider symbol and ABI.">
+  <g data-node="GroupLoweringPlan" role="group" aria-label="cuda.coop. Plan and provider-request records. GroupLoweringPlan. _CubLoadStoreRequest / _CubScanRequest. Record the provider symbol and ABI.">
     <rect x="8" y="156.10000000000002" width="254" height="152.20000000000002" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
     <text x="20" y="184.40000000000003" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">cuda.coop · Plan and provider-request</text>
     <text x="20" y="204.70000000000005" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">records</text>
     <text x="20" y="227.10000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">GroupLoweringPlan</text>
     <text x="20" y="249.50000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">_CubLoadStoreRequest /</text>
-    <text x="20" y="271.90000000000003" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">_CubLoadStoreRequest</text>
+    <text x="20" y="271.90000000000003" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">_CubScanRequest</text>
     <text x="20" y="294.3" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Record the provider symbol and ABI.</text>
   </g>
   <path d="M135 311.30000000000007V345.30000000000007" marker-end="url(#cutlass-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>

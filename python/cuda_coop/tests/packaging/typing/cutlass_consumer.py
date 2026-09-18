@@ -321,3 +321,98 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
         ),
         Uint32,
     )
+
+
+def check_cutlass_scan_surface(scalar: Uint32) -> None:
+    block = cutlass_coop.this_block()
+    logical = cutlass_coop.this_warp().group_by(8)
+    values = cutlass_coop.ThreadData(2, np.int32)
+    aggregate = cutlass_coop.ThreadData(1, Uint32)
+    assert_type(
+        cutlass_coop.scan(block, values), cutlass_coop.ThreadData[np.int32]
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.inclusive_scan(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_sum(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.scan(
+            block, values, scan_op="max", initial_value=np.int32(-8)
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.scan(block, values, scan_op=np.add),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            block, scalar, scan_op=operator.mul, initial_value=1
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(block, values, algorithm="raking_memoize"),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    storage = cutlass_coop.TempStorage(sharing="exclusive")
+    assert_type(
+        cutlass_coop.scan(
+            block, values, algorithm="warp_scans", temp_storage=storage
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.scan(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.inclusive_scan(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_sum(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(common_coop.inclusive_sum(logical, scalar), Uint32)
+    assert_type(
+        cutlass_coop.inclusive_sum(common_coop.this_warp(), scalar), Uint32
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(block, values.to_register_tensor()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.exclusive_sum(block, values.to_tensor_ssa()),
+        cutlass_coop.ThreadData[Any],
+    )
