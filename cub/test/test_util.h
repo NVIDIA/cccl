@@ -47,14 +47,14 @@
 /**
  * Assert equals
  */
-#define AssertEquals(a, b)                                                                           \
+#define AssertEquals(a, b) /* NOLINT(readability-identifier-naming) */                               \
   if ((a) != (b))                                                                                    \
   {                                                                                                  \
     std::cerr << "\n" << __FILE__ << ": " << __LINE__ << ": AssertEquals(" #a ", " #b ") failed.\n"; \
     exit(1);                                                                                         \
   }
 
-#define AssertTrue(a)                                                                      \
+#define AssertTrue(a) /* NOLINT(readability-identifier-naming) */                          \
   if (!(a))                                                                                \
   {                                                                                        \
     std::cerr << "\n" << __FILE__ << ": " << __LINE__ << ": AssertTrue(" #a ") failed.\n"; \
