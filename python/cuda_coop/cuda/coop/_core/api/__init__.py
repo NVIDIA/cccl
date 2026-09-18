@@ -8,9 +8,11 @@ The root package exports these names. Compiler adapters use their identities
 to recognize cooperative operations without changing the public call syntax.
 """
 
-from .load_store import load, store
-from .reduce import reduce, sum
-from .scan import (
+from .load_store import load, store  # noqa: F401
+from .merge_sort import merge_sort_keys as merge_sort_keys
+from .merge_sort import merge_sort_pairs as merge_sort_pairs
+from .reduce import reduce, sum  # noqa: F401
+from .scan import (  # noqa: F401
     exclusive_scan,
     exclusive_sum,
     inclusive_scan,
@@ -53,18 +55,20 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
-    "exclusive_scan",
-    "exclusive_sum",
-    "inclusive_scan",
-    "inclusive_sum",
-    "load",
-    "reduce",
-    "scan",
-    "store",
-    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
     "this_thread",
     "this_warp",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
+    "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "reduce",
+    "scan",
+    "store",
+    "sum",
 ]
