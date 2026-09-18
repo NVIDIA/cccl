@@ -101,3 +101,34 @@ def test_capacity_accounts_for_every_reservation(sharing, capacity):
 
     with pytest.raises(Exception, match="capacity is smaller"):
         _compile(launch)
+
+
+@pytest.mark.parametrize(
+    "order", ("reserve_only", "primitive_first", "reserve_first")
+)
+def test_auto_sync_rejected_through_aliases_and_policy_changes(order):
+    """Audit prior and later primitive uses, including a mutated descriptor."""
+
+    @cute.jit
+    def reserve(storage):
+        alias = storage
+        return alias.reserve(64, cutlass.Int32)
+
+    @cute.kernel
+    def kernel(memory: cute.Pointer):
+        storage = coop.TempStorage(auto_sync=order != "reserve_first")
+        alias = storage
+        if cutlass.const_expr(order == "primitive_first"):
+            coop.sum(coop.this_block(), cutlass.Int32(1), temp_storage=alias)
+            storage.auto_sync = False
+        reserve(alias)
+        if cutlass.const_expr(order == "reserve_first"):
+            alias.auto_sync = True
+            coop.sum(coop.this_block(), cutlass.Int32(1), temp_storage=storage)
+
+    @cute.jit
+    def launch(memory: cute.Pointer):
+        kernel(memory).launch(grid=1, block=64)
+
+    with pytest.raises(Exception, match="reserve requires auto_sync=False"):
+        _compile(launch)

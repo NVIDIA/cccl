@@ -446,6 +446,11 @@ the array and pointer consumers. Their
 [instructions](examples/numba_mlir/README.md) cover dependencies and launch
 commands.
 
+The [CuTe workspace example](examples/cutlass/shared_workspace.py) reuses one
+region between native CuTe code and a cooperative reduction while preserving
+a separate native shared allocation. CuTe reservations support fixed-width
+integer and floating-point types; Numba also supports complex scalar types.
+
 Numba-CUDA-MLIR has these additional compiler constraints:
 
 - All cooperative storage in a kernel shares one backing. Up to 48 KiB, the
