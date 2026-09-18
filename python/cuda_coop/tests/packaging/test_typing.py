@@ -18,7 +18,11 @@ import pytest
 
 _PACKAGE_ROOT = Path(__file__).parents[2]
 _CONSUMER_ROOT = Path(__file__).with_name("typing")
-_VALID_CONSUMERS = ("common_consumer.py", "numba_consumer.py")
+_VALID_CONSUMERS = (
+    "common_consumer.py",
+    "numba_consumer.py",
+    "cutlass_consumer.py",
+)
 _THREAD_GROUP_HIERARCHY_METHODS = frozenset(
     {
         "count",

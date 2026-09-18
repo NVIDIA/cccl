@@ -243,3 +243,18 @@ Run Length Decode
 
 .. autofunction:: run_length_decode
 .. autofunction:: run_length_decode_into
+
+.. _coop-cutlass-extensions:
+
+CUTLASS-qualified API
+---------------------
+
+.. py:module:: cuda.coop.cutlass
+
+The qualified CUTLASS surface currently provides ``this_block``,
+``ThreadData``, and DIRECT ``load``/``store``. It accepts the portable
+``valid_items``, ``offset``, and load-only ``oob_default`` controls. Load
+returns ``None`` and mutates its destination payload. ``ThreadData`` adds
+conversions to and from CuTe register-memory tensors and immutable register
+values. See :doc:`coop_cutlass` for runtime requirements and an executable
+example. The installed ``.pyi`` files declare the supported signatures.
