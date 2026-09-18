@@ -55,7 +55,7 @@ template <class _MDSpanIn, class _MDSpanOut, class _Env>
 [[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
 __transform_copy(_MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out, const _Env& __env)
 {
-  return cub::DeviceTransform::__transform_internal(
+  return DeviceTransform::__transform_internal(
     ::cuda::std::make_tuple(__mdspan_in.data_handle()),
     __mdspan_out.data_handle(),
     __mdspan_in.size(),
@@ -160,7 +160,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
       }
       // we use row-major order for the iteration
       const ::cuda::std::layout_right::mapping<E_In> mapping{mdspan_in.extents()};
-      return cub::DeviceFor::__for_each_in_extents(mapping, copy_mdspan_t{mdspan_in, mdspan_out}, env);
+      return DeviceFor::__for_each_in_extents(mapping, copy_mdspan_t{mdspan_in, mdspan_out}, env);
     }));
 }
 } // namespace detail::copy_mdspan
