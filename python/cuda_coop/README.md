@@ -1,35 +1,310 @@
 # `cuda.coop`
 
-`cuda.coop` provides cooperative Load and Store operations for Python GPU
-kernels. The base `cuda-coop` package contains the shared API, Block and Warp
-planning, and the CCCL headers used by compiler integrations.
+`cuda.coop` provides portable cooperative Load and Store constructs for CUDA
+thread blocks, physical warps, and logical warps in Python kernel DSLs. The
+first backend targets Numba-CUDA-MLIR and lowers the operations to CUB.
+
+The distribution is a universal Python wheel containing a coherent bundle of
+CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
+bundle by default. Development from a CCCL source checkout uses the matching
+checkout headers, and `CUDA_COOP_CCCL_ROOT` can select a different source
+checkout or `cuda-coop` header bundle. None of these modes substitutes CUB
+headers from the active CUDA Toolkit.
+
+## Installation
+
+Install the common API without a compiler backend:
 
 ```bash
 python -m pip install cuda-coop
 ```
 
+The base distribution has no Python package dependencies. It provides the
+common API, type declarations, and bundled CCCL headers. You can import
+`cuda.coop` without a compiler or GPU. Running its primitives inside a kernel
+requires a supported backend. Numba-CUDA-MLIR is the first backend; CUTLASS
+support is planned.
+
+For Numba-CUDA-MLIR, choose the extra matching the CUDA Toolkit major version:
+
+```bash
+python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
+# Use numba-cuda-mlir-cu12 with CUDA 12.
+```
+
+Python 3.10 through 3.14 is supported. The current backend integration requires
+`numba-cuda-mlir>=0.5.0,<0.6`.
+
+## Backend registration and imports
+
+Register the backend on the host before compiling kernels:
+
 ```python
 from cuda import coop
 
-block = coop.this_block()
-warp = coop.this_warp()
-logical_warp = warp.group_by(8)
+coop.register("numba-cuda-mlir")
+
+from numba_cuda_mlir import cuda
 ```
 
-Compiler backends implement `coop.load` and `coop.store` inside GPU kernels.
-The shared API records the group, data type, algorithm, bounds, and temporary
-storage requirements. It supports all Block Load/Store algorithms and physical
-or logical Warp Load/Store. Importing the package and creating group
-descriptors do not require a CUDA device.
+`register` loads the backend and installs its compiler hooks regardless of
+import order. It also accepts `"numba_cuda_mlir"`. Repeated calls are safe and
+return `None`. It requires installed backend dependencies and does not install
+packages. Installing an extra is separate from registering a compiler in the
+running process; installed package metadata does not reliably record which
+extra was requested.
 
-Block operations accept `direct`, `striped`, `vectorize`, `transpose`,
-`warp_transpose`, and `warp_transpose_timesliced`. Warp operations accept
-`direct`, `striped`, `vectorize`, and `transpose`.
+Importing `cuda.coop` after `numba_cuda_mlir` also registers the backend
+automatically. A standalone `cuda.coop` import does not load optional
+compilers. Explicit registration works when a dependency or earlier notebook
+cell already imported `cuda.coop`.
 
-`load` fills its `ThreadData` output in place and returns `None`. `store`
-writes per-thread values or a `ThreadData` payload. Both accept an element
-`offset` and a `valid_items` count relative to the group's tile.
+The common namespace describes operations shared across compiler backends.
+To use Numba-specific features, import the backend namespace; this also
+registers it:
 
-The package is experimental and its API is subject to change. See the
-[CCCL Python documentation](https://nvidia.github.io/cccl/python/coop.html)
-for the API and data-layout guidance.
+```python
+import cuda.coop.numba_mlir as numba_coop
+```
+
+Use `numba_coop` alongside common calls. In a program using only this backend,
+`import cuda.coop.numba_mlir as coop` is also supported. Keep the alias: a bare
+`import cuda.coop.numba_mlir` binds `cuda` to the top-level Python package and
+can replace the name used for Numba's `cuda.jit`.
+
+Shared operations retain the common signatures, string selectors, and
+inference rules. The backend namespace adds Numba local-array payloads, memory
+namespaces, and operation-specific controls such as Scan prefix callbacks.
+Both namespaces accept `ThreadData(..., alignment=None)`: use a compile-time
+positive power of two in bytes to request minimum payload storage alignment,
+or omit it to let the compiler choose. This does not assert alignment of Load
+or Store arrays.
+
+The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
+namespace choices and temporary storage. The
+[Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
+explains terms and concepts, including blocked and striped layouts.
+
+## Configuration
+
+Runtime configuration is controlled by these environment variables:
+
+| Variable | Effect |
+| --- | --- |
+| `CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION` | A truthy value disables automatic backend activation during `cuda.coop` import. Explicit qualified-backend import still works. |
+| `CUDA_COOP_CCCL_ROOT` | Selects a CCCL source checkout or a `cuda-coop` header bundle. An invalid configured root is an error; resolution does not fall back to another CCCL source. |
+| `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache. The value is read when the backend cache module is imported. |
+| `XDG_CACHE_HOME` | On Linux and other POSIX systems, sets the cache base directory; entries are stored in `<value>/cccl`. Unset, empty, or relative values fall back to `~/.cache/cccl`. Read when the backend cache module is imported. |
+| `LOCALAPPDATA` | On Windows, sets the cache base directory; entries are stored in `<value>\cccl`. Unset, empty, or relative values fall back to `~\AppData\Local\cccl`. Read when the backend cache module is imported. |
+| `CUDA_COOP_SOURCE_DUMP_DIR` | Writes generated CUDA source as `cuda_coop_<backend>_<hash>.cu` files. Set before compiling; Numba provider cache hits also dump source. Unset or empty disables dumping. |
+| `CUDA_PATH` | Supplies `<value>/include` as a CUDA header candidate if `cuda-pathfinder` does not resolve one. |
+| `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
+| `CUDA_ROOT` | Supplies `<value>/include` after `CUDA_HOME` under the same fallback rule. |
+
+If those mechanisms do not resolve CUDA headers, `/usr/local/cuda/include` is
+tried last.
+
+The build recognizes these CMake cache variables:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `CUDA_COOP_INSTALL_HEADER_BUNDLE` | `ON` | Installs the private CCCL header and CMake-package bundle into the wheel. |
+| `CUDA_COOP_ALLOW_DIRTY_HEADER_BUNDLE` | `OFF` | Allows a Git-worktree bundle when selected inputs are changed or `git status` cannot verify them, and records its source revision as `unknown`. |
+| `CUDA_COOP_CCCL_SOURCE_REVISION` | empty | Supplies the revision token recorded instead of deriving it from Git. A dirty or unverifiable Git worktree still records `unknown`. |
+
+For the two Boolean runtime switches, values are case-insensitive; `0`,
+`false`, `no`, `off`, and the empty string are false.
+
+## Block and Warp Load and Store
+
+The portable `cuda.coop` entry points and the qualified
+`cuda.coop.numba_mlir` entry points have matching signatures. The following
+kernel-body example clamps a grid tile tail, where `source`, `destination`, and
+`count` are kernel arguments:
+
+```python
+from numba_cuda_mlir import cuda, types
+
+from cuda import coop
+
+block = coop.this_block()
+items = coop.ThreadData(2)
+tile_items = cuda.blockDim.x * 2
+tile_offset = cuda.blockIdx.x * tile_items
+valid_items = count - tile_offset
+if valid_items < 0:
+    valid_items = 0
+elif valid_items > tile_items:
+    valid_items = tile_items
+coop.load(
+    block,
+    source,
+    items,
+    algorithm="direct",
+    valid_items=valid_items,
+    oob_default=0,
+    offset=tile_offset,
+)
+coop.store(
+    block,
+    destination,
+    items,
+    algorithm="direct",
+    valid_items=valid_items,
+    offset=tile_offset,
+)
+```
+
+`load` fills the caller's output in place and returns `None`. `valid_items`
+counts items across the selected group tile, while `offset` is a nonnegative
+element offset. Runtime offsets are caller-validated. Source and destination arrays
+must be one-dimensional and contiguous. Without `oob_default`, invalid Load
+slots retain their previous values. Every supplied runtime control
+(`valid_items`, `oob_default`, and `offset`) must be uniform within its selected
+group; different groups may use different values.
+
+Runtime `valid_items` and `offset` accept signed integer types through 64 bits
+and unsigned integer types through 32 bits. Boolean, floating-point, and
+`uint64` runtime values are rejected. A runtime `oob_default` is already typed
+by the compiler and must exactly match the Load payload dtype. Ordinary Python
+integer and floating-point literals are converted contextually and checked
+against that dtype before provider generation.
+
+> **`valid_items` must satisfy
+> `0 <= valid_items <= group_size * items_per_thread`.** Static values outside
+> that range are rejected while planning. Runtime values are checked rather
+> than saturated; do not rely on CUB's oversized-count behavior. An invalid
+> runtime value executes a deterministic device trap before narrowing to CUB's
+> integer parameter, and that trap poisons the current CUDA context. Clamp
+> grid-stride and tail counts as above. Run intentional failure probes in
+> disposable processes. For a Warp-group call, subtract that group's tile
+> origin from a block-wide remainder and clamp the result to
+> `[0, group_size * items_per_thread]`.
+
+Store payloads must have exactly the destination dtype. Numba-CUDA-MLIR may
+promote integer arithmetic even when its operands are 32-bit, so explicitly
+cast computed values before storing them:
+
+```python
+value = types.int32(source[cuda.threadIdx.x] + 1)
+coop.store(block, destination, value, algorithm="direct")
+```
+
+Both portable and qualified entry points use the same lowercase string
+algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
+`warp_transpose`, and `warp_transpose_timesliced`. All six are executable.
+`striped` exposes a striped per-thread payload; the other Load algorithms expose
+blocked payloads. Store consumes the matching arrangement. The transpose Store
+implementations copy their payload before calling CUB, so the caller's
+`ThreadData` remains unchanged. The two warp-transpose modes require a block
+size divisible by 32.
+
+Algorithm selectors are normalized to lowercase underscore-delimited strings.
+Enum and integer selectors, including `0`, are rejected.
+
+Warp Load and Store accept `this_warp()` and support `direct`, `striped`,
+`vectorize`, and `transpose`. Partition a physical warp into consecutive
+logical groups with `this_warp().group_by(width)`, where `width` is 1, 2, 4, 8,
+16, or 32. The enclosing block must contain a multiple of 32 threads and must
+not have an incomplete final physical warp. Every member of a participating
+group must reach the collective; complete sibling logical groups may diverge.
+`direct` and `vectorize` expose blocked payloads, `striped` exposes a striped
+payload, and `transpose` uses striped memory transactions while exposing a
+blocked payload.
+
+Each Warp group addresses a distinct tile. The compiler advances the memory
+base by `group_index * (group_size * items_per_thread)` and then applies the
+caller's element `offset`. The offset must be uniform within each participating
+group; different groups may use different offsets. The group index is the
+x-major linear thread rank divided by the selected group size. For a
+multi-block traversal, include the block's global tile origin in the caller
+offset; the compiler-provided origin distinguishes the physical or logical
+Warp groups within that block and must not be added again. Runtime offsets must
+also leave enough signed 64-bit range for the last group origin in the block;
+static offsets are checked during planning. `valid_items` is relative to each
+group's own tile, not the entire block, and must be uniform within that group.
+
+`ThreadGroup` objects are descriptor-only in this release. Runtime query,
+membership, and synchronization methods such as `rank`, `count`, `rank_as`,
+`count_as`, `sync`, `sync_aligned`, and `is_member` are not exposed.
+
+## Temporary storage
+
+Block Load and Store accept an optional caller descriptor:
+
+```python
+storage = coop.TempStorage(
+    size_in_bytes=None,
+    alignment=None,
+    auto_sync=None,
+    sharing="shared",
+)
+coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
+```
+
+For block, physical Warp, and logical Warp calls, `direct`, `striped`, and
+`vectorize` are storage-free: they default-construct CUB primitives without shared-memory allocation, pointer arguments, or
+barriers. For block calls, an explicit descriptor is validated but does not
+change their code generation. Construct `TempStorage` inside the kernel; module-global storage
+descriptors cannot be resolved. A descriptor may be passed to a device helper
+that Numba-CUDA-MLIR inlines into the kernel, which is the default.
+
+The three block transpose algorithms use CUB temporary storage. Without a descriptor,
+the compiler allocates the specialization's exact storage and inserts a block
+reuse barrier. A caller descriptor can select shared or exclusive ownership,
+request capacity and alignment, or opt into dynamic shared memory. The provider
+remains authoritative for the required byte count and alignment.
+
+A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
+every call that passes the same descriptor on one region, while `"exclusive"`
+gives each call site its own slice. A call site inside a loop reuses its slice
+under either layout, so `auto_sync` is independent of `sharing` and defaults to
+`True` for both.
+
+The synchronization model is deliberately simple. A descriptor names one
+region; distinct descriptors and compiler-owned storage never alias each other.
+With `auto_sync` enabled (the default) the compiler appends
+`cuda.syncthreads()` for block groups or `cuda.syncwarp(mask)` for Warp groups
+immediately after every call that consumes the storage, including the last
+one, and never inserts a barrier before a call. That trailing barrier only
+orders reuse of the temporary storage; it is not a general barrier for the
+kernel's own shared-memory traffic and disappears with `auto_sync=False`, in
+which case the caller issues `cuda.syncthreads()` between consecutive uses,
+and a call site inside a loop counts as a reuse on every iteration.
+Compiler-owned storage always synchronizes.
+
+All descriptors and compiler-owned requirements of a kernel share one
+shared-memory backing. Above the 48 KiB static limit that backing moves to
+dynamic shared memory and the launch reserves the exact byte count.
+Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
+allocations reliably. A kernel using cooperative temporary storage must not
+also declare a zero-sized or runtime-sized `cuda.shared.array`. When
+cooperative backing becomes dynamic, user static shared arrays are also
+unsupported. Keep both user arrays and cooperative backing static, or move the
+user data out of shared memory. Storage-free operations do not add this
+restriction.
+
+With `auto_sync=False`, a descriptor must originate from exactly one
+constructor site. Selecting between multiple manual-sync constructors is an
+MVP restriction: the compiler cannot prove that caller barriers protect the
+merged region, even when a particular program supplies sufficient barriers.
+
+Cooperative calls in device helpers must be inlined into the kernel; use
+`@cuda.jit(device=True, inline="always")` when selecting the helper's
+policy explicitly. Standalone collective helpers and collectives inside
+standalone callbacks are unsupported. For the MVP, `literal_unroll`
+values cannot determine cooperative payload extents, group dimensions,
+selectors, or descriptor constructor arguments. Write separate calls with
+explicit constants, or use an ordinary loop with one fixed cooperative shape.
+An unrelated `literal_unroll` loop does not add this restriction.
+
+Warp `transpose` uses compiler-owned storage with one disjoint slice per
+physical or logical group and inserts `syncwarp` with the exact group mask.
+Explicit `TempStorage` is rejected by both the portable and qualified APIs for
+every Warp Load and Store algorithm, including the storage-free modes.
+
+These APIs are compile-time kernel constructs. Calling them outside a
+compatible compiler context reports a structured context error.
+
+See the [CCCL documentation](https://nvidia.github.io/cccl/unstable/python/coop.html)
+for the complete signatures.
