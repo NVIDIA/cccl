@@ -105,10 +105,15 @@ struct UserDeletedDestructorInNonAggregate
   ~UserDeletedDestructorInNonAggregate() = delete;
 };
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4624) // destructor was implicitly defined as deleted
+
 struct DeletedDestructorViaBaseInAggregate : UserDeletedDestructorInAggregate
 {};
 struct DeletedDestructorViaBaseInNonAggregate : UserDeletedDestructorInNonAggregate
 {};
+
+_CCCL_DIAG_POP
 
 #if TEST_STD_VER >= 2020
 template <bool B>
@@ -146,12 +151,15 @@ struct ConstrainedUserDeclaredDefaultConstructor<true>
 // We can't emulate ConstrainedUserProvidedDestructor in C++17
 #endif // ^^^ TEST_STD_VER < 2020 ^^^
 
-#if TEST_COMPILER(CLANG)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4200) // nonstandard extension used: zero-sized array in struct/union
+
+#if !TEST_COMPILER(GCC, <, 15) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
 struct StructWithFlexibleArrayMember
 {
   int arr[];
 };
-#endif // TEST_COMPILER(CLANG)
+#endif // !TEST_COMPILER(GCC, <, 15) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
 
 #if !TEST_COMPILER(NVRTC)
 struct StructWithZeroSizedArray
@@ -159,6 +167,8 @@ struct StructWithZeroSizedArray
   int arr[0];
 };
 #endif // !TEST_COMPILER(NVRTC)
+
+_CCCL_DIAG_POP
 
 // Test implicit-lifetime type
 template <typename T, bool Expected>
@@ -285,9 +295,9 @@ TEST_FUNC constexpr bool test()
   test_is_implicit_lifetime<ConstrainedUserProvidedDestructor<false>, true>();
 #endif // TEST_STD_VER >= 2020
 
-#if TEST_COMPILER(CLANG)
+#if !TEST_COMPILER(GCC, <, 15) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
   test_is_implicit_lifetime<StructWithFlexibleArrayMember, true>();
-#endif // TEST_COMPILER(CLANG)
+#endif // !TEST_COMPILER(GCC, <, 15) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
 
 #if !TEST_COMPILER(NVRTC)
   test_is_implicit_lifetime<StructWithZeroSizedArray, true>();
