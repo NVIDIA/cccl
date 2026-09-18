@@ -253,7 +253,8 @@ CUTLASS-qualified API
 
 The qualified CUTLASS surface currently provides ``this_block``, ``this_warp``,
 ``ThreadData``, ``TempStorage``, all six block ``load``/``store`` algorithms,
-and four physical-warp algorithms. Explicit temporary storage is block-only.
+and four algorithms for physical and logical warps. Explicit temporary
+storage is block-only.
 It accepts the portable
 ``valid_items``, ``offset``, and load-only ``oob_default`` controls. Load
 returns ``None`` and mutates its destination payload. ``ThreadData`` adds

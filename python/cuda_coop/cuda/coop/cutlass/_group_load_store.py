@@ -27,11 +27,11 @@ _MAX_STATIC_OFFSET = (1 << 63) - 1
 def _resolve_group(group, algorithm, temp_storage, operation):
     if not isinstance(group, CommonThreadGroup):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
-    if group.kind not in {"block", "warp"}:
+    if group.kind not in {"block", "warp", "threads_within_warp"}:
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} requires a block or physical warp group"
+            f"{_SCOPE}.{operation} requires a block, physical warp, or logical warp group"
         )
-    if group.kind == "warp" and temp_storage is not None:
+    if group.kind != "block" and temp_storage is not None:
         raise NotImplementedError(
             f"{_SCOPE}.{operation} explicit TempStorage is supported only for block groups"
         )
