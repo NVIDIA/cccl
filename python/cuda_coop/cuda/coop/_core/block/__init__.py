@@ -78,6 +78,7 @@ from .shuffle import (
     make_block_shuffle_semantics,
     make_block_shuffle_specialization,
 )
+from .topk import BlockTopKSpecialization, make_block_topk_specialization
 
 __all__ = [
     "ArgumentBinding",
@@ -113,6 +114,7 @@ __all__ = [
     "BlockShuffleSpecialization",
     "BlockShuffleValueKind",
     "BlockStoreAlgorithm",
+    "BlockTopKSpecialization",
     "RadixBitRange",
     "RadixOrder",
     "binding",
@@ -134,6 +136,7 @@ __all__ = [
     "make_block_shuffle_semantics",
     "make_block_shuffle_specialization",
     "make_block_store_specialization",
+    "make_block_topk_specialization",
     "make_radix_bit_range",
     "normalize_block_dim",
     "normalize_block_reduce_algorithm",
