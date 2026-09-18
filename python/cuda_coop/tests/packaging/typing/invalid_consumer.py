@@ -635,6 +635,31 @@ common.radix_sort_keys(
     descending="yes",  # expected-error: [arg-type]
 )
 
+
+common.topk_min_keys(
+    common.this_warp(),  # expected-error: [arg-type]
+    common_values,
+    k=3,
+)
+common.topk_max_pairs(
+    common_block,
+    common_values,
+    common_values,
+    k="3",  # expected-error: [arg-type]
+)
+coop.topk_min_pairs(
+    coop.this_grid(),  # expected-error: [arg-type]
+    values,
+    values,
+    k=3,
+)
+coop.topk_max_keys(
+    qualified_block,
+    values,
+    k=3,
+    valid_items=1.5,  # expected-error: [arg-type]
+)
+
 common.sum(
     common.this_cluster(),  # expected-error: [arg-type]
     np.int32(1),

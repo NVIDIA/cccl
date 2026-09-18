@@ -234,3 +234,52 @@ def test_empty_prefix_with_cub_assertions(monkeypatch):
         kernel[1, 32](source, output, np.int64(k), np.int64(count))
         cuda.synchronize()
         np.testing.assert_array_equal(output, -np.ones_like(source))
+
+
+@pytest.mark.parametrize("qualified", [False, True])
+@pytest.mark.parametrize("pairs", [False, True])
+@pytest.mark.parametrize("threads,items", [(3, 5), (37, 3), (65, 1)])
+def test_chained_results_infer_dtype_from_indexed_writes(
+    qualified, pairs, threads, items
+):
+    api = numba_coop if qualified else coop
+    keep = threads * items // 2
+    selected_count = min(3, keep)
+
+    @cuda.jit
+    def kernel(source, positions, output, indices, preserved):
+        block = api.this_block()
+        keys = api.ThreadData(items)
+        values = api.ThreadData(items)
+        for item in range(items):
+            index = cuda.threadIdx.x * items + item
+            keys[item] = source[index]
+            values[item] = positions[index]
+        if pairs:
+            first_keys, first_values = api.topk_min_pairs(block, keys, values, k=keep)
+            chosen, associated = api.topk_max_pairs(
+                block, first_keys, first_values, k=selected_count, valid_items=keep
+            )
+            api.store(block, indices, associated, valid_items=selected_count)
+        else:
+            first = api.topk_min_keys(block, keys, k=keep)
+            chosen = api.topk_max_keys(block, first, k=selected_count, valid_items=keep)
+        api.store(block, output, chosen, valid_items=selected_count)
+        api.store(block, preserved, keys)
+
+    source = ((np.arange(threads * items) * 17 + 11) % 97 - 48).astype(np.int16)
+    positions = np.arange(source.size, dtype=np.int64)
+    output = np.zeros_like(source)
+    indices = np.zeros_like(positions)
+    preserved = np.zeros_like(source)
+    kernel[1, threads](source, positions, output, indices, preserved)
+    cuda.synchronize()
+    np.testing.assert_array_equal(
+        np.sort(output[:selected_count]), np.sort(source)[keep - selected_count : keep]
+    )
+    np.testing.assert_array_equal(preserved, source)
+    if pairs:
+        assert len(set(indices[:selected_count])) == selected_count
+        np.testing.assert_array_equal(
+            output[:selected_count], source[indices[:selected_count]]
+        )
