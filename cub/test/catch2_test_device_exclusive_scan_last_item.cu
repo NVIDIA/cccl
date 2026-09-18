@@ -45,7 +45,7 @@ CUB_TEST("Device exclusive scan ignores last input element", "[scan][device]", C
   host_input.push_back(type{}); // the last value doesn't matter here either
   c2h::host_vector<type> expected(size);
 
-  type init_value{};
+  const type init_value{};
   compute_exclusive_scan_reference(host_input.cbegin(), host_input.cend(), expected.begin(), init_value, op_t{});
 
   device_exclusive_scan(d_data, d_data, op_t{}, init_value, size);
