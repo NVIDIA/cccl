@@ -918,15 +918,19 @@ template <int BlockDimX,
           int NUM_PARTS                         = 1>
 struct BlockRadixRankMatchEarlyCounts
 {
+private:
   // constants
-  static constexpr int BLOCK_THREADS           = BlockDimX; // NOLINT(readability-identifier-naming)
+  static constexpr int block_threads = BlockDimX;
+
+public:
+  static constexpr int BLOCK_THREADS           = block_threads; // NOLINT(readability-identifier-naming)
   static constexpr int RADIX_DIGITS            = 1 << RadixBits;
-  static constexpr int BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+  static constexpr int BINS_PER_THREAD         = (RADIX_DIGITS + block_threads - 1) / block_threads;
   static constexpr int BINS_TRACKED_PER_THREAD = BINS_PER_THREAD;
-  static constexpr int FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS;
+  static constexpr int FULL_BINS               = BINS_PER_THREAD * block_threads == RADIX_DIGITS;
   static constexpr int WARP_THREADS            = detail::warp_threads;
-  static constexpr int PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS;
-  static constexpr int BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS;
+  static constexpr int PARTIAL_WARP_THREADS    = block_threads % WARP_THREADS;
+  static constexpr int BLOCK_WARPS             = block_threads / WARP_THREADS;
   static constexpr int PARTIAL_WARP_ID         = BLOCK_WARPS - 1;
   static constexpr int WARP_MASK               = ~0;
   static constexpr int NUM_MATCH_MASKS         = MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR ? BLOCK_WARPS : 0;
@@ -934,7 +938,7 @@ struct BlockRadixRankMatchEarlyCounts
   static constexpr int MATCH_MASKS_ALLOC_SIZE = NUM_MATCH_MASKS < 1 ? 1 : NUM_MATCH_MASKS;
 
   // types
-  using BlockScan = cub::BlockScan<int, BLOCK_THREADS, InnerScanAlgorithm>;
+  using BlockScan = cub::BlockScan<int, block_threads, InnerScanAlgorithm>;
 
   struct TempStorage
   {

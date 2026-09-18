@@ -90,8 +90,8 @@ Thus CUB is *CUDA Unbound*.
 An example (block-wide sorting)
 ==================================================
 
-The following code snippet presents a CUDA kernel in which each block of ``BLOCK_THREADS`` threads
-will collectively load, sort, and store its own segment of (``BLOCK_THREADS * ITEMS_PER_THREAD``)
+The following code snippet presents a CUDA kernel in which each block of ``BlockThreads`` threads
+will collectively load, sort, and store its own segment of (``BlockThreads * ITEMS_PER_THREAD``)
 integer keys:
 
 .. code-block:: c++
@@ -100,16 +100,16 @@ integer keys:
     #include <cub/block/block_store.cuh>
     #include <cub/block/block_radix_sort.cuh>
 
-    template <int BLOCK_THREADS, int ITEMS_PER_THREAD>
+    template <int BlockThreads, int ITEMS_PER_THREAD>
     __global__ void BlockSortKernel(int *d_in, int *d_out)
     {
         // Specialize BlockLoad, BlockStore, and BlockRadixSort collective types
         using BlockLoadT = cub::BlockLoad<
-          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_LOAD_TRANSPOSE>;
+          int, BlockThreads, ITEMS_PER_THREAD, cub::BLOCK_LOAD_TRANSPOSE>;
         using BlockStoreT = cub::BlockStore<
-          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_STORE_TRANSPOSE>;
+          int, BlockThreads, ITEMS_PER_THREAD, cub::BLOCK_STORE_TRANSPOSE>;
         using BlockRadixSortT = cub::BlockRadixSort<
-          int, BLOCK_THREADS, ITEMS_PER_THREAD>;
+          int, BlockThreads, ITEMS_PER_THREAD>;
 
         // Allocate type-safe, repurposable shared memory for collectives
         __shared__ union {
@@ -120,7 +120,7 @@ integer keys:
 
         // Obtain this block's segment of consecutive keys (blocked across threads)
         int thread_keys[ITEMS_PER_THREAD];
-        const int block_offset = blockIdx.x * (BLOCK_THREADS * ITEMS_PER_THREAD);
+        const int block_offset = blockIdx.x * (BlockThreads * ITEMS_PER_THREAD);
         BlockLoadT(temp_storage.load).Load(d_in + block_offset, thread_keys);
 
         __syncthreads();	// Barrier for smem reuse
@@ -365,7 +365,7 @@ accommodate:
 
    * - **Striped arrangement**. The aggregate tile of items is partitioned across threads in "striped"
        fashion, i.e., the ``ITEMS_PER_THREAD`` items owned by each thread have logical stride
-       ``BLOCK_THREADS`` between them. Striped arrangements are often desirable for data movement through
+       ``BlockThreads`` between them. Striped arrangements are often desirable for data movement through
        global memory (where
        `read/write coalescing <https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#coalesced-access-to-global-memory>`_
        is an important performance consideration).
