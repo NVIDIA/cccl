@@ -334,8 +334,9 @@ function Repair-CudaCcclWheel {
 
     Invoke-Checked { & $PythonExe -m pip install 'delvewheel>=1.13.1' | Write-Host } 'Failed to install delvewheel'
 
-    # delvewheel vendors the msvcp140.dll it finds on PATH, i.e. the System32
-    # copy the Visual Studio installer put there alongside this image's toolset.
+    # Vendor the System32 msvcp140.dll, the copy the Visual Studio installer put
+    # there alongside this image's toolset. Passed via --add-path so delvewheel
+    # takes this copy rather than the first one it meets on PATH.
     $systemMsvcp = Join-Path $env:SystemRoot 'System32\msvcp140.dll'
     Write-Host "System msvcp140.dll is $((Get-Item $systemMsvcp).VersionInfo.FileVersion)"
 
@@ -358,7 +359,8 @@ function Repair-CudaCcclWheel {
         '--namespace-pkg', 'cuda',
         '--exclude', ('cccl.c.parallel*.dll;libnvcc.dll;' +
             'nvrtc64_*.dll;nvrtc-builtins64_*.dll;nvJitLink_*.dll;nvfatbin*.dll;' +
-            'cudart64_*.dll;nvcuda.dll;dbghelp.dll')
+            'cudart64_*.dll;nvcuda.dll;dbghelp.dll'),
+        '--add-path', (Split-Path -Parent $systemMsvcp)
     )
     Write-Host ("python " + ($delvewheelArgs -join ' '))
     Invoke-Checked { & $PythonExe @delvewheelArgs } 'delvewheel repair failed'
