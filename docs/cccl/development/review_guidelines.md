@@ -65,6 +65,24 @@ not cover all of these, so green CI is not sufficient. Compiler-detection refact
 stay equivalent for every supported compiler — beware masquerading (Clang and NVHPC define
 `__GNUC__`). Benchmarks and tests count too.
 
+## build.fp16-implicit-ops (important, C++ code using `__half`/`__nv_bfloat16` or similar extended FP types)
+
+<!-- provenance:
+  #1735→#1785 static_cast<__half>/static_cast<float> instead of __float2half/__half2float in cub histogram ComputeScale
+-->
+
+Flag any use of the vendor-provided conversions or operators on CUDA extended floating-point types
+(`__half`, `__half2`, `__nv_bfloat16`, `__nv_bfloat162`): `static_cast<__half>(f)`,
+`static_cast<float>(h)`, arithmetic/comparison operators (`h1 + h2`, `h1 < h2`), and compound
+assignments. The vendor headers compile these out when a user defines
+`__CUDA_NO_HALF_CONVERSIONS__`/`__CUDA_NO_HALF_OPERATORS__` (or the HALF2/BFLOAT16/BFLOAT162
+equivalents), so such code silently fails to build for those configurations. Use the explicit
+intrinsics instead (`__float2half`/`__half2float`, `__hadd`/`__hgt`, …). `__nv_bfloat16`
+arithmetic/comparison intrinsics require SM80 while CCCL supports sm75+: gate them with
+`NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, …)` and a float round-trip fallback via the explicit conversion
+intrinsics (`__bfloat162float`/`__float2bfloat16_rn`; for `__nv_bfloat162`,
+`__bfloat1622float2`/`__float22bfloat162_rn`). Candidate for a pre-commit grep.
+
 ## correctness.pdl-restrict-aliasing (critical, CUDA kernels that call `_CCCL_PDL_GRID_DEPENDENCY_SYNC()` / `cudaGridDependencySynchronize()`)
 
 <!-- provenance: manually added -->
