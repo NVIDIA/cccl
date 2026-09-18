@@ -2,7 +2,6 @@
 #include <thrust/functional.h>
 #include <thrust/transform.h>
 
-#include "catch2_test_helper.h"
 #include <unittest/unittest.h>
 
 constexpr size_t num_samples = 10000;
@@ -73,5 +72,5 @@ TEMPLATE_LIST_TEST_CASE("LogicalNot", "[functional]", integral_vector_list)
 
   thrust::transform(input.begin(), input.end(), reference.begin(), ::cuda::std::logical_not<T>{});
   thrust::transform(input.begin(), input.end(), result.begin(), !_1);
-  ASSERT_EQUAL(reference, result);
+  REQUIRE(reference == result);
 }

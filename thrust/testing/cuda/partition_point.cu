@@ -33,9 +33,9 @@ void TestPartitionPointDevice(ExecutionPolicy exec)
   thrust::device_vector<iterator> result(1);
   partition_point_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(ref - v.begin(), (iterator) result[0] - v.begin());
+  REQUIRE(ref - v.begin() == (iterator) result[0] - v.begin());
 }
 
 void TestPartitionPointDeviceSeq()

@@ -10,9 +10,14 @@ import sys
 import sysconfig
 import warnings
 
-from ._bindings import Op, OpKind
+from ._bindings import Op, OpKind, TypeEnum
 from ._caching import CachableFunction, cache_with_registered_key_functions
 from ._device_code import DeviceCode
+
+try:
+    from ._build_info import USING_V2  # type: ignore[import-not-found]
+except ImportError:
+    USING_V2 = False
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -77,6 +82,14 @@ class _WellKnownOp(_OpAdapter):
         self._kind = kind
 
     def compile(self, input_types, output_type=None) -> Op:
+        # V2 supports some built-in operations on storage types, such as IDENTITY.
+        if not USING_V2:
+            for t in (*input_types, output_type):
+                if t is not None and t.info.typenum == TypeEnum.STORAGE:
+                    raise TypeError(
+                        f"OpKind.{self._kind.name} is not supported for struct or other "
+                        f"opaque types ({t.dtype}). Provide a custom operator instead."
+                    )
         return Op(
             operator_type=self._kind,
             name="",

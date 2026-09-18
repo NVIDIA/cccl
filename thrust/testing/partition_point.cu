@@ -44,7 +44,7 @@ void TestPartitionPoint()
 
   const Iterator ref = thrust::stable_partition(v.begin(), v.end(), is_even<T>());
 
-  ASSERT_EQUAL(ref - v.begin(), thrust::partition_point(v.begin(), v.end(), is_even<T>()) - v.begin());
+  REQUIRE(ref - v.begin() == thrust::partition_point(v.begin(), v.end(), is_even<T>()) - v.begin());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionPoint);
 
@@ -62,7 +62,7 @@ void TestPartitionPointDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::partition_point(sys, vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestPartitionPointDispatchExplicit);
 
@@ -79,7 +79,7 @@ void TestPartitionPointDispatchImplicit()
 
   thrust::partition_point(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestPartitionPointDispatchImplicit);
 
@@ -97,12 +97,12 @@ void TestPartitionPointWithBigIndexesHelper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(0);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   const test_less_than fn = {(1ll << magnitude) - 17};
 
-  ASSERT_EQUAL(::cuda::std::distance(begin, thrust::partition_point(thrust::device, begin, end, fn)),
-               (1ll << magnitude) - 17);
+  REQUIRE(
+    ::cuda::std::distance(begin, thrust::partition_point(thrust::device, begin, end, fn)) == (1ll << magnitude) - 17);
 }
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE

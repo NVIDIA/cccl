@@ -21,7 +21,7 @@ void TestSetSymmetricDifferenceDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_symmetric_difference(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestSetSymmetricDifferenceDispatchExplicit);
 
@@ -44,7 +44,7 @@ void TestSetSymmetricDifferenceDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestSetSymmetricDifferenceDispatchImplicit);
 
@@ -61,7 +61,7 @@ void TestSetSymmetricDifferenceSimple()
   const Iterator end = thrust::set_symmetric_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetSymmetricDifferenceSimple);
 
@@ -97,7 +97,7 @@ void TestSetSymmetricDifference(const size_t n)
     d_end = thrust::set_symmetric_difference(d_a.begin(), d_a.end(), d_b.begin(), d_b.begin() + size, d_result.begin());
     d_result.resize(d_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifference);
@@ -125,7 +125,7 @@ void TestSetSymmetricDifferenceEquivalentRanges(const size_t n)
   d_end = thrust::set_symmetric_difference(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin());
   d_result.erase(d_end, d_result.end());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceEquivalentRanges);
 
@@ -163,7 +163,7 @@ void TestSetSymmetricDifferenceMultiset(const size_t n)
   d_end = thrust::set_difference(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin());
   d_result.erase(d_end, d_result.end());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceMultiset);
 

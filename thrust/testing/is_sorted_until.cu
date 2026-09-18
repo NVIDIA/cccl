@@ -99,7 +99,7 @@ void TestIsSortedUntilExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::is_sorted_until(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestIsSortedUntilExplicit);
 
@@ -116,6 +116,6 @@ void TestIsSortedUntilImplicit()
 
   thrust::is_sorted_until(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestIsSortedUntilImplicit);

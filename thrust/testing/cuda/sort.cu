@@ -39,11 +39,11 @@ void TestComparisonSortDevice(ExecutionPolicy exec, const size_t n, Compare comp
 
   sort_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), comp);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::sort(h_data.begin(), h_data.end(), comp);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 };
 
 template <typename T>
@@ -106,7 +106,7 @@ void TestSortCudaStreams()
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
 
   cudaStreamDestroy(s);
 }
@@ -122,7 +122,7 @@ void TestComparisonSortCudaStreams()
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end(), my_less<int>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
 
   cudaStreamDestroy(s);
 }
@@ -173,22 +173,23 @@ struct TestRadixSortDispatch
 
   void operator()() const {}
 };
-using test_types_radix_sort =
-  unittest::concat<IntegralTypes,
-                   FloatingPointTypes
-#if _CCCL_HAS_INT128()
-                   ,
-                   unittest::type_list<__int128_t, __uint128_t>
-#endif // _CCCL_HAS_INT128()
+using test_types_radix_sort = cuda::std::__type_concat<
+  IntegralTypes,
+  FloatingPointTypes
+// nvcc's tile codegen does not support 128-bit integer types
+#if _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
+  ,
+  unittest::type_list<__int128_t, __uint128_t>
+#endif // _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
 #if _CCCL_HAS_NVFP16()
-                   ,
-                   unittest::type_list<__half>
+  ,
+  unittest::type_list<__half>
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-                   ,
-                   unittest::type_list<__nv_bfloat16>
+  ,
+  unittest::type_list<__nv_bfloat16>
 #endif // _CCCL_HAS_NVBF16()
-                   >;
+  >;
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestRadixSortDispatch, test_types_radix_sort);
 
 /**
@@ -274,7 +275,7 @@ void TestSortWithMagnitude(int magnitude)
       thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<std::uint8_t>(num_items));
     const bool ok =
       thrust::equal(expected_result_it, expected_result_it + static_cast<std::ptrdiff_t>(num_items), vec.cbegin());
-    ASSERT_EQUAL(ok, true);
+    REQUIRE(ok);
   }
   catch (std::bad_alloc&)
   {
@@ -312,22 +313,23 @@ struct TestSortAscendingKey
   }
 };
 
-using test_types_ascending_key =
-  unittest::concat<unittest::type_list<>
-#if _CCCL_HAS_INT128()
-                   ,
-                   unittest::type_list<__int128_t, __uint128_t>
-#endif // _CCCL_HAS_INT128()
+using test_types_ascending_key = cuda::std::__type_concat<
+  unittest::type_list<>
+// nvcc's tile codegen does not support 128-bit integer types
+#if _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
+  ,
+  unittest::type_list<__int128_t, __uint128_t>
+#endif // _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
 // CTK 12.2 offers __host__ __device__ operators for __half and __nv_bfloat16, so we can use std::sort
 #if _CCCL_CTK_AT_LEAST(12, 2)
 #  if _CCCL_HAS_NVFP16() || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-                   ,
-                   unittest::type_list<__half>
+  ,
+  unittest::type_list<__half>
 #  endif
 #  if _CCCL_HAS_NVBF16() || !defined(__CUDA_NO_BFLOAT16_OPERATORS__) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__)
-                   ,
-                   unittest::type_list<__nv_bfloat16>
+  ,
+  unittest::type_list<__nv_bfloat16>
 #  endif
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
-                   >;
+  >;
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestSortAscendingKey, test_types_ascending_key);

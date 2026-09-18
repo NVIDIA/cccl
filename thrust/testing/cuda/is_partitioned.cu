@@ -38,20 +38,20 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
   is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   thrust::partition(v.begin(), v.end(), is_even<int>());
 
   is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 }
 
 void TestIsPartitionedDeviceSeq()

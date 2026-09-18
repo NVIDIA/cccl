@@ -19,42 +19,42 @@ void TestDevicePointerManipulation()
   thrust::device_ptr<int> begin(&data[0]);
   const thrust::device_ptr<int> end(&data[0] + 5);
 
-  ASSERT_EQUAL(end - begin, 5);
+  REQUIRE(end - begin == 5);
 
   begin++;
   begin--;
 
-  ASSERT_EQUAL(end - begin, 5);
+  REQUIRE(end - begin == 5);
 
   begin += 1;
   begin -= 1;
 
-  ASSERT_EQUAL(end - begin, 5);
+  REQUIRE(end - begin == 5);
 
   begin = begin + (int) 1;
   begin = begin - (int) 1;
 
-  ASSERT_EQUAL(end - begin, 5);
+  REQUIRE(end - begin == 5);
 
   begin = begin + (unsigned int) 1;
   begin = begin - (unsigned int) 1;
 
-  ASSERT_EQUAL(end - begin, 5);
+  REQUIRE(end - begin == 5);
 
   begin = begin + (size_t) 1;
   begin = begin - (size_t) 1;
 
-  ASSERT_EQUAL(end - begin, 5);
+  REQUIRE(end - begin == 5);
 
   begin = begin + (ptrdiff_t) 1;
   begin = begin - (ptrdiff_t) 1;
 
-  ASSERT_EQUAL(end - begin, 5);
+  REQUIRE(end - begin == 5);
 
   begin = begin + (thrust::device_ptr<int>::difference_type) 1;
   begin = begin - (thrust::device_ptr<int>::difference_type) 1;
 
-  ASSERT_EQUAL(end - begin, 5);
+  REQUIRE(end - begin == 5);
 }
 DECLARE_UNITTEST(TestDevicePointerManipulation);
 
@@ -66,11 +66,11 @@ void TestMakeDevicePointer()
 
   const thrust::device_ptr<T> p0 = thrust::device_pointer_cast(raw_ptr);
 
-  ASSERT_EQUAL(thrust::raw_pointer_cast(p0), raw_ptr);
+  REQUIRE(thrust::raw_pointer_cast(p0) == raw_ptr);
 
   const thrust::device_ptr<T> p1 = thrust::device_pointer_cast(p0);
 
-  ASSERT_EQUAL(p0, p1);
+  REQUIRE(p0 == p1);
 }
 DECLARE_UNITTEST(TestMakeDevicePointer);
 
@@ -86,11 +86,11 @@ void TestRawPointerCast()
 
   first = thrust::raw_pointer_cast(&vec[0]);
   last  = thrust::raw_pointer_cast(&vec[3]);
-  ASSERT_EQUAL(last - first, 3);
+  REQUIRE(last - first == 3);
 
   first = thrust::raw_pointer_cast(&vec.front());
   last  = thrust::raw_pointer_cast(&vec.back());
-  ASSERT_EQUAL(last - first, 2);
+  REQUIRE(last - first == 2);
 
   // Do we want these to work?
   // first = thrust::raw_pointer_cast(vec.begin());
@@ -137,22 +137,22 @@ void TestDevicePointerCompare()
     const device_ptr ptr2 = ptr1 + 1;
 
     // Equality
-    ASSERT_EQUAL(true, (ptr1 == ptr1));
-    ASSERT_EQUAL(false, (ptr1 != ptr1));
+    REQUIRE(ptr1 == ptr1);
+    REQUIRE_FALSE(ptr1 != ptr1);
 
-    ASSERT_EQUAL(false, (ptr1 == ptr2));
-    ASSERT_EQUAL(true, (ptr1 != ptr2));
+    REQUIRE_FALSE(ptr1 == ptr2);
+    REQUIRE(ptr1 != ptr2);
 
     // Relations
-    ASSERT_EQUAL(true, (ptr1 < ptr2));
-    ASSERT_EQUAL(true, (ptr1 <= ptr2));
-    ASSERT_EQUAL(true, (ptr2 > ptr1));
-    ASSERT_EQUAL(true, (ptr2 >= ptr1));
+    REQUIRE(ptr1 < ptr2);
+    REQUIRE(ptr1 <= ptr2);
+    REQUIRE(ptr2 > ptr1);
+    REQUIRE(ptr2 >= ptr1);
 
-    ASSERT_EQUAL(false, (ptr2 < ptr1));
-    ASSERT_EQUAL(false, (ptr2 <= ptr1));
-    ASSERT_EQUAL(false, (ptr1 > ptr2));
-    ASSERT_EQUAL(false, (ptr1 >= ptr2));
+    REQUIRE_FALSE(ptr2 < ptr1);
+    REQUIRE_FALSE(ptr2 <= ptr1);
+    REQUIRE_FALSE(ptr1 > ptr2);
+    REQUIRE_FALSE(ptr1 >= ptr2);
   }
 
   using T2 = float;
@@ -175,22 +175,22 @@ void TestDevicePointerCompare()
     const other_ptr ptr2{other_ptr{thrust::raw_pointer_cast(ptr1 + 1)}};
 
     // Equality
-    ASSERT_EQUAL(true, (ptr1 == ptr1));
-    ASSERT_EQUAL(false, (ptr1 != ptr1));
+    REQUIRE(ptr1 == ptr1);
+    REQUIRE_FALSE(ptr1 != ptr1);
 
-    ASSERT_EQUAL(false, (ptr1 == ptr2));
-    ASSERT_EQUAL(true, (ptr1 != ptr2));
+    REQUIRE_FALSE(ptr1 == ptr2);
+    REQUIRE(ptr1 != ptr2);
 
     // Relations
-    ASSERT_EQUAL(true, (ptr1 < ptr2));
-    ASSERT_EQUAL(true, (ptr1 <= ptr2));
-    ASSERT_EQUAL(true, (ptr2 > ptr1));
-    ASSERT_EQUAL(true, (ptr2 >= ptr1));
+    REQUIRE(ptr1 < ptr2);
+    REQUIRE(ptr1 <= ptr2);
+    REQUIRE(ptr2 > ptr1);
+    REQUIRE(ptr2 >= ptr1);
 
-    ASSERT_EQUAL(false, (ptr2 < ptr1));
-    ASSERT_EQUAL(false, (ptr2 <= ptr1));
-    ASSERT_EQUAL(false, (ptr1 > ptr2));
-    ASSERT_EQUAL(false, (ptr1 >= ptr2));
+    REQUIRE_FALSE(ptr2 < ptr1);
+    REQUIRE_FALSE(ptr2 <= ptr1);
+    REQUIRE_FALSE(ptr1 > ptr2);
+    REQUIRE_FALSE(ptr1 >= ptr2);
   }
 
   { // ensure that different pointer types with different element types are not comparable
@@ -242,15 +242,15 @@ void TestToAddress()
 
   first = cuda::std::to_address(&vec[0]);
   last  = cuda::std::to_address(&vec[2]);
-  ASSERT_EQUAL(last - first, 2);
+  REQUIRE(last - first == 2);
 
   first = cuda::std::to_address(&vec.front());
   last  = cuda::std::to_address(&vec.back());
-  ASSERT_EQUAL(last - first, 2);
+  REQUIRE(last - first == 2);
 
   first = cuda::std::to_address(vec.begin());
   last  = cuda::std::to_address(vec.end());
-  ASSERT_EQUAL(last - first, 3);
+  REQUIRE(last - first == 3);
 }
 DECLARE_VECTOR_UNITTEST(TestToAddress);
 
