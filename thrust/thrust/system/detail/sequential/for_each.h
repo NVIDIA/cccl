@@ -19,7 +19,6 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
-#include <cuda/std/__algorithm/for_each.h>
 #include <cuda/std/__algorithm/for_each_n.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -30,8 +29,12 @@ template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction
 _CCCL_HOST_DEVICE InputIterator
 for_each(sequential::execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, UnaryFunction f)
 {
-  ::cuda::std::for_each(first, last, thrust::detail::wrapped_function<UnaryFunction>{f});
-  return last;
+  const thrust::detail::wrapped_function<UnaryFunction> wrapped_f{f};
+  for (; first != last; ++first)
+  {
+    wrapped_f(*first);
+  }
+  return first;
 } // end for_each()
 
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>

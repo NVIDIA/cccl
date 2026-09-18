@@ -26,6 +26,14 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
+_CCCL_HOST_DEVICE ForwardIterator
+remove_if(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, Predicate pred)
+{
+  return ::cuda::std::remove_if(first, last, thrust::detail::wrapped_function<Predicate>{pred});
+}
+
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
 _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   sequential::execution_policy<DerivedPolicy>&,
@@ -66,14 +74,6 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   }
 
   return result;
-}
-
-_CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator
-remove_if(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, Predicate pred)
-{
-  return ::cuda::std::remove_if(first, last, thrust::detail::wrapped_function<Predicate>{pred});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
