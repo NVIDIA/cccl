@@ -82,7 +82,7 @@ struct weird_buffer
 
   weird_buffer(::cuda::mr::legacy_pinned_memory_resource& res, std::size_t s)
       : resource(res)
-      , data((int*) res.allocate_sync(s * sizeof(int)))
+      , data(static_cast<int*>(res.allocate_sync(s * sizeof(int))))
       , size(s)
   {
     memset(data, 0, size);

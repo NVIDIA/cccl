@@ -1064,7 +1064,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   _CUDA_CUB_RET_IF_FAIL(status);
 
   ::cuda::std::pair<Size, Size>* partitions = (::cuda::std::pair<Size, Size>*) allocations[1];
-  char* vshmem_ptr                          = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
+  char* vshmem_ptr                          = vshmem_storage > 0 ? static_cast<char*>(allocations[2]) : nullptr;
 
   const init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
   ia.launch(tile_state, num_tiles);
