@@ -44,6 +44,30 @@ Header inclusion
 #. Never include headers from ``cuda/std/__internal/*`` directly, include ``cuda/std/detail/__config`` instead.
 #. Never include headers from ``thread/detail/config/*`` directly, include ``thrust/detail/config.h`` instead.
 
+Header removal
+~~~~~~~~~~~~~~
+
+#. Accidental header removal can cause tests to pick up a stale copy of the same
+   header from a system or CUDA Toolkit installation, masking the deletion.
+   Commits that delete or move a product header must say so clearly in the commit
+   message so internal testing can treat the change as intentional. The
+   mention may appear in the subject or the body. For example:
+
+   .. code-block:: text
+
+      [libcu++] Some change
+
+      Reason for the changes.
+
+      Removed obsolete header <cuda/std/__foo/bar.h>
+      Renamed header <cuda/std/__foo/meow.h> to <cuda/std/__foo/bark.h>
+
+   This requirement applies only to product code under:
+
+   * ``cub/cub/``
+   * ``thrust/thrust/``
+   * ``libcudacxx/include/cuda/``
+   * ``libcudacxx/include/nv/``
 
 Qualification
 ~~~~~~~~~~~~~
