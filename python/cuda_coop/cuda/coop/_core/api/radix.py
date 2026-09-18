@@ -125,10 +125,42 @@ def radix_sort_keys(
 ) -> Any:
     """Return stable, blocked radix-sorted integral keys without mutation.
 
-    The complete block participates. Keys are fixed-size ThreadData with
-    32- or 64-bit signed or unsigned integer elements. The half-open bit
-    interval selects CUB's ordered representation, including the inverted
-    sign bit for signed integers; omitted end_bit selects the key width.
+    Parameters
+    ----------
+    group : ThreadGroup
+        The complete physical block returned by ``this_block()``. All block
+        threads must participate with identical options and payload extents.
+    keys : ThreadDataLike
+        Fixed-size per-thread keys with int32, uint32, int64, or uint64 dtype.
+        The input sequence is the flattened blocked arrangement.
+    begin_bit, end_bit : int or compiler integer
+        Half-open interval in CUB's ordered key representation. The default
+        begin is zero; omitted end selects the full key width, even when begin
+        is nonzero. Bounds may be runtime values but must be block-uniform and
+        satisfy ``0 <= begin_bit < end_bit <= key_width``. Known bounds are
+        checked during compilation; invalid runtime bounds trap before narrowing
+        to CUB's integer arguments.
+    descending : bool
+        Compile-time selector for descending instead of ascending digit order.
+    temp_storage : TempStorageLike, optional
+        Caller-owned block scratch. Omit to allocate scratch automatically.
+        An explicit descriptor must satisfy the specialization's size and
+        alignment. With ``auto_sync=False``, the caller synchronizes before
+        reusing it.
+
+    Returns
+    -------
+    ThreadDataLike
+        Sorted keys in blocked arrangement with the input dtype and extent.
+        The input payload is preserved. Equal selected digits retain their
+        original blocked order, including for descending sorts.
+
+    Notes
+    -----
+    Wraps CUB ``BlockRadixSort::Sort`` or ``SortDescending``. For signed
+    integers, the sign bit is inverted before selecting the bit interval,
+    then restored in the returned keys. Use ``cuda.coop.numba_mlir`` for
+    floating-point keys, scalar or local-array payloads, and striped output.
     """
     _validate(
         "radix_sort_keys",
@@ -165,8 +197,42 @@ def radix_sort_pairs(
 ) -> tuple[Any, Any]:
     """Return stable sorted keys and associated numeric values without mutation.
 
-    Both ThreadData payloads must have the same extent. Equal selected key
-    digits retain flattened blocked input order, including descending sorts.
+    Parameters
+    ----------
+    group : ThreadGroup
+        A complete physical block; every thread participates.
+    keys, values : ThreadDataLike
+        Fixed-size per-thread payloads with matching extents. Keys use int32,
+        uint32, int64, or uint64. Values use the portable numeric dtypes:
+        signed or unsigned 8-, 16-, 32-, or 64-bit integers, float32, or
+        float64.
+    begin_bit, end_bit : int or compiler integer
+        Block-uniform half-open interval in CUB's ordered key representation.
+        Omitted end selects the key width. Require
+        ``0 <= begin_bit < end_bit <= key_width``. Invalid static bounds fail
+        compilation; invalid runtime bounds trap before narrowing. Signed keys
+        invert their sign bit before digit
+        extraction; returned keys retain their original representation.
+    descending : bool
+        Compile-time order selector. Equal digits retain their input order
+        for both ascending and descending sorts.
+    temp_storage : TempStorageLike, optional
+        Explicit block scratch; omitted storage is allocated automatically.
+        Its requested size and alignment must cover the specialization. The
+        caller supplies reuse synchronization when ``auto_sync=False``.
+
+    Returns
+    -------
+    tuple[ThreadDataLike, ThreadDataLike]
+        Keys and associated values in blocked arrangement, preserving both
+        input dtypes, their matching extent, and key/value association. Neither
+        input payload is modified.
+
+    Notes
+    -----
+    Wraps the key/value overload of CUB ``BlockRadixSort::Sort`` or
+    ``SortDescending``. Qualified Numba-CUDA-MLIR calls additionally support
+    floating-point keys, scalar or local-array payloads, and striped output.
     """
     _validate(
         "radix_sort_pairs",
@@ -201,11 +267,41 @@ def radix_rank(
     radix_bits: int | None = None,
     descending: bool = False,
 ) -> Any:
-    """Return shape-preserving int32 ranks without mutating integral keys.
+    """Return stable int32 digit ranks without mutating integral keys.
 
-    Rank the selected digit stably across a complete block. The interval
-    defaults to four bits starting at begin_bit and may contain at most eight
-    bits. Signed keys use the same sign-bit transformation as radix sort.
+    Parameters
+    ----------
+    group : ThreadGroup
+        A complete physical block. All threads participate with identical
+        compile-time controls and per-thread payload extents.
+    keys : ThreadDataLike
+        Fixed-size int32, uint32, int64, or uint64 per-thread keys in blocked
+        arrangement.
+    begin_bit, end_bit : int, optional
+        Compile-time half-open interval in CUB's ordered representation.
+        Begin defaults to zero; omitted end is begin plus ``radix_bits`` or
+        four when that option is omitted. The interval must remain within
+        the key width and contain one through eight bits.
+    radix_bits : int, optional
+        Compile-time digit width. When end is also supplied, it must equal
+        ``end_bit - begin_bit``.
+    descending : bool
+        Compile-time selector that places greater digits before smaller ones.
+
+    Returns
+    -------
+    ThreadDataLike
+        Signed int32 ranks with the same per-thread extent as keys. Ranks
+        form a permutation of the block tile's indices. Equal digits retain
+        flattened blocked input order. The keys are not modified.
+
+    Notes
+    -----
+    Uses CUB ``BlockRadixRank::RankKeys`` with a digit extractor. Signed keys
+    invert their sign bit before digit extraction, matching radix sort's
+    ordered representation. Scratch allocation and its reuse barrier are
+    automatic. The qualified API also accepts scalars and local arrays and
+    can write exclusive digit prefixes into a caller-provided output array.
     """
     _validate(
         "radix_rank",

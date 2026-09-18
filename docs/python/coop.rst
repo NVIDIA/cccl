@@ -21,7 +21,8 @@ Threads work together to :doc:`load <coop/visualizations/load>` and
 :doc:`Shuffle <coop/visualizations/shuffle>`, or compute
 :doc:`reductions <coop/visualizations/reduce>` and
 :doc:`scans <coop/visualizations/scan>` inside a kernel. They can also
-:ref:`sort keys and associated values <coop-merge-sort>` within a group.
+:ref:`sort keys and associated values <coop-merge-sort>` within a group or
+compute :ref:`radix sorts and digit ranks <coop-radix>` within a block.
 
 The common ``cuda.coop`` API describes those operations independently of a
 kernel compiler. Numba-CUDA-MLIR is the first supported backend; CUTLASS
@@ -234,8 +235,9 @@ Groups and thread data
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
 consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
 Exchange, Scan, and Merge Sort support block, physical-Warp, and logical-Warp
-forms; Shuffle is block-only. For Warp collectives, the enclosing block must
-contain a multiple of 32 threads, with no incomplete final physical warp.
+forms; Shuffle, Radix Sort, and Radix Rank are block-only. For Warp collectives,
+the enclosing block must contain a multiple of 32 threads, with no incomplete
+final physical warp.
 For a multidimensional block,
 threads are linearized in x-major order. Every member of a participating group
 must reach its collective; complete sibling logical groups may take different
