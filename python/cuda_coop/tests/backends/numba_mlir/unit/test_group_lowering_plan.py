@@ -378,6 +378,111 @@ def test_load_store_infer_untyped_payloads_symmetrically(
     assert plans[0].call.operation.dtype == types.int32
 
 
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize("projection", ["alias", "tuple", "tuple-alias"])
+def test_inferred_load_dtype_follows_output_aliases(qualified, projection):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    module = qualified_coop if qualified else root_coop
+
+    if projection == "alias":
+
+        def memory(source, flag):
+            payload = module.ThreadData(2)
+            alias = payload
+            if flag:
+                output = alias
+            else:
+                output = payload
+            module.load(module.this_block(), source, output)
+            exchanged = module.exchange(
+                module.this_block(), payload, mode="blocked_to_striped"
+            )
+            return module.inclusive_sum(module.this_block(), exchanged[0])
+
+    elif projection == "tuple":
+
+        def memory(source, flag):
+            payload = module.ThreadData(2)
+            packed = (payload,)
+            output = packed[0]
+            module.load(module.this_block(), source, output)
+            exchanged = module.exchange(
+                module.this_block(), payload, mode="blocked_to_striped"
+            )
+            return module.inclusive_sum(module.this_block(), exchanged[0])
+
+    else:
+
+        def memory(source, flag):
+            payload = module.ThreadData(2)
+            packed = (payload,)
+            if flag:
+                alias = packed
+            else:
+                alias = (payload,)
+            output = alias[-1]
+            module.load(module.this_block(), source, output)
+            exchanged = module.exchange(
+                module.this_block(), payload, mode="blocked_to_striped"
+            )
+            return module.inclusive_sum(module.this_block(), exchanged[0])
+
+    array_type = types.Array(types.int32, 1, "C")
+    planner = _planner(memory, arg_types=(array_type, types.boolean))
+    assert planner.run()
+    assert (
+        planner.context.dtype(_assigned_var(planner.func_ir, "payload")) == types.int32
+    )
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+def test_inferred_load_dtype_rejects_conflicting_alias_writes(qualified):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+
+    module = qualified_coop if qualified else root_coop
+
+    def memory(source, conflicting, flag):
+        payload = module.ThreadData(2)
+        other = module.ThreadData(2)
+        module.load(module.this_block(), source, payload)
+        if flag:
+            output = payload
+        else:
+            output = other
+        module.load(module.this_block(), conflicting, output)
+
+    array_type = types.Array(types.int32, 1, "C")
+    conflicting_type = types.Array(types.float32, 1, "C")
+    planner = _planner(memory, arg_types=(array_type, conflicting_type, types.boolean))
+    with pytest.raises(GroupRewriteError, match="inconsistent dtypes"):
+        planner.run()
+
+
+def test_load_does_not_infer_dtype_for_an_earlier_exchange():
+    from numba_cuda_mlir import types
+
+    from cuda import coop
+    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+
+    def memory(source):
+        payload = coop.ThreadData(2)
+        exchanged = coop.exchange(coop.this_block(), payload, mode="blocked_to_striped")
+        coop.load(coop.this_block(), source, payload)
+        return exchanged
+
+    array_type = types.Array(types.int32, 1, "C")
+    with pytest.raises(GroupRewriteError, match="could not infer a dtype"):
+        _planner(memory, arg_types=(array_type,)).run()
+
+
 @pytest.mark.parametrize(
     ("metadata_overrides", "diagnostic"),
     [
@@ -974,3 +1079,41 @@ def test_untyped_store_infers_write_dtype_before_destination_fallback(
 
     with pytest.raises(TypeError, match=error):
         planner.run()
+
+
+def test_scalar_scan_of_a_loaded_payload_element_plans_as_a_scalar(monkeypatch):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop._core import GroupOperandKind
+    from cuda.coop.numba_mlir._compiler import _group_scan
+
+    plans = []
+    plan_group_primitive = _group_scan.plan_group_primitive
+
+    def capture_plan(call, launch):
+        plan = plan_group_primitive(call, launch)
+        plans.append(plan)
+        return plan
+
+    monkeypatch.setattr(_group_scan, "plan_group_primitive", capture_plan)
+
+    def kernel(source, output):
+        payload = coop.ThreadData(2, dtype=types.int32)
+        coop.load(
+            coop.this_block(),
+            source,
+            payload,
+            algorithm="transpose",
+        )
+        # Indexing the loaded payload selects one scalar element.
+        output[0] = coop.inclusive_sum(coop.this_block(), payload[0])
+
+    array_type = types.Array(types.int32, 1, "C")
+    planner = _planner(kernel, arg_types=(array_type, array_type))
+    assert planner.run()
+
+    assert len(plans) == 1
+    assert plans[0].unsupported is None
+    assert plans[0].result is not None
+    assert plans[0].result.operand_kind is GroupOperandKind.SCALAR
