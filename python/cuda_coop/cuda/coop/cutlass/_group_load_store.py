@@ -13,21 +13,12 @@ from __future__ import annotations
 
 import math
 from numbers import Integral, Real
-from typing import Any, Literal
+from typing import Any
 
 from cuda.coop._core import ArgumentBinding, GroupLoadStoreAlgorithm
 from cuda.coop._core.api._payload import _validate_common_temp_storage
 from cuda.coop._core.thread_group import ThreadGroup as CommonThreadGroup
-from cuda.coop._typing import (
-    CommonThreadDataLike,
-    IntegerValue,
-    TempStorageLike,
-    ThreadDataLike,
-    ValidItems,
-    _CommonNumericT,
-)
 
-from .._core.api.thread_group import BlockGroup
 from ._thread_data import ThreadData
 from ._thread_group import _resolve_primitive_group_from_launch
 
@@ -47,11 +38,9 @@ def _resolve_group(group, algorithm, temp_storage, operation):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
     if group.kind != "block":
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} supports only block groups"
+            f"{_SCOPE}.{operation} currently supports block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
-    if algorithm is not GroupLoadStoreAlgorithm.DIRECT:
-        raise NotImplementedError(f"{_SCOPE}.{operation} supports only DIRECT")
     if temp_storage is not None:
         _validate_common_temp_storage(operation, temp_storage)
     from ._compiler._launch import current_kernel_launch_facts
@@ -64,27 +53,27 @@ def _resolve_group(group, algorithm, temp_storage, operation):
 
 
 def load(
-    group: BlockGroup,
-    source: object,
-    output: ThreadDataLike[_CommonNumericT],
+    group: CommonThreadGroup,
+    source: Any,
+    output: ThreadData,
     /,
     *,
-    algorithm: Literal["direct"] = "direct",
-    valid_items: ValidItems | None = None,
-    oob_default: _CommonNumericT | float | None = None,
-    offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    algorithm: Any = "direct",
+    valid_items: Any = None,
+    oob_default: Any = None,
+    offset: Any = None,
+    temp_storage: Any = None,
 ) -> None:
     """Load a contiguous block tile into a writable per-thread payload.
 
     Shared parameters and participation follow :func:`cuda.coop.load`. This
-    implementation accepts block groups and the DIRECT algorithm. The output
+    implementation accepts block groups. The output
     must be CUTLASS ThreadData; its dtype is inferred from the source, or must
     agree with it when already declared.
 
-    Load populates the payload in place in blocked order. Beyond
-    ``valid_items``, slots have unspecified values unless ``oob_default`` is
-    supplied, even if initialized before Load. Supplying ``oob_default`` also
+    Load populates the payload in place. Beyond
+    ``valid_items``, initialized slots keep their values unless
+    ``oob_default`` is supplied. Supplying ``oob_default`` also
     requires ``valid_items``. A runtime default must have the memory dtype.
 
     The count ranges from zero through the full tile size. ``offset`` is a
@@ -95,21 +84,9 @@ def load(
     The source must expose a raw pointer and a provably compact layout, or a
     bare pointer conversion without layout metadata. Register or local-memory
     tensors are rejected. Load reads addressable memory, such as global or
-    shared memory. DIRECT requires no shared scratch or reuse barrier; an
-    accepted explicit scratch descriptor does not change that.
-
-    Examples
-    --------
-    Copy a partial tile between different source and destination offsets.
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_load_store_examples.py
-        :language: python
-        :start-after: # qualified-load-store-example-begin
-        :end-before: # qualified-load-store-example-end
-        :dedent: 4
+    shared memory. DIRECT, STRIPED, and VECTORIZE need no shared scratch or
+    reuse barrier. Transpose algorithms use shared scratch; an optional
+    TempStorage descriptor controls allocation and reuse.
     """
 
     if not isinstance(output, ThreadData):
@@ -135,26 +112,27 @@ def load(
         oob_default_binding=_classify_oob_default(oob_default),
         offset=offset,
         offset_binding=_classify_integer_binding(offset, name="offset"),
+        temp_storage=temp_storage,
     )
 
 
 def store(
-    group: BlockGroup,
-    destination: object,
-    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
+    group: CommonThreadGroup,
+    destination: Any,
+    value: Any,
     /,
     *,
-    algorithm: Literal["direct"] = "direct",
-    valid_items: ValidItems | None = None,
-    offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    algorithm: Any = "direct",
+    valid_items: Any = None,
+    offset: Any = None,
+    temp_storage: Any = None,
 ) -> None:
     """Store per-thread values into a contiguous block tile.
 
     Shared parameters and participation follow :func:`cuda.coop.store`. This
-    implementation accepts block groups and DIRECT. Each thread supplies a
+    implementation accepts block groups. Each thread supplies a
     scalar or an initialized CUTLASS ThreadData payload whose dtype matches
-    the destination. The source payload is preserved.
+    the destination.
 
     ``valid_items`` selects a prefix from zero through the full tile size.
     ``offset`` is a nonnegative element offset. Both must agree across the
@@ -162,21 +140,9 @@ def store(
     for that prefix. Items outside it are not written.
 
     The destination has the same raw-pointer and compact-layout requirements
-    as :func:`load`. DIRECT needs no shared scratch or reuse barrier; an
-    accepted explicit scratch descriptor does not change that.
-
-    Examples
-    --------
-    Copy a partial tile between different source and destination offsets.
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_load_store_examples.py
-        :language: python
-        :start-after: # qualified-load-store-example-begin
-        :end-before: # qualified-load-store-example-end
-        :dedent: 4
+    as :func:`load`. DIRECT, STRIPED, and VECTORIZE need no shared scratch
+    or reuse barrier. Transpose algorithms use shared scratch; an optional
+    TempStorage descriptor controls allocation and reuse.
     """
 
     group, launch, algorithm = _resolve_group(
@@ -196,6 +162,7 @@ def store(
         ),
         offset=offset,
         offset_binding=_classify_integer_binding(offset, name="offset"),
+        temp_storage=temp_storage,
     )
 
 
@@ -257,8 +224,7 @@ def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
     if isinstance(value, Integer):
         return ArgumentBinding.runtime()
     raise TypeError(
-        f"{_SCOPE}.load/store {name} must be an integer, "
-        f"not {type(value).__name__}"
+        f"{_SCOPE}.load/store {name} must be an integer, not {type(value).__name__}"
     )
 
 
