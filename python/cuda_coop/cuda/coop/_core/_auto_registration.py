@@ -29,7 +29,7 @@ _WARNING_PREFIX = "cuda.coop automatic DSL registration:"
 
 # Keep this an explicit allowlist so installing an unrelated compiler package
 # cannot change the cuda.coop root import.
-_AUTO_DSL_CANDIDATES = ("numba_mlir",)
+_AUTO_DSL_CANDIDATES = ("numba_mlir", "cutlass")
 
 
 class CudaCoopAutoRegistrationWarning(UserWarning):
@@ -77,7 +77,20 @@ def _activate_numba_mlir() -> ModuleType:
     return importlib.import_module("cuda.coop.numba_mlir")
 
 
+def _activate_cutlass() -> ModuleType:
+    """Validate and activate CUTLASS only after the application imports it."""
+
+    return importlib.import_module("cuda.coop.cutlass")
+
+
 _CANDIDATES = {
+    "cutlass": _Candidate(
+        display_name="CUTLASS CuTe DSL",
+        runtime_module="cutlass",
+        distributions=("nvidia-cutlass-dsl",),
+        install_hint="CUTLASS CuTe DSL runtime with external LTO-IR linking support",
+        activate=_activate_cutlass,
+    ),
     "numba_mlir": _Candidate(
         display_name="Numba-CUDA-MLIR",
         runtime_module="numba_cuda_mlir",
