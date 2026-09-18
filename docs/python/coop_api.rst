@@ -252,12 +252,15 @@ CUTLASS-qualified API
 .. py:module:: cuda.coop.cutlass
 
 The qualified CUTLASS surface provides hierarchy queries and supported group
-synchronization, Block and Warp ``load``/``store``, and built-in Reduce and Scan
-families. Warp operations include supported logical subgroups. Load returns
-``None`` and fills its destination payload; Store, Reduce, and Scan preserve their
+synchronization, Block and Warp ``load``/``store``, built-in Reduce and Scan,
+Block and Warp Exchange, and Block Shuffle. Warp operations include supported
+logical subgroups. Load returns
+``None`` and fills its destination payload; the other operations preserve their
 input payloads. ``ThreadData`` adds conversions to and from CuTe
 register-memory tensors and immutable register values. See
 :doc:`coop_cutlass` for algorithms, result ownership, runtime requirements,
 and executable examples. Qualified Scan adds valid-prefix and aggregate-output
-controls. Custom operators and Scan prefix callbacks are not supported. The
-installed ``.pyi`` files declare the supported signatures.
+controls. Qualified Exchange adds block warp-striped layouts and scatter;
+qualified Shuffle adds scalar Offset and Rotate. Custom operators and Scan
+prefix callbacks are not supported. The installed ``.pyi`` files declare the
+supported signatures.

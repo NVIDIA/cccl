@@ -4,7 +4,8 @@
 ===========================================
 
 The CUTLASS backend provides group queries and synchronization, Load and
-Store, and built-in Reduce, Scan, and Sum inside CuTe DSL kernels.
+Store, built-in Reduce, Scan, and Sum, Exchange, and block Shuffle inside
+CuTe DSL kernels.
 It uses the same group-first calls and in-place
 payload contract as :mod:`cuda.coop`: ``load`` fills an existing
 ``ThreadData`` and returns ``None``; ``store`` leaves its input payload
@@ -364,6 +365,96 @@ use its conversion methods when a register-tensor result is needed.
    :language: python
    :start-after: docs: start cutlass-scan
    :end-before: docs: end cutlass-scan
+
+Exchange layouts and scatter
+----------------------------
+
+``exchange(group, values, mode=...)`` rearranges fixed per-thread payloads
+across a block, physical warp, or logical warp. It returns a fresh
+``ThreadData`` with the same dtype and extent and preserves the input. Scalar
+payloads are unsupported. Values may use the ten numeric dtypes supported by
+Scan.
+
+The portable modes are ``striped_to_blocked`` (the default) and
+``blocked_to_striped``. For group rank ``t``, item index ``i``, group size ``G``,
+and ``I`` items per thread, blocked layout holds tile index ``t * I + i``;
+striped layout holds ``t + i * G``. Exchange changes which thread holds each
+item without reading or writing global memory.
+
+Physical and logical Warp Exchange use the same complete-warp launch and
+participation requirements as Warp Load and Store, including logical widths
+1, 2, 4, 8, 16, and 32. Every member of a participating group must invoke the
+collective; complete sibling groups may take different control-flow paths.
+Each group has independent scratch and masked reuse synchronization. Block
+Exchange requires every block thread to participate.
+
+The qualified API adds these block-only modes:
+
+.. list-table:: Qualified Block Exchange modes
+   :header-rows: 1
+
+   * - Mode
+     - Additional contract
+   * - ``warp_striped_to_blocked``, ``blocked_to_warp_striped``
+     - Convert between blocked layout and a striped layout within each
+       physical warp. The block size must be divisible by 32.
+   * - ``scatter_to_blocked``, ``scatter_to_striped``
+     - Supply ``ranks`` giving each input item's destination in the tile.
+   * - ``scatter_to_striped_guarded``
+     - Supply ``ranks``; negative ranks skip the corresponding input items.
+   * - ``scatter_to_striped_flagged``
+     - Supply ``ranks`` and ``valid_flags``; zero flags skip input items.
+
+Ranks must be signed 8-, 16-, 32-, or 64-bit integers. Flags may use any
+signed or unsigned integer dtype; Boolean flags are unsupported. Each
+auxiliary payload must have the same item count as ``values``. The caller
+must ensure that participating ranks are unique and within the tile range.
+Destination slots that receive no item are undefined. Guarded and flagged
+operations still require every block thread to participate, and preserve
+values, ranks, and flags.
+
+``warp_time_slicing=True`` lets block layout conversions and ordinary
+scatters share scratch between physical warps. Guarded/flagged scatter and
+Warp Exchange reject this option. Ordinary block layouts and scatters allow
+blocks with incomplete physical-warp tails. Scratch and trailing reuse
+synchronization are managed by the backend; Exchange does not accept
+``temp_storage``.
+
+Block Shuffle
+-------------
+
+``shuffle(block, values, mode="down")`` shifts the flattened blocked payload
+by one item: output item ``j`` receives input item ``j + 1``. With
+``mode="up"``, it receives item ``j - 1``. The final Down item and first Up
+item are undefined; repair or exclude that boundary before reading it. These
+portable array operations require ``distance=1`` and return a fresh
+``ThreadData``, preserving the input.
+
+The qualified API also accepts a scalar per thread with ``mode="offset"``
+or ``mode="rotate"``. Offset reads the value from block rank
+``rank + distance`` without wrapping; results outside the block are
+undefined. Its distance may be negative or zero and must fit a signed 32-bit
+integer. Rotate wraps around the block and requires
+``1 <= distance < block_size`` with at least two threads. Distances may be
+runtime integers and may differ between threads. Supported typed distances
+are signed 8-, 16-, 32-, or 64-bit integers and unsigned 8-, 16-, or 32-bit
+integers; values are checked before narrowing.
+
+Every block thread must reach Shuffle even when only some results are used.
+The backend manages scratch and reuse synchronization. Shuffle does not
+accept explicit storage or prefix/suffix outputs. Warp groups are
+unsupported.
+
+This example converts blocked registers to striped registers, shifts that
+payload down, repairs its final boundary, and stores the result. It checks
+the layout and shift against an independent CPU reference.
+:download:`Download the Exchange and Shuffle example
+<../../python/cuda_coop/examples/cutlass/exchange_shuffle.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/exchange_shuffle.py
+   :language: python
+   :start-after: docs: start cutlass-exchange-shuffle
+   :end-before: docs: end cutlass-exchange-shuffle
 
 Qualified register payloads
 ---------------------------

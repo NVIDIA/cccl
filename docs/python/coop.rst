@@ -37,9 +37,10 @@ an independent reduction for each per-thread payload slot.
 The common ``cuda.coop`` API describes those operations independently of a
 kernel compiler. Numba-CUDA-MLIR is the first supported backend. The optional
 :doc:`CUTLASS backend <coop_cutlass>` provides group queries and synchronization,
-Block and Warp Load/Store, and built-in Reduce, Scan, and Sum. Warp operations
-include supported logical subgroups. The backend namespace adds features specific to
-its compiler. See :ref:`Which namespace should I use? <coop-faq-namespaces>`.
+Block and Warp Load/Store and Exchange, Block Shuffle, and built-in Reduce,
+Scan, and Sum. Warp operations include supported logical subgroups. The
+backend namespace adds features specific to its compiler. See
+:ref:`Which namespace should I use? <coop-faq-namespaces>`.
 
 Start with the :doc:`Programming Guide <coop/programming_guide>` to write a
 kernel. The :doc:`Visualizations <coop/visualizations/index>` show where each
