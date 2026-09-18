@@ -13,10 +13,12 @@ import sys
 import tempfile
 from typing import Any
 
-# compileiq defaults to forkserver, which pickles the objective into a clean
-# interpreter. Fork lets workers inherit the parent, which is what the pid-keyed
-# lane claim below relies on. Set before compileiq.worker picks a start method.
-os.environ.setdefault("CIQ_PROCESS_MODE", "fork")
+# compileiq defaults to forkserver, which re-imports this module in a clean
+# interpreter. That would re-evaluate PARENT_PID to the worker's own pid, so
+# every worker would claim lane 0 and the lanes would collide in one build
+# directory. Fork is a requirement, not a preference, so overwrite rather than
+# default. Set before compileiq.worker picks a start method.
+os.environ["CIQ_PROCESS_MODE"] = "fork"
 
 import cccl.bench as bench  # noqa: E402
 import compileiq.search_spaces.base as ss  # noqa: E402
