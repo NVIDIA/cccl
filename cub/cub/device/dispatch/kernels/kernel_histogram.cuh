@@ -186,74 +186,73 @@ struct Transforms
     }
 #endif // _CCCL_HAS_NVBF16()
 
-    // All types but __half:
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(T sample, T max_level, T min_level) const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API
+      _CCCL_FORCEINLINE int SampleIsValid(T sample, T max_level, T min_level) const noexcept
     {
-      return sample >= min_level && sample < max_level;
-    }
-
 #if _CCCL_HAS_NVFP16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(__half sample, __half max_level, __half min_level) const
-    {
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_53,
-        (return __hge(sample, min_level) && __hlt(sample, max_level);),
-        (return __half2float(sample) >= __half2float(min_level) && __half2float(sample) < __half2float(max_level);));
-    }
+      if constexpr (::cuda::std::is_same_v<T, ::__half>)
+      { // NOLINT(bugprone-branch-clone)
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                          (return ::__hge(sample, min_level) && ::__hlt(sample, max_level);),
+                          (return ::__half2float(sample) >= ::__half2float(min_level)
+                                 && ::__half2float(sample) < ::__half2float(max_level);));
+      }
+      else
 #endif // _CCCL_HAS_NVFP16()
-
 #if _CCCL_HAS_NVBF16()
-    _CCCL_HOST_DEVICE
-    _CCCL_FORCEINLINE int SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
-    {
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                        (return __hge(sample, min_level) && __hlt(sample, max_level);),
-                        (return __bfloat162float(sample) >= __bfloat162float(min_level)
-                               && __bfloat162float(sample) < __bfloat162float(max_level);));
-    }
+        if constexpr (::cuda::std::is_same_v<T, ::__nv_bfloat16>)
+      {
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                          (return ::__hge(sample, min_level) && ::__hlt(sample, max_level);),
+                          (return ::__bfloat162float(sample) >= ::__bfloat162float(min_level)
+                                 && ::__bfloat162float(sample) < ::__bfloat162float(max_level);));
+      }
+      else
 #endif // _CCCL_HAS_NVBF16()
+      {
+        return sample >= min_level && sample < max_level;
+      }
+    }
 
-    //! @brief Bin computation for floating point (and extended floating point) types
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::true_type /* is_fp */) const
+    [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int
+    ComputeBin(T sample, T min_level, ScaleT scale) const noexcept
     {
-      return static_cast<int>((sample - min_level) * scale.reciprocal);
-    }
-
-    //! @brief Bin computation for custom types and __[u]int128
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */) const
-    {
-      return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
-    }
-
-    //! @brief Bin computation for integral types of up to 64-bit types
-    template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
-    {
-      return static_cast<int>(
-        (static_cast<IntArithmeticT>(sample - min_level) * static_cast<IntArithmeticT>(scale.fraction.bins))
-        / static_cast<IntArithmeticT>(scale.fraction.range));
-    }
-
-    template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
-    {
-      return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
-    }
-
+      if constexpr (is_integral_excl_int128<T>::value)
+      {
+        return static_cast<int>(
+          (static_cast<IntArithmeticT>(sample - min_level) * static_cast<IntArithmeticT>(scale.fraction.bins))
+          / static_cast<IntArithmeticT>(scale.fraction.range));
+      }
 #if _CCCL_HAS_NVFP16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(__half sample, __half min_level, ScaleT scale) const
-    {
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_53,
-        (return static_cast<int>(__hmul(__hsub(sample, min_level), scale.reciprocal));),
-        (return static_cast<int>((__half2float(sample) - __half2float(min_level)) * __half2float(scale.reciprocal));));
-    }
+      else if constexpr (::cuda::std::is_same_v<T, ::__half>)
+      {
+        NV_IF_ELSE_TARGET(
+          NV_PROVIDES_SM_53,
+          (return static_cast<int>(::__hmul(::__hsub(sample, min_level), scale.reciprocal));),
+          (return static_cast<int>(
+                    (::__half2float(sample) - ::__half2float(min_level)) * ::__half2float(scale.reciprocal));));
+      }
 #endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+      else if constexpr (::cuda::std::is_same_v<T, ::__nv_bfloat16>)
+      {
+        // Compute in float on all architectures: bfloat16 cannot represent all bin indices beyond 256.
+        return static_cast<int>(
+          (::__bfloat162float(sample) - ::__bfloat162float(min_level)) * ::__bfloat162float(scale.reciprocal));
+      }
+#endif // _CCCL_HAS_NVBF16()
+      else if constexpr (::cuda::std::is_floating_point_v<T>)
+      {
+        return static_cast<int>((sample - min_level) * scale.reciprocal);
+      }
+      else
+      {
+        // Custom types and __[u]int128
+        return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
+      }
+    }
 
   public:
     //! @brief Initializes the ScaleTransform for the given parameters
