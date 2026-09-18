@@ -33,7 +33,7 @@ CUB_NAMESPACE_BEGIN
 //! ``cub::WarpStoreAlgorithm`` enumerates alternative algorithms for :cpp:struct:`cub::WarpStore`
 //! to write a blocked arrangement of items across a CUDA warp to a linear segment of memory.
 //! @endrst
-enum WarpStoreAlgorithm
+enum WarpStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   //! @rst
   //! Overview

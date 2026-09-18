@@ -39,7 +39,7 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 //! @brief Enumeration of cache modifiers for memory load operations.
-enum CacheLoadModifier
+enum CacheLoadModifier // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   LOAD_DEFAULT, ///< Default (no modifier)
   LOAD_CA, ///< Cache at all levels

@@ -33,7 +33,7 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 //! @brief Enumeration of cache modifiers for memory store operations.
-enum CacheStoreModifier
+enum CacheStoreModifier // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   STORE_DEFAULT, ///< Default (no modifier)
   STORE_WB, ///< Cache write-back all coherent levels

@@ -27,7 +27,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // REMEMBER CHANGES TO THESE ARE ABI BREAKING
 // TODO: Space values out for potential new scopes at an ABI break.
-enum thread_scope
+enum thread_scope // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   thread_scope_system  = 0,
   thread_scope_device  = 1,

@@ -95,7 +95,7 @@ struct BlockScanRunningPrefixOp
 /**
  * Enumerations of tile status
  */
-enum ScanTileStatus
+enum ScanTileStatus // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   SCAN_TILE_OOB, // Out-of-bounds (e.g., padding)
   SCAN_TILE_INVALID = 99, // Not yet processed
