@@ -14,6 +14,7 @@ from .. import _cccl_interop as cccl
 from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
     get_value_type,
+    make_pointer_object,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
@@ -40,6 +41,37 @@ from ..typing import (
     _Struct,
 )
 
+# Perf: get_data_pointer() (_utils/protocols.py) is a generic fallback chain
+# -- for a CuPy array it unconditionally tries arr.data_ptr() (PyTorch's
+# convention) FIRST, which raises AttributeError every single call before
+# falling through to the working arr.data.ptr line. Raising/catching an
+# AttributeError is not free in CPython (exception object construction,
+# stack unwind) -- measured ~6.7x slower than a direct attribute read for a
+# CuPy array. Since which accessor works depends only on the array's type
+# (not its value), cache the choice per-type once and skip the doomed
+# try/except on every execute() call. Process-wide, not per-reducer: the
+# right accessor for e.g. cupy.ndarray never changes.
+_PTR_GETTER_CACHE: dict = {}
+
+
+def _fast_data_pointer(arr):
+    t = type(arr)
+    getter = _PTR_GETTER_CACHE.get(t)
+    if getter is None:
+        if hasattr(t, "data_ptr"):
+            getter = lambda a: a.data_ptr()  # noqa: E731
+        elif hasattr(t, "data"):
+            getter = lambda a: a.data.ptr  # noqa: E731
+        else:
+            getter = lambda a: a.__cuda_array_interface__["data"][0]  # noqa: E731
+        _PTR_GETTER_CACHE[t] = getter
+    return getter(arr)
+
+
+# Sentinel for "stream not yet validated" -- distinct from None, which is
+# itself a valid stream argument (the null stream).
+_UNSET_STREAM = object()
+
 
 class _Reduce(Serializable):
     __slots__ = [
@@ -52,6 +84,56 @@ class _Reduce(Serializable):
         "build_results",
         "loaded_build_result",
         "device_reduce_fn",
+        # Perf: __call__ used to unconditionally redo three things that are
+        # data-independent (device_reduce_fn only depends on which build
+        # result got loaded; a *stateless* op's state is always b"" by
+        # definition). Caching them costs one extra `is` check but skips a
+        # `Determinism(...)` reconstruction / adapter re-derivation on every
+        # call in the common "same reducer, same op, repeated calls" case.
+        #
+        # These hold strong references (not bare ids) so identity can never
+        # false-positive against a GC'd-and-reused object. h_init is
+        # deliberately NOT cached this way: it's a plain mutable
+        # numpy array/GpuStruct the caller may mutate in place between calls
+        # while reusing the same object, and identity alone can't detect
+        # that -- so h_init state is still re-marshaled every call.
+        "_last_loaded_build_result",
+        "_last_stateless_op",
+        # Perf: is_kind_pointer() reads fixed metadata (iter_data.type) baked
+        # into the iterator descriptor when it was built -- it can never
+        # change for a given d_in_cccl/d_out_cccl object, so re-checking it
+        # on every execute() call (inside set_cccl_iterator_state) is
+        # redundant. Cached once here; execute() uses it to skip straight to
+        # the pointer-update fast path instead of re-deriving the branch.
+        "_d_in_is_ptr",
+        "_d_out_is_ptr",
+        # Perf: make_pointer_object() allocates a new Pointer (Cython
+        # __cinit__) every call. Pointer.ptr/.ref are plain `cdef` fields
+        # (not `cdef public`), so a pure-Python caller can't mutate an
+        # existing Pointer's fields directly -- Pointer.rebind() (added
+        # alongside this) does that from Cython. Hold one reusable Pointer
+        # per pointer-kind iterator (only when _d_in_is_ptr/_d_out_is_ptr is
+        # True) and rebind() + reassign .state on it every execute() call
+        # instead of allocating a fresh one. Safe to reuse across calls:
+        # the iterator's `.state` setter copies the raw pointer value out of
+        # the Pointer wrapper into its own C struct immediately on
+        # assignment (see Iterator.state's setter) -- it never holds a live
+        # reference to the wrapper's mutable state, so rebind-then-reassign
+        # each call is equivalent to allocating fresh each time.
+        "_d_in_ptr_obj",
+        "_d_out_ptr_obj",
+        # Perf: validate_and_get_stream() re-derives the same int handle
+        # every call for a fixed stream object (its __cuda_stream__()
+        # protocol result can't change over that object's lifetime). Cache
+        # by identity, same pattern as _last_loaded_build_result/
+        # _last_stateless_op above. Uses a private sentinel (not None) as
+        # the "never validated yet" marker, because stream=None is itself a
+        # valid, meaningful input (the null stream) -- None can't double as
+        # both "unset" and "a real cached value" the way it does for the
+        # other caches above, where None is never a legitimate op/build
+        # result.
+        "_last_stream_obj",
+        "_last_stream_handle",
     ]
 
     __serialization_schema__ = (
@@ -84,6 +166,17 @@ class _Reduce(Serializable):
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        self._d_in_is_ptr = self.d_in_cccl.is_kind_pointer()
+        self._d_out_is_ptr = self.d_out_cccl.is_kind_pointer()
+        # Placeholder Pointer objects (arg=0), rebound to the real address on
+        # the first execute() call -- see the __slots__ comment for why this
+        # is reused rather than allocated fresh every call.
+        self._d_in_ptr_obj = make_pointer_object(0, None) if self._d_in_is_ptr else None
+        self._d_out_ptr_obj = (
+            make_pointer_object(0, None) if self._d_out_is_ptr else None
+        )
+        self._last_stream_obj = _UNSET_STREAM
+        self._last_stream_handle: int | None = None
 
         self.init_kind = get_init_kind(h_init)
 
@@ -117,6 +210,8 @@ class _Reduce(Serializable):
 
         # loaded_build_result / device_reduce_fn are bound lazily on the first
         # __call__ (see _bind_device_reduce_fn).
+        self._last_loaded_build_result = None
+        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceReduceBuildResult,
             d_in,
@@ -138,10 +233,41 @@ class _Reduce(Serializable):
             ),
         )
 
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where these two caches are otherwise initialized -- without this,
+        # a deserialized _Reduce would raise AttributeError the first time
+        # _bind_device_reduce_fn/__call__ reads them.
+        self._last_loaded_build_result = None
+        self._last_stateless_op = None
+        # d_in_cccl/d_out_cccl ARE part of the serialization schema and are
+        # already restored by the time _after_deserialize runs (schema
+        # members are set in order before this hook fires) -- safe to read.
+        self._d_in_is_ptr = self.d_in_cccl.is_kind_pointer()
+        self._d_out_is_ptr = self.d_out_cccl.is_kind_pointer()
+        self._d_in_ptr_obj = make_pointer_object(0, None) if self._d_in_is_ptr else None
+        self._d_out_ptr_obj = (
+            make_pointer_object(0, None) if self._d_out_is_ptr else None
+        )
+        self._last_stream_obj = _UNSET_STREAM
+        self._last_stream_handle = None
+
     def _bind_device_reduce_fn(self) -> None:
         # Derived from the loaded build result (not serialized); bound at __call__
         # once resolve_build_result picks + loads the current device's build result.
         # compute() handles both init kinds: it ignores h_init for NO_INIT builds.
+        #
+        # Perf: device_reduce_fn is a pure function of `loaded_build_result`'s
+        # identity -- nothing else it's derived from can change without
+        # `loaded_build_result` itself changing first. resolve_build_result()
+        # already returns the same object every call on the construction-time
+        # bound fast path, so this guard turns a `Determinism(...)`
+        # reconstruction + two attribute writes into a no-op on repeat calls.
+        # For deserialized/unbound wrappers (resolved fresh per call), this
+        # still rebinds whenever the resolved result actually changes (e.g.
+        # a different device), matching prior behavior exactly.
+        if self.loaded_build_result is self._last_loaded_build_result:
+            return
         if (
             Determinism(self.loaded_build_result.determinism)
             is Determinism.NOT_GUARANTEED
@@ -149,6 +275,117 @@ class _Reduce(Serializable):
             self.device_reduce_fn = self.loaded_build_result.compute_nondeterministic
         else:
             self.device_reduce_fn = self.loaded_build_result.compute
+        self._last_loaded_build_result = self.loaded_build_result
+
+    def set_op(self, op: Callable | OpAdapter) -> None:
+        """Explicitly rebind this reducer's operator.
+
+        ``execute()`` (unlike ``__call__``) never re-derives op state on its
+        own -- if the operator or its captured state has changed since
+        construction or the last ``set_op()``, you must call this first, or
+        ``execute()`` will silently launch with stale op state. Call this
+        only when it has actually changed; it is not needed after every
+        ``execute()``.
+        """
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
+
+    def set_h_init(self, h_init: np.ndarray | GpuStruct) -> None:
+        """Explicitly rebind this reducer's initial value.
+
+        ``execute()`` never re-reads ``h_init`` on its own -- if its value
+        has changed (including in-place mutation of the same array object)
+        since construction or the last ``set_h_init()``, you must call this
+        first, or ``execute()`` will silently launch with the stale value.
+        """
+        if self.init_kind is _bindings.InitKind.VALUE_INIT:
+            self.h_init_cccl = cast(_bindings.Value, self.h_init_cccl)
+            self.h_init_cccl.state = to_cccl_value_state(h_init)
+
+    def execute(
+        self,
+        *,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        stream=None,
+    ):
+        """Minimal per-call path: updates only the ``d_in``/``d_out`` pointer
+        state and issues the launch. Unlike ``__call__``, this never
+        re-derives op state or ``h_init`` state -- construct with the right
+        initial values (or call ``set_op``/``set_h_init`` beforehand) and
+        reuse this for repeat calls against the same op/h_init. This is the
+        deliberately-unsafe-by-default counterpart to ``__call__``: it trades
+        the implicit per-call re-derivation (and its correctness margin for
+        mutated/varying op or h_init) for the lower fixed cost of a call
+        where op and h_init are call-invariant, which is the common case in
+        a hot loop. Use ``__call__`` (via ``reduce_into``/the object
+        returned by ``make_reduce_into``) if you can't make that guarantee.
+        """
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+        self._bind_device_reduce_fn()
+
+        # Perf: skip set_cccl_iterator_state's is_kind_pointer() re-check --
+        # _d_in_is_ptr/_d_out_is_ptr were already determined once at
+        # construction (see __init__/_after_deserialize) and cannot change
+        # for these iterator objects. Falls back to the general helper for
+        # the (rarer) non-pointer-kind case (a custom Iterator/Transform/Zip
+        # input), which still needs its own state-reading logic.
+        #
+        # For the pointer-kind case: _fast_data_pointer skips the doomed
+        # try/except get_data_pointer() would otherwise redo every call
+        # (see module docstring), and rebind() mutates the already-allocated
+        # Pointer wrapper instead of allocating a new one via
+        # make_pointer_object -> Pointer.__cinit__.
+        if self._d_in_is_ptr:
+            # _d_in_ptr_obj is only None when _d_in_is_ptr is False (see
+            # __init__/_after_deserialize), so it's always a Pointer here.
+            assert self._d_in_ptr_obj is not None
+            self._d_in_ptr_obj.rebind(_fast_data_pointer(d_in), d_in)
+            self.d_in_cccl.state = self._d_in_ptr_obj
+        else:
+            set_cccl_iterator_state(self.d_in_cccl, d_in)
+        if self._d_out_is_ptr:
+            assert self._d_out_ptr_obj is not None
+            self._d_out_ptr_obj.rebind(_fast_data_pointer(d_out), d_out)
+            self.d_out_cccl.state = self._d_out_ptr_obj
+        else:
+            set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        # Perf: validate_and_get_stream() re-derives the same int handle
+        # every call for a fixed stream object -- its __cuda_stream__()
+        # result can't change over that object's lifetime. Cache by
+        # identity, same as the other caches on this class; _UNSET_STREAM
+        # (not None) marks "never validated yet" since stream=None is
+        # itself a valid, meaningful input.
+        if stream is self._last_stream_obj:
+            stream_handle = self._last_stream_handle
+        else:
+            stream_handle = validate_and_get_stream(stream)
+            self._last_stream_obj = stream
+            self._last_stream_handle = stream_handle
+
+        if temp_storage is None:
+            temp_storage_bytes = 0
+            d_temp_storage = 0
+        else:
+            temp_storage_bytes = temp_storage.nbytes
+            d_temp_storage = get_data_pointer(temp_storage)
+
+        temp_storage_bytes = self.device_reduce_fn(
+            d_temp_storage,
+            temp_storage_bytes,
+            self.d_in_cccl,
+            self.d_out_cccl,
+            num_items,
+            self.op_cccl,
+            self.h_init_cccl,
+            stream_handle,
+        )
+        return temp_storage_bytes
 
     def __call__(
         self,
@@ -171,9 +408,22 @@ class _Reduce(Serializable):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        # Update op state for stateful ops
+        # Update op state for stateful ops.
+        #
+        # Perf: make_op_adapter(op) is already cheap when `op` is already an
+        # _OpAdapter (the common case: the isinstance check short-circuits,
+        # no construction). What's skippable is re-deriving and re-assigning
+        # .get_state(): for a *stateless* op that's a constant (b"" by
+        # definition -- see _OpAdapter.get_state), so once we've seen this
+        # exact op object with is_stateful=False, re-running that derivation
+        # on a repeat call is pure waste. Stateful ops are NOT cached this
+        # way: get_state() can legitimately return different bytes across
+        # calls for the same object (e.g. an op capturing evolving runtime
+        # state), so those always re-derive, unchanged from prior behavior.
         op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op_adapter.is_stateful or op is not self._last_stateless_op:
+            self.op_cccl.state = op_adapter.get_state()
+            self._last_stateless_op = None if op_adapter.is_stateful else op
 
         if self.init_kind is _bindings.InitKind.VALUE_INIT:
             # We know that h_init_cccl is a Value here, so this cast tells MyPy
