@@ -13,14 +13,16 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/raw_reference_cast.h>
+#include <thrust/detail/use_default.h>
 
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename Function, typename Result = void>
+template <typename Function, typename Result = use_default>
 struct wrapped_function
 {
   // mutable because Function::operator() might be const
@@ -28,11 +30,15 @@ struct wrapped_function
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
-  inline _CCCL_HOST_DEVICE auto operator()(Ts&&... args) const
+  inline _CCCL_HOST_DEVICE decltype(auto) operator()(Ts&&... args) const
   {
     if constexpr (::cuda::std::is_void_v<Result>)
     {
       m_f(thrust::raw_reference_cast(::cuda::std::forward<Ts>(args))...);
+    }
+    else if constexpr (::cuda::std::is_same_v<Result, use_default>)
+    {
+      return m_f(thrust::raw_reference_cast(::cuda::std::forward<Ts>(args))...);
     }
     else
     {
