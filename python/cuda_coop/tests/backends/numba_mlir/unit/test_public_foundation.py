@@ -49,6 +49,10 @@ _PORTABLE_EXPORTS = [
     "shuffle",
     "store",
     "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 _QUALIFIED_EXPORTS = [
     *(name for name in _PORTABLE_EXPORTS if name not in {"__version__", "register"}),
@@ -287,6 +291,10 @@ def test_python_operator_compilation_supports_explicit_state():
         "shuffle",
         "store",
         "sum",
+        "topk_max_keys",
+        "topk_max_pairs",
+        "topk_min_keys",
+        "topk_min_pairs",
     ),
 )
 def test_group_markers_use_exact_callable_identity(operation):

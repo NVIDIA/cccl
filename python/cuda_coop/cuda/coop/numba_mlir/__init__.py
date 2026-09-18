@@ -51,6 +51,10 @@ __all__ = [
     "shuffle",
     "store",
     "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
     "StatefulFunction",
     "local",
     "shared",
@@ -73,6 +77,10 @@ def __getattr__(name):
         "scan",
         "shuffle",
         "sum",
+        "topk_max_keys",
+        "topk_max_pairs",
+        "topk_min_keys",
+        "topk_min_pairs",
     }:
         module_name = {
             "merge_sort_keys": "_group_merge_sort",
@@ -89,6 +97,10 @@ def __getattr__(name):
             "scan": "_group_scan",
             "shuffle": "_group_shuffle",
             "sum": "_group_reduce",
+            "topk_max_keys": "_group_topk",
+            "topk_max_pairs": "_group_topk",
+            "topk_min_keys": "_group_topk",
+            "topk_min_pairs": "_group_topk",
         }[name]
         value = getattr(importlib.import_module(f"{__name__}.{module_name}"), name)
         globals()[name] = value

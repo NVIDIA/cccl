@@ -28,6 +28,14 @@ _WHEEL_VALIDATOR = importlib.util.module_from_spec(_VALIDATOR_SPEC)
 _VALIDATOR_SPEC.loader.exec_module(_WHEEL_VALIDATOR)
 
 _REQUIRED_PACKAGE_MEMBERS = {
+    "cuda/coop/_core/api/topk.py",
+    "cuda/coop/_core/api/topk.pyi",
+    "cuda/coop/_core/block/topk.py",
+    "cuda/coop/_core/group/topk.py",
+    "cuda/coop/numba_mlir/_compiler/_group_topk.py",
+    "cuda/coop/numba_mlir/_group_topk.py",
+    "cuda/coop/numba_mlir/_group_topk.pyi",
+    "cuda/coop/numba_mlir/_lowering/_topk.py",
     "cuda/coop/_core/api/radix.py",
     "cuda/coop/_core/api/radix.pyi",
     "cuda/coop/_core/block/radix.py",
@@ -115,6 +123,7 @@ _REQUIRED_PACKAGE_MEMBERS = {
 }
 
 _REQUIRED_HEADER_MEMBERS = {
+    "cuda/coop/_headers/include/cub/block/block_topk.cuh",
     "cuda/coop/_headers/include/cub/block/block_radix_sort.cuh",
     "cuda/coop/_headers/include/cub/block/block_radix_rank.cuh",
     "cuda/coop/_headers/cccl-bundle-provenance.json",
