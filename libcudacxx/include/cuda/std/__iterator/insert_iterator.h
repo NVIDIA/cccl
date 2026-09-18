@@ -40,8 +40,9 @@ template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT insert_iterator
 {
 protected:
-  _Container* container;
-  __insert_iterator_iter_t<_Container> iter;
+  // The standard requires protected access to both members.
+  _Container* container; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
+  __insert_iterator_iter_t<_Container> iter; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 public:
   using iterator_category = output_iterator_tag;

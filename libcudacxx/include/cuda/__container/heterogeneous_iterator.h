@@ -105,7 +105,8 @@ public:
   }
 
 protected:
-  pointer __ptr_ = nullptr;
+  // Derived iterators and their comparison functions access this pointer.
+  pointer __ptr_ = nullptr; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   template <class, class...>
   friend class heterogeneous_iterator;
@@ -151,7 +152,8 @@ public:
   }
 
 protected:
-  pointer __ptr_ = nullptr;
+  // Derived iterators and their comparison functions access this pointer.
+  pointer __ptr_ = nullptr; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   template <class, class...>
   friend class heterogeneous_iterator;
@@ -197,7 +199,8 @@ public:
   }
 
 protected:
-  pointer __ptr_ = nullptr;
+  // Derived iterators and their comparison functions access this pointer.
+  pointer __ptr_ = nullptr; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   template <class, class...>
   friend class heterogeneous_iterator;

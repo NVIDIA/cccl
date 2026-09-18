@@ -67,19 +67,20 @@ private:
 
 public:
   /// Total number of input items
-  OffsetT num_items{0};
+  // Callers read and modify these public descriptor fields.
+  OffsetT num_items{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// Grid size in thread blocks
-  int grid_size{0};
+  int grid_size{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// OffsetT into input marking the beginning of the owning thread block's segment of input tiles
-  OffsetT block_offset{0};
+  OffsetT block_offset{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// OffsetT into input of marking the end (one-past) of the owning thread block's segment of input tiles
-  OffsetT block_end{0};
+  OffsetT block_end{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// Stride between input tiles
-  OffsetT block_stride{0};
+  OffsetT block_stride{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /**
    * \brief Constructor.
