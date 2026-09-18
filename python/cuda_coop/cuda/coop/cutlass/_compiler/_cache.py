@@ -14,9 +14,12 @@ import stat
 import tempfile
 import threading
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 
 from cutlass.base_dsl.common import DSLRuntimeError
+
+from ._layout import _validate_storage_layout
+from ._types import ScratchLayout
 
 if os.name == "nt":
     import msvcrt
@@ -38,6 +41,7 @@ class _CachedBundle:
     path: str
     artifact_size: int | None = None
     artifact_sha256: str | None = None
+    layouts_by_expression: dict[str, ScratchLayout] = field(default_factory=dict)
 
 
 def _acquire_state_lock_before_fork() -> None:
@@ -267,16 +271,30 @@ def load_bundle(path: str, cache_key: str) -> _CachedBundle | None:
             metadata = json.load(stream)
         if metadata["cache_key"] != cache_key:
             return None
-        cached = _CachedBundle(path, metadata["size"], metadata["sha256"])
+        layouts = {
+            expression: _validate_storage_layout(
+                layout["size_in_bytes"], layout["alignment"], description=expression
+            )
+            for expression, layout in metadata.get("layouts", {}).items()
+        }
+        cached = _CachedBundle(path, metadata["size"], metadata["sha256"], layouts)
         return cached if _cached_artifact_is_valid(cached) else None
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return None
 
 
-def publish_bundle(path: str, cache_key: str, blob: bytes) -> _CachedBundle:
+def publish_bundle(
+    path: str,
+    cache_key: str,
+    blob: bytes,
+    *,
+    layouts_by_expression: dict[str, ScratchLayout] | None = None,
+) -> _CachedBundle:
     """Publish data before metadata while holding the artifact lock."""
 
-    cached = _CachedBundle(path, len(blob), hashlib.sha256(blob).hexdigest())
+    cached = _CachedBundle(
+        path, len(blob), hashlib.sha256(blob).hexdigest(), layouts_by_expression or {}
+    )
     write_binary_atomic(path, blob, scope="cuda.coop.cutlass")
     write_text_atomic(
         f"{path}.json",
@@ -285,6 +303,10 @@ def publish_bundle(path: str, cache_key: str, blob: bytes) -> _CachedBundle:
                 "cache_key": cache_key,
                 "size": len(blob),
                 "sha256": cached.artifact_sha256,
+                "layouts": {
+                    expression: asdict(layout)
+                    for expression, layout in cached.layouts_by_expression.items()
+                },
             },
             sort_keys=True,
         )

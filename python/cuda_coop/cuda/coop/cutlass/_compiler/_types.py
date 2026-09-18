@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Hashable
 from dataclasses import dataclass
 from numbers import Integral
 from typing import Any
@@ -47,6 +47,64 @@ class BundleRenderer:
     include_lines: tuple[str, ...]
     cccl_headers: tuple[tuple[str, str], ...]
     render: Callable[[Any], list[str]]
+    scratch_layout_probe: Callable[[Any], ScratchLayoutProbe | None] | None = None
+
+
+@dataclass(frozen=True)
+class ScratchLayout:
+    """Exact C++ temporary-storage layout for one specialization."""
+
+    size_in_bytes: int
+    alignment: int
+
+
+@dataclass(frozen=True)
+class ScratchLayoutProbe:
+    """C++ constant expressions for one exact scratch layout."""
+
+    requirement_key: Hashable
+    size_expression: str
+    alignment_expression: str
+
+
+@dataclass(frozen=True)
+class DeferredTempStorageEvent:
+    """One traced cooperative call whose scratch operands need finalization."""
+
+    kernel_op: Any
+    kernel_name: str
+    temp_storage: Any
+    primitive_name: str
+    requirement_key: Hashable
+    sharing: str
+    auto_sync: bool
+    capacity_size_in_bytes: int | None
+    capacity_alignment: int | None
+    smem_addr_placeholder: Any
+    size_placeholder: Any
+    location: str
+
+
+@dataclass(frozen=True)
+class DeferredTempStorageBinding:
+    """Resolved per-call scratch slice within a deferred storage plan."""
+
+    event: DeferredTempStorageEvent
+    byte_offset_in_bytes: int
+    size_in_bytes: int
+    alignment: int
+
+
+@dataclass(frozen=True)
+class DeferredTempStoragePlan:
+    """One kernel-local allocation for one TempStorage identity."""
+
+    kernel_op: Any
+    kernel_name: str
+    temp_storage: Any
+    size_in_bytes: int
+    alignment: int
+    bindings: tuple[DeferredTempStorageBinding, ...]
 
 
 TYPE_SPECS: dict[type, TypeSpec] = {

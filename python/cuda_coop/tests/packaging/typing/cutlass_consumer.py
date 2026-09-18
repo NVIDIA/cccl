@@ -40,6 +40,42 @@ def check_cutlass_surface(source: object, destination: object) -> None:
     common_coop.load(common_coop.this_block(), source, values)
     common_coop.store(common_coop.this_block(), destination, values)
 
+    storage = cutlass_coop.TempStorage(alignment=1, sharing="exclusive")
+    assert_type(storage, cutlass_coop.TempStorage)
+    assert_type(storage.auto_sync, bool)
+    assert_type(storage.size_in_bytes, int | None)
+    assert_type(storage.alignment, int | None)
+    cutlass_coop.load(
+        block, source, values, algorithm="transpose", temp_storage=storage
+    )
+    cutlass_coop.store(
+        block, destination, values, algorithm="transpose", temp_storage=storage
+    )
+    manual = cutlass_coop.TempStorage(
+        16384, alignment=32, auto_sync=False, sharing="shared"
+    )
+    common_coop.load(
+        common_coop.this_block(),
+        source,
+        values,
+        algorithm="transpose",
+        temp_storage=manual,
+    )
+    assert_type(manual.sync(), None)
+    common_coop.store(
+        common_coop.this_block(),
+        destination,
+        values,
+        algorithm="transpose",
+        temp_storage=manual,
+    )
+    manual.sync()
+
+    common_storage = common_coop.TempStorage(alignment=32)
+    cutlass_coop.store(
+        block, destination, values, algorithm="transpose", temp_storage=common_storage
+    )
+
     copied = cutlass_coop.ThreadData.from_payload(values)
     assert_type(copied, cutlass_coop.ThreadData[np.int32])
     generated = cutlass_coop.ThreadData.from_fn(2, lambda index: np.int32(index))
