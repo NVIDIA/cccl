@@ -101,7 +101,7 @@ template <class _Scope>
     (return _Fn(__cuda_atomic_host_backend{}, __VA_ARGS__, __thread_scope_tag{});))
 
 template <class _Sco>
-_CCCL_HOST_DEVICE_API inline void __atomic_thread_fence_dispatch(memory_order __order, [[maybe_unused]] _Sco __scope)
+_CCCL_HOST_DEVICE_API void __atomic_thread_fence_dispatch(memory_order __order, [[maybe_unused]] _Sco __scope)
 {
   _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_thread_fence, __scope, __order);
 }
