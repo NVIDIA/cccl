@@ -118,10 +118,22 @@ def build_lanes(gpus, lanes_per_gpu):
     return lanes
 
 
+def drop_jsonlists(lane):
+    """Forget what the lane read off the base binary on an earlier run.
+
+    The lists carry the declared axes and the device, either of which a run can
+    arrive with changed, so they are cached for a run rather than kept.
+    """
+    for name in os.listdir(lane.directory):
+        if name.startswith("jsonlists.") and name.endswith(".json"):
+            os.remove(os.path.join(lane.directory, name))
+
+
 def configure_lanes(lanes, cmake_args):
     processes = []
     for lane in lanes:
         os.makedirs(lane.directory, exist_ok=True)
+        drop_jsonlists(lane)
         cmd = [
             "cmake",
             "-S",
@@ -217,6 +229,26 @@ def gpu_lock(path):
         os.close(descriptor)
 
 
+def prime_jsonlists(algname):
+    """Seed the caches the score lookup reads the GPU name and the axes from.
+
+    Reading them runs the base binary, which creates a CUDA context on a device
+    another lane may be benchmarking on, and this process caches nothing across
+    evaluations. The lane directory is per GPU, so keeping them there pays that
+    read once per lane instead of once per variant. `configure_lanes` drops the
+    file, so a run never inherits the axes or the device of an older one.
+    """
+    path = "jsonlists.{}.json".format(algname)
+
+    if os.path.exists(path):
+        with open(path) as lists_file:
+            bench.prime_jsonlists(algname, json.load(lists_file))
+        return
+
+    with open(path, "w") as lists_file:
+        json.dump(bench.export_jsonlists(algname), lists_file)
+
+
 def evaluate(request_path):
     """Score one variant. Runs in a fresh process, bound to one lane."""
     with open(request_path) as request_file:
@@ -238,6 +270,8 @@ def evaluate(request_path):
     if not variant.get_base().build():
         sys.stderr.write("base build failed for {}\n".format(request["algname"]))
         sys.exit(BASE_BUILD_FAILED)
+
+    prime_jsonlists(request["algname"])
 
     estimator = bench.MedianCenterEstimator()
     ct_workload = request["ct_workload"]

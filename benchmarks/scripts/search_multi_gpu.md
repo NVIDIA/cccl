@@ -86,14 +86,26 @@ search re-proposes survivors every generation: one measured run scored 194 disti
 9.1s. Scope is the lane's own database, which covers 49% of the repeats; sharing one database
 across lanes would reach 73%, at the price of eight writers on one sqlite file.
 
+**Device queries.** Everything that reads the benchmark's metadata - the GPU name that keys
+the database, the declared axes that shape its tables - comes from running the base binary with
+`--jsonlist-devices` or `--jsonlist-benches`, and both create a CUDA context on the device. A
+long-lived process pays that once, in `JsonCache`; the shim is a fresh process, so it would pay
+it on every evaluation, in the cache lookup that runs *before* the lock, on a GPU that is
+timing a benchmark for another lane. So the lists are cached in the lane directory, which is
+already per GPU: the first evaluation in a lane writes them, the rest prime `JsonCache` from
+the file. That is `num_gpus * K` reads per run, during the first generation while every lane is
+still compiling, rather than one per variant. `configure_lanes` drops the files, so a run never
+inherits the axes or the device of an older one.
+
 **Evaluation.** The shim is a fresh process per evaluation, spawned with `Popen` - not
 required, since the binding is static and a worker could equally `chdir` once and stay
 in-process. It buys crash isolation (a hung build or leaked handle costs one evaluation, not
 the lane for the rest of the run), bounds memory (`BenchCache` and `RunsCache` accumulate
 every result otherwise), and avoids resetting the six `_instance` singletons that `cccl.bench`
 caches against a cwd-relative layout (`cmake --build .`, `./bin/<exe>`, `result.json`, the db).
-Cost is ~1.2s of cold start (0.25s import, ~0.5s per `--jsonlist-*` call), which lands on the
-build side, behind the GPU lock, so it is free in throughput terms.
+Cost is ~0.25s of cold start for the import, which lands on the build side, so it is free in
+throughput terms; the ~0.5s per `--jsonlist-*` call that used to come with it is now a file
+read.
 
 **Provisioning.** Run from the CCCL source root. The script splits `-D*` args from search args,
 configures every lane with the tuning preset, and drives the search from `build/gpu0/lane0`.

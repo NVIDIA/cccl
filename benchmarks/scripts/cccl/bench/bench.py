@@ -343,6 +343,23 @@ def get_device_name(device):
     return name.replace("NVIDIA ", "")
 
 
+def export_jsonlists(algname):
+    """The jsonlists for `algname`, ready to be handed to another process."""
+    return {"benches": json_benches(algname), "device": device_json(algname)}
+
+
+def prime_jsonlists(algname, jsonlists):
+    """Seed the caches from `export_jsonlists`, launching no benchmark binary.
+
+    Both lists are read by running the base binary, which creates a CUDA context
+    on the device. A process that only needs cached scores would otherwise pay
+    that on a GPU that is busy benchmarking for someone else.
+    """
+    cache = JsonCache()
+    cache.bench_cache[algname] = jsonlists["benches"]
+    cache.device_cache[algname] = jsonlists["device"]
+
+
 def get_gpu_name(algname):
     override = get_gpu_name_override()
     if override is not None:
