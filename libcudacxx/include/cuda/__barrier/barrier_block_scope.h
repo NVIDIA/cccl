@@ -70,6 +70,8 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* __native_handle() const
   {
+    // Const wait operations require the mutable native handle for PTX instructions.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return ::cuda::device::barrier_native_handle(const_cast<barrier&>(*this));
   }
 
