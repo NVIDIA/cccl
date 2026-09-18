@@ -34,6 +34,7 @@ from ._core.api.thread_group import (
     this_thread,
     this_warp,
 )
+from ._core.api.topk import topk_max_keys, topk_max_pairs, topk_min_keys, topk_min_pairs
 
 __version__: str
 
@@ -42,6 +43,10 @@ def register(
 ) -> None: ...
 
 __all__ = [
+    "topk_min_keys",
+    "topk_min_pairs",
+    "topk_max_keys",
+    "topk_max_pairs",
     "Hierarchy",
     "TempStorage",
     "TempStorageLike",
