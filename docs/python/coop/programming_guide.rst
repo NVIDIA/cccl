@@ -159,6 +159,10 @@ several operations:
    * - Comparison sorting
      - Ascending or descending Merge Sort of keys or key-value pairs
      - Also accepts a custom ``compare_op`` and fixed local arrays
+   * - Radix sorting and ranking
+     - Integer-key sorting and digit ranks
+     - Also supports floating-point sorting, striped sort output,
+       digit-prefix output, scalars, and fixed local arrays
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -688,12 +692,15 @@ allocation. Its contents are opaque; keep application values in
      - Scratch behavior in the current backend
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
-   * - Block transpose-family Load/Store; Block Scan; Block Merge Sort
+   * - Block transpose-family Load/Store; Block Scan; Block Merge Sort;
+       Block Radix Sort
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
    * - Exchange and Shuffle
      - Compiler-owned scratch and reuse synchronization
+   * - Radix Rank
+     - Compiler-owned block scratch and reuse synchronization
 
 Reduce has its own group-dependent implementation and does not accept
 ``temp_storage`` in the public signature.
@@ -1089,6 +1096,72 @@ The qualified API accepts ``compare_op`` for a custom strict weak ordering.
 The comparator must be stateless, return a Boolean, and perform ordinary
 device computation. Supply the desired direction in the comparator rather
 than combining it with ``descending=True``.
+
+.. _coop-radix:
+
+Radix sorting and digit ranks
+----------------------------
+
+:func:`~cuda.coop.radix_sort_keys` and :func:`~cuda.coop.radix_sort_pairs`
+sort a block's full tile by key bits. They accept blocked input, return
+new blocked payloads, and preserve their inputs. Radix Sort is a
+:term:`stable sort`: associated values whose keys have equal selected digits
+keep their blocked input order, in both ascending and descending sorts.
+The common API accepts signed or unsigned 32-bit and 64-bit keys in
+``ThreadData``; the qualified API also accepts floating-point sorting keys,
+scalar payloads, and fixed local arrays.
+
+This example retains the original positions of equal keys:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
+   :language: python
+   :start-after: # radix-sort-example-begin
+   :end-before: # radix-sort-example-end
+   :dedent: 4
+
+Use ``descending=True`` for largest keys first. ``begin_bit`` and
+``end_bit`` restrict ordering to a half-open bit interval satisfying
+``0 <= begin_bit < end_bit <= key_width``. The default ``end_bit`` is the full
+key width. Sort bounds may be runtime integers, but must be uniform across
+the block. Invalid runtime intervals trigger a device trap before narrowing
+to CUB's integer arguments.
+
+For signed and floating-point keys, CUB transforms the bit representation into an
+order-preserving form before selecting those bits. A bit interval is
+therefore not necessarily an interval of the original signed or floating-
+point representation. Full-width ordering uses the usual numeric order;
+floating-point NaNs follow CUB's bit ordering.
+
+Radix Sort consumes a full tile and has no ``valid_items`` parameter.
+Initialize every input slot. If an application pads a partial tile, it
+must choose padding that sorts outside the desired output prefix.
+
+Qualified ``blocked_to_striped=True`` changes the result layout. Use
+``store(..., algorithm="striped")`` to write that result in sorted order,
+or Exchange to convert it before an operation expecting blocked data.
+
+Radix Rank assigns a destination rank without moving keys. With
+``begin_bit=0, end_bit=4``, it ranks keys by their lowest four bits and
+preserves blocked input order among keys with the same digit. The output
+is an ``int32`` payload, independent of the key dtype:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
+   :language: python
+   :start-after: # radix-rank-example-begin
+   :end-before: # radix-rank-example-end
+   :dedent: 4
+
+The rank bit interval is a compile-time choice containing one to eight bits;
+it defaults to four bits starting at ``begin_bit``. When both ``end_bit`` and
+``radix_bits`` are supplied, they must describe the same interval. Ranking one
+digit does not rank keys by their complete values. The qualified
+:func:`~cuda.coop.numba_mlir.radix_rank` also writes optional digit prefixes;
+its API reference describes the ``int32`` side array's required extent and
+bin indexing, including descending ranking.
+
+All radix calls are block-only; physical and logical warp groups are
+unsupported. Radix Sort accepts an explicit ``temp_storage`` descriptor;
+Radix Rank uses compiler-owned scratch.
 
 Checking and tuning a kernel
 ---------------------------
