@@ -92,6 +92,13 @@ def this_block() -> ThreadGroup:
     )
 
 
+def this_warp() -> ThreadGroup:
+    """Describe the calling complete 32-thread physical warp."""
+    return make_thread_group(
+        "warp", group_type=ThreadGroup, scope="cuda.coop.cutlass"
+    )
+
+
 __all__ = [
     "Hierarchy",
     "ThreadGroup",
@@ -99,4 +106,5 @@ __all__ = [
     "_require_complete_warp_partition",
     "_resolve_primitive_group_from_launch",
     "this_block",
+    "this_warp",
 ]
