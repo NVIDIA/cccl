@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from cuda.coop._core import (
-    INT32,
+    INT64,
     Array,
     Dependency,
     TempStorageParameter,
@@ -101,8 +101,8 @@ def test_explicit_descending_striped_pair_sort_owns_runtime_bit_abi():
                 is_inout=True,
                 is_return=False,
             ),
-            Value(INT32, name="begin_bit"),
-            Value(INT32, name="end_bit"),
+            Value(INT64, name="begin_bit"),
+            Value(INT64, name="end_bit"),
         ),
     )
 
