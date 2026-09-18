@@ -585,6 +585,31 @@ coop.exclusive_sum(  # expected-error: [misc]
     prefix_op=stateful_float32_value,
 )
 
+common.merge_sort_keys(  # expected-error: [call-overload]
+    common_block, common_values, compare_op=lambda a, b: a < b
+)
+common.merge_sort_keys(
+    common.this_warp(),  # expected-error: [arg-type]
+    common_values,
+    temp_storage=common.TempStorage(),
+)
+common.merge_sort_keys(  # expected-error: [call-overload]
+    common_block, common_values, valid_items=4
+)
+common.merge_sort_keys(
+    common.this_grid(),  # expected-error: [arg-type]
+    common_values,
+)
+coop.merge_sort_keys(  # expected-error: [call-overload]
+    qualified_block, values, descending=True, compare_op=lambda a, b: a < b
+)
+coop.merge_sort_keys(  # expected-error: [call-overload]
+    qualified_block, values, compare_op="less"
+)
+coop.merge_sort_pairs(  # expected-error: [call-overload]
+    qualified_block, values, values, oob_default=99
+)
+
 common.sum(
     common.this_cluster(),  # expected-error: [arg-type]
     np.int32(1),
