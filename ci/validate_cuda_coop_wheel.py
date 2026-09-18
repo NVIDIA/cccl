@@ -22,6 +22,7 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/__init__.pyi",
     "cuda/coop/_typing.pyi",
     "cuda/coop/py.typed",
+    "cuda/coop/_core/_auto_registration.py",
     "cuda/coop/_core/api/__init__.py",
     "cuda/coop/_core/api/__init__.pyi",
     "cuda/coop/_core/api/load_store.py",
@@ -36,6 +37,25 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/_core/group/load_store.py",
     "cuda/coop/_headers/_identity.py",
     "cuda/coop/_headers/_toolkit.py",
+    "cuda/coop/numba_mlir/__init__.py",
+    "cuda/coop/numba_mlir/__init__.pyi",
+    "cuda/coop/numba_mlir/_compiler/_activation.py",
+    "cuda/coop/numba_mlir/_compiler/_artifacts.py",
+    "cuda/coop/numba_mlir/_compiler/_caching.py",
+    "cuda/coop/numba_mlir/_compiler/_group_load_store.py",
+    "cuda/coop/numba_mlir/_compiler/_group_planner.py",
+    "cuda/coop/numba_mlir/_compiler/_nvrtc.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite.py",
+    "cuda/coop/numba_mlir/_group_load_store.py",
+    "cuda/coop/numba_mlir/_group_load_store.pyi",
+    "cuda/coop/numba_mlir/_lowering/_load_store.py",
+    "cuda/coop/numba_mlir/_temp_storage.py",
+    "cuda/coop/numba_mlir/_temp_storage.pyi",
+    "cuda/coop/numba_mlir/_thread_data.py",
+    "cuda/coop/numba_mlir/_thread_data.pyi",
+    "cuda/coop/numba_mlir/_thread_group.py",
+    "cuda/coop/numba_mlir/_thread_group.pyi",
+    "cuda/coop/numba_mlir/py.typed",
 }
 
 _REQUIRED_HEADER_FILES = {
@@ -62,6 +82,8 @@ _OBSOLETE_LAYOUT_COMPONENTS = {"_block", "_dsl", "_internal", "_warp"}
 _NATIVE_SUFFIXES = {".a", ".dll", ".dylib", ".exe", ".lib", ".pyd", ".so"}
 _FORBIDDEN_PACKAGE_FILES = {
     "cuda/coop/_aot_cli.py",
+    "cuda/coop/numba_mlir/_enums.py",
+    "cuda/coop/numba_mlir/_enums.pyi",
     "cuda/coop/_core/api/reduce.py",
     "cuda/coop/_core/api/reduce.pyi",
     "cuda/coop/_core/api/scan.py",
@@ -70,6 +92,15 @@ _FORBIDDEN_PACKAGE_FILES = {
     "cuda/coop/_core/block/scan.py",
     "cuda/coop/_core/group/reduce.py",
     "cuda/coop/_core/group/scan.py",
+    "cuda/coop/numba_mlir/_dataclass.py",
+    "cuda/coop/numba_mlir/_stateful_function.py",
+    "cuda/coop/numba_mlir/_group_reduce.py",
+    "cuda/coop/numba_mlir/_group_scan.py",
+    "cuda/coop/numba_mlir/_lowering/_reduce.py",
+    "cuda/coop/numba_mlir/_lowering/_scan.py",
+    "cuda/coop/numba_mlir/_lowering/_thread_group.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite_reduce.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite_scan.py",
 }
 
 
@@ -100,6 +131,8 @@ def _validate_metadata(archive: zipfile.ZipFile, names: set[str]) -> None:
             f"{metadata.get('Requires-Python')!r}"
         )
     expected_extras = {
+        "numba-cuda-mlir-cu12",
+        "numba-cuda-mlir-cu13",
         "test",
     }
     extras = set(metadata.get_all("Provides-Extra", []))

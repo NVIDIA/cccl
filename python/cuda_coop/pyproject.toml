@@ -31,6 +31,20 @@ dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
+numba-cuda-mlir-cu12 = [
+  "cuda-core>=0.5.1,<2",
+  "cuda-pathfinder>=1.2.3",
+  "numba-cuda-mlir[cu12]>=0.5.0,<0.6",
+  "numpy",
+  "typing_extensions>=4.12.0",
+]
+numba-cuda-mlir-cu13 = [
+  "cuda-core>=0.5.1,<2",
+  "cuda-pathfinder>=1.2.3",
+  "numba-cuda-mlir[cu13]>=0.5.0,<0.6",
+  "numpy",
+  "typing_extensions>=4.12.0",
+]
 test = [
   "cuda-pathfinder>=1.2.3",
   "mypy",
@@ -118,6 +132,9 @@ known-first-party = [
   "cuda.coop._core.api",
   "cuda.coop._core.block",
   "cuda.coop._core.group",
+  "cuda.coop.numba_mlir",
+  "cuda.coop.numba_mlir._compiler",
+  "cuda.coop.numba_mlir._lowering",
 ]
 
 [tool.pytest.ini_options]
@@ -130,6 +147,7 @@ addopts = [
 ]
 xfail_strict = true
 markers = [
+  "backend_numba_mlir: cuda.coop.numba_mlir backend test",
   "compile: compiler or lowering test that does not launch a kernel",
   "unit: backend-local unit test without GPU execution",
   "runtime: representative backend runtime test",
@@ -138,7 +156,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["cuda.coop._core"]
+source = ["cuda.coop._core", "cuda.coop.numba_mlir"]
 
 [tool.coverage.report]
 show_missing = true
