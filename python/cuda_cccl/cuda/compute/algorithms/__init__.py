@@ -15,6 +15,8 @@ from ._histogram import histogram_even as histogram_even
 from ._histogram import make_histogram_even as make_histogram_even
 from ._reduce import make_reduce_into as make_reduce_into
 from ._reduce import reduce_into as reduce_into
+from ._reduce_by_key import make_reduce_by_key as make_reduce_by_key
+from ._reduce_by_key import reduce_by_key as reduce_by_key
 from ._scan import exclusive_scan as exclusive_scan
 from ._scan import inclusive_scan as inclusive_scan
 from ._scan import make_exclusive_scan as make_exclusive_scan

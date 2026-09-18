@@ -39,6 +39,7 @@ typedef enum cccl_serialization_algo_t
   CCCL_SERIALIZATION_ALGO_UNIQUE_BY_KEY       = 10,
   CCCL_SERIALIZATION_ALGO_HISTOGRAM           = 11,
   CCCL_SERIALIZATION_ALGO_FOR                 = 12,
+  CCCL_SERIALIZATION_ALGO_REDUCE_BY_KEY      = 13,
 } cccl_serialization_algo_t;
 
 // Frees a buffer returned by any cccl_device_<algo>_serialize call.
