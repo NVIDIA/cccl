@@ -3,13 +3,12 @@
 ``cuda.coop.cutlass``: CuTe DSL integration
 ===========================================
 
-The CUTLASS backend provides Block, physical Warp, and logical Warp Load and
-Store inside CuTe DSL kernels.
+The CUTLASS backend provides group queries and synchronization, Load and
+Store, and built-in Reduce and Sum inside CuTe DSL kernels.
 It uses the same group-first calls and in-place
 payload contract as :mod:`cuda.coop`: ``load`` fills an existing
 ``ThreadData`` and returns ``None``; ``store`` leaves its input payload
-unchanged. Other primitive families are not yet available through this
-backend.
+unchanged. Reductions return a scalar and preserve their input payload.
 
 Runtime requirements
 --------------------
@@ -213,6 +212,96 @@ eight groups of eight threads, each loading its own partial tile.
    :language: python
    :start-after: docs: start cutlass-logical-warp-load-store
    :end-before: docs: end cutlass-logical-warp-load-store
+
+Hierarchy queries and synchronization
+-------------------------------------
+
+``this_thread()``, ``this_warp()``, ``this_block()``, ``this_cluster()``, and
+``this_grid()`` describe the corresponding physical groups. ``rank`` and
+``count`` accept a hierarchy level: ``thread`` (also spelled ``gpu_thread``),
+``warp``, ``block``, ``cluster``, or ``grid``. Their default result is a CuTe
+``Uint32``, or ``Uint64`` when the group or queried level is the grid.
+``rank_as(dtype, level="thread")`` and ``count_as`` select a signed or unsigned
+8-, 16-, 32-, or 64-bit integer type. Floating and Boolean query types are
+unsupported. NumPy integer dtypes and Python ``int`` are also accepted as dtype
+selectors; the compiled values are CuTe scalars. ``is_member()`` returns a CuTe
+``Uint8`` membership flag.
+
+Mapped groups may query their constituents and immediate physical parent.
+Thus ``this_warp().group_by(8)`` supports thread and warp queries, while
+``this_block().group_by(2)`` supports thread, warp, and block queries. Queries
+above that parent are rejected. With ``exhaustive=False``, trailing units that
+cannot form a complete group are excluded; guard rank-dependent work with
+``is_member()``. Metadata queries do not synchronize threads.
+
+``sync()`` supports thread, physical warp, logical warp, block, and cluster
+groups. Every participating member must reach the synchronization;
+``sync_aligned()`` additionally requires an aligned, converged group.
+Synchronization of mapped groups of physical warps and grid groups is
+unsupported. Queries and synchronization consume the exact dimensions and
+launch flags supplied by the compiler. Cluster operations require consistent
+cluster dimensions and launch mode; grid queries also require exact grid
+dimensions.
+
+Built-in Reduce and Sum
+-----------------------
+
+``reduce(group, value, ...)`` and ``sum(group, value, ...)`` accept a scalar
+or fixed per-thread ``ThreadData`` payload. Full-group reductions support
+thread, physical and logical warp, block, mapped groups of physical warps,
+and cluster groups. Grid reductions are unsupported. All members of a
+participating group must invoke the collective.
+
+For a mapped group of physical warps, every thread in the enclosing block
+must reach the reduction, including nonmembers of a non-exhaustive partition:
+its collective setup synchronizes the parent block. Restrict use of the
+result to participating members; do not guard the collective itself with
+``is_member()``.
+
+The built-in operators are sum, product, minimum, maximum, bitwise AND,
+bitwise OR, and bitwise XOR. For example, ``binary_op="max"`` selects maximum,
+and ``binary_op="bit_or"`` selects bitwise OR. An omitted operator selects
+sum. Bitwise operators require integer values. The qualified API also accepts
+known ``operator`` and NumPy callable aliases; arbitrary callbacks are
+unsupported.
+
+With the default ``broadcast=True``, every group member may use the scalar
+result. With ``broadcast=False``, only group rank zero may use it; the other
+members must still call the collective. Nonmembers of a non-exhaustive mapped
+group have no defined result. The input payload remains unchanged.
+
+Full-group operations without algorithm controls use CUDAX. An explicit block
+algorithm or ``valid_items`` selects CUB and requires ``broadcast=False``:
+
+.. list-table:: Direct reduction controls
+   :header-rows: 1
+
+   * - Group and input
+     - Supported controls
+   * - Block scalar
+     - ``valid_items`` and any supported block algorithm
+   * - Block multi-item payload
+     - An explicit block algorithm, without ``valid_items``
+   * - Physical or logical warp scalar
+     - ``valid_items``, without an algorithm selector
+
+Block algorithm names are ``raking_commutative_only``, ``raking``, and
+``warp_reductions``. A valid prefix contains from one through the group size
+contributing members, counting threads rather than payload elements. The count
+must be uniform within the group. Zero and out-of-range counts are invalid;
+all members still participate even when their values fall outside the prefix.
+Reduction scratch is managed by the implementation, including synchronization
+for repeated reuse; these calls do not accept ``temp_storage``.
+
+This example uses block rank queries, a full block sum, logical-warp maxima,
+and a scalar valid-prefix sum whose result is read only at block rank zero.
+:download:`Download the reduction example
+<../../python/cuda_coop/examples/cutlass/reduce.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/reduce.py
+   :language: python
+   :start-after: docs: start cutlass-reduce
+   :end-before: docs: end cutlass-reduce
 
 Qualified register payloads
 ---------------------------

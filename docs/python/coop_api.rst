@@ -251,13 +251,12 @@ CUTLASS-qualified API
 
 .. py:module:: cuda.coop.cutlass
 
-The qualified CUTLASS surface currently provides ``this_block``, ``this_warp``,
-``ThreadData``, ``TempStorage``, all six block ``load``/``store`` algorithms,
-and four algorithms for physical and logical warps. Explicit temporary
-storage is block-only.
-It accepts the portable
-``valid_items``, ``offset``, and load-only ``oob_default`` controls. Load
-returns ``None`` and mutates its destination payload. ``ThreadData`` adds
-conversions to and from CuTe register-memory tensors and immutable register
-values. See :doc:`coop_cutlass` for runtime requirements and an executable
-example. The installed ``.pyi`` files declare the supported signatures.
+The qualified CUTLASS surface provides hierarchy queries and supported group
+synchronization, Block and Warp ``load``/``store``, and built-in ``reduce`` and
+``sum``. Warp operations include supported logical subgroups. Load returns
+``None`` and fills its destination payload; Store and Reduce preserve their
+input payloads. ``ThreadData`` adds conversions to and from CuTe
+register-memory tensors and immutable register values. See
+:doc:`coop_cutlass` for algorithms, result ownership, runtime requirements,
+and executable examples. Custom reduction callbacks are not supported. The
+installed ``.pyi`` files declare the supported signatures.
