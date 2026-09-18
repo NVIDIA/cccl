@@ -121,6 +121,8 @@ public:
     friend class __sentinel;
 
   public:
+    // Non-member friend operators of __sentinel require access.
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     iterator_t<_Base> __current_ = iterator_t<_Base>();
 
     using iterator_concept =
