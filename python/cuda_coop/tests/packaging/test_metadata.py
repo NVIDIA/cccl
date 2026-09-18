@@ -105,6 +105,7 @@ def test_python_implementation_boundaries() -> None:
         "__init__.py",
         "exchange.py",
         "load_store.py",
+        "merge_sort.py",
         "reduce.py",
         "scan.py",
     }
