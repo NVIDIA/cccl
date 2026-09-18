@@ -26,6 +26,14 @@ from .load_store import (
     make_block_load_store_spec,
     make_block_store_spec,
 )
+from .merge_sort import (
+    BlockMergeSortPayload,
+    BlockMergeSortSemantics,
+    BlockMergeSortSpec,
+    BlockMergeSortTilePolicy,
+    make_block_merge_sort_semantics,
+    make_block_merge_sort_spec,
+)
 from .reduce import (
     BlockReduceAlgorithm,
     BlockReduceOperation,
@@ -52,6 +60,12 @@ from .shuffle import (
 )
 
 __all__ = [
+    "BlockMergeSortPayload",
+    "BlockMergeSortTilePolicy",
+    "BlockMergeSortSemantics",
+    "BlockMergeSortSpec",
+    "make_block_merge_sort_semantics",
+    "make_block_merge_sort_spec",
     "ArgumentBinding",
     "BindingKind",
     "BlockExchangeMode",

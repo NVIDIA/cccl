@@ -545,3 +545,28 @@ coop.exclusive_sum(  # expected-error: [misc]
     prefix_state,
     prefix_op=stateful_float32_value,
 )
+
+portable.merge_sort_keys(  # expected-error: [call-overload]
+    portable_block, portable_values, compare_op=lambda a, b: a < b
+)
+portable.merge_sort_keys(
+    portable.this_warp(),  # expected-error: [arg-type]
+    portable_values,
+    temp_storage=portable.TempStorage(),
+)
+portable.merge_sort_keys(  # expected-error: [call-overload]
+    portable_block, portable_values, valid_items=4
+)
+portable.merge_sort_keys(
+    portable.this_grid(),  # expected-error: [arg-type]
+    portable_values,
+)
+coop.merge_sort_keys(  # expected-error: [call-overload]
+    qualified_block, values, descending=True, compare_op=lambda a, b: a < b
+)
+coop.merge_sort_keys(  # expected-error: [call-overload]
+    qualified_block, values, compare_op="less"
+)
+coop.merge_sort_pairs(  # expected-error: [call-overload]
+    qualified_block, values, values, oob_default=99
+)

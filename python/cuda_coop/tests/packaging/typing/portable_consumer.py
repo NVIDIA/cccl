@@ -191,3 +191,31 @@ def check_portable_surface(
         coop.ThreadDataLike[np.int16],
     )
     assert_type(coop.inclusive_sum(warp, np.uint32(4)), np.uint32)
+
+
+def check_merge_sort_surface() -> None:
+    keys = coop.ThreadData(3, np.int32)
+    values = coop.ThreadData(3, np.float64)
+    read_only_keys = _ReadOnlyThreadData(np.int32(1))
+    read_only_values = _ReadOnlyThreadData(np.float64(1.0))
+    assert_type(
+        coop.merge_sort_keys(coop.this_block(), keys), coop.ThreadDataLike[np.int32]
+    )
+    assert_type(
+        coop.merge_sort_pairs(coop.this_warp(), keys, values),
+        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
+    )
+    assert_type(
+        coop.merge_sort_keys(
+            coop.this_warp().group_by(8), keys, valid_items=23, oob_default=1000
+        ),
+        coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        coop.merge_sort_keys(coop.this_block(), read_only_keys),
+        coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        coop.merge_sort_pairs(coop.this_warp(), read_only_keys, read_only_values),
+        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
+    )
