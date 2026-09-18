@@ -76,7 +76,6 @@ Checks:
   - '-cppcoreguidelines-pro-type-union-access'
   - '-cppcoreguidelines-pro-type-const-cast'
   - '-cppcoreguidelines-use-enum-class'
-  - '-cppcoreguidelines-slicing'
   # This does not understand the concept macros
   - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME
