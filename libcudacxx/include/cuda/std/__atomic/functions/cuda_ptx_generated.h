@@ -45,6 +45,8 @@ extern "C" _CCCL_DEVICE void __atomic_ldst_128b_unsupported_before_SM_70();
 
 _CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_block_tag)
 { asm volatile("membar.cta;" ::: "memory"); }
+_CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_cluster_tag)
+{ asm volatile("membar.gl;" ::: "memory"); }
 _CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_device_tag)
 { asm volatile("membar.gl;" ::: "memory"); }
 _CCCL_DEVICE_API inline void __cuda_atomic_membar(__thread_scope_system_tag)
