@@ -153,6 +153,10 @@ first. Repeated calls are safe and return ``None``. The spelling
 ``"numba_cuda_mlir"`` is also accepted. Registration requires the backend's
 dependencies to be installed; it does not install packages.
 
+For a compatible CUTLASS environment, use ``coop.register("cutlass")``. See
+:doc:`coop_cutlass` for capability requirements, prerequisite packages, and
+its currently supported operations.
+
 For convenience, importing ``cuda.coop`` after ``numba_cuda_mlir`` also
 registers the backend automatically. A standalone ``cuda.coop`` import does
 not discover or load optional compilers. Explicit registration is useful in
