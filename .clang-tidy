@@ -77,7 +77,6 @@ Checks:
   - '-cppcoreguidelines-pro-type-union-access'
   - '-cppcoreguidelines-pro-type-const-cast'
   - '-cppcoreguidelines-use-enum-class'
-  - '-cppcoreguidelines-prefer-member-initializer'
   - '-cppcoreguidelines-slicing'
   - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME

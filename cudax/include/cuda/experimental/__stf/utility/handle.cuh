@@ -272,9 +272,8 @@ UNITTEST("Weak handle")
   {
   protected:
     test(int x)
-    {
-      a = x;
-    }
+        : a(x)
+    {}
 
   public:
     int a;
