@@ -256,7 +256,11 @@ void TestVectorAllocatorPropagateOnSwap()
 
   Vector v3(15, alloc1);
   Vector v4(31, alloc2);
-  ASSERT_THROWS(swap(v3, v4), thrust::detail::allocator_mismatch_on_swap);
+  REQUIRE_THROWS_MATCHES(
+    swap(v3, v4),
+    thrust::detail::allocator_mismatch_on_swap,
+    Catch::Matchers::Message("swap called on containers with allocators that propagate on swap, "
+                             "but compare non-equal"));
 }
 
 void TestVectorAllocatorPropagateOnSwapHost()
