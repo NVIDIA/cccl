@@ -488,11 +488,13 @@ void TestTupleSwap()
   thrust::swap_ranges(d_v1.begin(), d_v1.end(), d_v2.begin());
 
   const swappable_tuple ref(user_swappable(true), user_swappable(true), user_swappable(true), user_swappable(true));
+  const swappable_tuple not_swapped(
+    user_swappable(false), user_swappable(false), user_swappable(false), user_swappable(false));
 
   REQUIRE(ref == h_v1[0]);
-  REQUIRE(ref == h_v1[0]);
+  REQUIRE(not_swapped == h_v2[0]);
   REQUIRE(ref == (swappable_tuple) d_v1[0]);
-  REQUIRE(ref == (swappable_tuple) d_v1[0]);
+  REQUIRE(not_swapped == (swappable_tuple) d_v2[0]);
 }
 DECLARE_UNITTEST(TestTupleSwap);
 

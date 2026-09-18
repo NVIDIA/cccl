@@ -24,6 +24,8 @@ void TestCopyNFromConstIterator()
   thrust::host_vector<T> h(5, (T) 10);
   const thrust::host_vector<T>::iterator h_result = thrust::copy_n(begin, h.size(), h.begin());
 
+  const thrust::host_vector<T> href{0, 1, 2, 3, 4};
+  REQUIRE(h == href);
   REQUIRE(h_result == h.end());
 
   // copy to device_vector

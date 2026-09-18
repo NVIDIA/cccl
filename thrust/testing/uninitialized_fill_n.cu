@@ -62,6 +62,7 @@ void TestUninitializedFillNPOD()
 
   Vector ref{0, exemplar, exemplar, exemplar, 4};
   REQUIRE(v.begin() + 4 == iter);
+  REQUIRE(v == ref);
 
   exemplar = 8;
 
@@ -69,6 +70,7 @@ void TestUninitializedFillNPOD()
 
   ref = {exemplar, exemplar, exemplar, 7, 4};
   REQUIRE(v.begin() + 3 == iter);
+  REQUIRE(v == ref);
 
   exemplar = 9;
 
@@ -76,6 +78,7 @@ void TestUninitializedFillNPOD()
 
   ref = {8, 8, exemplar, exemplar, 9};
   REQUIRE(v.end() == iter);
+  REQUIRE(v == ref);
 
   exemplar = 1;
 
@@ -83,6 +86,7 @@ void TestUninitializedFillNPOD()
 
   ref = {exemplar, exemplar, exemplar, exemplar, exemplar};
   REQUIRE(v.end() == iter);
+  REQUIRE(v == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedFillNPOD);
 
