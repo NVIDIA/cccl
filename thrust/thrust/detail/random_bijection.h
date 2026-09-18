@@ -28,18 +28,11 @@ public:
 
   template <class URBG>
   _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g)
+      : R_bits((total_bits(m) + 1) / 2)
+      , L_bits(total_bits(m) / 2)
+      , R_mask((1ull << R_bits) - 1)
+      , L_mask((1ull << L_bits) - 1)
   {
-    // Calculate number of bits needed to represent num_elements - 1
-    // Prevent zero
-    const uint64_t max_index  = (::cuda::std::max) (static_cast<uint64_t>(1), m) - 1;
-    const uint64_t total_bits = static_cast<uint64_t>((::cuda::std::max) (8, ::cuda::std::bit_width(max_index)));
-    // Half bits rounded down
-    L_bits = total_bits / 2;
-    L_mask = (1ull << L_bits) - 1;
-    // Half the bits rounded up
-    R_bits = total_bits - L_bits;
-    R_mask = (1ull << R_bits) - 1;
-
     thrust::uniform_int_distribution<std::uint32_t> dist; // NOLINT(misc-const-correctness)
     for (auto& k : key)
     {
@@ -77,6 +70,13 @@ public:
   }
 
 private:
+  _CCCL_HOST_DEVICE static constexpr std::uint64_t total_bits(std::uint64_t m)
+  {
+    // Clamp empty ranges to avoid unsigned underflow.
+    const auto max_index = (::cuda::std::max) (std::uint64_t{1}, m) - 1;
+    return static_cast<std::uint64_t>((::cuda::std::max) (8, ::cuda::std::bit_width(max_index)));
+  }
+
   static constexpr std::uint32_t num_rounds = 24;
   std::uint64_t R_bits;
   std::uint64_t L_bits;

@@ -40,10 +40,9 @@ struct Squad : SquadDesc
   _CCCL_DEVICE_API Squad(SquadDesc squadStatic, SpecialRegisters specialRegisters)
       : SquadDesc(squadStatic)
       , mSpecialRegisters(specialRegisters)
-  {
-    mIsWarpLeader = ::cuda::ptx::elect_sync(~0);
-    mIsLeaderWarp = warpRank() == 0;
-  }
+      , mIsWarpLeader(::cuda::ptx::elect_sync(~0))
+      , mIsLeaderWarp(warpRank() == 0)
+  {}
 
   [[nodiscard]] _CCCL_DEVICE_API int warpRank() const
   {

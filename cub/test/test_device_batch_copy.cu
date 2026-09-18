@@ -275,15 +275,13 @@ struct object_with_non_trivial_ctor
   int magic;
 
   __host__ __device__ object_with_non_trivial_ctor()
-  {
-    magic = MAGIC;
-    field = 0;
-  }
+      : field(0)
+      , magic(MAGIC)
+  {}
   __host__ __device__ object_with_non_trivial_ctor(int f)
-  {
-    magic = MAGIC;
-    field = f;
-  }
+      : field(f)
+      , magic(MAGIC)
+  {}
 
   object_with_non_trivial_ctor(const object_with_non_trivial_ctor& x) = default;
 
