@@ -7,7 +7,7 @@ Shuffle
 =======
 
 This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-operation support <coop-backend-operation-support>` for CUTLASS availability.
+coverage <coop-backends>` for CUTLASS availability.
 
 :func:`cuda.coop.shuffle` shifts values within a complete block and returns
 a new per-thread payload. The input remains unchanged. ``up`` and ``down``
