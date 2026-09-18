@@ -9,6 +9,9 @@ from ._group_exchange import exchange
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys as merge_sort_keys
 from ._group_merge_sort import merge_sort_pairs as merge_sort_pairs
+from ._group_radix import radix_rank as radix_rank
+from ._group_radix import radix_sort_keys as radix_sort_keys
+from ._group_radix import radix_sort_pairs as radix_sort_pairs
 from ._group_reduce import reduce, sum
 from ._group_scan import (
     exclusive_scan,
@@ -53,6 +56,9 @@ __all__ = [
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "shuffle",

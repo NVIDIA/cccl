@@ -13,6 +13,7 @@ from .exchange import exchange  # noqa: F401
 from .load_store import load, store  # noqa: F401
 from .merge_sort import merge_sort_keys as merge_sort_keys
 from .merge_sort import merge_sort_pairs as merge_sort_pairs
+from .radix import radix_rank, radix_sort_keys, radix_sort_pairs  # noqa: F401
 from .reduce import reduce, sum  # noqa: F401
 from .scan import (  # noqa: F401
     exclusive_scan,
@@ -71,6 +72,9 @@ __all__ = [
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "shuffle",

@@ -122,6 +122,7 @@ class GroupResultSource:
 
     dtype_parameter: str | None
     array_parameter: str | None
+    fixed_dtype: Any = None
 
     def __post_init__(self) -> None:
         for name in ("dtype_parameter", "array_parameter"):
