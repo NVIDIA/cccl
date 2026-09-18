@@ -48,7 +48,8 @@ using ::malloc;
   if (::cuda::mul_hi(__n, __size) == 0)
   {
     const size_t __nbytes = __n * __size;
-    __ptr                 = ::cuda::std::malloc(__nbytes);
+    // calloc transfers ownership to its caller.
+    __ptr = ::cuda::std::malloc(__nbytes); // NOLINT(cppcoreguidelines-no-malloc)
     if (__ptr != nullptr)
     {
       ::cuda::std::memset(__ptr, 0, __nbytes);
@@ -61,7 +62,9 @@ using ::malloc;
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline void* calloc(size_t __n, size_t __size) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::calloc(__n, __size);), (return ::cuda::std::__calloc_device(__n, __size);))
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return ::calloc(__n, __size);), // NOLINT(cppcoreguidelines-no-malloc)
+                    (return ::cuda::std::__calloc_device(__n, __size);))
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

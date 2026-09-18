@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -1212,10 +1213,10 @@ int CompareDeviceResults(
   }
 
   // Allocate array on host
-  T* h_data = (T*) malloc(num_items * sizeof(T));
+  const std::unique_ptr<T[]> h_data(new T[num_items]);
 
   // Copy data back
-  cudaMemcpy(h_data, d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
 
   // Display data
   if (display_data)
@@ -1234,15 +1235,7 @@ int CompareDeviceResults(
   }
 
   // Check
-  const int retval = CompareResults(h_data, h_reference, num_items, verbose);
-
-  // Cleanup
-  if (h_data)
-  {
-    free(h_data);
-  }
-
-  return retval;
+  return CompareResults(h_data.get(), h_reference, num_items, verbose);
 }
 
 /**
@@ -1254,12 +1247,12 @@ int CompareDeviceDeviceResults(
   T* d_reference, T* d_data, std::size_t num_items, bool verbose = true, bool display_data = false)
 {
   // Allocate array on host
-  T* h_reference = (T*) malloc(num_items * sizeof(T));
-  T* h_data      = (T*) malloc(num_items * sizeof(T));
+  const std::unique_ptr<T[]> h_reference(new T[num_items]);
+  const std::unique_ptr<T[]> h_data(new T[num_items]);
 
   // Copy data back
-  cudaMemcpy(h_reference, d_reference, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
-  cudaMemcpy(h_data, d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_reference.get(), d_reference, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
 
   // Display data
   if (display_data)
@@ -1278,19 +1271,7 @@ int CompareDeviceDeviceResults(
   }
 
   // Check
-  int retval = CompareResults(h_data, h_reference, num_items, verbose);
-
-  // Cleanup
-  if (h_reference)
-  {
-    free(h_reference);
-  }
-  if (h_data)
-  {
-    free(h_data);
-  }
-
-  return retval;
+  return CompareResults(h_data.get(), h_reference.get(), num_items, verbose);
 }
 
 /**
@@ -1319,18 +1300,12 @@ template <typename T>
 void DisplayDeviceResults(T* d_data, std::size_t num_items)
 {
   // Allocate array on host
-  T* h_data = (T*) malloc(num_items * sizeof(T));
+  const std::unique_ptr<T[]> h_data(new T[num_items]);
 
   // Copy data back
-  cudaMemcpy(h_data, d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
 
-  DisplayResults(h_data, num_items);
-
-  // Cleanup
-  if (h_data)
-  {
-    free(h_data);
-  }
+  DisplayResults(h_data.get(), num_items);
 }
 
 /******************************************************************************

@@ -71,7 +71,7 @@ template <class... _Args>
 _CCCL_HOST_DEVICE_API void __cccl_operator_delete(void* __ptr, align_val_t __align, _Args... __args)
 {
 #if _CCCL_CUDA_COMPILER(CLANG) && _CCCL_DEVICE_COMPILATION()
-  ::cuda::std::free(__ptr);
+  ::cuda::std::free(__ptr); // NOLINT(cppcoreguidelines-no-malloc)
 #else // ^^^ clang-cuda in device mode ^^^ / vvv other vvv
   return ::operator delete(__ptr, __align, __args...);
 #endif // ^^^ other ^^^
@@ -82,7 +82,7 @@ template <class... _Args>
 _CCCL_HOST_DEVICE_API void __cccl_operator_delete(void* __ptr, size_t __size, align_val_t __align, _Args... __args)
 {
 #  if _CCCL_CUDA_COMPILER(CLANG) && _CCCL_DEVICE_COMPILATION()
-  ::cuda::std::free(__ptr);
+  ::cuda::std::free(__ptr); // NOLINT(cppcoreguidelines-no-malloc)
 #  else // ^^^ clang-cuda in device mode ^^^ / vvv other vvv
   return ::operator delete(__ptr, __size, __align, __args...);
 #  endif // ^^^ other ^^^

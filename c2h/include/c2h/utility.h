@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <typeinfo>
 #ifdef __GNUC__
@@ -17,11 +18,11 @@ namespace c2h
 inline std::string demangle(const char* name)
 {
 #if __GNUC__ && !_NVHPC_CUDA
-  int status     = 0;
-  char* realname = abi::__cxa_demangle(name, nullptr, nullptr, &status);
-  std::string result(realname);
-  std::free(realname);
-  return result;
+  int status = 0;
+  // Retain ownership if string construction throws.
+  const std::unique_ptr<char, decltype(&std::free)> realname{
+    abi::__cxa_demangle(name, nullptr, nullptr, &status), &std::free};
+  return realname.get();
 #else // __GNUC__ && !_NVHPC_CUDA
   return name;
 #endif // __GNUC__ && !_NVHPC_CUDA
