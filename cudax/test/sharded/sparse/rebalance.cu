@@ -21,7 +21,7 @@
  *        decreases — not exact values, which are hardware-dependent.
  */
 
-#include <cuda/experimental/__sharded/sparse.cuh> // opt-in vendor tier
+#include <cuda/experimental/__sharded/sparse/sparse.cuh> // opt-in vendor tier
 #include <cuda/experimental/sharded.cuh>
 
 #include <algorithm>

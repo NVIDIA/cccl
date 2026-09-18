@@ -36,3 +36,4 @@
 #include <cuda/experimental/__places/place_partition.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__places/stream_pool.cuh>
+#include <cuda/experimental/__places/stream_scope.cuh>

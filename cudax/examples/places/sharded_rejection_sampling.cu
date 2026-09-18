@@ -49,7 +49,7 @@
  * (even) shard boundaries and comparing the accepted bytes.
  */
 
-#include <cuda/experimental/__sharded/random.cuh> // opt-in vendor tier
+#include <cuda/experimental/__sharded/algorithm/random/random.cuh> // opt-in vendor tier
 #include <cuda/experimental/sharded.cuh>
 
 #include <algorithm>

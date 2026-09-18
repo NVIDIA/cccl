@@ -13,7 +13,7 @@
  *
  * @brief Parity of the live sharded transforms (direct per-shard launches,
  *        `transform.cuh`) against the MGMN-engine reference implementation
- *        (`reserved::mgmn_engine`, `mgmn_transform.cuh`): `transform` and
+ *        (`reserved::mgmn_engine`, `reference/mgmn_transform.cuh`): `transform` and
  *        `zip_transform` — self-bound, explicit-environments, synchronous
  *        and stream-bearing, unary through 3-ary, in place into an input —
  *        are compared BITWISE (bit patterns, never floating-point `==`) on
@@ -26,7 +26,7 @@
  *        spellings must produce identical bits.
  */
 
-#include <cuda/experimental/__sharded/mgmn_transform.cuh>
+#include <cuda/experimental/__sharded/reference/mgmn_transform.cuh>
 #include <cuda/experimental/sharded.cuh>
 
 #include <cstring>

@@ -19,7 +19,7 @@
  *        be re-run when the toolkit changes.
  */
 
-#include <cuda/experimental/__sharded/random.cuh> // opt-in vendor tier
+#include <cuda/experimental/__sharded/algorithm/random/random.cuh> // opt-in vendor tier
 #include <cuda/experimental/sharded.cuh>
 
 #include <cstdio>
@@ -129,7 +129,8 @@ int run_case(const char* name, place_group& group, bool normal)
     for (size_t i = 0; i < pieces.size(); i++)
     {
       const size_t p = i % group.size();
-      envs.push_back(place_group::env(group.place(p).affine_data_place(), group.get_stream(p, (i / group.size()) % group.num_lanes())));
+      envs.push_back(place_group::env(
+        group.place(p).affine_data_place(), group.get_stream(p, (i / group.size()) % group.num_lanes())));
     }
 
     if (normal)

@@ -1,7 +1,6 @@
 set(
   sharded_test_sources
   include_only.cu
-  stream_scope.cu
   concepts/models.cu
   concepts/foreign_models.cu
   containers/sharded_array.cu
@@ -60,27 +59,46 @@ function(cudax_add_sharded_test target_name_var source)
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
+## cudax_add_sharded_standalone_header
+#
+# Add a compile-only executable that includes just `header` (a path relative
+# to `cudax/include`), and register it with ctest. The target is named after
+# the header's path below `__sharded/`, with `/` replaced by `.`.
+#
+function(cudax_add_sharded_standalone_header target_name_var header)
+  string(REPLACE "cuda/experimental/__sharded/" "" test_label "${header}")
+  string(REPLACE ".cuh" "" test_label "${test_label}")
+  string(REPLACE "/" "." test_label "${test_label}")
+
+  set(test_target cudax.test.sharded.header_standalone.${test_label})
+
+  cccl_add_executable(${test_target} SOURCES header_standalone.cu ADD_CTEST)
+  cudax_places_configure_target(${test_target})
+  target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
+  target_compile_definitions(
+    ${test_target}
+    PRIVATE "CUDAX_SHARDED_HEADER=<${header}>"
+  )
+
+  set(${target_name_var} ${test_target} PARENT_SCOPE)
+endfunction()
+
 foreach (source IN LISTS sharded_test_sources)
   cudax_add_sharded_test(test_target "${source}")
 endforeach()
 
-# Vendor tier: cuRAND (random.cuh is opt-in and not part of the umbrella).
+# Vendor tier: cuRAND (algorithm/random/random.cuh is opt-in and not part of
+# the umbrella).
 cudax_add_sharded_test(curand_test_target "algorithms/random_fill.cu")
 target_link_libraries(${curand_test_target} PRIVATE CUDA::curand)
 
-set(test_target cudax.test.sharded.header_standalone.random)
-cccl_add_executable(${test_target} SOURCES header_standalone.cu ADD_CTEST)
-cudax_places_configure_target(${test_target})
-target_link_libraries(
-  ${test_target}
-  PRIVATE cudax.compiler_interface CUDA::curand
+cudax_add_sharded_standalone_header(
+  curand_header_target
+  "cuda/experimental/__sharded/algorithm/random/random.cuh"
 )
-target_compile_definitions(
-  ${test_target}
-  PRIVATE "CUDAX_SHARDED_HEADER=<cuda/experimental/__sharded/random.cuh>"
-)
+target_link_libraries(${curand_header_target} PRIVATE CUDA::curand)
 
-# Math-library tier: cuSPARSE (sparse.cuh is opt-in; the sharded_csr container
+# Math-library tier: cuSPARSE (sparse/ is opt-in; the sharded_csr container
 # itself is vendor-free and tested in the main list above), behind the same
 # switch as STF's cuBLAS/cuSOLVER tests.
 if (cudax_ENABLE_CUDASTF_MATHLIBS)
@@ -93,47 +111,59 @@ if (cudax_ENABLE_CUDASTF_MATHLIBS)
     target_link_libraries(${cusparse_test_target} PRIVATE CUDA::cusparse)
   endforeach()
 
-  set(test_target cudax.test.sharded.header_standalone.sparse)
-  cccl_add_executable(${test_target} SOURCES header_standalone.cu ADD_CTEST)
-  cudax_places_configure_target(${test_target})
-  target_link_libraries(
-    ${test_target}
-    PRIVATE cudax.compiler_interface CUDA::cusparse
+  foreach (
+    header
+    IN
+    ITEMS
+      cuda/experimental/__sharded/sparse/cusparse.cuh
+      cuda/experimental/__sharded/sparse/rebalance.cuh
+      cuda/experimental/__sharded/sparse/sparse.cuh
+      cuda/experimental/__sharded/sparse/spmm.cuh
+      cuda/experimental/__sharded/sparse/spmv.cuh
   )
-  target_compile_definitions(
-    ${test_target}
-    PRIVATE "CUDAX_SHARDED_HEADER=<cuda/experimental/__sharded/sparse.cuh>"
-  )
+    cudax_add_sharded_standalone_header(cusparse_header_target "${header}")
+    target_link_libraries(${cusparse_header_target} PRIVATE CUDA::cusparse)
+  endforeach()
 endif()
 
 ## Header hygiene: every `__sharded` header must compile on its own, so that
 ## no header silently depends on a name another header happens to introduce
 ## first. One compile-only target per header, each including just that one.
-## (`__sharded/legacy/` — the temporary reference implementations — is not
-## enumerated: the glob is not recursive; `legacy_parity.cu` compiles them.
-## `mgmn_transform.cuh`, the MGMN-engine reference transform, is a sibling
-## header and gets its target like any other; the umbrella does not include
-## it.)
-file(
-  GLOB sharded_headers
-  RELATIVE
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__sharded"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__sharded/*.cuh"
+## Listed explicitly (like `places_unittested_headers`): `__sharded/reference/`
+## — the non-shipping comparison implementations — gets no targets and is
+## compiled by the tests that include it (`legacy_parity.cu`,
+## `engine_parity.cu`); the vendor tiers (`algorithm/random/`, `sparse/`) are
+## registered in the gated vendor blocks above.
+set(
+  sharded_standalone_headers
+  cuda/experimental/__sharded/concepts.cuh
+  cuda/experimental/__sharded/cuda_safe_call.cuh
+  cuda/experimental/__sharded/concepts/env.cuh
+  cuda/experimental/__sharded/concepts/guards.cuh
+  cuda/experimental/__sharded/concepts/view.cuh
+  cuda/experimental/__sharded/container/csr.cuh
+  cuda/experimental/__sharded/container/default_envs.cuh
+  cuda/experimental/__sharded/container/shard.cuh
+  cuda/experimental/__sharded/container/sharded_array.cuh
+  cuda/experimental/__sharded/composition/fork_join.cuh
+  cuda/experimental/__sharded/composition/pinned_staging.cuh
+  cuda/experimental/__sharded/composition/verbs.cuh
+  cuda/experimental/__sharded/engine/generic_map.cuh
+  cuda/experimental/__sharded/engine/mgmn.cuh
+  cuda/experimental/__sharded/algorithm/adjacent_difference/adjacent_difference.cuh
+  cuda/experimental/__sharded/algorithm/copy_if/copy_if.cuh
+  cuda/experimental/__sharded/algorithm/count/count.cuh
+  cuda/experimental/__sharded/algorithm/fill/fill.cuh
+  cuda/experimental/__sharded/algorithm/histogram/histogram.cuh
+  cuda/experimental/__sharded/algorithm/reduce/reduce.cuh
+  cuda/experimental/__sharded/algorithm/scan/scan.cuh
+  cuda/experimental/__sharded/algorithm/segmented_reduce/segmented_reduce.cuh
+  cuda/experimental/__sharded/algorithm/sort/shared_va.cuh
+  cuda/experimental/__sharded/algorithm/sort/sort.cuh
+  cuda/experimental/__sharded/algorithm/transform/transform.cuh
+  cuda/experimental/__sharded/algorithm/unique/unique.cuh
 )
 
-# Vendor headers are opt-in and require their library's dev headers: their
-# hygiene targets are registered in the gated vendor blocks below instead.
-list(REMOVE_ITEM sharded_headers random.cuh sparse.cuh)
-
-foreach (header IN LISTS sharded_headers)
-  get_filename_component(header_name "${header}" NAME_WE)
-  set(test_target cudax.test.sharded.header_standalone.${header_name})
-
-  cccl_add_executable(${test_target} SOURCES header_standalone.cu ADD_CTEST)
-  cudax_places_configure_target(${test_target})
-  target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
-  target_compile_definitions(
-    ${test_target}
-    PRIVATE "CUDAX_SHARDED_HEADER=<cuda/experimental/__sharded/${header}>"
-  )
+foreach (header IN LISTS sharded_standalone_headers)
+  cudax_add_sharded_standalone_header(test_target "${header}")
 endforeach()

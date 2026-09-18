@@ -113,7 +113,7 @@ environment selects the contract):
   on the shard's stream): the map family never communicates, so it does
   not go through the communicator-based engines. An implementation of the
   same two verbs on the MGMN transform engine exists internally
-  (``reserved::mgmn_engine``, ``__sharded/mgmn_transform.cuh``, not part of
+  (``reserved::mgmn_engine``, ``__sharded/reference/mgmn_transform.cuh``, not part of
   the API) as the comparison point for the interfacing cost of those
   engines;
 - ``reduce`` / ``sum`` / ``min`` / ``max``, ``reduce_into``,
@@ -201,9 +201,9 @@ Generic algorithms need no execution-place object: work launched into a
 shard's stream executes in the stream's context with the stream's SM
 confinement (``stream_scope`` supplies the one thing a launch needs from the
 calling thread — device currency — derived from the stream itself; see
-``test/sharded/stream_scope.cu``).
+``test/places/stream_scope.cu``).
 
-``cuda/experimental/__sharded/legacy/`` holds the previous hand-written
+``cuda/experimental/__sharded/reference/`` holds the previous hand-written
 bodies of the reductions and scans as a *temporary* reference for
 parity and overhead measurement (``reserved::legacy``); it is not part of the
 API, not included by the umbrella header, and will be removed.

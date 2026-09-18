@@ -22,27 +22,35 @@
  * Built on the standalone places layer (`cuda/experimental/places.cuh`), in
  * particular `place_group` (execution resources) and `localized_array` (the
  * VMM backing of `sharded_array<T>::allocate_contiguous`).
+ *
+ * Layout of `__sharded/`: `concepts/` (what the algorithms are written
+ * against), `container/` (the reference models), `composition/` (the
+ * cross-lane verbs), `algorithm/<name>/` (the verbs), `engine/` (the drivers
+ * the algorithms include themselves — not part of this umbrella), `sparse/`
+ * and `algorithm/random/` (opt-in vendor tiers, not part of this umbrella)
+ * and `reference/` (non-shipping comparison implementations, never
+ * included).
  */
 
 #pragma once
 
 #include <cuda/experimental/__places/place_group.cuh>
-#include <cuda/experimental/__sharded/adjacent_difference.cuh>
-#include <cuda/experimental/__sharded/composition.cuh>
+#include <cuda/experimental/__sharded/algorithm/adjacent_difference/adjacent_difference.cuh>
+#include <cuda/experimental/__sharded/algorithm/copy_if/copy_if.cuh>
+#include <cuda/experimental/__sharded/algorithm/count/count.cuh>
+#include <cuda/experimental/__sharded/algorithm/fill/fill.cuh>
+#include <cuda/experimental/__sharded/algorithm/histogram/histogram.cuh>
+#include <cuda/experimental/__sharded/algorithm/reduce/reduce.cuh>
+#include <cuda/experimental/__sharded/algorithm/scan/scan.cuh>
+#include <cuda/experimental/__sharded/algorithm/segmented_reduce/segmented_reduce.cuh>
+#include <cuda/experimental/__sharded/algorithm/sort/sort.cuh>
+#include <cuda/experimental/__sharded/algorithm/transform/transform.cuh>
+#include <cuda/experimental/__sharded/algorithm/unique/unique.cuh>
+#include <cuda/experimental/__sharded/composition/fork_join.cuh>
+#include <cuda/experimental/__sharded/composition/pinned_staging.cuh>
+#include <cuda/experimental/__sharded/composition/verbs.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
-#include <cuda/experimental/__sharded/copy_if.cuh>
-#include <cuda/experimental/__sharded/count.cuh>
-#include <cuda/experimental/__sharded/default_envs.cuh>
-#include <cuda/experimental/__sharded/fill.cuh>
-#include <cuda/experimental/__sharded/histogram.cuh>
-#include <cuda/experimental/__sharded/mgmn_adapter.cuh>
-#include <cuda/experimental/__sharded/reduce.cuh>
-#include <cuda/experimental/__sharded/scan.cuh>
-#include <cuda/experimental/__sharded/segmented_reduce.cuh>
-#include <cuda/experimental/__sharded/shard.cuh>
-#include <cuda/experimental/__sharded/sharded_array.cuh>
-#include <cuda/experimental/__sharded/sharded_csr.cuh>
-#include <cuda/experimental/__sharded/sort.cuh>
-#include <cuda/experimental/__sharded/stream_scope.cuh>
-#include <cuda/experimental/__sharded/transform.cuh>
-#include <cuda/experimental/__sharded/unique.cuh>
+#include <cuda/experimental/__sharded/container/csr.cuh>
+#include <cuda/experimental/__sharded/container/default_envs.cuh>
+#include <cuda/experimental/__sharded/container/shard.cuh>
+#include <cuda/experimental/__sharded/container/sharded_array.cuh>

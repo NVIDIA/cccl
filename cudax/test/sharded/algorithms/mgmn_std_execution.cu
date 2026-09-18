@@ -23,7 +23,7 @@
 
 #include <cuda/std/execution>
 
-#include <cuda/experimental/__sharded/mgmn_transform.cuh>
+#include <cuda/experimental/__sharded/reference/mgmn_transform.cuh>
 #include <cuda/experimental/sharded.cuh>
 
 #include <vector>

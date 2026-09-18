@@ -12,7 +12,7 @@
  * @file
  *
  * @brief Parity of the live sharded verbs (MGMN engines) against the legacy
- *        reference implementations of `__sharded/legacy/`: `reduce`,
+ *        reference implementations of `__sharded/reference/`: `reduce`,
  *        `reduce_into`, `reduce_into_lanes`, the scans and the sums are
  *        compared BITWISE (bit patterns, never floating-point
  *        `==`) on the locality-domain group and on a single-place group, at
@@ -26,8 +26,8 @@
  *        the MGMN-engine reference is `engine_parity.cu`.)
  */
 
-#include <cuda/experimental/__sharded/legacy/reduce.cuh>
-#include <cuda/experimental/__sharded/legacy/scan.cuh>
+#include <cuda/experimental/__sharded/reference/legacy_reduce.cuh>
+#include <cuda/experimental/__sharded/reference/legacy_scan.cuh>
 #include <cuda/experimental/sharded.cuh>
 
 #include <cstring>

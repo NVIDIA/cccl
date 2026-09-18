@@ -17,7 +17,7 @@
  *        over (environments from elsewhere get a per-call group); the sharded
  *        verbs whose engine is an MGMN algorithm (reduce, reduce_into_lanes,
  *        inclusive/exclusive scan) and the MGMN-engine reference transforms
- *        (`reserved::mgmn_engine`, `mgmn_transform.cuh`) agree with host
+ *        (`reserved::mgmn_engine`, `reference/mgmn_transform.cuh`) agree with host
  *        references and with the live direct transforms —
  *        on a locality-domain group and on a single-place group, at
  *        divisible and non-divisible sizes, with custom operators and
@@ -28,7 +28,7 @@
 
 #include <cuda/__runtime/ensure_current_context.h>
 
-#include <cuda/experimental/__sharded/mgmn_transform.cuh>
+#include <cuda/experimental/__sharded/reference/mgmn_transform.cuh>
 #include <cuda/experimental/sharded.cuh>
 
 #include <algorithm>

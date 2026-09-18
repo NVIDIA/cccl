@@ -48,7 +48,7 @@
  * tiers composing on it in place.
  */
 
-#include <cuda/experimental/__sharded/sparse.cuh> // opt-in vendor tier
+#include <cuda/experimental/__sharded/sparse/sparse.cuh> // opt-in vendor tier
 #include <cuda/experimental/sharded.cuh>
 
 #include <cmath>
