@@ -70,9 +70,25 @@ def _exercise_copy(api_name, *, nested=False, repeats=1):
 
 
 @pytest.mark.parametrize("api", ("common", "qualified"))
-@pytest.mark.parametrize("order", ("cutlass-first", "root-first"))
+@pytest.mark.parametrize(
+    "order",
+    ("cutlass-first", "root-first", "root-first-register", "cutlass-first-register"),
+)
 def test_fresh_process_traces_with_either_import_order(tmp_path, api, order):
-    if order == "root-first":
+    if order.endswith("-register"):
+        compiler_import = (
+            "import cutlass.cute" if order.startswith("cutlass-first") else ""
+        )
+        imports = f"""
+        import os
+        os.environ["CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION"] = "1"
+        {compiler_import}
+        from cuda import coop
+        assert "cuda.coop.cutlass" not in sys.modules
+        assert coop.register("cutlass") is None
+        assert "cuda.coop.cutlass" in sys.modules
+        """
+    elif order == "root-first":
         imports = """
         import cuda.coop
         assert 'cutlass' not in sys.modules
