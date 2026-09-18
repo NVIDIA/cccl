@@ -48,6 +48,8 @@ __ptr_alignment(const void* __ptr, ::cuda::std::size_t __max_alignment) noexcept
 [[nodiscard]] _CCCL_API inline ::cuda::std::size_t
 __ptr_alignment(const volatile void* __ptr, ::cuda::std::size_t __max_alignment) noexcept
 {
+  // The query inspects only the address.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return ::cuda::__ptr_alignment(const_cast<const void*>(__ptr), __max_alignment);
 }
 
@@ -65,6 +67,8 @@ __ptr_alignment(const volatile void* __ptr, ::cuda::std::size_t __max_alignment)
 
 [[nodiscard]] _CCCL_API inline ::cuda::std::size_t __ptr_alignment(const volatile void* __ptr) noexcept
 {
+  // The query inspects only the address.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return ::cuda::__ptr_alignment(const_cast<const void*>(__ptr));
 }
 
