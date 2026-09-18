@@ -154,12 +154,12 @@ struct ConstrainedUserDeclaredDefaultConstructor<true>
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4200) // nonstandard extension used: zero-sized array in struct/union
 
-#if !TEST_COMPILER(GCC, <, 15) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
+#if !TEST_COMPILER(GCC) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
 struct StructWithFlexibleArrayMember
 {
   int arr[];
 };
-#endif // !TEST_COMPILER(GCC, <, 15) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
+#endif // !TEST_COMPILER(GCC) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
 
 #if !TEST_COMPILER(NVRTC)
 struct StructWithZeroSizedArray
@@ -295,9 +295,9 @@ TEST_FUNC constexpr bool test()
   test_is_implicit_lifetime<ConstrainedUserProvidedDestructor<false>, true>();
 #endif // TEST_STD_VER >= 2020
 
-#if !TEST_COMPILER(GCC, <, 15) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
+#if !TEST_COMPILER(GCC) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
   test_is_implicit_lifetime<StructWithFlexibleArrayMember, true>();
-#endif // !TEST_COMPILER(GCC, <, 15) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
+#endif // !TEST_COMPILER(GCC) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
 
 #if !TEST_COMPILER(NVRTC)
   test_is_implicit_lifetime<StructWithZeroSizedArray, true>();
