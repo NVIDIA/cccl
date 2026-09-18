@@ -18,7 +18,7 @@
 
 #include <unittest/unittest.h>
 
-void TestCopyFromConstIterator()
+TEST_CASE("TestCopyFromConstIterator", "[copy]")
 {
   using T = int;
 
@@ -42,12 +42,8 @@ void TestCopyFromConstIterator()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-TEST_CASE("TestCopyFromConstIterator", "[copy]")
-{
-  TestCopyFromConstIterator();
-}
 
-void TestCopyToDiscardIterator()
+TEST_CASE("TestCopyToDiscardIterator", "[copy]")
 {
   using T = int;
 
@@ -67,12 +63,8 @@ void TestCopyToDiscardIterator()
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-TEST_CASE("TestCopyToDiscardIterator", "[copy]")
-{
-  TestCopyToDiscardIterator();
-}
 
-void TestCopyToDiscardIteratorZipped()
+TEST_CASE("TestCopyToDiscardIteratorZipped", "[copy]")
 {
   using T = int;
 
@@ -105,10 +97,6 @@ void TestCopyToDiscardIteratorZipped()
   REQUIRE(d_output == d_input);
   REQUIRE(reference == cuda::std::get<0>(h_result.get_iterator_tuple()));
   REQUIRE(reference == cuda::std::get<0>(d_result.get_iterator_tuple()));
-}
-TEST_CASE("TestCopyToDiscardIteratorZipped", "[copy]")
-{
-  TestCopyToDiscardIteratorZipped();
 }
 
 template <class Vector>
@@ -161,7 +149,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyMixedTypes);
 
 _CCCL_DIAG_POP
 
-void TestCopyVectorBool()
+TEST_CASE("TestCopyVectorBool", "[copy]")
 {
   std::vector<bool> v{true, false, true};
 
@@ -176,10 +164,6 @@ void TestCopyVectorBool()
 
   const thrust::device_vector<bool> dref{true, false, true};
   REQUIRE(d == dref);
-}
-TEST_CASE("TestCopyVectorBool", "[copy]")
-{
-  TestCopyVectorBool();
 }
 
 template <class Vector>
@@ -460,7 +444,7 @@ struct always_true
 };
 } // namespace
 
-void TestCopyIfNonTrivial()
+TEST_CASE("TestCopyIfNonTrivial", "[copy]")
 {
   // Attempting to copy an object_with_non_trivial_ctor into uninitialized
   // memory will fail:
@@ -500,10 +484,6 @@ void TestCopyIfNonTrivial()
 
     REQUIRE(ia == ib);
   }
-}
-TEST_CASE("TestCopyIfNonTrivial", "[copy]")
-{
-  TestCopyIfNonTrivial();
 }
 
 template <typename Vector>
@@ -579,7 +559,7 @@ OutputIterator copy(my_system& system, InputIterator, InputIterator, OutputItera
   return result;
 }
 
-void TestCopyDispatchExplicit()
+TEST_CASE("TestCopyDispatchExplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -587,10 +567,6 @@ void TestCopyDispatchExplicit()
   thrust::copy(sys, vec.begin(), vec.end(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestCopyDispatchExplicit", "[copy]")
-{
-  TestCopyDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator>
@@ -600,17 +576,13 @@ OutputIterator copy(my_tag, InputIterator, InputIterator, OutputIterator result)
   return result;
 }
 
-void TestCopyDispatchImplicit()
+TEST_CASE("TestCopyDispatchImplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::copy(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestCopyDispatchImplicit", "[copy]")
-{
-  TestCopyDispatchImplicit();
 }
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
@@ -620,7 +592,7 @@ OutputIterator copy_if(my_system& system, InputIterator, InputIterator, OutputIt
   return result;
 }
 
-void TestCopyIfDispatchExplicit()
+TEST_CASE("TestCopyIfDispatchExplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -628,10 +600,6 @@ void TestCopyIfDispatchExplicit()
   thrust::copy_if(sys, vec.begin(), vec.end(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestCopyIfDispatchExplicit", "[copy]")
-{
-  TestCopyIfDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
@@ -641,7 +609,7 @@ OutputIterator copy_if(my_tag, InputIterator, InputIterator, OutputIterator resu
   return result;
 }
 
-void TestCopyIfDispatchImplicit()
+TEST_CASE("TestCopyIfDispatchImplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -649,10 +617,6 @@ void TestCopyIfDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestCopyIfDispatchImplicit", "[copy]")
-{
-  TestCopyIfDispatchImplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
@@ -663,7 +627,7 @@ copy_if(my_system& system, InputIterator1, InputIterator1, InputIterator2, Outpu
   return result;
 }
 
-void TestCopyIfStencilDispatchExplicit()
+TEST_CASE("TestCopyIfStencilDispatchExplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -671,10 +635,6 @@ void TestCopyIfStencilDispatchExplicit()
   thrust::copy_if(sys, vec.begin(), vec.end(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestCopyIfStencilDispatchExplicit", "[copy]")
-{
-  TestCopyIfStencilDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
@@ -684,7 +644,7 @@ OutputIterator copy_if(my_tag, InputIterator1, InputIterator1, InputIterator2, O
   return result;
 }
 
-void TestCopyIfStencilDispatchImplicit()
+TEST_CASE("TestCopyIfStencilDispatchImplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -696,10 +656,6 @@ void TestCopyIfStencilDispatchImplicit()
     0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestCopyIfStencilDispatchImplicit", "[copy]")
-{
-  TestCopyIfStencilDispatchImplicit();
 }
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -797,16 +753,12 @@ void TestCopyWithBigIndexesHelper(int magnitude)
   REQUIRE(has_executed_h);
 }
 
-void TestCopyWithBigIndexes()
+TEST_CASE("TestCopyWithBigIndexes", "[copy]")
 {
   TestCopyWithBigIndexesHelper(30);
   TestCopyWithBigIndexesHelper(31);
   TestCopyWithBigIndexesHelper(32);
   TestCopyWithBigIndexesHelper(33);
-}
-TEST_CASE("TestCopyWithBigIndexes", "[copy]")
-{
-  TestCopyWithBigIndexes();
 }
 
 #endif

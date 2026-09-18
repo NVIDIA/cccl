@@ -26,7 +26,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetUnionByKeyDispatchExplicit()
+TEST_CASE("TestSetUnionByKeyDispatchExplicit", "[set_union_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -35,10 +35,6 @@ void TestSetUnionByKeyDispatchExplicit()
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestSetUnionByKeyDispatchExplicit", "[set_union_by_key]")
-{
-  TestSetUnionByKeyDispatchExplicit();
 }
 
 template <typename InputIterator1,
@@ -62,7 +58,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetUnionByKeyDispatchImplicit()
+TEST_CASE("TestSetUnionByKeyDispatchImplicit", "[set_union_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -77,10 +73,6 @@ void TestSetUnionByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestSetUnionByKeyDispatchImplicit", "[set_union_by_key]")
-{
-  TestSetUnionByKeyDispatchImplicit();
 }
 
 template <typename Vector>

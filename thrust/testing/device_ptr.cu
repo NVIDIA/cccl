@@ -12,7 +12,7 @@ static_assert(std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 #endif // __cpp_lib_concepts
 static_assert(cuda::std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 
-void TestDevicePointerManipulation()
+TEST_CASE("TestDevicePointerManipulation", "[device_ptr]")
 {
   thrust::device_vector<int> data(5);
 
@@ -56,12 +56,8 @@ void TestDevicePointerManipulation()
 
   REQUIRE(end - begin == 5);
 }
-TEST_CASE("TestDevicePointerManipulation", "[device_ptr]")
-{
-  TestDevicePointerManipulation();
-}
 
-void TestMakeDevicePointer()
+TEST_CASE("TestMakeDevicePointer", "[device_ptr]")
 {
   using T = int;
 
@@ -74,10 +70,6 @@ void TestMakeDevicePointer()
   const thrust::device_ptr<T> p1 = thrust::device_pointer_cast(p0);
 
   REQUIRE(p0 == p1);
-}
-TEST_CASE("TestMakeDevicePointer", "[device_ptr]")
-{
-  TestMakeDevicePointer();
 }
 
 template <typename Vector>
@@ -130,7 +122,7 @@ void TestDevicePointerBoolConversion()
 }
 DECLARE_GENERIC_UNITTEST(TestDevicePointerBoolConversion);
 
-void TestDevicePointerCompare()
+TEST_CASE("TestDevicePointerCompare", "[device_ptr]")
 {
   using T1 = int;
 
@@ -233,10 +225,6 @@ void TestDevicePointerCompare()
     static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<device_ptr, other_ptr>);
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ptr, other_ptr>);
   }
-}
-TEST_CASE("TestDevicePointerCompare", "[device_ptr]")
-{
-  TestDevicePointerCompare();
 }
 
 template <typename Vector>

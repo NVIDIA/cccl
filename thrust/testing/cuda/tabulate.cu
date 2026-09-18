@@ -48,26 +48,18 @@ void TestTabulateDevice(ExecutionPolicy exec)
   REQUIRE(v == ref);
 }
 
-void TestTabulateDeviceSeq()
+TEST_CASE("TestTabulateDeviceSeq", "[tabulate]")
 {
   TestTabulateDevice(thrust::seq);
 }
-TEST_CASE("TestTabulateDeviceSeq", "[tabulate]")
-{
-  TestTabulateDeviceSeq();
-}
 
-void TestTabulateDeviceDevice()
+TEST_CASE("TestTabulateDeviceDevice", "[tabulate]")
 {
   TestTabulateDevice(thrust::device);
 }
-TEST_CASE("TestTabulateDeviceDevice", "[tabulate]")
-{
-  TestTabulateDeviceDevice();
-}
 #endif
 
-void TestTabulateCudaStreams()
+TEST_CASE("TestTabulateCudaStreams", "[tabulate]")
 {
   using namespace thrust::placeholders;
   using Vector = thrust::device_vector<int>;
@@ -97,8 +89,4 @@ void TestTabulateCudaStreams()
   REQUIRE(v == ref);
 
   cudaStreamSynchronize(s);
-}
-TEST_CASE("TestTabulateCudaStreams", "[tabulate]")
-{
-  TestTabulateCudaStreams();
 }

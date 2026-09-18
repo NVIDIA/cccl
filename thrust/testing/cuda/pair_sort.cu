@@ -46,21 +46,13 @@ void TestPairStableSortDevice(ExecutionPolicy exec)
   REQUIRE((h_pairs == d_pairs));
 };
 
-void TestPairStableSortDeviceSeq()
+TEST_CASE("TestPairStableSortDeviceSeq", "[pair_sort]")
 {
   TestPairStableSortDevice(thrust::seq);
 }
-TEST_CASE("TestPairStableSortDeviceSeq", "[pair_sort]")
-{
-  TestPairStableSortDeviceSeq();
-}
 
-void TestPairStableSortDeviceDevice()
-{
-  TestPairStableSortDevice(thrust::device);
-}
 TEST_CASE("TestPairStableSortDeviceDevice", "[pair_sort]")
 {
-  TestPairStableSortDeviceDevice();
+  TestPairStableSortDevice(thrust::device);
 }
 #endif

@@ -12,7 +12,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::transform_iterator from cuda::std
-void TestTransformIteratorTraits()
+TEST_CASE("TestTransformIteratorTraits", "[transform_iterator]")
 {
   using func    = ::cuda::std::negate<int>;
   using base_it = thrust::host_vector<int>::iterator;
@@ -36,10 +36,6 @@ void TestTransformIteratorTraits()
   static_assert(cuda::std::bidirectional_iterator<it>);
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
-}
-TEST_CASE("TestTransformIteratorTraits", "[transform_iterator]")
-{
-  TestTransformIteratorTraits();
 }
 
 template <class Vector>
@@ -121,7 +117,7 @@ struct ExtractValue
   }
 };
 
-void TestTransformIteratorNonCopyable()
+TEST_CASE("TestTransformIteratorNonCopyable", "[transform_iterator]")
 {
   thrust::host_vector<std::unique_ptr<int>> hv(4);
   hv[0] = std::make_unique<int>(1);
@@ -134,11 +130,6 @@ void TestTransformIteratorNonCopyable()
   REQUIRE(transformed[1] == 2);
   REQUIRE(transformed[2] == 3);
   REQUIRE(transformed[3] == 4);
-}
-
-TEST_CASE("TestTransformIteratorNonCopyable", "[transform_iterator]")
-{
-  TestTransformIteratorNonCopyable();
 }
 
 struct flip_value
@@ -167,7 +158,7 @@ struct forward
   }
 };
 
-void TestTransformIteratorReferenceAndValueType()
+TEST_CASE("TestTransformIteratorReferenceAndValueType", "[transform_iterator]")
 {
   using ::cuda::std::is_same;
   using ::cuda::std::negate;
@@ -246,21 +237,12 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value);
   }
 }
-TEST_CASE("TestTransformIteratorReferenceAndValueType", "[transform_iterator]")
-{
-  TestTransformIteratorReferenceAndValueType();
-}
 
-void TestTransformIteratorIdentity()
+TEST_CASE("TestTransformIteratorIdentity", "[transform_iterator]")
 {
   thrust::device_vector<int> v(3, 42);
 
   REQUIRE(*thrust::make_transform_iterator(v.begin(), cuda::std::identity{}) == 42);
   using namespace thrust::placeholders;
   REQUIRE(*thrust::make_transform_iterator(v.begin(), _1) == 42);
-}
-
-TEST_CASE("TestTransformIteratorIdentity", "[transform_iterator]")
-{
-  TestTransformIteratorIdentity();
 }

@@ -39,7 +39,7 @@ int reduce(my_system& system, InputIterator, InputIterator)
   return 13;
 }
 
-void TestReduceDispatchExplicit()
+TEST_CASE("TestReduceDispatchExplicit", "[reduce]")
 {
   thrust::device_vector<int> vec;
 
@@ -48,10 +48,6 @@ void TestReduceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestReduceDispatchExplicit", "[reduce]")
-{
-  TestReduceDispatchExplicit();
-}
 
 template <typename InputIterator>
 int reduce(my_tag, InputIterator, InputIterator)
@@ -59,17 +55,13 @@ int reduce(my_tag, InputIterator, InputIterator)
   return 13;
 }
 
-void TestReduceDispatchImplicit()
+TEST_CASE("TestReduceDispatchImplicit", "[reduce]")
 {
   thrust::device_vector<int> vec;
 
   const int result = thrust::reduce(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
   REQUIRE(13 == result);
-}
-TEST_CASE("TestReduceDispatchImplicit", "[reduce]")
-{
-  TestReduceDispatchImplicit();
 }
 
 template <typename T>
@@ -104,21 +96,13 @@ void TestReduceMixedTypes()
   // int -> float should use using plus<float> operator by default
   REQUIRE(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5) == 10.5);
 }
-void TestReduceMixedTypesHost()
+TEST_CASE("TestReduceMixedTypesHost", "[reduce]")
 {
   TestReduceMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
-TEST_CASE("TestReduceMixedTypesHost", "[reduce]")
-{
-  TestReduceMixedTypesHost();
-}
-void TestReduceMixedTypesDevice()
-{
-  TestReduceMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
-}
 TEST_CASE("TestReduceMixedTypesDevice", "[reduce]")
 {
-  TestReduceMixedTypesDevice();
+  TestReduceMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
 
 template <typename T>
@@ -201,7 +185,7 @@ void TestReduceWithBigIndexesHelper(int magnitude)
   REQUIRE(result == (1ll << magnitude));
 }
 
-void TestReduceWithBigIndexes()
+TEST_CASE("TestReduceWithBigIndexes", "[reduce]")
 {
   TestReduceWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -209,8 +193,4 @@ void TestReduceWithBigIndexes()
   TestReduceWithBigIndexesHelper(32);
   TestReduceWithBigIndexesHelper(33);
 #endif
-}
-TEST_CASE("TestReduceWithBigIndexes", "[reduce]")
-{
-  TestReduceWithBigIndexes();
 }

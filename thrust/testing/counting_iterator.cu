@@ -43,7 +43,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 // ensure that we properly support thrust::counting_iterator from cuda::std
-void TestCountingIteratorTraits()
+TEST_CASE("TestCountingIteratorTraits", "[counting_iterator]")
 {
   using it       = thrust::counting_iterator<int>;
   using traits   = cuda::std::iterator_traits<it>;
@@ -68,10 +68,6 @@ void TestCountingIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-TEST_CASE("TestCountingIteratorTraits", "[counting_iterator]")
-{
-  TestCountingIteratorTraits();
-}
 
 template <typename T>
 void TestCountingDefaultConstructor()
@@ -81,7 +77,7 @@ void TestCountingDefaultConstructor()
 }
 DECLARE_GENERIC_UNITTEST(TestCountingDefaultConstructor);
 
-void TestCountingIteratorCopyConstructor()
+TEST_CASE("TestCountingIteratorCopyConstructor", "[counting_iterator]")
 {
   const thrust::counting_iterator<int> iter0(100);
 
@@ -97,14 +93,10 @@ void TestCountingIteratorCopyConstructor()
   const thrust::counting_iterator<int, thrust::device_system_tag> d_iter = iter0;
   REQUIRE(*iter0 == *d_iter);
 }
-TEST_CASE("TestCountingIteratorCopyConstructor", "[counting_iterator]")
-{
-  TestCountingIteratorCopyConstructor();
-}
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value);
 static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value);
 
-void TestCountingIteratorIncrement()
+TEST_CASE("TestCountingIteratorIncrement", "[counting_iterator]")
 {
   thrust::counting_iterator<int> iter(0);
 
@@ -127,12 +119,8 @@ void TestCountingIteratorIncrement()
 
   REQUIRE(*iter == -2);
 }
-TEST_CASE("TestCountingIteratorIncrement", "[counting_iterator]")
-{
-  TestCountingIteratorIncrement();
-}
 
-void TestCountingIteratorComparison()
+TEST_CASE("TestCountingIteratorComparison", "[counting_iterator]")
 {
   thrust::counting_iterator<int> iter1(0);
   thrust::counting_iterator<int> iter2(0);
@@ -156,12 +144,8 @@ void TestCountingIteratorComparison()
   REQUIRE(iter1 - iter2 == 0);
   REQUIRE(iter1 == iter2);
 }
-TEST_CASE("TestCountingIteratorComparison", "[counting_iterator]")
-{
-  TestCountingIteratorComparison();
-}
 
-void TestCountingIteratorFloatComparison()
+TEST_CASE("TestCountingIteratorFloatComparison", "[counting_iterator]")
 {
   thrust::counting_iterator<float> iter1(0);
   thrust::counting_iterator<float> iter2(0);
@@ -223,12 +207,8 @@ void TestCountingIteratorFloatComparison()
   REQUIRE(iter3 < iter4);
   REQUIRE_FALSE(iter4 < iter3);
 }
-TEST_CASE("TestCountingIteratorFloatComparison", "[counting_iterator]")
-{
-  TestCountingIteratorFloatComparison();
-}
 
-void TestCountingIteratorDistance()
+TEST_CASE("TestCountingIteratorDistance", "[counting_iterator]")
 {
   thrust::counting_iterator<int> iter1(0);
   thrust::counting_iterator<int> iter2(5);
@@ -243,12 +223,8 @@ void TestCountingIteratorDistance()
 
   REQUIRE(::cuda::std::distance(iter1, iter2) == 104);
 }
-TEST_CASE("TestCountingIteratorDistance", "[counting_iterator]")
-{
-  TestCountingIteratorDistance();
-}
 
-void TestCountingIteratorUnsignedType()
+TEST_CASE("TestCountingIteratorUnsignedType", "[counting_iterator]")
 {
   const thrust::counting_iterator<unsigned int> iter0(0);
   const thrust::counting_iterator<unsigned int> iter1(5);
@@ -259,12 +235,8 @@ void TestCountingIteratorUnsignedType()
   REQUIRE(iter0 < iter1);
   REQUIRE_FALSE(iter1 < iter0);
 }
-TEST_CASE("TestCountingIteratorUnsignedType", "[counting_iterator]")
-{
-  TestCountingIteratorUnsignedType();
-}
 
-void TestCountingIteratorLowerBound()
+TEST_CASE("TestCountingIteratorLowerBound", "[counting_iterator]")
 {
   const size_t n = 10000;
   const size_t M = 100;
@@ -291,12 +263,8 @@ void TestCountingIteratorLowerBound()
 
   REQUIRE(h_result == d_result);
 }
-TEST_CASE("TestCountingIteratorLowerBound", "[counting_iterator]")
-{
-  TestCountingIteratorLowerBound();
-}
 
-void TestCountingIteratorDifference()
+TEST_CASE("TestCountingIteratorDifference", "[counting_iterator]")
 {
   using Iterator   = thrust::counting_iterator<std::uint64_t>;
   using Difference = thrust::detail::it_difference_t<Iterator>;
@@ -308,12 +276,8 @@ void TestCountingIteratorDifference()
 
   REQUIRE(diff == last - first);
 }
-TEST_CASE("TestCountingIteratorDifference", "[counting_iterator]")
-{
-  TestCountingIteratorDifference();
-}
 
-void TestCountingIteratorDynamicStride()
+TEST_CASE("TestCountingIteratorDynamicStride", "[counting_iterator]")
 {
   auto iter = thrust::make_counting_iterator(0, 2);
   static_assert(sizeof(iter) == 2 * sizeof(int));
@@ -329,12 +293,8 @@ void TestCountingIteratorDynamicStride()
   iter -= 10;
   REQUIRE(*iter == -4);
 }
-TEST_CASE("TestCountingIteratorDynamicStride", "[counting_iterator]")
-{
-  TestCountingIteratorDynamicStride();
-}
 
-void TestCountingIteratorStaticStride()
+TEST_CASE("TestCountingIteratorStaticStride", "[counting_iterator]")
 {
   auto iter = thrust::make_counting_iterator<2>(0);
   static_assert(sizeof(decltype(iter)) == sizeof(int));
@@ -350,12 +310,8 @@ void TestCountingIteratorStaticStride()
   iter -= 10;
   REQUIRE(*iter == -4);
 }
-TEST_CASE("TestCountingIteratorStaticStride", "[counting_iterator]")
-{
-  TestCountingIteratorStaticStride();
-}
 
-void TestCountingIteratorPointer()
+TEST_CASE("TestCountingIteratorPointer", "[counting_iterator]")
 {
   int arr[11];
   std::iota(arr, arr + 11, 0);
@@ -378,23 +334,15 @@ void TestCountingIteratorPointer()
   REQUIRE(*iter == &arr[0]);
   REQUIRE(**iter == 0);
 }
-TEST_CASE("TestCountingIteratorPointer", "[counting_iterator]")
-{
-  TestCountingIteratorPointer();
-}
 
 _CCCL_DIAG_POP
 
 // Test that counting_iterator<float> distance_to does not trigger
 // MSVC C4244 (implicit float-to-integer conversion) without suppression.
-void TestCountingIteratorFloatDistanceTo()
+TEST_CASE("TestCountingIteratorFloatDistanceTo", "[counting_iterator]")
 {
   const thrust::counting_iterator<float> iter1(0);
   const thrust::counting_iterator<float> iter2(5);
 
   REQUIRE(iter2 - iter1 == 5);
-}
-TEST_CASE("TestCountingIteratorFloatDistanceTo", "[counting_iterator]")
-{
-  TestCountingIteratorFloatDistanceTo();
 }

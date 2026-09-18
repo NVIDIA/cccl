@@ -30,7 +30,7 @@ merge(my_system& system, InputIterator1, InputIterator1, InputIterator2, InputIt
   return result;
 }
 
-void TestMergeDispatchExplicit()
+TEST_CASE("TestMergeDispatchExplicit", "[merge]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -38,10 +38,6 @@ void TestMergeDispatchExplicit()
   thrust::merge(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestMergeDispatchExplicit", "[merge]")
-{
-  TestMergeDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -51,7 +47,7 @@ OutputIterator merge(my_tag, InputIterator1, InputIterator1, InputIterator2, Inp
   return result;
 }
 
-void TestMergeDispatchImplicit()
+TEST_CASE("TestMergeDispatchImplicit", "[merge]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -62,10 +58,6 @@ void TestMergeDispatchImplicit()
                 thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestMergeDispatchImplicit", "[merge]")
-{
-  TestMergeDispatchImplicit();
 }
 
 template <typename T>

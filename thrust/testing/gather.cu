@@ -33,7 +33,7 @@ OutputIterator gather(my_system& system, InputIterator, InputIterator, RandomAcc
   return result;
 }
 
-void TestGatherDispatchExplicit()
+TEST_CASE("TestGatherDispatchExplicit", "[gather]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -41,10 +41,6 @@ void TestGatherDispatchExplicit()
   thrust::gather(sys, vec.begin(), vec.end(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestGatherDispatchExplicit", "[gather]")
-{
-  TestGatherDispatchExplicit();
 }
 
 template <typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
@@ -54,7 +50,7 @@ OutputIterator gather(my_tag, InputIterator, InputIterator, RandomAccessIterator
   return result;
 }
 
-void TestGatherDispatchImplicit()
+TEST_CASE("TestGatherDispatchImplicit", "[gather]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -64,10 +60,6 @@ void TestGatherDispatchImplicit()
                  thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestGatherDispatchImplicit", "[gather]")
-{
-  TestGatherDispatchImplicit();
 }
 
 template <typename T>
@@ -169,7 +161,7 @@ OutputIterator gather_if(
   return result;
 }
 
-void TestGatherIfDispatchExplicit()
+TEST_CASE("TestGatherIfDispatchExplicit", "[gather]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -177,10 +169,6 @@ void TestGatherIfDispatchExplicit()
   thrust::gather_if(sys, vec.begin(), vec.end(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestGatherIfDispatchExplicit", "[gather]")
-{
-  TestGatherIfDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator, typename OutputIterator>
@@ -196,7 +184,7 @@ OutputIterator gather_if(
   return result;
 }
 
-void TestGatherIfDispatchImplicit()
+TEST_CASE("TestGatherIfDispatchImplicit", "[gather]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -208,10 +196,6 @@ void TestGatherIfDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestGatherIfDispatchImplicit", "[gather]")
-{
-  TestGatherIfDispatchImplicit();
 }
 
 template <typename T>

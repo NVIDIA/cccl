@@ -12,14 +12,10 @@ void verify_stream()
   REQUIRE(stream == cudaStreamPerThread);
 }
 
-void TestPerThreadDefaultStream()
+TEST_CASE("TestPerThreadDefaultStream", "[stream_per_thread]")
 {
   verify_stream();
 
   std::thread t(verify_stream);
   t.join();
-}
-TEST_CASE("TestPerThreadDefaultStream", "[stream_per_thread]")
-{
-  TestPerThreadDefaultStream();
 }

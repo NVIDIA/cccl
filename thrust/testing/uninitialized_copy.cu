@@ -13,7 +13,7 @@ ForwardIterator uninitialized_copy(my_system& system, InputIterator, InputIterat
   return result;
 }
 
-void TestUninitializedCopyDispatchExplicit()
+TEST_CASE("TestUninitializedCopyDispatchExplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -21,10 +21,6 @@ void TestUninitializedCopyDispatchExplicit()
   thrust::uninitialized_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestUninitializedCopyDispatchExplicit", "[uninitialized_copy]")
-{
-  TestUninitializedCopyDispatchExplicit();
 }
 
 template <typename InputIterator, typename ForwardIterator>
@@ -34,7 +30,7 @@ ForwardIterator uninitialized_copy(my_tag, InputIterator, InputIterator, Forward
   return result;
 }
 
-void TestUninitializedCopyDispatchImplicit()
+TEST_CASE("TestUninitializedCopyDispatchImplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -42,10 +38,6 @@ void TestUninitializedCopyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestUninitializedCopyDispatchImplicit", "[uninitialized_copy]")
-{
-  TestUninitializedCopyDispatchImplicit();
 }
 
 template <typename InputIterator, typename Size, typename ForwardIterator>
@@ -55,7 +47,7 @@ ForwardIterator uninitialized_copy_n(my_system& system, InputIterator, Size, For
   return result;
 }
 
-void TestUninitializedCopyNDispatchExplicit()
+TEST_CASE("TestUninitializedCopyNDispatchExplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -63,10 +55,6 @@ void TestUninitializedCopyNDispatchExplicit()
   thrust::uninitialized_copy_n(sys, vec.begin(), vec.size(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestUninitializedCopyNDispatchExplicit", "[uninitialized_copy]")
-{
-  TestUninitializedCopyNDispatchExplicit();
 }
 
 template <typename InputIterator, typename Size, typename ForwardIterator>
@@ -76,17 +64,13 @@ ForwardIterator uninitialized_copy_n(my_tag, InputIterator, Size, ForwardIterato
   return result;
 }
 
-void TestUninitializedCopyNDispatchImplicit()
+TEST_CASE("TestUninitializedCopyNDispatchImplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::uninitialized_copy_n(thrust::retag<my_tag>(vec.begin()), vec.size(), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestUninitializedCopyNDispatchImplicit", "[uninitialized_copy]")
-{
-  TestUninitializedCopyNDispatchImplicit();
 }
 
 template <class Vector>

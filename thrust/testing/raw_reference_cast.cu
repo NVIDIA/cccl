@@ -10,7 +10,7 @@
 template <>
 inline constexpr bool thrust::detail::is_proxy_reference_v<std::vector<bool>::reference> = true;
 
-void TestRawReferenceCast()
+TEST_CASE("TestRawReferenceCast", "[raw_reference_cast]")
 {
   using ::cuda::std::is_same_v;
 
@@ -57,8 +57,4 @@ void TestRawReferenceCast()
     [[maybe_unused]] std::vector<bool> vb; // NOLINT(misc-const-correctness)
     static_assert(is_same_v<decltype(thrust::raw_reference_cast(vb[0])), std::vector<bool>::reference>);
   }
-}
-TEST_CASE("TestRawReferenceCast", "[raw_reference_cast]")
-{
-  TestRawReferenceCast();
 }

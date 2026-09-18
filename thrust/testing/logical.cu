@@ -31,7 +31,7 @@ bool all_of(my_system& system, InputIterator, InputIterator, Predicate)
   return false;
 }
 
-void TestAllOfDispatchExplicit()
+TEST_CASE("TestAllOfDispatchExplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -39,10 +39,6 @@ void TestAllOfDispatchExplicit()
   thrust::all_of(sys, vec.begin(), vec.end(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestAllOfDispatchExplicit", "[logical]")
-{
-  TestAllOfDispatchExplicit();
 }
 
 template <class InputIterator, class Predicate>
@@ -52,17 +48,13 @@ bool all_of(my_tag, InputIterator first, InputIterator, Predicate)
   return false;
 }
 
-void TestAllOfDispatchImplicit()
+TEST_CASE("TestAllOfDispatchImplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::all_of(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestAllOfDispatchImplicit", "[logical]")
-{
-  TestAllOfDispatchImplicit();
 }
 
 template <class Vector>
@@ -92,7 +84,7 @@ bool any_of(my_system& system, InputIterator, InputIterator, Predicate)
   return false;
 }
 
-void TestAnyOfDispatchExplicit()
+TEST_CASE("TestAnyOfDispatchExplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -100,10 +92,6 @@ void TestAnyOfDispatchExplicit()
   thrust::any_of(sys, vec.begin(), vec.end(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestAnyOfDispatchExplicit", "[logical]")
-{
-  TestAnyOfDispatchExplicit();
 }
 
 template <class InputIterator, class Predicate>
@@ -113,17 +101,13 @@ bool any_of(my_tag, InputIterator first, InputIterator, Predicate)
   return false;
 }
 
-void TestAnyOfDispatchImplicit()
+TEST_CASE("TestAnyOfDispatchImplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::any_of(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestAnyOfDispatchImplicit", "[logical]")
-{
-  TestAnyOfDispatchImplicit();
 }
 
 template <class Vector>
@@ -153,7 +137,7 @@ bool none_of(my_system& system, InputIterator, InputIterator, Predicate)
   return false;
 }
 
-void TestNoneOfDispatchExplicit()
+TEST_CASE("TestNoneOfDispatchExplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -161,10 +145,6 @@ void TestNoneOfDispatchExplicit()
   thrust::none_of(sys, vec.begin(), vec.end(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestNoneOfDispatchExplicit", "[logical]")
-{
-  TestNoneOfDispatchExplicit();
 }
 
 template <class InputIterator, class Predicate>
@@ -174,15 +154,11 @@ bool none_of(my_tag, InputIterator first, InputIterator, Predicate)
   return false;
 }
 
-void TestNoneOfDispatchImplicit()
+TEST_CASE("TestNoneOfDispatchImplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::none_of(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestNoneOfDispatchImplicit", "[logical]")
-{
-  TestNoneOfDispatchImplicit();
 }

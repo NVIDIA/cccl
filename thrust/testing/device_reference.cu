@@ -3,7 +3,7 @@
 
 #include <unittest/unittest.h>
 
-void TestDeviceReferenceConstructorFromDeviceReference()
+TEST_CASE("TestDeviceReferenceConstructorFromDeviceReference", "[device_reference]")
 {
   using T = int;
 
@@ -26,12 +26,8 @@ void TestDeviceReferenceConstructorFromDeviceReference()
   REQUIRE(7 == v[0]);
   REQUIRE(v[0] == ref);
 }
-TEST_CASE("TestDeviceReferenceConstructorFromDeviceReference", "[device_reference]")
-{
-  TestDeviceReferenceConstructorFromDeviceReference();
-}
 
-void TestDeviceReferenceConstructorFromDevicePointer()
+TEST_CASE("TestDeviceReferenceConstructorFromDevicePointer", "[device_reference]")
 {
   using T = int;
 
@@ -55,12 +51,8 @@ void TestDeviceReferenceConstructorFromDevicePointer()
   REQUIRE(7 == *ptr);
   REQUIRE(v[0] == ref);
 }
-TEST_CASE("TestDeviceReferenceConstructorFromDevicePointer", "[device_reference]")
-{
-  TestDeviceReferenceConstructorFromDevicePointer();
-}
 
-void TestDeviceReferenceAssignmentFromDeviceReference()
+TEST_CASE("TestDeviceReferenceAssignmentFromDeviceReference", "[device_reference]")
 {
   // test same types
   using T0 = int;
@@ -106,12 +98,8 @@ void TestDeviceReferenceAssignmentFromDeviceReference()
   REQUIRE(11.0f == ref2);
   REQUIRE(ref0 == ref2);
 }
-TEST_CASE("TestDeviceReferenceAssignmentFromDeviceReference", "[device_reference]")
-{
-  TestDeviceReferenceAssignmentFromDeviceReference();
-}
 
-void TestDeviceReferenceManipulation()
+TEST_CASE("TestDeviceReferenceManipulation", "[device_reference]")
 {
   using T1 = int;
 
@@ -232,12 +220,8 @@ void TestDeviceReferenceManipulation()
   const thrust::device_reference<const T1> ref1 = v[0];
   REQUIRE(ref1 == ref);
 }
-TEST_CASE("TestDeviceReferenceManipulation", "[device_reference]")
-{
-  TestDeviceReferenceManipulation();
-}
 
-void TestDeviceReferenceSwap()
+TEST_CASE("TestDeviceReferenceSwap", "[device_reference]")
 {
   using T = int;
 
@@ -259,12 +243,8 @@ void TestDeviceReferenceSwap()
   REQUIRE(7 == ref1);
   REQUIRE(13 == ref2);
 }
-TEST_CASE("TestDeviceReferenceSwap", "[device_reference]")
-{
-  TestDeviceReferenceSwap();
-}
 
-void TestDeviceReferenceCompare()
+TEST_CASE("TestDeviceReferenceCompare", "[device_reference]")
 {
   using T1 = int;
 
@@ -416,12 +396,8 @@ void TestDeviceReferenceCompare()
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ref, other_ref>);
   }
 }
-TEST_CASE("TestDeviceReferenceCompare", "[device_reference]")
-{
-  TestDeviceReferenceCompare();
-}
 
-void TestTaggedReferenceCompare()
+TEST_CASE("TestTaggedReferenceCompare", "[device_reference]")
 {
   using T1 = int;
 
@@ -571,8 +547,4 @@ void TestTaggedReferenceCompare()
     static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<tagged_ref, other_ref>);
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<tagged_ref, other_ref>);
   }
-}
-TEST_CASE("TestTaggedReferenceCompare", "[device_reference]")
-{
-  TestTaggedReferenceCompare();
 }

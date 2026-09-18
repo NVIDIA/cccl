@@ -27,26 +27,18 @@ void TestUninitializedCopyDevice(ExecutionPolicy exec)
   REQUIRE(v2 == ref);
 }
 
-void TestUninitializedCopyDeviceSeq()
+TEST_CASE("TestUninitializedCopyDeviceSeq", "[uninitialized_copy]")
 {
   TestUninitializedCopyDevice(thrust::seq);
 }
-TEST_CASE("TestUninitializedCopyDeviceSeq", "[uninitialized_copy]")
-{
-  TestUninitializedCopyDeviceSeq();
-}
 
-void TestUninitializedCopyDeviceDevice()
+TEST_CASE("TestUninitializedCopyDeviceDevice", "[uninitialized_copy]")
 {
   TestUninitializedCopyDevice(thrust::device);
 }
-TEST_CASE("TestUninitializedCopyDeviceDevice", "[uninitialized_copy]")
-{
-  TestUninitializedCopyDeviceDevice();
-}
 #endif
 
-void TestUninitializedCopyCudaStreams()
+TEST_CASE("TestUninitializedCopyCudaStreams", "[uninitialized_copy]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -63,10 +55,6 @@ void TestUninitializedCopyCudaStreams()
 
   REQUIRE(v2 == v1);
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestUninitializedCopyCudaStreams", "[uninitialized_copy]")
-{
-  TestUninitializedCopyCudaStreams();
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -92,26 +80,18 @@ void TestUninitializedCopyNDevice(ExecutionPolicy exec)
   REQUIRE(v2 == v1);
 }
 
-void TestUninitializedCopyNDeviceSeq()
+TEST_CASE("TestUninitializedCopyNDeviceSeq", "[uninitialized_copy]")
 {
   TestUninitializedCopyNDevice(thrust::seq);
 }
-TEST_CASE("TestUninitializedCopyNDeviceSeq", "[uninitialized_copy]")
-{
-  TestUninitializedCopyNDeviceSeq();
-}
 
-void TestUninitializedCopyNDeviceDevice()
+TEST_CASE("TestUninitializedCopyNDeviceDevice", "[uninitialized_copy]")
 {
   TestUninitializedCopyNDevice(thrust::device);
 }
-TEST_CASE("TestUninitializedCopyNDeviceDevice", "[uninitialized_copy]")
-{
-  TestUninitializedCopyNDeviceDevice();
-}
 #endif
 
-void TestUninitializedCopyNCudaStreams()
+TEST_CASE("TestUninitializedCopyNCudaStreams", "[uninitialized_copy]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -128,8 +108,4 @@ void TestUninitializedCopyNCudaStreams()
   REQUIRE(v2 == v1);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestUninitializedCopyNCudaStreams", "[uninitialized_copy]")
-{
-  TestUninitializedCopyNCudaStreams();
 }

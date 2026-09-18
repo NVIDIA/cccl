@@ -51,7 +51,7 @@ ForwardIterator remove(my_system& system, ForwardIterator first, ForwardIterator
   return first;
 }
 
-void TestRemoveDispatchExplicit()
+TEST_CASE("TestRemoveDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -59,10 +59,6 @@ void TestRemoveDispatchExplicit()
   thrust::remove(sys, vec.begin(), vec.end(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestRemoveDispatchExplicit", "[remove]")
-{
-  TestRemoveDispatchExplicit();
 }
 
 template <typename ForwardIterator, typename T>
@@ -72,17 +68,13 @@ ForwardIterator remove(my_tag, ForwardIterator first, ForwardIterator, const T&)
   return first;
 }
 
-void TestRemoveDispatchImplicit()
+TEST_CASE("TestRemoveDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::remove(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestRemoveDispatchImplicit", "[remove]")
-{
-  TestRemoveDispatchImplicit();
 }
 
 template <typename Vector>
@@ -111,7 +103,7 @@ OutputIterator remove_copy(my_system& system, InputIterator, InputIterator, Outp
   return result;
 }
 
-void TestRemoveCopyDispatchExplicit()
+TEST_CASE("TestRemoveCopyDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -119,10 +111,6 @@ void TestRemoveCopyDispatchExplicit()
   thrust::remove_copy(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestRemoveCopyDispatchExplicit", "[remove]")
-{
-  TestRemoveCopyDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator, typename T>
@@ -132,7 +120,7 @@ OutputIterator remove_copy(my_tag, InputIterator, InputIterator, OutputIterator 
   return result;
 }
 
-void TestRemoveCopyDispatchImplicit()
+TEST_CASE("TestRemoveCopyDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -140,10 +128,6 @@ void TestRemoveCopyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestRemoveCopyDispatchImplicit", "[remove]")
-{
-  TestRemoveCopyDispatchImplicit();
 }
 
 template <typename Vector>
@@ -170,7 +154,7 @@ ForwardIterator remove_if(my_system& system, ForwardIterator first, ForwardItera
   return first;
 }
 
-void TestRemoveIfDispatchExplicit()
+TEST_CASE("TestRemoveIfDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -178,10 +162,6 @@ void TestRemoveIfDispatchExplicit()
   thrust::remove_if(sys, vec.begin(), vec.end(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestRemoveIfDispatchExplicit", "[remove]")
-{
-  TestRemoveIfDispatchExplicit();
 }
 
 template <typename ForwardIterator, typename Predicate>
@@ -191,17 +171,13 @@ ForwardIterator remove_if(my_tag, ForwardIterator first, ForwardIterator, Predic
   return first;
 }
 
-void TestRemoveIfDispatchImplicit()
+TEST_CASE("TestRemoveIfDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::remove_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestRemoveIfDispatchImplicit", "[remove]")
-{
-  TestRemoveIfDispatchImplicit();
 }
 
 template <typename Vector>
@@ -228,7 +204,7 @@ ForwardIterator remove_if(my_system& system, ForwardIterator first, ForwardItera
   return first;
 }
 
-void TestRemoveIfStencilDispatchExplicit()
+TEST_CASE("TestRemoveIfStencilDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -236,10 +212,6 @@ void TestRemoveIfStencilDispatchExplicit()
   thrust::remove_if(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestRemoveIfStencilDispatchExplicit", "[remove]")
-{
-  TestRemoveIfStencilDispatchExplicit();
 }
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
@@ -249,7 +221,7 @@ ForwardIterator remove_if(my_tag, ForwardIterator first, ForwardIterator, InputI
   return first;
 }
 
-void TestRemoveIfStencilDispatchImplicit()
+TEST_CASE("TestRemoveIfStencilDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -257,10 +229,6 @@ void TestRemoveIfStencilDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestRemoveIfStencilDispatchImplicit", "[remove]")
-{
-  TestRemoveIfStencilDispatchImplicit();
 }
 
 template <typename Vector>
@@ -289,7 +257,7 @@ InputIterator remove_copy_if(my_system& system, InputIterator first, InputIterat
   return first;
 }
 
-void TestRemoveCopyIfDispatchExplicit()
+TEST_CASE("TestRemoveCopyIfDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -297,10 +265,6 @@ void TestRemoveCopyIfDispatchExplicit()
   thrust::remove_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestRemoveCopyIfDispatchExplicit", "[remove]")
-{
-  TestRemoveCopyIfDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
@@ -310,7 +274,7 @@ InputIterator remove_copy_if(my_tag, InputIterator first, InputIterator, OutputI
   return first;
 }
 
-void TestRemoveCopyIfDispatchImplicit()
+TEST_CASE("TestRemoveCopyIfDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -318,10 +282,6 @@ void TestRemoveCopyIfDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestRemoveCopyIfDispatchImplicit", "[remove]")
-{
-  TestRemoveCopyIfDispatchImplicit();
 }
 
 template <typename Vector>
@@ -351,7 +311,7 @@ remove_copy_if(my_system& system, InputIterator1, InputIterator1, InputIterator2
   return result;
 }
 
-void TestRemoveCopyIfStencilDispatchExplicit()
+TEST_CASE("TestRemoveCopyIfStencilDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -359,10 +319,6 @@ void TestRemoveCopyIfStencilDispatchExplicit()
   thrust::remove_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestRemoveCopyIfStencilDispatchExplicit", "[remove]")
-{
-  TestRemoveCopyIfStencilDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
@@ -372,7 +328,7 @@ OutputIterator remove_copy_if(my_tag, InputIterator1, InputIterator1, InputItera
   return result;
 }
 
-void TestRemoveCopyIfStencilDispatchImplicit()
+TEST_CASE("TestRemoveCopyIfStencilDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -384,10 +340,6 @@ void TestRemoveCopyIfStencilDispatchImplicit()
     0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestRemoveCopyIfStencilDispatchImplicit", "[remove]")
-{
-  TestRemoveCopyIfStencilDispatchImplicit();
 }
 
 template <typename T>

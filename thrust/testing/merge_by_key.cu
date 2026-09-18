@@ -56,7 +56,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestMergeByKeyDispatchExplicit()
+TEST_CASE("TestMergeByKeyDispatchExplicit", "[merge_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -65,10 +65,6 @@ void TestMergeByKeyDispatchExplicit()
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestMergeByKeyDispatchExplicit", "[merge_by_key]")
-{
-  TestMergeByKeyDispatchExplicit();
 }
 
 template <typename InputIterator1,
@@ -92,23 +88,6 @@ cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestMergeByKeyDispatchImplicit()
-{
-  thrust::device_vector<int> vec(1);
-
-  thrust::merge_by_key(
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()));
-
-  REQUIRE(13 == vec.front());
-}
-
 template <typename T, typename CompareOp, typename... Args>
 auto call_merge_by_key(Args&&... args) -> decltype(thrust::merge_by_key(std::forward<Args>(args)...))
 {
@@ -127,7 +106,19 @@ auto call_merge_by_key(Args&&... args) -> decltype(thrust::merge_by_key(std::for
 
 TEST_CASE("TestMergeByKeyDispatchImplicit", "[merge_by_key]")
 {
-  TestMergeByKeyDispatchImplicit();
+  thrust::device_vector<int> vec(1);
+
+  thrust::merge_by_key(
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()));
+
+  REQUIRE(13 == vec.front());
 }
 
 template <typename T, typename CompareOp = void>
@@ -282,7 +273,7 @@ struct offset_transform
 
 // Tests the use of thrust::merge_by_key similar to cuDF in
 // https://github.com/rapidsai/cudf/blob/branch-24.08/cpp/src/lists/dremel.cu#L413
-void TestMergeByKeyFromCuDFDremel()
+TEST_CASE("TestMergeByKeyFromCuDFDremel", "[merge_by_key]")
 {
   // TODO(bgruber): I have no idea what this code is actually computing, but I tried to replicate the types/iterators
   constexpr std::ptrdiff_t empties_size = 123;
@@ -325,8 +316,4 @@ void TestMergeByKeyFromCuDFDremel()
 
   REQUIRE(reference_rep_level == rep_level);
   REQUIRE(reference_def_level == def_level);
-}
-TEST_CASE("TestMergeByKeyFromCuDFDremel", "[merge_by_key]")
-{
-  TestMergeByKeyFromCuDFDremel();
 }

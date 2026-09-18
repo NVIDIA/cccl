@@ -31,7 +31,7 @@ void replace(my_system& system, ForwardIterator, ForwardIterator, const T&, cons
   system.validate_dispatch();
 }
 
-void TestReplaceDispatchExplicit()
+TEST_CASE("TestReplaceDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -40,10 +40,6 @@ void TestReplaceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestReplaceDispatchExplicit", "[replace]")
-{
-  TestReplaceDispatchExplicit();
-}
 
 template <typename ForwardIterator, typename T>
 void replace(my_tag, ForwardIterator first, ForwardIterator, const T&, const T&)
@@ -51,17 +47,13 @@ void replace(my_tag, ForwardIterator first, ForwardIterator, const T&, const T&)
   *first = 13;
 }
 
-void TestReplaceDispatchImplicit()
+TEST_CASE("TestReplaceDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::replace(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestReplaceDispatchImplicit", "[replace]")
-{
-  TestReplaceDispatchImplicit();
 }
 
 template <typename T>
@@ -106,7 +98,7 @@ OutputIterator replace_copy(my_system& system, InputIterator, InputIterator, Out
   return result;
 }
 
-void TestReplaceCopyDispatchExplicit()
+TEST_CASE("TestReplaceCopyDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -114,10 +106,6 @@ void TestReplaceCopyDispatchExplicit()
   thrust::replace_copy(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestReplaceCopyDispatchExplicit", "[replace]")
-{
-  TestReplaceCopyDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator, typename T>
@@ -127,7 +115,7 @@ OutputIterator replace_copy(my_tag, InputIterator, InputIterator, OutputIterator
   return result;
 }
 
-void TestReplaceCopyDispatchImplicit()
+TEST_CASE("TestReplaceCopyDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -135,10 +123,6 @@ void TestReplaceCopyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestReplaceCopyDispatchImplicit", "[replace]")
-{
-  TestReplaceCopyDispatchImplicit();
 }
 
 template <typename T>
@@ -213,7 +197,7 @@ void replace_if(my_system& system, ForwardIterator, ForwardIterator, Predicate, 
   system.validate_dispatch();
 }
 
-void TestReplaceIfDispatchExplicit()
+TEST_CASE("TestReplaceIfDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -222,10 +206,6 @@ void TestReplaceIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestReplaceIfDispatchExplicit", "[replace]")
-{
-  TestReplaceIfDispatchExplicit();
-}
 
 template <typename ForwardIterator, typename Predicate, typename T>
 void replace_if(my_tag, ForwardIterator first, ForwardIterator, Predicate, const T&)
@@ -233,17 +213,13 @@ void replace_if(my_tag, ForwardIterator first, ForwardIterator, Predicate, const
   *first = 13;
 }
 
-void TestReplaceIfDispatchImplicit()
+TEST_CASE("TestReplaceIfDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::replace_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestReplaceIfDispatchImplicit", "[replace]")
-{
-  TestReplaceIfDispatchImplicit();
 }
 
 template <class Vector>
@@ -268,7 +244,7 @@ void replace_if(my_system& system, ForwardIterator, ForwardIterator, InputIterat
   system.validate_dispatch();
 }
 
-void TestReplaceIfStencilDispatchExplicit()
+TEST_CASE("TestReplaceIfStencilDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -277,10 +253,6 @@ void TestReplaceIfStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestReplaceIfStencilDispatchExplicit", "[replace]")
-{
-  TestReplaceIfStencilDispatchExplicit();
-}
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
 void replace_if(my_tag, ForwardIterator first, ForwardIterator, InputIterator, Predicate, const T&)
@@ -288,7 +260,7 @@ void replace_if(my_tag, ForwardIterator first, ForwardIterator, InputIterator, P
   *first = 13;
 }
 
-void TestReplaceIfStencilDispatchImplicit()
+TEST_CASE("TestReplaceIfStencilDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -296,10 +268,6 @@ void TestReplaceIfStencilDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestReplaceIfStencilDispatchImplicit", "[replace]")
-{
-  TestReplaceIfStencilDispatchImplicit();
 }
 
 template <typename T>
@@ -355,7 +323,7 @@ replace_copy_if(my_system& system, InputIterator, InputIterator, OutputIterator 
   return result;
 }
 
-void TestReplaceCopyIfDispatchExplicit()
+TEST_CASE("TestReplaceCopyIfDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -363,10 +331,6 @@ void TestReplaceCopyIfDispatchExplicit()
   thrust::replace_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestReplaceCopyIfDispatchExplicit", "[replace]")
-{
-  TestReplaceCopyIfDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
@@ -376,7 +340,7 @@ OutputIterator replace_copy_if(my_tag, InputIterator, InputIterator, OutputItera
   return result;
 }
 
-void TestReplaceCopyIfDispatchImplicit()
+TEST_CASE("TestReplaceCopyIfDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -384,10 +348,6 @@ void TestReplaceCopyIfDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestReplaceCopyIfDispatchImplicit", "[replace]")
-{
-  TestReplaceCopyIfDispatchImplicit();
 }
 
 template <class Vector>
@@ -416,7 +376,7 @@ OutputIterator replace_copy_if(
   return result;
 }
 
-void TestReplaceCopyIfStencilDispatchExplicit()
+TEST_CASE("TestReplaceCopyIfStencilDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -424,10 +384,6 @@ void TestReplaceCopyIfStencilDispatchExplicit()
   thrust::replace_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestReplaceCopyIfStencilDispatchExplicit", "[replace]")
-{
-  TestReplaceCopyIfStencilDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
@@ -438,7 +394,7 @@ replace_copy_if(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIt
   return result;
 }
 
-void TestReplaceCopyIfStencilDispatchImplicit()
+TEST_CASE("TestReplaceCopyIfStencilDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -451,10 +407,6 @@ void TestReplaceCopyIfStencilDispatchImplicit()
     0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestReplaceCopyIfStencilDispatchImplicit", "[replace]")
-{
-  TestReplaceCopyIfStencilDispatchImplicit();
 }
 
 template <typename T>

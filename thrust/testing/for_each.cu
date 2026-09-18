@@ -49,7 +49,7 @@ InputIterator for_each(my_system& system, InputIterator first, InputIterator, Fu
   return first;
 }
 
-void TestForEachDispatchExplicit()
+TEST_CASE("TestForEachDispatchExplicit", "[for_each]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -57,10 +57,6 @@ void TestForEachDispatchExplicit()
   thrust::for_each(sys, vec.begin(), vec.end(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestForEachDispatchExplicit", "[for_each]")
-{
-  TestForEachDispatchExplicit();
 }
 
 template <typename InputIterator, typename Function>
@@ -70,17 +66,13 @@ InputIterator for_each(my_tag, InputIterator first, InputIterator, Function)
   return first;
 }
 
-void TestForEachDispatchImplicit()
+TEST_CASE("TestForEachDispatchImplicit", "[for_each]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::for_each(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestForEachDispatchImplicit", "[for_each]")
-{
-  TestForEachDispatchImplicit();
 }
 
 template <class Vector>
@@ -109,7 +101,7 @@ InputIterator for_each_n(my_system& system, InputIterator first, Size, Function)
   return first;
 }
 
-void TestForEachNDispatchExplicit()
+TEST_CASE("TestForEachNDispatchExplicit", "[for_each]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -117,10 +109,6 @@ void TestForEachNDispatchExplicit()
   thrust::for_each_n(sys, vec.begin(), vec.size(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestForEachNDispatchExplicit", "[for_each]")
-{
-  TestForEachNDispatchExplicit();
 }
 
 template <typename InputIterator, typename Size, typename Function>
@@ -130,7 +118,7 @@ InputIterator for_each_n(my_tag, InputIterator first, Size, Function)
   return first;
 }
 
-void TestForEachNDispatchImplicit()
+TEST_CASE("TestForEachNDispatchImplicit", "[for_each]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -138,12 +126,8 @@ void TestForEachNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-TEST_CASE("TestForEachNDispatchImplicit", "[for_each]")
-{
-  TestForEachNDispatchImplicit();
-}
 
-void TestForEachSimpleAnySystem()
+TEST_CASE("TestForEachSimpleAnySystem", "[for_each]")
 {
   thrust::device_vector<int> output(7, 0);
 
@@ -157,12 +141,8 @@ void TestForEachSimpleAnySystem()
   REQUIRE(output == ref);
   REQUIRE((result == thrust::make_counting_iterator(5)));
 }
-TEST_CASE("TestForEachSimpleAnySystem", "[for_each]")
-{
-  TestForEachSimpleAnySystem();
-}
 
-void TestForEachNSimpleAnySystem()
+TEST_CASE("TestForEachNSimpleAnySystem", "[for_each]")
 {
   thrust::device_vector<int> output(7, 0);
 
@@ -174,10 +154,6 @@ void TestForEachNSimpleAnySystem()
   const thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
   REQUIRE(output == ref);
   REQUIRE((result == thrust::make_counting_iterator(5)));
-}
-TEST_CASE("TestForEachNSimpleAnySystem", "[for_each]")
-{
-  TestForEachNSimpleAnySystem();
 }
 
 template <typename T>
@@ -281,7 +257,7 @@ void _TestForEachWithLargeTypes()
   REQUIRE((h_data == d_data));
 }
 
-void TestForEachWithLargeTypes()
+TEST_CASE("TestForEachWithLargeTypes", "[for_each]")
 {
   _TestForEachWithLargeTypes<int, 1>();
   _TestForEachWithLargeTypes<int, 2>();
@@ -297,10 +273,6 @@ void TestForEachWithLargeTypes()
 
   // XXX parallel_for doesn't support large types
   //    _TestForEachWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
-}
-TEST_CASE("TestForEachWithLargeTypes", "[for_each]")
-{
-  TestForEachWithLargeTypes();
 }
 
 template <typename T, unsigned int N>
@@ -325,7 +297,7 @@ void _TestForEachNWithLargeTypes()
   REQUIRE((h_data == d_data));
 }
 
-void TestForEachNWithLargeTypes()
+TEST_CASE("TestForEachNWithLargeTypes", "[for_each]")
 {
   _TestForEachNWithLargeTypes<int, 1>();
   _TestForEachNWithLargeTypes<int, 2>();
@@ -341,10 +313,6 @@ void TestForEachNWithLargeTypes()
 
   // XXX parallel_for doesn't support large types
   //    _TestForEachNWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
-}
-TEST_CASE("TestForEachNWithLargeTypes", "[for_each]")
-{
-  TestForEachNWithLargeTypes();
 }
 
 _CCCL_DIAG_POP
@@ -382,14 +350,10 @@ void TestForEachWithBigIndexesHelper(int magnitude)
   REQUIRE(has_executed_h);
 }
 
-void TestForEachWithBigIndexes()
+TEST_CASE("TestForEachWithBigIndexes", "[for_each]")
 {
   TestForEachWithBigIndexesHelper(30);
   TestForEachWithBigIndexesHelper(31);
   TestForEachWithBigIndexesHelper(32);
   TestForEachWithBigIndexesHelper(33);
-}
-TEST_CASE("TestForEachWithBigIndexes", "[for_each]")
-{
-  TestForEachWithBigIndexes();
 }

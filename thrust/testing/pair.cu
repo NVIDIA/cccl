@@ -251,7 +251,7 @@ struct TestPairTupleSize
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairTupleSize, PairConstVolatileTypes);
 
-void TestPairTupleElement()
+TEST_CASE("TestPairTupleElement", "[pair]")
 {
   using type0 = thrust::tuple_element<0, thrust::pair<int, float>>::type;
   using type1 = thrust::tuple_element<1, thrust::pair<int, float>>::type;
@@ -272,13 +272,9 @@ void TestPairTupleElement()
   using cv_type1 = thrust::tuple_element<1, thrust::pair<int, float> const volatile>::type;
   static_assert(std::is_same_v<int const volatile, cv_type0>);
   static_assert(std::is_same_v<float const volatile, cv_type1>);
-};
-TEST_CASE("TestPairTupleElement", "[pair]")
-{
-  TestPairTupleElement();
 }
 
-void TestPairSwap()
+TEST_CASE("TestPairSwap", "[pair]")
 {
   const int x = 7;
   const int y = 13;
@@ -312,12 +308,8 @@ void TestPairSwap()
   REQUIRE(ref == (swappable_pair) d_v1[0]);
   REQUIRE(ref == (swappable_pair) d_v1[0]);
 }
-TEST_CASE("TestPairSwap", "[pair]")
-{
-  TestPairSwap();
-}
 
-void TestPairStructuredBindings()
+TEST_CASE("TestPairStructuredBindings", "[pair]")
 {
   const int a = 42;
   const int b = 1337;
@@ -327,12 +319,8 @@ void TestPairStructuredBindings()
   REQUIRE(a == a2);
   REQUIRE(b == b2);
 }
-TEST_CASE("TestPairStructuredBindings", "[pair]")
-{
-  TestPairStructuredBindings();
-}
 
-void TestPairCTAD()
+TEST_CASE("TestPairCTAD", "[pair]")
 {
   const int a = 42;
   const int b = 1337;
@@ -341,8 +329,4 @@ void TestPairCTAD()
   auto [a2, b2] = p;
   REQUIRE(a == a2);
   REQUIRE(b == b2);
-}
-TEST_CASE("TestPairCTAD", "[pair]")
-{
-  TestPairCTAD();
 }

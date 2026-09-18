@@ -15,7 +15,7 @@ OutputIterator set_intersection(
   return result;
 }
 
-void TestSetIntersectionDispatchExplicit()
+TEST_CASE("TestSetIntersectionDispatchExplicit", "[set_intersection]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -23,10 +23,6 @@ void TestSetIntersectionDispatchExplicit()
   thrust::set_intersection(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestSetIntersectionDispatchExplicit", "[set_intersection]")
-{
-  TestSetIntersectionDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -37,7 +33,7 @@ set_intersection(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIt
   return result;
 }
 
-void TestSetIntersectionDispatchImplicit()
+TEST_CASE("TestSetIntersectionDispatchImplicit", "[set_intersection]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -49,10 +45,6 @@ void TestSetIntersectionDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestSetIntersectionDispatchImplicit", "[set_intersection]")
-{
-  TestSetIntersectionDispatchImplicit();
 }
 
 template <typename Vector>
@@ -234,7 +226,7 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 }
 _CCCL_DIAG_POP
 
-void TestSetDifferenceWithBigIndexes()
+TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_intersection]")
 {
 #  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestSetDifferenceWithBigIndexesHelper(30);
@@ -242,9 +234,5 @@ void TestSetDifferenceWithBigIndexes()
   TestSetDifferenceWithBigIndexesHelper(32);
   TestSetDifferenceWithBigIndexesHelper(33);
 #  endif
-}
-TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_intersection]")
-{
-  TestSetDifferenceWithBigIndexes();
 }
 #endif

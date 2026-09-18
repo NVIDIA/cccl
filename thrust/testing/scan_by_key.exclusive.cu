@@ -57,7 +57,7 @@ exclusive_scan_by_key(my_system& system, InputIterator1, InputIterator1, InputIt
   return result;
 }
 
-void TestExclusiveScanByKeyDispatchExplicit()
+TEST_CASE("TestExclusiveScanByKeyDispatchExplicit", "[scan_by_key.exclusive]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -65,10 +65,6 @@ void TestExclusiveScanByKeyDispatchExplicit()
   thrust::exclusive_scan_by_key(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestExclusiveScanByKeyDispatchExplicit", "[scan_by_key.exclusive]")
-{
-  TestExclusiveScanByKeyDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -78,7 +74,7 @@ OutputIterator exclusive_scan_by_key(my_tag, InputIterator1, InputIterator1, Inp
   return result;
 }
 
-void TestExclusiveScanByKeyDispatchImplicit()
+TEST_CASE("TestExclusiveScanByKeyDispatchImplicit", "[scan_by_key.exclusive]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -89,10 +85,6 @@ void TestExclusiveScanByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestExclusiveScanByKeyDispatchImplicit", "[scan_by_key.exclusive]")
-{
-  TestExclusiveScanByKeyDispatchImplicit();
 }
 
 struct head_flag_predicate
@@ -208,7 +200,7 @@ void TestExclusiveScanByKeyInPlace(const size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestExclusiveScanByKeyInPlace);
 
-void TestScanByKeyMixedTypes()
+TEST_CASE("TestScanByKeyMixedTypes", "[scan_by_key.exclusive]")
 {
   const unsigned int n = 113;
 
@@ -253,10 +245,6 @@ void TestScanByKeyMixedTypes()
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_int_output.begin(), (float) 3.5);
   REQUIRE(d_int_output == h_int_output);
 }
-TEST_CASE("TestScanByKeyMixedTypes", "[scan_by_key.exclusive]")
-{
-  TestScanByKeyMixedTypes();
-}
 
 template <typename T>
 void TestScanByKeyDiscardOutput(std::size_t n)
@@ -292,7 +280,7 @@ void TestScanByKeyDiscardOutput(std::size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestScanByKeyDiscardOutput);
 
-void TestScanByKeyLargeInput()
+TEST_CASE("TestScanByKeyLargeInput", "[scan_by_key.exclusive]")
 {
   const unsigned int N = 1 << 20;
 
@@ -326,10 +314,6 @@ void TestScanByKeyLargeInput()
     REQUIRE(d_output == h_output);
   }
 }
-TEST_CASE("TestScanByKeyLargeInput", "[scan_by_key.exclusive]")
-{
-  TestScanByKeyLargeInput();
-}
 
 template <typename T, unsigned int N>
 void _TestScanByKeyWithLargeTypes()
@@ -361,7 +345,7 @@ void _TestScanByKeyWithLargeTypes()
   REQUIRE((h_output == d_output));
 }
 
-void TestScanByKeyWithLargeTypes()
+TEST_CASE("TestScanByKeyWithLargeTypes", "[scan_by_key.exclusive]")
 {
   _TestScanByKeyWithLargeTypes<int, 1>();
   _TestScanByKeyWithLargeTypes<int, 2>();
@@ -378,8 +362,4 @@ void TestScanByKeyWithLargeTypes()
   //_TestScanByKeyWithLargeTypes<int,  256>();
   //_TestScanByKeyWithLargeTypes<int,  512>();
   //_TestScanByKeyWithLargeTypes<int, 1024>();
-}
-TEST_CASE("TestScanByKeyWithLargeTypes", "[scan_by_key.exclusive]")
-{
-  TestScanByKeyWithLargeTypes();
 }

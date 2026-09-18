@@ -91,7 +91,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortByKeyDeviceDevice,
                                           unittest::type_list<unittest::int8_t, unittest::int32_t>);
 #endif
 
-void TestComparisonSortByKeyCudaStreams()
+TEST_CASE("TestComparisonSortByKeyCudaStreams", "[sort_by_key]")
 {
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
   thrust::device_vector<int> vals{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
@@ -107,12 +107,8 @@ void TestComparisonSortByKeyCudaStreams()
 
   cudaStreamDestroy(s);
 }
-TEST_CASE("TestComparisonSortByKeyCudaStreams", "[sort_by_key]")
-{
-  TestComparisonSortByKeyCudaStreams();
-}
 
-void TestSortByKeyCudaStreams()
+TEST_CASE("TestSortByKeyCudaStreams", "[sort_by_key]")
 {
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
   thrust::device_vector<int> vals{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
@@ -127,8 +123,4 @@ void TestSortByKeyCudaStreams()
   REQUIRE(thrust::is_sorted(vals.begin(), vals.end()));
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestSortByKeyCudaStreams", "[sort_by_key]")
-{
-  TestSortByKeyCudaStreams();
 }

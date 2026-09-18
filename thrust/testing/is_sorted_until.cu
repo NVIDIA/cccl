@@ -92,7 +92,7 @@ ForwardIterator is_sorted_until(my_system& system, ForwardIterator first, Forwar
   return first;
 }
 
-void TestIsSortedUntilExplicit()
+TEST_CASE("TestIsSortedUntilExplicit", "[is_sorted_until]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -100,10 +100,6 @@ void TestIsSortedUntilExplicit()
   thrust::is_sorted_until(sys, vec.begin(), vec.end());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestIsSortedUntilExplicit", "[is_sorted_until]")
-{
-  TestIsSortedUntilExplicit();
 }
 
 template <typename ForwardIterator>
@@ -113,15 +109,11 @@ ForwardIterator is_sorted_until(my_tag, ForwardIterator first, ForwardIterator)
   return first;
 }
 
-void TestIsSortedUntilImplicit()
+TEST_CASE("TestIsSortedUntilImplicit", "[is_sorted_until]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::is_sorted_until(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestIsSortedUntilImplicit", "[is_sorted_until]")
-{
-  TestIsSortedUntilImplicit();
 }

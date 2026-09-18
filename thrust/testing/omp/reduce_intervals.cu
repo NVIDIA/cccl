@@ -36,7 +36,7 @@ void reduce_intervals(InputIterator input, OutputIterator output, BinaryFunction
   }
 }
 
-void TestOmpReduceIntervalsSimple()
+TEST_CASE("TestOmpReduceIntervalsSimple", "[reduce_intervals]")
 {
   using T      = int;
   using Vector = thrust::device_vector<T>;
@@ -64,10 +64,6 @@ void TestOmpReduceIntervalsSimple()
     REQUIRE(output[0] == 6);
     REQUIRE(output[1] == 4);
   }
-}
-TEST_CASE("TestOmpReduceIntervalsSimple", "[reduce_intervals]")
-{
-  TestOmpReduceIntervalsSimple();
 }
 
 template <typename T>

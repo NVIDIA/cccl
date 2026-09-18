@@ -69,26 +69,18 @@ void TestAllOfDevice(ExecutionPolicy exec)
   REQUIRE_FALSE(result[0]);
 }
 
-void TestAllOfDeviceSeq()
+TEST_CASE("TestAllOfDeviceSeq", "[logical]")
 {
   TestAllOfDevice(thrust::seq);
 }
-TEST_CASE("TestAllOfDeviceSeq", "[logical]")
-{
-  TestAllOfDeviceSeq();
-}
 
-void TestAllOfDeviceDevice()
+TEST_CASE("TestAllOfDeviceDevice", "[logical]")
 {
   TestAllOfDevice(thrust::device);
 }
-TEST_CASE("TestAllOfDeviceDevice", "[logical]")
-{
-  TestAllOfDeviceDevice();
-}
 #endif
 
-void TestAllOfCudaStreams()
+TEST_CASE("TestAllOfCudaStreams", "[logical]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -110,10 +102,6 @@ void TestAllOfCudaStreams()
   REQUIRE_FALSE(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestAllOfCudaStreams", "[logical]")
-{
-  TestAllOfCudaStreams();
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -182,26 +170,18 @@ void TestAnyOfDevice(ExecutionPolicy exec)
   REQUIRE_FALSE(result[0]);
 }
 
-void TestAnyOfDeviceSeq()
+TEST_CASE("TestAnyOfDeviceSeq", "[logical]")
 {
   TestAnyOfDevice(thrust::seq);
 }
-TEST_CASE("TestAnyOfDeviceSeq", "[logical]")
-{
-  TestAnyOfDeviceSeq();
-}
 
-void TestAnyOfDeviceDevice()
+TEST_CASE("TestAnyOfDeviceDevice", "[logical]")
 {
   TestAnyOfDevice(thrust::device);
 }
-TEST_CASE("TestAnyOfDeviceDevice", "[logical]")
-{
-  TestAnyOfDeviceDevice();
-}
 #endif
 
-void TestAnyOfCudaStreams()
+TEST_CASE("TestAnyOfCudaStreams", "[logical]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -223,10 +203,6 @@ void TestAnyOfCudaStreams()
   REQUIRE_FALSE(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestAnyOfCudaStreams", "[logical]")
-{
-  TestAnyOfCudaStreams();
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -295,26 +271,18 @@ void TestNoneOfDevice(ExecutionPolicy exec)
   REQUIRE(result[0]);
 }
 
-void TestNoneOfDeviceSeq()
+TEST_CASE("TestNoneOfDeviceSeq", "[logical]")
 {
   TestNoneOfDevice(thrust::seq);
 }
-TEST_CASE("TestNoneOfDeviceSeq", "[logical]")
-{
-  TestNoneOfDeviceSeq();
-}
 
-void TestNoneOfDeviceDevice()
+TEST_CASE("TestNoneOfDeviceDevice", "[logical]")
 {
   TestNoneOfDevice(thrust::device);
 }
-TEST_CASE("TestNoneOfDeviceDevice", "[logical]")
-{
-  TestNoneOfDeviceDevice();
-}
 #endif
 
-void TestNoneOfCudaStreams()
+TEST_CASE("TestNoneOfCudaStreams", "[logical]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -336,8 +304,4 @@ void TestNoneOfCudaStreams()
   REQUIRE(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestNoneOfCudaStreams", "[logical]")
-{
-  TestNoneOfCudaStreams();
 }

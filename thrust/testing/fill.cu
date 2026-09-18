@@ -39,7 +39,7 @@ void TestFillSimple()
 }
 DECLARE_VECTOR_UNITTEST(TestFillSimple);
 
-void TestFillDiscardIterator()
+TEST_CASE("TestFillDiscardIterator", "[fill]")
 {
   // there's no result to check because fill returns void
   thrust::fill(
@@ -47,10 +47,6 @@ void TestFillDiscardIterator()
 
   thrust::fill(
     thrust::discard_iterator<thrust::device_system_tag>(), thrust::discard_iterator<thrust::device_system_tag>(10), 13);
-}
-TEST_CASE("TestFillDiscardIterator", "[fill]")
-{
-  TestFillDiscardIterator();
 }
 
 template <class Vector>
@@ -140,7 +136,7 @@ void TestFillNSimple()
 }
 DECLARE_VECTOR_UNITTEST(TestFillNSimple);
 
-void TestFillNDiscardIterator()
+TEST_CASE("TestFillNDiscardIterator", "[fill]")
 {
   const thrust::discard_iterator<thrust::host_system_tag> h_result =
     thrust::fill_n(thrust::discard_iterator<thrust::host_system_tag>(), 10, 13);
@@ -152,10 +148,6 @@ void TestFillNDiscardIterator()
 
   REQUIRE((reference == h_result));
   REQUIRE((reference == d_result));
-}
-TEST_CASE("TestFillNDiscardIterator", "[fill]")
-{
-  TestFillNDiscardIterator();
 }
 
 template <class Vector>
@@ -238,7 +230,7 @@ void TestFillZipIterator()
 };
 DECLARE_VECTOR_UNITTEST(TestFillZipIterator);
 
-void TestFillTuple()
+TEST_CASE("TestFillTuple", "[fill]")
 {
   using T     = int;
   using Tuple = cuda::std::tuple<T, T>;
@@ -250,10 +242,6 @@ void TestFillTuple()
   thrust::fill(d.begin(), d.end(), Tuple(4, 7));
 
   REQUIRE((h == d));
-};
-TEST_CASE("TestFillTuple", "[fill]")
-{
-  TestFillTuple();
 }
 
 struct TypeWithTrivialAssigment
@@ -261,7 +249,7 @@ struct TypeWithTrivialAssigment
   int x, y, z;
 };
 
-void TestFillWithTrivialAssignment()
+TEST_CASE("TestFillWithTrivialAssignment", "[fill]")
 {
   using T = TypeWithTrivialAssigment;
 
@@ -289,10 +277,6 @@ void TestFillWithTrivialAssignment()
   REQUIRE(static_cast<T>(d[0]).x == 10);
   REQUIRE(static_cast<T>(d[0]).y == 20);
   REQUIRE(static_cast<T>(d[0]).z == -1);
-};
-TEST_CASE("TestFillWithTrivialAssignment", "[fill]")
-{
-  TestFillWithTrivialAssignment();
 }
 
 struct TypeWithNonTrivialAssigment
@@ -317,7 +301,7 @@ struct TypeWithNonTrivialAssigment
   }
 };
 
-void TestFillWithNonTrivialAssignment()
+TEST_CASE("TestFillWithNonTrivialAssignment", "[fill]")
 {
   using T = TypeWithNonTrivialAssigment;
 
@@ -345,10 +329,6 @@ void TestFillWithNonTrivialAssignment()
   REQUIRE(static_cast<T>(d[0]).x == 10);
   REQUIRE(static_cast<T>(d[0]).y == 20);
   REQUIRE(static_cast<T>(d[0]).z == 30);
-};
-TEST_CASE("TestFillWithNonTrivialAssignment", "[fill]")
-{
-  TestFillWithNonTrivialAssignment();
 }
 
 template <typename ForwardIterator, typename T>
@@ -357,7 +337,7 @@ void fill(my_system& system, ForwardIterator /*first*/, ForwardIterator, const T
   system.validate_dispatch();
 }
 
-void TestFillDispatchExplicit()
+TEST_CASE("TestFillDispatchExplicit", "[fill]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -366,10 +346,6 @@ void TestFillDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestFillDispatchExplicit", "[fill]")
-{
-  TestFillDispatchExplicit();
-}
 
 template <typename ForwardIterator, typename T>
 void fill(my_tag, ForwardIterator first, ForwardIterator, const T&)
@@ -377,17 +353,13 @@ void fill(my_tag, ForwardIterator first, ForwardIterator, const T&)
   *first = 13;
 }
 
-void TestFillDispatchImplicit()
+TEST_CASE("TestFillDispatchImplicit", "[fill]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::fill(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestFillDispatchImplicit", "[fill]")
-{
-  TestFillDispatchImplicit();
 }
 
 template <typename OutputIterator, typename Size, typename T>
@@ -397,7 +369,7 @@ OutputIterator fill_n(my_system& system, OutputIterator first, Size, const T&)
   return first;
 }
 
-void TestFillNDispatchExplicit()
+TEST_CASE("TestFillNDispatchExplicit", "[fill]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -405,10 +377,6 @@ void TestFillNDispatchExplicit()
   thrust::fill_n(sys, vec.begin(), vec.size(), 0);
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestFillNDispatchExplicit", "[fill]")
-{
-  TestFillNDispatchExplicit();
 }
 
 template <typename OutputIterator, typename Size, typename T>
@@ -418,17 +386,13 @@ OutputIterator fill_n(my_tag, OutputIterator first, Size, const T&)
   return first;
 }
 
-void TestFillNDispatchImplicit()
+TEST_CASE("TestFillNDispatchImplicit", "[fill]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::fill_n(thrust::retag<my_tag>(vec.begin()), vec.size(), 0);
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestFillNDispatchImplicit", "[fill]")
-{
-  TestFillNDispatchImplicit();
 }
 
 _CCCL_DIAG_POP

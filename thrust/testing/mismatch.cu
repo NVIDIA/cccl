@@ -93,7 +93,7 @@ void TestMismatchBoundedSimple()
 }
 DECLARE_VECTOR_UNITTEST(TestMismatchBoundedSimple);
 
-void TestMismatchBoundedWithExec()
+TEST_CASE("TestMismatchBoundedWithExec", "[mismatch]")
 {
   thrust::device_vector<int> a{1, 2, 3, 4};
   thrust::device_vector<int> b{1, 2, 99};
@@ -108,10 +108,6 @@ void TestMismatchBoundedWithExec()
   REQUIRE(result.first - a.begin() == 2);
   REQUIRE(result.second - b.begin() == 2);
 }
-TEST_CASE("TestMismatchBoundedWithExec", "[mismatch]")
-{
-  TestMismatchBoundedWithExec();
-}
 
 template <typename InputIterator1, typename InputIterator2>
 cuda::std::pair<InputIterator1, InputIterator2>
@@ -121,7 +117,7 @@ mismatch(my_system& system, InputIterator1 first, InputIterator1, InputIterator2
   return cuda::std::make_pair(first, first);
 }
 
-void TestMismatchDispatchExplicit()
+TEST_CASE("TestMismatchDispatchExplicit", "[mismatch]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -129,10 +125,6 @@ void TestMismatchDispatchExplicit()
   thrust::mismatch(sys, vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestMismatchDispatchExplicit", "[mismatch]")
-{
-  TestMismatchDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2>
@@ -142,7 +134,7 @@ cuda::std::pair<InputIterator1, InputIterator2> mismatch(my_tag, InputIterator1 
   return cuda::std::make_pair(first, first);
 }
 
-void TestMismatchDispatchImplicit()
+TEST_CASE("TestMismatchDispatchImplicit", "[mismatch]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -150,8 +142,4 @@ void TestMismatchDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestMismatchDispatchImplicit", "[mismatch]")
-{
-  TestMismatchDispatchImplicit();
 }

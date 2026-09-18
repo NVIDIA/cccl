@@ -106,31 +106,19 @@ void TestUniqueByKeyDevice(ExecutionPolicy exec)
   REQUIRE(values == values_ref);
 }
 
-void TestUniqueByKeyDeviceSeq()
+TEST_CASE("TestUniqueByKeyDeviceSeq", "[unique_by_key]")
 {
   TestUniqueByKeyDevice(thrust::seq);
 }
-TEST_CASE("TestUniqueByKeyDeviceSeq", "[unique_by_key]")
-{
-  TestUniqueByKeyDeviceSeq();
-}
 
-void TestUniqueByKeyDeviceDevice()
+TEST_CASE("TestUniqueByKeyDeviceDevice", "[unique_by_key]")
 {
   TestUniqueByKeyDevice(thrust::device);
 }
-TEST_CASE("TestUniqueByKeyDeviceDevice", "[unique_by_key]")
-{
-  TestUniqueByKeyDeviceDevice();
-}
 
-void TestUniqueByKeyDeviceNoSync()
-{
-  TestUniqueByKeyDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueByKeyDeviceNoSync", "[unique_by_key]")
 {
-  TestUniqueByKeyDeviceNoSync();
+  TestUniqueByKeyDevice(thrust::cuda::par_nosync);
 }
 #endif
 
@@ -187,22 +175,14 @@ void TestUniqueByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestUniqueByKeyCudaStreamsSync()
+TEST_CASE("TestUniqueByKeyCudaStreamsSync", "[unique_by_key]")
 {
   TestUniqueByKeyCudaStreams(thrust::cuda::par);
 }
-TEST_CASE("TestUniqueByKeyCudaStreamsSync", "[unique_by_key]")
-{
-  TestUniqueByKeyCudaStreamsSync();
-}
 
-void TestUniqueByKeyCudaStreamsNoSync()
-{
-  TestUniqueByKeyCudaStreams(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueByKeyCudaStreamsNoSync", "[unique_by_key]")
 {
-  TestUniqueByKeyCudaStreamsNoSync();
+  TestUniqueByKeyCudaStreams(thrust::cuda::par_nosync);
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -315,31 +295,19 @@ void TestUniqueCopyByKeyDevice(ExecutionPolicy exec)
   REQUIRE(output_values == values_ref);
 }
 
-void TestUniqueCopyByKeyDeviceSeq()
+TEST_CASE("TestUniqueCopyByKeyDeviceSeq", "[unique_by_key]")
 {
   TestUniqueCopyByKeyDevice(thrust::seq);
 }
-TEST_CASE("TestUniqueCopyByKeyDeviceSeq", "[unique_by_key]")
-{
-  TestUniqueCopyByKeyDeviceSeq();
-}
 
-void TestUniqueCopyByKeyDeviceDevice()
+TEST_CASE("TestUniqueCopyByKeyDeviceDevice", "[unique_by_key]")
 {
   TestUniqueCopyByKeyDevice(thrust::device);
 }
-TEST_CASE("TestUniqueCopyByKeyDeviceDevice", "[unique_by_key]")
-{
-  TestUniqueCopyByKeyDeviceDevice();
-}
 
-void TestUniqueCopyByKeyDeviceNoSync()
-{
-  TestUniqueCopyByKeyDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueCopyByKeyDeviceNoSync", "[unique_by_key]")
 {
-  TestUniqueCopyByKeyDeviceNoSync();
+  TestUniqueCopyByKeyDevice(thrust::cuda::par_nosync);
 }
 #endif
 
@@ -408,20 +376,12 @@ void TestUniqueCopyByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestUniqueCopyByKeyCudaStreamsSync()
+TEST_CASE("TestUniqueCopyByKeyCudaStreamsSync", "[unique_by_key]")
 {
   TestUniqueCopyByKeyCudaStreams(thrust::cuda::par);
 }
-TEST_CASE("TestUniqueCopyByKeyCudaStreamsSync", "[unique_by_key]")
-{
-  TestUniqueCopyByKeyCudaStreamsSync();
-}
 
-void TestUniqueCopyByKeyCudaStreamsNoSync()
-{
-  TestUniqueCopyByKeyCudaStreams(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestUniqueCopyByKeyCudaStreamsNoSync", "[unique_by_key]")
 {
-  TestUniqueCopyByKeyCudaStreamsNoSync();
+  TestUniqueCopyByKeyCudaStreams(thrust::cuda::par_nosync);
 }

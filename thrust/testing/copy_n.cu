@@ -12,7 +12,7 @@
 
 #include <unittest/unittest.h>
 
-void TestCopyNFromConstIterator()
+TEST_CASE("TestCopyNFromConstIterator", "[copy_n]")
 {
   using T = int;
 
@@ -36,12 +36,8 @@ void TestCopyNFromConstIterator()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-TEST_CASE("TestCopyNFromConstIterator", "[copy_n]")
-{
-  TestCopyNFromConstIterator();
-}
 
-void TestCopyNToDiscardIterator()
+TEST_CASE("TestCopyNToDiscardIterator", "[copy_n]")
 {
   using T = int;
 
@@ -60,10 +56,6 @@ void TestCopyNToDiscardIterator()
 
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
-}
-TEST_CASE("TestCopyNToDiscardIterator", "[copy_n]")
-{
-  TestCopyNToDiscardIterator();
 }
 
 template <class Vector>
@@ -116,7 +108,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyNMixedTypes);
 
 _CCCL_DIAG_POP
 
-void TestCopyNVectorBool()
+TEST_CASE("TestCopyNVectorBool", "[copy_n]")
 {
   std::vector<bool> v{true, false, true};
 
@@ -133,10 +125,6 @@ void TestCopyNVectorBool()
   REQUIRE(d == dref);
 
   REQUIRE(d == dref);
-}
-TEST_CASE("TestCopyNVectorBool", "[copy_n]")
-{
-  TestCopyNVectorBool();
 }
 
 template <class Vector>
@@ -236,7 +224,7 @@ OutputIterator copy_n(my_system& system, InputIterator, Size, OutputIterator res
   return result;
 }
 
-void TestCopyNDispatchExplicit()
+TEST_CASE("TestCopyNDispatchExplicit", "[copy_n]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -244,10 +232,6 @@ void TestCopyNDispatchExplicit()
   thrust::copy_n(sys, vec.begin(), 1, vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestCopyNDispatchExplicit", "[copy_n]")
-{
-  TestCopyNDispatchExplicit();
 }
 
 template <typename InputIterator, typename Size, typename OutputIterator>
@@ -257,15 +241,11 @@ OutputIterator copy_n(my_tag, InputIterator, Size, OutputIterator result)
   return result;
 }
 
-void TestCopyNDispatchImplicit()
+TEST_CASE("TestCopyNDispatchImplicit", "[copy_n]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::copy_n(thrust::retag<my_tag>(vec.begin()), 1, thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestCopyNDispatchImplicit", "[copy_n]")
-{
-  TestCopyNDispatchImplicit();
 }

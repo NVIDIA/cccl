@@ -50,22 +50,14 @@ void TestFindDevice(ExecutionPolicy exec)
   }
 }
 
-void TestFindDeviceSeq()
-{
-  TestFindDevice(thrust::seq);
-};
 TEST_CASE("TestFindDeviceSeq", "[find]")
 {
-  TestFindDeviceSeq();
+  TestFindDevice(thrust::seq);
 }
 
-void TestFindDeviceDevice()
-{
-  TestFindDevice(thrust::device);
-};
 TEST_CASE("TestFindDeviceDevice", "[find]")
 {
-  TestFindDeviceDevice();
+  TestFindDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename Iterator2>
@@ -114,22 +106,14 @@ void TestFindIfDevice(ExecutionPolicy exec)
   }
 }
 
-void TestFindIfDeviceSeq()
-{
-  TestFindIfDevice(thrust::seq);
-};
 TEST_CASE("TestFindIfDeviceSeq", "[find]")
 {
-  TestFindIfDeviceSeq();
+  TestFindIfDevice(thrust::seq);
 }
 
-void TestFindIfDeviceDevice()
-{
-  TestFindIfDevice(thrust::device);
-};
 TEST_CASE("TestFindIfDeviceDevice", "[find]")
 {
-  TestFindIfDeviceDevice();
+  TestFindIfDevice(thrust::device);
 }
 
 template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename Iterator2>
@@ -177,26 +161,18 @@ void TestFindIfNotDevice(ExecutionPolicy exec)
   }
 }
 
-void TestFindIfNotDeviceSeq()
-{
-  TestFindIfNotDevice(thrust::seq);
-};
 TEST_CASE("TestFindIfNotDeviceSeq", "[find]")
 {
-  TestFindIfNotDeviceSeq();
+  TestFindIfNotDevice(thrust::seq);
 }
 
-void TestFindIfNotDeviceDevice()
-{
-  TestFindIfNotDevice(thrust::device);
-};
 TEST_CASE("TestFindIfNotDeviceDevice", "[find]")
 {
-  TestFindIfNotDeviceDevice();
+  TestFindIfNotDevice(thrust::device);
 }
 #endif
 
-void TestFindCudaStreams()
+TEST_CASE("TestFindCudaStreams", "[find]")
 {
   thrust::device_vector<int> vec{1, 2, 3, 3, 5};
 
@@ -211,8 +187,4 @@ void TestFindCudaStreams()
   REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 5) - vec.begin() == 4);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestFindCudaStreams", "[find]")
-{
-  TestFindCudaStreams();
 }

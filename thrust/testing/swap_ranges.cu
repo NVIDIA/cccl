@@ -12,7 +12,7 @@ ForwardIterator2 swap_ranges(my_system& system, ForwardIterator1, ForwardIterato
   return first2;
 }
 
-void TestSwapRangesDispatchExplicit()
+TEST_CASE("TestSwapRangesDispatchExplicit", "[swap_ranges]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -20,10 +20,6 @@ void TestSwapRangesDispatchExplicit()
   thrust::swap_ranges(sys, vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestSwapRangesDispatchExplicit", "[swap_ranges]")
-{
-  TestSwapRangesDispatchExplicit();
 }
 
 template <typename ForwardIterator1, typename ForwardIterator2>
@@ -33,7 +29,7 @@ ForwardIterator2 swap_ranges(my_tag, ForwardIterator1, ForwardIterator1, Forward
   return first2;
 }
 
-void TestSwapRangesDispatchImplicit()
+TEST_CASE("TestSwapRangesDispatchImplicit", "[swap_ranges]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -41,10 +37,6 @@ void TestSwapRangesDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestSwapRangesDispatchImplicit", "[swap_ranges]")
-{
-  TestSwapRangesDispatchImplicit();
 }
 
 template <class Vector>
@@ -85,7 +77,7 @@ void TestSwapRanges(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestSwapRanges);
 
 #if (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP)
-void TestSwapRangesForcedIterator()
+TEST_CASE("TestSwapRangesForcedIterator", "[swap_ranges]")
 {
   thrust::device_vector<int> A(3, 0);
   thrust::device_vector<int> B(3, 1);
@@ -100,10 +92,6 @@ void TestSwapRangesForcedIterator()
   REQUIRE(B[0] == 0);
   REQUIRE(B[1] == 0);
   REQUIRE(B[2] == 0);
-}
-TEST_CASE("TestSwapRangesForcedIterator", "[swap_ranges]")
-{
-  TestSwapRangesForcedIterator();
 }
 #endif
 
@@ -145,7 +133,7 @@ inline _CCCL_HOST_DEVICE void swap(type_with_swap& a, type_with_swap& b) noexcep
   b.m_swapped = true;
 }
 
-void TestSwapRangesUserSwap()
+TEST_CASE("TestSwapRangesUserSwap", "[swap_ranges]")
 {
   thrust::host_vector<type_with_swap> h_A(3, type_with_swap(0));
   thrust::host_vector<type_with_swap> h_B(3, type_with_swap(1));
@@ -199,8 +187,4 @@ void TestSwapRangesUserSwap()
   REQUIRE((ref == d_B[0]));
   REQUIRE((ref == d_B[1]));
   REQUIRE((ref == d_B[2]));
-}
-TEST_CASE("TestSwapRangesUserSwap", "[swap_ranges]")
-{
-  TestSwapRangesUserSwap();
 }

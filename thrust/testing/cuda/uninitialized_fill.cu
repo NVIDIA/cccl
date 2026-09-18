@@ -62,26 +62,18 @@ void TestUninitializedFillDevice(ExecutionPolicy exec)
   REQUIRE(v == ref);
 }
 
-void TestUninitializedFillDeviceSeq()
+TEST_CASE("TestUninitializedFillDeviceSeq", "[uninitialized_fill]")
 {
   TestUninitializedFillDevice(thrust::seq);
 }
-TEST_CASE("TestUninitializedFillDeviceSeq", "[uninitialized_fill]")
-{
-  TestUninitializedFillDeviceSeq();
-}
 
-void TestUninitializedFillDeviceDevice()
+TEST_CASE("TestUninitializedFillDeviceDevice", "[uninitialized_fill]")
 {
   TestUninitializedFillDevice(thrust::device);
 }
-TEST_CASE("TestUninitializedFillDeviceDevice", "[uninitialized_fill]")
-{
-  TestUninitializedFillDeviceDevice();
-}
 #endif
 
-void TestUninitializedFillCudaStreams()
+TEST_CASE("TestUninitializedFillCudaStreams", "[uninitialized_fill]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -99,10 +91,6 @@ void TestUninitializedFillCudaStreams()
   REQUIRE(v == ref);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestUninitializedFillCudaStreams", "[uninitialized_fill]")
-{
-  TestUninitializedFillCudaStreams();
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -179,26 +167,18 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
   REQUIRE(v.end() == iter);
 }
 
-void TestUninitializedFillNDeviceSeq()
+TEST_CASE("TestUninitializedFillNDeviceSeq", "[uninitialized_fill]")
 {
   TestUninitializedFillNDevice(thrust::seq);
 }
-TEST_CASE("TestUninitializedFillNDeviceSeq", "[uninitialized_fill]")
-{
-  TestUninitializedFillNDeviceSeq();
-}
 
-void TestUninitializedFillNDeviceDevice()
+TEST_CASE("TestUninitializedFillNDeviceDevice", "[uninitialized_fill]")
 {
   TestUninitializedFillNDevice(thrust::device);
 }
-TEST_CASE("TestUninitializedFillNDeviceDevice", "[uninitialized_fill]")
-{
-  TestUninitializedFillNDeviceDevice();
-}
 #endif
 
-void TestUninitializedFillNCudaStreams()
+TEST_CASE("TestUninitializedFillNCudaStreams", "[uninitialized_fill]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -216,8 +196,4 @@ void TestUninitializedFillNCudaStreams()
   REQUIRE(v == ref);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestUninitializedFillNCudaStreams", "[uninitialized_fill]")
-{
-  TestUninitializedFillNCudaStreams();
 }

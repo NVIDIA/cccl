@@ -2,7 +2,7 @@
 
 #include <unittest/unittest.h>
 
-void TestUniformDecomposition()
+TEST_CASE("TestUniformDecomposition", "[decompose]")
 {
   using thrust::system::detail::internal::uniform_decomposition;
 
@@ -80,8 +80,4 @@ void TestUniformDecomposition()
     REQUIRE(ud[2].end() == 10);
     REQUIRE(ud[2].size() == 2);
   }
-}
-TEST_CASE("TestUniformDecomposition", "[decompose]")
-{
-  TestUniformDecomposition();
 }

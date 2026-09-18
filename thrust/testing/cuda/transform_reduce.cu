@@ -30,26 +30,18 @@ void TestTransformReduceDevice(ExecutionPolicy exec)
   REQUIRE(8 == (T) result[0]);
 }
 
-void TestTransformReduceDeviceSeq()
+TEST_CASE("TestTransformReduceDeviceSeq", "[transform_reduce]")
 {
   TestTransformReduceDevice(thrust::seq);
 }
-TEST_CASE("TestTransformReduceDeviceSeq", "[transform_reduce]")
-{
-  TestTransformReduceDeviceSeq();
-}
 
-void TestTransformReduceDeviceDevice()
+TEST_CASE("TestTransformReduceDeviceDevice", "[transform_reduce]")
 {
   TestTransformReduceDevice(thrust::device);
 }
-TEST_CASE("TestTransformReduceDeviceDevice", "[transform_reduce]")
-{
-  TestTransformReduceDeviceDevice();
-}
 #endif
 
-void TestTransformReduceCudaStreams()
+TEST_CASE("TestTransformReduceCudaStreams", "[transform_reduce]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -67,8 +59,4 @@ void TestTransformReduceCudaStreams()
   REQUIRE(8 == result);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestTransformReduceCudaStreams", "[transform_reduce]")
-{
-  TestTransformReduceCudaStreams();
 }

@@ -1,55 +1,35 @@
 #include <unittest/unittest.h>
 
-void TestAssertEqual()
+TEST_CASE("TestAssertEqual", "[unittest_tester]")
 {
   REQUIRE(0 == 0);
   REQUIRE(1 == 1);
   REQUIRE(-15.0f == -15.0f);
 }
-TEST_CASE("TestAssertEqual", "[unittest_tester]")
-{
-  TestAssertEqual();
-}
 
-void TestAssertLEqual()
+TEST_CASE("TestAssertLEqual", "[unittest_tester]")
 {
   REQUIRE(0 <= 1);
   REQUIRE(0 <= 0);
 }
-TEST_CASE("TestAssertLEqual", "[unittest_tester]")
-{
-  TestAssertLEqual();
-}
 
-void TestAssertGEqual()
+TEST_CASE("TestAssertGEqual", "[unittest_tester]")
 {
   REQUIRE(1 >= 0);
   REQUIRE(0 >= 0);
 }
-TEST_CASE("TestAssertGEqual", "[unittest_tester]")
-{
-  TestAssertGEqual();
-}
 
-void TestAssertLess()
+TEST_CASE("TestAssertLess", "[unittest_tester]")
 {
   REQUIRE(0 < 1);
 }
-TEST_CASE("TestAssertLess", "[unittest_tester]")
-{
-  TestAssertLess();
-}
 
-void TestAssertGreater()
+TEST_CASE("TestAssertGreater", "[unittest_tester]")
 {
   REQUIRE(1 > 0);
 }
-TEST_CASE("TestAssertGreater", "[unittest_tester]")
-{
-  TestAssertGreater();
-}
 
-void TestTypeName()
+TEST_CASE("TestTypeName", "[unittest_tester]")
 {
   REQUIRE(unittest::type_name<char>() == "char");
   REQUIRE(unittest::type_name<signed char>() == "signed char");
@@ -57,8 +37,4 @@ void TestTypeName()
   REQUIRE(unittest::type_name<int>() == "int");
   REQUIRE(unittest::type_name<float>() == "float");
   REQUIRE(unittest::type_name<double>() == "double");
-}
-TEST_CASE("TestTypeName", "[unittest_tester]")
-{
-  TestTypeName();
 }

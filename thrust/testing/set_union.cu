@@ -15,7 +15,7 @@ set_union(my_system& system, InputIterator1, InputIterator1, InputIterator2, Inp
   return result;
 }
 
-void TestSetUnionDispatchExplicit()
+TEST_CASE("TestSetUnionDispatchExplicit", "[set_union]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -23,10 +23,6 @@ void TestSetUnionDispatchExplicit()
   thrust::set_union(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestSetUnionDispatchExplicit", "[set_union]")
-{
-  TestSetUnionDispatchExplicit();
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -36,7 +32,7 @@ OutputIterator set_union(my_tag, InputIterator1, InputIterator1, InputIterator2,
   return result;
 }
 
-void TestSetUnionDispatchImplicit()
+TEST_CASE("TestSetUnionDispatchImplicit", "[set_union]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -48,10 +44,6 @@ void TestSetUnionDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestSetUnionDispatchImplicit", "[set_union]")
-{
-  TestSetUnionDispatchImplicit();
 }
 
 template <typename Vector>

@@ -73,7 +73,7 @@ void TestAdjacentDifferenceDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestAdjacentDifferenceDeviceDevice);
 #endif
 
-void TestAdjacentDifferenceCudaStreams()
+TEST_CASE("TestAdjacentDifferenceCudaStreams", "[adjacent_difference]")
 {
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -90,10 +90,6 @@ void TestAdjacentDifferenceCudaStreams()
   REQUIRE(output == ref);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestAdjacentDifferenceCudaStreams", "[adjacent_difference]")
-{
-  TestAdjacentDifferenceCudaStreams();
 }
 
 struct detect_wrong_difference
@@ -153,7 +149,7 @@ void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
   REQUIRE(all_differences_correct_h);
 }
 
-void TestAdjacentDifferenceWithBigIndexes()
+TEST_CASE("TestAdjacentDifferenceWithBigIndexes", "[adjacent_difference]")
 {
   TestAdjacentDifferenceWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -161,8 +157,4 @@ void TestAdjacentDifferenceWithBigIndexes()
   TestAdjacentDifferenceWithBigIndexesHelper(32);
   TestAdjacentDifferenceWithBigIndexesHelper(33);
 #endif
-}
-TEST_CASE("TestAdjacentDifferenceWithBigIndexes", "[adjacent_difference]")
-{
-  TestAdjacentDifferenceWithBigIndexes();
 }

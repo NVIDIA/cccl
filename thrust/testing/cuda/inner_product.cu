@@ -37,26 +37,18 @@ void TestInnerProductDevice(ExecutionPolicy exec)
   REQUIRE(expected == result[0]);
 }
 
-void TestInnerProductDeviceSeq()
-{
-  TestInnerProductDevice(thrust::seq);
-};
 TEST_CASE("TestInnerProductDeviceSeq", "[inner_product]")
 {
-  TestInnerProductDeviceSeq();
+  TestInnerProductDevice(thrust::seq);
 }
 
-void TestInnerProductDeviceDevice()
-{
-  TestInnerProductDevice(thrust::device);
-};
 TEST_CASE("TestInnerProductDeviceDevice", "[inner_product]")
 {
-  TestInnerProductDeviceDevice();
+  TestInnerProductDevice(thrust::device);
 }
 #endif
 
-void TestInnerProductCudaStreams()
+TEST_CASE("TestInnerProductCudaStreams", "[inner_product]")
 {
   thrust::device_vector<int> v1 = {1, -2, 3};
   thrust::device_vector<int> v2 = {-4, 5, 6};
@@ -69,8 +61,4 @@ void TestInnerProductCudaStreams()
   REQUIRE(result == 7);
 
   cudaStreamDestroy(s);
-}
-TEST_CASE("TestInnerProductCudaStreams", "[inner_product]")
-{
-  TestInnerProductCudaStreams();
 }

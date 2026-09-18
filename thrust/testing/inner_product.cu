@@ -28,7 +28,7 @@ int inner_product(my_system& system, InputIterator1, InputIterator1, InputIterat
   return 13;
 }
 
-void TestInnerProductDispatchExplicit()
+TEST_CASE("TestInnerProductDispatchExplicit", "[inner_product]")
 {
   thrust::device_vector<int> vec;
 
@@ -37,10 +37,6 @@ void TestInnerProductDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-TEST_CASE("TestInnerProductDispatchExplicit", "[inner_product]")
-{
-  TestInnerProductDispatchExplicit();
-}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputType>
 int inner_product(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputType)
@@ -48,7 +44,7 @@ int inner_product(my_tag, InputIterator1, InputIterator1, InputIterator2, Output
   return 13;
 }
 
-void TestInnerProductDispatchImplicit()
+TEST_CASE("TestInnerProductDispatchImplicit", "[inner_product]")
 {
   thrust::device_vector<int> vec;
 
@@ -56,10 +52,6 @@ void TestInnerProductDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()), 0);
 
   REQUIRE(13 == result);
-}
-TEST_CASE("TestInnerProductDispatchImplicit", "[inner_product]")
-{
-  TestInnerProductDispatchImplicit();
 }
 
 template <class Vector>
@@ -135,7 +127,7 @@ void TestInnerProductWithBigIndexesHelper(int magnitude)
   REQUIRE(has_executed_h);
 }
 
-void TestInnerProductWithBigIndexes()
+TEST_CASE("TestInnerProductWithBigIndexes", "[inner_product]")
 {
   TestInnerProductWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -144,12 +136,8 @@ void TestInnerProductWithBigIndexes()
   TestInnerProductWithBigIndexesHelper(33);
 #endif
 }
-TEST_CASE("TestInnerProductWithBigIndexes", "[inner_product]")
-{
-  TestInnerProductWithBigIndexes();
-}
 
-void TestInnerProductPlaceholders()
+TEST_CASE("TestInnerProductPlaceholders", "[inner_product]")
 { // Regression test for NVIDIA/thrust#1178
   using namespace thrust::placeholders;
 
@@ -160,8 +148,4 @@ void TestInnerProductPlaceholders()
     thrust::inner_product(v1.begin(), v1.end(), v2.begin(), 0.0f, ::cuda::std::plus<float>{}, _1 * _2 + 1.0f);
 
   ASSERT_ALMOST_EQUAL(result, 200.f);
-}
-TEST_CASE("TestInnerProductPlaceholders", "[inner_product]")
-{
-  TestInnerProductPlaceholders();
 }

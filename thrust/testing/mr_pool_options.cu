@@ -2,7 +2,7 @@
 
 #include <unittest/unittest.h>
 
-void TestPoolOptionsBasicValidity()
+TEST_CASE("TestPoolOptionsBasicValidity", "[mr_pool_options]")
 {
   thrust::mr::pool_options options = thrust::mr::pool_options();
   REQUIRE_FALSE(options.validate());
@@ -31,12 +31,8 @@ void TestPoolOptionsBasicValidity()
   options.smallest_block_size = 8;
   REQUIRE(options.validate());
 }
-TEST_CASE("TestPoolOptionsBasicValidity", "[mr_pool_options]")
-{
-  TestPoolOptionsBasicValidity();
-}
 
-void TestPoolOptionsComplexValidity()
+TEST_CASE("TestPoolOptionsComplexValidity", "[mr_pool_options]")
 {
   thrust::mr::pool_options options = thrust::mr::pool_options();
   REQUIRE_FALSE(options.validate());
@@ -63,8 +59,4 @@ void TestPoolOptionsComplexValidity()
   REQUIRE_FALSE(options.validate());
   options.min_blocks_per_chunk = 128;
   REQUIRE(options.validate());
-}
-TEST_CASE("TestPoolOptionsComplexValidity", "[mr_pool_options]")
-{
-  TestPoolOptionsComplexValidity();
 }

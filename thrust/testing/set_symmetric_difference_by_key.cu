@@ -26,7 +26,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_ke
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetSymmetricDifferenceByKeyDispatchExplicit()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchExplicit", "[set_symmetric_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -35,10 +35,6 @@ void TestSetSymmetricDifferenceByKeyDispatchExplicit()
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchExplicit", "[set_symmetric_difference_by_key]")
-{
-  TestSetSymmetricDifferenceByKeyDispatchExplicit();
 }
 
 template <typename InputIterator1,
@@ -62,7 +58,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_ke
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetSymmetricDifferenceByKeyDispatchImplicit()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchImplicit", "[set_symmetric_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -77,10 +73,6 @@ void TestSetSymmetricDifferenceByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchImplicit", "[set_symmetric_difference_by_key]")
-{
-  TestSetSymmetricDifferenceByKeyDispatchImplicit();
 }
 
 template <typename Vector>

@@ -216,26 +216,18 @@ void TestTransformScanDevice(ExecutionPolicy exec)
   REQUIRE(ref == input);
 }
 
-void TestTransformScanDeviceSeq()
+TEST_CASE("TestTransformScanDeviceSeq", "[transform_scan]")
 {
   TestTransformScanDevice(thrust::seq);
 }
-TEST_CASE("TestTransformScanDeviceSeq", "[transform_scan]")
-{
-  TestTransformScanDeviceSeq();
-}
 
-void TestTransformScanDeviceDevice()
+TEST_CASE("TestTransformScanDeviceDevice", "[transform_scan]")
 {
   TestTransformScanDevice(thrust::device);
 }
-TEST_CASE("TestTransformScanDeviceDevice", "[transform_scan]")
-{
-  TestTransformScanDeviceDevice();
-}
 #endif
 
-void TestTransformScanCudaStreams()
+TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -362,12 +354,8 @@ void TestTransformScanCudaStreams()
 
   cudaStreamDestroy(s);
 }
-TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
-{
-  TestTransformScanCudaStreams();
-}
 
-void TestTransformScanConstAccumulator()
+TEST_CASE("TestTransformScanConstAccumulator", "[transform_scan]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -381,8 +369,4 @@ void TestTransformScanConstAccumulator()
   thrust::inclusive_scan(input.begin(), input.end(), reference.begin(), ::cuda::std::plus<T>());
 
   REQUIRE(output == reference);
-}
-TEST_CASE("TestTransformScanConstAccumulator", "[transform_scan]")
-{
-  TestTransformScanConstAccumulator();
 }

@@ -73,31 +73,19 @@ void TestPartitionDevice(ExecutionPolicy exec)
   REQUIRE(ref == data);
 }
 
-void TestPartitionDeviceSeq()
+TEST_CASE("TestPartitionDeviceSeq", "[partition]")
 {
   TestPartitionDevice(thrust::seq);
 }
-TEST_CASE("TestPartitionDeviceSeq", "[partition]")
-{
-  TestPartitionDeviceSeq();
-}
 
-void TestPartitionDeviceDevice()
+TEST_CASE("TestPartitionDeviceDevice", "[partition]")
 {
   TestPartitionDevice(thrust::device);
 }
-TEST_CASE("TestPartitionDeviceDevice", "[partition]")
-{
-  TestPartitionDeviceDevice();
-}
 
-void TestPartitionDeviceNoSync()
-{
-  TestPartitionDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestPartitionDeviceNoSync", "[partition]")
 {
-  TestPartitionDeviceNoSync();
+  TestPartitionDevice(thrust::cuda::par_nosync);
 }
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename Iterator3>
@@ -144,31 +132,19 @@ void TestPartitionStencilDevice(ExecutionPolicy exec)
   REQUIRE(ref == data);
 }
 
-void TestPartitionStencilDeviceSeq()
+TEST_CASE("TestPartitionStencilDeviceSeq", "[partition]")
 {
   TestPartitionStencilDevice(thrust::seq);
 }
-TEST_CASE("TestPartitionStencilDeviceSeq", "[partition]")
-{
-  TestPartitionStencilDeviceSeq();
-}
 
-void TestPartitionStencilDeviceDevice()
+TEST_CASE("TestPartitionStencilDeviceDevice", "[partition]")
 {
   TestPartitionStencilDevice(thrust::device);
 }
-TEST_CASE("TestPartitionStencilDeviceDevice", "[partition]")
-{
-  TestPartitionStencilDeviceDevice();
-}
 
-void TestPartitionStencilDeviceNoSync()
-{
-  TestPartitionStencilDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestPartitionStencilDeviceNoSync", "[partition]")
 {
-  TestPartitionStencilDeviceNoSync();
+  TestPartitionStencilDevice(thrust::cuda::par_nosync);
 }
 
 template <typename ExecutionPolicy,
@@ -230,31 +206,19 @@ void TestPartitionCopyDevice(ExecutionPolicy exec)
   REQUIRE(false_ref == false_results);
 }
 
-void TestPartitionCopyDeviceSeq()
+TEST_CASE("TestPartitionCopyDeviceSeq", "[partition]")
 {
   TestPartitionCopyDevice(thrust::seq);
 }
-TEST_CASE("TestPartitionCopyDeviceSeq", "[partition]")
-{
-  TestPartitionCopyDeviceSeq();
-}
 
-void TestPartitionCopyDeviceDevice()
+TEST_CASE("TestPartitionCopyDeviceDevice", "[partition]")
 {
   TestPartitionCopyDevice(thrust::device);
 }
-TEST_CASE("TestPartitionCopyDeviceDevice", "[partition]")
-{
-  TestPartitionCopyDeviceDevice();
-}
 
-void TestPartitionCopyDeviceNoSync()
-{
-  TestPartitionCopyDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestPartitionCopyDeviceNoSync", "[partition]")
 {
-  TestPartitionCopyDeviceNoSync();
+  TestPartitionCopyDevice(thrust::cuda::par_nosync);
 }
 
 template <typename ExecutionPolicy,
@@ -332,31 +296,19 @@ void TestPartitionCopyStencilDevice(ExecutionPolicy exec)
   REQUIRE(false_ref == false_results);
 }
 
-void TestPartitionCopyStencilDeviceSeq()
+TEST_CASE("TestPartitionCopyStencilDeviceSeq", "[partition]")
 {
   TestPartitionCopyStencilDevice(thrust::seq);
 }
-TEST_CASE("TestPartitionCopyStencilDeviceSeq", "[partition]")
-{
-  TestPartitionCopyStencilDeviceSeq();
-}
 
-void TestPartitionCopyStencilDeviceDevice()
+TEST_CASE("TestPartitionCopyStencilDeviceDevice", "[partition]")
 {
   TestPartitionCopyStencilDevice(thrust::device);
 }
-TEST_CASE("TestPartitionCopyStencilDeviceDevice", "[partition]")
-{
-  TestPartitionCopyStencilDeviceDevice();
-}
 
-void TestPartitionCopyStencilDeviceNoSync()
-{
-  TestPartitionCopyStencilDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestPartitionCopyStencilDeviceNoSync", "[partition]")
 {
-  TestPartitionCopyStencilDeviceNoSync();
+  TestPartitionCopyStencilDevice(thrust::cuda::par_nosync);
 }
 
 template <typename ExecutionPolicy, typename Iterator1, typename Predicate, typename Iterator2>
@@ -396,31 +348,19 @@ void TestStablePartitionDevice(ExecutionPolicy exec)
   REQUIRE(ref == data);
 }
 
-void TestStablePartitionDeviceSeq()
+TEST_CASE("TestStablePartitionDeviceSeq", "[partition]")
 {
   TestStablePartitionDevice(thrust::seq);
 }
-TEST_CASE("TestStablePartitionDeviceSeq", "[partition]")
-{
-  TestStablePartitionDeviceSeq();
-}
 
-void TestStablePartitionDeviceDevice()
+TEST_CASE("TestStablePartitionDeviceDevice", "[partition]")
 {
   TestStablePartitionDevice(thrust::device);
 }
-TEST_CASE("TestStablePartitionDeviceDevice", "[partition]")
-{
-  TestStablePartitionDeviceDevice();
-}
 
-void TestStablePartitionDeviceNoSync()
-{
-  TestStablePartitionDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestStablePartitionDeviceNoSync", "[partition]")
 {
-  TestStablePartitionDeviceNoSync();
+  TestStablePartitionDevice(thrust::cuda::par_nosync);
 }
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename Iterator3>
@@ -467,31 +407,19 @@ void TestStablePartitionStencilDevice(ExecutionPolicy exec)
   REQUIRE(ref == data);
 }
 
-void TestStablePartitionStencilDeviceSeq()
+TEST_CASE("TestStablePartitionStencilDeviceSeq", "[partition]")
 {
   TestStablePartitionStencilDevice(thrust::seq);
 }
-TEST_CASE("TestStablePartitionStencilDeviceSeq", "[partition]")
-{
-  TestStablePartitionStencilDeviceSeq();
-}
 
-void TestStablePartitionStencilDeviceDevice()
+TEST_CASE("TestStablePartitionStencilDeviceDevice", "[partition]")
 {
   TestStablePartitionStencilDevice(thrust::device);
 }
-TEST_CASE("TestStablePartitionStencilDeviceDevice", "[partition]")
-{
-  TestStablePartitionStencilDeviceDevice();
-}
 
-void TestStablePartitionStencilDeviceNoSync()
-{
-  TestStablePartitionStencilDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestStablePartitionStencilDeviceNoSync", "[partition]")
 {
-  TestStablePartitionStencilDeviceNoSync();
+  TestStablePartitionStencilDevice(thrust::cuda::par_nosync);
 }
 
 template <typename ExecutionPolicy,
@@ -553,31 +481,19 @@ void TestStablePartitionCopyDevice(ExecutionPolicy exec)
   REQUIRE(false_ref == false_results);
 }
 
-void TestStablePartitionCopyDeviceSeq()
+TEST_CASE("TestStablePartitionCopyDeviceSeq", "[partition]")
 {
   TestStablePartitionCopyDevice(thrust::seq);
 }
-TEST_CASE("TestStablePartitionCopyDeviceSeq", "[partition]")
-{
-  TestStablePartitionCopyDeviceSeq();
-}
 
-void TestStablePartitionCopyDeviceDevice()
+TEST_CASE("TestStablePartitionCopyDeviceDevice", "[partition]")
 {
   TestStablePartitionCopyDevice(thrust::device);
 }
-TEST_CASE("TestStablePartitionCopyDeviceDevice", "[partition]")
-{
-  TestStablePartitionCopyDeviceDevice();
-}
 
-void TestStablePartitionCopyDeviceNoSync()
-{
-  TestStablePartitionCopyDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestStablePartitionCopyDeviceNoSync", "[partition]")
 {
-  TestStablePartitionCopyDeviceNoSync();
+  TestStablePartitionCopyDevice(thrust::cuda::par_nosync);
 }
 
 template <typename ExecutionPolicy,
@@ -655,31 +571,19 @@ void TestStablePartitionCopyStencilDevice(ExecutionPolicy exec)
   REQUIRE(false_ref == false_results);
 }
 
-void TestStablePartitionCopyStencilDeviceSeq()
+TEST_CASE("TestStablePartitionCopyStencilDeviceSeq", "[partition]")
 {
   TestStablePartitionCopyStencilDevice(thrust::seq);
 }
-TEST_CASE("TestStablePartitionCopyStencilDeviceSeq", "[partition]")
-{
-  TestStablePartitionCopyStencilDeviceSeq();
-}
 
-void TestStablePartitionCopyStencilDeviceDevice()
+TEST_CASE("TestStablePartitionCopyStencilDeviceDevice", "[partition]")
 {
   TestStablePartitionCopyStencilDevice(thrust::device);
 }
-TEST_CASE("TestStablePartitionCopyStencilDeviceDevice", "[partition]")
-{
-  TestStablePartitionCopyStencilDeviceDevice();
-}
 
-void TestStablePartitionCopyStencilDeviceNoSync()
-{
-  TestStablePartitionCopyStencilDevice(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestStablePartitionCopyStencilDeviceNoSync", "[partition]")
 {
-  TestStablePartitionCopyStencilDeviceNoSync();
+  TestStablePartitionCopyStencilDevice(thrust::cuda::par_nosync);
 }
 
 void TestPartitionIfWithMagnitude(int magnitude)
@@ -746,7 +650,7 @@ void TestPartitionIfWithMagnitude(int magnitude)
   }
 }
 
-void TestPartitionIfWithLargeNumberOfItems()
+TEST_CASE("TestPartitionIfWithLargeNumberOfItems", "[partition]")
 {
   TestPartitionIfWithMagnitude(30);
   // These require 64-bit dispatches even when magnitude < 32.
@@ -755,10 +659,6 @@ void TestPartitionIfWithLargeNumberOfItems()
   TestPartitionIfWithMagnitude(32);
   TestPartitionIfWithMagnitude(33);
 #  endif
-}
-TEST_CASE("TestPartitionIfWithLargeNumberOfItems", "[partition]")
-{
-  TestPartitionIfWithLargeNumberOfItems();
 }
 #endif
 
@@ -796,20 +696,12 @@ void TestPartitionCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestPartitionCudaStreamsSync()
+TEST_CASE("TestPartitionCudaStreamsSync", "[partition]")
 {
   TestPartitionCudaStreams(thrust::cuda::par);
 }
-TEST_CASE("TestPartitionCudaStreamsSync", "[partition]")
-{
-  TestPartitionCudaStreamsSync();
-}
 
-void TestPartitionCudaStreamsNoSync()
-{
-  TestPartitionCudaStreams(thrust::cuda::par_nosync);
-}
 TEST_CASE("TestPartitionCudaStreamsNoSync", "[partition]")
 {
-  TestPartitionCudaStreamsNoSync();
+  TestPartitionCudaStreams(thrust::cuda::par_nosync);
 }

@@ -108,7 +108,7 @@ OutputIterator inclusive_scan(my_system& system, InputIterator, InputIterator, O
   return result;
 }
 
-void TestInclusiveScanDispatchExplicit()
+TEST_CASE("TestInclusiveScanDispatchExplicit", "[scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -116,10 +116,6 @@ void TestInclusiveScanDispatchExplicit()
   thrust::inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestInclusiveScanDispatchExplicit", "[scan]")
-{
-  TestInclusiveScanDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator>
@@ -129,7 +125,7 @@ OutputIterator inclusive_scan(my_tag, InputIterator, InputIterator, OutputIterat
   return result;
 }
 
-void TestInclusiveScanDispatchImplicit()
+TEST_CASE("TestInclusiveScanDispatchImplicit", "[scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -137,10 +133,6 @@ void TestInclusiveScanDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
   REQUIRE(13 == vec.front());
-}
-TEST_CASE("TestInclusiveScanDispatchImplicit", "[scan]")
-{
-  TestInclusiveScanDispatchImplicit();
 }
 
 template <typename InputIterator, typename OutputIterator>
@@ -150,7 +142,7 @@ OutputIterator exclusive_scan(my_system& system, InputIterator, InputIterator, O
   return result;
 }
 
-void TestExclusiveScanDispatchExplicit()
+TEST_CASE("TestExclusiveScanDispatchExplicit", "[scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -158,10 +150,6 @@ void TestExclusiveScanDispatchExplicit()
   thrust::exclusive_scan(sys, vec.begin(), vec.begin(), vec.begin());
 
   REQUIRE(sys.is_valid());
-}
-TEST_CASE("TestExclusiveScanDispatchExplicit", "[scan]")
-{
-  TestExclusiveScanDispatchExplicit();
 }
 
 template <typename InputIterator, typename OutputIterator>
@@ -171,7 +159,7 @@ OutputIterator exclusive_scan(my_tag, InputIterator, InputIterator, OutputIterat
   return result;
 }
 
-void TestExclusiveScanDispatchImplicit()
+TEST_CASE("TestExclusiveScanDispatchImplicit", "[scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -180,12 +168,8 @@ void TestExclusiveScanDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-TEST_CASE("TestExclusiveScanDispatchImplicit", "[scan]")
-{
-  TestExclusiveScanDispatchImplicit();
-}
 
-void TestInclusiveScan32()
+TEST_CASE("TestInclusiveScan32", "[scan]")
 {
   using T        = int;
   const size_t n = 32;
@@ -201,12 +185,8 @@ void TestInclusiveScan32()
 
   REQUIRE(d_output == h_output);
 }
-TEST_CASE("TestInclusiveScan32", "[scan]")
-{
-  TestInclusiveScan32();
-}
 
-void TestExclusiveScan32()
+TEST_CASE("TestExclusiveScan32", "[scan]")
 {
   using T        = int;
   const size_t n = 32;
@@ -222,10 +202,6 @@ void TestExclusiveScan32()
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), init);
 
   REQUIRE(d_output == h_output);
-}
-TEST_CASE("TestExclusiveScan32", "[scan]")
-{
-  TestExclusiveScan32();
 }
 
 template <class IntVector, class FloatVector>
@@ -280,21 +256,13 @@ void TestScanMixedTypes()
   REQUIRE(float_output[2] == 8.5f); // out: 8.0f  in: 3 accum: 11.5f
   REQUIRE(float_output[3] == 11.5f); // out: 11.f  in: 4 accum: 15.5f
 }
-void TestScanMixedTypesHost()
+TEST_CASE("TestScanMixedTypesHost", "[scan]")
 {
   TestScanMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
-TEST_CASE("TestScanMixedTypesHost", "[scan]")
-{
-  TestScanMixedTypesHost();
-}
-void TestScanMixedTypesDevice()
-{
-  TestScanMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
-}
 TEST_CASE("TestScanMixedTypesDevice", "[scan]")
 {
-  TestScanMixedTypesDevice();
+  TestScanMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
 
 template <typename T>
@@ -489,7 +457,7 @@ void _TestScanWithLargeTypes()
   REQUIRE((h_output == d_output));
 }
 
-void TestScanWithLargeTypes()
+TEST_CASE("TestScanWithLargeTypes", "[scan]")
 {
   _TestScanWithLargeTypes<int, 1>();
 
@@ -497,10 +465,6 @@ void TestScanWithLargeTypes()
   _TestScanWithLargeTypes<int, 8>();
   _TestScanWithLargeTypes<int, 64>();
 #endif
-}
-TEST_CASE("TestScanWithLargeTypes", "[scan]")
-{
-  TestScanWithLargeTypes();
 }
 
 template <typename T>
@@ -647,7 +611,7 @@ void TestInclusiveScanWithBigIndexesHelper(int magnitude)
   REQUIRE(has_executed_h);
 }
 
-void TestInclusiveScanWithBigIndexes()
+TEST_CASE("TestInclusiveScanWithBigIndexes", "[scan]")
 {
   TestInclusiveScanWithBigIndexesHelper(30);
   TestInclusiveScanWithBigIndexesHelper(31);
@@ -655,11 +619,6 @@ void TestInclusiveScanWithBigIndexes()
   TestInclusiveScanWithBigIndexesHelper(32);
   TestInclusiveScanWithBigIndexesHelper(33);
 #endif
-}
-
-TEST_CASE("TestInclusiveScanWithBigIndexes", "[scan]")
-{
-  TestInclusiveScanWithBigIndexes();
 }
 
 void TestExclusiveScanWithBigIndexesHelper(int magnitude)
@@ -681,7 +640,7 @@ void TestExclusiveScanWithBigIndexesHelper(int magnitude)
   REQUIRE(has_executed_h);
 }
 
-void TestExclusiveScanWithBigIndexes()
+TEST_CASE("TestExclusiveScanWithBigIndexes", "[scan]")
 {
   TestExclusiveScanWithBigIndexesHelper(30);
   TestExclusiveScanWithBigIndexesHelper(31);
@@ -689,11 +648,6 @@ void TestExclusiveScanWithBigIndexes()
   TestExclusiveScanWithBigIndexesHelper(32);
   TestExclusiveScanWithBigIndexesHelper(33);
 #endif
-}
-
-TEST_CASE("TestExclusiveScanWithBigIndexes", "[scan]")
-{
-  TestExclusiveScanWithBigIndexes();
 }
 
 struct Int
@@ -722,7 +676,7 @@ struct Int
   }
 };
 
-void TestScanWithUserDefinedTypeAndInit()
+TEST_CASE("TestScanWithUserDefinedTypeAndInit", "[scan]")
 {
   {
     thrust::device_vector<Int> vec(5, Int{1});
@@ -734,10 +688,6 @@ void TestScanWithUserDefinedTypeAndInit()
     thrust::inclusive_scan(thrust::device, vec.cbegin(), vec.cend(), vec.begin(), Int{100}, ::cuda::std::plus<Int>());
     REQUIRE(vec == (thrust::device_vector<Int>{Int{101}, Int{102}, Int{103}, Int{104}, Int{105}}));
   }
-}
-TEST_CASE("TestScanWithUserDefinedTypeAndInit", "[scan]")
-{
-  TestScanWithUserDefinedTypeAndInit();
 }
 
 // Represents a permutation as a tuple of integers, see also: https://en.wikipedia.org/wiki/Permutation
@@ -781,7 +731,7 @@ struct composition_op_t
   }
 };
 
-void TestInclusiveScanWithNonCommutativeOp()
+TEST_CASE("TestInclusiveScanWithNonCommutativeOp", "[scan]")
 {
   const thrust::device_vector<permutation_t> input = {
     {3, 2, 0, 1, 4},
@@ -827,10 +777,6 @@ void TestInclusiveScanWithNonCommutativeOp()
       {0, 1, 4, 2, 3},
       {4, 0, 2, 1, 3}}));
 }
-TEST_CASE("TestInclusiveScanWithNonCommutativeOp", "[scan]")
-{
-  TestInclusiveScanWithNonCommutativeOp();
-}
 
 struct checking_identity
 {
@@ -844,7 +790,7 @@ struct checking_identity
   }
 };
 
-void TestInclusiveScanForInvalidValues()
+TEST_CASE("TestInclusiveScanForInvalidValues", "[scan]")
 {
   using value_t = unsigned;
 
@@ -871,13 +817,9 @@ void TestInclusiveScanForInvalidValues()
     }
   }
 }
-TEST_CASE("TestInclusiveScanForInvalidValues", "[scan]")
-{
-  TestInclusiveScanForInvalidValues();
-}
 
 // Adapted from issue: https://github.com/NVIDIA/cccl/issues/6317
-void TestScanBug6317()
+TEST_CASE("TestScanBug6317", "[scan]")
 {
   using T     = unsigned int;
   const int n = 1729;
@@ -898,13 +840,9 @@ void TestScanBug6317()
     REQUIRE(s == d);
   }
 }
-TEST_CASE("TestScanBug6317", "[scan]")
-{
-  TestScanBug6317();
-}
 
 // Test edge cases for parallel scan with non-additive operations
-void TestScanEdgeCases()
+TEST_CASE("TestScanEdgeCases", "[scan]")
 {
   // Test 1: Large array with inclusive_scan, multiplies, and init
   // Tests Step 1 fix with many threads
@@ -1021,8 +959,4 @@ void TestScanEdgeCases()
     const thrust::device_vector<int> expected = {3, 6};
     REQUIRE(d_output == expected);
   }
-}
-TEST_CASE("TestScanEdgeCases", "[scan]")
-{
-  TestScanEdgeCases();
 }
