@@ -33,20 +33,20 @@ or initialize CUDA bindings.
 Activation and example
 ----------------------
 
-Import the compiler runtime before the portable namespace:
+Register CUTLASS on the host before compiling:
 
 .. code-block:: python
+
+   from cuda import coop
+
+   coop.register("cutlass")
 
    import cutlass.cute as cute
-   from cuda import coop
 
-If the portable namespace was imported first, import the qualified backend
-before compiling:
-
-.. code-block:: python
-
-   from cuda import coop
-   import cuda.coop.cutlass as cutlass_coop
+Registration works in either import order, is safe to repeat, and remains
+available when automatic registration is disabled. Importing
+``cuda.coop.cutlass`` also registers the backend. For convenience, importing
+``cuda.coop`` after ``cutlass`` activates it automatically.
 
 The active CuTe compiler selects the backend while tracing a kernel. A
 CUTLASS installation alone does not make portable operations callable on the
@@ -85,6 +85,11 @@ conversions. The qualified ``ThreadData`` provides ``from_register_tensor``
 and ``to_register_tensor`` for register-memory tensors, and ``from_vector``
 and ``to_tensor_ssa`` for immutable register values. These conversions use the
 same fixed per-thread item count as the load/store payload.
+
+An initialized ``ThreadData`` can cross CuTe runtime loops and branches while
+retaining its fixed item count, dtype, and requested alignment. Initialize
+every item in every participating thread before carrying the payload across
+a runtime control-flow boundary.
 
 .. code-block:: python
 

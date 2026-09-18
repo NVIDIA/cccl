@@ -42,7 +42,9 @@ from ._core.api.topk import topk_max_keys, topk_max_pairs, topk_min_keys, topk_m
 
 __version__: str
 
-def register(backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"]) -> None: ...
+def register(
+    backend: Literal["numba-cuda-mlir", "numba_cuda_mlir", "cutlass"],
+) -> None: ...
 
 __all__ = [
     "topk_min_keys",
