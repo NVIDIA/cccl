@@ -89,17 +89,18 @@ function(cccl_tidy_init)
     list(APPEND load_cmds "--load='$<TARGET_FILE:${plugin}>'")
   endforeach()
   list(JOIN load_cmds " " CCCL_CLANG_TIDY_PLUGINS)
-  # configure_file does not support generator expressions (which are needed for the
+
+  # configure_file alone does not support generator expressions (which are needed for the
   # clang-tidy plugins), while file(GENERATE) does not support @VAR@ substitutions. So we
   # need to do it ourselves
-  file(
-    READ "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_clang_tidy.sh.in"
-    run_clang_tidy_sh_in
+  configure_file(
+    "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_clang_tidy.sh.in"
+    "${CCCL_RUN_CLANG_TIDY_SCRIPT}.tmp"
+    @ONLY
   )
-  string(CONFIGURE "${run_clang_tidy_sh_in}" run_clang_tidy_sh_tmp @ONLY)
   file(
     GENERATE OUTPUT "${CCCL_RUN_CLANG_TIDY_SCRIPT}"
-    CONTENT "${run_clang_tidy_sh_tmp}"
+    INPUT "${CCCL_RUN_CLANG_TIDY_SCRIPT}.tmp"
   )
 
   # Do not set to cache; multiple separate instances of CCCL in a build should not
