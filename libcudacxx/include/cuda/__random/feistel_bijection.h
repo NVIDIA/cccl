@@ -44,6 +44,16 @@ private:
   uint64_t __L_mask_{};
   uint32_t __keys_[__num_rounds] = {};
 
+  struct __from_total_bits_tag
+  {};
+
+  _CCCL_HOST_DEVICE_API constexpr __feistel_bijection(uint64_t __total_bits, __from_total_bits_tag) noexcept
+      : __R_bits_((__total_bits + 1) / 2)
+      , __L_bits_(__total_bits / 2)
+      , __R_mask_((1ull << __R_bits_) - 1)
+      , __L_mask_((1ull << __L_bits_) - 1)
+  {}
+
 public:
   using index_type = uint64_t;
 
@@ -51,19 +61,11 @@ public:
 
   template <class _RNG>
   _CCCL_HOST_DEVICE_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
+      : __feistel_bijection(
+          static_cast<uint64_t>(::cuda::std::max(
+            8, ::cuda::std::bit_width(::cuda::std::max(static_cast<uint64_t>(1), __num_elements) - 1))),
+          __from_total_bits_tag{})
   {
-    // Calculate number of bits needed to represent num_elements - 1
-    // Prevent zero
-    const uint64_t __max_index  = ::cuda::std::max(static_cast<uint64_t>(1), __num_elements) - 1;
-    const uint64_t __total_bits = static_cast<uint64_t>(::cuda::std::max(8, ::cuda::std::bit_width(__max_index)));
-
-    // Half bits rounded down
-    __L_bits_ = __total_bits / 2;
-    __L_mask_ = (1ull << __L_bits_) - 1;
-    // Half the bits rounded up
-    __R_bits_ = __total_bits - __L_bits_;
-    __R_mask_ = (1ull << __R_bits_) - 1;
-
     ::cuda::std::uniform_int_distribution<uint32_t> __dist{}; // NOLINT(misc-const-correctness)
     _CCCL_PRAGMA_UNROLL_FULL()
     for (auto& __key : __keys_)
