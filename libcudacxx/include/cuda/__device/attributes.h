@@ -769,8 +769,7 @@ inline constexpr host_memory_pools_supported_t host_memory_pools_supported{};
 #  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^
 
 #  if _CCCL_CTK_AT_LEAST(13, 3)
-using handle_type_fabric_supported_t =
-  __cu_dev_attr_impl<::CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_FABRIC_SUPPORTED, bool>;
+using handle_type_fabric_supported_t = __cu_dev_attr_impl<::CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_FABRIC_SUPPORTED, bool>;
 inline constexpr handle_type_fabric_supported_t handle_type_fabric_supported{};
 
 using logical_endpoint_unicast_supported_t =
