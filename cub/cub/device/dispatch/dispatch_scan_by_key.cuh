@@ -23,6 +23,7 @@
 #include <cub/agent/agent_scan_by_key.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
@@ -47,147 +48,8 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 CUB_NAMESPACE_BEGIN
 
-/******************************************************************************
- * Kernel entry points
- *****************************************************************************/
-
 namespace detail::scan_by_key
 {
-/**
- * @brief Scan by key kernel entry point (multi-block)
- *
- * @tparam PolicySelector
- *   Policy selector type
- *
- * @tparam KeysInputIteratorT
- *   Random-access input iterator type
- *
- * @tparam ValuesInputIteratorT
- *   Random-access input iterator type
- *
- * @tparam ValuesOutputIteratorT
- *   Random-access output iterator type
- *
- * @tparam ScanByKeyTileStateT
- *   Tile status interface type
- *
- * @tparam EqualityOp
- *   Equality functor type
- *
- * @tparam ScanOpT
- *   Scan functor type
- *
- * @tparam InitValueT
- *   The init_value element for ScanOpT type (cub::NullType for inclusive scan)
- *
- * @tparam OffsetT
- *   Unsigned integer type for global offsets
- *
- * @param d_keys_in
- *   Input keys data
- *
- * @param d_keys_prev_in
- *   Predecessor items for each tile
- *
- * @param d_values_in
- *   Input values data
- *
- * @param d_values_out
- *   Output values data
- *
- * @param tile_state
- *   Tile status interface
- *
- * @param start_tile
- *   The starting tile for the current grid
- *
- * @param equality_op
- *   Binary equality functor
- *
- * @param scan_op
- *   Binary scan functor
- *
- * @param init_value
- *   Initial value to seed the exclusive scan
- *
- * @param num_items
- *   Total number of scan items for the entire problem
- */
-template <typename PolicySelector,
-          typename KeysInputIteratorT,
-          typename ValuesInputIteratorT,
-          typename ValuesOutputIteratorT,
-          typename ScanByKeyTileStateT,
-          typename EqualityOp,
-          typename ScanOpT,
-          typename InitValueT,
-          typename OffsetT,
-          typename AccumT,
-          typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
-    const KeysInputIteratorT d_keys_in,
-    KeyT* const d_keys_prev_in,
-    const ValuesInputIteratorT d_values_in,
-    const ValuesOutputIteratorT d_values_out,
-    ScanByKeyTileStateT tile_state,
-    const int start_tile,
-    EqualityOp equality_op,
-    const ScanOpT scan_op,
-    const InitValueT init_value,
-    const OffsetT num_items)
-{
-  static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
-
-  using scan_by_key_policy_t = agent_scan_by_key_policy<
-    policy.lookback.threads_per_block,
-    policy.lookback.items_per_thread,
-    policy.lookback.load_algorithm,
-    policy.lookback.load_modifier,
-    policy.lookback.scan_algorithm,
-    policy.lookback.store_algorithm,
-    delay_constructor_t<policy.lookback.lookback_delay.kind,
-                        policy.lookback.lookback_delay.delay,
-                        policy.lookback.lookback_delay.l2_write_latency>>;
-
-  // Thread block type for scanning input tiles
-  using AgentScanByKeyT = detail::scan_by_key::AgentScanByKey<
-    scan_by_key_policy_t,
-    KeysInputIteratorT,
-    ValuesInputIteratorT,
-    ValuesOutputIteratorT,
-    EqualityOp,
-    ScanOpT,
-    InitValueT,
-    OffsetT,
-    AccumT>;
-
-  // Shared memory for AgentScanByKey
-  __shared__ typename AgentScanByKeyT::TempStorage temp_storage;
-
-  // Process tiles
-  AgentScanByKeyT(temp_storage, d_keys_in, d_keys_prev_in, d_values_in, d_values_out, equality_op, scan_op, init_value)
-    .ConsumeRange(num_items, tile_state, start_tile);
-}
-
-template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT>
-_CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
-  ScanTileStateT tile_state,
-  const KeysInputIteratorT d_keys_in,
-  cub::detail::it_value_t<KeysInputIteratorT>* d_keys_prev_in,
-  const OffsetT items_per_tile,
-  const int num_tiles)
-{
-  // Initialize tile status
-  tile_state.InitializeStatus(num_tiles);
-
-  const int tid           = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
-  const OffsetT tile_base = static_cast<OffsetT>(tid) * items_per_tile;
-  if (tid > 0 && tid < num_tiles)
-  {
-    d_keys_prev_in[tid] = d_keys_in[tile_base - 1];
-  }
-}
 
 template <typename PolicySelector,
           typename KeysInputIteratorT,
@@ -665,6 +527,24 @@ struct dispatch_scan_by_key
   }
 };
 
+//! The element type of the per-tile key buffer allocated below. Type-erased iterators, as used by
+//! the NVRTC launcher, expose no value type: the buffer is only ever written through the compiled
+//! kernel's own key type, so the caller reports its element size instead.
+template <typename KeysInputIteratorT, typename = void>
+struct key_buffer_value
+{
+  using type = unsigned char;
+};
+
+template <typename KeysInputIteratorT>
+struct key_buffer_value<KeysInputIteratorT, ::cuda::std::void_t<cub::detail::it_value_t<KeysInputIteratorT>>>
+{
+  using type = cub::detail::it_value_t<KeysInputIteratorT>;
+};
+
+template <typename KeysInputIteratorT>
+using key_buffer_value_t = typename key_buffer_value<KeysInputIteratorT>::type;
+
 template <
   typename OverrideAccumT = use_default,
   typename KeysInputIteratorT,
@@ -713,12 +593,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {}) -> cudaError_t
+  KernelLauncherFactory launcher_factory = {},
+  size_t key_buffer_bytes                = sizeof(key_buffer_value_t<KeysInputIteratorT>)) -> cudaError_t
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
                 "scan_by_key::dispatch only supports unsigned offset types of at least 4-bytes");
 
-  using KeyT = cub::detail::it_value_t<KeysInputIteratorT>;
+  using KeyT = key_buffer_value_t<KeysInputIteratorT>;
 
   static constexpr int INIT_KERNEL_THREADS = 128;
 
@@ -763,7 +644,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error; // bytes needed for tile status descriptors
   }
 
-  allocation_sizes[1] = sizeof(KeyT) * (num_tiles + 1);
+  allocation_sizes[1] = key_buffer_bytes * (num_tiles + 1);
 
   // Compute allocation pointers into the single storage blob (or compute
   // the necessary size of the blob)
