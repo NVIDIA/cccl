@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common block radix ordering operations."""
+"""Portable block radix ordering operations."""
 
 from __future__ import annotations
 
@@ -122,7 +122,7 @@ def radix_sort_pairs(
         A complete physical block; every thread participates.
     keys, values : ThreadDataLike
         Fixed-size per-thread payloads with matching extents. Keys use int32,
-        uint32, int64, or uint64. Values use the common API's numeric dtypes:
+        uint32, int64, or uint64. Values use the portable numeric dtypes:
         signed or unsigned 8-, 16-, 32-, or 64-bit integers, float32, or
         float64.
     begin_bit, end_bit : int or compiler integer
