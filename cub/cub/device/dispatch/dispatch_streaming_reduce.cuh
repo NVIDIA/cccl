@@ -349,22 +349,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   cudaStream_t stream,
   const TuningEnvT& tuning_env = {})
 {
-  using input_value_t = detail::it_value_t<InputIteratorT>;
-  // TODO(bgruber): we should use the input_value_t in the accumulator and for comparison, and only covert when writing
-  // the final result
-  using output_extremum_t     = detail::non_void_value_t<ExtremumOutIteratorT, input_value_t>;
-  using per_partition_accum_t = KeyValuePair<PerPartitionOffsetT, output_extremum_t>;
-  using global_accum_t        = KeyValuePair<GlobalOffsetT, output_extremum_t>;
+  using input_value_t         = detail::it_value_t<InputIteratorT>;
+  using per_partition_accum_t = KeyValuePair<PerPartitionOffsetT, input_value_t>;
+  using global_accum_t        = KeyValuePair<GlobalOffsetT, input_value_t>;
 
   // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
-  using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, output_extremum_t>;
+  using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT>;
 
   // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
   auto d_result_out = ::cuda::make_tabulate_output_iterator(
     detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
   // Initial value for empty problems, according to documented contract
-  const auto empty_problem_extremum = static_cast<output_extremum_t>([] {
+  const auto empty_problem_extremum = [] {
     if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_min>
                   && ::cuda::std::numeric_limits<input_value_t>::is_specialized)
     {
@@ -379,7 +376,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     {
       return input_value_t{};
     }
-  }());
+  }();
   auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, empty_problem_extremum}};
 
   return dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
