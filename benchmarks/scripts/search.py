@@ -79,6 +79,17 @@ def build_search_space(parameter_space):
     return search_space
 
 
+def variant_label(algname, parameter_space, config):
+    """The canonical `algname.trp_0.ld_1...` name the benchmarks are known by."""
+    range_points = [
+        bench.RangePoint(
+            search_range.definition, search_range.label, int(config[search_range.label])
+        )
+        for search_range in parameter_space
+    ]
+    return "{}.{}".format(algname, bench.VariantPoint(range_points).label())
+
+
 def visible_gpus():
     visible = os.environ.get("CUDA_VISIBLE_DEVICES", "").strip()
     if visible:
@@ -340,9 +351,19 @@ class LaneObjective:
         if score != INVALID_SCORE:
             score = float(score)
 
+        # The variant name and score lead the line so that the output stays
+        # greppable in the format single-GPU searches have always printed; the
+        # lane is a trailing annotation.
         # Flush: workers are forked, so buffered output would be inherited and
         # re-emitted by children.
-        print("gpu {} {}: {}".format(lane.gpu, config, score), flush=True)
+        print(
+            "{} {} (gpu {})".format(
+                variant_label(self.algname, self.parameter_space, config),
+                score,
+                lane.gpu,
+            ),
+            flush=True,
+        )
         return score
 
 
@@ -401,7 +422,14 @@ class CompileIQSeeker:
 
             results = tuner.start(num_workers=len(self.lanes))
             best = results.get_best_result()
-            print("Best for {} {}: {}".format(algname, ct_workload, best))
+            print(
+                "Best for {} {}: {} {}".format(
+                    algname,
+                    ct_workload,
+                    variant_label(algname, parameter_space, best["params"]),
+                    best["score_1"],
+                )
+            )
 
 
 def main():

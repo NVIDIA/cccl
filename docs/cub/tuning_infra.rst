@@ -320,8 +320,8 @@ and forwards any :code:`-D` options to CMake:
 .. code:: bash
 
   $ ./benchmarks/scripts/search.py -DCMAKE_CUDA_ARCHITECTURES=native -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28'
-  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6 0.6805093269929858
-  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10 1.0774560502969677
+  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6 0.6805093269929858 (gpu 0)
+  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10 1.0774560502969677 (gpu 1)
   ...
 
 This will search the space of merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
