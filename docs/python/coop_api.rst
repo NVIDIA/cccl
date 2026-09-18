@@ -124,6 +124,16 @@ See :ref:`radix sorting and digit ranks <coop-radix>`.
 .. autofunction:: radix_sort_pairs
 .. autofunction:: radix_rank
 
+Top-k selection
+^^^^^^^^^^^^^^^
+
+See :ref:`selecting the smallest or largest keys <coop-topk>`.
+
+.. autofunction:: topk_min_keys
+.. autofunction:: topk_max_keys
+.. autofunction:: topk_min_pairs
+.. autofunction:: topk_max_pairs
+
 .. _coop-numba-extensions:
 
 Numba-CUDA-MLIR-qualified API
@@ -180,3 +190,11 @@ Radix sorting and ranking
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
 .. autofunction:: radix_rank
+
+Top-k selection
+^^^^^^^^^^^^^^^
+
+.. autofunction:: topk_min_keys
+.. autofunction:: topk_max_keys
+.. autofunction:: topk_min_pairs
+.. autofunction:: topk_max_pairs
