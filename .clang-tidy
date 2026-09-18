@@ -74,6 +74,7 @@ Checks:
   - '-cppcoreguidelines-rvalue-reference-param-not-moved'
   - '-cppcoreguidelines-virtual-class-destructor'
   - '-cppcoreguidelines-pro-type-member-init'
+  # Unions are used far too much in CUB for this to be useful
   - '-cppcoreguidelines-pro-type-union-access'
   - '-cppcoreguidelines-pro-type-const-cast'
   - '-cppcoreguidelines-use-enum-class'
