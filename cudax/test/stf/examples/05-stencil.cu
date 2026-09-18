@@ -53,19 +53,52 @@ public:
     return sum;
   }
 
-public:
+  size_t get_block_size() const
+  {
+    return block_size;
+  }
+
+  size_t get_ghost_size() const
+  {
+    return ghost_size;
+  }
+
+  int get_preferred_devid() const
+  {
+    return preferred_device;
+  }
+
+  void set_preferred_devid(int device)
+  {
+    preferred_device = device;
+  }
+
+  logical_data<slice<T>>& get_handle()
+  {
+    return handle;
+  }
+
+  logical_data<slice<T>>& get_left_handle()
+  {
+    return left_handle;
+  }
+
+  logical_data<slice<T>>& get_right_handle()
+  {
+    return right_handle;
+  }
+
+private:
   size_t beg;
   size_t end;
   size_t block_size;
   size_t ghost_size;
   int preferred_device;
 
-private:
   std::vector<T> array;
   std::vector<T> left_interface;
   std::vector<T> right_interface;
 
-public:
   // HANDLE = whole data + boundaries
   logical_data<slice<T>> handle;
   // A piece of data to store the left part of the block
@@ -89,11 +122,13 @@ __global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T*
 template <typename T>
 void stencil(data_block<T>& bn, data_block<T>& bn1)
 {
-  const int dev = bn.preferred_device;
+  const int dev = bn.get_preferred_devid();
 
-  ctx.task(exec_place::device(dev), bn.handle.rw(), bn1.handle.read())->*[&](cudaStream_t stream, auto sN, auto sN1) {
-    stencil_kernel<T><<<32, 64, 0, stream>>>(bn.block_size, bn.ghost_size, sN.data_handle(), sN1.data_handle());
-  };
+  ctx.task(exec_place::device(dev), bn.get_handle().rw(), bn1.get_handle().read())
+      ->*[&](cudaStream_t stream, auto sN, auto sN1) {
+            stencil_kernel<T>
+              <<<32, 64, 0, stream>>>(bn.get_block_size(), bn.get_ghost_size(), sN.data_handle(), sN1.data_handle());
+          };
 }
 
 template <typename T>
@@ -119,10 +154,12 @@ template <typename T>
 void update_inner_interfaces(data_block<T>& bn)
 {
   // LEFT
-  copy_task<T>(bn.ghost_size, bn.left_handle, 0, bn.handle, bn.ghost_size, bn.preferred_device);
+  copy_task<T>(
+    bn.get_ghost_size(), bn.get_left_handle(), 0, bn.get_handle(), bn.get_ghost_size(), bn.get_preferred_devid());
 
   // RIGHT
-  copy_task<T>(bn.ghost_size, bn.right_handle, 0, bn.handle, bn.block_size, bn.preferred_device);
+  copy_task<T>(
+    bn.get_ghost_size(), bn.get_right_handle(), 0, bn.get_handle(), bn.get_block_size(), bn.get_preferred_devid());
 }
 
 // Copy left/right handles from neighbours to the array
@@ -130,18 +167,25 @@ template <typename T>
 void update_outer_interfaces(data_block<T>& bn, data_block<T>& left, data_block<T>& right)
 {
   // update_outer_interface_left
-  copy_task<T>(bn.ghost_size, bn.handle, 0, left.right_handle, 0, bn.preferred_device);
+  copy_task<T>(bn.get_ghost_size(), bn.get_handle(), 0, left.get_right_handle(), 0, bn.get_preferred_devid());
 
   // update_outer_interface_right
-  copy_task<T>(bn.ghost_size, bn.handle, bn.ghost_size + bn.block_size, right.left_handle, 0, bn.preferred_device);
+  copy_task<T>(
+    bn.get_ghost_size(),
+    bn.get_handle(),
+    bn.get_ghost_size() + bn.get_block_size(),
+    right.get_left_handle(),
+    0,
+    bn.get_preferred_devid());
 }
 
 // bn1.array = bn.array
 template <typename T>
 void copy_array(data_block<T>& bn, data_block<T>& bn1)
 {
-  assert(bn.preferred_device == bn1.preferred_device);
-  copy_task<T>(bn.block_size + 2 * bn.ghost_size, bn1.handle, 0, bn.handle, 0, bn.preferred_device);
+  assert(bn.get_preferred_devid() == bn1.get_preferred_devid());
+  copy_task<T>(
+    bn.get_block_size() + 2 * bn.get_ghost_size(), bn1.get_handle(), 0, bn.get_handle(), 0, bn.get_preferred_devid());
 }
 
 int main(int argc, char** argv)
@@ -190,8 +234,8 @@ int main(int argc, char** argv)
 
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    Un[b].preferred_device  = static_cast<int>(b % ndevs);
-    Un1[b].preferred_device = static_cast<int>(b % ndevs);
+    Un[b].set_preferred_devid(static_cast<int>(b % ndevs));
+    Un1[b].set_preferred_devid(static_cast<int>(b % ndevs));
   }
 
   // Fill blocks with initial values. For the sake of simplicity, we are
@@ -201,7 +245,7 @@ int main(int argc, char** argv)
   {
     size_t beg = b * BLOCK_SIZE;
 
-    ctx.task(exec_place::host(), Un1[b].handle.rw())->*[&](cudaStream_t stream, auto sUn1) {
+    ctx.task(exec_place::host(), Un1[b].get_handle().rw())->*[&](cudaStream_t stream, auto sUn1) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       double* Un1_vals = sUn1.data_handle();
 

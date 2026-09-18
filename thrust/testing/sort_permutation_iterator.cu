@@ -50,7 +50,7 @@ public:
     return begin() + ((last - first) + (stride - 1)) / stride;
   }
 
-protected:
+private:
   Iterator first;
   Iterator last;
   difference_type stride;

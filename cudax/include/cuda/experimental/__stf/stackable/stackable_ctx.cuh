@@ -517,13 +517,15 @@ private:
       return ::std::unique_lock<::std::shared_mutex>(mutex);
     }
 
+  private:
+    friend class stackable_logical_data;
+
     stackable_ctx sctx;
     ::std::vector<::cuda::std::optional<data_node>> data_nodes;
     int data_root_offset = -1;
     ::std::string symbol;
     bool read_only = false;
 
-  private:
     mutable ::std::shared_mutex mutex;
   };
 
