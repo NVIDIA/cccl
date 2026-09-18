@@ -1,5 +1,31 @@
 include_guard(GLOBAL)
 
+function(_cccl_create_tidy_plugins ret_var)
+  list(APPEND CMAKE_MESSAGE_CONTEXT "create_tidy_plugins")
+
+  # Use an absolute path for binary directory because we are not certain where this
+  # function will be called from the first time. Also, because we need to pass the path to
+  # the plugins directly to clang-tidy, we need a stable directory where they will be
+  # output.
+  add_subdirectory(
+    "${CCCL_SOURCE_DIR}/cmake/clang_tidy_plugins"
+    "${CCCL_BINARY_DIR}/cccl_clang_tidy_plugins"
+  )
+
+  get_property(plugins GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
+  if (NOT plugins)
+    # TODO (jfaibussowit):
+    #
+    # Enable this check once we actually have clang-tidy plugins
+    #
+    # message(
+    #   FATAL_ERROR
+    #   "clang-tidy plugins failed to propagate the list of configured plugins."
+    # )
+  endif()
+  set(${ret_var} "${plugins}" PARENT_SCOPE)
+endfunction()
+
 #[=======================================================================[.rst:
 cccl_tidy_init
 --------------
@@ -42,11 +68,26 @@ function(cccl_tidy_init)
   )
   set(CCCL_RUN_CLANG_TIDY_SCRIPT "${CCCL_RUN_CLANG_TIDY_SCRIPT}" PARENT_SCOPE)
 
-  configure_file(
-    "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_clang_tidy.sh.in"
-    "${CCCL_RUN_CLANG_TIDY_SCRIPT}"
-    @ONLY
+  _cccl_create_tidy_plugins(all_plugins)
+
+  set(load_cmds)
+  foreach (plugin IN LISTS all_plugins)
+    list(APPEND load_cmds "--load='$<TARGET_FILE:${plugin}>'")
+  endforeach()
+  list(JOIN load_cmds " " CCCL_CLANG_TIDY_PLUGINS)
+  # configure_file does not support generator expressions (which are needed for the
+  # clang-tidy plugins), while file(GENERATE) does not support @VAR@ substitutions. So we
+  # need to do it ourselves
+  file(
+    READ "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_clang_tidy.sh.in"
+    run_clang_tidy_sh_in
   )
+  string(CONFIGURE "${run_clang_tidy_sh_in}" run_clang_tidy_sh_tmp @ONLY)
+  file(
+    GENERATE OUTPUT "${CCCL_RUN_CLANG_TIDY_SCRIPT}"
+    CONTENT "${run_clang_tidy_sh_tmp}"
+  )
+
   # Do not set to cache; multiple separate instances of CCCL in a build should not
   # conflict.
   set(CCCL_TIDY_INITIALIZED TRUE)
