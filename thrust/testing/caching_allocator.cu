@@ -21,4 +21,7 @@ void TestSingleDeviceTLSCachingAllocator()
 {
   test_implementation(thrust::detail::single_device_tls_caching_allocator());
 };
-DECLARE_UNITTEST(TestSingleDeviceTLSCachingAllocator);
+TEST_CASE("TestSingleDeviceTLSCachingAllocator", "[caching_allocator]")
+{
+  TestSingleDeviceTLSCachingAllocator();
+}

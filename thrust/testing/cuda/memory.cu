@@ -31,7 +31,10 @@ void TestSelectSystemCudaToCpp()
   const bool is_cuda_to_cpp = are_same_type(cuda_to_cpp, select_system(cuda_tag, cpp_tag));
   REQUIRE(is_cuda_to_cpp);
 }
-DECLARE_UNITTEST(TestSelectSystemCudaToCpp);
+TEST_CASE("TestSelectSystemCudaToCpp", "[memory]")
+{
+  TestSelectSystemCudaToCpp();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename Iterator>
@@ -81,7 +84,10 @@ void TestGetTemporaryBufferDeviceSeq()
     }
   }
 }
-DECLARE_UNITTEST(TestGetTemporaryBufferDeviceSeq);
+TEST_CASE("TestGetTemporaryBufferDeviceSeq", "[memory]")
+{
+  TestGetTemporaryBufferDeviceSeq();
+}
 
 template <typename Iterator>
 __global__ void malloc_kernel(size_t n, Iterator result)
@@ -126,5 +132,8 @@ void TestMallocDeviceSeq()
     }
   }
 }
-DECLARE_UNITTEST(TestMallocDeviceSeq);
+TEST_CASE("TestMallocDeviceSeq", "[memory]")
+{
+  TestMallocDeviceSeq();
+}
 #endif

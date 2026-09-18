@@ -76,7 +76,10 @@ void TestIsPartitionedDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestIsPartitionedDispatchExplicit);
+TEST_CASE("TestIsPartitionedDispatchExplicit", "[is_partitioned]")
+{
+  TestIsPartitionedDispatchExplicit();
+}
 
 template <typename InputIterator, typename Predicate>
 bool is_partitioned(my_tag, InputIterator first, InputIterator, Predicate)
@@ -93,4 +96,7 @@ void TestIsPartitionedDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestIsPartitionedDispatchImplicit);
+TEST_CASE("TestIsPartitionedDispatchImplicit", "[is_partitioned]")
+{
+  TestIsPartitionedDispatchImplicit();
+}

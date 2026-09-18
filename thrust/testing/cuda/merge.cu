@@ -64,13 +64,19 @@ void TestMergeDeviceSeq()
 {
   TestMergeDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMergeDeviceSeq);
+TEST_CASE("TestMergeDeviceSeq", "[merge]")
+{
+  TestMergeDeviceSeq();
+}
 
 void TestMergeDeviceDevice()
 {
   TestMergeDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMergeDeviceDevice);
+TEST_CASE("TestMergeDeviceDevice", "[merge]")
+{
+  TestMergeDeviceDevice();
+}
 #endif
 
 void TestMergeCudaStreams()
@@ -89,4 +95,7 @@ void TestMergeCudaStreams()
   REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {0, 0, 2, 3, 3, 4, 4});
 }
-DECLARE_UNITTEST(TestMergeCudaStreams);
+TEST_CASE("TestMergeCudaStreams", "[merge]")
+{
+  TestMergeCudaStreams();
+}

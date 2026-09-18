@@ -56,7 +56,10 @@ void TestGenerateDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGenerateDispatchExplicit);
+TEST_CASE("TestGenerateDispatchExplicit", "[generate]")
+{
+  TestGenerateDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename Generator>
 void generate(my_tag, ForwardIterator first, ForwardIterator, Generator)
@@ -72,7 +75,10 @@ void TestGenerateDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGenerateDispatchImplicit);
+TEST_CASE("TestGenerateDispatchImplicit", "[generate]")
+{
+  TestGenerateDispatchImplicit();
+}
 
 template <typename T>
 void TestGenerate(const size_t n)
@@ -140,7 +146,10 @@ void TestGenerateNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGenerateNDispatchExplicit);
+TEST_CASE("TestGenerateNDispatchExplicit", "[generate]")
+{
+  TestGenerateNDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename Size, typename Generator>
 ForwardIterator generate_n(my_tag, ForwardIterator first, Size, Generator)
@@ -157,7 +166,10 @@ void TestGenerateNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGenerateNDispatchImplicit);
+TEST_CASE("TestGenerateNDispatchImplicit", "[generate]")
+{
+  TestGenerateNDispatchImplicit();
+}
 
 template <typename T>
 void TestGenerateNToDiscardIterator(const size_t n)
@@ -210,6 +222,9 @@ void TestGenerateTuple()
 
   REQUIRE((h == d));
 };
-DECLARE_UNITTEST(TestGenerateTuple);
+TEST_CASE("TestGenerateTuple", "[generate]")
+{
+  TestGenerateTuple();
+}
 
 _CCCL_DIAG_POP

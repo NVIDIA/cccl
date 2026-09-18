@@ -40,7 +40,10 @@ void TestForEachLargeRegisterFootprint()
 
   thrust::for_each(input.begin(), input.end(), CopyFunctorWithManyRegisters<NUM_REGISTERS>());
 }
-DECLARE_UNITTEST(TestForEachLargeRegisterFootprint);
+TEST_CASE("TestForEachLargeRegisterFootprint", "[for_each]")
+{
+  TestForEachLargeRegisterFootprint();
+}
 
 void TestForEachNLargeRegisterFootprint()
 {
@@ -55,7 +58,10 @@ void TestForEachNLargeRegisterFootprint()
 
   thrust::for_each_n(input.begin(), input.size(), CopyFunctorWithManyRegisters<NUM_REGISTERS>());
 }
-DECLARE_UNITTEST(TestForEachNLargeRegisterFootprint);
+TEST_CASE("TestForEachNLargeRegisterFootprint", "[for_each]")
+{
+  TestForEachNLargeRegisterFootprint();
+}
 
 template <typename T>
 struct mark_present_for_each
@@ -235,4 +241,7 @@ void TestForEachCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestForEachCudaStreams);
+TEST_CASE("TestForEachCudaStreams", "[for_each]")
+{
+  TestForEachCudaStreams();
+}

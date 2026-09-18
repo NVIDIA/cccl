@@ -36,7 +36,10 @@ void TestSetUnionByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetUnionByKeyDispatchExplicit);
+TEST_CASE("TestSetUnionByKeyDispatchExplicit", "[set_union_by_key]")
+{
+  TestSetUnionByKeyDispatchExplicit();
+}
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -75,7 +78,10 @@ void TestSetUnionByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetUnionByKeyDispatchImplicit);
+TEST_CASE("TestSetUnionByKeyDispatchImplicit", "[set_union_by_key]")
+{
+  TestSetUnionByKeyDispatchImplicit();
+}
 
 template <typename Vector>
 void TestSetUnionByKeySimple()

@@ -35,4 +35,7 @@ void TestStableSortByKeyWithLargeKeys()
   _TestStableSortByKeyWithLargeKeys<8>();
   _TestStableSortByKeyWithLargeKeys<16>();
 }
-DECLARE_UNITTEST(TestStableSortByKeyWithLargeKeys);
+TEST_CASE("TestStableSortByKeyWithLargeKeys", "[stable_sort_by_key_large_keys]")
+{
+  TestStableSortByKeyWithLargeKeys();
+}

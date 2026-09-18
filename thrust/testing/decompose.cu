@@ -81,4 +81,7 @@ void TestUniformDecomposition()
     REQUIRE(ud[2].size() == 2);
   }
 }
-DECLARE_UNITTEST(TestUniformDecomposition);
+TEST_CASE("TestUniformDecomposition", "[decompose]")
+{
+  TestUniformDecomposition();
+}

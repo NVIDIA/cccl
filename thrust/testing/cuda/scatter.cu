@@ -47,13 +47,19 @@ void TestScatterDeviceSeq()
 {
   TestScatterDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScatterDeviceSeq);
+TEST_CASE("TestScatterDeviceSeq", "[scatter]")
+{
+  TestScatterDeviceSeq();
+}
 
 void TestScatterDeviceDevice()
 {
   TestScatterDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScatterDeviceDevice);
+TEST_CASE("TestScatterDeviceDevice", "[scatter]")
+{
+  TestScatterDeviceDevice();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -124,13 +130,19 @@ void TestScatterIfDeviceSeq()
 {
   TestScatterIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScatterIfDeviceSeq);
+TEST_CASE("TestScatterIfDeviceSeq", "[scatter]")
+{
+  TestScatterIfDeviceSeq();
+}
 
 void TestScatterIfDeviceDevice()
 {
   TestScatterIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScatterIfDeviceDevice);
+TEST_CASE("TestScatterIfDeviceDevice", "[scatter]")
+{
+  TestScatterIfDeviceDevice();
+}
 #endif
 
 void TestScatterCudaStreams()
@@ -153,7 +165,10 @@ void TestScatterCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScatterCudaStreams);
+TEST_CASE("TestScatterCudaStreams", "[scatter]")
+{
+  TestScatterCudaStreams();
+}
 
 void TestScatterIfCudaStreams()
 {
@@ -175,4 +190,7 @@ void TestScatterIfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScatterIfCudaStreams);
+TEST_CASE("TestScatterIfCudaStreams", "[scatter]")
+{
+  TestScatterIfCudaStreams();
+}

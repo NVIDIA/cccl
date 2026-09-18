@@ -96,13 +96,19 @@ void TestReduceIntoCudaStreamsSync()
 {
   TestReduceIntoCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestReduceIntoCudaStreamsSync);
+TEST_CASE("TestReduceIntoCudaStreamsSync", "[reduce_into]")
+{
+  TestReduceIntoCudaStreamsSync();
+}
 
 void TestReduceIntoCudaStreamsNoSync()
 {
   TestReduceIntoCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceIntoCudaStreamsNoSync);
+TEST_CASE("TestReduceIntoCudaStreamsNoSync", "[reduce_into]")
+{
+  TestReduceIntoCudaStreamsNoSync();
+}
 
 #if defined(THRUST_RDC_ENABLED)
 void TestReduceIntoLargeInput()
@@ -120,5 +126,8 @@ void TestReduceIntoLargeInput()
 
   REQUIRE(num_items == d_result[0]);
 }
-DECLARE_UNITTEST(TestReduceIntoLargeInput);
+TEST_CASE("TestReduceIntoLargeInput", "[reduce_into]")
+{
+  TestReduceIntoLargeInput();
+}
 #endif

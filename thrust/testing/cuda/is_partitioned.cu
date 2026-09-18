@@ -58,13 +58,19 @@ void TestIsPartitionedDeviceSeq()
 {
   TestIsPartitionedDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestIsPartitionedDeviceSeq);
+TEST_CASE("TestIsPartitionedDeviceSeq", "[is_partitioned]")
+{
+  TestIsPartitionedDeviceSeq();
+}
 
 void TestIsPartitionedDeviceDevice()
 {
   TestIsPartitionedDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestIsPartitionedDeviceDevice);
+TEST_CASE("TestIsPartitionedDeviceDevice", "[is_partitioned]")
+{
+  TestIsPartitionedDeviceDevice();
+}
 #endif
 
 void TestIsPartitionedCudaStreams()
@@ -103,7 +109,10 @@ void TestIsPartitionedCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestIsPartitionedCudaStreams);
+TEST_CASE("TestIsPartitionedCudaStreams", "[is_partitioned]")
+{
+  TestIsPartitionedCudaStreams();
+}
 
 template <typename T>
 struct is_even_non_const
@@ -124,4 +133,7 @@ void TestIsPartitionedWithNonConstPredicate()
   REQUIRE_FALSE(
     thrust::is_partitioned(thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), is_even_non_const<int>{}));
 }
-DECLARE_UNITTEST(TestIsPartitionedWithNonConstPredicate);
+TEST_CASE("TestIsPartitionedWithNonConstPredicate", "[is_partitioned]")
+{
+  TestIsPartitionedWithNonConstPredicate();
+}

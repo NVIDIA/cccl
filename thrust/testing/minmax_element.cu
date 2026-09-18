@@ -81,7 +81,10 @@ void TestMinMaxElementDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMinMaxElementDispatchExplicit);
+TEST_CASE("TestMinMaxElementDispatchExplicit", "[minmax_element]")
+{
+  TestMinMaxElementDispatchExplicit();
+}
 
 template <typename ForwardIterator>
 cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(my_tag, ForwardIterator first, ForwardIterator)
@@ -98,7 +101,10 @@ void TestMinMaxElementDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestMinMaxElementDispatchImplicit);
+TEST_CASE("TestMinMaxElementDispatchImplicit", "[minmax_element]")
+{
+  TestMinMaxElementDispatchImplicit();
+}
 
 void TestMinMaxElementWithBigIndexesHelper(int magnitude)
 {
@@ -125,7 +131,10 @@ void TestMinMaxElementWithBigIndexes()
   TestMinMaxElementWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestMinMaxElementWithBigIndexes);
+TEST_CASE("TestMinMaxElementWithBigIndexes", "[minmax_element]")
+{
+  TestMinMaxElementWithBigIndexes();
+}
 
 void TestMinElementCudaIterator()
 {
@@ -133,4 +142,7 @@ void TestMinElementCudaIterator()
   REQUIRE(*result.first == 0);
   REQUIRE(*result.second == 99);
 }
-DECLARE_UNITTEST(TestMinElementCudaIterator);
+TEST_CASE("TestMinElementCudaIterator", "[minmax_element]")
+{
+  TestMinElementCudaIterator();
+}

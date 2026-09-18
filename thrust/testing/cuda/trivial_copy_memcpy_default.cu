@@ -25,7 +25,10 @@ void TestTrivialCopyFromDevice_HostSource()
     REQUIRE(dst[i] == i * 10);
   }
 }
-DECLARE_UNITTEST(TestTrivialCopyFromDevice_HostSource);
+TEST_CASE("TestTrivialCopyFromDevice_HostSource", "[trivial_copy_memcpy_default]")
+{
+  TestTrivialCopyFromDevice_HostSource();
+}
 
 void TestTrivialCopyToDevice_HostDest()
 {
@@ -40,4 +43,7 @@ void TestTrivialCopyToDevice_HostDest()
     REQUIRE(dst[i] == i * 100);
   }
 }
-DECLARE_UNITTEST(TestTrivialCopyToDevice_HostDest);
+TEST_CASE("TestTrivialCopyToDevice_HostDest", "[trivial_copy_memcpy_default]")
+{
+  TestTrivialCopyToDevice_HostDest();
+}

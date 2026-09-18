@@ -269,19 +269,28 @@ void TestReduceByKeyDeviceSeq()
 {
   TestReduceByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceSeq);
+TEST_CASE("TestReduceByKeyDeviceSeq", "[reduce_by_key]")
+{
+  TestReduceByKeyDeviceSeq();
+}
 
 void TestReduceByKeyDeviceDevice()
 {
   TestReduceByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceDevice);
+TEST_CASE("TestReduceByKeyDeviceDevice", "[reduce_by_key]")
+{
+  TestReduceByKeyDeviceDevice();
+}
 
 void TestReduceByKeyDeviceNoSync()
 {
   TestReduceByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceNoSync);
+TEST_CASE("TestReduceByKeyDeviceNoSync", "[reduce_by_key]")
+{
+  TestReduceByKeyDeviceNoSync();
+}
 #endif
 
 template <typename ExecutionPolicy>
@@ -382,13 +391,19 @@ void TestReduceByKeyCudaStreamsSync()
 {
   TestReduceByKeyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsSync);
+TEST_CASE("TestReduceByKeyCudaStreamsSync", "[reduce_by_key]")
+{
+  TestReduceByKeyCudaStreamsSync();
+}
 
 void TestReduceByKeyCudaStreamsNoSync()
 {
   TestReduceByKeyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsNoSync);
+TEST_CASE("TestReduceByKeyCudaStreamsNoSync", "[reduce_by_key]")
+{
+  TestReduceByKeyCudaStreamsNoSync();
+}
 
 // Maps indices to key ids
 class div_op
@@ -483,7 +498,10 @@ void TestReduceByKeyWithBigIndexes()
   TestReduceByKeyWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestReduceByKeyWithBigIndexes);
+TEST_CASE("TestReduceByKeyWithBigIndexes", "[reduce_by_key]")
+{
+  TestReduceByKeyWithBigIndexes();
+}
 
 void TestReduceByKeyWithCustomEqualityOp()
 {
@@ -527,7 +545,10 @@ void TestReduceByKeyWithCustomEqualityOp()
   REQUIRE(all_values_correct);
 }
 
-DECLARE_UNITTEST(TestReduceByKeyWithCustomEqualityOp);
+TEST_CASE("TestReduceByKeyWithCustomEqualityOp", "[reduce_by_key]")
+{
+  TestReduceByKeyWithCustomEqualityOp();
+}
 
 void TestReduceByKeyWithDifferentAccumulatorT()
 {
@@ -574,4 +595,7 @@ void TestReduceByKeyWithDifferentAccumulatorT()
   REQUIRE(aggregates_out[0] == expected_aggregate);
 }
 
-DECLARE_UNITTEST(TestReduceByKeyWithDifferentAccumulatorT);
+TEST_CASE("TestReduceByKeyWithDifferentAccumulatorT", "[reduce_by_key]")
+{
+  TestReduceByKeyWithDifferentAccumulatorT();
+}

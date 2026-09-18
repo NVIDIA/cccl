@@ -36,7 +36,10 @@ void TestCopyNFromConstIterator()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_UNITTEST(TestCopyNFromConstIterator);
+TEST_CASE("TestCopyNFromConstIterator", "[copy_n]")
+{
+  TestCopyNFromConstIterator();
+}
 
 void TestCopyNToDiscardIterator()
 {
@@ -58,7 +61,10 @@ void TestCopyNToDiscardIterator()
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_UNITTEST(TestCopyNToDiscardIterator);
+TEST_CASE("TestCopyNToDiscardIterator", "[copy_n]")
+{
+  TestCopyNToDiscardIterator();
+}
 
 template <class Vector>
 void TestCopyNMatchingTypes()
@@ -128,7 +134,10 @@ void TestCopyNVectorBool()
 
   REQUIRE(d == dref);
 }
-DECLARE_UNITTEST(TestCopyNVectorBool);
+TEST_CASE("TestCopyNVectorBool", "[copy_n]")
+{
+  TestCopyNVectorBool();
+}
 
 template <class Vector>
 void TestCopyNListTo()
@@ -236,7 +245,10 @@ void TestCopyNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCopyNDispatchExplicit);
+TEST_CASE("TestCopyNDispatchExplicit", "[copy_n]")
+{
+  TestCopyNDispatchExplicit();
+}
 
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(my_tag, InputIterator, Size, OutputIterator result)
@@ -253,4 +265,7 @@ void TestCopyNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestCopyNDispatchImplicit);
+TEST_CASE("TestCopyNDispatchImplicit", "[copy_n]")
+{
+  TestCopyNDispatchImplicit();
+}

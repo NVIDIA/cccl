@@ -20,7 +20,10 @@ void TestTabulateDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTabulateDispatchExplicit);
+TEST_CASE("TestTabulateDispatchExplicit", "[tabulate]")
+{
+  TestTabulateDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename UnaryOperation>
 void tabulate(my_tag, ForwardIterator first, ForwardIterator, UnaryOperation)
@@ -36,7 +39,10 @@ void TestTabulateDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTabulateDispatchImplicit);
+TEST_CASE("TestTabulateDispatchImplicit", "[tabulate]")
+{
+  TestTabulateDispatchImplicit();
+}
 
 template <class Vector>
 void TestTabulateSimple()

@@ -34,7 +34,10 @@ void TestPermutationIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestPermutationIteratorTraits);
+TEST_CASE("TestPermutationIteratorTraits", "[permutation_iterator]")
+{
+  TestPermutationIteratorTraits();
+}
 
 template <class Vector>
 void TestPermutationIteratorSimple()
@@ -203,7 +206,10 @@ void TestPermutationIteratorHostDeviceGather()
   const HostVector href{4, 1, 6, 8};
   REQUIRE(h_output == href);
 }
-DECLARE_UNITTEST(TestPermutationIteratorHostDeviceGather);
+TEST_CASE("TestPermutationIteratorHostDeviceGather", "[permutation_iterator]")
+{
+  TestPermutationIteratorHostDeviceGather();
+}
 
 void TestPermutationIteratorHostDeviceScatter()
 {
@@ -240,7 +246,10 @@ void TestPermutationIteratorHostDeviceScatter()
   const HostVector href = dref;
   REQUIRE(h_output == href);
 }
-DECLARE_UNITTEST(TestPermutationIteratorHostDeviceScatter);
+TEST_CASE("TestPermutationIteratorHostDeviceScatter", "[permutation_iterator]")
+{
+  TestPermutationIteratorHostDeviceScatter();
+}
 
 template <typename Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestPermutationIteratorWithCountingIterator()

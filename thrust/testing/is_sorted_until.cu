@@ -101,7 +101,10 @@ void TestIsSortedUntilExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestIsSortedUntilExplicit);
+TEST_CASE("TestIsSortedUntilExplicit", "[is_sorted_until]")
+{
+  TestIsSortedUntilExplicit();
+}
 
 template <typename ForwardIterator>
 ForwardIterator is_sorted_until(my_tag, ForwardIterator first, ForwardIterator)
@@ -118,4 +121,7 @@ void TestIsSortedUntilImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestIsSortedUntilImplicit);
+TEST_CASE("TestIsSortedUntilImplicit", "[is_sorted_until]")
+{
+  TestIsSortedUntilImplicit();
+}

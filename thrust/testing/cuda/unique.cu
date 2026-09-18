@@ -100,19 +100,28 @@ void TestUniqueDeviceSeq()
 {
   TestUniqueDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueDeviceSeq);
+TEST_CASE("TestUniqueDeviceSeq", "[unique]")
+{
+  TestUniqueDeviceSeq();
+}
 
 void TestUniqueDeviceDevice()
 {
   TestUniqueDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueDeviceDevice);
+TEST_CASE("TestUniqueDeviceDevice", "[unique]")
+{
+  TestUniqueDeviceDevice();
+}
 
 void TestUniqueDeviceNoSync()
 {
   TestUniqueDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueDeviceNoSync);
+TEST_CASE("TestUniqueDeviceNoSync", "[unique]")
+{
+  TestUniqueDeviceNoSync();
+}
 #endif
 
 template <typename ExecutionPolicy>
@@ -154,13 +163,19 @@ void TestUniqueCudaStreamsSync()
 {
   TestUniqueCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueCudaStreamsSync);
+TEST_CASE("TestUniqueCudaStreamsSync", "[unique]")
+{
+  TestUniqueCudaStreamsSync();
+}
 
 void TestUniqueCudaStreamsNoSync()
 {
   TestUniqueCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCudaStreamsNoSync);
+TEST_CASE("TestUniqueCudaStreamsNoSync", "[unique]")
+{
+  TestUniqueCudaStreamsNoSync();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Iterator3>
@@ -222,19 +237,28 @@ void TestUniqueCopyDeviceSeq()
 {
   TestUniqueCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueCopyDeviceSeq);
+TEST_CASE("TestUniqueCopyDeviceSeq", "[unique]")
+{
+  TestUniqueCopyDeviceSeq();
+}
 
 void TestUniqueCopyDeviceDevice()
 {
   TestUniqueCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueCopyDeviceDevice);
+TEST_CASE("TestUniqueCopyDeviceDevice", "[unique]")
+{
+  TestUniqueCopyDeviceDevice();
+}
 
 void TestUniqueCopyDeviceNoSync()
 {
   TestUniqueCopyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCopyDeviceNoSync);
+TEST_CASE("TestUniqueCopyDeviceNoSync", "[unique]")
+{
+  TestUniqueCopyDeviceNoSync();
+}
 #endif
 
 template <typename ExecutionPolicy>
@@ -278,13 +302,19 @@ void TestUniqueCopyCudaStreamsSync()
 {
   TestUniqueCopyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueCopyCudaStreamsSync);
+TEST_CASE("TestUniqueCopyCudaStreamsSync", "[unique]")
+{
+  TestUniqueCopyCudaStreamsSync();
+}
 
 void TestUniqueCopyCudaStreamsNoSync()
 {
   TestUniqueCopyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCopyCudaStreamsNoSync);
+TEST_CASE("TestUniqueCopyCudaStreamsNoSync", "[unique]")
+{
+  TestUniqueCopyCudaStreamsNoSync();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2>
@@ -331,19 +361,28 @@ void TestUniqueCountDeviceSeq()
 {
   TestUniqueCountDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueCountDeviceSeq);
+TEST_CASE("TestUniqueCountDeviceSeq", "[unique]")
+{
+  TestUniqueCountDeviceSeq();
+}
 
 void TestUniqueCountDeviceDevice()
 {
   TestUniqueCountDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueCountDeviceDevice);
+TEST_CASE("TestUniqueCountDeviceDevice", "[unique]")
+{
+  TestUniqueCountDeviceDevice();
+}
 
 void TestUniqueCountDeviceNoSync()
 {
   TestUniqueCountDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCountDeviceNoSync);
+TEST_CASE("TestUniqueCountDeviceNoSync", "[unique]")
+{
+  TestUniqueCountDeviceNoSync();
+}
 #endif
 
 template <typename ExecutionPolicy>
@@ -376,13 +415,19 @@ void TestUniqueCountCudaStreamsSync()
 {
   TestUniqueCountCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueCountCudaStreamsSync);
+TEST_CASE("TestUniqueCountCudaStreamsSync", "[unique]")
+{
+  TestUniqueCountCudaStreamsSync();
+}
 
 void TestUniqueCountCudaStreamsNoSync()
 {
   TestUniqueCountCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCountCudaStreamsNoSync);
+TEST_CASE("TestUniqueCountCudaStreamsNoSync", "[unique]")
+{
+  TestUniqueCountCudaStreamsNoSync();
+}
 
 void TestUniqueWithMagnitude(int magnitude)
 {
@@ -426,7 +471,10 @@ catch (std::bad_alloc&)
   // if we run out of memory, just skip the test
   return;
 }
-DECLARE_UNITTEST(TestUniqueWithLargeNumberOfItems);
+TEST_CASE("TestUniqueWithLargeNumberOfItems", "[unique]")
+{
+  TestUniqueWithLargeNumberOfItems();
+}
 
 void TestUniqueWithCustomEqualityOp()
 {
@@ -450,7 +498,10 @@ void TestUniqueWithCustomEqualityOp()
   REQUIRE(all_results_correct);
 }
 
-DECLARE_UNITTEST(TestUniqueWithCustomEqualityOp);
+TEST_CASE("TestUniqueWithCustomEqualityOp", "[unique]")
+{
+  TestUniqueWithCustomEqualityOp();
+}
 
 template <typename F>
 struct NonConstAdapter
@@ -475,4 +526,7 @@ void TestUniqueWithCustomEqualityOpMutable()
   thrust::unique(thrust::cuda::par, in.begin(), in.end(), NonConstAdapter(cuda::std::equal_to<>{}));
 }
 
-DECLARE_UNITTEST(TestUniqueWithCustomEqualityOpMutable);
+TEST_CASE("TestUniqueWithCustomEqualityOpMutable", "[unique]")
+{
+  TestUniqueWithCustomEqualityOpMutable();
+}

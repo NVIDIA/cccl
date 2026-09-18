@@ -78,7 +78,10 @@ void TestIsSortedDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestIsSortedDispatchExplicit);
+TEST_CASE("TestIsSortedDispatchExplicit", "[is_sorted]")
+{
+  TestIsSortedDispatchExplicit();
+}
 
 template <typename InputIterator>
 bool is_sorted(my_tag, InputIterator first, InputIterator)
@@ -95,4 +98,7 @@ void TestIsSortedDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestIsSortedDispatchImplicit);
+TEST_CASE("TestIsSortedDispatchImplicit", "[is_sorted]")
+{
+  TestIsSortedDispatchImplicit();
+}

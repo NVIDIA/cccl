@@ -26,7 +26,10 @@ void TestDeviceReferenceConstructorFromDeviceReference()
   REQUIRE(7 == v[0]);
   REQUIRE(v[0] == ref);
 }
-DECLARE_UNITTEST(TestDeviceReferenceConstructorFromDeviceReference);
+TEST_CASE("TestDeviceReferenceConstructorFromDeviceReference", "[device_reference]")
+{
+  TestDeviceReferenceConstructorFromDeviceReference();
+}
 
 void TestDeviceReferenceConstructorFromDevicePointer()
 {
@@ -52,7 +55,10 @@ void TestDeviceReferenceConstructorFromDevicePointer()
   REQUIRE(7 == *ptr);
   REQUIRE(v[0] == ref);
 }
-DECLARE_UNITTEST(TestDeviceReferenceConstructorFromDevicePointer);
+TEST_CASE("TestDeviceReferenceConstructorFromDevicePointer", "[device_reference]")
+{
+  TestDeviceReferenceConstructorFromDevicePointer();
+}
 
 void TestDeviceReferenceAssignmentFromDeviceReference()
 {
@@ -100,7 +106,10 @@ void TestDeviceReferenceAssignmentFromDeviceReference()
   REQUIRE(11.0f == ref2);
   REQUIRE(ref0 == ref2);
 }
-DECLARE_UNITTEST(TestDeviceReferenceAssignmentFromDeviceReference);
+TEST_CASE("TestDeviceReferenceAssignmentFromDeviceReference", "[device_reference]")
+{
+  TestDeviceReferenceAssignmentFromDeviceReference();
+}
 
 void TestDeviceReferenceManipulation()
 {
@@ -223,7 +232,10 @@ void TestDeviceReferenceManipulation()
   const thrust::device_reference<const T1> ref1 = v[0];
   REQUIRE(ref1 == ref);
 }
-DECLARE_UNITTEST(TestDeviceReferenceManipulation);
+TEST_CASE("TestDeviceReferenceManipulation", "[device_reference]")
+{
+  TestDeviceReferenceManipulation();
+}
 
 void TestDeviceReferenceSwap()
 {
@@ -247,7 +259,10 @@ void TestDeviceReferenceSwap()
   REQUIRE(7 == ref1);
   REQUIRE(13 == ref2);
 }
-DECLARE_UNITTEST(TestDeviceReferenceSwap);
+TEST_CASE("TestDeviceReferenceSwap", "[device_reference]")
+{
+  TestDeviceReferenceSwap();
+}
 
 void TestDeviceReferenceCompare()
 {
@@ -401,7 +416,10 @@ void TestDeviceReferenceCompare()
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ref, other_ref>);
   }
 }
-DECLARE_UNITTEST(TestDeviceReferenceCompare);
+TEST_CASE("TestDeviceReferenceCompare", "[device_reference]")
+{
+  TestDeviceReferenceCompare();
+}
 
 void TestTaggedReferenceCompare()
 {
@@ -554,4 +572,7 @@ void TestTaggedReferenceCompare()
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<tagged_ref, other_ref>);
   }
 }
-DECLARE_UNITTEST(TestTaggedReferenceCompare);
+TEST_CASE("TestTaggedReferenceCompare", "[device_reference]")
+{
+  TestTaggedReferenceCompare();
+}

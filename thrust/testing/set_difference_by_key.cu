@@ -36,7 +36,10 @@ void TestSetDifferenceByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDispatchExplicit);
+TEST_CASE("TestSetDifferenceByKeyDispatchExplicit", "[set_difference_by_key]")
+{
+  TestSetDifferenceByKeyDispatchExplicit();
+}
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -75,7 +78,10 @@ void TestSetDifferenceByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDispatchImplicit);
+TEST_CASE("TestSetDifferenceByKeyDispatchImplicit", "[set_difference_by_key]")
+{
+  TestSetDifferenceByKeyDispatchImplicit();
+}
 
 template <typename Vector>
 void TestSetDifferenceByKeySimple()

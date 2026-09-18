@@ -27,7 +27,10 @@ void TestAddressStabilityLibcuxx()
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(cuda::std::plus<addable>{}))>::value);
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(cuda::std::plus<>{}))>::value);
 }
-DECLARE_UNITTEST(TestAddressStabilityLibcuxx);
+TEST_CASE("TestAddressStabilityLibcuxx", "[address_stability]")
+{
+  TestAddressStabilityLibcuxx();
+}
 
 void TestAddressStabilityThrust()
 {
@@ -47,7 +50,10 @@ void TestAddressStabilityThrust()
     proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(::cuda::std::plus<addable>{}))>::value);
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(::cuda::std::plus<>{}))>::value);
 }
-DECLARE_UNITTEST(TestAddressStabilityThrust);
+TEST_CASE("TestAddressStabilityThrust", "[address_stability]")
+{
+  TestAddressStabilityThrust();
+}
 
 template <typename T>
 struct my_plus
@@ -81,7 +87,10 @@ void TestAddressStabilityUserDefinedFunctionObject()
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(my_plus<int&&>{}))>::value);
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(my_plus<const int&&>{}))>::value);
 }
-DECLARE_UNITTEST(TestAddressStabilityUserDefinedFunctionObject);
+TEST_CASE("TestAddressStabilityUserDefinedFunctionObject", "[address_stability]")
+{
+  TestAddressStabilityUserDefinedFunctionObject();
+}
 
 void TestAddressStabilityLambda()
 {
@@ -117,4 +126,7 @@ void TestAddressStabilityLambda()
     static_assert(proclaims_copyable_arguments<decltype(pr_l)>::value);
   }
 }
-DECLARE_UNITTEST(TestAddressStabilityLambda);
+TEST_CASE("TestAddressStabilityLambda", "[address_stability]")
+{
+  TestAddressStabilityLambda();
+}

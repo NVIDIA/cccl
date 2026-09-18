@@ -24,7 +24,10 @@ void TestSetIntersectionDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetIntersectionDispatchExplicit);
+TEST_CASE("TestSetIntersectionDispatchExplicit", "[set_intersection]")
+{
+  TestSetIntersectionDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -47,7 +50,10 @@ void TestSetIntersectionDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetIntersectionDispatchImplicit);
+TEST_CASE("TestSetIntersectionDispatchImplicit", "[set_intersection]")
+{
+  TestSetIntersectionDispatchImplicit();
+}
 
 template <typename Vector>
 void TestSetIntersectionSimple()
@@ -237,5 +243,8 @@ void TestSetDifferenceWithBigIndexes()
   TestSetDifferenceWithBigIndexesHelper(33);
 #  endif
 }
-DECLARE_UNITTEST(TestSetDifferenceWithBigIndexes);
+TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_intersection]")
+{
+  TestSetDifferenceWithBigIndexes();
+}
 #endif

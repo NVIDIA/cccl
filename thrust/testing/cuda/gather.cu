@@ -79,7 +79,10 @@ void TestGatherCudaStreams()
   REQUIRE(dst == ref);
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGatherCudaStreams);
+TEST_CASE("TestGatherCudaStreams", "[gather]")
+{
+  TestGatherCudaStreams();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy,
@@ -199,4 +202,7 @@ void TestGatherIfCudaStreams()
   REQUIRE(dst == ref);
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGatherIfCudaStreams);
+TEST_CASE("TestGatherIfCudaStreams", "[gather]")
+{
+  TestGatherIfCudaStreams();
+}

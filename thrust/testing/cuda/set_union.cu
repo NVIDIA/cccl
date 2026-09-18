@@ -40,13 +40,19 @@ void TestSetUnionDeviceSeq()
 {
   TestSetUnionDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetUnionDeviceSeq);
+TEST_CASE("TestSetUnionDeviceSeq", "[set_union]")
+{
+  TestSetUnionDeviceSeq();
+}
 
 void TestSetUnionDeviceDevice()
 {
   TestSetUnionDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetUnionDeviceDevice);
+TEST_CASE("TestSetUnionDeviceDevice", "[set_union]")
+{
+  TestSetUnionDeviceDevice();
+}
 #endif
 
 void TestSetUnionCudaStreams()
@@ -64,4 +70,7 @@ void TestSetUnionCudaStreams()
   REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {0, 2, 3, 3, 4});
 }
-DECLARE_UNITTEST(TestSetUnionCudaStreams);
+TEST_CASE("TestSetUnionCudaStreams", "[set_union]")
+{
+  TestSetUnionCudaStreams();
+}

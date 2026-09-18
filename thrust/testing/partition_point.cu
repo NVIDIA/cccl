@@ -64,7 +64,10 @@ void TestPartitionPointDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestPartitionPointDispatchExplicit);
+TEST_CASE("TestPartitionPointDispatchExplicit", "[partition_point]")
+{
+  TestPartitionPointDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition_point(my_tag, ForwardIterator first, ForwardIterator, Predicate)
@@ -81,7 +84,10 @@ void TestPartitionPointDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestPartitionPointDispatchImplicit);
+TEST_CASE("TestPartitionPointDispatchImplicit", "[partition_point]")
+{
+  TestPartitionPointDispatchImplicit();
+}
 
 struct test_less_than
 {
@@ -113,5 +119,8 @@ void TestPartitionPointWithBigIndexes()
   TestPartitionPointWithBigIndexesHelper(32);
   TestPartitionPointWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestPartitionPointWithBigIndexes);
+TEST_CASE("TestPartitionPointWithBigIndexes", "[partition_point]")
+{
+  TestPartitionPointWithBigIndexes();
+}
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE

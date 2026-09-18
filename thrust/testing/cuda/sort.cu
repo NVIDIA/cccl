@@ -110,7 +110,10 @@ void TestSortCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestSortCudaStreams);
+TEST_CASE("TestSortCudaStreams", "[sort]")
+{
+  TestSortCudaStreams();
+}
 
 void TestComparisonSortCudaStreams()
 {
@@ -126,7 +129,10 @@ void TestComparisonSortCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestComparisonSortCudaStreams);
+TEST_CASE("TestComparisonSortCudaStreams", "[sort]")
+{
+  TestComparisonSortCudaStreams();
+}
 
 template <typename T>
 struct TestRadixSortDispatch
@@ -294,7 +300,10 @@ void TestSortWithLargeNumberOfItems()
   TestSortWithMagnitude(39);
 #endif
 }
-DECLARE_UNITTEST(TestSortWithLargeNumberOfItems);
+TEST_CASE("TestSortWithLargeNumberOfItems", "[sort]")
+{
+  TestSortWithLargeNumberOfItems();
+}
 
 template <typename T>
 struct TestSortAscendingKey

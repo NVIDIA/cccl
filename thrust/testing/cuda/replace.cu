@@ -85,13 +85,19 @@ void TestReplaceCopyDeviceSeq()
 {
   TestReplaceCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceCopyDeviceSeq);
+TEST_CASE("TestReplaceCopyDeviceSeq", "[replace]")
+{
+  TestReplaceCopyDeviceSeq();
+}
 
 void TestReplaceCopyDeviceDevice()
 {
   TestReplaceCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceCopyDeviceDevice);
+TEST_CASE("TestReplaceCopyDeviceDevice", "[replace]")
+{
+  TestReplaceCopyDeviceDevice();
+}
 
 template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename T>
 __global__ void replace_if_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predicate pred, T new_value)
@@ -119,13 +125,19 @@ void TestReplaceIfDeviceSeq()
 {
   TestReplaceIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceIfDeviceSeq);
+TEST_CASE("TestReplaceIfDeviceSeq", "[replace]")
+{
+  TestReplaceIfDeviceSeq();
+}
 
 void TestReplaceIfDeviceDevice()
 {
   TestReplaceIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceIfDeviceDevice);
+TEST_CASE("TestReplaceIfDeviceDevice", "[replace]")
+{
+  TestReplaceIfDeviceDevice();
+}
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename T>
 __global__ void replace_if_kernel(
@@ -157,13 +169,19 @@ void TestReplaceIfStencilDeviceSeq()
 {
   TestReplaceIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceIfStencilDeviceSeq);
+TEST_CASE("TestReplaceIfStencilDeviceSeq", "[replace]")
+{
+  TestReplaceIfStencilDeviceSeq();
+}
 
 void TestReplaceIfStencilDeviceDevice()
 {
   TestReplaceIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceIfStencilDeviceDevice);
+TEST_CASE("TestReplaceIfStencilDeviceDevice", "[replace]")
+{
+  TestReplaceIfStencilDeviceDevice();
+}
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename T>
 __global__ void replace_copy_if_kernel(
@@ -196,13 +214,19 @@ void TestReplaceCopyIfDeviceSeq()
 {
   TestReplaceCopyIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceCopyIfDeviceSeq);
+TEST_CASE("TestReplaceCopyIfDeviceSeq", "[replace]")
+{
+  TestReplaceCopyIfDeviceSeq();
+}
 
 void TestReplaceCopyIfDeviceDevice()
 {
   TestReplaceCopyIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceCopyIfDeviceDevice);
+TEST_CASE("TestReplaceCopyIfDeviceDevice", "[replace]")
+{
+  TestReplaceCopyIfDeviceDevice();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -250,13 +274,19 @@ void TestReplaceCopyIfStencilDeviceSeq()
 {
   TestReplaceCopyIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReplaceCopyIfStencilDeviceSeq);
+TEST_CASE("TestReplaceCopyIfStencilDeviceSeq", "[replace]")
+{
+  TestReplaceCopyIfStencilDeviceSeq();
+}
 
 void TestReplaceCopyIfStencilDeviceDevice()
 {
   TestReplaceCopyIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReplaceCopyIfStencilDeviceDevice);
+TEST_CASE("TestReplaceCopyIfStencilDeviceDevice", "[replace]")
+{
+  TestReplaceCopyIfStencilDeviceDevice();
+}
 #endif
 
 void TestReplaceCudaStreams()
@@ -280,4 +310,7 @@ void TestReplaceCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestReplaceCudaStreams);
+TEST_CASE("TestReplaceCudaStreams", "[replace]")
+{
+  TestReplaceCudaStreams();
+}

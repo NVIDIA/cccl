@@ -30,7 +30,10 @@ void TestDeviceBufferShuffleCudaStreams()
 
   test_runtime::assert_equal(stream, buffer, {0, 1, 2, 3, 4});
 }
-DECLARE_UNITTEST(TestDeviceBufferShuffleCudaStreams);
+TEST_CASE("TestDeviceBufferShuffleCudaStreams", "[device_buffer_algorithms]")
+{
+  TestDeviceBufferShuffleCudaStreams();
+}
 
 void TestDeviceBufferSortCudaStreams()
 {
@@ -44,4 +47,7 @@ void TestDeviceBufferSortCudaStreams()
 
   test_runtime::assert_equal(stream, buffer, {0, 1, 2, 3, 4});
 }
-DECLARE_UNITTEST(TestDeviceBufferSortCudaStreams);
+TEST_CASE("TestDeviceBufferSortCudaStreams", "[device_buffer_algorithms]")
+{
+  TestDeviceBufferSortCudaStreams();
+}

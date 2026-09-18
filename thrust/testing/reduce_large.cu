@@ -35,4 +35,7 @@ void TestReduceWithLargeTypes()
   //  _TestReduceWithLargeTypes<int,  256>();
   //  _TestReduceWithLargeTypes<int,  512>();
 }
-DECLARE_UNITTEST(TestReduceWithLargeTypes);
+TEST_CASE("TestReduceWithLargeTypes", "[reduce_large]")
+{
+  TestReduceWithLargeTypes();
+}

@@ -19,4 +19,7 @@ void TestLegacyDefaultStream()
   std::thread t(verify_stream);
   t.join();
 }
-DECLARE_UNITTEST(TestLegacyDefaultStream);
+TEST_CASE("TestLegacyDefaultStream", "[stream_legacy]")
+{
+  TestLegacyDefaultStream();
+}

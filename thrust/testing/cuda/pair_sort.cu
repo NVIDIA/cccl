@@ -50,11 +50,17 @@ void TestPairStableSortDeviceSeq()
 {
   TestPairStableSortDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPairStableSortDeviceSeq);
+TEST_CASE("TestPairStableSortDeviceSeq", "[pair_sort]")
+{
+  TestPairStableSortDeviceSeq();
+}
 
 void TestPairStableSortDeviceDevice()
 {
   TestPairStableSortDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPairStableSortDeviceDevice);
+TEST_CASE("TestPairStableSortDeviceDevice", "[pair_sort]")
+{
+  TestPairStableSortDeviceDevice();
+}
 #endif

@@ -46,13 +46,19 @@ void TestIsSortedDeviceSeq()
 {
   TestIsSortedDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestIsSortedDeviceSeq);
+TEST_CASE("TestIsSortedDeviceSeq", "[is_sorted]")
+{
+  TestIsSortedDeviceSeq();
+}
 
 void TestIsSortedDeviceDevice()
 {
   TestIsSortedDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestIsSortedDeviceDevice);
+TEST_CASE("TestIsSortedDeviceDevice", "[is_sorted]")
+{
+  TestIsSortedDeviceDevice();
+}
 #endif
 
 void TestIsSortedCudaStreams()
@@ -89,4 +95,7 @@ void TestIsSortedCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestIsSortedCudaStreams);
+TEST_CASE("TestIsSortedCudaStreams", "[is_sorted]")
+{
+  TestIsSortedCudaStreams();
+}

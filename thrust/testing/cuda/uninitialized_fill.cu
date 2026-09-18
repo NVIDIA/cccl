@@ -66,13 +66,19 @@ void TestUninitializedFillDeviceSeq()
 {
   TestUninitializedFillDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUninitializedFillDeviceSeq);
+TEST_CASE("TestUninitializedFillDeviceSeq", "[uninitialized_fill]")
+{
+  TestUninitializedFillDeviceSeq();
+}
 
 void TestUninitializedFillDeviceDevice()
 {
   TestUninitializedFillDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUninitializedFillDeviceDevice);
+TEST_CASE("TestUninitializedFillDeviceDevice", "[uninitialized_fill]")
+{
+  TestUninitializedFillDeviceDevice();
+}
 #endif
 
 void TestUninitializedFillCudaStreams()
@@ -94,7 +100,10 @@ void TestUninitializedFillCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestUninitializedFillCudaStreams);
+TEST_CASE("TestUninitializedFillCudaStreams", "[uninitialized_fill]")
+{
+  TestUninitializedFillCudaStreams();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator1, typename Size, typename T, typename Iterator2>
@@ -174,13 +183,19 @@ void TestUninitializedFillNDeviceSeq()
 {
   TestUninitializedFillNDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUninitializedFillNDeviceSeq);
+TEST_CASE("TestUninitializedFillNDeviceSeq", "[uninitialized_fill]")
+{
+  TestUninitializedFillNDeviceSeq();
+}
 
 void TestUninitializedFillNDeviceDevice()
 {
   TestUninitializedFillNDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUninitializedFillNDeviceDevice);
+TEST_CASE("TestUninitializedFillNDeviceDevice", "[uninitialized_fill]")
+{
+  TestUninitializedFillNDeviceDevice();
+}
 #endif
 
 void TestUninitializedFillNCudaStreams()
@@ -202,4 +217,7 @@ void TestUninitializedFillNCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestUninitializedFillNCudaStreams);
+TEST_CASE("TestUninitializedFillNCudaStreams", "[uninitialized_fill]")
+{
+  TestUninitializedFillNCudaStreams();
+}

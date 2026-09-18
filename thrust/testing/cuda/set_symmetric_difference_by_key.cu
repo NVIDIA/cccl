@@ -77,13 +77,19 @@ void TestSetSymmetricDifferenceByKeyDeviceSeq()
 {
   TestSetSymmetricDifferenceByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDeviceSeq);
+TEST_CASE("TestSetSymmetricDifferenceByKeyDeviceSeq", "[set_symmetric_difference_by_key]")
+{
+  TestSetSymmetricDifferenceByKeyDeviceSeq();
+}
 
 void TestSetSymmetricDifferenceByKeyDeviceDevice()
 {
   TestSetSymmetricDifferenceByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDeviceDevice);
+TEST_CASE("TestSetSymmetricDifferenceByKeyDeviceDevice", "[set_symmetric_difference_by_key]")
+{
+  TestSetSymmetricDifferenceByKeyDeviceDevice();
+}
 #endif
 
 void TestSetSymmetricDifferenceByKeyCudaStreams()
@@ -114,4 +120,7 @@ void TestSetSymmetricDifferenceByKeyCudaStreams()
   test_runtime::assert_equal(stream, result_key, {2, 3, 3, 6, 7});
   test_runtime::assert_equal(stream, result_val, {0, 1, 1, 0, 1});
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyCudaStreams);
+TEST_CASE("TestSetSymmetricDifferenceByKeyCudaStreams", "[set_symmetric_difference_by_key]")
+{
+  TestSetSymmetricDifferenceByKeyCudaStreams();
+}

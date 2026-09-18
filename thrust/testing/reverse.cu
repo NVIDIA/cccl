@@ -34,7 +34,10 @@ void TestReverseDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReverseDispatchExplicit);
+TEST_CASE("TestReverseDispatchExplicit", "[reverse]")
+{
+  TestReverseDispatchExplicit();
+}
 
 template <typename BidirectionalIterator>
 void reverse(my_tag, BidirectionalIterator first, BidirectionalIterator)
@@ -50,7 +53,10 @@ void TestReverseDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReverseDispatchImplicit);
+TEST_CASE("TestReverseDispatchImplicit", "[reverse]")
+{
+  TestReverseDispatchImplicit();
+}
 
 template <typename Vector>
 void TestReverseCopySimple()
@@ -85,7 +91,10 @@ void TestReverseCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReverseCopyDispatchExplicit);
+TEST_CASE("TestReverseCopyDispatchExplicit", "[reverse]")
+{
+  TestReverseCopyDispatchExplicit();
+}
 
 template <typename BidirectionalIterator, typename OutputIterator>
 OutputIterator reverse_copy(my_tag, BidirectionalIterator, BidirectionalIterator, OutputIterator result)
@@ -103,7 +112,10 @@ void TestReverseCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReverseCopyDispatchImplicit);
+TEST_CASE("TestReverseCopyDispatchImplicit", "[reverse]")
+{
+  TestReverseCopyDispatchImplicit();
+}
 
 template <typename T>
 struct TestReverse
@@ -175,4 +187,7 @@ void TestReverseZippedHost()
   REQUIRE(a == expected_a);
   REQUIRE(b == expected_b);
 }
-DECLARE_UNITTEST(TestReverseZippedHost);
+TEST_CASE("TestReverseZippedHost", "[reverse]")
+{
+  TestReverseZippedHost();
+}

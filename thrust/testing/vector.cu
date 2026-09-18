@@ -36,7 +36,10 @@ void TestVectorBool()
   REQUIRE(h == h_ref);
   REQUIRE(d == d_ref);
 }
-DECLARE_UNITTEST(TestVectorBool);
+TEST_CASE("TestVectorBool", "[vector]")
+{
+  TestVectorBool();
+}
 
 template <class Vector>
 void TestVectorInitializerList()
@@ -625,7 +628,10 @@ void TestVectorEquality()
   REQUIRE_FALSE(s_c == h_b);
   REQUIRE_FALSE(h_c == s_b);
 }
-DECLARE_UNITTEST(TestVectorEquality);
+TEST_CASE("TestVectorEquality", "[vector]")
+{
+  TestVectorEquality();
+}
 
 void TestVectorInequality()
 {
@@ -723,7 +729,10 @@ void TestVectorInequality()
   REQUIRE(s_c != h_b);
   REQUIRE(h_c != s_b);
 }
-DECLARE_UNITTEST(TestVectorInequality);
+TEST_CASE("TestVectorInequality", "[vector]")
+{
+  TestVectorInequality();
+}
 
 template <class Vector>
 void TestVectorResizing()
@@ -868,7 +877,10 @@ void TestVectorContainingLargeType()
 
   REQUIRE((dv3 == hv3));
 }
-DECLARE_UNITTEST(TestVectorContainingLargeType);
+TEST_CASE("TestVectorContainingLargeType", "[vector]")
+{
+  TestVectorContainingLargeType();
+}
 
 template <typename Vector>
 void TestVectorReversed()
@@ -966,7 +978,10 @@ void TestVectorDefaultInitCtor()
     }
   }
 }
-DECLARE_UNITTEST(TestVectorDefaultInitCtor);
+TEST_CASE("TestVectorDefaultInitCtor", "[vector]")
+{
+  TestVectorDefaultInitCtor();
+}
 
 void TestVectorNoInitCtor()
 {
@@ -980,7 +995,10 @@ void TestVectorNoInitCtor()
   // thrust::host_vector<IntWithInit> hv(10, thrust::no_init);
   // thrust::device_vector<IntWithInit> dv(10, thrust::no_init);
 }
-DECLARE_UNITTEST(TestVectorNoInitCtor);
+TEST_CASE("TestVectorNoInitCtor", "[vector]")
+{
+  TestVectorNoInitCtor();
+}
 
 void TestVectorDefaultInitResize()
 {
@@ -1012,7 +1030,10 @@ void TestVectorDefaultInitResize()
     }
   }
 }
-DECLARE_UNITTEST(TestVectorDefaultInitResize);
+TEST_CASE("TestVectorDefaultInitResize", "[vector]")
+{
+  TestVectorDefaultInitResize();
+}
 
 void TestVectorNoInitResize()
 {
@@ -1030,4 +1051,7 @@ void TestVectorNoInitResize()
   // thrust::host_vector<IntWithInit>(5).resize(10, thrust::no_init);
   // thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
 }
-DECLARE_UNITTEST(TestVectorNoInitResize);
+TEST_CASE("TestVectorNoInitResize", "[vector]")
+{
+  TestVectorNoInitResize();
+}

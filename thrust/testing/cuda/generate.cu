@@ -83,7 +83,10 @@ void TestGenerateCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGenerateCudaStreams);
+TEST_CASE("TestGenerateCudaStreams", "[generate]")
+{
+  TestGenerateCudaStreams();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Size, typename Function>
@@ -149,4 +152,7 @@ void TestGenerateNCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGenerateNCudaStreams);
+TEST_CASE("TestGenerateNCudaStreams", "[generate]")
+{
+  TestGenerateNCudaStreams();
+}

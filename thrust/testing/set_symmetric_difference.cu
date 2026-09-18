@@ -23,7 +23,10 @@ void TestSetSymmetricDifferenceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceDispatchExplicit);
+TEST_CASE("TestSetSymmetricDifferenceDispatchExplicit", "[set_symmetric_difference]")
+{
+  TestSetSymmetricDifferenceDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -46,7 +49,10 @@ void TestSetSymmetricDifferenceDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceDispatchImplicit);
+TEST_CASE("TestSetSymmetricDifferenceDispatchImplicit", "[set_symmetric_difference]")
+{
+  TestSetSymmetricDifferenceDispatchImplicit();
+}
 
 template <typename Vector>
 void TestSetSymmetricDifferenceSimple()

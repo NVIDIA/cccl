@@ -77,13 +77,19 @@ void TestMergeByKeyDeviceSeq()
 {
   TestMergeByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMergeByKeyDeviceSeq);
+TEST_CASE("TestMergeByKeyDeviceSeq", "[merge_by_key]")
+{
+  TestMergeByKeyDeviceSeq();
+}
 
 void TestMergeByKeyDeviceDevice()
 {
   TestMergeByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMergeByKeyDeviceDevice);
+TEST_CASE("TestMergeByKeyDeviceDevice", "[merge_by_key]")
+{
+  TestMergeByKeyDeviceDevice();
+}
 #endif
 
 void TestMergeByKeyCudaStreams()
@@ -116,4 +122,7 @@ void TestMergeByKeyCudaStreams()
   test_runtime::assert_equal(stream, result_key, {0, 0, 2, 3, 3, 4, 4});
   test_runtime::assert_equal(stream, result_val, {13, 42, 7, 42, 7, 42, 13});
 }
-DECLARE_UNITTEST(TestMergeByKeyCudaStreams);
+TEST_CASE("TestMergeByKeyCudaStreams", "[merge_by_key]")
+{
+  TestMergeByKeyCudaStreams();
+}

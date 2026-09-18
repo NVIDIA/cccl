@@ -56,7 +56,10 @@ void TestDevicePointerManipulation()
 
   REQUIRE(end - begin == 5);
 }
-DECLARE_UNITTEST(TestDevicePointerManipulation);
+TEST_CASE("TestDevicePointerManipulation", "[device_ptr]")
+{
+  TestDevicePointerManipulation();
+}
 
 void TestMakeDevicePointer()
 {
@@ -72,7 +75,10 @@ void TestMakeDevicePointer()
 
   REQUIRE(p0 == p1);
 }
-DECLARE_UNITTEST(TestMakeDevicePointer);
+TEST_CASE("TestMakeDevicePointer", "[device_ptr]")
+{
+  TestMakeDevicePointer();
+}
 
 template <typename Vector>
 void TestRawPointerCast()
@@ -228,7 +234,10 @@ void TestDevicePointerCompare()
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ptr, other_ptr>);
   }
 }
-DECLARE_UNITTEST(TestDevicePointerCompare);
+TEST_CASE("TestDevicePointerCompare", "[device_ptr]")
+{
+  TestDevicePointerCompare();
+}
 
 template <typename Vector>
 void TestToAddress()

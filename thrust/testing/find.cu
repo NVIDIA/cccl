@@ -37,7 +37,10 @@ void TestFindDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFindDispatchExplicit);
+TEST_CASE("TestFindDispatchExplicit", "[find]")
+{
+  TestFindDispatchExplicit();
+}
 
 template <typename InputIterator, typename T>
 InputIterator find(my_tag, InputIterator first, InputIterator, const T&)
@@ -54,7 +57,10 @@ void TestFindDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFindDispatchImplicit);
+TEST_CASE("TestFindDispatchImplicit", "[find]")
+{
+  TestFindDispatchImplicit();
+}
 
 template <class Vector>
 void TestFindIfSimple()
@@ -89,7 +95,10 @@ void TestFindIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFindIfDispatchExplicit);
+TEST_CASE("TestFindIfDispatchExplicit", "[find]")
+{
+  TestFindIfDispatchExplicit();
+}
 
 template <typename InputIterator, typename Predicate>
 InputIterator find_if(my_tag, InputIterator first, InputIterator, Predicate)
@@ -106,7 +115,10 @@ void TestFindIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFindIfDispatchImplicit);
+TEST_CASE("TestFindIfDispatchImplicit", "[find]")
+{
+  TestFindIfDispatchImplicit();
+}
 
 template <class Vector>
 void TestFindIfNotSimple()
@@ -141,7 +153,10 @@ void TestFindIfNotDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFindIfNotDispatchExplicit);
+TEST_CASE("TestFindIfNotDispatchExplicit", "[find]")
+{
+  TestFindIfNotDispatchExplicit();
+}
 
 template <typename InputIterator, typename Predicate>
 InputIterator find_if_not(my_tag, InputIterator first, InputIterator, Predicate)
@@ -158,7 +173,10 @@ void TestFindIfNotDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFindIfNotDispatchImplicit);
+TEST_CASE("TestFindIfNotDispatchImplicit", "[find]")
+{
+  TestFindIfNotDispatchImplicit();
+}
 
 template <typename T>
 struct TestFind
@@ -263,7 +281,10 @@ void TestFindWithBigIndexes()
   TestFindWithBigIndexesHelper(32);
   TestFindWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestFindWithBigIndexes);
+TEST_CASE("TestFindWithBigIndexes", "[find]")
+{
+  TestFindWithBigIndexes();
+}
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 
 namespace
@@ -293,4 +314,7 @@ void TestFindAsymmetricEquality()
   REQUIRE(*result == 333);
   REQUIRE(result - dv.begin() == 333);
 }
-DECLARE_UNITTEST(TestFindAsymmetricEquality);
+TEST_CASE("TestFindAsymmetricEquality", "[find]")
+{
+  TestFindAsymmetricEquality();
+}

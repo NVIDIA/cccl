@@ -24,7 +24,10 @@ void TestSetUnionDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetUnionDispatchExplicit);
+TEST_CASE("TestSetUnionDispatchExplicit", "[set_union]")
+{
+  TestSetUnionDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator set_union(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIterator2, OutputIterator result)
@@ -46,7 +49,10 @@ void TestSetUnionDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetUnionDispatchImplicit);
+TEST_CASE("TestSetUnionDispatchImplicit", "[set_union]")
+{
+  TestSetUnionDispatchImplicit();
+}
 
 template <typename Vector>
 void TestSetUnionSimple()

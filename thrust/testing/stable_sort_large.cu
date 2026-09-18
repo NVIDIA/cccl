@@ -30,4 +30,7 @@ void TestStableSortWithLargeKeys()
   _TestStableSortWithLargeKeys<int, 17>();
   _TestStableSortWithLargeKeys<int, 128>();
 }
-DECLARE_UNITTEST(TestStableSortWithLargeKeys);
+TEST_CASE("TestStableSortWithLargeKeys", "[stable_sort_large]")
+{
+  TestStableSortWithLargeKeys();
+}

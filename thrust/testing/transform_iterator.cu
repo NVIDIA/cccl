@@ -37,7 +37,10 @@ void TestTransformIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTransformIteratorTraits);
+TEST_CASE("TestTransformIteratorTraits", "[transform_iterator]")
+{
+  TestTransformIteratorTraits();
+}
 
 template <class Vector>
 void TestTransformIterator()
@@ -133,7 +136,10 @@ void TestTransformIteratorNonCopyable()
   REQUIRE(transformed[3] == 4);
 }
 
-DECLARE_UNITTEST(TestTransformIteratorNonCopyable);
+TEST_CASE("TestTransformIteratorNonCopyable", "[transform_iterator]")
+{
+  TestTransformIteratorNonCopyable();
+}
 
 struct flip_value
 {
@@ -240,7 +246,10 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value);
   }
 }
-DECLARE_UNITTEST(TestTransformIteratorReferenceAndValueType);
+TEST_CASE("TestTransformIteratorReferenceAndValueType", "[transform_iterator]")
+{
+  TestTransformIteratorReferenceAndValueType();
+}
 
 void TestTransformIteratorIdentity()
 {
@@ -251,4 +260,7 @@ void TestTransformIteratorIdentity()
   REQUIRE(*thrust::make_transform_iterator(v.begin(), _1) == 42);
 }
 
-DECLARE_UNITTEST(TestTransformIteratorIdentity);
+TEST_CASE("TestTransformIteratorIdentity", "[transform_iterator]")
+{
+  TestTransformIteratorIdentity();
+}

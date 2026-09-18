@@ -21,7 +21,10 @@ void TestUninitializedFillDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedFillDispatchExplicit);
+TEST_CASE("TestUninitializedFillDispatchExplicit", "[uninitialized_fill]")
+{
+  TestUninitializedFillDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename T>
 void uninitialized_fill(my_tag, ForwardIterator first, ForwardIterator, const T&)
@@ -37,7 +40,10 @@ void TestUninitializedFillDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUninitializedFillDispatchImplicit);
+TEST_CASE("TestUninitializedFillDispatchImplicit", "[uninitialized_fill]")
+{
+  TestUninitializedFillDispatchImplicit();
+}
 
 template <class Vector>
 void TestUninitializedFillPOD()

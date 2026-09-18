@@ -80,7 +80,10 @@ void TestEqualDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestEqualDispatchExplicit);
+TEST_CASE("TestEqualDispatchExplicit", "[equal]")
+{
+  TestEqualDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2>
 bool equal(my_tag, InputIterator1 first, InputIterator1, InputIterator2)
@@ -98,7 +101,10 @@ void TestEqualDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestEqualDispatchImplicit);
+TEST_CASE("TestEqualDispatchImplicit", "[equal]")
+{
+  TestEqualDispatchImplicit();
+}
 
 struct only_set_when_both_expected
 {
@@ -143,5 +149,8 @@ void TestEqualWithBigIndexes()
   TestEqualWithBigIndexesHelper(32);
   TestEqualWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestEqualWithBigIndexes);
+TEST_CASE("TestEqualWithBigIndexes", "[equal]")
+{
+  TestEqualWithBigIndexes();
+}
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE

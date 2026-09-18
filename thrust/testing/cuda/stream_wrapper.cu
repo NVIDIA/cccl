@@ -65,22 +65,34 @@ void TestCudartStreamSync()
 {
   TestOnStream<stream_wrapper>(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCudartStreamSync);
+TEST_CASE("TestCudartStreamSync", "[stream_wrapper]")
+{
+  TestCudartStreamSync();
+}
 
 void TestCudartStreamNoSync()
 {
   TestOnStream<stream_wrapper>(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCudartStreamNoSync);
+TEST_CASE("TestCudartStreamNoSync", "[stream_wrapper]")
+{
+  TestCudartStreamNoSync();
+}
 
 void TestCudaStreamRefSync()
 {
   TestOnStream<stream_wrapper_ref>(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCudaStreamRefSync);
+TEST_CASE("TestCudaStreamRefSync", "[stream_wrapper]")
+{
+  TestCudaStreamRefSync();
+}
 
 void TestCudaStreamRefNoSync()
 {
   TestOnStream<stream_wrapper_ref>(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCudaStreamRefNoSync);
+TEST_CASE("TestCudaStreamRefNoSync", "[stream_wrapper]")
+{
+  TestCudaStreamRefNoSync();
+}

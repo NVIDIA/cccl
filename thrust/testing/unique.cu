@@ -23,7 +23,10 @@ void TestUniqueDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueDispatchExplicit);
+TEST_CASE("TestUniqueDispatchExplicit", "[unique]")
+{
+  TestUniqueDispatchExplicit();
+}
 
 template <typename ForwardIterator>
 ForwardIterator unique(my_tag, ForwardIterator first, ForwardIterator)
@@ -40,7 +43,10 @@ void TestUniqueDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUniqueDispatchImplicit);
+TEST_CASE("TestUniqueDispatchImplicit", "[unique]")
+{
+  TestUniqueDispatchImplicit();
+}
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator unique_copy(my_system& system, InputIterator, InputIterator, OutputIterator result)
@@ -58,7 +64,10 @@ void TestUniqueCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueCopyDispatchExplicit);
+TEST_CASE("TestUniqueCopyDispatchExplicit", "[unique]")
+{
+  TestUniqueCopyDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator unique_copy(my_tag, InputIterator, InputIterator, OutputIterator result)
@@ -76,7 +85,10 @@ void TestUniqueCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUniqueCopyDispatchImplicit);
+TEST_CASE("TestUniqueCopyDispatchImplicit", "[unique]")
+{
+  TestUniqueCopyDispatchImplicit();
+}
 
 template <typename ForwardIterator>
 typename ::cuda::std::iterator_traits<ForwardIterator>::difference_type
@@ -95,7 +107,10 @@ void TestUniqueCountDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueCountDispatchExplicit);
+TEST_CASE("TestUniqueCountDispatchExplicit", "[unique]")
+{
+  TestUniqueCountDispatchExplicit();
+}
 
 template <typename ForwardIterator>
 typename ::cuda::std::iterator_traits<ForwardIterator>::difference_type
@@ -112,7 +127,10 @@ void TestUniqueCountDispatchImplicit()
 
   REQUIRE(13 == result);
 }
-DECLARE_UNITTEST(TestUniqueCountDispatchImplicit);
+TEST_CASE("TestUniqueCountDispatchImplicit", "[unique]")
+{
+  TestUniqueCountDispatchImplicit();
+}
 
 template <typename T>
 struct is_equal_div_10_unique

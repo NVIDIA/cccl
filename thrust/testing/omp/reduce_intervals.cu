@@ -65,7 +65,10 @@ void TestOmpReduceIntervalsSimple()
     REQUIRE(output[1] == 4);
   }
 }
-DECLARE_UNITTEST(TestOmpReduceIntervalsSimple);
+TEST_CASE("TestOmpReduceIntervalsSimple", "[reduce_intervals]")
+{
+  TestOmpReduceIntervalsSimple();
+}
 
 template <typename T>
 struct TestOmpReduceIntervals

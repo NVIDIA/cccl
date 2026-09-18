@@ -41,13 +41,19 @@ void TestInnerProductDeviceSeq()
 {
   TestInnerProductDevice(thrust::seq);
 };
-DECLARE_UNITTEST(TestInnerProductDeviceSeq);
+TEST_CASE("TestInnerProductDeviceSeq", "[inner_product]")
+{
+  TestInnerProductDeviceSeq();
+}
 
 void TestInnerProductDeviceDevice()
 {
   TestInnerProductDevice(thrust::device);
 };
-DECLARE_UNITTEST(TestInnerProductDeviceDevice);
+TEST_CASE("TestInnerProductDeviceDevice", "[inner_product]")
+{
+  TestInnerProductDeviceDevice();
+}
 #endif
 
 void TestInnerProductCudaStreams()
@@ -64,4 +70,7 @@ void TestInnerProductCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestInnerProductCudaStreams);
+TEST_CASE("TestInnerProductCudaStreams", "[inner_product]")
+{
+  TestInnerProductCudaStreams();
+}

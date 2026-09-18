@@ -91,7 +91,10 @@ void TestAdjacentDifferenceCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestAdjacentDifferenceCudaStreams);
+TEST_CASE("TestAdjacentDifferenceCudaStreams", "[adjacent_difference]")
+{
+  TestAdjacentDifferenceCudaStreams();
+}
 
 struct detect_wrong_difference
 {
@@ -159,4 +162,7 @@ void TestAdjacentDifferenceWithBigIndexes()
   TestAdjacentDifferenceWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestAdjacentDifferenceWithBigIndexes);
+TEST_CASE("TestAdjacentDifferenceWithBigIndexes", "[adjacent_difference]")
+{
+  TestAdjacentDifferenceWithBigIndexes();
+}

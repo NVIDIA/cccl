@@ -232,7 +232,10 @@ void TestScanCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScanCudaStreams);
+TEST_CASE("TestScanCudaStreams", "[scan]")
+{
+  TestScanCudaStreams();
+}
 
 template <typename T>
 struct const_ref_plus_mod3
@@ -262,4 +265,7 @@ static void TestInclusiveScanWithConstAccumulator()
   const thrust::device_vector<int> ref{0, 1, 0, 1, 0, 0, 1};
   REQUIRE(data == ref);
 }
-DECLARE_UNITTEST(TestInclusiveScanWithConstAccumulator);
+TEST_CASE("TestInclusiveScanWithConstAccumulator", "[scan]")
+{
+  TestInclusiveScanWithConstAccumulator();
+}

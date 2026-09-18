@@ -18,4 +18,7 @@ void TestTransformWithLambda()
   REQUIRE(thrust::any_of(B.begin(), B.end(), l));
 }
 
-DECLARE_UNITTEST(TestTransformWithLambda);
+TEST_CASE("TestTransformWithLambda", "[transform_iterator]")
+{
+  TestTransformWithLambda();
+}

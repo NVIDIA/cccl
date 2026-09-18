@@ -73,13 +73,19 @@ void TestAllOfDeviceSeq()
 {
   TestAllOfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestAllOfDeviceSeq);
+TEST_CASE("TestAllOfDeviceSeq", "[logical]")
+{
+  TestAllOfDeviceSeq();
+}
 
 void TestAllOfDeviceDevice()
 {
   TestAllOfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestAllOfDeviceDevice);
+TEST_CASE("TestAllOfDeviceDevice", "[logical]")
+{
+  TestAllOfDeviceDevice();
+}
 #endif
 
 void TestAllOfCudaStreams()
@@ -105,7 +111,10 @@ void TestAllOfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestAllOfCudaStreams);
+TEST_CASE("TestAllOfCudaStreams", "[logical]")
+{
+  TestAllOfCudaStreams();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Function, typename Iterator2>
@@ -177,13 +186,19 @@ void TestAnyOfDeviceSeq()
 {
   TestAnyOfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestAnyOfDeviceSeq);
+TEST_CASE("TestAnyOfDeviceSeq", "[logical]")
+{
+  TestAnyOfDeviceSeq();
+}
 
 void TestAnyOfDeviceDevice()
 {
   TestAnyOfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestAnyOfDeviceDevice);
+TEST_CASE("TestAnyOfDeviceDevice", "[logical]")
+{
+  TestAnyOfDeviceDevice();
+}
 #endif
 
 void TestAnyOfCudaStreams()
@@ -209,7 +224,10 @@ void TestAnyOfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestAnyOfCudaStreams);
+TEST_CASE("TestAnyOfCudaStreams", "[logical]")
+{
+  TestAnyOfCudaStreams();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Function, typename Iterator2>
@@ -281,13 +299,19 @@ void TestNoneOfDeviceSeq()
 {
   TestNoneOfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestNoneOfDeviceSeq);
+TEST_CASE("TestNoneOfDeviceSeq", "[logical]")
+{
+  TestNoneOfDeviceSeq();
+}
 
 void TestNoneOfDeviceDevice()
 {
   TestNoneOfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestNoneOfDeviceDevice);
+TEST_CASE("TestNoneOfDeviceDevice", "[logical]")
+{
+  TestNoneOfDeviceDevice();
+}
 #endif
 
 void TestNoneOfCudaStreams()
@@ -313,4 +337,7 @@ void TestNoneOfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestNoneOfCudaStreams);
+TEST_CASE("TestNoneOfCudaStreams", "[logical]")
+{
+  TestNoneOfCudaStreams();
+}

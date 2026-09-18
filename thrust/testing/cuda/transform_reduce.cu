@@ -34,13 +34,19 @@ void TestTransformReduceDeviceSeq()
 {
   TestTransformReduceDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformReduceDeviceSeq);
+TEST_CASE("TestTransformReduceDeviceSeq", "[transform_reduce]")
+{
+  TestTransformReduceDeviceSeq();
+}
 
 void TestTransformReduceDeviceDevice()
 {
   TestTransformReduceDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformReduceDeviceDevice);
+TEST_CASE("TestTransformReduceDeviceDevice", "[transform_reduce]")
+{
+  TestTransformReduceDeviceDevice();
+}
 #endif
 
 void TestTransformReduceCudaStreams()
@@ -62,4 +68,7 @@ void TestTransformReduceCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestTransformReduceCudaStreams);
+TEST_CASE("TestTransformReduceCudaStreams", "[transform_reduce]")
+{
+  TestTransformReduceCudaStreams();
+}

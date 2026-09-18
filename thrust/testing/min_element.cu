@@ -73,7 +73,10 @@ void TestMinElementDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMinElementDispatchExplicit);
+TEST_CASE("TestMinElementDispatchExplicit", "[min_element]")
+{
+  TestMinElementDispatchExplicit();
+}
 
 template <typename ForwardIterator>
 ForwardIterator min_element(my_tag, ForwardIterator first, ForwardIterator)
@@ -90,7 +93,10 @@ void TestMinElementDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestMinElementDispatchImplicit);
+TEST_CASE("TestMinElementDispatchImplicit", "[min_element]")
+{
+  TestMinElementDispatchImplicit();
+}
 
 void TestMinElementWithBigIndexesHelper(int magnitude)
 {
@@ -110,11 +116,17 @@ void TestMinElementWithBigIndexes()
   TestMinElementWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestMinElementWithBigIndexes);
+TEST_CASE("TestMinElementWithBigIndexes", "[min_element]")
+{
+  TestMinElementWithBigIndexes();
+}
 
 void TestMinElementCudaIterator()
 {
   auto pos = thrust::min_element(thrust::device, cuda::counting_iterator{0}, cuda::counting_iterator{0} + 100);
   REQUIRE(*pos == 0);
 }
-DECLARE_UNITTEST(TestMinElementCudaIterator);
+TEST_CASE("TestMinElementCudaIterator", "[min_element]")
+{
+  TestMinElementCudaIterator();
+}

@@ -77,19 +77,28 @@ void TestPartitionDeviceSeq()
 {
   TestPartitionDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionDeviceSeq);
+TEST_CASE("TestPartitionDeviceSeq", "[partition]")
+{
+  TestPartitionDeviceSeq();
+}
 
 void TestPartitionDeviceDevice()
 {
   TestPartitionDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionDeviceDevice);
+TEST_CASE("TestPartitionDeviceDevice", "[partition]")
+{
+  TestPartitionDeviceDevice();
+}
 
 void TestPartitionDeviceNoSync()
 {
   TestPartitionDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionDeviceNoSync);
+TEST_CASE("TestPartitionDeviceNoSync", "[partition]")
+{
+  TestPartitionDeviceNoSync();
+}
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename Iterator3>
 __global__ void partition_kernel(
@@ -139,19 +148,28 @@ void TestPartitionStencilDeviceSeq()
 {
   TestPartitionStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionStencilDeviceSeq);
+TEST_CASE("TestPartitionStencilDeviceSeq", "[partition]")
+{
+  TestPartitionStencilDeviceSeq();
+}
 
 void TestPartitionStencilDeviceDevice()
 {
   TestPartitionStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionStencilDeviceDevice);
+TEST_CASE("TestPartitionStencilDeviceDevice", "[partition]")
+{
+  TestPartitionStencilDeviceDevice();
+}
 
 void TestPartitionStencilDeviceNoSync()
 {
   TestPartitionStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionStencilDeviceNoSync);
+TEST_CASE("TestPartitionStencilDeviceNoSync", "[partition]")
+{
+  TestPartitionStencilDeviceNoSync();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -216,19 +234,28 @@ void TestPartitionCopyDeviceSeq()
 {
   TestPartitionCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionCopyDeviceSeq);
+TEST_CASE("TestPartitionCopyDeviceSeq", "[partition]")
+{
+  TestPartitionCopyDeviceSeq();
+}
 
 void TestPartitionCopyDeviceDevice()
 {
   TestPartitionCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionCopyDeviceDevice);
+TEST_CASE("TestPartitionCopyDeviceDevice", "[partition]")
+{
+  TestPartitionCopyDeviceDevice();
+}
 
 void TestPartitionCopyDeviceNoSync()
 {
   TestPartitionCopyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionCopyDeviceNoSync);
+TEST_CASE("TestPartitionCopyDeviceNoSync", "[partition]")
+{
+  TestPartitionCopyDeviceNoSync();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -309,19 +336,28 @@ void TestPartitionCopyStencilDeviceSeq()
 {
   TestPartitionCopyStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDeviceSeq);
+TEST_CASE("TestPartitionCopyStencilDeviceSeq", "[partition]")
+{
+  TestPartitionCopyStencilDeviceSeq();
+}
 
 void TestPartitionCopyStencilDeviceDevice()
 {
   TestPartitionCopyStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDeviceDevice);
+TEST_CASE("TestPartitionCopyStencilDeviceDevice", "[partition]")
+{
+  TestPartitionCopyStencilDeviceDevice();
+}
 
 void TestPartitionCopyStencilDeviceNoSync()
 {
   TestPartitionCopyStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDeviceNoSync);
+TEST_CASE("TestPartitionCopyStencilDeviceNoSync", "[partition]")
+{
+  TestPartitionCopyStencilDeviceNoSync();
+}
 
 template <typename ExecutionPolicy, typename Iterator1, typename Predicate, typename Iterator2>
 __global__ void
@@ -364,19 +400,28 @@ void TestStablePartitionDeviceSeq()
 {
   TestStablePartitionDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestStablePartitionDeviceSeq);
+TEST_CASE("TestStablePartitionDeviceSeq", "[partition]")
+{
+  TestStablePartitionDeviceSeq();
+}
 
 void TestStablePartitionDeviceDevice()
 {
   TestStablePartitionDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestStablePartitionDeviceDevice);
+TEST_CASE("TestStablePartitionDeviceDevice", "[partition]")
+{
+  TestStablePartitionDeviceDevice();
+}
 
 void TestStablePartitionDeviceNoSync()
 {
   TestStablePartitionDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestStablePartitionDeviceNoSync);
+TEST_CASE("TestStablePartitionDeviceNoSync", "[partition]")
+{
+  TestStablePartitionDeviceNoSync();
+}
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename Iterator3>
 __global__ void stable_partition_kernel(
@@ -426,19 +471,28 @@ void TestStablePartitionStencilDeviceSeq()
 {
   TestStablePartitionStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDeviceSeq);
+TEST_CASE("TestStablePartitionStencilDeviceSeq", "[partition]")
+{
+  TestStablePartitionStencilDeviceSeq();
+}
 
 void TestStablePartitionStencilDeviceDevice()
 {
   TestStablePartitionStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDeviceDevice);
+TEST_CASE("TestStablePartitionStencilDeviceDevice", "[partition]")
+{
+  TestStablePartitionStencilDeviceDevice();
+}
 
 void TestStablePartitionStencilDeviceNoSync()
 {
   TestStablePartitionStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDeviceNoSync);
+TEST_CASE("TestStablePartitionStencilDeviceNoSync", "[partition]")
+{
+  TestStablePartitionStencilDeviceNoSync();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -503,19 +557,28 @@ void TestStablePartitionCopyDeviceSeq()
 {
   TestStablePartitionCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDeviceSeq);
+TEST_CASE("TestStablePartitionCopyDeviceSeq", "[partition]")
+{
+  TestStablePartitionCopyDeviceSeq();
+}
 
 void TestStablePartitionCopyDeviceDevice()
 {
   TestStablePartitionCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDeviceDevice);
+TEST_CASE("TestStablePartitionCopyDeviceDevice", "[partition]")
+{
+  TestStablePartitionCopyDeviceDevice();
+}
 
 void TestStablePartitionCopyDeviceNoSync()
 {
   TestStablePartitionCopyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDeviceNoSync);
+TEST_CASE("TestStablePartitionCopyDeviceNoSync", "[partition]")
+{
+  TestStablePartitionCopyDeviceNoSync();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -596,19 +659,28 @@ void TestStablePartitionCopyStencilDeviceSeq()
 {
   TestStablePartitionCopyStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDeviceSeq);
+TEST_CASE("TestStablePartitionCopyStencilDeviceSeq", "[partition]")
+{
+  TestStablePartitionCopyStencilDeviceSeq();
+}
 
 void TestStablePartitionCopyStencilDeviceDevice()
 {
   TestStablePartitionCopyStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDeviceDevice);
+TEST_CASE("TestStablePartitionCopyStencilDeviceDevice", "[partition]")
+{
+  TestStablePartitionCopyStencilDeviceDevice();
+}
 
 void TestStablePartitionCopyStencilDeviceNoSync()
 {
   TestStablePartitionCopyStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDeviceNoSync);
+TEST_CASE("TestStablePartitionCopyStencilDeviceNoSync", "[partition]")
+{
+  TestStablePartitionCopyStencilDeviceNoSync();
+}
 
 void TestPartitionIfWithMagnitude(int magnitude)
 {
@@ -684,7 +756,10 @@ void TestPartitionIfWithLargeNumberOfItems()
   TestPartitionIfWithMagnitude(33);
 #  endif
 }
-DECLARE_UNITTEST(TestPartitionIfWithLargeNumberOfItems);
+TEST_CASE("TestPartitionIfWithLargeNumberOfItems", "[partition]")
+{
+  TestPartitionIfWithLargeNumberOfItems();
+}
 #endif
 
 template <typename ExecutionPolicy>
@@ -725,10 +800,16 @@ void TestPartitionCudaStreamsSync()
 {
   TestPartitionCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestPartitionCudaStreamsSync);
+TEST_CASE("TestPartitionCudaStreamsSync", "[partition]")
+{
+  TestPartitionCudaStreamsSync();
+}
 
 void TestPartitionCudaStreamsNoSync()
 {
   TestPartitionCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionCudaStreamsNoSync);
+TEST_CASE("TestPartitionCudaStreamsNoSync", "[partition]")
+{
+  TestPartitionCudaStreamsNoSync();
+}

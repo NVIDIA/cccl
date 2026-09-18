@@ -107,7 +107,10 @@ void TestComparisonSortByKeyCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestComparisonSortByKeyCudaStreams);
+TEST_CASE("TestComparisonSortByKeyCudaStreams", "[sort_by_key]")
+{
+  TestComparisonSortByKeyCudaStreams();
+}
 
 void TestSortByKeyCudaStreams()
 {
@@ -125,4 +128,7 @@ void TestSortByKeyCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestSortByKeyCudaStreams);
+TEST_CASE("TestSortByKeyCudaStreams", "[sort_by_key]")
+{
+  TestSortByKeyCudaStreams();
+}

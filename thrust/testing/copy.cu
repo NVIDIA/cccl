@@ -42,7 +42,10 @@ void TestCopyFromConstIterator()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_UNITTEST(TestCopyFromConstIterator);
+TEST_CASE("TestCopyFromConstIterator", "[copy]")
+{
+  TestCopyFromConstIterator();
+}
 
 void TestCopyToDiscardIterator()
 {
@@ -64,7 +67,10 @@ void TestCopyToDiscardIterator()
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_UNITTEST(TestCopyToDiscardIterator);
+TEST_CASE("TestCopyToDiscardIterator", "[copy]")
+{
+  TestCopyToDiscardIterator();
+}
 
 void TestCopyToDiscardIteratorZipped()
 {
@@ -100,7 +106,10 @@ void TestCopyToDiscardIteratorZipped()
   REQUIRE(reference == cuda::std::get<0>(h_result.get_iterator_tuple()));
   REQUIRE(reference == cuda::std::get<0>(d_result.get_iterator_tuple()));
 }
-DECLARE_UNITTEST(TestCopyToDiscardIteratorZipped);
+TEST_CASE("TestCopyToDiscardIteratorZipped", "[copy]")
+{
+  TestCopyToDiscardIteratorZipped();
+}
 
 template <class Vector>
 void TestCopyMatchingTypes()
@@ -168,7 +177,10 @@ void TestCopyVectorBool()
   const thrust::device_vector<bool> dref{true, false, true};
   REQUIRE(d == dref);
 }
-DECLARE_UNITTEST(TestCopyVectorBool);
+TEST_CASE("TestCopyVectorBool", "[copy]")
+{
+  TestCopyVectorBool();
+}
 
 template <class Vector>
 void TestCopyListTo()
@@ -489,7 +501,10 @@ void TestCopyIfNonTrivial()
     REQUIRE(ia == ib);
   }
 }
-DECLARE_UNITTEST(TestCopyIfNonTrivial);
+TEST_CASE("TestCopyIfNonTrivial", "[copy]")
+{
+  TestCopyIfNonTrivial();
+}
 
 template <typename Vector>
 void TestCopyCountingIterator()
@@ -573,7 +588,10 @@ void TestCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCopyDispatchExplicit);
+TEST_CASE("TestCopyDispatchExplicit", "[copy]")
+{
+  TestCopyDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator copy(my_tag, InputIterator, InputIterator, OutputIterator result)
@@ -590,7 +608,10 @@ void TestCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestCopyDispatchImplicit);
+TEST_CASE("TestCopyDispatchImplicit", "[copy]")
+{
+  TestCopyDispatchImplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 OutputIterator copy_if(my_system& system, InputIterator, InputIterator, OutputIterator result, Predicate)
@@ -608,7 +629,10 @@ void TestCopyIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCopyIfDispatchExplicit);
+TEST_CASE("TestCopyIfDispatchExplicit", "[copy]")
+{
+  TestCopyIfDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 OutputIterator copy_if(my_tag, InputIterator, InputIterator, OutputIterator result, Predicate)
@@ -626,7 +650,10 @@ void TestCopyIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestCopyIfDispatchImplicit);
+TEST_CASE("TestCopyIfDispatchImplicit", "[copy]")
+{
+  TestCopyIfDispatchImplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator
@@ -645,7 +672,10 @@ void TestCopyIfStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCopyIfStencilDispatchExplicit);
+TEST_CASE("TestCopyIfStencilDispatchExplicit", "[copy]")
+{
+  TestCopyIfStencilDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator copy_if(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator result, Predicate)
@@ -667,7 +697,10 @@ void TestCopyIfStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestCopyIfStencilDispatchImplicit);
+TEST_CASE("TestCopyIfStencilDispatchImplicit", "[copy]")
+{
+  TestCopyIfStencilDispatchImplicit();
+}
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
 
@@ -771,6 +804,9 @@ void TestCopyWithBigIndexes()
   TestCopyWithBigIndexesHelper(32);
   TestCopyWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestCopyWithBigIndexes);
+TEST_CASE("TestCopyWithBigIndexes", "[copy]")
+{
+  TestCopyWithBigIndexes();
+}
 
 #endif
