@@ -12,8 +12,6 @@
 #ifndef _CUDA_STD___CSTDDEF_TYPES_H
 #define _CUDA_STD___CSTDDEF_TYPES_H
 
-// IWYU pragma: always_keep
-
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -25,7 +23,7 @@
 #endif // no system header
 
 #if _CCCL_HOSTED()
-#  include <cstddef>
+#  include <cstddef> // IWYU pragma: export
 #else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
 #  if !defined(offsetof)
 #    define offsetof(type, member) (::size_t) ((char*) &(((type*) 0)->member) - (char*) 0)
