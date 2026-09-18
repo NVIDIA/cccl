@@ -78,16 +78,17 @@ device or green context. It is meant for code that wants to spread independent w
 managing their lifetime.
 
 - ``get_stream()``: returns the next stream in round-robin order
-- ``get_stream(i)``: returns the stream in slot ``i % capacity()``
-- ``capacity()``, ``device()``, ``priority()``: the parameters given at construction
+- ``get_stream(i)``: returns the stream in slot ``i % size()``
+- ``size()``, ``device()``, ``priority()``: the parameters given at construction; the constructors throw
+  ``std::invalid_argument`` for a size of zero
 
 Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool. The streams are
 destroyed with the pool, so the work submitted to them must be synchronized before the pool goes away; the pool does
-not do it. When the streams are created depends on a leading tag:
+not do it. When the streams are created is chosen with a ``cuda::stream_pool::creation`` value passed after the size:
 
-- ``cuda::stream_pool::lazy``, the default: a stream is created the first time its slot is requested, and the
-  getters take a mutex to do so.
-- ``cuda::stream_pool::eager``: every stream is created in the constructor, and the getters take no lock at all.
+- ``creation::lazy``, the default: a stream is created the first time its slot is requested, and the getters take a
+  mutex to do so.
+- ``creation::eager``: every stream is created in the constructor, and the getters take no lock at all.
 
 All getters can be called concurrently from several threads.
 
@@ -102,8 +103,8 @@ Availability: CCCL 3.6.0
    #include <cuda/devices>
 
    int main() {
-     // 16 stream slots on device 0, each stream created on the first request for its slot
-     cuda::stream_pool pool{cuda::devices[0]};
+     // 16 streams on device 0, each created on the first request for its slot
+     cuda::stream_pool pool{cuda::devices[0], 16};
 
      for (int i = 0; i < 64; ++i) {
        // Cycles through the 16 streams
@@ -115,7 +116,7 @@ Availability: CCCL 3.6.0
      cuda::stream_ref fixed = pool.get_stream(3);
 
      // Wait for everything submitted to the pool before it goes away
-     for (std::size_t i = 0; i < pool.capacity(); ++i) {
+     for (std::size_t i = 0; i < pool.size(); ++i) {
        pool.get_stream(i).sync();
      }
    } // All streams are destroyed here

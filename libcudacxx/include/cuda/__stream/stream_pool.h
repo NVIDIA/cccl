@@ -31,6 +31,8 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 
 #  include <atomic>
 #  include <mutex>
@@ -43,149 +45,84 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief A fixed-size pool of non-blocking streams on one device or green context.
 //!
 //! The pool owns its streams and destroys them with the pool. `get_stream()` hands out the streams in
-//! round-robin order; `get_stream(i)` addresses slot `i % capacity()`. Both return a `cuda::stream_ref` that
+//! round-robin order; `get_stream(i)` addresses slot `i % size()`. Both return a `cuda::stream_ref` that
 //! stays valid for the lifetime of the pool. Destroying the pool destroys the streams; it is the caller's
 //! responsibility to synchronize the work submitted to them first. The pool can be neither copied nor moved; to
 //! hand it around or share it, allocate it with `std::make_unique` or `std::make_shared`.
 //!
-//! By default, and with the `stream_pool::lazy` tag, a stream is created the first time its slot is requested,
-//! and the getters take a mutex to do so. With the `stream_pool::eager` tag, every stream is created in the
+//! Whether the streams are created in the constructor or on the first request for their slot is chosen at
+//! construction with `stream_pool::creation`. With `creation::lazy`, the default, the getters take a mutex to
+//! create a stream the first time its slot is requested. With `creation::eager`, every stream is created in the
 //! constructor and the getters take no lock at all. All getters can be called concurrently from several threads.
 class stream_pool
 {
 public:
-  //! @brief Capacity used when none is requested
-  static constexpr ::cuda::std::size_t default_capacity = 16;
-
-  //! @brief Tag selecting the constructors that create each stream on the first request for its slot
-  struct lazy_t
+  //! @brief When the streams of a pool are created
+  enum class creation
   {
-    explicit lazy_t() = default;
+    //! Each stream is created the first time its slot is requested
+    lazy,
+    //! Every stream is created in the constructor
+    eager,
   };
-
-  //! @brief Tag selecting the constructors that create the streams in the constructor
-  struct eager_t
-  {
-    explicit eager_t() = default;
-  };
-
-  //! @brief Tag value selecting lazy creation, see `lazy_t`; this is the default
-  static constexpr lazy_t lazy{};
-
-  //! @brief Tag value selecting eager creation, see `eager_t`
-  static constexpr eager_t eager{};
 
   //! @brief Constructs a pool of streams on the primary context of a device
   //!
-  //! Equivalent to the constructor taking `stream_pool::lazy`: a stream is created on the first request for
-  //! its slot.
-  //!
   //! @param[in] __device The device the streams are created on
-  //! @param[in] __capacity Number of stream slots, must be greater than zero, defaults to `default_capacity`
+  //! @param[in] __size Number of streams in the pool, must be greater than zero
+  //! @param[in] __mode When the streams are created, defaults to `creation::lazy`
   //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
+  //!
+  //! @throws std::invalid_argument if `__size` is zero
+  //! @throws cuda_error if `__mode` is `creation::eager` and a stream creation fails
   _CCCL_HOST_API explicit stream_pool(
-    device_ref __device, ::cuda::std::size_t __capacity = default_capacity, int __priority = stream::default_priority)
-      : stream_pool{lazy, __logical_device_ref{__device}, __capacity, __priority}
+    device_ref __device,
+    ::cuda::std::size_t __size,
+    creation __mode = creation::lazy,
+    int __priority  = stream::default_priority)
+      : stream_pool{__logical_device_ref{__device}, __size, __mode, __priority}
   {}
 
   //! @brief Constructs a pool of streams on a logical device, that is a device or a green context
   //!
-  //! Equivalent to the constructor taking `stream_pool::lazy`: a stream is created on the first request for
-  //! its slot. The pool does not own the green context, which must outlive the pool.
-  //!
-  //! @param[in] __device The logical device the streams are created on
-  //! @param[in] __capacity Number of stream slots, must be greater than zero, defaults to `default_capacity`
-  //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
-  _CCCL_HOST_API explicit stream_pool(__logical_device_ref __device,
-                                      ::cuda::std::size_t __capacity = default_capacity,
-                                      int __priority                 = stream::default_priority)
-      : stream_pool{lazy, __device, __capacity, __priority}
-  {}
-
-  //! @brief Constructs a pool of streams on the primary context of a device, creating each stream on demand
-  //!
-  //! No stream is created until its slot is requested. Nothing on the device is touched by the constructor.
-  //!
-  //! @param[in] __lazy Tag selecting lazy creation, pass `stream_pool::lazy`
-  //! @param[in] __device The device the streams are created on
-  //! @param[in] __capacity Number of stream slots, must be greater than zero, defaults to `default_capacity`
-  //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
-  _CCCL_HOST_API explicit stream_pool(
-    lazy_t __lazy,
-    device_ref __device,
-    ::cuda::std::size_t __capacity = default_capacity,
-    int __priority                 = stream::default_priority)
-      : stream_pool{__lazy, __logical_device_ref{__device}, __capacity, __priority}
-  {}
-
-  //! @brief Constructs a pool of streams on a logical device, creating each stream on demand
-  //!
-  //! No stream is created until its slot is requested. Nothing on the device is touched by the constructor.
   //! The pool does not own the green context, which must outlive the pool.
   //!
-  //! @param[in] __lazy Tag selecting lazy creation, pass `stream_pool::lazy`
   //! @param[in] __device The logical device the streams are created on
-  //! @param[in] __capacity Number of stream slots, must be greater than zero, defaults to `default_capacity`
+  //! @param[in] __size Number of streams in the pool, must be greater than zero
+  //! @param[in] __mode When the streams are created, defaults to `creation::lazy`
   //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
+  //!
+  //! @throws std::invalid_argument if `__size` is zero
+  //! @throws cuda_error if `__mode` is `creation::eager` and a stream creation fails
   _CCCL_HOST_API explicit stream_pool(
-    lazy_t,
     __logical_device_ref __device,
-    ::cuda::std::size_t __capacity = default_capacity,
-    int __priority                 = stream::default_priority)
+    ::cuda::std::size_t __size,
+    creation __mode = creation::lazy,
+    int __priority  = stream::default_priority)
       : __device_{__device}
       , __priority_{__priority}
-      , __lazy_{true}
+      , __lazy_{__mode == creation::lazy}
   {
-    _CCCL_ASSERT(__capacity > 0, "cuda::stream_pool requires at least one stream");
-    __streams_.reserve(__capacity);
-    for (::cuda::std::size_t __i = 0; __i < __capacity; ++__i)
+    if (__size == 0)
     {
-      __streams_.emplace_back(no_init);
+      _CCCL_THROW(::std::invalid_argument, "cuda::stream_pool requires at least one stream");
     }
-  }
-
-  //! @brief Constructs a pool of streams on the primary context of a device and creates all of them
-  //!
-  //! @param[in] __eager Tag selecting eager creation, pass `stream_pool::eager`
-  //! @param[in] __device The device the streams are created on
-  //! @param[in] __capacity Number of stream slots, must be greater than zero, defaults to `default_capacity`
-  //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
-  //!
-  //! @throws cuda_error if a stream creation fails
-  _CCCL_HOST_API explicit stream_pool(
-    eager_t __eager,
-    device_ref __device,
-    ::cuda::std::size_t __capacity = default_capacity,
-    int __priority                 = stream::default_priority)
-      : stream_pool{__eager, __logical_device_ref{__device}, __capacity, __priority}
-  {}
-
-  //! @brief Constructs a pool of streams on a logical device and creates all of them
-  //!
-  //! The pool does not own the green context, which must outlive the pool.
-  //!
-  //! @param[in] __eager Tag selecting eager creation, pass `stream_pool::eager`
-  //! @param[in] __device The logical device the streams are created on
-  //! @param[in] __capacity Number of stream slots, must be greater than zero, defaults to `default_capacity`
-  //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
-  //!
-  //! @throws cuda_error if a stream creation fails
-  _CCCL_HOST_API explicit stream_pool(
-    eager_t,
-    __logical_device_ref __device,
-    ::cuda::std::size_t __capacity = default_capacity,
-    int __priority                 = stream::default_priority)
-      : __device_{__device}
-      , __priority_{__priority}
-      , __lazy_{false}
-  {
-    _CCCL_ASSERT(__capacity > 0, "cuda::stream_pool requires at least one stream");
-    // Makes the stream creation capture-safe; a no-op when the calling thread is not capturing.
-    const __relaxed_capture_scope __relaxed{};
-    __streams_.reserve(__capacity);
-    for (::cuda::std::size_t __i = 0; __i < __capacity; ++__i)
+    __streams_.reserve(__size);
+    if (__lazy_)
     {
-      __streams_.emplace_back(__create_stream());
+      for (::cuda::std::size_t __i = 0; __i < __size; ++__i)
+      {
+        __streams_.emplace_back(no_init);
+      }
+    }
+    else
+    {
+      // Makes the stream creation capture-safe; a no-op when the calling thread is not capturing.
+      const __relaxed_capture_scope __relaxed{};
+      for (::cuda::std::size_t __i = 0; __i < __size; ++__i)
+      {
+        __streams_.emplace_back(__create_stream());
+      }
     }
   }
 
@@ -209,12 +146,12 @@ public:
     return __stream_at(__ticket % __streams_.size());
   }
 
-  //! @brief Returns the stream in slot `__index % capacity()`
+  //! @brief Returns the stream in slot `__index % size()`
   //!
   //! In a lazy pool, creates the stream if its slot is requested for the first time. Requesting a slot does
   //! not advance the round-robin position.
   //!
-  //! @param[in] __index Slot index, wraps around `capacity()`
+  //! @param[in] __index Slot index, wraps around `size()`
   //!
   //! @return A reference to a stream owned by the pool
   //!
@@ -224,13 +161,13 @@ public:
     return __stream_at(__index % __streams_.size());
   }
 
-  //! @brief Number of stream slots in the pool
+  //! @brief Number of streams in the pool
   //!
   //! Fixed at construction; every stream the pool ever hands out comes from one of these slots, whether or not
   //! its stream has been created yet.
   //!
-  //! @return The capacity given at construction
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t capacity() const noexcept
+  //! @return The size given at construction
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t size() const noexcept
   {
     return __streams_.size();
   }
@@ -295,7 +232,7 @@ private:
   bool __lazy_;
   //! Guards the creation of streams in a lazy pool. Unused in an eager pool.
   mutable ::std::mutex __mutex_{};
-  //! The slots, `capacity()` of them; a slot without a stream holds `__invalid_stream()`.
+  //! The slots, `size()` of them; a slot without a stream holds `__invalid_stream()`.
   mutable ::std::vector<stream> __streams_{};
   mutable ::std::atomic<::cuda::std::size_t> __next_{0};
 };
