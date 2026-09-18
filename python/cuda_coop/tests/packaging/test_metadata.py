@@ -34,10 +34,21 @@ def test_project_metadata_declares_the_supported_python_range() -> None:
     }
 
 
-def test_only_test_extra_is_published() -> None:
+def test_only_numba_cuda_mlir_backend_extras_are_published() -> None:
     optional = _metadata()["project"]["optional-dependencies"]
 
-    assert set(optional) == {"test"}
+    assert set(optional) == {
+        "numba-cuda-mlir-cu12",
+        "numba-cuda-mlir-cu13",
+        "test",
+    }
+    for cuda_major in (12, 13):
+        requirements = optional[f"numba-cuda-mlir-cu{cuda_major}"]
+        assert "cuda-core>=0.5.1,<2" in requirements
+        assert f"numba-cuda-mlir[cu{cuda_major}]>=0.5.0,<0.6" in requirements
+        assert "cuda-pathfinder>=1.2.3" in requirements
+        assert "numpy" in requirements
+        assert "typing_extensions>=4.12.0" in requirements
 
 
 def test_base_package_has_no_python_dependencies() -> None:
@@ -81,6 +92,15 @@ def test_excluded_python_implementations_are_absent() -> None:
         "_core/api/reduce.pyi",
         "_core/api/scan.py",
         "_core/api/scan.pyi",
+        "numba_mlir/_dataclass.py",
+        "numba_mlir/_stateful_function.py",
+        "numba_mlir/_group_reduce.py",
+        "numba_mlir/_group_scan.py",
+        "numba_mlir/_lowering/_reduce.py",
+        "numba_mlir/_lowering/_scan.py",
+        "numba_mlir/_lowering/_thread_group.py",
+        "numba_mlir/_compiler/_rewrite_reduce.py",
+        "numba_mlir/_compiler/_rewrite_scan.py",
     )
 
     assert not [relative for relative in forbidden if (package / relative).exists()]

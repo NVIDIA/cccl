@@ -1,0 +1,2095 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from enum import Enum
+from types import SimpleNamespace
+
+import numpy as np
+import pytest
+from numba_cuda_mlir import cuda, types
+from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+from numba_cuda_mlir.numbair_transforms import ir
+
+import cuda.coop as common_coop
+import cuda.coop.numba_mlir as coop
+from cuda.coop._core import SynchronizationScope
+from cuda.coop.numba_mlir._compiler import _operations
+from cuda.coop.numba_mlir._compiler._rewrite import (
+    CoopSinglePhaseRewrite,
+    CoopSinglePhaseRewriteError,
+    CoopWholeFunctionPlanner,
+)
+from cuda.coop.numba_mlir._compiler._rewrite_support import (
+    _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
+    _TempStorageCtorSpec,
+    _TempStoragePlan,
+    _TempStorageRequirementSummary,
+    _TempStorageUseRequirement,
+)
+
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringSharing(str, Enum):
+    SHARED = "shared"
+
+
+class _TypingContext:
+    def __init__(self):
+        self.refresh_count = 0
+
+    def refresh(self):
+        self.refresh_count += 1
+
+
+@pytest.fixture(autouse=True)
+def _restore_rewrite_registries():
+    operation_prefix = "_test_storage_rewrite_family_"
+    try:
+        yield
+    finally:
+        for factory, metadata in tuple(_operations._FACTORY_OPERATIONS.items()):
+            if metadata.operation.startswith(operation_prefix):
+                del _operations._FACTORY_OPERATIONS[factory]
+        for operation in tuple(_operations._REWRITE_OPERATIONS):
+            if operation.startswith(operation_prefix):
+                del _operations._REWRITE_OPERATIONS[operation]
+
+
+def _rewrite(function):
+    func_ir = run_frontend(function)
+    typingctx = _TypingContext()
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        typingctx=typingctx,
+        typemap={},
+        calltypes={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    for label in sorted(func_ir.blocks):
+        block = func_ir.blocks[label]
+        for _ in range(10):
+            if not rewrite.match(func_ir, block, state.typemap, state.calltypes):
+                break
+            block = rewrite.apply()
+            func_ir.blocks[label] = block
+        else:
+            pytest.fail("payload rewrite did not reach a fixed point")
+    return func_ir, typingctx
+
+
+def _call_targets(func_ir):
+    rewrite = object.__new__(CoopSinglePhaseRewrite)
+    rewrite._func_ir = func_ir
+    targets = []
+    for block in func_ir.blocks.values():
+        rewrite._block_defs = {
+            inst.target.name: inst.value
+            for inst in block.body
+            if isinstance(inst, ir.Assign)
+        }
+        for inst in block.body:
+            value = getattr(inst, "value", None)
+            if isinstance(value, ir.Expr) and value.op == "call":
+                targets.append(rewrite._resolve_python_value(value.func))
+    return targets
+
+
+def test_qualified_thread_data_lowers_to_a_compiler_array():
+    def kernel():
+        data = coop.ThreadData(2, types.int32, alignment=16)
+        return data[0]
+
+    func_ir, typingctx = _rewrite(kernel)
+    targets = _call_targets(func_ir)
+
+    assert cuda.local.array in targets
+    assert typingctx.refresh_count == 1
+
+
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_constructor_alias_can_feed_multiple_blocks(module):
+    def kernel(flag):
+        constructor = module.ThreadData
+        alias = constructor
+        if flag:
+            first = alias(1, types.int32)
+            return first[0]
+        second = alias(2, types.int32)
+        return second[1]
+
+    func_ir, _ = _rewrite(kernel)
+
+    assert _call_targets(func_ir).count(cuda.local.array) == 2
+
+
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_constructor_alias_can_feed_a_loop(module):
+    def kernel():
+        constructor = module.ThreadData
+        result = 0
+        for _ in range(2):
+            data = constructor(1, types.int32)
+            result += data[0]
+        return result
+
+    func_ir, _ = _rewrite(kernel)
+
+    assert _call_targets(func_ir).count(cuda.local.array) == 1
+
+
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_item_extent_is_a_compile_time_constant(module):
+    def kernel():
+        payload = module.ThreadData(3, types.int32)
+        alias = payload
+        return alias.items_per_thread
+
+    func_ir, _ = _rewrite(kernel)
+    assignments = [
+        stmt
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+    ]
+
+    assert not any(
+        isinstance(stmt.value, ir.Expr)
+        and stmt.value.op == "getattr"
+        and stmt.value.attr == "items_per_thread"
+        for stmt in assignments
+    )
+    definitions = {stmt.target.name: stmt.value for stmt in assignments}
+    returned = next(
+        stmt
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Return)
+    )
+    result = definitions[returned.value.name]
+    assert result.op == "cast"
+    extent = definitions[result.value.name]
+    assert isinstance(extent, ir.Const)
+    assert extent.value == 3
+
+
+def test_native_local_array_item_extent_is_not_rewritten():
+    def kernel():
+        payload = cuda.local.array(3, types.int32)
+        return payload.items_per_thread
+
+    func_ir, _ = _rewrite(kernel)
+    assignments = [
+        stmt
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+    ]
+
+    assert any(
+        isinstance(stmt.value, ir.Expr)
+        and stmt.value.op == "getattr"
+        and stmt.value.attr == "items_per_thread"
+        for stmt in assignments
+    )
+
+
+def test_mixed_thread_data_item_extent_is_not_rewritten():
+    def kernel(flag):
+        thread_data = coop.ThreadData(3, types.int32)
+        native = cuda.local.array(3, types.int32)
+        payload = thread_data if flag else native
+        return payload.items_per_thread
+
+    func_ir, _ = _rewrite(kernel)
+    assignments = [
+        stmt
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+    ]
+
+    assert any(
+        isinstance(stmt.value, ir.Expr)
+        and stmt.value.op == "getattr"
+        and stmt.value.attr == "items_per_thread"
+        for stmt in assignments
+    )
+
+
+@pytest.mark.parametrize(
+    "alignment",
+    [None, 1, 2, 4, 8, 16, np.int64(32)],
+)
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_rewrite_uses_alignment(alignment, module):
+    def kernel():
+        data = module.ThreadData(
+            2,
+            types.int32,
+            alignment=alignment,
+        )
+        return data[0]
+
+    func_ir, _ = _rewrite(kernel)
+
+    assert cuda.local.array in _call_targets(func_ir)
+    definitions = {
+        stmt.target.name: stmt.value
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+    }
+    calls = [
+        value
+        for value in definitions.values()
+        if isinstance(value, ir.Expr) and value.op == "call"
+    ]
+    assert len(calls) == 1
+    alignment_refs = [value for name, value in calls[0].kws if name == "alignment"]
+    if alignment is None:
+        assert alignment_refs == []
+    else:
+        assert len(alignment_refs) == 1
+        assert definitions[alignment_refs[0].name].value == max(8, alignment)
+
+
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+@pytest.mark.parametrize(
+    ("alignment", "message"),
+    [
+        (True, "alignment must be an integer or None"),
+        (1.5, "alignment must be an integer or None"),
+        (0, "alignment must be a positive integer"),
+        (-1, "alignment must be a positive integer"),
+        (3, "alignment must be a power of 2"),
+    ],
+)
+def test_thread_data_rewrite_rejects_invalid_alignment(module, alignment, message):
+    def kernel():
+        return module.ThreadData(2, types.int32, alignment=alignment)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match=message):
+        _rewrite(kernel)
+
+
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_rewrite_rejects_dynamic_alignment(module):
+    def kernel(alignment):
+        return module.ThreadData(2, types.int32, alignment=alignment)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="alignment must be a compile-time"
+    ):
+        _rewrite(kernel)
+
+
+def test_whole_function_planner_reuses_the_foundation_rewrite():
+    def kernel():
+        return coop.ThreadData(2, types.int32)
+
+    func_ir = run_frontend(kernel)
+    typingctx = _TypingContext()
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        typingctx=typingctx,
+        typemap={},
+        calltypes={},
+        metadata={"targetoptions": {}},
+    )
+
+    assert CoopWholeFunctionPlanner(state).run()
+    assert cuda.local.array in _call_targets(func_ir)
+    assert typingctx.refresh_count == 1
+
+
+def _unused_temp_storage():
+    _storage = coop.TempStorage(32)
+    return 0
+
+
+@pytest.mark.parametrize(
+    "kernel",
+    [
+        pytest.param(_unused_temp_storage, id="no-consumer"),
+        pytest.param(lambda: coop.TempStorage(32), id="return"),
+        pytest.param(lambda: coop.TempStorage(32)[0], id="index"),
+        pytest.param(lambda: len(coop.TempStorage(32)), id="other-call"),
+    ],
+)
+def test_temp_storage_is_an_opaque_primitive_descriptor(kernel):
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="opaque compile-time descriptors",
+    ):
+        _rewrite(kernel)
+
+
+def test_temp_storage_rewrite_rejects_starred_constructor_arguments():
+    # Numba's frontend rejects **kwargs outright, so only *args can reach the
+    # rewrite. It used to parse as TempStorage() and silently keep the default
+    # auto_sync=True that the caller had turned off.
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+    options = (None, None, False)
+
+    def kernel(value):
+        storage = coop.TempStorage(*options)
+        return provider(value, temp_storage=storage)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="does not accept"):
+        _rewrite_registered_provider(kernel)
+
+
+def test_temp_storage_rewrite_rejects_string_enum_sharing():
+    def kernel():
+        return coop.TempStorage(sharing=_StringSharing.SHARED)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="TempStorage sharing must be a string",
+    ):
+        _rewrite(kernel)
+
+
+class _FakeInvocable:
+    files = ("storage-rewrite-test.ltoir",)
+    specialization = None
+    storage_abi = "leading_pointer"
+    execution_scope = "block"
+    synchronization_scope = "block"
+
+    def __init__(self, *, size_in_bytes=64, alignment=16):
+        self.temp_storage_bytes = size_in_bytes
+        self.temp_storage_alignment = alignment
+
+    def __call__(self, *args):
+        del args
+
+
+def _register_leading_pointer_provider(
+    invocable,
+    *,
+    execution_scope=SynchronizationScope.BLOCK,
+    synchronization_scope=SynchronizationScope.BLOCK,
+):
+    operation = f"_test_storage_rewrite_family_{id(invocable)}"
+    calls = []
+
+    def provider(*runtime_args, **factory_kwargs):
+        assert not runtime_args
+        assert not factory_kwargs
+        calls.append((runtime_args, factory_kwargs))
+        return invocable
+
+    provider.calls = calls
+
+    _operations.register_factory(
+        provider,
+        operation=operation,
+        namespace="storage_test",
+        storage_abi=_operations.StorageABI.LEADING_POINTER,
+        execution_scope=execution_scope,
+        synchronization_scope=synchronization_scope,
+    )
+    _operations.register_rewrite_operation(
+        operation,
+        _operations.RewriteOperationSpec(
+            factory_namespaces=frozenset({"storage_test"}),
+            dtype_factory_kwargs=frozenset(),
+            runtime_arg_counts=frozenset({1}),
+            runtime_factory_kwargs=(),
+            runtime_factory_kw_prerequisites=(),
+            allowed_factory_kwargs=frozenset(),
+            required_factory_kwargs=frozenset(),
+            accepts_temp_storage=True,
+            scalar_binding_kwargs=frozenset(),
+            runtime_offset_kwarg=None,
+            infer_payload=lambda *_args: None,
+        ),
+    )
+    return provider
+
+
+def _frontend(function, *, ssa=False):
+    func_ir = run_frontend(function)
+    if ssa:
+        from numba_cuda_mlir.numba_cuda.core.ir_utils import build_definitions
+        from numba_cuda_mlir.numba_cuda.core.ssa import reconstruct_ssa
+
+        func_ir = reconstruct_ssa(func_ir)
+        func_ir._definitions = build_definitions(func_ir.blocks)
+    return func_ir
+
+
+def _rewrite_registered_provider(function, *, ssa=False, lifo=False):
+    func_ir = _frontend(function, ssa=ssa)
+    typingctx = _TypingContext()
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(),
+        typingctx=typingctx,
+        typemap={},
+        calltypes={},
+        metadata={"targetoptions": {}},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    items = list(func_ir.blocks.items())
+    if not lifo:
+        items.reverse()
+    while items:
+        label, block = items.pop()
+        if rewrite.match(func_ir, block, state.typemap, state.calltypes):
+            new_block = rewrite.apply()
+            func_ir.blocks[label] = new_block
+            items.append((label, new_block))
+    return func_ir, rewrite, state
+
+
+def _rewrite_preflight(function):
+    func_ir = _frontend(function)
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(),
+        typingctx=_TypingContext(),
+        typemap={},
+        calltypes={},
+        metadata={"targetoptions": {}},
+    )
+    return func_ir, state, CoopSinglePhaseRewrite(state)
+
+
+@pytest.mark.parametrize(
+    ("execution_scope", "synchronization_scope", "accepted"),
+    [
+        pytest.param(
+            SynchronizationScope.BLOCK,
+            SynchronizationScope.BLOCK,
+            True,
+            id="block-block",
+        ),
+        pytest.param(
+            SynchronizationScope.BLOCK,
+            SynchronizationScope.NONE,
+            False,
+            id="block-none",
+        ),
+        pytest.param(
+            SynchronizationScope.WARP,
+            SynchronizationScope.WARP,
+            False,
+            id="warp-warp",
+        ),
+        pytest.param(
+            SynchronizationScope.NONE,
+            SynchronizationScope.NONE,
+            False,
+            id="none-none",
+        ),
+        pytest.param(
+            SynchronizationScope.GROUP,
+            SynchronizationScope.GROUP,
+            False,
+            id="group-group",
+        ),
+    ],
+)
+def test_storage_provider_without_plan_requires_block_scope(
+    execution_scope,
+    synchronization_scope,
+    accepted,
+):
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(
+        invocable,
+        execution_scope=execution_scope,
+        synchronization_scope=synchronization_scope,
+    )
+
+    def kernel(value):
+        return provider(value)
+
+    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    entry_block = func_ir.blocks[min(func_ir.blocks)]
+    if accepted:
+        prepared = []
+        rewrite._prepare_ltoir_bundle_for_matches = lambda matches: prepared.append(
+            tuple(matches)
+        )
+
+        assert rewrite.match(func_ir, entry_block, state.typemap, state.calltypes)
+        assert len(prepared) == 1
+        assert len(prepared[0]) == 1
+        assert provider.calls == [((), {})]
+        return
+
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: pytest.fail(
+        "invalid no-plan provider reached bundle preparation"
+    )
+    rewrite._materialize_invocable = lambda _match: pytest.fail(
+        "invalid no-plan provider reached provider materialization"
+    )
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="require block execution and block synchronization scopes",
+    ):
+        rewrite.match(func_ir, entry_block, state.typemap, state.calltypes)
+    assert provider.calls == []
+
+
+@pytest.mark.parametrize(
+    ("case", "with_descriptor", "message"),
+    [
+        pytest.param(
+            "group",
+            False,
+            "execution scope 'group' has no storage emitter",
+            id="group",
+        ),
+        pytest.param(
+            "address-space",
+            False,
+            "shared-address-space TempStorage",
+            id="address-space",
+        ),
+        pytest.param(
+            "implementation-with-descriptor",
+            True,
+            "TempStorage ownership disagrees with its runtime arguments",
+            id="implementation-with-descriptor",
+        ),
+        pytest.param(
+            "caller-without-descriptor",
+            False,
+            "TempStorage ownership disagrees with its runtime arguments",
+            id="caller-without-descriptor",
+        ),
+        pytest.param(
+            "caller-none",
+            True,
+            "caller-owned TempStorage is supported only for single-instance block",
+            id="caller-none",
+        ),
+        pytest.param(
+            "caller-group",
+            True,
+            "execution scope 'group' has no storage emitter",
+            id="caller-group",
+        ),
+    ],
+)
+def test_planned_storage_guardrails_fail_before_materialization(
+    case,
+    with_descriptor,
+    message,
+):
+    from dataclasses import replace
+
+    from cuda.coop._core import (
+        GroupLoadStoreAlgorithm,
+        GroupLoweringTarget,
+        GroupTopologyContract,
+        LaunchFacts,
+        ParticipationContract,
+        StorageOwnership,
+        SynchronizationContract,
+        make_group_primitive_call,
+        resolve_thread_group,
+        this_block,
+        this_thread,
+    )
+    from cuda.coop._core.group._contracts import _contracts
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(
+        this_block(),
+        _load_store(algorithm=GroupLoadStoreAlgorithm.TRANSPOSE),
+    )
+    execution_scope = SynchronizationScope.BLOCK
+    synchronization_scope = SynchronizationScope.BLOCK
+    if case in {"group", "caller-group"}:
+        execution_scope = SynchronizationScope.GROUP
+        synchronization_scope = SynchronizationScope.GROUP
+        launch = LaunchFacts(exact_block_dim=(64, 1, 1))
+        resolved_group = resolve_thread_group(
+            this_block().group_by(2), launch
+        ).require_supported()
+        topology, participation, synchronization, storage = _contracts(
+            resolved_group,
+            launch,
+            result=None,
+            storage_ownership=StorageOwnership.IMPLEMENTATION,
+            cpp_type=plan.temp_storage.cpp_type,
+        )
+        plan = replace(
+            plan,
+            target=GroupLoweringTarget.CUDAX_GROUP,
+            call=make_group_primitive_call(resolved_group, plan.call.operation),
+            resolved_group=resolved_group,
+            topology=topology,
+            participation=participation,
+            synchronization=synchronization,
+            temp_storage=storage,
+        )
+    elif case == "address-space":
+        plan = replace(
+            plan,
+            temp_storage=replace(plan.temp_storage, address_space="local"),
+        )
+    elif case == "caller-none":
+        execution_scope = SynchronizationScope.NONE
+        synchronization_scope = SynchronizationScope.NONE
+        launch = LaunchFacts(exact_block_dim=(64, 1, 1))
+        resolved_thread = resolve_thread_group(
+            this_thread(), launch
+        ).require_supported()
+        operation = plan.call.operation
+        plan = replace(
+            plan,
+            target=GroupLoweringTarget.CUDAX_GROUP,
+            call=make_group_primitive_call(resolved_thread, operation),
+            resolved_group=resolved_thread,
+            topology=GroupTopologyContract(
+                group_kind="thread",
+                logical_width=1,
+                instances=64,
+                instance_index="linear_thread_rank",
+                thread_rank="0",
+                execution_scope=SynchronizationScope.NONE,
+            ),
+            participation=ParticipationContract(
+                group_kind="thread",
+                exact_group_size=1,
+                exact_block_dim=(64, 1, 1),
+                complete_membership=True,
+                contiguous=True,
+                aligned=True,
+                converged_entry=True,
+                complete_parent_partition=True,
+            ),
+            synchronization=SynchronizationContract(
+                converged_entry=True,
+                storage_reuse_barrier=SynchronizationScope.NONE,
+            ),
+            temp_storage=replace(
+                plan.temp_storage,
+                instances=64,
+                instance_index="linear_thread_rank",
+            ),
+        )
+    if case.startswith("caller-"):
+        plan = replace(
+            plan,
+            temp_storage=replace(
+                plan.temp_storage,
+                ownership=StorageOwnership.CALLER,
+                exact_layout_required=True,
+                sharing="shared",
+            ),
+        )
+
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(
+        invocable,
+        execution_scope=execution_scope,
+        synchronization_scope=synchronization_scope,
+    )
+    if with_descriptor:
+
+        def kernel(value):
+            storage = coop.TempStorage()
+            return provider(
+                value,
+                temp_storage=storage,
+                __cuda_coop_group_lowering_plan__=plan,
+            )
+
+    else:
+
+        def kernel(value):
+            return provider(
+                value,
+                __cuda_coop_group_lowering_plan__=plan,
+            )
+
+    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: pytest.fail(
+        "invalid planned provider reached bundle preparation"
+    )
+    rewrite._materialize_invocable = lambda _match: pytest.fail(
+        "invalid planned provider reached provider materialization"
+    )
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match=message):
+        rewrite.match(
+            func_ir,
+            func_ir.blocks[min(func_ir.blocks)],
+            state.typemap,
+            state.calltypes,
+        )
+    assert provider.calls == []
+
+
+@pytest.mark.parametrize("descriptor_auto_sync", [False, True], ids=["drift", "agree"])
+def test_planned_caller_storage_contract_must_match_the_descriptor(
+    descriptor_auto_sync,
+):
+    from cuda.coop._core import GroupLoadStoreAlgorithm, StorageOwnership, this_block
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(
+        this_block(),
+        _load_store(
+            algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
+            storage_ownership=StorageOwnership.CALLER,
+            storage_sharing="shared",
+            storage_auto_sync=True,
+        ),
+    )
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        storage = coop.TempStorage(auto_sync=descriptor_auto_sync)
+        return provider(
+            value,
+            temp_storage=storage,
+            __cuda_coop_group_lowering_plan__=plan,
+        )
+
+    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
+    rewrite._materialize_invocable = lambda _match: (invocable, False)
+    entry = func_ir.blocks[min(func_ir.blocks)]
+
+    if descriptor_auto_sync:
+        assert rewrite.match(func_ir, entry, state.typemap, state.calltypes)
+        return
+    # The planner parsed auto_sync=True into the plan while the rewrite sees
+    # auto_sync=False: neither parser may silently win.
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="disagrees between the group lowering plan",
+    ):
+        rewrite.match(func_ir, entry, state.typemap, state.calltypes)
+
+
+def test_apply_refuses_a_plan_whose_auto_sync_disagrees_with_implicit_storage():
+    from dataclasses import replace
+
+    from cuda.coop._core import GroupLoadStoreAlgorithm, this_block
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(
+        this_block(),
+        _load_store(algorithm=GroupLoadStoreAlgorithm.TRANSPOSE),
+    )
+    plan = replace(
+        plan,
+        temp_storage=replace(plan.temp_storage, auto_sync=False),
+        synchronization=replace(
+            plan.synchronization,
+            storage_reuse_barrier=SynchronizationScope.NONE,
+        ),
+    )
+    invocable = _FakeInvocable()
+    invocable.synchronization_scope = "none"
+    provider = _register_leading_pointer_provider(
+        invocable,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+
+    def kernel(value):
+        return provider(value, __cuda_coop_group_lowering_plan__=plan)
+
+    # Implementation-owned storage always carries the trailing barrier; a plan
+    # that claims otherwise must be rejected rather than drop the barrier.
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="disagrees between the group lowering plan and the descriptor",
+    ):
+        _rewrite_registered_provider(kernel)
+
+
+def _resolved_calls(func_ir):
+    resolver = object.__new__(CoopSinglePhaseRewrite)
+    resolver._func_ir = func_ir
+    calls = []
+    for label, block in func_ir.blocks.items():
+        resolver._block_defs = {
+            inst.target.name: inst.value
+            for inst in block.body
+            if isinstance(inst, ir.Assign)
+        }
+        for inst in block.body:
+            value = getattr(inst, "value", None)
+            if isinstance(value, ir.Expr) and value.op == "call":
+                calls.append((label, inst, resolver._resolve_python_value(value.func)))
+    return calls
+
+
+def _rewrite_with_fake_invocable(function, invocable, *, ssa=False):
+    func_ir = _frontend(function, ssa=ssa)
+    typingctx = _TypingContext()
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(),
+        typingctx=typingctx,
+        typemap={},
+        calltypes={},
+        metadata={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
+    rewrite._materialize_invocable = lambda _match: (invocable, False)
+    rewrite._record_invocable_specialization = lambda _invocable: None
+    for label in sorted(func_ir.blocks):
+        block = func_ir.blocks[label]
+        while rewrite.match(func_ir, block, state.typemap, state.calltypes):
+            block = rewrite.apply()
+            func_ir.blocks[label] = block
+    return func_ir, rewrite
+
+
+def test_temp_storage_aliases_from_one_constructor_are_accepted():
+    from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
+
+    def kernel(source, choose_first):
+        storage = coop.TempStorage()
+        if choose_first:
+            selected = storage
+        else:
+            selected = storage
+        payload = coop.ThreadData(2, types.int32)
+        return provider_load(
+            source,
+            payload,
+            dtype=types.int32,
+            threads_per_block=32,
+            items_per_thread=2,
+            temp_storage=selected,
+        )
+
+    func_ir, _ = _rewrite_with_fake_invocable(
+        kernel,
+        _FakeInvocable(),
+        ssa=True,
+    )
+
+    assert any(
+        isinstance(inst, ir.Assign)
+        and isinstance(inst.value, ir.Expr)
+        and inst.value.op == "phi"
+        for block in func_ir.blocks.values()
+        for inst in block.body
+    )
+    targets = _call_targets(func_ir)
+    assert cuda.shared.array not in targets
+    assert cuda.syncthreads not in targets
+
+
+def test_temp_storage_phi_canonicalizes_equivalent_constructor_contracts():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value, choose_first):
+        if choose_first:
+            selected = coop.TempStorage()
+        else:
+            selected = coop.TempStorage(auto_sync=True, sharing=" SHARED ")
+        return provider(value, temp_storage=selected)
+
+    func_ir, rewrite, _ = _rewrite_registered_provider(kernel, ssa=True)
+    calls = _resolved_calls(func_ir)
+
+    assert sum(target is cuda.shared.array for _, _, target in calls) == 1
+    assert sum(target is invocable for _, _, target in calls) == 1
+    assert rewrite._temp_storage_global_plan.total_size == 64
+    assert len(set(rewrite._temp_storage_ctor_roots.values())) == 1
+
+
+def test_leading_pointer_storage_can_disable_external_reuse_sync():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        storage = coop.TempStorage(auto_sync=False)
+        return provider(value, temp_storage=storage)
+
+    func_ir, _, _ = _rewrite_registered_provider(kernel)
+    calls = _resolved_calls(func_ir)
+    targets = [target for _, _, target in calls]
+    invocable_calls = [inst.value for _, inst, target in calls if target is invocable]
+
+    assert targets.count(cuda.shared.array) == 1
+    assert len(invocable_calls) == 1
+    assert len(invocable_calls[0].args) == 2
+    assert cuda.syncthreads not in targets
+    assert cuda.syncwarp not in targets
+
+
+@pytest.mark.parametrize(
+    "explicit_descriptor", [True, False], ids=["caller", "implicit"]
+)
+def test_temp_storage_backing_rejects_user_dynamic_shared_arrays(explicit_descriptor):
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    if explicit_descriptor:
+
+        def kernel(value):
+            mine = cuda.shared.array(0, types.int32)
+            storage = coop.TempStorage()
+            mine[0] = value
+            return provider(value, temp_storage=storage)
+
+    else:
+
+        def kernel(value):
+            mine = cuda.shared.array(shape=0, dtype=types.int32)
+            mine[0] = value
+            return provider(value)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match=r"dynamic/runtime-sized cuda\.shared\.array.*would alias",
+    ):
+        _rewrite_registered_provider(kernel)
+
+
+def test_temp_storage_backing_coexists_with_static_user_shared_arrays():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        mine = cuda.shared.array(4, types.int32)
+        storage = coop.TempStorage()
+        mine[0] = value
+        return provider(value, temp_storage=storage)
+
+    func_ir, _, _ = _rewrite_registered_provider(kernel)
+    targets = [target for _, _, target in _resolved_calls(func_ir)]
+
+    assert targets.count(cuda.shared.array) == 2
+    assert targets.count(invocable) == 1
+
+
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        ((64, 16, True, "shared"), (96, 16, True, "shared")),
+        ((64, 16, True, "shared"), (64, 32, True, "shared")),
+        ((64, 16, True, "shared"), (64, 16, False, "shared")),
+        ((64, 16, None, "shared"), (64, 16, None, "exclusive")),
+    ],
+    ids=["capacity", "alignment", "auto-sync", "sharing"],
+)
+def test_temp_storage_phi_rejects_incompatible_contracts_before_compile(left, right):
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+    left_size, left_alignment, left_auto_sync, left_sharing = left
+    right_size, right_alignment, right_auto_sync, right_sharing = right
+
+    def kernel(value, choose_first):
+        if choose_first:
+            selected = coop.TempStorage(
+                left_size,
+                alignment=left_alignment,
+                auto_sync=left_auto_sync,
+                sharing=left_sharing,
+            )
+        else:
+            selected = coop.TempStorage(
+                right_size,
+                alignment=right_alignment,
+                auto_sync=right_auto_sync,
+                sharing=right_sharing,
+            )
+        return provider(value, temp_storage=selected)
+
+    func_ir = _frontend(kernel, ssa=True)
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(),
+        typingctx=_TypingContext(),
+        typemap={},
+        calltypes={},
+        metadata={"targetoptions": {}},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: pytest.fail(
+        "incompatible TempStorage reached provider preparation"
+    )
+    rewrite._materialize_invocable = lambda _match: pytest.fail(
+        "incompatible TempStorage reached provider compilation"
+    )
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="TempStorage aliases have inconsistent contracts",
+    ):
+        rewrite.match(
+            func_ir,
+            func_ir.blocks[min(func_ir.blocks)],
+            state.typemap,
+            state.calltypes,
+        )
+
+
+def test_group_planning_rejects_mixed_descriptor_phi():
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+
+    def consume(value):
+        del value
+
+    def kernel(choose_storage):
+        if choose_storage:
+            selected = coop.TempStorage()
+        else:
+            selected = None
+        consume(selected)
+
+    func_ir = _frontend(kernel, ssa=True)
+    phi_assign = next(
+        inst
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign)
+        and isinstance(inst.value, ir.Expr)
+        and inst.value.op == "phi"
+    )
+    planner = _GroupCallPlanner(
+        SimpleNamespace(func_ir=func_ir, args=(types.boolean,)),
+        {"block": (32, 1, 1), "grid": (1, 1, 1)},
+    )
+
+    with pytest.raises(GroupRewriteError, match="on every path"):
+        planner.context.temp_storage(phi_assign.target)
+
+
+@pytest.mark.parametrize("descriptor", ["temp_storage", "thread_data"])
+@pytest.mark.parametrize("aliases", ["direct", "chain", "conditional"])
+def test_descriptor_passed_to_a_device_function_defers_until_inlining(
+    descriptor, aliases
+):
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    @cuda.jit(device=True)
+    def helper(value, storage):
+        return provider(value, temp_storage=storage)
+
+    if descriptor == "temp_storage":
+
+        def kernel(value, flag):
+            storage = coop.TempStorage()
+            alias = storage
+            chained = alias
+            if aliases == "direct":
+                selected = storage
+            elif aliases == "chain":
+                selected = chained
+            else:
+                selected = alias if flag else chained
+            first = helper(value, selected)
+            return helper(first, selected)
+
+    else:
+
+        def kernel(value, flag):
+            payload = coop.ThreadData(2)
+            alias = payload
+            chained = alias
+            if aliases == "direct":
+                selected = payload
+            elif aliases == "chain":
+                selected = chained
+            else:
+                selected = alias if flag else chained
+            return helper(value, selected)
+
+    # Before inlining the helper body is invisible: leave the IR untouched so
+    # the whole-function planner sees the real consumers after inlining.
+    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    for label in sorted(func_ir.blocks):
+        block = func_ir.blocks[label]
+        assert not rewrite.match(func_ir, block, state.typemap, state.calltypes)
+    assert rewrite._deferred_post_inline
+    assert _call_targets(func_ir).count(helper) == (
+        2 if descriptor == "temp_storage" else 1
+    )
+
+    if descriptor == "temp_storage":
+        # After inlining, a surviving device-function call means the helper
+        # was not inlined; the escape is then reported as such.
+        post_inline = CoopSinglePhaseRewrite(state, post_inline=True)
+        with pytest.raises(
+            CoopSinglePhaseRewriteError,
+            match="device function that was not inlined",
+        ):
+            post_inline.match(
+                func_ir,
+                func_ir.blocks[min(func_ir.blocks)],
+                state.typemap,
+                state.calltypes,
+            )
+
+
+@pytest.mark.parametrize(
+    "shape",
+    ["ternary", "initializer"],
+)
+def test_descriptor_joined_with_none_is_rejected_before_type_inference(shape):
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    if shape == "ternary":
+
+        def kernel(value, flag):
+            storage = coop.TempStorage() if flag else None
+            return provider(value, temp_storage=storage)
+
+    else:
+
+        def kernel(value, flag):
+            storage = None
+            if flag:
+                storage = coop.TempStorage()
+            return provider(value, temp_storage=storage)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="on every path"):
+        _rewrite_registered_provider(kernel)
+
+
+def test_group_planning_rejects_descriptor_joined_with_none_without_ssa():
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+
+    def consume(value):
+        del value
+
+    def kernel(choose_storage):
+        selected = None
+        if choose_storage:
+            selected = coop.TempStorage()
+        consume(selected)
+
+    func_ir = _frontend(kernel)
+    consume_call = next(
+        inst
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign)
+        and isinstance(inst.value, ir.Expr)
+        and inst.value.op == "call"
+        and getattr(func_ir.get_definition(inst.value.func), "value", None) is consume
+    )
+    planner = _GroupCallPlanner(
+        SimpleNamespace(func_ir=func_ir, args=(types.boolean,)),
+        {"block": (32, 1, 1), "grid": (1, 1, 1)},
+    )
+
+    with pytest.raises(GroupRewriteError, match="on every path"):
+        planner.context.temp_storage(consume_call.value.args[0])
+
+
+@pytest.mark.parametrize("auto_sync", [False, None], ids=["manual", "auto"])
+def test_rebound_constructor_name_collapses_only_with_auto_sync(auto_sync):
+    # Production IR is not in SSA form: a name rebound inside a branch keeps
+    # one name for two constructor sites. Collapsing them into one region is
+    # safe only while every use carries the trailing reuse barrier.
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value, flag):
+        storage = coop.TempStorage(auto_sync=auto_sync)
+        first = provider(value, temp_storage=storage)
+        if flag:
+            storage = coop.TempStorage(auto_sync=auto_sync)
+        return provider(first, temp_storage=storage)
+
+    if auto_sync is False:
+        with pytest.raises(CoopSinglePhaseRewriteError, match="exactly one site"):
+            _rewrite_registered_provider(kernel)
+        return
+
+    func_ir, rewrite, _ = _rewrite_registered_provider(kernel)
+    targets = [target for _, _, target in _resolved_calls(func_ir)]
+
+    assert targets.count(cuda.shared.array) == 1
+    assert targets.count(invocable) == 2
+    assert targets.count(cuda.syncthreads) == 2
+    assert rewrite._temp_storage_global_plan.total_size == 64
+
+
+def test_temp_storage_phi_rejects_merging_manual_sync_constructors():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value, choose_first):
+        if choose_first:
+            selected = coop.TempStorage(auto_sync=False)
+        else:
+            selected = coop.TempStorage(auto_sync=False)
+        return provider(value, temp_storage=selected)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="exactly one site"):
+        _rewrite_registered_provider(kernel, ssa=True)
+
+
+@pytest.mark.parametrize("auto_sync", [False, None], ids=["manual", "auto"])
+def test_group_planning_collapses_constructor_sites_only_with_auto_sync(auto_sync):
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+
+    def consume(value):
+        del value
+
+    def kernel(choose_storage):
+        if choose_storage:
+            selected = coop.TempStorage(auto_sync=auto_sync)
+        else:
+            selected = coop.TempStorage(auto_sync=auto_sync)
+        consume(selected)
+
+    func_ir = _frontend(kernel)
+    consume_call = next(
+        inst
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign)
+        and isinstance(inst.value, ir.Expr)
+        and inst.value.op == "call"
+        and getattr(func_ir.get_definition(inst.value.func), "value", None) is consume
+    )
+    planner = _GroupCallPlanner(
+        SimpleNamespace(func_ir=func_ir, args=(types.boolean,)),
+        {"block": (32, 1, 1), "grid": (1, 1, 1)},
+    )
+
+    if auto_sync is False:
+        with pytest.raises(GroupRewriteError, match="exactly one site"):
+            planner.context.temp_storage(consume_call.value.args[0])
+    else:
+        assert planner.context.temp_storage(consume_call.value.args[0]) == (
+            None,
+            None,
+            True,
+            "shared",
+        )
+
+
+def test_temp_storage_backing_dominates_nonentry_call_under_lifo_rewrite():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value, take_provider):
+        if take_provider:
+            result = provider(value)
+        else:
+            result = value
+        return result
+
+    func_ir, rewrite, _ = _rewrite_registered_provider(kernel, lifo=True)
+    calls = _resolved_calls(func_ir)
+    entry_label = min(func_ir.blocks)
+    backing_calls = [
+        (label, inst) for label, inst, target in calls if target is cuda.shared.array
+    ]
+    invocable_calls = [
+        (label, inst) for label, inst, target in calls if target is invocable
+    ]
+
+    assert len(backing_calls) == 1
+    assert len(invocable_calls) == 1
+    backing_label, backing_assign = backing_calls[0]
+    call_label, call_assign = invocable_calls[0]
+    assert backing_label == entry_label
+    assert call_label != entry_label
+    storage_arg = call_assign.value.args[0]
+    storage_definition = next(
+        inst.value
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign) and inst.target.name == storage_arg.name
+    )
+    assert isinstance(storage_definition, ir.Expr)
+    assert storage_definition.op == "getitem"
+    assert storage_definition.value.name == backing_assign.target.name
+    assert rewrite._temp_storage_backing_emitted
+
+
+def test_equivalent_temp_storage_phi_escape_is_rejected_before_compile():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value, choose_first):
+        if choose_first:
+            selected = coop.TempStorage()
+        else:
+            selected = coop.TempStorage(auto_sync=True)
+        provider(value, temp_storage=selected)
+        return selected
+
+    func_ir = _frontend(kernel, ssa=True)
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(),
+        typingctx=_TypingContext(),
+        typemap={},
+        calltypes={},
+        metadata={"targetoptions": {}},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: pytest.fail(
+        "escaping TempStorage reached provider preparation"
+    )
+    rewrite._materialize_invocable = lambda _match: pytest.fail(
+        "escaping TempStorage reached provider compilation"
+    )
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="would escape to runtime",
+    ):
+        rewrite.match(
+            func_ir,
+            func_ir.blocks[min(func_ir.blocks)],
+            state.typemap,
+            state.calltypes,
+        )
+
+
+def test_leading_pointer_provider_stages_one_dynamic_backing(monkeypatch):
+    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+
+    size_in_bytes = 64 * 1024
+    invocable = _FakeInvocable(size_in_bytes=size_in_bytes)
+    provider = _register_leading_pointer_provider(invocable)
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "_query_device_shared_memory_limits",
+        lambda: {
+            "max_default_shared_memory_per_block": 48 * 1024,
+            "max_optin_shared_memory_per_block": 96 * 1024,
+        },
+    )
+
+    def kernel(value):
+        return provider(value)
+
+    func_ir, rewrite, state = _rewrite_registered_provider(kernel, lifo=True)
+    backing_calls = [
+        inst.value
+        for _, inst, target in _resolved_calls(func_ir)
+        if target is cuda.shared.array
+    ]
+
+    assert len(backing_calls) == 1
+    size_var = backing_calls[0].args[0]
+    size_definition = next(
+        inst.value
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign) and inst.target.name == size_var.name
+    )
+    assert isinstance(size_definition, ir.Const)
+    assert size_definition.value == 0
+    assert rewrite._temp_storage_global_plan.dynamic_shared_bytes == size_in_bytes
+    assert state.metadata["required_dynamic_shared_memory"] == size_in_bytes
+
+
+def test_mixed_temp_storage_primitive_and_escape_fails_before_compile():
+    from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
+
+    def kernel(source):
+        storage = coop.TempStorage()
+        payload = coop.ThreadData(2, types.int32)
+        provider_load(
+            source,
+            payload,
+            dtype=types.int32,
+            threads_per_block=32,
+            items_per_thread=2,
+            temp_storage=storage,
+        )
+        return storage
+
+    func_ir = run_frontend(kernel)
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(),
+        typingctx=_TypingContext(),
+        typemap={},
+        calltypes={},
+        metadata={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: pytest.fail(
+        "escaping TempStorage reached provider preparation"
+    )
+    rewrite._materialize_invocable = lambda _match: pytest.fail(
+        "escaping TempStorage reached provider compilation"
+    )
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="would escape to runtime",
+    ):
+        rewrite.match(
+            func_ir,
+            func_ir.blocks[min(func_ir.blocks)],
+            state.typemap,
+            state.calltypes,
+        )
+
+
+def test_direct_provider_uses_no_implicit_storage_or_automatic_sync():
+    from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
+
+    def kernel(source):
+        payload = coop.ThreadData(2, types.int32)
+        return provider_load(
+            source,
+            payload,
+            dtype=types.int32,
+            threads_per_block=32,
+            items_per_thread=2,
+        )
+
+    invocable = _FakeInvocable()
+    func_ir, rewrite = _rewrite_with_fake_invocable(kernel, invocable)
+    targets = _call_targets(func_ir)
+
+    assert cuda.shared.array not in targets
+    assert cuda.syncthreads not in targets
+    assert rewrite._temp_storage_global_plan is None
+    resolver = object.__new__(CoopSinglePhaseRewrite)
+    resolver._func_ir = func_ir
+    invocable_calls = []
+    for block in func_ir.blocks.values():
+        resolver._block_defs = {
+            inst.target.name: inst.value
+            for inst in block.body
+            if isinstance(inst, ir.Assign)
+        }
+        invocable_calls.extend(
+            inst.value
+            for inst in block.body
+            if isinstance(inst, ir.Assign)
+            and isinstance(inst.value, ir.Expr)
+            and inst.value.op == "call"
+            and resolver._resolve_python_value(inst.value.func) is invocable
+        )
+    assert len(invocable_calls) == 1
+    assert len(invocable_calls[0].args) == 2
+
+
+def test_direct_provider_ignores_implicit_and_explicit_storage():
+    from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
+
+    def kernel(source_a, source_b):
+        storage = coop.TempStorage()
+        payload_a = coop.ThreadData(2, types.int32)
+        payload_b = coop.ThreadData(2, types.int32)
+        provider_load(
+            source_a,
+            payload_a,
+            dtype=types.int32,
+            threads_per_block=32,
+            items_per_thread=2,
+            temp_storage=storage,
+        )
+        return provider_load(
+            source_b,
+            payload_b,
+            dtype=types.int32,
+            threads_per_block=32,
+            items_per_thread=2,
+        )
+
+    invocable = _FakeInvocable()
+    func_ir, rewrite = _rewrite_with_fake_invocable(kernel, invocable)
+    targets = _call_targets(func_ir)
+
+    assert cuda.shared.array not in targets
+    assert cuda.syncthreads not in targets
+    assert rewrite._temp_storage_global_plan is None
+
+
+def test_getitem_temp_storage_syntax_is_not_an_accepted_descriptor_use():
+    from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
+
+    def kernel(source):
+        storage = coop.TempStorage()
+        payload = coop.ThreadData(2, types.int32)
+        return provider_load[storage](
+            source,
+            payload,
+            dtype=types.int32,
+            threads_per_block=32,
+            items_per_thread=2,
+        )
+
+    func_ir = run_frontend(kernel)
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(),
+        typingctx=_TypingContext(),
+        typemap={},
+        calltypes={},
+        metadata={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: pytest.fail(
+        "getitem TempStorage reached provider preparation"
+    )
+    rewrite._materialize_invocable = lambda _match: pytest.fail(
+        "getitem TempStorage reached provider compilation"
+    )
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="may only be passed as temp_storage=",
+    ):
+        rewrite.match(
+            func_ir,
+            func_ir.blocks[min(func_ir.blocks)],
+            state.typemap,
+            state.calltypes,
+        )
+
+
+def _planner_for_storage_policy(spec, use_specs):
+    rewrite = object.__new__(CoopSinglePhaseRewrite)
+    calls = [object() for _ in use_specs]
+    rewrite._temp_storage_plans = {}
+    rewrite._temp_storage_ctor_specs = {"storage": spec}
+    rewrite._func_temp_storage_requirements = {
+        "storage": _TempStorageRequirementSummary(
+            uses=[
+                _TempStorageUseRequirement(
+                    call_assign=call,
+                    order=index,
+                    size_in_bytes=size,
+                    alignment=alignment,
+                )
+                for index, (call, (size, alignment)) in enumerate(zip(calls, use_specs))
+            ]
+        )
+    }
+    return rewrite, calls
+
+
+def test_shared_storage_reuses_one_aligned_slice_and_defaults_to_auto_sync():
+    rewrite, calls = _planner_for_storage_policy(
+        _TempStorageCtorSpec(None, None, None, "shared"),
+        [(24, 8), (64, 16)],
+    )
+
+    plan = rewrite._finalize_temp_storage_plan_for_var("storage")
+
+    assert (plan.size_in_bytes, plan.alignment, plan.auto_sync) == (64, 16, True)
+    assert [plan.slices_by_call_id[id(call)].offset for call in calls] == [0, 0]
+
+
+def test_shared_storage_can_delegate_synchronization_to_the_caller():
+    rewrite, _ = _planner_for_storage_policy(
+        _TempStorageCtorSpec(None, None, False, "shared"),
+        [(24, 8), (64, 16)],
+    )
+
+    plan = rewrite._finalize_temp_storage_plan_for_var("storage")
+
+    assert not plan.auto_sync
+
+
+@pytest.mark.parametrize("auto_sync", [None, True], ids=["default", "explicit"])
+def test_exclusive_storage_assigns_distinct_aligned_slices_with_auto_sync(auto_sync):
+    rewrite, calls = _planner_for_storage_policy(
+        _TempStorageCtorSpec(None, None, auto_sync, "exclusive"),
+        [(24, 8), (16, 16)],
+    )
+
+    plan = rewrite._finalize_temp_storage_plan_for_var("storage")
+
+    assert (plan.size_in_bytes, plan.alignment, plan.auto_sync) == (48, 16, True)
+    assert [plan.slices_by_call_id[id(call)].offset for call in calls] == [0, 32]
+
+
+def test_exclusive_storage_can_delegate_synchronization_to_the_caller():
+    rewrite, _ = _planner_for_storage_policy(
+        _TempStorageCtorSpec(None, None, False, "exclusive"),
+        [(24, 8)],
+    )
+
+    plan = rewrite._finalize_temp_storage_plan_for_var("storage")
+
+    assert not plan.auto_sync
+
+
+def test_exclusive_leading_pointer_storage_emits_a_barrier_per_call_site():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        storage = coop.TempStorage(sharing="exclusive")
+        first = provider(value, temp_storage=storage)
+        second = provider(first, temp_storage=storage)
+        return second
+
+    func_ir, _, _ = _rewrite_registered_provider(kernel)
+    targets = [target for _, _, target in _resolved_calls(func_ir)]
+
+    assert targets.count(invocable) == 2
+    assert targets.count(cuda.syncthreads) == 2
+
+
+def test_storage_capacity_is_validated_before_codegen():
+    undersized, _ = _planner_for_storage_policy(
+        _TempStorageCtorSpec(15, 8, None, "shared"),
+        [(16, 16)],
+    )
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="smaller than required"):
+        undersized._finalize_temp_storage_plan_for_var("storage")
+
+
+@pytest.mark.parametrize("alignment", [None, 1, 8, 16, 32])
+@pytest.mark.parametrize("sharing", ["shared", "exclusive"])
+def test_storage_alignment_satisfies_all_uses(alignment, sharing):
+    rewrite, calls = _planner_for_storage_policy(
+        _TempStorageCtorSpec(None, alignment, None, sharing),
+        [(24, 8), (16, 16)],
+    )
+
+    plan = rewrite._finalize_temp_storage_plan_for_var("storage")
+
+    assert plan.alignment == max(16, alignment or 1)
+    assert plan.size_in_bytes == (24 if sharing == "shared" else 48)
+    assert [plan.slices_by_call_id[id(call)].offset for call in calls] == (
+        [0, 0] if sharing == "shared" else [0, 32]
+    )
+
+
+@pytest.mark.parametrize("module", [common_coop, coop], ids=["root", "qualified"])
+@pytest.mark.parametrize("alignment", [None, 1, 2, 4, 8, 16, np.int64(32)])
+def test_temp_storage_rewrite_normalizes_minimum_alignment(module, alignment):
+    invocable = _FakeInvocable(alignment=16)
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        storage = module.TempStorage(alignment=alignment)
+        return provider(value, temp_storage=storage)
+
+    func_ir, rewrite, _ = _rewrite_registered_provider(kernel)
+
+    assert cuda.shared.array in _call_targets(func_ir)
+    assert rewrite._temp_storage_global_plan.max_alignment == max(16, alignment or 1)
+
+
+@pytest.mark.parametrize("module", [common_coop, coop], ids=["root", "qualified"])
+@pytest.mark.parametrize(
+    ("alignment", "message"),
+    [
+        (True, "alignment must be an integer or None"),
+        (1.5, "alignment must be an integer or None"),
+        (0, "alignment must be a positive integer"),
+        (-1, "alignment must be a positive integer"),
+        (3, "alignment must be a power of 2"),
+    ],
+)
+def test_temp_storage_rewrite_rejects_invalid_alignment(module, alignment, message):
+    def kernel():
+        return module.TempStorage(alignment=alignment)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match=message):
+        _rewrite(kernel)
+
+
+@pytest.mark.parametrize("module", [common_coop, coop], ids=["root", "qualified"])
+def test_temp_storage_rewrite_requires_keyword_options(module):
+    def kernel():
+        storage = module.TempStorage(64, 16)
+        return storage
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="only size_in_bytes positionally"
+    ):
+        _rewrite(kernel)
+
+
+def test_small_static_storage_does_not_require_a_device_query(monkeypatch):
+    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+
+    rewrite = object.__new__(CoopSinglePhaseRewrite)
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "_query_device_shared_memory_limits",
+        lambda: pytest.fail("small static storage queried a device"),
+    )
+
+    assert rewrite._get_device_shared_memory_limits(
+        _DEFAULT_STATIC_SHARED_MEMORY_BYTES
+    ) == (
+        _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
+        _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
+    )
+
+
+def test_large_storage_requires_an_exact_device_limit(monkeypatch):
+    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+
+    rewrite = object.__new__(CoopSinglePhaseRewrite)
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "_query_device_shared_memory_limits",
+        lambda: (_ for _ in ()).throw(RuntimeError("no current device")),
+    )
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="require an exact current-device shared-memory query",
+    ):
+        rewrite._get_device_shared_memory_limits(
+            _DEFAULT_STATIC_SHARED_MEMORY_BYTES + 1
+        )
+
+
+def _global_storage_planner(
+    monkeypatch,
+    *,
+    size,
+    default_limit,
+    optin_limit,
+    implicit_use_specs=(),
+    alignment=16,
+):
+    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+
+    rewrite = object.__new__(CoopSinglePhaseRewrite)
+    rewrite._state = object()
+    rewrite._temp_storage_global_plan = None
+    rewrite._temp_storage_ctor_specs = {"storage": object()}
+    rewrite._temp_storage_ctor_order = {"storage": 0}
+    rewrite._temp_storage_plans = {}
+    rewrite._func_temp_storage_requirements = {
+        "storage": _TempStorageRequirementSummary()
+    }
+    implicit_calls = [object() for _ in implicit_use_specs]
+    rewrite._implicit_temp_storage_requirements = _TempStorageRequirementSummary(
+        max_size_in_bytes=max(
+            (use_size for use_size, _ in implicit_use_specs),
+            default=0,
+        ),
+        max_alignment=max(
+            (alignment for _, alignment in implicit_use_specs),
+            default=1,
+        ),
+        uses=[
+            _TempStorageUseRequirement(
+                call_assign=call,
+                order=index,
+                size_in_bytes=use_size,
+                alignment=alignment,
+            )
+            for index, (call, (use_size, alignment)) in enumerate(
+                zip(implicit_calls, implicit_use_specs)
+            )
+        ],
+    )
+    rewrite._implicit_temp_storage_plan = None
+    rewrite._finalize_temp_storage_plan_for_var = lambda _key: _TempStoragePlan(
+        size_in_bytes=size,
+        alignment=alignment,
+        sharing="shared",
+        auto_sync=True,
+        slices_by_call_id={},
+    )
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "_query_device_shared_memory_limits",
+        lambda: {
+            "max_default_shared_memory_per_block": default_limit,
+            "max_optin_shared_memory_per_block": optin_limit,
+        },
+    )
+    requested = []
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "set_required_dynamic_shared_memory",
+        lambda state, value: requested.append((state, value)),
+    )
+    return rewrite, requested, implicit_calls
+
+
+def test_storage_above_default_requests_exact_dynamic_shared_memory(monkeypatch):
+    rewrite, requested, _ = _global_storage_planner(
+        monkeypatch,
+        size=64 * 1024,
+        default_limit=48 * 1024,
+        optin_limit=96 * 1024,
+    )
+
+    plan = rewrite._ensure_temp_storage_global_plan()
+
+    assert plan.uses_dynamic_smem
+    assert plan.dynamic_shared_bytes == 64 * 1024
+    assert requested == [(rewrite._state, 64 * 1024)]
+
+
+def test_dynamic_backing_rejects_alignment_above_the_window_guarantee(monkeypatch):
+    # The static path declares the shared array with the requested alignment;
+    # the dynamic window only guarantees 16 bytes, so a larger request must
+    # fail instead of becoming a false alignment assumption.
+    rewrite, requested, _ = _global_storage_planner(
+        monkeypatch,
+        size=64 * 1024,
+        default_limit=48 * 1024,
+        optin_limit=96 * 1024,
+        alignment=32,
+    )
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="guarantees only 16-byte alignment",
+    ):
+        rewrite._ensure_temp_storage_global_plan()
+    assert requested == []
+
+
+def test_static_backing_honors_alignment_above_the_dynamic_guarantee(monkeypatch):
+    rewrite, requested, _ = _global_storage_planner(
+        monkeypatch,
+        size=32 * 1024,
+        default_limit=48 * 1024,
+        optin_limit=96 * 1024,
+        alignment=32,
+    )
+
+    plan = rewrite._ensure_temp_storage_global_plan()
+
+    assert not plan.uses_dynamic_smem
+    assert plan.max_alignment == 32
+    assert requested == []
+
+
+def test_storage_above_device_optin_limit_is_rejected(monkeypatch):
+    rewrite, requested, _ = _global_storage_planner(
+        monkeypatch,
+        size=100 * 1024,
+        default_limit=48 * 1024,
+        optin_limit=96 * 1024,
+    )
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="device max opt-in"):
+        rewrite._ensure_temp_storage_global_plan()
+    assert requested == []
+
+
+def test_implicit_and_explicit_storage_share_one_dynamic_backing(monkeypatch):
+    rewrite, requested, implicit_calls = _global_storage_planner(
+        monkeypatch,
+        size=40 * 1024,
+        implicit_use_specs=((16 * 1024, 16), (8 * 1024, 8)),
+        default_limit=48 * 1024,
+        optin_limit=96 * 1024,
+    )
+
+    plan = rewrite._ensure_temp_storage_global_plan()
+    implicit = rewrite._implicit_temp_storage_plan
+
+    assert plan.total_size == 56 * 1024
+    assert plan.dynamic_shared_bytes == 56 * 1024
+    assert requested == [(rewrite._state, 56 * 1024)]
+    assert implicit is not None
+    assert implicit.base_offset == 40 * 1024
+    assert implicit.size_in_bytes == 16 * 1024
+    assert set(implicit.slices_by_call_id) == {id(call) for call in implicit_calls}
+
+
+def test_implicit_storage_counts_toward_the_optin_limit(monkeypatch):
+    rewrite, requested, _ = _global_storage_planner(
+        monkeypatch,
+        size=80 * 1024,
+        implicit_use_specs=((32 * 1024, 16),),
+        default_limit=48 * 1024,
+        optin_limit=96 * 1024,
+    )
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="device max opt-in"):
+        rewrite._ensure_temp_storage_global_plan()
+    assert requested == []
+
+
+@pytest.mark.parametrize("ssa", [False, True], ids=["before-ssa", "ssa"])
+@pytest.mark.parametrize("rebound", [False, True], ids=["selected", "rebound"])
+def test_descriptor_none_alias_is_rejected_by_both_parsers(ssa, rebound):
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    if rebound:
+
+        def kernel(value, flag):
+            empty = None
+            alias = empty
+            storage = coop.TempStorage()
+            if flag:
+                storage = alias
+            return provider(value, temp_storage=storage)
+
+    else:
+
+        def kernel(value, flag):
+            empty = None
+            alias = empty
+            storage = coop.TempStorage()
+            selected = storage if flag else alias
+            return provider(value, temp_storage=selected)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="on every path"):
+        _rewrite_registered_provider(kernel, ssa=ssa)
+
+    func_ir = _frontend(kernel, ssa=ssa)
+    provider_call = next(
+        inst.value for _, inst, target in _resolved_calls(func_ir) if target is provider
+    )
+    planner = _GroupCallPlanner(
+        SimpleNamespace(func_ir=func_ir, args=(types.int32, types.boolean)),
+        {"block": (32, 1, 1), "grid": (1, 1, 1)},
+    )
+    with pytest.raises(GroupRewriteError, match="on every path"):
+        planner.context.temp_storage(dict(provider_call.kws)["temp_storage"])
+
+
+@pytest.mark.parametrize("ssa", [False, True], ids=["before-ssa", "ssa"])
+def test_descriptor_loop_alias_retains_constructor_provenance(ssa):
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value, count):
+        storage = coop.TempStorage()
+        selected = storage
+        for _ in range(count):
+            alias = selected
+            selected = alias
+            value = provider(value, temp_storage=selected)
+        return value
+
+    func_ir = _frontend(kernel, ssa=ssa)
+    provider_call = next(
+        inst.value for _, inst, target in _resolved_calls(func_ir) if target is provider
+    )
+    planner = _GroupCallPlanner(
+        SimpleNamespace(func_ir=func_ir, args=(types.int32, types.int32)),
+        {"block": (32, 1, 1), "grid": (1, 1, 1)},
+    )
+    assert planner.context.temp_storage(dict(provider_call.kws)["temp_storage"]) == (
+        None,
+        None,
+        True,
+        "shared",
+    )
+    func_ir, _, _ = _rewrite_registered_provider(kernel, ssa=ssa)
+    assert _call_targets(func_ir).count(cuda.syncthreads) == 1
+
+
+@pytest.mark.parametrize("explicit", [False, True], ids=["implicit", "explicit"])
+@pytest.mark.parametrize("user_shape", ["static", "runtime", "zero"])
+def test_dynamic_coop_backing_rejects_all_user_shared_allocations(
+    monkeypatch, explicit, user_shape
+):
+    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+
+    invocable = _FakeInvocable(size_in_bytes=64 * 1024)
+    provider = _register_leading_pointer_provider(invocable)
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "_query_device_shared_memory_limits",
+        lambda: {
+            "max_default_shared_memory_per_block": 48 * 1024,
+            "max_optin_shared_memory_per_block": 96 * 1024,
+        },
+    )
+
+    shape = (4, 4) if user_shape == "static" else 0
+    if explicit:
+        if user_shape == "runtime":
+
+            def kernel(value, size):
+                array = cuda.shared.array
+                alias = array
+                mine = alias(size, types.int32)
+                mine[0] = value
+                storage = coop.TempStorage()
+                return provider(value, temp_storage=storage)
+
+        else:
+
+            def kernel(value, size):
+                array = cuda.shared.array
+                alias = array
+                mine = alias(shape, types.int32)
+                mine[0] = value
+                storage = coop.TempStorage()
+                return provider(value, temp_storage=storage)
+
+    elif user_shape == "runtime":
+
+        def kernel(value, size):
+            array = cuda.shared.array
+            alias = array
+            mine = alias(size, types.int32)
+            mine[0] = value
+            return provider(value)
+
+    else:
+
+        def kernel(value, size):
+            array = cuda.shared.array
+            alias = array
+            mine = alias(shape, types.int32)
+            mine[0] = value
+            return provider(value)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="65536-byte dynamic shared-memory backing.*would alias",
+    ):
+        _rewrite_registered_provider(kernel)
+
+
+def test_static_coop_backing_rejects_runtime_user_shared_allocation():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value, size):
+        mine = cuda.shared.array(size, types.int32)
+        mine[0] = value
+        return provider(value)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="64-byte static.*dynamic/runtime-sized.*would alias",
+    ):
+        _rewrite_registered_provider(kernel)
+
+
+def test_static_multidimensional_user_array_coexists_with_static_coop_backing():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        mine = cuda.shared.array((4, 4), types.int32)
+        mine[0, 0] = value
+        return provider(value)
+
+    func_ir, _, _ = _rewrite_registered_provider(kernel)
+    assert _call_targets(func_ir).count(cuda.shared.array) == 2
