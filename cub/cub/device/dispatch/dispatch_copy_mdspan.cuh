@@ -17,9 +17,9 @@
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
 
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__functional/call_or.h>
-#include <cuda/__mdspan/__copy/mdspan_d2d.h>
 #include <cuda/__mdspan/host_device_mdspan.h>
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/get_stream.h>
@@ -28,6 +28,10 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__mdspan/layout_right.h>
+
+#if _CCCL_HOSTED()
+#  include <cuda/__mdspan/__copy/mdspan_d2d.h>
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 
@@ -64,6 +68,20 @@ __transform_copy(_MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out, const _Env&
     __env);
 }
 
+template <class _MDSpanIn, class _MDSpanOut, class _Env>
+[[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
+__copy_with_cub(_MDSpanIn __mdspan_in, _MDSpanOut __mdspan_out, const _Env& __env)
+{
+  if (__mdspan_in.is_exhaustive() && __mdspan_out.is_exhaustive()
+      && cub::detail::have_same_strides(__mdspan_in.mapping(), __mdspan_out.mapping()))
+  {
+    return cub::detail::copy_mdspan::__transform_copy(__mdspan_in, __mdspan_out, __env);
+  }
+  using extents_t = typename _MDSpanIn::extents_type;
+  const ::cuda::std::layout_right::mapping<extents_t> mapping{__mdspan_in.extents()};
+  return DeviceFor::__for_each_in_extents(mapping, copy_mdspan_t{__mdspan_in, __mdspan_out}, __env);
+}
+
 template <typename T_In,
           typename E_In,
           typename L_In,
@@ -92,6 +110,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
     {
       _CCCL_TRY
       {
+#if _CCCL_HOSTED()
         if (input.extents() != output.extents())
         {
           _CCCL_THROW(::std::invalid_argument, "mdspan extents must be equal");
@@ -111,11 +130,19 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
         {
           ::cuda::copy(mdspan_in, mdspan_out, stream);
         }
+        // cuda::copy performs context/device queries, breaking graph capture
+        else if (::cuda::__driver::__streamIsCapturing(stream.get()) == ::CU_STREAM_CAPTURE_STATUS_ACTIVE)
+        {
+          return cub::detail::copy_mdspan::__copy_with_cub(input, output, environment);
+        }
         else
         {
           const ::cuda::__ensure_current_context ctx{stream};
           ::cuda::copy(mdspan_in, mdspan_out, stream);
         }
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+        return cub::detail::copy_mdspan::__copy_with_cub(input, output, environment);
+#endif // !_CCCL_HOSTED()
       }
 #if _CCCL_HOSTED()
       _CCCL_CATCH (const ::cuda::cuda_error& error)
@@ -124,6 +151,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
       }
       _CCCL_CATCH (const ::std::invalid_argument& error)
       {
+        static_cast<void>(error);
         return ::cudaErrorInvalidValue;
       }
 #endif // _CCCL_HOSTED
@@ -134,7 +162,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
       return ::cudaSuccess;
     }
   };
-  const copy_on_host_t copy_on_host{mdspan_in, mdspan_out, env};
+  [[maybe_unused]] const copy_on_host_t copy_on_host{mdspan_in, mdspan_out, env};
 
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
@@ -153,14 +181,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
         _CCCL_ASSERT(!(in_end >= out_start && out_end >= in_start), "mdspan memory ranges must not overlap");
       }
 
-      if (mdspan_in.is_exhaustive() && mdspan_out.is_exhaustive()
-          && cub::detail::have_same_strides(mdspan_in.mapping(), mdspan_out.mapping()))
-      {
-        return cub::detail::copy_mdspan::__transform_copy(mdspan_in, mdspan_out, env);
-      }
-      // we use row-major order for the iteration
-      const ::cuda::std::layout_right::mapping<E_In> mapping{mdspan_in.extents()};
-      return DeviceFor::__for_each_in_extents(mapping, copy_mdspan_t{mdspan_in, mdspan_out}, env);
+      return cub::detail::copy_mdspan::__copy_with_cub(mdspan_in, mdspan_out, env);
     }));
 }
 } // namespace detail::copy_mdspan
