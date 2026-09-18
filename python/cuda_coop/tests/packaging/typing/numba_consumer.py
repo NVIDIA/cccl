@@ -578,3 +578,26 @@ def check_merge_sort_surface() -> None:
         ),
         tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
     )
+
+
+def check_radix_surface() -> None:
+    block = coop.this_block()
+    keys = coop.ThreadData(3, np.int32)
+    values = coop.ThreadData(3, np.float64)
+    assert_type(coop.radix_sort_keys(block, keys), coop.ThreadDataLike[np.int32])
+    assert_type(
+        coop.radix_rank(block, keys, radix_bits=4), coop.ThreadDataLike[np.int32]
+    )
+    assert_type(
+        coop.radix_sort_pairs(block, keys, values),
+        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
+    )
+    prefix = coop.ThreadData(1, np.int32)
+    assert_type(
+        coop.radix_rank(block, keys, exclusive_digit_prefix=prefix),
+        coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        coop.radix_sort_keys(block, np.float64(1.5), blocked_to_striped=True),
+        np.float64,
+    )
