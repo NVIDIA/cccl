@@ -19,6 +19,46 @@ Hierarchy = ThreadHierarchy
 class ThreadGroup(CommonThreadGroup):
     """A shared thread-group descriptor consumed by CUTLASS primitives."""
 
+    def rank(self, level="thread"):
+        """Return this group's rank relative to a hierarchy level."""
+        return self.rank_as(None, level)
+
+    def count(self, level="thread"):
+        """Return this group's count relative to a hierarchy level."""
+        return self.count_as(None, level)
+
+    def rank_as(self, dtype=None, level="thread"):
+        from ._lowering._thread_group import provider_group_query
+
+        return provider_group_query(
+            group=self, op="rank", level=level, result_type=dtype
+        )
+
+    def count_as(self, dtype=None, level="thread"):
+        from ._lowering._thread_group import provider_group_query
+
+        return provider_group_query(
+            group=self, op="count", level=level, result_type=dtype
+        )
+
+    def sync(self):
+        """Synchronize the participating members of this group."""
+        from ._lowering._thread_group import provider_group_sync
+
+        provider_group_sync(group=self, aligned=False)
+
+    def sync_aligned(self):
+        """Synchronize a converged group with aligned participation."""
+        from ._lowering._thread_group import provider_group_sync
+
+        provider_group_sync(group=self, aligned=True)
+
+    def is_member(self):
+        """Return whether this thread is included in the group."""
+        from ._lowering._thread_group import provider_group_membership
+
+        return provider_group_membership(group=self)
+
 
 def _resolve_primitive_group_from_launch(
     group: ThreadGroup,
@@ -57,8 +97,7 @@ def _require_complete_warp_partition(
         block_threads = x * y * z
     if block_threads is None:
         raise NotImplementedError(
-            f"cuda.coop.cutlass.{feature} requires exact enclosing "
-            "block dimensions "
+            f"cuda.coop.cutlass.{feature} requires exact enclosing block dimensions "
             "to prove complete 32-thread physical-warp participation"
         )
     if block_threads % 32:
@@ -71,16 +110,31 @@ def _require_complete_warp_partition(
 def this_block() -> ThreadGroup:
     """Describe the current CUDA thread block for a CUTLASS primitive."""
 
-    return make_thread_group(
-        "block", group_type=ThreadGroup, scope="cuda.coop.cutlass"
-    )
+    return make_thread_group("block", group_type=ThreadGroup, scope="cuda.coop.cutlass")
 
 
 def this_warp() -> ThreadGroup:
     """Describe the calling complete 32-thread physical warp."""
+    return make_thread_group("warp", group_type=ThreadGroup, scope="cuda.coop.cutlass")
+
+
+def this_thread() -> ThreadGroup:
+    """Describe the calling CUDA thread."""
     return make_thread_group(
-        "warp", group_type=ThreadGroup, scope="cuda.coop.cutlass"
+        "thread", group_type=ThreadGroup, scope="cuda.coop.cutlass"
     )
+
+
+def this_cluster() -> ThreadGroup:
+    """Describe the current cluster using verified launch facts."""
+    return make_thread_group(
+        "cluster", group_type=ThreadGroup, scope="cuda.coop.cutlass"
+    )
+
+
+def this_grid() -> ThreadGroup:
+    """Describe the current grid using exact launch facts."""
+    return make_thread_group("grid", group_type=ThreadGroup, scope="cuda.coop.cutlass")
 
 
 __all__ = [
@@ -89,4 +143,7 @@ __all__ = [
     "ThreadHierarchy",
     "this_block",
     "this_warp",
+    "this_thread",
+    "this_cluster",
+    "this_grid",
 ]
