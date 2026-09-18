@@ -25,7 +25,7 @@ CCCL_C_EXTERN_C_BEGIN
 
 // Algorithm tag stored in the blob header. Used to detect cross-algorithm
 // deserialization attempts (e.g. loading a reduce blob with scan_deserialize).
-typedef enum cccl_serialization_algo_t
+typedef enum cccl_serialization_algo_t // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   CCCL_SERIALIZATION_ALGO_REDUCE              = 1,
   CCCL_SERIALIZATION_ALGO_SCAN                = 2,

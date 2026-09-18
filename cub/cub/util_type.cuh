@@ -820,7 +820,7 @@ struct BinaryOpHasIdxParam<T,
 /**
  * \brief Basic type traits categories
  */
-enum Category
+enum Category // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   NOT_A_NUMBER,
   SIGNED_INTEGER,

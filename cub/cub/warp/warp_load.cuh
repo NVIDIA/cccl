@@ -34,7 +34,7 @@ CUB_NAMESPACE_BEGIN
 //! ``cub::WarpLoadAlgorithm`` enumerates alternative algorithms for :cpp:struct:`cub::WarpLoad` to
 //! read a linear segment of data from memory into a CUDA warp.
 //! @endrst
-enum WarpLoadAlgorithm
+enum WarpLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   //! @rst
   //! Overview

@@ -438,7 +438,7 @@ T RandomValue(T max)
 /**
  * Test problem generation options
  */
-enum GenMode
+enum class GenMode
 {
   UNIFORM, // Assign to '2', regardless of integer seed
   INTEGER_SEED, // Assign to integer seed
@@ -460,16 +460,16 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
     ({
       switch (gen_mode)
       {
-        case RANDOM:
+        case GenMode::RANDOM:
           RandomBits(value);
           break;
-        case RANDOM_BIT: {
+        case GenMode::RANDOM_BIT: {
           char c;
           RandomBits(c, 0, 0, 1);
           value = static_cast<T>((c > 0) ? 1 : -1);
           break;
         }
-        case RANDOM_MINUS_PLUS_ZERO: {
+        case GenMode::RANDOM_MINUS_PLUS_ZERO: {
           // Replace roughly 1/128 of values with -0.0 or +0.0, and
           // generate the rest randomly
           using UnsignedBits = typename CUB_NS_QUALIFIER::Traits<T>::UnsignedBits;
@@ -492,10 +492,10 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
           }
           break;
         }
-        case UNIFORM:
+        case GenMode::UNIFORM:
           value = 2;
           break;
-        case INTEGER_SEED:
+        case GenMode::INTEGER_SEED:
         default:
           value = static_cast<T>(index);
           break;
@@ -504,16 +504,16 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
     ({
       switch (gen_mode)
       {
-        case RANDOM:
-        case RANDOM_BIT:
-        case RANDOM_MINUS_PLUS_ZERO:
+        case GenMode::RANDOM:
+        case GenMode::RANDOM_BIT:
+        case GenMode::RANDOM_MINUS_PLUS_ZERO:
           _CubLog("%s\n", "cub::InitValue cannot generate random numbers on device.");
           cuda::std::terminate();
           break;
-        case UNIFORM:
+        case GenMode::UNIFORM:
           value = 2;
           break;
-        case INTEGER_SEED:
+        case GenMode::INTEGER_SEED:
         default:
           value = static_cast<T>(index);
           break;
@@ -533,16 +533,16 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, bool& value
     ({
       switch (gen_mode)
       {
-        case RANDOM:
-        case RANDOM_BIT:
+        case GenMode::RANDOM:
+        case GenMode::RANDOM_BIT:
           char c;
           RandomBits(c, 0, 0, 1);
           value = (c > 0);
           break;
-        case UNIFORM:
+        case GenMode::UNIFORM:
           value = true;
           break;
-        case INTEGER_SEED:
+        case GenMode::INTEGER_SEED:
         default:
           value = (index > 0);
           break;
@@ -551,16 +551,16 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, bool& value
     ({
       switch (gen_mode)
       {
-        case RANDOM:
-        case RANDOM_BIT:
-        case RANDOM_MINUS_PLUS_ZERO:
+        case GenMode::RANDOM:
+        case GenMode::RANDOM_BIT:
+        case GenMode::RANDOM_MINUS_PLUS_ZERO:
           _CubLog("%s\n", "cub::InitValue cannot generate random numbers on device.");
           cuda::std::terminate();
           break;
-        case UNIFORM:
+        case GenMode::UNIFORM:
           value = true;
           break;
-        case INTEGER_SEED:
+        case GenMode::INTEGER_SEED:
         default:
           value = (index > 0);
           break;

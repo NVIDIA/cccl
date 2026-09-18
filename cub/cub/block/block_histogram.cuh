@@ -30,7 +30,8 @@ CUB_NAMESPACE_BEGIN
 
 //! @brief BlockHistogramAlgorithm enumerates alternative algorithms for the parallel construction of
 //!        block-wide histograms.
-enum BlockHistogramAlgorithm
+enum BlockHistogramAlgorithm // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit
+                             // conversions.
 {
 
   //! @rst

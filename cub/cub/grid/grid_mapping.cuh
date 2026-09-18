@@ -30,7 +30,7 @@ CUB_NAMESPACE_BEGIN
  * \brief cub::GridMappingStrategy enumerates alternative strategies for mapping constant-sized tiles of device-wide
  * data onto a grid of CUDA thread blocks.
  */
-enum GridMappingStrategy
+enum GridMappingStrategy // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   /**
    * \brief An a "raking" access pattern in which each thread block is

@@ -33,7 +33,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-enum BlockHistogramMemoryPreference
+enum BlockHistogramMemoryPreference // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit
+                                    // conversions.
 {
   GMEM,
   SMEM,

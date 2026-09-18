@@ -28,7 +28,7 @@
 
 CCCL_C_EXTERN_C_BEGIN
 
-typedef enum cccl_type_enum
+typedef enum cccl_type_enum // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   CCCL_INT8    = 0,
   CCCL_INT16   = 1,
@@ -55,7 +55,7 @@ typedef struct cccl_type_info
   cccl_type_enum type;
 } cccl_type_info;
 
-typedef enum cccl_op_kind_t
+typedef enum cccl_op_kind_t // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   // Arbitrary semantics, without state.
   CCCL_STATELESS = 0,
@@ -90,7 +90,7 @@ typedef enum cccl_op_kind_t
   CCCL_MAXIMUM       = 23,
 } cccl_op_kind_t;
 
-typedef enum cccl_op_code_type
+typedef enum cccl_op_code_type // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   CCCL_OP_LTOIR      = 0, // Pre-compiled LTO-IR (default for backward compatibility)
   CCCL_OP_CPP_SOURCE = 1 // C++ source code
@@ -120,7 +120,7 @@ typedef struct cccl_build_config
   size_t num_extra_include_dirs;
 } cccl_build_config;
 
-typedef enum cccl_iterator_kind_t
+typedef enum cccl_iterator_kind_t // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   CCCL_POINTER  = 0,
   CCCL_ITERATOR = 1,
@@ -152,33 +152,33 @@ typedef struct cccl_iterator_t
   cccl_host_op_fn_ptr_t host_advance;
 } cccl_iterator_t;
 
-typedef enum cccl_sort_order_t
+typedef enum cccl_sort_order_t // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   CCCL_ASCENDING  = 0,
   CCCL_DESCENDING = 1,
 } cccl_sort_order_t;
 
-typedef enum cccl_init_kind_t
+typedef enum cccl_init_kind_t // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   CCCL_VALUE_INIT        = 0,
   CCCL_FUTURE_VALUE_INIT = 1,
   CCCL_NO_INIT           = 2,
 } cccl_init_kind_t;
 
-typedef enum cccl_determinism_t
+typedef enum cccl_determinism_t // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   CCCL_NOT_GUARANTEED = 0,
   CCCL_RUN_TO_RUN     = 1,
   CCCL_GPU_TO_GPU     = 2,
 } cccl_determinism_t;
 
-typedef enum cccl_binary_search_mode_t
+typedef enum cccl_binary_search_mode_t // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   CCCL_BINARY_SEARCH_LOWER_BOUND = 0,
   CCCL_BINARY_SEARCH_UPPER_BOUND = 1,
 } cccl_binary_search_mode_t;
 
-typedef enum cccl_payload_kind_t
+typedef enum cccl_payload_kind_t // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   CCCL_PAYLOAD_LTOIR = 0,
   CCCL_PAYLOAD_CUBIN = 1,
