@@ -60,9 +60,9 @@ class _CubLoadStoreRequest:
                 "CUTLASS Load/Store requires a CUB block or warp plan"
             )
         if self.plan.target is GroupLoweringTarget.CUB_WARP:
-            if self.plan.resolved_group.kind != "warp":
+            if self.plan.resolved_group.kind not in {"warp", "threads_within_warp"}:
                 raise NotImplementedError(
-                    "CUTLASS Warp Load/Store currently requires physical warps"
+                    "CUTLASS Warp Load/Store requires physical or logical warps"
                 )
             if self.plan.temp_storage.ownership is StorageOwnership.CALLER:
                 raise NotImplementedError(
@@ -281,7 +281,15 @@ def _render_cub_load_store(request):
             for i in range(operation.items_per_thread)
         )
     if request.uses_scratch:
-        barrier = "__syncwarp(0xffffffffu)" if request.is_warp else "__syncthreads()"
+        barrier = "__syncthreads()"
+        if request.is_warp:
+            width = request.plan.resolved_group.static_size
+            mask = "0xffffffffu"
+            if width < 32:
+                mask = (
+                    f"{(1 << width) - 1}u << ((linear_tid % 32u / {width}u) * {width}u)"
+                )
+            barrier = f"__syncwarp({mask})"
         lines.append(f"  if (temp_storage_auto_sync != 0) {{ {barrier}; }}")
     return [*lines, "}"]
 
