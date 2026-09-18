@@ -1172,6 +1172,7 @@ _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
   // since we switch the active member of the union, we must use placement new or construct_at. This also uses the copy
   // constructor of It, which works in more cases than assignment (e.g. thrust::transform_iterator with
   // non-copy-assignable functor, e.g. in merge sort tests)
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
   ::cuda::std::__construct_at(&arg.iterator, it);
   return arg;
 }
@@ -1243,6 +1244,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
       ::cuda::std::move(pred),
       ::cuda::std::move(f),
       ::cuda::std::move(out),
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
       ::cuda::std::move(ins.iterator)...);
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::vectorized)
@@ -1260,6 +1262,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
       can_vectorize,
       ::cuda::std::move(f),
       ::cuda::std::move(out),
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
       ::cuda::std::move(ins.iterator)...);
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)

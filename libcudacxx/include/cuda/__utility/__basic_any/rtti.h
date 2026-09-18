@@ -106,6 +106,7 @@ struct __base_info
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_vptr(__rtti const* __rtti_ptr, uint8_t __version) const noexcept
     -> __base_vptr
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
     return __version >= 1 ? __cast_fn_(__rtti_ptr) : __vptr_v0_;
   }
 

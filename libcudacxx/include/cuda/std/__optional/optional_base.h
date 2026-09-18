@@ -133,7 +133,7 @@ struct __optional_destruct_base<_Tp, false>
 };
 
 template <class _Tp>
-struct __optional_destruct_base<_Tp, true>
+struct __optional_destruct_base<_Tp, true> // NOLINT(cppcoreguidelines-pro-type-union-access)
 {
   using value_type = _Tp;
   static_assert(is_object_v<value_type>, "instantiation of optional with a non-object type is undefined behavior");
@@ -203,10 +203,12 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
 
   [[nodiscard]] _CCCL_API constexpr value_type& __get() & noexcept
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
     return this->__storage_.__val_;
   }
   [[nodiscard]] _CCCL_API constexpr const value_type& __get() const& noexcept
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
     return this->__storage_.__val_;
   }
   [[nodiscard]] _CCCL_API constexpr value_type&& __get() && noexcept

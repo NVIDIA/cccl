@@ -107,6 +107,7 @@ struct __default_device_memory_pool
   _CCCL_HOST_API void __init(::cuda::device_ref __device)
   {
     ::cuda::std::__construct_at(
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
       &__storage_.__pool_,
       ::cuda::__get_default_memory_pool(
         ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED));
@@ -118,6 +119,7 @@ struct __default_device_memory_pool
       this->__init(__device);
     });
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
     return __storage_.__pool_;
   }
 };

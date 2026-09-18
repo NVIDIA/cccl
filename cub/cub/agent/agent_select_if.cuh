@@ -410,11 +410,13 @@ struct AgentSelectIf
   {
     if (IS_LAST_TILE)
     {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
       BlockLoadT(temp_storage.load_items)
         .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
     }
     else
     {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
       BlockLoadT(temp_storage.load_items).Load((d_in + streaming_context.input_offset()) + tile_offset, items);
     }
   }
@@ -708,6 +710,7 @@ struct AgentSelectIf
       const int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
       if (selection_flags[ITEM])
       {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
         temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
       }
     }
@@ -718,6 +721,7 @@ struct AgentSelectIf
     {
       *((d_selected_out + streaming_context.num_previously_selected())
         + (num_selections_prefix + item)) = // NOLINT(bugprone-misplaced-widening-cast)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
         temp_storage.raw_exchange.Alias()[item];
     }
   }
@@ -810,6 +814,7 @@ struct AgentSelectIf
       const int local_scatter_offset =
         (selection_flags[ITEM]) ? tile_num_rejections + local_selection_idx : local_rejection_idx;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
       temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
     }
 
@@ -845,6 +850,7 @@ struct AgentSelectIf
       const OffsetT scatter_offset =
         (item_idx < tile_num_rejections) ? num_rejected_prefix + rejection_idx : num_selections_prefix + selection_idx;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
       const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
 
       if (!IS_LAST_TILE || (item_idx < num_tile_items))
@@ -890,6 +896,7 @@ struct AgentSelectIf
           : (streaming_context.num_previously_selected() + static_cast<total_offset_t>(num_selections_prefix)
              + static_cast<total_offset_t>(selection_idx));
 
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
       const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
       if (!IS_LAST_TILE || (item_idx < num_tile_items))
       {
@@ -934,6 +941,7 @@ struct AgentSelectIf
 
     // Exclusive scan of selection_flags
     OffsetT num_tile_selections;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_indices, num_tile_selections);
 
     if (threadIdx.x == 0)
@@ -1001,7 +1009,12 @@ struct AgentSelectIf
 
     // Exclusive scan of values and selection_flags
     TilePrefixCallbackOpT prefix_op(
-      tile_state_wrapper, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
+      tile_state_wrapper,
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
+      temp_storage.scan_storage.prefix,
+      ::cuda::std::plus<>{},
+      tile_idx);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_indices, prefix_op);
 
     OffsetT num_tile_selections   = prefix_op.GetBlockAggregate();

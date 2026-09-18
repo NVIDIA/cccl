@@ -460,6 +460,7 @@ public:
   _CCCL_API constexpr _Tp* operator->() noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator-> requires the expected to contain a value");
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
     return ::cuda::std::addressof(this->__union_.__val_);
   }
 
@@ -555,6 +556,7 @@ public:
   _CCCL_API constexpr _Err& error() & noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
     return this->__union_.__unex_;
   }
 

@@ -116,9 +116,11 @@ protected:
     switch (__contains_)
     {
       case __variant_like_state::__holds_first:
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
         ::cuda::std::destroy_at(::cuda::std::addressof(__first_));
         break;
       case __variant_like_state::__holds_second:
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
         ::cuda::std::destroy_at(::cuda::std::addressof(__second_));
         break;
       case __variant_like_state::__nothing:

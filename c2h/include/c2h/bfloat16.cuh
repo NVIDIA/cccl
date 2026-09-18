@@ -12,6 +12,7 @@
 
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -83,13 +84,7 @@ struct bfloat16_t
     }
     else
     {
-      union
-      {
-        uint32_t U32;
-        float F32;
-      };
-
-      F32                          = a;
+      const auto U32               = ::cuda::std::bit_cast<uint32_t>(a);
       const uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
       ir                           = static_cast<uint16_t>((U32 + rounding_bias) >> 16);
     }
