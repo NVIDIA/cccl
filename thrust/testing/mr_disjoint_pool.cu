@@ -98,7 +98,7 @@ public:
   {
     REQUIRE(p.size == bytes);
     REQUIRE(p.alignment == alignment);
-    ASSERT_LEQUAL(bytes, used_bytes);
+    REQUIRE(bytes <= used_bytes);
     // Check that the id has been previously allocated
     ASSERT_NOT_EQUAL_QUIET(find(allocation_ids.begin(), allocation_ids.end(), p.id), allocation_ids.end());
 
