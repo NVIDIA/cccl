@@ -287,7 +287,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
     for (auto __i = __tid; __i < __partial_tile_total; __i += __block_stride)
     {
       __tile_extent_t __linear = __i;
-      ::cuda::std::array<__tile_extent_t, __max_rank> __coords;
+      ::cuda::std::array<__tile_extent_t, __max_rank> __coords{};
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int __k = 0; __k < __max_rank; ++__k)
       {

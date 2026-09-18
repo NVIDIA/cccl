@@ -85,7 +85,7 @@ __device__ __forceinline__ ScalarT div_floor_floating(ScalarT a, ScalarT b)
     div -= ScalarT(1);
   }
 
-  ScalarT floordiv;
+  ScalarT floordiv{};
   if (div != 0)
   {
     floordiv = std::floor(div);

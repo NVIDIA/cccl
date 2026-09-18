@@ -85,6 +85,7 @@ public:
   //! @p target_device
   SwitchDevice(const int target_device)
       : target_device_(target_device)
+      , original_device_(target_device)
   {
     CubDebug(cudaGetDevice(&original_device_));
     if (original_device_ != target_device_)
@@ -199,10 +200,10 @@ struct PerDeviceAttributeCache
     DeviceEntryReady
   };
 
-  struct DeviceEntry
+  struct DeviceEntry // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     ::std::atomic<DeviceEntryStatus> flag;
-    DevicePayload payload;
+    DevicePayload payload{};
   };
 
 private:
@@ -309,7 +310,7 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
   cudaError_t result = cudaSuccess; // NOLINT(misc-const-correctness)
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     ({
-                      cudaFuncAttributes empty_kernel_attrs;
+                      cudaFuncAttributes empty_kernel_attrs{};
                       result      = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, (const void*) empty_kernel));
                       ptx_version = empty_kernel_attrs.ptxVersion * 10;
                     }),

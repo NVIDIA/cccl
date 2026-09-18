@@ -297,9 +297,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   const GridQueue<int> tile_queue(allocations[NUM_ALLOCATIONS - 1]);
 
   // Wrap arrays so we can pass them by-value to the kernel
-  ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper;
-  ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper;
-  ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper;
+  ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper{};
+  ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper{};
+  ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper{};
 
   auto* typed_allocations = reinterpret_cast<CounterT**>(allocations);
   ::cuda::std::copy(typed_allocations, typed_allocations + NumActiveChannels, d_privatized_histograms_wrapper.begin());
@@ -806,7 +806,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     // Use the search transform op for converting privatized bins to output bins
     using OutputDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
 
-    ::cuda::std::array<int, NumActiveChannels> num_privatized_levels;
+    ::cuda::std::array<int, NumActiveChannels> num_privatized_levels{};
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
     ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op{};
     int max_levels = num_output_levels[0];
@@ -988,7 +988,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
     using CommonT = typename TransformsT::ScaleTransform::CommonT;
 
-    ::cuda::std::array<int, NumActiveChannels> num_privatized_levels;
+    ::cuda::std::array<int, NumActiveChannels> num_privatized_levels{};
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
     ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op{};
     int max_levels = num_output_levels[0];

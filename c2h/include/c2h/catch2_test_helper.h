@@ -370,9 +370,9 @@ struct element_compare_result_t
 template <typename T>
 struct vector_compare_result_t
 {
-  size_t actual_size;
-  size_t expected_size;
-  size_t total_mismatches;
+  size_t actual_size{};
+  size_t expected_size{};
+  size_t total_mismatches{};
   std::vector<indexed_value_t<T>> good_values;
   std::vector<element_compare_result_t<T>> first_mismatches;
   std::optional<std::vector<element_compare_result_t<T>>> last_mismatches;

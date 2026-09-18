@@ -100,6 +100,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, SelectAlgorithm algo)
 #endif // _CCCL_HOSTED()
 
 //! The tuning policy for all non-ByKey algorithms in @ref DeviceSelect
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct SelectPolicy
 {
   SelectAlgorithm algorithm; //!< The select algorithm to use
@@ -190,6 +191,7 @@ struct PartitionLookbackPolicy
 };
 
 //! The tuning policy for all non-three-way algorithms of @ref DevicePartition
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct PartitionPolicy
 {
   PartitionAlgorithm algorithm = PartitionAlgorithm::lookback; //!< The partition algorithm to use

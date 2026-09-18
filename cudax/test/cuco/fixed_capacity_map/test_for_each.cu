@@ -80,8 +80,8 @@ struct record_visit
 template <class Value>
 struct record_visit_mutable
 {
-  int* visits;
-  int calls = 0;
+  int* visits = nullptr;
+  int calls   = 0;
 
   __device__ void operator()(Value slot) noexcept
   {
