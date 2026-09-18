@@ -14,6 +14,8 @@ layouts, and the rules for results and temporary storage.
 See the :doc:`Numba-CUDA-MLIR Programming Guide <programming_guide>`
 for complete kernels and launch examples.
 
+The :doc:`CUTLASS Programming Guide <../coop_cutlass>` covers CuTe kernels.
+
 .. _coop-backend-registration:
 
 Registering a backend
