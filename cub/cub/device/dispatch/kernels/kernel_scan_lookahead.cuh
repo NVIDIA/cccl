@@ -232,6 +232,25 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regAggrInclusive)[
   }
 }
 
+template <typename Tp, size_t ElemPerThread>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+replaceSingleItem(const warpspeed::Squad& squad, Tp (&regAggrInclusive)[ElemPerThread], int index, const Tp& value)
+{
+  constexpr int elem_per_thread = static_cast<int>(ElemPerThread);
+  const int index_this_thread   = index - squad.threadRank() * elem_per_thread;
+  if (index_this_thread >= 0 && index_this_thread < elem_per_thread)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < elem_per_thread; ++i)
+    {
+      if (i == index_this_thread)
+      {
+        regAggrInclusive[i] = value;
+      }
+    }
+  }
+}
+
 template <bool IsInclusive, bool IsLastTile, typename Tp, size_t ElemPerThread, typename ScanOpT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
@@ -327,7 +346,19 @@ struct lookahead_scan_closure
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo) const
   {
     warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
-    warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+    if constexpr (isInclusive)
+    {
+      warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+    }
+    else
+    {
+      // in exclusive scans, we might be loading no data at all
+      // if the tile consists just of the last element
+      if (loadInfo.origCopySizeBytes > 0)
+      {
+        warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+      }
+    }
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookahead(
@@ -396,6 +427,16 @@ struct lookahead_scan_closure
         reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes);
       // in the last tile, we load some invalid elements, but don't process them later
       warpspeed::squadLoadSmem(squad, regInput, smem_data_start);
+
+      if constexpr (!isInclusive)
+      {
+        if (is_last_tile)
+        {
+          // the last element was not loaded to smem, so replace it by init value. Its actual value doesn't matter,
+          // since the aggregate of the last tile is never used, but it must not be garbage passed to scan_op
+          replaceSingleItem(squad, regInput, valid_items - 1, static_cast<AccumT>(real_init_value));
+        }
+      }
 
       // Reduce across thread and warp
       _CCCL_IKET_RANGE_PUSH(ReduceThreadWarp);
@@ -677,6 +718,13 @@ struct lookahead_scan_closure
       reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
 
     _CCCL_IKET_RANGE_PUSH(ThreadScan);
+    if constexpr (IsLastTile && !isInclusive)
+    {
+      // the last element was not loaded to smem, so replace it by init value
+      // its actual value doesn't matter, since we discard it
+      replaceSingleItem(squad, regAggrInclusive, valid_items - 1, static_cast<AccumT>(real_init_value));
+    }
+
     // Perform inclusive scan of register array in current thread.
     // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use aggrExclusive
     const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
@@ -813,9 +861,11 @@ struct lookahead_scan_closure
       _CCCL_ASSERT(idxTileBase < params.numElem, "");
       const int valid_items =
         static_cast<int>(cuda::std::min(params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
-      const bool is_last_tile = valid_items < tile_size;
+      const bool is_last_tile = idxTileBase + ::cuda::std::size_t(valid_items) >= params.numElem;
+      // In exclusive scans, ignore the last element
+      const int load_items = (!isInclusive && is_last_tile) ? valid_items - 1 : valid_items;
       const warpspeed::CpAsyncOobInfo loadInfo =
-        warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
+        warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, load_items);
 
       if (squad == squadLoad)
       {
