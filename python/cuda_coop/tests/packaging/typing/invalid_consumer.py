@@ -589,3 +589,28 @@ portable.radix_sort_keys(
     radix_keys,
     descending="yes",  # expected-error: [arg-type]
 )
+
+
+portable.topk_min_keys(
+    portable.this_warp(),  # expected-error: [arg-type]
+    portable_values,
+    k=3,
+)
+portable.topk_max_pairs(
+    portable_block,
+    portable_values,
+    portable_values,
+    k="3",  # expected-error: [arg-type]
+)
+coop.topk_min_pairs(
+    coop.this_grid(),  # expected-error: [arg-type]
+    values,
+    values,
+    k=3,
+)
+coop.topk_max_keys(
+    qualified_block,
+    values,
+    k=3,
+    valid_items=1.5,  # expected-error: [arg-type]
+)
