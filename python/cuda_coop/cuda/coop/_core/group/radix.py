@@ -209,7 +209,9 @@ def _plan(
         provenance=ImplementationProvenance(
             library="CUB",
             header=header,
-            cpp_class=f"cub::{spec.struct_name}",
+            cpp_class="cub::BlockRadixRank"
+            if isinstance(operation, GroupRadixRankSemantics)
+            else "cub::BlockRadixSort",
             method=spec.method_name,
         ),
     )
