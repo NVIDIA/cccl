@@ -171,6 +171,8 @@ CUB and Thrust
 #. Any entity inside the namespace ``cub`` or ``thrust``, including all nested namespaces,
    unless any namespace is named ``detail``, or the entity is prefixed with ``__``,
    is considered part of the public API.
+   This exemption does not apply if a ``detail`` entity is re-exposed through a public
+   alias or base class outside ``detail`` later; such re-exposed entities remain part of the public API.
 #. Non-public entities, except macros, should be put inside a ``detail`` namespace (preferred)
    or prefixed with ``__``.
    Non-public macros should be prefixed with ``_``.
