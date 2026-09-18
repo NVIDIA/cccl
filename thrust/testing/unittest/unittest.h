@@ -230,7 +230,7 @@ using BuiltinNumericTypes = unittest::type_list<
 
 // Bridges a function-template test `template <class T> void VTEST()` into a functor so it can be driven by
 // unittest::detail::for_each_type over a type list.
-#define THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, TYPE_LIST)        \
+#define _THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, TYPE_LIST)       \
   template <class T>                                               \
   struct VTEST##_invoker                                           \
   {                                                                \
@@ -263,7 +263,7 @@ using vector_list = cuda::std::__type_list<
   // universal
   thrust::universal_vector<int>,
   thrust::universal_host_pinned_vector<int>>;
-#define DECLARE_VECTOR_UNITTEST(VTEST) THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, vector_list)
+#define DECLARE_VECTOR_UNITTEST(VTEST) _THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, vector_list)
 
 // Same as above, but only for integral types
 using integral_vector_list = cuda::std::__type_list<
@@ -278,12 +278,14 @@ using integral_vector_list = cuda::std::__type_list<
   // universal
   thrust::universal_vector<int>,
   thrust::universal_host_pinned_vector<int>>;
-#define DECLARE_INTEGRAL_VECTOR_UNITTEST(VTEST) THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, integral_vector_list)
+#define DECLARE_INTEGRAL_VECTOR_UNITTEST(VTEST) _THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, integral_vector_list)
 
 // Macro to create instances of a test for several data types.
 using generic_list =
   cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float>;
-#define DECLARE_GENERIC_UNITTEST(TEST) THRUST_DECLARE_TYPE_LIST_UNITTEST(TEST, generic_list)
+#define DECLARE_GENERIC_UNITTEST(TEST) _THRUST_DECLARE_TYPE_LIST_UNITTEST(TEST, generic_list)
+
+#undef _THRUST_DECLARE_TYPE_LIST_UNITTEST
 
 namespace unittest::detail
 {
@@ -307,9 +309,7 @@ void for_each_type(L<Ts...>, Args&&... args)
     unittest::detail::for_each_type<TEST>(__VA_ARGS__{}, s); \
   }
 
-// Same as THRUST_DECLARE_TYPE_LIST_UNITTEST, but the test also takes an array size, generated from
-// GENERATE_THRUST_TEST_SIZES().
-#define THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, TYPE_LIST)     \
+#define _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, TYPE_LIST)    \
   template <class T>                                                 \
   struct TEST##_invoker                                              \
   {                                                                  \
@@ -324,15 +324,15 @@ void for_each_type(L<Ts...>, Args&&... args)
     unittest::detail::for_each_type<TEST##_invoker>(TYPE_LIST{}, s); \
   }
 
-// Macro to create instances of a test for several data types and array sizes
 using variable_list =
   cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float, double>;
-#define DECLARE_VARIABLE_UNITTEST(TEST) THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, variable_list)
+#define DECLARE_VARIABLE_UNITTEST(TEST) _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, variable_list)
 
-// Same as above, but only for integral types
 using integral_variable_list =
   cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int>;
-#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST) THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, integral_variable_list)
+#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST) _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, integral_variable_list)
+
+#undef _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST
 
 namespace unittest::detail
 {
