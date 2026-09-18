@@ -11,6 +11,8 @@ not own semantic lowering, provider rendering, or backend compiler state.
 
 from .exchange import exchange  # noqa: F401
 from .load_store import load, store  # noqa: F401
+from .merge_sort import merge_sort_keys as merge_sort_keys
+from .merge_sort import merge_sort_pairs as merge_sort_pairs
 from .reduce import reduce, sum  # noqa: F401
 from .scan import (  # noqa: F401
     exclusive_scan,
@@ -67,6 +69,8 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
     "shuffle",
