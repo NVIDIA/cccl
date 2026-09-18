@@ -29,6 +29,7 @@
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/hierarchy_levels.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
@@ -296,11 +297,13 @@ public:
     auto __counter = __make_counter(__stream);
 
     const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
-      <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-        __first, __num_keys, __stencil, __pred, __counter.data(), __container_ref);
-    _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to insert keys");
+    const auto __config    = ::cuda::make_config(
+      ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+    using __kernel_type =
+      void (*)(_InputIt, detail::__index_type, _StencilIt, _Predicate, typename _Ref::size_type*, _Ref);
+    const __kernel_type __kernel = __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>;
+    ::cuda::launch(
+      __stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __counter.data(), __container_ref);
 
     return __read_counter(__counter, __stream);
   }
@@ -342,11 +345,11 @@ public:
     else
     {
       const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
-
-      __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-          __first, __num_keys, __stencil, __pred, __container_ref);
-      _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to insert keys");
+      const auto __config    = ::cuda::make_config(
+        ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+      using __kernel_type          = void (*)(_InputIt, detail::__index_type, _StencilIt, _Predicate, _Ref);
+      const __kernel_type __kernel = __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>;
+      ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __container_ref);
     }
   }
 
@@ -397,11 +400,12 @@ public:
     else
     {
       const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
-
-      __open_addressing::__contains_if_n<__cg_size, detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-          __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
-      _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to query keys");
+      const auto __config    = ::cuda::make_config(
+        ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+      const auto& __kernel = __open_addressing::
+        __contains_if_n<__cg_size, detail::__default_block_size, _InputIt, _StencilIt, _Predicate, _OutputIt, _Ref>;
+      ::cuda::launch(
+        __stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
     }
   }
 
@@ -428,11 +432,12 @@ public:
     }
 
     const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
-
-    __open_addressing::__find_if_n<__cg_size, detail::__default_block_size>
-      <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-        __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
-    _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to query keys");
+    const auto __config    = ::cuda::make_config(
+      ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+    const auto& __kernel = __open_addressing::
+      __find_if_n<__cg_size, detail::__default_block_size, _InputIt, _StencilIt, _Predicate, _OutputIt, _Ref>;
+    ::cuda::launch(
+      __stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
   }
 
   //! @brief Asynchronously finds the payloads for keys in `[first, last)`.
@@ -631,19 +636,19 @@ public:
   }
 
   //! @brief Returns the key comparison function.
-  [[nodiscard]] _CCCL_HOST_API constexpr __key_equal key_eq() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __key_equal key_eq() const
   {
     return __predicate;
   }
 
   //! @brief Returns the probing scheme.
-  [[nodiscard]] _CCCL_HOST_API constexpr __probing_scheme_type probing_scheme() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __probing_scheme_type probing_scheme() const
   {
     return __probing_scheme;
   }
 
   //! @brief Returns the hash function.
-  [[nodiscard]] _CCCL_HOST_API constexpr __hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __hasher hash_function() const
   {
     return probing_scheme().hash_function();
   }

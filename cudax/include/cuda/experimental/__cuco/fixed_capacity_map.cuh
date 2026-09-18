@@ -759,7 +759,7 @@ public:
   //! @brief Gets the function used to compare keys for equality.
   //!
   //! @return The function used to compare keys for equality
-  [[nodiscard]] constexpr key_equal key_eq() const noexcept
+  [[nodiscard]] constexpr key_equal key_eq() const
   {
     return __impl->key_eq();
   }
@@ -767,7 +767,7 @@ public:
   //! @brief Gets the function(s) used to hash keys.
   //!
   //! @return The function(s) used to hash keys
-  [[nodiscard]] constexpr hasher hash_function() const noexcept
+  [[nodiscard]] constexpr hasher hash_function() const
   {
     return __impl->hash_function();
   }
@@ -778,7 +778,7 @@ public:
   //! — safe to pass by value to kernels. The ref's lifetime must not exceed the map's lifetime.
   //!
   //! @return A `ref_type` referring to this map
-  [[nodiscard]] auto ref() const noexcept -> ref_type
+  [[nodiscard]] auto ref() const -> ref_type
   {
     auto __slots = typename ref_type::storage_span_type{__impl->storage_ref().data(), __impl->capacity()};
     return detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())

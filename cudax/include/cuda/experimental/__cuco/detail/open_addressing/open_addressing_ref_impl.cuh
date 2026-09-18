@@ -161,7 +161,7 @@ public:
     __value_type __empty_slot_sentinel,
     const __key_equal& __predicate,
     const __probing_scheme_type& __probing_scheme,
-    __storage_ref_type __storage_ref) noexcept
+    __storage_ref_type __storage_ref)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __predicate{__extract_key(__empty_slot_sentinel), __extract_key(__empty_slot_sentinel), __predicate}
       , __probing_scheme{__probing_scheme}
@@ -180,7 +180,7 @@ public:
     __key_type __erased_key_sentinel,
     const __key_equal& __predicate,
     const __probing_scheme_type& __probing_scheme,
-    __storage_ref_type __storage_ref) noexcept
+    __storage_ref_type __storage_ref)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __predicate{__extract_key(__empty_slot_sentinel), __erased_key_sentinel, __predicate}
       , __probing_scheme{__probing_scheme}
@@ -225,7 +225,7 @@ public:
   //!
   //! @return The key equality predicate
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr detail::__equal_wrapper<__key_type, __key_equal, __allows_duplicates>
-  predicate() const noexcept
+  predicate() const
   {
     return __predicate;
   }
@@ -233,7 +233,7 @@ public:
   //! @brief Gets the key comparator.
   //!
   //! @return The comparator used to compare keys
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __key_equal key_eq() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __key_equal key_eq() const
   {
     return predicate().__equal;
   }
@@ -241,7 +241,7 @@ public:
   //! @brief Gets the probing scheme.
   //!
   //! @return The probing scheme used for the container
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __probing_scheme_type probing_scheme() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __probing_scheme_type probing_scheme() const
   {
     return __probing_scheme;
   }
@@ -249,7 +249,7 @@ public:
   //! @brief Gets the function(s) used to hash keys
   //!
   //! @return The function(s) used to hash keys
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __hasher hash_function() const
   {
     return probing_scheme().hash_function();
   }
