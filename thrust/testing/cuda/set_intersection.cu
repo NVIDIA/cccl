@@ -39,19 +39,28 @@ void TestSetIntersectionDeviceSeq()
 {
   TestSetIntersectionDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetIntersectionDeviceSeq);
+TEST_CASE("TestSetIntersectionDeviceSeq", "[set_intersection]")
+{
+  TestSetIntersectionDeviceSeq();
+}
 
 void TestSetIntersectionDeviceDevice()
 {
   TestSetIntersectionDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetIntersectionDeviceDevice);
+TEST_CASE("TestSetIntersectionDeviceDevice", "[set_intersection]")
+{
+  TestSetIntersectionDeviceDevice();
+}
 
 void TestSetIntersectionDeviceNoSync()
 {
   TestSetIntersectionDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestSetIntersectionDeviceNoSync);
+TEST_CASE("TestSetIntersectionDeviceNoSync", "[set_intersection]")
+{
+  TestSetIntersectionDeviceNoSync();
+}
 #endif
 
 template <typename ExecutionPolicy>
@@ -77,10 +86,16 @@ void TestSetIntersectionCudaStreamsSync()
 {
   TestSetIntersectionCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestSetIntersectionCudaStreamsSync);
+TEST_CASE("TestSetIntersectionCudaStreamsSync", "[set_intersection]")
+{
+  TestSetIntersectionCudaStreamsSync();
+}
 
 void TestSetIntersectionCudaStreamsNoSync()
 {
   TestSetIntersectionCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestSetIntersectionCudaStreamsNoSync);
+TEST_CASE("TestSetIntersectionCudaStreamsNoSync", "[set_intersection]")
+{
+  TestSetIntersectionCudaStreamsNoSync();
+}

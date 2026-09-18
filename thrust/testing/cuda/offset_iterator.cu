@@ -122,4 +122,7 @@ void TestOffsetIteratorWithDeviceOnlyIterator()
   TestOffsetIteratorBoth(iter);
   TestOffsetIteratorDevice<<<1, 1>>>(iter);
 }
-DECLARE_UNITTEST(TestOffsetIteratorWithDeviceOnlyIterator);
+TEST_CASE("TestOffsetIteratorWithDeviceOnlyIterator", "[offset_iterator]")
+{
+  TestOffsetIteratorWithDeviceOnlyIterator();
+}

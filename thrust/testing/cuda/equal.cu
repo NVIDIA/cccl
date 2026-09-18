@@ -115,4 +115,7 @@ void TestEqualCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestEqualCudaStreams);
+TEST_CASE("TestEqualCudaStreams", "[equal]")
+{
+  TestEqualCudaStreams();
+}

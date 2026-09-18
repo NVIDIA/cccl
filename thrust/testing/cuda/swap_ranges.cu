@@ -32,13 +32,19 @@ void TestSwapRangesDeviceSeq()
 {
   TestSwapRangesDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSwapRangesDeviceSeq);
+TEST_CASE("TestSwapRangesDeviceSeq", "[swap_ranges]")
+{
+  TestSwapRangesDeviceSeq();
+}
 
 void TestSwapRangesDeviceDevice()
 {
   TestSwapRangesDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSwapRangesDeviceDevice);
+TEST_CASE("TestSwapRangesDeviceDevice", "[swap_ranges]")
+{
+  TestSwapRangesDeviceDevice();
+}
 #endif
 
 void TestSwapRangesCudaStreams()
@@ -61,4 +67,7 @@ void TestSwapRangesCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestSwapRangesCudaStreams);
+TEST_CASE("TestSwapRangesCudaStreams", "[swap_ranges]")
+{
+  TestSwapRangesCudaStreams();
+}

@@ -38,7 +38,10 @@ void TestScatterDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestScatterDispatchExplicit);
+TEST_CASE("TestScatterDispatchExplicit", "[scatter]")
+{
+  TestScatterDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
 void scatter(my_tag, InputIterator1, InputIterator1, InputIterator2, RandomAccessIterator output)
@@ -57,7 +60,10 @@ void TestScatterDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestScatterDispatchImplicit);
+TEST_CASE("TestScatterDispatchImplicit", "[scatter]")
+{
+  TestScatterDispatchImplicit();
+}
 
 template <typename T>
 void TestScatter(const size_t n)
@@ -140,7 +146,10 @@ void TestScatterIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestScatterIfDispatchExplicit);
+TEST_CASE("TestScatterIfDispatchExplicit", "[scatter]")
+{
+  TestScatterIfDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename InputIterator3, typename RandomAccessIterator>
 void scatter_if(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIterator3, RandomAccessIterator output)
@@ -161,7 +170,10 @@ void TestScatterIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestScatterIfDispatchImplicit);
+TEST_CASE("TestScatterIfDispatchImplicit", "[scatter]")
+{
+  TestScatterIfDispatchImplicit();
+}
 
 template <typename T>
 class is_even_scatter_if

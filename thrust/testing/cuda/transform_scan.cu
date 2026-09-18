@@ -220,13 +220,19 @@ void TestTransformScanDeviceSeq()
 {
   TestTransformScanDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformScanDeviceSeq);
+TEST_CASE("TestTransformScanDeviceSeq", "[transform_scan]")
+{
+  TestTransformScanDeviceSeq();
+}
 
 void TestTransformScanDeviceDevice()
 {
   TestTransformScanDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformScanDeviceDevice);
+TEST_CASE("TestTransformScanDeviceDevice", "[transform_scan]")
+{
+  TestTransformScanDeviceDevice();
+}
 #endif
 
 void TestTransformScanCudaStreams()
@@ -356,7 +362,10 @@ void TestTransformScanCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestTransformScanCudaStreams);
+TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
+{
+  TestTransformScanCudaStreams();
+}
 
 void TestTransformScanConstAccumulator()
 {
@@ -373,4 +382,7 @@ void TestTransformScanConstAccumulator()
 
   REQUIRE(output == reference);
 }
-DECLARE_UNITTEST(TestTransformScanConstAccumulator);
+TEST_CASE("TestTransformScanConstAccumulator", "[transform_scan]")
+{
+  TestTransformScanConstAccumulator();
+}

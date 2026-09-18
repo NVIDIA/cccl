@@ -23,7 +23,10 @@ void TestNvccIndependenceTransform()
 
   REQUIRE(h_output == d_output);
 }
-DECLARE_UNITTEST(TestNvccIndependenceTransform);
+TEST_CASE("TestNvccIndependenceTransform", "[nvcc_independence]")
+{
+  TestNvccIndependenceTransform();
+}
 
 void TestNvccIndependenceReduce()
 {
@@ -40,7 +43,10 @@ void TestNvccIndependenceReduce()
 
   ASSERT_ALMOST_EQUAL(h_result, d_result);
 }
-DECLARE_UNITTEST(TestNvccIndependenceReduce);
+TEST_CASE("TestNvccIndependenceReduce", "[nvcc_independence]")
+{
+  TestNvccIndependenceReduce();
+}
 
 void TestNvccIndependenceExclusiveScan()
 {
@@ -57,7 +63,10 @@ void TestNvccIndependenceExclusiveScan()
   thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
   REQUIRE(d_output == h_output);
 }
-DECLARE_UNITTEST(TestNvccIndependenceExclusiveScan);
+TEST_CASE("TestNvccIndependenceExclusiveScan", "[nvcc_independence]")
+{
+  TestNvccIndependenceExclusiveScan();
+}
 
 void TestNvccIndependenceSort()
 {
@@ -72,4 +81,7 @@ void TestNvccIndependenceSort()
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_UNITTEST(TestNvccIndependenceSort);
+TEST_CASE("TestNvccIndependenceSort", "[nvcc_independence]")
+{
+  TestNvccIndependenceSort();
+}

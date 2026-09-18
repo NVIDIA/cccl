@@ -58,7 +58,10 @@ void TestForEachDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestForEachDispatchExplicit);
+TEST_CASE("TestForEachDispatchExplicit", "[for_each]")
+{
+  TestForEachDispatchExplicit();
+}
 
 template <typename InputIterator, typename Function>
 InputIterator for_each(my_tag, InputIterator first, InputIterator, Function)
@@ -75,7 +78,10 @@ void TestForEachDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestForEachDispatchImplicit);
+TEST_CASE("TestForEachDispatchImplicit", "[for_each]")
+{
+  TestForEachDispatchImplicit();
+}
 
 template <class Vector>
 void TestForEachNSimple()
@@ -112,7 +118,10 @@ void TestForEachNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestForEachNDispatchExplicit);
+TEST_CASE("TestForEachNDispatchExplicit", "[for_each]")
+{
+  TestForEachNDispatchExplicit();
+}
 
 template <typename InputIterator, typename Size, typename Function>
 InputIterator for_each_n(my_tag, InputIterator first, Size, Function)
@@ -129,7 +138,10 @@ void TestForEachNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestForEachNDispatchImplicit);
+TEST_CASE("TestForEachNDispatchImplicit", "[for_each]")
+{
+  TestForEachNDispatchImplicit();
+}
 
 void TestForEachSimpleAnySystem()
 {
@@ -145,7 +157,10 @@ void TestForEachSimpleAnySystem()
   REQUIRE(output == ref);
   REQUIRE((result == thrust::make_counting_iterator(5)));
 }
-DECLARE_UNITTEST(TestForEachSimpleAnySystem);
+TEST_CASE("TestForEachSimpleAnySystem", "[for_each]")
+{
+  TestForEachSimpleAnySystem();
+}
 
 void TestForEachNSimpleAnySystem()
 {
@@ -160,7 +175,10 @@ void TestForEachNSimpleAnySystem()
   REQUIRE(output == ref);
   REQUIRE((result == thrust::make_counting_iterator(5)));
 }
-DECLARE_UNITTEST(TestForEachNSimpleAnySystem);
+TEST_CASE("TestForEachNSimpleAnySystem", "[for_each]")
+{
+  TestForEachNSimpleAnySystem();
+}
 
 template <typename T>
 void TestForEach(const size_t n)
@@ -280,7 +298,10 @@ void TestForEachWithLargeTypes()
   // XXX parallel_for doesn't support large types
   //    _TestForEachWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
-DECLARE_UNITTEST(TestForEachWithLargeTypes);
+TEST_CASE("TestForEachWithLargeTypes", "[for_each]")
+{
+  TestForEachWithLargeTypes();
+}
 
 template <typename T, unsigned int N>
 void _TestForEachNWithLargeTypes()
@@ -321,7 +342,10 @@ void TestForEachNWithLargeTypes()
   // XXX parallel_for doesn't support large types
   //    _TestForEachNWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
-DECLARE_UNITTEST(TestForEachNWithLargeTypes);
+TEST_CASE("TestForEachNWithLargeTypes", "[for_each]")
+{
+  TestForEachNWithLargeTypes();
+}
 
 _CCCL_DIAG_POP
 
@@ -365,4 +389,7 @@ void TestForEachWithBigIndexes()
   TestForEachWithBigIndexesHelper(32);
   TestForEachWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestForEachWithBigIndexes);
+TEST_CASE("TestForEachWithBigIndexes", "[for_each]")
+{
+  TestForEachWithBigIndexes();
+}

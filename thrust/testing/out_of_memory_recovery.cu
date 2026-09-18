@@ -35,4 +35,7 @@ void test_out_of_memory_recovery()
     return;
   }
 }
-DECLARE_UNITTEST(test_out_of_memory_recovery);
+TEST_CASE("test_out_of_memory_recovery", "[out_of_memory_recovery]")
+{
+  test_out_of_memory_recovery();
+}

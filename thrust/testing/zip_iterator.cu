@@ -121,7 +121,10 @@ void TestZipIteratorTraits()
     static_assert(!cuda::std::contiguous_iterator<it>);
   }
 }
-DECLARE_UNITTEST(TestZipIteratorTraits);
+TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
+{
+  TestZipIteratorTraits();
+}
 
 template <typename T>
 struct TestZipIteratorConstructionFromIterators
@@ -414,7 +417,10 @@ void TestZipIteratorCopyAoSToSoA()
   thrust::copy(d_aos.begin(), d_aos.end(), h_soa);
   REQUIRE((cuda::std::make_tuple(7, 13) == h_soa[0]));
 }
-DECLARE_UNITTEST(TestZipIteratorCopyAoSToSoA);
+TEST_CASE("TestZipIteratorCopyAoSToSoA", "[zip_iterator]")
+{
+  TestZipIteratorCopyAoSToSoA();
+}
 
 void TestZipIteratorCopySoAToAoS()
 {
@@ -467,7 +473,10 @@ void TestZipIteratorCopySoAToAoS()
   REQUIRE((7 == cuda::std::get<0>(h_soa[0])));
   REQUIRE((13 == cuda::std::get<1>(h_soa[0])));
 };
-DECLARE_UNITTEST(TestZipIteratorCopySoAToAoS);
+TEST_CASE("TestZipIteratorCopySoAToAoS", "[zip_iterator]")
+{
+  TestZipIteratorCopySoAToAoS();
+}
 
 template <typename T>
 void TestZipIteratorDereferenceToValueType(const T& t)
@@ -499,7 +508,10 @@ void TestZipIteratorDereferenceToValue()
   TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(1, cuda::std::make_tuple(1, 1)));
   TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(cuda::std::make_tuple(1), cuda::std::make_tuple(1, 1)));
 }
-DECLARE_UNITTEST(TestZipIteratorDereferenceToValue);
+TEST_CASE("TestZipIteratorDereferenceToValue", "[zip_iterator]")
+{
+  TestZipIteratorDereferenceToValue();
+}
 
 void TestZipIteratorNestedCopy()
 {
@@ -549,7 +561,10 @@ void TestZipIteratorNestedCopy()
     REQUIRE((b == b_expected));
   }
 }
-DECLARE_UNITTEST(TestZipIteratorNestedCopy);
+TEST_CASE("TestZipIteratorNestedCopy", "[zip_iterator]")
+{
+  TestZipIteratorNestedCopy();
+}
 
 // See https://github.com/NVIDIA/cccl/issues/9773
 void TestZipIteratorComparison()
@@ -573,4 +588,7 @@ void TestZipIteratorComparison()
     REQUIRE((pos == iter + 1));
   }
 }
-DECLARE_UNITTEST(TestZipIteratorComparison);
+TEST_CASE("TestZipIteratorComparison", "[zip_iterator]")
+{
+  TestZipIteratorComparison();
+}

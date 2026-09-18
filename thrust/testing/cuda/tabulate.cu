@@ -52,13 +52,19 @@ void TestTabulateDeviceSeq()
 {
   TestTabulateDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTabulateDeviceSeq);
+TEST_CASE("TestTabulateDeviceSeq", "[tabulate]")
+{
+  TestTabulateDeviceSeq();
+}
 
 void TestTabulateDeviceDevice()
 {
   TestTabulateDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTabulateDeviceDevice);
+TEST_CASE("TestTabulateDeviceDevice", "[tabulate]")
+{
+  TestTabulateDeviceDevice();
+}
 #endif
 
 void TestTabulateCudaStreams()
@@ -92,4 +98,7 @@ void TestTabulateCudaStreams()
 
   cudaStreamSynchronize(s);
 }
-DECLARE_UNITTEST(TestTabulateCudaStreams);
+TEST_CASE("TestTabulateCudaStreams", "[tabulate]")
+{
+  TestTabulateCudaStreams();
+}

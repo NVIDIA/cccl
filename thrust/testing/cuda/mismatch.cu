@@ -60,13 +60,19 @@ void TestMismatchDeviceSeq()
 {
   TestMismatchDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMismatchDeviceSeq);
+TEST_CASE("TestMismatchDeviceSeq", "[mismatch]")
+{
+  TestMismatchDeviceSeq();
+}
 
 void TestMismatchDeviceDevice()
 {
   TestMismatchDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMismatchDeviceDevice);
+TEST_CASE("TestMismatchDeviceDevice", "[mismatch]")
+{
+  TestMismatchDeviceDevice();
+}
 #endif
 
 void TestMismatchCudaStreams()
@@ -94,7 +100,10 @@ void TestMismatchCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestMismatchCudaStreams);
+TEST_CASE("TestMismatchCudaStreams", "[mismatch]")
+{
+  TestMismatchCudaStreams();
+}
 
 // see https://github.com/NVIDIA/cccl/issues/3591
 template <typename T>
@@ -127,4 +136,7 @@ void TestMismatchBug3591()
   T* p    = nullptr;
   thrust::mismatch(thrust::device, p, p, p, cuda::std::equal_to<T>());
 }
-DECLARE_UNITTEST(TestMismatchBug3591);
+TEST_CASE("TestMismatchBug3591", "[mismatch]")
+{
+  TestMismatchBug3591();
+}

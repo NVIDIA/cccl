@@ -202,13 +202,19 @@ void TestDisjointUnsynchronizedPool()
 {
   TestDisjointPool<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointUnsynchronizedPool);
+TEST_CASE("TestDisjointUnsynchronizedPool", "[mr_disjoint_pool]")
+{
+  TestDisjointUnsynchronizedPool();
+}
 
 void TestDisjointSynchronizedPool()
 {
   TestDisjointPool<thrust::mr::disjoint_synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointSynchronizedPool);
+TEST_CASE("TestDisjointSynchronizedPool", "[mr_disjoint_pool]")
+{
+  TestDisjointSynchronizedPool();
+}
 
 template <template <typename, typename> class PoolTemplate>
 void TestDisjointPoolCachingOversized()
@@ -280,13 +286,19 @@ void TestDisjointUnsynchronizedPoolCachingOversized()
 {
   TestDisjointPoolCachingOversized<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointUnsynchronizedPoolCachingOversized);
+TEST_CASE("TestDisjointUnsynchronizedPoolCachingOversized", "[mr_disjoint_pool]")
+{
+  TestDisjointUnsynchronizedPoolCachingOversized();
+}
 
 void TestDisjointSynchronizedPoolCachingOversized()
 {
   TestDisjointPoolCachingOversized<thrust::mr::disjoint_synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointSynchronizedPoolCachingOversized);
+TEST_CASE("TestDisjointSynchronizedPoolCachingOversized", "[mr_disjoint_pool]")
+{
+  TestDisjointSynchronizedPoolCachingOversized();
+}
 
 template <template <typename, typename> class PoolTemplate>
 void TestDisjointGlobalPool()
@@ -300,13 +312,19 @@ void TestUnsynchronizedDisjointGlobalPool()
 {
   TestDisjointGlobalPool<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestUnsynchronizedDisjointGlobalPool);
+TEST_CASE("TestUnsynchronizedDisjointGlobalPool", "[mr_disjoint_pool]")
+{
+  TestUnsynchronizedDisjointGlobalPool();
+}
 
 void TestSynchronizedDisjointGlobalPool()
 {
   TestDisjointGlobalPool<thrust::mr::disjoint_synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestSynchronizedDisjointGlobalPool);
+TEST_CASE("TestSynchronizedDisjointGlobalPool", "[mr_disjoint_pool]")
+{
+  TestSynchronizedDisjointGlobalPool();
+}
 
 template <template <typename, typename> class PoolTemplate>
 void TestDisjointPoolSqueeze()
@@ -513,10 +531,16 @@ void TestDisjointUnsynchronizedPoolSqueeze()
 {
   TestDisjointPoolSqueeze<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointUnsynchronizedPoolSqueeze);
+TEST_CASE("TestDisjointUnsynchronizedPoolSqueeze", "[mr_disjoint_pool]")
+{
+  TestDisjointUnsynchronizedPoolSqueeze();
+}
 
 void TestDisjointSynchronizedPoolSqueeze()
 {
   TestDisjointPoolSqueeze<thrust::mr::disjoint_synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointSynchronizedPoolSqueeze);
+TEST_CASE("TestDisjointSynchronizedPoolSqueeze", "[mr_disjoint_pool]")
+{
+  TestDisjointSynchronizedPoolSqueeze();
+}

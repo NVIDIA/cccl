@@ -42,7 +42,10 @@ void TestGatherDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGatherDispatchExplicit);
+TEST_CASE("TestGatherDispatchExplicit", "[gather]")
+{
+  TestGatherDispatchExplicit();
+}
 
 template <typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
 OutputIterator gather(my_tag, InputIterator, InputIterator, RandomAccessIterator, OutputIterator result)
@@ -62,7 +65,10 @@ void TestGatherDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGatherDispatchImplicit);
+TEST_CASE("TestGatherDispatchImplicit", "[gather]")
+{
+  TestGatherDispatchImplicit();
+}
 
 template <typename T>
 void TestGather(const size_t n)
@@ -172,7 +178,10 @@ void TestGatherIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGatherIfDispatchExplicit);
+TEST_CASE("TestGatherIfDispatchExplicit", "[gather]")
+{
+  TestGatherIfDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator, typename OutputIterator>
 OutputIterator gather_if(
@@ -200,7 +209,10 @@ void TestGatherIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGatherIfDispatchImplicit);
+TEST_CASE("TestGatherIfDispatchImplicit", "[gather]")
+{
+  TestGatherIfDispatchImplicit();
+}
 
 template <typename T>
 void TestGatherIf(const size_t n)

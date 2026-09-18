@@ -31,13 +31,19 @@ void TestUninitializedCopyDeviceSeq()
 {
   TestUninitializedCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUninitializedCopyDeviceSeq);
+TEST_CASE("TestUninitializedCopyDeviceSeq", "[uninitialized_copy]")
+{
+  TestUninitializedCopyDeviceSeq();
+}
 
 void TestUninitializedCopyDeviceDevice()
 {
   TestUninitializedCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUninitializedCopyDeviceDevice);
+TEST_CASE("TestUninitializedCopyDeviceDevice", "[uninitialized_copy]")
+{
+  TestUninitializedCopyDeviceDevice();
+}
 #endif
 
 void TestUninitializedCopyCudaStreams()
@@ -58,7 +64,10 @@ void TestUninitializedCopyCudaStreams()
   REQUIRE(v2 == v1);
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestUninitializedCopyCudaStreams);
+TEST_CASE("TestUninitializedCopyCudaStreams", "[uninitialized_copy]")
+{
+  TestUninitializedCopyCudaStreams();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator1, typename Size, typename Iterator2>
@@ -87,13 +96,19 @@ void TestUninitializedCopyNDeviceSeq()
 {
   TestUninitializedCopyNDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDeviceSeq);
+TEST_CASE("TestUninitializedCopyNDeviceSeq", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNDeviceSeq();
+}
 
 void TestUninitializedCopyNDeviceDevice()
 {
   TestUninitializedCopyNDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDeviceDevice);
+TEST_CASE("TestUninitializedCopyNDeviceDevice", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNDeviceDevice();
+}
 #endif
 
 void TestUninitializedCopyNCudaStreams()
@@ -114,4 +129,7 @@ void TestUninitializedCopyNCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestUninitializedCopyNCudaStreams);
+TEST_CASE("TestUninitializedCopyNCudaStreams", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNCudaStreams();
+}

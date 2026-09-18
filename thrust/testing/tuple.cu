@@ -496,7 +496,10 @@ void TestTupleSwap()
   REQUIRE(ref == (swappable_tuple) d_v1[0]);
   REQUIRE(not_swapped == (swappable_tuple) d_v2[0]);
 }
-DECLARE_UNITTEST(TestTupleSwap);
+TEST_CASE("TestTupleSwap", "[tuple]")
+{
+  TestTupleSwap();
+}
 
 void TestTupleStructuredBindings()
 {
@@ -510,7 +513,10 @@ void TestTupleStructuredBindings()
   REQUIRE(b == b2);
   REQUIRE(c == c2);
 }
-DECLARE_UNITTEST(TestTupleStructuredBindings);
+TEST_CASE("TestTupleStructuredBindings", "[tuple]")
+{
+  TestTupleStructuredBindings();
+}
 
 void TestTupleCTAD()
 {
@@ -524,7 +530,10 @@ void TestTupleCTAD()
   REQUIRE(b == b2);
   REQUIRE(c == c2);
 }
-DECLARE_UNITTEST(TestTupleCTAD);
+TEST_CASE("TestTupleCTAD", "[tuple]")
+{
+  TestTupleCTAD();
+}
 
 void TestTupleOfIteratorReferenceAssignsFromConst()
 {
@@ -541,4 +550,7 @@ void TestTupleOfIteratorReferenceAssignsFromConst()
   // should compile:
   refs = crefs;
 }
-DECLARE_UNITTEST(TestTupleOfIteratorReferenceAssignsFromConst);
+TEST_CASE("TestTupleOfIteratorReferenceAssignsFromConst", "[tuple]")
+{
+  TestTupleOfIteratorReferenceAssignsFromConst();
+}

@@ -273,7 +273,10 @@ void TestPairTupleElement()
   static_assert(std::is_same_v<int const volatile, cv_type0>);
   static_assert(std::is_same_v<float const volatile, cv_type1>);
 };
-DECLARE_UNITTEST(TestPairTupleElement);
+TEST_CASE("TestPairTupleElement", "[pair]")
+{
+  TestPairTupleElement();
+}
 
 void TestPairSwap()
 {
@@ -309,7 +312,10 @@ void TestPairSwap()
   REQUIRE(ref == (swappable_pair) d_v1[0]);
   REQUIRE(ref == (swappable_pair) d_v1[0]);
 }
-DECLARE_UNITTEST(TestPairSwap);
+TEST_CASE("TestPairSwap", "[pair]")
+{
+  TestPairSwap();
+}
 
 void TestPairStructuredBindings()
 {
@@ -321,7 +327,10 @@ void TestPairStructuredBindings()
   REQUIRE(a == a2);
   REQUIRE(b == b2);
 }
-DECLARE_UNITTEST(TestPairStructuredBindings);
+TEST_CASE("TestPairStructuredBindings", "[pair]")
+{
+  TestPairStructuredBindings();
+}
 
 void TestPairCTAD()
 {
@@ -333,4 +342,7 @@ void TestPairCTAD()
   REQUIRE(a == a2);
   REQUIRE(b == b2);
 }
-DECLARE_UNITTEST(TestPairCTAD);
+TEST_CASE("TestPairCTAD", "[pair]")
+{
+  TestPairCTAD();
+}

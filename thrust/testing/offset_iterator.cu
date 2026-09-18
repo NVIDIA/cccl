@@ -30,7 +30,10 @@ void TestOffsetIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestOffsetIteratorTraits);
+TEST_CASE("TestOffsetIteratorTraits", "[offset_iterator]")
+{
+  TestOffsetIteratorTraits();
+}
 
 template <typename Vector>
 void TestOffsetConstructor()

@@ -334,7 +334,10 @@ void TestRanlux24BaseValidation()
 
   TestEngineValidation<Engine, 7937952u>();
 }
-DECLARE_UNITTEST(TestRanlux24BaseValidation);
+TEST_CASE("TestRanlux24BaseValidation", "[random]")
+{
+  TestRanlux24BaseValidation();
+}
 
 void TestRanlux24BaseMin()
 {
@@ -342,7 +345,10 @@ void TestRanlux24BaseMin()
 
   TestEngineMin<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24BaseMin);
+TEST_CASE("TestRanlux24BaseMin", "[random]")
+{
+  TestRanlux24BaseMin();
+}
 
 void TestRanlux24BaseMax()
 {
@@ -350,7 +356,10 @@ void TestRanlux24BaseMax()
 
   TestEngineMax<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24BaseMax);
+TEST_CASE("TestRanlux24BaseMax", "[random]")
+{
+  TestRanlux24BaseMax();
+}
 
 void TestRanlux24BaseSaveRestore()
 {
@@ -358,7 +367,10 @@ void TestRanlux24BaseSaveRestore()
 
   TestEngineSaveRestore<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24BaseSaveRestore);
+TEST_CASE("TestRanlux24BaseSaveRestore", "[random]")
+{
+  TestRanlux24BaseSaveRestore();
+}
 
 void TestRanlux24BaseEqual()
 {
@@ -366,7 +378,10 @@ void TestRanlux24BaseEqual()
 
   TestEngineEqual<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24BaseEqual);
+TEST_CASE("TestRanlux24BaseEqual", "[random]")
+{
+  TestRanlux24BaseEqual();
+}
 
 void TestRanlux24BaseUnequal()
 {
@@ -374,7 +389,10 @@ void TestRanlux24BaseUnequal()
 
   TestEngineUnequal<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24BaseUnequal);
+TEST_CASE("TestRanlux24BaseUnequal", "[random]")
+{
+  TestRanlux24BaseUnequal();
+}
 
 void TestRanlux48BaseValidation()
 {
@@ -382,7 +400,10 @@ void TestRanlux48BaseValidation()
 
   TestEngineValidation<Engine, 192113843633948ull>();
 }
-DECLARE_UNITTEST(TestRanlux48BaseValidation);
+TEST_CASE("TestRanlux48BaseValidation", "[random]")
+{
+  TestRanlux48BaseValidation();
+}
 
 void TestRanlux48BaseMin()
 {
@@ -390,7 +411,10 @@ void TestRanlux48BaseMin()
 
   TestEngineMin<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48BaseMin);
+TEST_CASE("TestRanlux48BaseMin", "[random]")
+{
+  TestRanlux48BaseMin();
+}
 
 void TestRanlux48BaseMax()
 {
@@ -398,7 +422,10 @@ void TestRanlux48BaseMax()
 
   TestEngineMax<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48BaseMax);
+TEST_CASE("TestRanlux48BaseMax", "[random]")
+{
+  TestRanlux48BaseMax();
+}
 
 void TestRanlux48BaseSaveRestore()
 {
@@ -406,7 +433,10 @@ void TestRanlux48BaseSaveRestore()
 
   TestEngineSaveRestore<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48BaseSaveRestore);
+TEST_CASE("TestRanlux48BaseSaveRestore", "[random]")
+{
+  TestRanlux48BaseSaveRestore();
+}
 
 void TestRanlux48BaseEqual()
 {
@@ -414,7 +444,10 @@ void TestRanlux48BaseEqual()
 
   TestEngineEqual<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48BaseEqual);
+TEST_CASE("TestRanlux48BaseEqual", "[random]")
+{
+  TestRanlux48BaseEqual();
+}
 
 void TestRanlux48BaseUnequal()
 {
@@ -422,7 +455,10 @@ void TestRanlux48BaseUnequal()
 
   TestEngineUnequal<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48BaseUnequal);
+TEST_CASE("TestRanlux48BaseUnequal", "[random]")
+{
+  TestRanlux48BaseUnequal();
+}
 
 void TestMinstdRandValidation()
 {
@@ -430,7 +466,10 @@ void TestMinstdRandValidation()
 
   TestEngineValidation<Engine, 399268537u>();
 }
-DECLARE_UNITTEST(TestMinstdRandValidation);
+TEST_CASE("TestMinstdRandValidation", "[random]")
+{
+  TestMinstdRandValidation();
+}
 
 void TestMinstdRandMin()
 {
@@ -438,7 +477,10 @@ void TestMinstdRandMin()
 
   TestEngineMin<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRandMin);
+TEST_CASE("TestMinstdRandMin", "[random]")
+{
+  TestMinstdRandMin();
+}
 
 void TestMinstdRandMax()
 {
@@ -446,7 +488,10 @@ void TestMinstdRandMax()
 
   TestEngineMax<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRandMax);
+TEST_CASE("TestMinstdRandMax", "[random]")
+{
+  TestMinstdRandMax();
+}
 
 void TestMinstdRandSaveRestore()
 {
@@ -454,7 +499,10 @@ void TestMinstdRandSaveRestore()
 
   TestEngineSaveRestore<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRandSaveRestore);
+TEST_CASE("TestMinstdRandSaveRestore", "[random]")
+{
+  TestMinstdRandSaveRestore();
+}
 
 void TestMinstdRandEqual()
 {
@@ -462,7 +510,10 @@ void TestMinstdRandEqual()
 
   TestEngineEqual<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRandEqual);
+TEST_CASE("TestMinstdRandEqual", "[random]")
+{
+  TestMinstdRandEqual();
+}
 
 void TestMinstdRandUnequal()
 {
@@ -470,7 +521,10 @@ void TestMinstdRandUnequal()
 
   TestEngineUnequal<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRandUnequal);
+TEST_CASE("TestMinstdRandUnequal", "[random]")
+{
+  TestMinstdRandUnequal();
+}
 
 void TestMinstdRand0Validation()
 {
@@ -478,7 +532,10 @@ void TestMinstdRand0Validation()
 
   TestEngineValidation<Engine, 1043618065u>();
 }
-DECLARE_UNITTEST(TestMinstdRand0Validation);
+TEST_CASE("TestMinstdRand0Validation", "[random]")
+{
+  TestMinstdRand0Validation();
+}
 
 void TestMinstdRand0Min()
 {
@@ -486,7 +543,10 @@ void TestMinstdRand0Min()
 
   TestEngineMin<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRand0Min);
+TEST_CASE("TestMinstdRand0Min", "[random]")
+{
+  TestMinstdRand0Min();
+}
 
 void TestMinstdRand0Max()
 {
@@ -494,7 +554,10 @@ void TestMinstdRand0Max()
 
   TestEngineMax<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRand0Max);
+TEST_CASE("TestMinstdRand0Max", "[random]")
+{
+  TestMinstdRand0Max();
+}
 
 void TestMinstdRand0SaveRestore()
 {
@@ -502,7 +565,10 @@ void TestMinstdRand0SaveRestore()
 
   TestEngineSaveRestore<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRand0SaveRestore);
+TEST_CASE("TestMinstdRand0SaveRestore", "[random]")
+{
+  TestMinstdRand0SaveRestore();
+}
 
 void TestMinstdRand0Equal()
 {
@@ -510,7 +576,10 @@ void TestMinstdRand0Equal()
 
   TestEngineEqual<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRand0Equal);
+TEST_CASE("TestMinstdRand0Equal", "[random]")
+{
+  TestMinstdRand0Equal();
+}
 
 void TestMinstdRand0Unequal()
 {
@@ -518,7 +587,10 @@ void TestMinstdRand0Unequal()
 
   TestEngineUnequal<Engine>();
 }
-DECLARE_UNITTEST(TestMinstdRand0Unequal);
+TEST_CASE("TestMinstdRand0Unequal", "[random]")
+{
+  TestMinstdRand0Unequal();
+}
 
 void TestTaus88Validation()
 {
@@ -526,7 +598,10 @@ void TestTaus88Validation()
 
   TestEngineValidation<Engine, 3535848941ull>();
 }
-DECLARE_UNITTEST(TestTaus88Validation);
+TEST_CASE("TestTaus88Validation", "[random]")
+{
+  TestTaus88Validation();
+}
 
 void TestTaus88Min()
 {
@@ -534,7 +609,10 @@ void TestTaus88Min()
 
   TestEngineMin<Engine>();
 }
-DECLARE_UNITTEST(TestTaus88Min);
+TEST_CASE("TestTaus88Min", "[random]")
+{
+  TestTaus88Min();
+}
 
 void TestTaus88Max()
 {
@@ -542,7 +620,10 @@ void TestTaus88Max()
 
   TestEngineMax<Engine>();
 }
-DECLARE_UNITTEST(TestTaus88Max);
+TEST_CASE("TestTaus88Max", "[random]")
+{
+  TestTaus88Max();
+}
 
 void TestTaus88SaveRestore()
 {
@@ -550,7 +631,10 @@ void TestTaus88SaveRestore()
 
   TestEngineSaveRestore<Engine>();
 }
-DECLARE_UNITTEST(TestTaus88SaveRestore);
+TEST_CASE("TestTaus88SaveRestore", "[random]")
+{
+  TestTaus88SaveRestore();
+}
 
 void TestTaus88Equal()
 {
@@ -558,7 +642,10 @@ void TestTaus88Equal()
 
   TestEngineEqual<Engine>();
 }
-DECLARE_UNITTEST(TestTaus88Equal);
+TEST_CASE("TestTaus88Equal", "[random]")
+{
+  TestTaus88Equal();
+}
 
 void TestTaus88Unequal()
 {
@@ -566,7 +653,10 @@ void TestTaus88Unequal()
 
   TestEngineUnequal<Engine>();
 }
-DECLARE_UNITTEST(TestTaus88Unequal);
+TEST_CASE("TestTaus88Unequal", "[random]")
+{
+  TestTaus88Unequal();
+}
 
 void TestRanlux24Validation()
 {
@@ -574,7 +664,10 @@ void TestRanlux24Validation()
 
   TestEngineValidation<Engine, 9901578>();
 }
-DECLARE_UNITTEST(TestRanlux24Validation);
+TEST_CASE("TestRanlux24Validation", "[random]")
+{
+  TestRanlux24Validation();
+}
 
 void TestRanlux24Min()
 {
@@ -582,7 +675,10 @@ void TestRanlux24Min()
 
   TestEngineMin<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24Min);
+TEST_CASE("TestRanlux24Min", "[random]")
+{
+  TestRanlux24Min();
+}
 
 void TestRanlux24Max()
 {
@@ -590,7 +686,10 @@ void TestRanlux24Max()
 
   TestEngineMax<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24Max);
+TEST_CASE("TestRanlux24Max", "[random]")
+{
+  TestRanlux24Max();
+}
 
 void TestRanlux24SaveRestore()
 {
@@ -598,7 +697,10 @@ void TestRanlux24SaveRestore()
 
   TestEngineSaveRestore<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24SaveRestore);
+TEST_CASE("TestRanlux24SaveRestore", "[random]")
+{
+  TestRanlux24SaveRestore();
+}
 
 void TestRanlux24Equal()
 {
@@ -606,7 +708,10 @@ void TestRanlux24Equal()
 
   TestEngineEqual<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24Equal);
+TEST_CASE("TestRanlux24Equal", "[random]")
+{
+  TestRanlux24Equal();
+}
 
 void TestRanlux24Unequal()
 {
@@ -614,7 +719,10 @@ void TestRanlux24Unequal()
 
   TestEngineUnequal<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux24Unequal);
+TEST_CASE("TestRanlux24Unequal", "[random]")
+{
+  TestRanlux24Unequal();
+}
 
 void TestRanlux48Validation()
 {
@@ -622,7 +730,10 @@ void TestRanlux48Validation()
 
   TestEngineValidation<Engine, 88229545517833ull>();
 }
-DECLARE_UNITTEST(TestRanlux48Validation);
+TEST_CASE("TestRanlux48Validation", "[random]")
+{
+  TestRanlux48Validation();
+}
 
 void TestRanlux48Min()
 {
@@ -630,7 +741,10 @@ void TestRanlux48Min()
 
   TestEngineMin<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48Min);
+TEST_CASE("TestRanlux48Min", "[random]")
+{
+  TestRanlux48Min();
+}
 
 void TestRanlux48Max()
 {
@@ -638,7 +752,10 @@ void TestRanlux48Max()
 
   TestEngineMax<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48Max);
+TEST_CASE("TestRanlux48Max", "[random]")
+{
+  TestRanlux48Max();
+}
 
 void TestRanlux48SaveRestore()
 {
@@ -646,7 +763,10 @@ void TestRanlux48SaveRestore()
 
   TestEngineSaveRestore<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48SaveRestore);
+TEST_CASE("TestRanlux48SaveRestore", "[random]")
+{
+  TestRanlux48SaveRestore();
+}
 
 void TestRanlux48Equal()
 {
@@ -654,7 +774,10 @@ void TestRanlux48Equal()
 
   TestEngineEqual<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48Equal);
+TEST_CASE("TestRanlux48Equal", "[random]")
+{
+  TestRanlux48Equal();
+}
 
 void TestRanlux48Unequal()
 {
@@ -662,7 +785,10 @@ void TestRanlux48Unequal()
 
   TestEngineUnequal<Engine>();
 }
-DECLARE_UNITTEST(TestRanlux48Unequal);
+TEST_CASE("TestRanlux48Unequal", "[random]")
+{
+  TestRanlux48Unequal();
+}
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4305) // truncation warning
@@ -759,7 +885,10 @@ void TestUniformIntDistributionMin()
   ValidateDistributionCharacteristic<int_dist, ValidateDistributionMin<int_dist, thrust::minstd_rand>>();
   ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMin<uint_dist, thrust::minstd_rand>>();
 }
-DECLARE_UNITTEST(TestUniformIntDistributionMin);
+TEST_CASE("TestUniformIntDistributionMin", "[random]")
+{
+  TestUniformIntDistributionMin();
+}
 
 void TestUniformIntDistributionMax()
 {
@@ -769,7 +898,10 @@ void TestUniformIntDistributionMax()
   ValidateDistributionCharacteristic<int_dist, ValidateDistributionMax<int_dist, thrust::minstd_rand>>();
   ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMax<uint_dist, thrust::minstd_rand>>();
 }
-DECLARE_UNITTEST(TestUniformIntDistributionMax);
+TEST_CASE("TestUniformIntDistributionMax", "[random]")
+{
+  TestUniformIntDistributionMax();
+}
 
 void TestUniformIntDistributionSaveRestore()
 {
@@ -779,7 +911,10 @@ void TestUniformIntDistributionSaveRestore()
   TestDistributionSaveRestore<int_dist>();
   TestDistributionSaveRestore<uint_dist>();
 }
-DECLARE_UNITTEST(TestUniformIntDistributionSaveRestore);
+TEST_CASE("TestUniformIntDistributionSaveRestore", "[random]")
+{
+  TestUniformIntDistributionSaveRestore();
+}
 
 void TestUniformRealDistributionMin()
 {
@@ -789,7 +924,10 @@ void TestUniformRealDistributionMin()
   ValidateDistributionCharacteristic<float_dist, ValidateDistributionMin<float_dist, thrust::minstd_rand>>();
   ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand>>();
 }
-DECLARE_UNITTEST(TestUniformRealDistributionMin);
+TEST_CASE("TestUniformRealDistributionMin", "[random]")
+{
+  TestUniformRealDistributionMin();
+}
 
 void TestUniformRealDistributionMax()
 {
@@ -799,7 +937,10 @@ void TestUniformRealDistributionMax()
   ValidateDistributionCharacteristic<float_dist, ValidateDistributionMax<float_dist, thrust::minstd_rand>>();
   ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand>>();
 }
-DECLARE_UNITTEST(TestUniformRealDistributionMax);
+TEST_CASE("TestUniformRealDistributionMax", "[random]")
+{
+  TestUniformRealDistributionMax();
+}
 
 void TestUniformRealDistributionSaveRestore()
 {
@@ -809,7 +950,10 @@ void TestUniformRealDistributionSaveRestore()
   TestDistributionSaveRestore<float_dist>();
   TestDistributionSaveRestore<double_dist>();
 }
-DECLARE_UNITTEST(TestUniformRealDistributionSaveRestore);
+TEST_CASE("TestUniformRealDistributionSaveRestore", "[random]")
+{
+  TestUniformRealDistributionSaveRestore();
+}
 
 void TestNormalDistributionMin()
 {
@@ -819,7 +963,10 @@ void TestNormalDistributionMin()
   ValidateDistributionCharacteristic<float_dist, ValidateDistributionMin<float_dist, thrust::minstd_rand>>();
   ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand>>();
 }
-DECLARE_UNITTEST(TestNormalDistributionMin);
+TEST_CASE("TestNormalDistributionMin", "[random]")
+{
+  TestNormalDistributionMin();
+}
 
 void TestNormalDistributionMax()
 {
@@ -829,7 +976,10 @@ void TestNormalDistributionMax()
   ValidateDistributionCharacteristic<float_dist, ValidateDistributionMax<float_dist, thrust::minstd_rand>>();
   ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand>>();
 }
-DECLARE_UNITTEST(TestNormalDistributionMax);
+TEST_CASE("TestNormalDistributionMax", "[random]")
+{
+  TestNormalDistributionMax();
+}
 
 void TestNormalDistributionSaveRestore()
 {
@@ -839,7 +989,10 @@ void TestNormalDistributionSaveRestore()
   TestDistributionSaveRestore<float_dist>();
   TestDistributionSaveRestore<double_dist>();
 }
-DECLARE_UNITTEST(TestNormalDistributionSaveRestore);
+TEST_CASE("TestNormalDistributionSaveRestore", "[random]")
+{
+  TestNormalDistributionSaveRestore();
+}
 
 template <typename Distribution, typename Engine>
 void ValidateDistributionWithEngine()
@@ -859,4 +1012,7 @@ void TestDistributionsWithCudaStdPhilox()
   ValidateDistributionWithEngine<float_dist, engine>();
   ValidateDistributionWithEngine<double_dist, engine>();
 }
-DECLARE_UNITTEST(TestDistributionsWithCudaStdPhilox);
+TEST_CASE("TestDistributionsWithCudaStdPhilox", "[random]")
+{
+  TestDistributionsWithCudaStdPhilox();
+}

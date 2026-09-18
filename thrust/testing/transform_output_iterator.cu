@@ -37,7 +37,10 @@ void TestTransformOutputIteratorTraits()
   static_assert(!cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTransformOutputIteratorTraits);
+TEST_CASE("TestTransformOutputIteratorTraits", "[transform_output_iterator]")
+{
+  TestTransformOutputIteratorTraits();
+}
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformOutputIterator()

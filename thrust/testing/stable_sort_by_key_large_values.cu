@@ -51,4 +51,7 @@ void TestStableSortByKeyWithLargeValues()
   _TestStableSortByKeyWithLargeValues<8>();
   _TestStableSortByKeyWithLargeValues<16>();
 }
-DECLARE_UNITTEST(TestStableSortByKeyWithLargeValues);
+TEST_CASE("TestStableSortByKeyWithLargeValues", "[stable_sort_by_key_large_values]")
+{
+  TestStableSortByKeyWithLargeValues();
+}

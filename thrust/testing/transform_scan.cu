@@ -28,7 +28,10 @@ void TestTransformInclusiveScanDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanDispatchExplicit);
+TEST_CASE("TestTransformInclusiveScanDispatchExplicit", "[transform_scan]")
+{
+  TestTransformInclusiveScanDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_inclusive_scan(
@@ -47,7 +50,10 @@ void TestTransformInclusiveScanInitDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanInitDispatchExplicit);
+TEST_CASE("TestTransformInclusiveScanInitDispatchExplicit", "[transform_scan]")
+{
+  TestTransformInclusiveScanInitDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename AssociativeOperator>
 OutputIterator transform_inclusive_scan(
@@ -66,7 +72,10 @@ void TestTransformInclusiveScanDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanDispatchImplicit);
+TEST_CASE("TestTransformInclusiveScanDispatchImplicit", "[transform_scan]")
+{
+  TestTransformInclusiveScanDispatchImplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(
@@ -85,7 +94,10 @@ void TestTransformExclusiveScanDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformExclusiveScanDispatchExplicit);
+TEST_CASE("TestTransformExclusiveScanDispatchExplicit", "[transform_scan]")
+{
+  TestTransformExclusiveScanDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(
@@ -104,7 +116,10 @@ void TestTransformExclusiveScanDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTransformExclusiveScanDispatchImplicit);
+TEST_CASE("TestTransformExclusiveScanDispatchImplicit", "[transform_scan]")
+{
+  TestTransformExclusiveScanDispatchImplicit();
+}
 
 template <class Vector>
 void TestTransformScanSimple()
@@ -243,7 +258,10 @@ void TestTransformInclusiveScanDifferentTypes()
   REQUIRE(d_input == input_copy);
   REQUIRE(d_output == result);
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanDifferentTypes);
+TEST_CASE("TestTransformInclusiveScanDifferentTypes", "[transform_scan]")
+{
+  TestTransformInclusiveScanDifferentTypes();
+}
 
 template <typename T>
 struct TestTransformScan
@@ -539,4 +557,7 @@ void TestTransformScanEdgeCases()
     REQUIRE(d_output == expected);
   }
 }
-DECLARE_UNITTEST(TestTransformScanEdgeCases);
+TEST_CASE("TestTransformScanEdgeCases", "[transform_scan]")
+{
+  TestTransformScanEdgeCases();
+}

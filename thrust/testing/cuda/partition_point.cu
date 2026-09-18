@@ -42,13 +42,19 @@ void TestPartitionPointDeviceSeq()
 {
   TestPartitionPointDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionPointDeviceSeq);
+TEST_CASE("TestPartitionPointDeviceSeq", "[partition_point]")
+{
+  TestPartitionPointDeviceSeq();
+}
 
 void TestPartitionPointDeviceDevice()
 {
   TestPartitionPointDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionPointDeviceDevice);
+TEST_CASE("TestPartitionPointDeviceDevice", "[partition_point]")
+{
+  TestPartitionPointDeviceDevice();
+}
 #endif
 
 void TestPartitionPointCudaStreams()
@@ -79,4 +85,7 @@ void TestPartitionPointCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestPartitionPointCudaStreams);
+TEST_CASE("TestPartitionPointCudaStreams", "[partition_point]")
+{
+  TestPartitionPointCudaStreams();
+}

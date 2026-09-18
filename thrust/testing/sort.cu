@@ -19,7 +19,10 @@ void TestSortDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSortDispatchExplicit);
+TEST_CASE("TestSortDispatchExplicit", "[sort]")
+{
+  TestSortDispatchExplicit();
+}
 
 template <typename RandomAccessIterator>
 void sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
@@ -35,7 +38,10 @@ void TestSortDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSortDispatchImplicit);
+TEST_CASE("TestSortDispatchImplicit", "[sort]")
+{
+  TestSortDispatchImplicit();
+}
 
 template <class Vector>
 void InitializeSimpleKeySortTest(Vector& unsorted_keys, Vector& sorted_keys)
@@ -86,7 +92,10 @@ void TestSortDescendingKey()
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_UNITTEST(TestSortDescendingKey);
+TEST_CASE("TestSortDescendingKey", "[sort]")
+{
+  TestSortDescendingKey();
+}
 
 void TestSortBool()
 {
@@ -100,7 +109,10 @@ void TestSortBool()
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_UNITTEST(TestSortBool);
+TEST_CASE("TestSortBool", "[sort]")
+{
+  TestSortBool();
+}
 
 void TestSortBoolDescending()
 {
@@ -114,7 +126,10 @@ void TestSortBoolDescending()
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_UNITTEST(TestSortBoolDescending);
+TEST_CASE("TestSortBoolDescending", "[sort]")
+{
+  TestSortBoolDescending();
+}
 
 // See also: https://github.com/NVIDIA/cccl/issues/4919
 void TestSortTrivial()
@@ -125,4 +140,7 @@ void TestSortTrivial()
   thrust::sort(h_data.begin(), h_data.end());
   REQUIRE(h_data == ref);
 }
-DECLARE_UNITTEST(TestSortTrivial);
+TEST_CASE("TestSortTrivial", "[sort]")
+{
+  TestSortTrivial();
+}

@@ -19,7 +19,10 @@ void TestStableSortByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStableSortByKeyDispatchExplicit);
+TEST_CASE("TestStableSortByKeyDispatchExplicit", "[stable_sort_by_key]")
+{
+  TestStableSortByKeyDispatchExplicit();
+}
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
 void stable_sort_by_key(my_tag, RandomAccessIterator1 keys_first, RandomAccessIterator1, RandomAccessIterator2)
@@ -36,7 +39,10 @@ void TestStableSortByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStableSortByKeyDispatchImplicit);
+TEST_CASE("TestStableSortByKeyDispatchImplicit", "[stable_sort_by_key]")
+{
+  TestStableSortByKeyDispatchImplicit();
+}
 
 template <typename T>
 struct less_div_10

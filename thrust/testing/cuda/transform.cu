@@ -43,13 +43,19 @@ void TestTransformUnaryDeviceSeq()
 {
   TestTransformUnaryDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformUnaryDeviceSeq);
+TEST_CASE("TestTransformUnaryDeviceSeq", "[transform]")
+{
+  TestTransformUnaryDeviceSeq();
+}
 
 void TestTransformUnaryDeviceDevice()
 {
   TestTransformUnaryDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformUnaryDeviceDevice);
+TEST_CASE("TestTransformUnaryDeviceDevice", "[transform]")
+{
+  TestTransformUnaryDeviceDevice();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -104,13 +110,19 @@ void TestTransformIfUnaryNoStencilDeviceSeq()
 {
   TestTransformIfUnaryNoStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformIfUnaryNoStencilDeviceSeq);
+TEST_CASE("TestTransformIfUnaryNoStencilDeviceSeq", "[transform]")
+{
+  TestTransformIfUnaryNoStencilDeviceSeq();
+}
 
 void TestTransformIfUnaryNoStencilDeviceDevice()
 {
   TestTransformIfUnaryNoStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformIfUnaryNoStencilDeviceDevice);
+TEST_CASE("TestTransformIfUnaryNoStencilDeviceDevice", "[transform]")
+{
+  TestTransformIfUnaryNoStencilDeviceDevice();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -169,13 +181,19 @@ void TestTransformIfUnaryDeviceSeq()
 {
   TestTransformIfUnaryDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformIfUnaryDeviceSeq);
+TEST_CASE("TestTransformIfUnaryDeviceSeq", "[transform]")
+{
+  TestTransformIfUnaryDeviceSeq();
+}
 
 void TestTransformIfUnaryDeviceDevice()
 {
   TestTransformIfUnaryDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformIfUnaryDeviceDevice);
+TEST_CASE("TestTransformIfUnaryDeviceDevice", "[transform]")
+{
+  TestTransformIfUnaryDeviceDevice();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -225,13 +243,19 @@ void TestTransformBinaryDeviceSeq()
 {
   TestTransformBinaryDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformBinaryDeviceSeq);
+TEST_CASE("TestTransformBinaryDeviceSeq", "[transform]")
+{
+  TestTransformBinaryDeviceSeq();
+}
 
 void TestTransformBinaryDeviceDevice()
 {
   TestTransformBinaryDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformBinaryDeviceDevice);
+TEST_CASE("TestTransformBinaryDeviceDevice", "[transform]")
+{
+  TestTransformBinaryDeviceDevice();
+}
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -296,13 +320,19 @@ void TestTransformIfBinaryDeviceSeq()
 {
   TestTransformIfBinaryDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformIfBinaryDeviceSeq);
+TEST_CASE("TestTransformIfBinaryDeviceSeq", "[transform]")
+{
+  TestTransformIfBinaryDeviceSeq();
+}
 
 void TestTransformIfBinaryDeviceDevice()
 {
   TestTransformIfBinaryDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformIfBinaryDeviceDevice);
+TEST_CASE("TestTransformIfBinaryDeviceDevice", "[transform]")
+{
+  TestTransformIfBinaryDeviceDevice();
+}
 #endif
 
 void TestTransformUnaryCudaStreams()
@@ -328,7 +358,10 @@ void TestTransformUnaryCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestTransformUnaryCudaStreams);
+TEST_CASE("TestTransformUnaryCudaStreams", "[transform]")
+{
+  TestTransformUnaryCudaStreams();
+}
 
 void TestTransformBinaryCudaStreams()
 {
@@ -354,7 +387,10 @@ void TestTransformBinaryCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestTransformBinaryCudaStreams);
+TEST_CASE("TestTransformBinaryCudaStreams", "[transform]")
+{
+  TestTransformBinaryCudaStreams();
+}
 
 struct sum_five
 {
@@ -428,7 +464,10 @@ void TestTransformThrustZipIteratorUnwrapping()
     REQUIRE(reference == result);
   }
 }
-DECLARE_UNITTEST(TestTransformThrustZipIteratorUnwrapping);
+TEST_CASE("TestTransformThrustZipIteratorUnwrapping", "[transform]")
+{
+  TestTransformThrustZipIteratorUnwrapping();
+}
 
 // we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
 // zip_function is actually called (and not unwrapped)
@@ -497,4 +536,7 @@ void TestTransformCudaZipIteratorUnwrapping()
     REQUIRE(reference == result);
   }
 }
-DECLARE_UNITTEST(TestTransformCudaZipIteratorUnwrapping);
+TEST_CASE("TestTransformCudaZipIteratorUnwrapping", "[transform]")
+{
+  TestTransformCudaZipIteratorUnwrapping();
+}

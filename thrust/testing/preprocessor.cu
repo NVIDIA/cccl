@@ -37,7 +37,10 @@ void test_pp_stringize()
 
   REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_STRINGIZE(int))) == "\"int\"");
 }
-DECLARE_UNITTEST(test_pp_stringize);
+TEST_CASE("test_pp_stringize", "[preprocessor]")
+{
+  test_pp_stringize();
+}
 
 void test_pp_cat2()
 {
@@ -60,7 +63,10 @@ void test_pp_cat2()
 
   REQUIRE(std::string(THRUST_PP_STRINGIZE(THRUST_PP_CAT2(-, >))) == "->");
 }
-DECLARE_UNITTEST(test_pp_cat2);
+TEST_CASE("test_pp_cat2", "[preprocessor]")
+{
+  test_pp_cat2();
+}
 
 #define THRUST_TEST_PP_EXPAND_TARGET() success
 
@@ -106,7 +112,10 @@ void test_pp_expand()
       THRUST_TEST_PP_EXPAND_TARGET THRUST_TEST_PP_EXPAND_ARGS()
     ))) == "success");
 }
-DECLARE_UNITTEST(test_pp_expand);
+TEST_CASE("test_pp_expand", "[preprocessor]")
+{
+  test_pp_expand();
+}
 
 #undef THRUST_TEST_PP_EXPAND_TARGET
 
@@ -381,7 +390,10 @@ REQUIRE(THRUST_PP_ARITY(
       0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62
     ) == 63);
 }
-DECLARE_UNITTEST(test_pp_arity);
+TEST_CASE("test_pp_arity", "[preprocessor]")
+{
+  test_pp_arity();
+}
 
 #define THRUST_TEST_PP_DISPATCH_PLUS(...)                                     \
   THRUST_PP_DISPATCH(THRUST_TEST_PP_DISPATCH_PLUS, __VA_ARGS__)               \
@@ -401,7 +413,10 @@ void test_pp_dispatch()
 
   REQUIRE(THRUST_TEST_PP_DISPATCH_PLUS(1, 2, 3) == 6);
 }
-DECLARE_UNITTEST(test_pp_dispatch);
+TEST_CASE("test_pp_dispatch", "[preprocessor]")
+{
+  test_pp_dispatch();
+}
 // clang-format on
 
 #undef THRUST_TEST_PP_DISPATCH_PLUS

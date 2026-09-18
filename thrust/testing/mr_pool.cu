@@ -232,13 +232,19 @@ void TestUnsynchronizedPool()
 {
   TestPool<thrust::mr::unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestUnsynchronizedPool);
+TEST_CASE("TestUnsynchronizedPool", "[mr_pool]")
+{
+  TestUnsynchronizedPool();
+}
 
 void TestSynchronizedPool()
 {
   TestPool<thrust::mr::synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestSynchronizedPool);
+TEST_CASE("TestSynchronizedPool", "[mr_pool]")
+{
+  TestSynchronizedPool();
+}
 
 template <template <typename> class PoolTemplate>
 void TestPoolCachingOversized()
@@ -341,13 +347,19 @@ void TestUnsynchronizedPoolCachingOversized()
 {
   TestPoolCachingOversized<thrust::mr::unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestUnsynchronizedPoolCachingOversized);
+TEST_CASE("TestUnsynchronizedPoolCachingOversized", "[mr_pool]")
+{
+  TestUnsynchronizedPoolCachingOversized();
+}
 
 void TestSynchronizedPoolCachingOversized()
 {
   TestPoolCachingOversized<thrust::mr::synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestSynchronizedPoolCachingOversized);
+TEST_CASE("TestSynchronizedPoolCachingOversized", "[mr_pool]")
+{
+  TestSynchronizedPoolCachingOversized();
+}
 
 template <template <typename> class PoolTemplate>
 void TestGlobalPool()
@@ -361,10 +373,16 @@ void TestUnsynchronizedGlobalPool()
 {
   TestGlobalPool<thrust::mr::unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestUnsynchronizedGlobalPool);
+TEST_CASE("TestUnsynchronizedGlobalPool", "[mr_pool]")
+{
+  TestUnsynchronizedGlobalPool();
+}
 
 void TestSynchronizedGlobalPool()
 {
   TestGlobalPool<thrust::mr::synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestSynchronizedGlobalPool);
+TEST_CASE("TestSynchronizedGlobalPool", "[mr_pool]")
+{
+  TestSynchronizedGlobalPool();
+}

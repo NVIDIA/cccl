@@ -72,4 +72,7 @@ void TestAdjacentDifferenceWithBigIndexes()
   TestAdjacentDifferenceWithBigIndexesHelper(32);
   TestAdjacentDifferenceWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestAdjacentDifferenceWithBigIndexes);
+TEST_CASE("TestAdjacentDifferenceWithBigIndexes", "[adjacent_difference]")
+{
+  TestAdjacentDifferenceWithBigIndexes();
+}

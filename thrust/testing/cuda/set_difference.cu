@@ -40,13 +40,19 @@ void TestSetDifferenceDeviceSeq()
 {
   TestSetDifferenceDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetDifferenceDeviceSeq);
+TEST_CASE("TestSetDifferenceDeviceSeq", "[set_difference]")
+{
+  TestSetDifferenceDeviceSeq();
+}
 
 void TestSetDifferenceDeviceDevice()
 {
   TestSetDifferenceDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetDifferenceDeviceDevice);
+TEST_CASE("TestSetDifferenceDeviceDevice", "[set_difference]")
+{
+  TestSetDifferenceDeviceDevice();
+}
 #endif
 
 void TestSetDifferenceCudaStreams()
@@ -64,4 +70,7 @@ void TestSetDifferenceCudaStreams()
   REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {2, 5});
 }
-DECLARE_UNITTEST(TestSetDifferenceCudaStreams);
+TEST_CASE("TestSetDifferenceCudaStreams", "[set_difference]")
+{
+  TestSetDifferenceCudaStreams();
+}

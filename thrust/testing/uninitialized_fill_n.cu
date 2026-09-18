@@ -29,7 +29,10 @@ void TestUninitializedFillNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedFillNDispatchExplicit);
+TEST_CASE("TestUninitializedFillNDispatchExplicit", "[uninitialized_fill_n]")
+{
+  TestUninitializedFillNDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename Size, typename T>
 ForwardIterator uninitialized_fill_n(my_tag, ForwardIterator first, Size, const T&)
@@ -47,7 +50,10 @@ void TestUninitializedFillNDispatchImplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedFillNDispatchImplicit);
+TEST_CASE("TestUninitializedFillNDispatchImplicit", "[uninitialized_fill_n]")
+{
+  TestUninitializedFillNDispatchImplicit();
+}
 
 template <class Vector>
 void TestUninitializedFillNPOD()
@@ -136,4 +142,7 @@ struct TestUninitializedFillNNonPOD
     thrust::device_free(v);
   }
 };
-DECLARE_UNITTEST(TestUninitializedFillNNonPOD);
+TEST_CASE("TestUninitializedFillNNonPOD", "[uninitialized_fill_n]")
+{
+  TestUninitializedFillNNonPOD();
+}

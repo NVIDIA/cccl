@@ -134,7 +134,10 @@ void TestSelectSystemDifferentTypes()
   is_device_system_tag = are_same(device_sys, select_system(device_sys, my_sys));
   REQUIRE(is_device_system_tag);
 }
-DECLARE_UNITTEST(TestSelectSystemDifferentTypes);
+TEST_CASE("TestSelectSystemDifferentTypes", "[memory]")
+{
+  TestSelectSystemDifferentTypes();
+}
 
 void TestSelectSystemSameTypes()
 {
@@ -156,7 +159,10 @@ void TestSelectSystemSameTypes()
   const bool is_my_system = are_same(my_sys, select_system(my_sys, my_sys));
   REQUIRE(is_my_system);
 }
-DECLARE_UNITTEST(TestSelectSystemSameTypes);
+TEST_CASE("TestSelectSystemSameTypes", "[memory]")
+{
+  TestSelectSystemSameTypes();
+}
 
 void TestGetTemporaryBuffer()
 {
@@ -177,7 +183,10 @@ void TestGetTemporaryBuffer()
 
   thrust::return_temporary_buffer(dev_tag, ptr_and_sz.first, ptr_and_sz.second);
 }
-DECLARE_UNITTEST(TestGetTemporaryBuffer);
+TEST_CASE("TestGetTemporaryBuffer", "[memory]")
+{
+  TestGetTemporaryBuffer();
+}
 
 void TestMalloc()
 {
@@ -196,7 +205,10 @@ void TestMalloc()
 
   thrust::free(dev_tag, ptr);
 }
-DECLARE_UNITTEST(TestMalloc);
+TEST_CASE("TestMalloc", "[memory]")
+{
+  TestMalloc();
+}
 
 thrust::pointer<void, my_memory_system> malloc(my_memory_system& system, std::size_t)
 {
@@ -214,7 +226,10 @@ void TestMallocDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMallocDispatchExplicit);
+TEST_CASE("TestMallocDispatchExplicit", "[memory]")
+{
+  TestMallocDispatchExplicit();
+}
 
 template <typename Pointer>
 void free(my_memory_system& system, Pointer)
@@ -231,7 +246,10 @@ void TestFreeDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFreeDispatchExplicit);
+TEST_CASE("TestFreeDispatchExplicit", "[memory]")
+{
+  TestFreeDispatchExplicit();
+}
 
 template <typename T>
 cuda::std::pair<thrust::pointer<T, my_memory_system>, std::ptrdiff_t>
@@ -265,7 +283,10 @@ void TestGetTemporaryBufferDispatchExplicit()
 
   thrust::return_temporary_buffer(sys, ptr_and_sz.first, ptr_and_sz.second);
 }
-DECLARE_UNITTEST(TestGetTemporaryBufferDispatchExplicit);
+TEST_CASE("TestGetTemporaryBufferDispatchExplicit", "[memory]")
+{
+  TestGetTemporaryBufferDispatchExplicit();
+}
 
 #ifndef WAR_BUG_1731
 
@@ -290,7 +311,10 @@ void TestGetTemporaryBufferDispatchImplicit()
   REQUIRE(thrust::is_sorted(vec.begin(), vec.end()));
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGetTemporaryBufferDispatchImplicit);
+TEST_CASE("TestGetTemporaryBufferDispatchImplicit", "[memory]")
+{
+  TestGetTemporaryBufferDispatchImplicit();
+}
 
 #endif
 
@@ -312,7 +336,10 @@ void TestTemporaryBufferOldCustomization()
     thrust::return_temporary_buffer(sys, ps.first, ps.second);
   }
 }
-DECLARE_UNITTEST(TestTemporaryBufferOldCustomization);
+TEST_CASE("TestTemporaryBufferOldCustomization", "[memory]")
+{
+  TestTemporaryBufferOldCustomization();
+}
 
 void TestTemporaryBufferNewCustomization()
 {
@@ -332,4 +359,7 @@ void TestTemporaryBufferNewCustomization()
     thrust::return_temporary_buffer(sys, ps.first, ps.second);
   }
 }
-DECLARE_UNITTEST(TestTemporaryBufferNewCustomization);
+TEST_CASE("TestTemporaryBufferNewCustomization", "[memory]")
+{
+  TestTemporaryBufferNewCustomization();
+}

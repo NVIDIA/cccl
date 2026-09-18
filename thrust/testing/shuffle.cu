@@ -222,7 +222,10 @@ void TestFeistelBijectionLength()
   f = thrust::detail::feistel_bijection(m, g);
   REQUIRE(f.size() == uint64_t(256));
 }
-DECLARE_UNITTEST(TestFeistelBijectionLength);
+TEST_CASE("TestFeistelBijectionLength", "[shuffle]")
+{
+  TestFeistelBijectionLength();
+}
 
 void TestShuffleIteratorConstructibleFromBijection()
 {
@@ -241,7 +244,10 @@ void TestShuffleIteratorConstructibleFromBijection()
   REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it2));
   REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it3));
 }
-DECLARE_UNITTEST(TestShuffleIteratorConstructibleFromBijection);
+TEST_CASE("TestShuffleIteratorConstructibleFromBijection", "[shuffle]")
+{
+  TestShuffleIteratorConstructibleFromBijection();
+}
 
 void TestShuffleAndPermutationIterator()
 {
@@ -259,7 +265,10 @@ void TestShuffleAndPermutationIterator()
 
   REQUIRE(thrust::equal(permute_it, permute_it + 32, premute_vec.begin()));
 }
-DECLARE_UNITTEST(TestShuffleAndPermutationIterator);
+TEST_CASE("TestShuffleAndPermutationIterator", "[shuffle]")
+{
+  TestShuffleAndPermutationIterator();
+}
 
 void TestShuffleIteratorStateless()
 {
@@ -272,7 +281,10 @@ void TestShuffleIteratorStateless()
   ++it;
   REQUIRE(*(it - 1) == *(it - 1));
 }
-DECLARE_UNITTEST(TestShuffleIteratorStateless);
+TEST_CASE("TestShuffleIteratorStateless", "[shuffle]")
+{
+  TestShuffleIteratorStateless();
+}
 
 double inverse_erf(double x)
 {

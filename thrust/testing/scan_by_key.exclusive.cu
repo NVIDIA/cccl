@@ -66,7 +66,10 @@ void TestExclusiveScanByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestExclusiveScanByKeyDispatchExplicit);
+TEST_CASE("TestExclusiveScanByKeyDispatchExplicit", "[scan_by_key.exclusive]")
+{
+  TestExclusiveScanByKeyDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator exclusive_scan_by_key(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator result)
@@ -87,7 +90,10 @@ void TestExclusiveScanByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestExclusiveScanByKeyDispatchImplicit);
+TEST_CASE("TestExclusiveScanByKeyDispatchImplicit", "[scan_by_key.exclusive]")
+{
+  TestExclusiveScanByKeyDispatchImplicit();
+}
 
 struct head_flag_predicate
 {
@@ -247,7 +253,10 @@ void TestScanByKeyMixedTypes()
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_int_output.begin(), (float) 3.5);
   REQUIRE(d_int_output == h_int_output);
 }
-DECLARE_UNITTEST(TestScanByKeyMixedTypes);
+TEST_CASE("TestScanByKeyMixedTypes", "[scan_by_key.exclusive]")
+{
+  TestScanByKeyMixedTypes();
+}
 
 template <typename T>
 void TestScanByKeyDiscardOutput(std::size_t n)
@@ -317,7 +326,10 @@ void TestScanByKeyLargeInput()
     REQUIRE(d_output == h_output);
   }
 }
-DECLARE_UNITTEST(TestScanByKeyLargeInput);
+TEST_CASE("TestScanByKeyLargeInput", "[scan_by_key.exclusive]")
+{
+  TestScanByKeyLargeInput();
+}
 
 template <typename T, unsigned int N>
 void _TestScanByKeyWithLargeTypes()
@@ -367,4 +379,7 @@ void TestScanByKeyWithLargeTypes()
   //_TestScanByKeyWithLargeTypes<int,  512>();
   //_TestScanByKeyWithLargeTypes<int, 1024>();
 }
-DECLARE_UNITTEST(TestScanByKeyWithLargeTypes);
+TEST_CASE("TestScanByKeyWithLargeTypes", "[scan_by_key.exclusive]")
+{
+  TestScanByKeyWithLargeTypes();
+}

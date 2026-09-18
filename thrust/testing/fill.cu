@@ -48,7 +48,10 @@ void TestFillDiscardIterator()
   thrust::fill(
     thrust::discard_iterator<thrust::device_system_tag>(), thrust::discard_iterator<thrust::device_system_tag>(10), 13);
 }
-DECLARE_UNITTEST(TestFillDiscardIterator);
+TEST_CASE("TestFillDiscardIterator", "[fill]")
+{
+  TestFillDiscardIterator();
+}
 
 template <class Vector>
 void TestFillMixedTypes()
@@ -150,7 +153,10 @@ void TestFillNDiscardIterator()
   REQUIRE((reference == h_result));
   REQUIRE((reference == d_result));
 }
-DECLARE_UNITTEST(TestFillNDiscardIterator);
+TEST_CASE("TestFillNDiscardIterator", "[fill]")
+{
+  TestFillNDiscardIterator();
+}
 
 template <class Vector>
 void TestFillNMixedTypes()
@@ -245,7 +251,10 @@ void TestFillTuple()
 
   REQUIRE((h == d));
 };
-DECLARE_UNITTEST(TestFillTuple);
+TEST_CASE("TestFillTuple", "[fill]")
+{
+  TestFillTuple();
+}
 
 struct TypeWithTrivialAssigment
 {
@@ -281,7 +290,10 @@ void TestFillWithTrivialAssignment()
   REQUIRE(static_cast<T>(d[0]).y == 20);
   REQUIRE(static_cast<T>(d[0]).z == -1);
 };
-DECLARE_UNITTEST(TestFillWithTrivialAssignment);
+TEST_CASE("TestFillWithTrivialAssignment", "[fill]")
+{
+  TestFillWithTrivialAssignment();
+}
 
 struct TypeWithNonTrivialAssigment
 {
@@ -334,7 +346,10 @@ void TestFillWithNonTrivialAssignment()
   REQUIRE(static_cast<T>(d[0]).y == 20);
   REQUIRE(static_cast<T>(d[0]).z == 30);
 };
-DECLARE_UNITTEST(TestFillWithNonTrivialAssignment);
+TEST_CASE("TestFillWithNonTrivialAssignment", "[fill]")
+{
+  TestFillWithNonTrivialAssignment();
+}
 
 template <typename ForwardIterator, typename T>
 void fill(my_system& system, ForwardIterator /*first*/, ForwardIterator, const T&)
@@ -351,7 +366,10 @@ void TestFillDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFillDispatchExplicit);
+TEST_CASE("TestFillDispatchExplicit", "[fill]")
+{
+  TestFillDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename T>
 void fill(my_tag, ForwardIterator first, ForwardIterator, const T&)
@@ -367,7 +385,10 @@ void TestFillDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFillDispatchImplicit);
+TEST_CASE("TestFillDispatchImplicit", "[fill]")
+{
+  TestFillDispatchImplicit();
+}
 
 template <typename OutputIterator, typename Size, typename T>
 OutputIterator fill_n(my_system& system, OutputIterator first, Size, const T&)
@@ -385,7 +406,10 @@ void TestFillNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFillNDispatchExplicit);
+TEST_CASE("TestFillNDispatchExplicit", "[fill]")
+{
+  TestFillNDispatchExplicit();
+}
 
 template <typename OutputIterator, typename Size, typename T>
 OutputIterator fill_n(my_tag, OutputIterator first, Size, const T&)
@@ -402,6 +426,9 @@ void TestFillNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFillNDispatchImplicit);
+TEST_CASE("TestFillNDispatchImplicit", "[fill]")
+{
+  TestFillNDispatchImplicit();
+}
 
 _CCCL_DIAG_POP

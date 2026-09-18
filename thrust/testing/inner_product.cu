@@ -37,7 +37,10 @@ void TestInnerProductDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestInnerProductDispatchExplicit);
+TEST_CASE("TestInnerProductDispatchExplicit", "[inner_product]")
+{
+  TestInnerProductDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputType>
 int inner_product(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputType)
@@ -54,7 +57,10 @@ void TestInnerProductDispatchImplicit()
 
   REQUIRE(13 == result);
 }
-DECLARE_UNITTEST(TestInnerProductDispatchImplicit);
+TEST_CASE("TestInnerProductDispatchImplicit", "[inner_product]")
+{
+  TestInnerProductDispatchImplicit();
+}
 
 template <class Vector>
 void TestInnerProductWithOperator()
@@ -138,7 +144,10 @@ void TestInnerProductWithBigIndexes()
   TestInnerProductWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestInnerProductWithBigIndexes);
+TEST_CASE("TestInnerProductWithBigIndexes", "[inner_product]")
+{
+  TestInnerProductWithBigIndexes();
+}
 
 void TestInnerProductPlaceholders()
 { // Regression test for NVIDIA/thrust#1178
@@ -152,4 +161,7 @@ void TestInnerProductPlaceholders()
 
   ASSERT_ALMOST_EQUAL(result, 200.f);
 }
-DECLARE_UNITTEST(TestInnerProductPlaceholders);
+TEST_CASE("TestInnerProductPlaceholders", "[inner_product]")
+{
+  TestInnerProductPlaceholders();
+}

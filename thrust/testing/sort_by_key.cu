@@ -19,7 +19,10 @@ void TestSortByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSortByKeyDispatchExplicit);
+TEST_CASE("TestSortByKeyDispatchExplicit", "[sort_by_key]")
+{
+  TestSortByKeyDispatchExplicit();
+}
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
 void sort_by_key(my_tag, RandomAccessIterator1 keys_first, RandomAccessIterator1, RandomAccessIterator2)
@@ -36,7 +39,10 @@ void TestSortByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSortByKeyDispatchImplicit);
+TEST_CASE("TestSortByKeyDispatchImplicit", "[sort_by_key]")
+{
+  TestSortByKeyDispatchImplicit();
+}
 
 template <class Vector>
 void InitializeSimpleKeyValueSortTest(
@@ -118,7 +124,10 @@ void TestSortByKeyBool()
   REQUIRE(h_keys == d_keys);
   REQUIRE(h_values == d_values);
 }
-DECLARE_UNITTEST(TestSortByKeyBool);
+TEST_CASE("TestSortByKeyBool", "[sort_by_key]")
+{
+  TestSortByKeyBool();
+}
 
 void TestSortByKeyBoolDescending()
 {
@@ -136,7 +145,10 @@ void TestSortByKeyBoolDescending()
   REQUIRE(h_keys == d_keys);
   REQUIRE(h_values == d_values);
 }
-DECLARE_UNITTEST(TestSortByKeyBoolDescending);
+TEST_CASE("TestSortByKeyBoolDescending", "[sort_by_key]")
+{
+  TestSortByKeyBoolDescending();
+}
 
 void TestSortByKeyLongDouble()
 {
@@ -149,4 +161,7 @@ void TestSortByKeyLongDouble()
   REQUIRE(thrust::is_sorted(h_keys.begin(), h_keys.end()));
   REQUIRE(h_values == h_values_expected);
 }
-DECLARE_UNITTEST(TestSortByKeyLongDouble);
+TEST_CASE("TestSortByKeyLongDouble", "[sort_by_key]")
+{
+  TestSortByKeyLongDouble();
+}

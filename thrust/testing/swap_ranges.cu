@@ -21,7 +21,10 @@ void TestSwapRangesDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSwapRangesDispatchExplicit);
+TEST_CASE("TestSwapRangesDispatchExplicit", "[swap_ranges]")
+{
+  TestSwapRangesDispatchExplicit();
+}
 
 template <typename ForwardIterator1, typename ForwardIterator2>
 ForwardIterator2 swap_ranges(my_tag, ForwardIterator1, ForwardIterator1, ForwardIterator2 first2)
@@ -39,7 +42,10 @@ void TestSwapRangesDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSwapRangesDispatchImplicit);
+TEST_CASE("TestSwapRangesDispatchImplicit", "[swap_ranges]")
+{
+  TestSwapRangesDispatchImplicit();
+}
 
 template <class Vector>
 void TestSwapRangesSimple()
@@ -95,7 +101,10 @@ void TestSwapRangesForcedIterator()
   REQUIRE(B[1] == 0);
   REQUIRE(B[2] == 0);
 }
-DECLARE_UNITTEST(TestSwapRangesForcedIterator);
+TEST_CASE("TestSwapRangesForcedIterator", "[swap_ranges]")
+{
+  TestSwapRangesForcedIterator();
+}
 #endif
 
 struct type_with_swap
@@ -191,4 +200,7 @@ void TestSwapRangesUserSwap()
   REQUIRE((ref == d_B[1]));
   REQUIRE((ref == d_B[2]));
 }
-DECLARE_UNITTEST(TestSwapRangesUserSwap);
+TEST_CASE("TestSwapRangesUserSwap", "[swap_ranges]")
+{
+  TestSwapRangesUserSwap();
+}

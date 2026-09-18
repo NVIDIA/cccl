@@ -117,7 +117,10 @@ void TestInclusiveScanDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestInclusiveScanDispatchExplicit);
+TEST_CASE("TestInclusiveScanDispatchExplicit", "[scan]")
+{
+  TestInclusiveScanDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator inclusive_scan(my_tag, InputIterator, InputIterator, OutputIterator result)
@@ -135,7 +138,10 @@ void TestInclusiveScanDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestInclusiveScanDispatchImplicit);
+TEST_CASE("TestInclusiveScanDispatchImplicit", "[scan]")
+{
+  TestInclusiveScanDispatchImplicit();
+}
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator exclusive_scan(my_system& system, InputIterator, InputIterator, OutputIterator result)
@@ -153,7 +159,10 @@ void TestExclusiveScanDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestExclusiveScanDispatchExplicit);
+TEST_CASE("TestExclusiveScanDispatchExplicit", "[scan]")
+{
+  TestExclusiveScanDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator exclusive_scan(my_tag, InputIterator, InputIterator, OutputIterator result)
@@ -171,7 +180,10 @@ void TestExclusiveScanDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestExclusiveScanDispatchImplicit);
+TEST_CASE("TestExclusiveScanDispatchImplicit", "[scan]")
+{
+  TestExclusiveScanDispatchImplicit();
+}
 
 void TestInclusiveScan32()
 {
@@ -189,7 +201,10 @@ void TestInclusiveScan32()
 
   REQUIRE(d_output == h_output);
 }
-DECLARE_UNITTEST(TestInclusiveScan32);
+TEST_CASE("TestInclusiveScan32", "[scan]")
+{
+  TestInclusiveScan32();
+}
 
 void TestExclusiveScan32()
 {
@@ -208,7 +223,10 @@ void TestExclusiveScan32()
 
   REQUIRE(d_output == h_output);
 }
-DECLARE_UNITTEST(TestExclusiveScan32);
+TEST_CASE("TestExclusiveScan32", "[scan]")
+{
+  TestExclusiveScan32();
+}
 
 template <class IntVector, class FloatVector>
 void TestScanMixedTypes()
@@ -266,12 +284,18 @@ void TestScanMixedTypesHost()
 {
   TestScanMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
-DECLARE_UNITTEST(TestScanMixedTypesHost);
+TEST_CASE("TestScanMixedTypesHost", "[scan]")
+{
+  TestScanMixedTypesHost();
+}
 void TestScanMixedTypesDevice()
 {
   TestScanMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
-DECLARE_UNITTEST(TestScanMixedTypesDevice);
+TEST_CASE("TestScanMixedTypesDevice", "[scan]")
+{
+  TestScanMixedTypesDevice();
+}
 
 template <typename T>
 struct TestScanWithOperator
@@ -433,7 +457,10 @@ void TestScanMixedTypes()
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), (float) 3.5);
   REQUIRE(d_int_output == h_int_output);
 }
-DECLARE_UNITTEST(TestScanMixedTypes);
+TEST_CASE("TestScanMixedTypes", "[scan]")
+{
+  TestScanMixedTypes();
+}
 
 template <typename T, unsigned int N>
 void _TestScanWithLargeTypes()
@@ -471,7 +498,10 @@ void TestScanWithLargeTypes()
   _TestScanWithLargeTypes<int, 64>();
 #endif
 }
-DECLARE_UNITTEST(TestScanWithLargeTypes);
+TEST_CASE("TestScanWithLargeTypes", "[scan]")
+{
+  TestScanWithLargeTypes();
+}
 
 template <typename T>
 struct plus_mod3
@@ -627,7 +657,10 @@ void TestInclusiveScanWithBigIndexes()
 #endif
 }
 
-DECLARE_UNITTEST(TestInclusiveScanWithBigIndexes);
+TEST_CASE("TestInclusiveScanWithBigIndexes", "[scan]")
+{
+  TestInclusiveScanWithBigIndexes();
+}
 
 void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 {
@@ -658,7 +691,10 @@ void TestExclusiveScanWithBigIndexes()
 #endif
 }
 
-DECLARE_UNITTEST(TestExclusiveScanWithBigIndexes);
+TEST_CASE("TestExclusiveScanWithBigIndexes", "[scan]")
+{
+  TestExclusiveScanWithBigIndexes();
+}
 
 struct Int
 {
@@ -699,7 +735,10 @@ void TestScanWithUserDefinedTypeAndInit()
     REQUIRE(vec == (thrust::device_vector<Int>{Int{101}, Int{102}, Int{103}, Int{104}, Int{105}}));
   }
 }
-DECLARE_UNITTEST(TestScanWithUserDefinedTypeAndInit);
+TEST_CASE("TestScanWithUserDefinedTypeAndInit", "[scan]")
+{
+  TestScanWithUserDefinedTypeAndInit();
+}
 
 // Represents a permutation as a tuple of integers, see also: https://en.wikipedia.org/wiki/Permutation
 // We need a distinct type (instead of an alias) for operator<< to be found via ADL
@@ -788,7 +827,10 @@ void TestInclusiveScanWithNonCommutativeOp()
       {0, 1, 4, 2, 3},
       {4, 0, 2, 1, 3}}));
 }
-DECLARE_UNITTEST(TestInclusiveScanWithNonCommutativeOp);
+TEST_CASE("TestInclusiveScanWithNonCommutativeOp", "[scan]")
+{
+  TestInclusiveScanWithNonCommutativeOp();
+}
 
 struct checking_identity
 {
@@ -829,7 +871,10 @@ void TestInclusiveScanForInvalidValues()
     }
   }
 }
-DECLARE_UNITTEST(TestInclusiveScanForInvalidValues);
+TEST_CASE("TestInclusiveScanForInvalidValues", "[scan]")
+{
+  TestInclusiveScanForInvalidValues();
+}
 
 // Adapted from issue: https://github.com/NVIDIA/cccl/issues/6317
 void TestScanBug6317()
@@ -853,7 +898,10 @@ void TestScanBug6317()
     REQUIRE(s == d);
   }
 }
-DECLARE_UNITTEST(TestScanBug6317);
+TEST_CASE("TestScanBug6317", "[scan]")
+{
+  TestScanBug6317();
+}
 
 // Test edge cases for parallel scan with non-additive operations
 void TestScanEdgeCases()
@@ -974,4 +1022,7 @@ void TestScanEdgeCases()
     REQUIRE(d_output == expected);
   }
 }
-DECLARE_UNITTEST(TestScanEdgeCases);
+TEST_CASE("TestScanEdgeCases", "[scan]")
+{
+  TestScanEdgeCases();
+}

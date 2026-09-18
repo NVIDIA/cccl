@@ -66,7 +66,10 @@ void TestMergeByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMergeByKeyDispatchExplicit);
+TEST_CASE("TestMergeByKeyDispatchExplicit", "[merge_by_key]")
+{
+  TestMergeByKeyDispatchExplicit();
+}
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -122,7 +125,10 @@ auto call_merge_by_key(Args&&... args) -> decltype(thrust::merge_by_key(std::for
   _CCCL_UNREACHABLE();
 }
 
-DECLARE_UNITTEST(TestMergeByKeyDispatchImplicit);
+TEST_CASE("TestMergeByKeyDispatchImplicit", "[merge_by_key]")
+{
+  TestMergeByKeyDispatchImplicit();
+}
 
 template <typename T, typename CompareOp = void>
 void TestMergeByKey(size_t n)
@@ -320,4 +326,7 @@ void TestMergeByKeyFromCuDFDremel()
   REQUIRE(reference_rep_level == rep_level);
   REQUIRE(reference_def_level == def_level);
 }
-DECLARE_UNITTEST(TestMergeByKeyFromCuDFDremel);
+TEST_CASE("TestMergeByKeyFromCuDFDremel", "[merge_by_key]")
+{
+  TestMergeByKeyFromCuDFDremel();
+}

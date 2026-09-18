@@ -48,7 +48,10 @@ void TestReduceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReduceDispatchExplicit);
+TEST_CASE("TestReduceDispatchExplicit", "[reduce]")
+{
+  TestReduceDispatchExplicit();
+}
 
 template <typename InputIterator>
 int reduce(my_tag, InputIterator, InputIterator)
@@ -64,7 +67,10 @@ void TestReduceDispatchImplicit()
 
   REQUIRE(13 == result);
 }
-DECLARE_UNITTEST(TestReduceDispatchImplicit);
+TEST_CASE("TestReduceDispatchImplicit", "[reduce]")
+{
+  TestReduceDispatchImplicit();
+}
 
 template <typename T>
 struct TestReduce
@@ -102,12 +108,18 @@ void TestReduceMixedTypesHost()
 {
   TestReduceMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
-DECLARE_UNITTEST(TestReduceMixedTypesHost);
+TEST_CASE("TestReduceMixedTypesHost", "[reduce]")
+{
+  TestReduceMixedTypesHost();
+}
 void TestReduceMixedTypesDevice()
 {
   TestReduceMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
-DECLARE_UNITTEST(TestReduceMixedTypesDevice);
+TEST_CASE("TestReduceMixedTypesDevice", "[reduce]")
+{
+  TestReduceMixedTypesDevice();
+}
 
 template <typename T>
 struct TestReduceWithOperator
@@ -198,4 +210,7 @@ void TestReduceWithBigIndexes()
   TestReduceWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestReduceWithBigIndexes);
+TEST_CASE("TestReduceWithBigIndexes", "[reduce]")
+{
+  TestReduceWithBigIndexes();
+}

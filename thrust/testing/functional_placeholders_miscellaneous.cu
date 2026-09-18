@@ -103,7 +103,10 @@ void TestFunctionalPlaceholdersArgumentValueCategories()
   REQUIRE(expr(a, b) == 13); // pass l-value
   REQUIRE(expr(::cuda::std::move(a), ::cuda::std::move(b)) == 13); // pass x-value
 }
-DECLARE_UNITTEST(TestFunctionalPlaceholdersArgumentValueCategories);
+TEST_CASE("TestFunctionalPlaceholdersArgumentValueCategories", "[functional_placeholders_miscellaneous]")
+{
+  TestFunctionalPlaceholdersArgumentValueCategories();
+}
 
 void TestFunctionalPlaceholdersSemiRegular()
 {
@@ -120,4 +123,7 @@ void TestFunctionalPlaceholdersSemiRegular()
 
   static_assert(::cuda::std::semiregular<Expr>);
 }
-DECLARE_UNITTEST(TestFunctionalPlaceholdersSemiRegular);
+TEST_CASE("TestFunctionalPlaceholdersSemiRegular", "[functional_placeholders_miscellaneous]")
+{
+  TestFunctionalPlaceholdersSemiRegular();
+}

@@ -54,13 +54,19 @@ void TestMinElementDeviceSeq()
 {
   TestMinElementDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMinElementDeviceSeq);
+TEST_CASE("TestMinElementDeviceSeq", "[min_element]")
+{
+  TestMinElementDeviceSeq();
+}
 
 void TestMinElementDeviceDevice()
 {
   TestMinElementDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMinElementDeviceDevice);
+TEST_CASE("TestMinElementDeviceDevice", "[min_element]")
+{
+  TestMinElementDeviceDevice();
+}
 #endif
 
 void TestMinElementCudaStreams()
@@ -89,7 +95,10 @@ void TestMinElementCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestMinElementCudaStreams);
+TEST_CASE("TestMinElementCudaStreams", "[min_element]")
+{
+  TestMinElementCudaStreams();
+}
 
 void TestMinElementDevicePointer()
 {
@@ -109,4 +118,7 @@ void TestMinElementDevicePointer()
   REQUIRE(thrust::min_element(thrust::device, raw_ptr, raw_ptr + n) - raw_ptr == 2);
   REQUIRE(thrust::min_element(thrust::device, raw_ptr, raw_ptr + n, ::cuda::std::greater<T>()) - raw_ptr == 1);
 }
-DECLARE_UNITTEST(TestMinElementDevicePointer);
+TEST_CASE("TestMinElementDevicePointer", "[min_element]")
+{
+  TestMinElementDevicePointer();
+}

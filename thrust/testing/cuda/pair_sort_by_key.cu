@@ -61,11 +61,17 @@ void TestPairStableSortByKeyDeviceSeq()
 {
   TestPairStableSortByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPairStableSortByKeyDeviceSeq);
+TEST_CASE("TestPairStableSortByKeyDeviceSeq", "[pair_sort_by_key]")
+{
+  TestPairStableSortByKeyDeviceSeq();
+}
 
 void TestPairStableSortByKeyDeviceDevice()
 {
   TestPairStableSortByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPairStableSortByKeyDeviceDevice);
+TEST_CASE("TestPairStableSortByKeyDeviceDevice", "[pair_sort_by_key]")
+{
+  TestPairStableSortByKeyDeviceDevice();
+}
 #endif

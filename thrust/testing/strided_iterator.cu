@@ -36,7 +36,10 @@ void TestReadingStridedIterator()
   iter -= 10;
   REQUIRE(*iter == -4);
 }
-DECLARE_UNITTEST(TestReadingStridedIterator);
+TEST_CASE("TestReadingStridedIterator", "[strided_iterator]")
+{
+  TestReadingStridedIterator();
+}
 
 template <typename Vector>
 void TestWritingStridedIterator()
@@ -90,6 +93,9 @@ void TestWritingStridedIteratorToStructMember()
     REQUIRE(arr == reference);
   }
 }
-DECLARE_UNITTEST(TestWritingStridedIteratorToStructMember);
+TEST_CASE("TestWritingStridedIteratorToStructMember", "[strided_iterator]")
+{
+  TestWritingStridedIteratorToStructMember();
+}
 
 _CCCL_DIAG_POP

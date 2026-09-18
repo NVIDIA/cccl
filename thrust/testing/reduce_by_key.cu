@@ -216,7 +216,10 @@ void TestReduceByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReduceByKeyDispatchExplicit);
+TEST_CASE("TestReduceByKeyDispatchExplicit", "[reduce_by_key]")
+{
+  TestReduceByKeyDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
 cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
@@ -239,4 +242,7 @@ void TestReduceByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReduceByKeyDispatchImplicit);
+TEST_CASE("TestReduceByKeyDispatchImplicit", "[reduce_by_key]")
+{
+  TestReduceByKeyDispatchImplicit();
+}

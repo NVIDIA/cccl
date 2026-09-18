@@ -23,4 +23,7 @@ void TestLog2()
   static_assert(thrust::random::detail::log2(511u) == 8u);
   static_assert(thrust::random::detail::log2(512u) == 9u);
 }
-DECLARE_UNITTEST(TestLog2);
+TEST_CASE("TestLog2", "[xor_combine_engine_max]")
+{
+  TestLog2();
+}

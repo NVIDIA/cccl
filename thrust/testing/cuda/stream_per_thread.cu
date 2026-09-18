@@ -19,4 +19,7 @@ void TestPerThreadDefaultStream()
   std::thread t(verify_stream);
   t.join();
 }
-DECLARE_UNITTEST(TestPerThreadDefaultStream);
+TEST_CASE("TestPerThreadDefaultStream", "[stream_per_thread]")
+{
+  TestPerThreadDefaultStream();
+}

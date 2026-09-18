@@ -34,7 +34,10 @@ void TestSetIntersectionByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDispatchExplicit);
+TEST_CASE("TestSetIntersectionByKeyDispatchExplicit", "[set_intersection_by_key]")
+{
+  TestSetIntersectionByKeyDispatchExplicit();
+}
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -70,7 +73,10 @@ void TestSetIntersectionByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDispatchImplicit);
+TEST_CASE("TestSetIntersectionByKeyDispatchImplicit", "[set_intersection_by_key]")
+{
+  TestSetIntersectionByKeyDispatchImplicit();
+}
 
 template <typename Vector>
 void TestSetIntersectionByKeySimple()

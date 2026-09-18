@@ -31,7 +31,10 @@ void TestDiscardIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestDiscardIteratorTraits);
+TEST_CASE("TestDiscardIteratorTraits", "[discard_iterator]")
+{
+  TestDiscardIteratorTraits();
+}
 
 void TestDiscardIteratorIncrement()
 {
@@ -57,7 +60,10 @@ void TestDiscardIteratorIncrement()
 
   REQUIRE(-2 == lhs - rhs);
 }
-DECLARE_UNITTEST(TestDiscardIteratorIncrement);
+TEST_CASE("TestDiscardIteratorIncrement", "[discard_iterator]")
+{
+  TestDiscardIteratorIncrement();
+}
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::discard_iterator<>>::value);
 static_assert(cuda::std::is_trivially_copyable<thrust::discard_iterator<>>::value);
 
@@ -85,7 +91,10 @@ void TestDiscardIteratorComparison()
   REQUIRE(0 == iter1 - iter2);
   REQUIRE(iter1 == iter2);
 }
-DECLARE_UNITTEST(TestDiscardIteratorComparison);
+TEST_CASE("TestDiscardIteratorComparison", "[discard_iterator]")
+{
+  TestDiscardIteratorComparison();
+}
 
 void TestMakeDiscardIterator()
 {
@@ -99,7 +108,10 @@ void TestMakeDiscardIterator()
 
   REQUIRE(6 == iter0 - iter1);
 }
-DECLARE_UNITTEST(TestMakeDiscardIterator);
+TEST_CASE("TestMakeDiscardIterator", "[discard_iterator]")
+{
+  TestMakeDiscardIterator();
+}
 
 void TestZippedDiscardIterator()
 {
@@ -130,4 +142,7 @@ void TestZippedDiscardIterator()
 
   REQUIRE(10 == cuda::std::get<1>(z_iter_first.get_iterator_tuple()) - thrust::make_discard_iterator());
 }
-DECLARE_UNITTEST(TestZippedDiscardIterator);
+TEST_CASE("TestZippedDiscardIterator", "[discard_iterator]")
+{
+  TestZippedDiscardIterator();
+}

@@ -20,7 +20,10 @@ void TestSequenceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSequenceDispatchExplicit);
+TEST_CASE("TestSequenceDispatchExplicit", "[sequence]")
+{
+  TestSequenceDispatchExplicit();
+}
 
 template <typename ForwardIterator>
 void sequence(my_tag, ForwardIterator first, ForwardIterator)
@@ -36,7 +39,10 @@ void TestSequenceDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSequenceDispatchImplicit);
+TEST_CASE("TestSequenceDispatchImplicit", "[sequence]")
+{
+  TestSequenceDispatchImplicit();
+}
 
 template <class Vector>
 void TestSequenceSimple()
@@ -109,7 +115,10 @@ void TestSequenceComplex()
   thrust::device_vector<thrust::complex<double>> m(64);
   thrust::sequence(m.begin(), m.end());
 }
-DECLARE_UNITTEST(TestSequenceComplex);
+TEST_CASE("TestSequenceComplex", "[sequence]")
+{
+  TestSequenceComplex();
+}
 
 // A class that does not accept conversion from size_t but can be multiplied by a scalar
 struct Vector
@@ -156,4 +165,7 @@ void TestSequenceNoSizeTConversion()
     REQUIRE(static_cast<std::size_t>(v.y) == 2 * i);
   }
 }
-DECLARE_UNITTEST(TestSequenceNoSizeTConversion);
+TEST_CASE("TestSequenceNoSizeTConversion", "[sequence]")
+{
+  TestSequenceNoSizeTConversion();
+}

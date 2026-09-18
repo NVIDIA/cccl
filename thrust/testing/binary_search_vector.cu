@@ -79,7 +79,10 @@ void TestVectorLowerBoundDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestVectorLowerBoundDispatchExplicit);
+TEST_CASE("TestVectorLowerBoundDispatchExplicit", "[binary_search_vector]")
+{
+  TestVectorLowerBoundDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator lower_bound(my_tag, ForwardIterator, ForwardIterator, InputIterator, InputIterator, OutputIterator output)
@@ -101,7 +104,10 @@ void TestVectorLowerBoundDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestVectorLowerBoundDispatchImplicit);
+TEST_CASE("TestVectorLowerBoundDispatchImplicit", "[binary_search_vector]")
+{
+  TestVectorLowerBoundDispatchImplicit();
+}
 
 template <class Vector>
 void TestVectorUpperBoundSimple()
@@ -159,7 +165,10 @@ void TestVectorUpperBoundDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestVectorUpperBoundDispatchExplicit);
+TEST_CASE("TestVectorUpperBoundDispatchExplicit", "[binary_search_vector]")
+{
+  TestVectorUpperBoundDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator upper_bound(my_tag, ForwardIterator, ForwardIterator, InputIterator, InputIterator, OutputIterator output)
@@ -181,7 +190,10 @@ void TestVectorUpperBoundDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestVectorUpperBoundDispatchImplicit);
+TEST_CASE("TestVectorUpperBoundDispatchImplicit", "[binary_search_vector]")
+{
+  TestVectorUpperBoundDispatchImplicit();
+}
 
 template <class Vector>
 void TestVectorBinarySearchSimple()
@@ -234,7 +246,10 @@ void TestVectorBinarySearchDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestVectorBinarySearchDispatchExplicit);
+TEST_CASE("TestVectorBinarySearchDispatchExplicit", "[binary_search_vector]")
+{
+  TestVectorBinarySearchDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator
@@ -257,7 +272,10 @@ void TestVectorBinarySearchDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestVectorBinarySearchDispatchImplicit);
+TEST_CASE("TestVectorBinarySearchDispatchImplicit", "[binary_search_vector]")
+{
+  TestVectorBinarySearchDispatchImplicit();
+}
 
 template <typename T>
 struct TestVectorLowerBound

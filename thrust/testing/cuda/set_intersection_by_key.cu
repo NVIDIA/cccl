@@ -67,19 +67,28 @@ void TestSetIntersectionByKeyDeviceSeq()
 {
   TestSetIntersectionByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDeviceSeq);
+TEST_CASE("TestSetIntersectionByKeyDeviceSeq", "[set_intersection_by_key]")
+{
+  TestSetIntersectionByKeyDeviceSeq();
+}
 
 void TestSetIntersectionByKeyDeviceDevice()
 {
   TestSetIntersectionByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDeviceDevice);
+TEST_CASE("TestSetIntersectionByKeyDeviceDevice", "[set_intersection_by_key]")
+{
+  TestSetIntersectionByKeyDeviceDevice();
+}
 
 void TestSetIntersectionByKeyDeviceNoSync()
 {
   TestSetIntersectionByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDeviceNoSync);
+TEST_CASE("TestSetIntersectionByKeyDeviceNoSync", "[set_intersection_by_key]")
+{
+  TestSetIntersectionByKeyDeviceNoSync();
+}
 #endif
 
 template <typename ExecutionPolicy>
@@ -117,10 +126,16 @@ void TestSetIntersectionByKeyCudaStreamsSync()
 {
   TestSetIntersectionByKeyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyCudaStreamsSync);
+TEST_CASE("TestSetIntersectionByKeyCudaStreamsSync", "[set_intersection_by_key]")
+{
+  TestSetIntersectionByKeyCudaStreamsSync();
+}
 
 void TestSetIntersectionByKeyCudaStreamsNoSync()
 {
   TestSetIntersectionByKeyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyCudaStreamsNoSync);
+TEST_CASE("TestSetIntersectionByKeyCudaStreamsNoSync", "[set_intersection_by_key]")
+{
+  TestSetIntersectionByKeyCudaStreamsNoSync();
+}

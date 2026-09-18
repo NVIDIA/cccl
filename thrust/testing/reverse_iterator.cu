@@ -33,7 +33,10 @@ void TestReverseIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestReverseIteratorTraits);
+TEST_CASE("TestReverseIteratorTraits", "[reverse_iterator]")
+{
+  TestReverseIteratorTraits();
+}
 
 void TestReverseIteratorCopyConstructor()
 {
@@ -53,7 +56,10 @@ void TestReverseIteratorCopyConstructor()
   REQUIRE(d_iter2 == d_iter3);
   REQUIRE(*d_iter2 == *d_iter3);
 }
-DECLARE_UNITTEST(TestReverseIteratorCopyConstructor);
+TEST_CASE("TestReverseIteratorCopyConstructor", "[reverse_iterator]")
+{
+  TestReverseIteratorCopyConstructor();
+}
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::reverse_iterator<int*>>::value);
 static_assert(cuda::std::is_trivially_copyable<thrust::reverse_iterator<int*>>::value);
 
@@ -91,7 +97,10 @@ void TestReverseIteratorIncrement()
   d_iter++;
   REQUIRE(*d_iter == 0);
 }
-DECLARE_UNITTEST(TestReverseIteratorIncrement);
+TEST_CASE("TestReverseIteratorIncrement", "[reverse_iterator]")
+{
+  TestReverseIteratorIncrement();
+}
 
 template <typename Vector>
 void TestReverseIteratorCopy()
@@ -130,7 +139,10 @@ void TestReverseIteratorExclusiveScanSimple()
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_UNITTEST(TestReverseIteratorExclusiveScanSimple);
+TEST_CASE("TestReverseIteratorExclusiveScanSimple", "[reverse_iterator]")
+{
+  TestReverseIteratorExclusiveScanSimple();
+}
 
 template <typename T>
 struct TestReverseIteratorExclusiveScan

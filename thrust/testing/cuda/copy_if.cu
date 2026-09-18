@@ -107,19 +107,28 @@ void TestCopyIfDeviceSeq()
 {
   TestCopyIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestCopyIfDeviceSeq);
+TEST_CASE("TestCopyIfDeviceSeq", "[copy_if]")
+{
+  TestCopyIfDeviceSeq();
+}
 
 void TestCopyIfDeviceDevice()
 {
   TestCopyIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestCopyIfDeviceDevice);
+TEST_CASE("TestCopyIfDeviceDevice", "[copy_if]")
+{
+  TestCopyIfDeviceDevice();
+}
 
 void TestCopyIfDeviceNoSync()
 {
   TestCopyIfDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfDeviceNoSync);
+TEST_CASE("TestCopyIfDeviceNoSync", "[copy_if]")
+{
+  TestCopyIfDeviceNoSync();
+}
 #endif
 
 template <typename ExecutionPolicy>
@@ -147,13 +156,19 @@ void TestCopyIfCudaStreamsSync()
 {
   TestCopyIfCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCopyIfCudaStreamsSync);
+TEST_CASE("TestCopyIfCudaStreamsSync", "[copy_if]")
+{
+  TestCopyIfCudaStreamsSync();
+}
 
 void TestCopyIfCudaStreamsNoSync()
 {
   TestCopyIfCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfCudaStreamsNoSync);
+TEST_CASE("TestCopyIfCudaStreamsNoSync", "[copy_if]")
+{
+  TestCopyIfCudaStreamsNoSync();
+}
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy,
@@ -235,19 +250,28 @@ void TestCopyIfStencilDeviceSeq()
 {
   TestCopyIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestCopyIfStencilDeviceSeq);
+TEST_CASE("TestCopyIfStencilDeviceSeq", "[copy_if]")
+{
+  TestCopyIfStencilDeviceSeq();
+}
 
 void TestCopyIfStencilDeviceDevice()
 {
   TestCopyIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestCopyIfStencilDeviceDevice);
+TEST_CASE("TestCopyIfStencilDeviceDevice", "[copy_if]")
+{
+  TestCopyIfStencilDeviceDevice();
+}
 
 void TestCopyIfStencilDeviceNoSync()
 {
   TestCopyIfStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfStencilDeviceNoSync);
+TEST_CASE("TestCopyIfStencilDeviceNoSync", "[copy_if]")
+{
+  TestCopyIfStencilDeviceNoSync();
+}
 #endif
 
 template <typename ExecutionPolicy>
@@ -281,13 +305,19 @@ void TestCopyIfStencilCudaStreamsSync()
 {
   TestCopyIfStencilCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCopyIfStencilCudaStreamsSync);
+TEST_CASE("TestCopyIfStencilCudaStreamsSync", "[copy_if]")
+{
+  TestCopyIfStencilCudaStreamsSync();
+}
 
 void TestCopyIfStencilCudaStreamsNoSync()
 {
   TestCopyIfStencilCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfStencilCudaStreamsNoSync);
+TEST_CASE("TestCopyIfStencilCudaStreamsNoSync", "[copy_if]")
+{
+  TestCopyIfStencilCudaStreamsNoSync();
+}
 
 void TestCopyIfWithMagnitude(int magnitude)
 {
@@ -323,7 +353,10 @@ void TestCopyIfWithLargeNumberOfItems()
   TestCopyIfWithMagnitude(32);
   TestCopyIfWithMagnitude(33);
 }
-DECLARE_UNITTEST(TestCopyIfWithLargeNumberOfItems);
+TEST_CASE("TestCopyIfWithLargeNumberOfItems", "[copy_if]")
+{
+  TestCopyIfWithLargeNumberOfItems();
+}
 
 void TestCopyIfStencilWithMagnitude(int magnitude)
 {
@@ -360,4 +393,7 @@ void TestCopyIfStencilWithLargeNumberOfItems()
   TestCopyIfStencilWithMagnitude(32);
   TestCopyIfStencilWithMagnitude(33);
 }
-DECLARE_UNITTEST(TestCopyIfStencilWithLargeNumberOfItems);
+TEST_CASE("TestCopyIfStencilWithLargeNumberOfItems", "[copy_if]")
+{
+  TestCopyIfStencilWithLargeNumberOfItems();
+}

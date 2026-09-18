@@ -31,7 +31,10 @@ void TestPoolOptionsBasicValidity()
   options.smallest_block_size = 8;
   REQUIRE(options.validate());
 }
-DECLARE_UNITTEST(TestPoolOptionsBasicValidity);
+TEST_CASE("TestPoolOptionsBasicValidity", "[mr_pool_options]")
+{
+  TestPoolOptionsBasicValidity();
+}
 
 void TestPoolOptionsComplexValidity()
 {
@@ -61,4 +64,7 @@ void TestPoolOptionsComplexValidity()
   options.min_blocks_per_chunk = 128;
   REQUIRE(options.validate());
 }
-DECLARE_UNITTEST(TestPoolOptionsComplexValidity);
+TEST_CASE("TestPoolOptionsComplexValidity", "[mr_pool_options]")
+{
+  TestPoolOptionsComplexValidity();
+}

@@ -59,13 +59,19 @@ void TestSequenceDeviceSeq()
 {
   TestSequenceDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSequenceDeviceSeq);
+TEST_CASE("TestSequenceDeviceSeq", "[sequence]")
+{
+  TestSequenceDeviceSeq();
+}
 
 void TestSequenceDeviceDevice()
 {
   TestSequenceDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSequenceDeviceDevice);
+TEST_CASE("TestSequenceDeviceDevice", "[sequence]")
+{
+  TestSequenceDeviceDevice();
+}
 #endif
 
 void TestSequenceCudaStreams()
@@ -97,4 +103,7 @@ void TestSequenceCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestSequenceCudaStreams);
+TEST_CASE("TestSequenceCudaStreams", "[sequence]")
+{
+  TestSequenceCudaStreams();
+}

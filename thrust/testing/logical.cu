@@ -40,7 +40,10 @@ void TestAllOfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestAllOfDispatchExplicit);
+TEST_CASE("TestAllOfDispatchExplicit", "[logical]")
+{
+  TestAllOfDispatchExplicit();
+}
 
 template <class InputIterator, class Predicate>
 bool all_of(my_tag, InputIterator first, InputIterator, Predicate)
@@ -57,7 +60,10 @@ void TestAllOfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestAllOfDispatchImplicit);
+TEST_CASE("TestAllOfDispatchImplicit", "[logical]")
+{
+  TestAllOfDispatchImplicit();
+}
 
 template <class Vector>
 void TestAnyOf()
@@ -95,7 +101,10 @@ void TestAnyOfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestAnyOfDispatchExplicit);
+TEST_CASE("TestAnyOfDispatchExplicit", "[logical]")
+{
+  TestAnyOfDispatchExplicit();
+}
 
 template <class InputIterator, class Predicate>
 bool any_of(my_tag, InputIterator first, InputIterator, Predicate)
@@ -112,7 +121,10 @@ void TestAnyOfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestAnyOfDispatchImplicit);
+TEST_CASE("TestAnyOfDispatchImplicit", "[logical]")
+{
+  TestAnyOfDispatchImplicit();
+}
 
 template <class Vector>
 void TestNoneOf()
@@ -150,7 +162,10 @@ void TestNoneOfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestNoneOfDispatchExplicit);
+TEST_CASE("TestNoneOfDispatchExplicit", "[logical]")
+{
+  TestNoneOfDispatchExplicit();
+}
 
 template <class InputIterator, class Predicate>
 bool none_of(my_tag, InputIterator first, InputIterator, Predicate)
@@ -167,4 +182,7 @@ void TestNoneOfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestNoneOfDispatchImplicit);
+TEST_CASE("TestNoneOfDispatchImplicit", "[logical]")
+{
+  TestNoneOfDispatchImplicit();
+}

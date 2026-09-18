@@ -22,7 +22,10 @@ void TestUninitializedCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedCopyDispatchExplicit);
+TEST_CASE("TestUninitializedCopyDispatchExplicit", "[uninitialized_copy]")
+{
+  TestUninitializedCopyDispatchExplicit();
+}
 
 template <typename InputIterator, typename ForwardIterator>
 ForwardIterator uninitialized_copy(my_tag, InputIterator, InputIterator, ForwardIterator result)
@@ -40,7 +43,10 @@ void TestUninitializedCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUninitializedCopyDispatchImplicit);
+TEST_CASE("TestUninitializedCopyDispatchImplicit", "[uninitialized_copy]")
+{
+  TestUninitializedCopyDispatchImplicit();
+}
 
 template <typename InputIterator, typename Size, typename ForwardIterator>
 ForwardIterator uninitialized_copy_n(my_system& system, InputIterator, Size, ForwardIterator result)
@@ -58,7 +64,10 @@ void TestUninitializedCopyNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDispatchExplicit);
+TEST_CASE("TestUninitializedCopyNDispatchExplicit", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNDispatchExplicit();
+}
 
 template <typename InputIterator, typename Size, typename ForwardIterator>
 ForwardIterator uninitialized_copy_n(my_tag, InputIterator, Size, ForwardIterator result)
@@ -75,7 +84,10 @@ void TestUninitializedCopyNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDispatchImplicit);
+TEST_CASE("TestUninitializedCopyNDispatchImplicit", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNDispatchImplicit();
+}
 
 template <class Vector>
 void TestUninitializedCopySimplePOD()
@@ -143,7 +155,10 @@ struct TestUninitializedCopyNonPODDevice
     REQUIRE_FALSE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNonPODDevice);
+TEST_CASE("TestUninitializedCopyNonPODDevice", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNonPODDevice();
+}
 
 struct TestUninitializedCopyNNonPODDevice
 {
@@ -168,7 +183,10 @@ struct TestUninitializedCopyNNonPODDevice
     REQUIRE_FALSE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNNonPODDevice);
+TEST_CASE("TestUninitializedCopyNNonPODDevice", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNNonPODDevice();
+}
 
 struct TestUninitializedCopyNonPODHost
 {
@@ -193,7 +211,10 @@ struct TestUninitializedCopyNonPODHost
     REQUIRE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNonPODHost);
+TEST_CASE("TestUninitializedCopyNonPODHost", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNonPODHost();
+}
 
 struct TestUninitializedCopyNNonPODHost
 {
@@ -218,4 +239,7 @@ struct TestUninitializedCopyNNonPODHost
     REQUIRE(x.copy_constructed_on_host);
   }
 };
-DECLARE_UNITTEST(TestUninitializedCopyNNonPODHost);
+TEST_CASE("TestUninitializedCopyNNonPODHost", "[uninitialized_copy]")
+{
+  TestUninitializedCopyNNonPODHost();
+}

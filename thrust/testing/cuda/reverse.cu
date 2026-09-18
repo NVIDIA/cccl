@@ -30,13 +30,19 @@ void TestReverseDeviceSeq()
 {
   TestReverseDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReverseDeviceSeq);
+TEST_CASE("TestReverseDeviceSeq", "[reverse]")
+{
+  TestReverseDeviceSeq();
+}
 
 void TestReverseDeviceDevice()
 {
   TestReverseDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReverseDeviceDevice);
+TEST_CASE("TestReverseDeviceDevice", "[reverse]")
+{
+  TestReverseDeviceDevice();
+}
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2>
 __global__ void reverse_copy_kernel(ExecutionPolicy exec, Iterator1 first, Iterator1 last, Iterator2 result)
@@ -67,13 +73,19 @@ void TestReverseCopyDeviceSeq()
 {
   TestReverseCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReverseCopyDeviceSeq);
+TEST_CASE("TestReverseCopyDeviceSeq", "[reverse]")
+{
+  TestReverseCopyDeviceSeq();
+}
 
 void TestReverseCopyDeviceDevice()
 {
   TestReverseCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReverseCopyDeviceDevice);
+TEST_CASE("TestReverseCopyDeviceDevice", "[reverse]")
+{
+  TestReverseCopyDeviceDevice();
+}
 #endif
 
 void TestReverseCudaStreams()
@@ -94,7 +106,10 @@ void TestReverseCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestReverseCudaStreams);
+TEST_CASE("TestReverseCudaStreams", "[reverse]")
+{
+  TestReverseCudaStreams();
+}
 
 void TestReverseCopyCudaStreams()
 {
@@ -116,4 +131,7 @@ void TestReverseCopyCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestReverseCopyCudaStreams);
+TEST_CASE("TestReverseCopyCudaStreams", "[reverse]")
+{
+  TestReverseCopyCudaStreams();
+}

@@ -39,7 +39,10 @@ void TestMergeDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMergeDispatchExplicit);
+TEST_CASE("TestMergeDispatchExplicit", "[merge]")
+{
+  TestMergeDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator merge(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIterator2, OutputIterator result)
@@ -60,7 +63,10 @@ void TestMergeDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestMergeDispatchImplicit);
+TEST_CASE("TestMergeDispatchImplicit", "[merge]")
+{
+  TestMergeDispatchImplicit();
+}
 
 template <typename T>
 void TestMerge(size_t n)

@@ -78,13 +78,19 @@ void TestSetDifferenceByKeyDeviceSeq()
 {
   TestSetDifferenceByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDeviceSeq);
+TEST_CASE("TestSetDifferenceByKeyDeviceSeq", "[set_difference_by_key]")
+{
+  TestSetDifferenceByKeyDeviceSeq();
+}
 
 void TestSetDifferenceByKeyDeviceDevice()
 {
   TestSetDifferenceByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDeviceDevice);
+TEST_CASE("TestSetDifferenceByKeyDeviceDevice", "[set_difference_by_key]")
+{
+  TestSetDifferenceByKeyDeviceDevice();
+}
 #endif
 
 void TestSetDifferenceByKeyCudaStreams()
@@ -115,4 +121,7 @@ void TestSetDifferenceByKeyCudaStreams()
   test_runtime::assert_equal(stream, result_key, {2, 5});
   test_runtime::assert_equal(stream, result_val, {0, 0});
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyCudaStreams);
+TEST_CASE("TestSetDifferenceByKeyCudaStreams", "[set_difference_by_key]")
+{
+  TestSetDifferenceByKeyCudaStreams();
+}

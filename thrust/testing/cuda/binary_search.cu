@@ -21,4 +21,7 @@ void TestEqualRangeOnStream()
   REQUIRE(5 == ::cuda::std::distance(input.begin(), result.first));
   REQUIRE(6 == ::cuda::std::distance(input.begin(), result.second));
 }
-DECLARE_UNITTEST(TestEqualRangeOnStream);
+TEST_CASE("TestEqualRangeOnStream", "[binary_search]")
+{
+  TestEqualRangeOnStream();
+}

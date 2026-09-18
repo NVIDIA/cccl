@@ -87,7 +87,10 @@ void TestCountDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCountDispatchExplicit);
+TEST_CASE("TestCountDispatchExplicit", "[count]")
+{
+  TestCountDispatchExplicit();
+}
 
 template <typename InputIterator, typename EqualityComparable>
 int count(my_tag, InputIterator /*first*/, InputIterator, EqualityComparable x)
@@ -103,7 +106,10 @@ void TestCountDispatchImplicit()
 
   REQUIRE(13 == result);
 }
-DECLARE_UNITTEST(TestCountDispatchImplicit);
+TEST_CASE("TestCountDispatchImplicit", "[count]")
+{
+  TestCountDispatchImplicit();
+}
 
 void TestCountWithBigIndexesHelper(int magnitude)
 {
@@ -125,4 +131,7 @@ void TestCountWithBigIndexes()
   TestCountWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestCountWithBigIndexes);
+TEST_CASE("TestCountWithBigIndexes", "[count]")
+{
+  TestCountWithBigIndexes();
+}

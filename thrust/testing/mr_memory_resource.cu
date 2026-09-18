@@ -59,7 +59,10 @@ void TestMemoryResourceIdentityEquality()
   REQUIRE_FALSE(first_allocator == second_allocator);
   REQUIRE_FALSE(second_allocator == first_allocator);
 }
-DECLARE_UNITTEST(TestMemoryResourceIdentityEquality);
+TEST_CASE("TestMemoryResourceIdentityEquality", "[mr_memory_resource]")
+{
+  TestMemoryResourceIdentityEquality();
+}
 
 void TestMemoryResourceEquivalentEquality()
 {
@@ -79,4 +82,7 @@ void TestMemoryResourceEquivalentEquality()
   REQUIRE(second_allocator == first_allocator);
   REQUIRE_FALSE(first_allocator != second_allocator);
 }
-DECLARE_UNITTEST(TestMemoryResourceEquivalentEquality);
+TEST_CASE("TestMemoryResourceEquivalentEquality", "[mr_memory_resource]")
+{
+  TestMemoryResourceEquivalentEquality();
+}

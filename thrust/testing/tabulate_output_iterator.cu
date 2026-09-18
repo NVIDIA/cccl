@@ -108,7 +108,10 @@ void TestTabulateOutputIteratorTraits()
   static_assert(!cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTabulateOutputIteratorTraits);
+TEST_CASE("TestTabulateOutputIteratorTraits", "[tabulate_output_iterator]")
+{
+  TestTabulateOutputIteratorTraits();
+}
 
 template <class Vector>
 void TestTabulateOutputIterator()
@@ -175,4 +178,7 @@ void TestTabulateOutputIteratorSubscript()
   REQUIRE(out == ref);
 }
 
-DECLARE_UNITTEST(TestTabulateOutputIteratorSubscript);
+TEST_CASE("TestTabulateOutputIteratorSubscript", "[tabulate_output_iterator]")
+{
+  TestTabulateOutputIteratorSubscript();
+}

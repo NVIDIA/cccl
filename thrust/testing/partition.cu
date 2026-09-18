@@ -943,7 +943,10 @@ void TestPartitionDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestPartitionDispatchExplicit);
+TEST_CASE("TestPartitionDispatchExplicit", "[partition]")
+{
+  TestPartitionDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator partition(my_system& system, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -961,7 +964,10 @@ void TestPartitionStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestPartitionStencilDispatchExplicit);
+TEST_CASE("TestPartitionStencilDispatchExplicit", "[partition]")
+{
+  TestPartitionStencilDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition(my_tag, ForwardIterator first, ForwardIterator, Predicate)
@@ -978,7 +984,10 @@ void TestPartitionDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestPartitionDispatchImplicit);
+TEST_CASE("TestPartitionDispatchImplicit", "[partition]")
+{
+  TestPartitionDispatchImplicit();
+}
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator partition(my_tag, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -996,7 +1005,10 @@ void TestPartitionStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestPartitionStencilDispatchImplicit);
+TEST_CASE("TestPartitionStencilDispatchImplicit", "[partition]")
+{
+  TestPartitionStencilDispatchImplicit();
+}
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
 cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
@@ -1015,7 +1027,10 @@ void TestPartitionCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestPartitionCopyDispatchExplicit);
+TEST_CASE("TestPartitionCopyDispatchExplicit", "[partition]")
+{
+  TestPartitionCopyDispatchExplicit();
+}
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1044,7 +1059,10 @@ void TestPartitionCopyStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDispatchExplicit);
+TEST_CASE("TestPartitionCopyStencilDispatchExplicit", "[partition]")
+{
+  TestPartitionCopyStencilDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
 cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
@@ -1067,7 +1085,10 @@ void TestPartitionCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestPartitionCopyDispatchImplicit);
+TEST_CASE("TestPartitionCopyDispatchImplicit", "[partition]")
+{
+  TestPartitionCopyDispatchImplicit();
+}
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1101,7 +1122,10 @@ void TestPartitionCopyStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDispatchImplicit);
+TEST_CASE("TestPartitionCopyStencilDispatchImplicit", "[partition]")
+{
+  TestPartitionCopyStencilDispatchImplicit();
+}
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator stable_partition(my_system& system, ForwardIterator first, ForwardIterator, Predicate)
@@ -1119,7 +1143,10 @@ void TestStablePartitionDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStablePartitionDispatchExplicit);
+TEST_CASE("TestStablePartitionDispatchExplicit", "[partition]")
+{
+  TestStablePartitionDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator stable_partition(my_system& system, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -1137,7 +1164,10 @@ void TestStablePartitionStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDispatchExplicit);
+TEST_CASE("TestStablePartitionStencilDispatchExplicit", "[partition]")
+{
+  TestStablePartitionStencilDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator stable_partition(my_tag, ForwardIterator first, ForwardIterator, Predicate)
@@ -1154,7 +1184,10 @@ void TestStablePartitionDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStablePartitionDispatchImplicit);
+TEST_CASE("TestStablePartitionDispatchImplicit", "[partition]")
+{
+  TestStablePartitionDispatchImplicit();
+}
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator stable_partition(my_tag, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -1172,7 +1205,10 @@ void TestStablePartitionStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDispatchImplicit);
+TEST_CASE("TestStablePartitionStencilDispatchImplicit", "[partition]")
+{
+  TestStablePartitionStencilDispatchImplicit();
+}
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
 cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
@@ -1191,7 +1227,10 @@ void TestStablePartitionCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDispatchExplicit);
+TEST_CASE("TestStablePartitionCopyDispatchExplicit", "[partition]")
+{
+  TestStablePartitionCopyDispatchExplicit();
+}
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1220,7 +1259,10 @@ void TestStablePartitionCopyStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDispatchExplicit);
+TEST_CASE("TestStablePartitionCopyStencilDispatchExplicit", "[partition]")
+{
+  TestStablePartitionCopyStencilDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
 cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
@@ -1243,7 +1285,10 @@ void TestStablePartitionCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDispatchImplicit);
+TEST_CASE("TestStablePartitionCopyDispatchImplicit", "[partition]")
+{
+  TestStablePartitionCopyDispatchImplicit();
+}
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1277,4 +1322,7 @@ void TestStablePartitionCopyStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDispatchImplicit);
+TEST_CASE("TestStablePartitionCopyStencilDispatchImplicit", "[partition]")
+{
+  TestStablePartitionCopyStencilDispatchImplicit();
+}

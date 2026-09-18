@@ -36,7 +36,10 @@ void TestDeviceDeleteDestructorInvocation()
   thrust::device_delete(foo_ptr);
   REQUIRE(destructor_flag[0]);
 }
-DECLARE_UNITTEST(TestDeviceDeleteDestructorInvocation);
+TEST_CASE("TestDeviceDeleteDestructorInvocation", "[device_delete]")
+{
+  TestDeviceDeleteDestructorInvocation();
+}
 
 // based on: https://github.com/NVIDIA/cccl/issues/6132
 struct base
@@ -88,4 +91,7 @@ void TestDeviceDeleteVirtualDestructorInvocation()
     REQUIRE(destructor_flags[1]);
   }
 }
-DECLARE_UNITTEST(TestDeviceDeleteVirtualDestructorInvocation);
+TEST_CASE("TestDeviceDeleteVirtualDestructorInvocation", "[device_delete]")
+{
+  TestDeviceDeleteVirtualDestructorInvocation();
+}

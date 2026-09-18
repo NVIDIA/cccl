@@ -120,13 +120,19 @@ void TestScanByKeyDeviceSeq()
 {
   TestScanByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScanByKeyDeviceSeq);
+TEST_CASE("TestScanByKeyDeviceSeq", "[scan_by_key]")
+{
+  TestScanByKeyDeviceSeq();
+}
 
 void TestScanByKeyDeviceDevice()
 {
   TestScanByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScanByKeyDeviceDevice);
+TEST_CASE("TestScanByKeyDeviceDevice", "[scan_by_key]")
+{
+  TestScanByKeyDeviceDevice();
+}
 #endif
 
 void TestInclusiveScanByKeyCudaStreams()
@@ -174,7 +180,10 @@ void TestInclusiveScanByKeyCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestInclusiveScanByKeyCudaStreams);
+TEST_CASE("TestInclusiveScanByKeyCudaStreams", "[scan_by_key]")
+{
+  TestInclusiveScanByKeyCudaStreams();
+}
 
 void TestExclusiveScanByKeyCudaStreams()
 {
@@ -226,4 +235,7 @@ void TestExclusiveScanByKeyCudaStreams()
   ref = {10, 10, 12, 15, 10, 10, 16};
   REQUIRE(output == ref);
 }
-DECLARE_UNITTEST(TestExclusiveScanByKeyCudaStreams);
+TEST_CASE("TestExclusiveScanByKeyCudaStreams", "[scan_by_key]")
+{
+  TestExclusiveScanByKeyCudaStreams();
+}

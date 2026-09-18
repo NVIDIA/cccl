@@ -68,7 +68,10 @@ void TestCountingIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestCountingIteratorTraits);
+TEST_CASE("TestCountingIteratorTraits", "[counting_iterator]")
+{
+  TestCountingIteratorTraits();
+}
 
 template <typename T>
 void TestCountingDefaultConstructor()
@@ -94,7 +97,10 @@ void TestCountingIteratorCopyConstructor()
   const thrust::counting_iterator<int, thrust::device_system_tag> d_iter = iter0;
   REQUIRE(*iter0 == *d_iter);
 }
-DECLARE_UNITTEST(TestCountingIteratorCopyConstructor);
+TEST_CASE("TestCountingIteratorCopyConstructor", "[counting_iterator]")
+{
+  TestCountingIteratorCopyConstructor();
+}
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value);
 static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value);
 
@@ -121,7 +127,10 @@ void TestCountingIteratorIncrement()
 
   REQUIRE(*iter == -2);
 }
-DECLARE_UNITTEST(TestCountingIteratorIncrement);
+TEST_CASE("TestCountingIteratorIncrement", "[counting_iterator]")
+{
+  TestCountingIteratorIncrement();
+}
 
 void TestCountingIteratorComparison()
 {
@@ -147,7 +156,10 @@ void TestCountingIteratorComparison()
   REQUIRE(iter1 - iter2 == 0);
   REQUIRE(iter1 == iter2);
 }
-DECLARE_UNITTEST(TestCountingIteratorComparison);
+TEST_CASE("TestCountingIteratorComparison", "[counting_iterator]")
+{
+  TestCountingIteratorComparison();
+}
 
 void TestCountingIteratorFloatComparison()
 {
@@ -211,7 +223,10 @@ void TestCountingIteratorFloatComparison()
   REQUIRE(iter3 < iter4);
   REQUIRE_FALSE(iter4 < iter3);
 }
-DECLARE_UNITTEST(TestCountingIteratorFloatComparison);
+TEST_CASE("TestCountingIteratorFloatComparison", "[counting_iterator]")
+{
+  TestCountingIteratorFloatComparison();
+}
 
 void TestCountingIteratorDistance()
 {
@@ -228,7 +243,10 @@ void TestCountingIteratorDistance()
 
   REQUIRE(::cuda::std::distance(iter1, iter2) == 104);
 }
-DECLARE_UNITTEST(TestCountingIteratorDistance);
+TEST_CASE("TestCountingIteratorDistance", "[counting_iterator]")
+{
+  TestCountingIteratorDistance();
+}
 
 void TestCountingIteratorUnsignedType()
 {
@@ -241,7 +259,10 @@ void TestCountingIteratorUnsignedType()
   REQUIRE(iter0 < iter1);
   REQUIRE_FALSE(iter1 < iter0);
 }
-DECLARE_UNITTEST(TestCountingIteratorUnsignedType);
+TEST_CASE("TestCountingIteratorUnsignedType", "[counting_iterator]")
+{
+  TestCountingIteratorUnsignedType();
+}
 
 void TestCountingIteratorLowerBound()
 {
@@ -270,7 +291,10 @@ void TestCountingIteratorLowerBound()
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_UNITTEST(TestCountingIteratorLowerBound);
+TEST_CASE("TestCountingIteratorLowerBound", "[counting_iterator]")
+{
+  TestCountingIteratorLowerBound();
+}
 
 void TestCountingIteratorDifference()
 {
@@ -284,7 +308,10 @@ void TestCountingIteratorDifference()
 
   REQUIRE(diff == last - first);
 }
-DECLARE_UNITTEST(TestCountingIteratorDifference);
+TEST_CASE("TestCountingIteratorDifference", "[counting_iterator]")
+{
+  TestCountingIteratorDifference();
+}
 
 void TestCountingIteratorDynamicStride()
 {
@@ -302,7 +329,10 @@ void TestCountingIteratorDynamicStride()
   iter -= 10;
   REQUIRE(*iter == -4);
 }
-DECLARE_UNITTEST(TestCountingIteratorDynamicStride);
+TEST_CASE("TestCountingIteratorDynamicStride", "[counting_iterator]")
+{
+  TestCountingIteratorDynamicStride();
+}
 
 void TestCountingIteratorStaticStride()
 {
@@ -320,7 +350,10 @@ void TestCountingIteratorStaticStride()
   iter -= 10;
   REQUIRE(*iter == -4);
 }
-DECLARE_UNITTEST(TestCountingIteratorStaticStride);
+TEST_CASE("TestCountingIteratorStaticStride", "[counting_iterator]")
+{
+  TestCountingIteratorStaticStride();
+}
 
 void TestCountingIteratorPointer()
 {
@@ -345,7 +378,10 @@ void TestCountingIteratorPointer()
   REQUIRE(*iter == &arr[0]);
   REQUIRE(**iter == 0);
 }
-DECLARE_UNITTEST(TestCountingIteratorPointer);
+TEST_CASE("TestCountingIteratorPointer", "[counting_iterator]")
+{
+  TestCountingIteratorPointer();
+}
 
 _CCCL_DIAG_POP
 
@@ -358,4 +394,7 @@ void TestCountingIteratorFloatDistanceTo()
 
   REQUIRE(iter2 - iter1 == 5);
 }
-DECLARE_UNITTEST(TestCountingIteratorFloatDistanceTo);
+TEST_CASE("TestCountingIteratorFloatDistanceTo", "[counting_iterator]")
+{
+  TestCountingIteratorFloatDistanceTo();
+}

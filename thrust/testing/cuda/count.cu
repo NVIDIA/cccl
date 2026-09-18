@@ -100,4 +100,7 @@ void TestCountCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestCountCudaStreams);
+TEST_CASE("TestCountCudaStreams", "[count]")
+{
+  TestCountCudaStreams();
+}

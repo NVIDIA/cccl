@@ -40,7 +40,10 @@ void TestReplaceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceDispatchExplicit);
+TEST_CASE("TestReplaceDispatchExplicit", "[replace]")
+{
+  TestReplaceDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename T>
 void replace(my_tag, ForwardIterator first, ForwardIterator, const T&, const T&)
@@ -56,7 +59,10 @@ void TestReplaceDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceDispatchImplicit);
+TEST_CASE("TestReplaceDispatchImplicit", "[replace]")
+{
+  TestReplaceDispatchImplicit();
+}
 
 template <typename T>
 void TestReplace(const size_t n)
@@ -109,7 +115,10 @@ void TestReplaceCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceCopyDispatchExplicit);
+TEST_CASE("TestReplaceCopyDispatchExplicit", "[replace]")
+{
+  TestReplaceCopyDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator replace_copy(my_tag, InputIterator, InputIterator, OutputIterator result, const T&, const T&)
@@ -127,7 +136,10 @@ void TestReplaceCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceCopyDispatchImplicit);
+TEST_CASE("TestReplaceCopyDispatchImplicit", "[replace]")
+{
+  TestReplaceCopyDispatchImplicit();
+}
 
 template <typename T>
 void TestReplaceCopy(const size_t n)
@@ -210,7 +222,10 @@ void TestReplaceIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceIfDispatchExplicit);
+TEST_CASE("TestReplaceIfDispatchExplicit", "[replace]")
+{
+  TestReplaceIfDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename Predicate, typename T>
 void replace_if(my_tag, ForwardIterator first, ForwardIterator, Predicate, const T&)
@@ -226,7 +241,10 @@ void TestReplaceIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceIfDispatchImplicit);
+TEST_CASE("TestReplaceIfDispatchImplicit", "[replace]")
+{
+  TestReplaceIfDispatchImplicit();
+}
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencilSimple()
@@ -259,7 +277,10 @@ void TestReplaceIfStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceIfStencilDispatchExplicit);
+TEST_CASE("TestReplaceIfStencilDispatchExplicit", "[replace]")
+{
+  TestReplaceIfStencilDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
 void replace_if(my_tag, ForwardIterator first, ForwardIterator, InputIterator, Predicate, const T&)
@@ -276,7 +297,10 @@ void TestReplaceIfStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceIfStencilDispatchImplicit);
+TEST_CASE("TestReplaceIfStencilDispatchImplicit", "[replace]")
+{
+  TestReplaceIfStencilDispatchImplicit();
+}
 
 template <typename T>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIf(const size_t n)
@@ -340,7 +364,10 @@ void TestReplaceCopyIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceCopyIfDispatchExplicit);
+TEST_CASE("TestReplaceCopyIfDispatchExplicit", "[replace]")
+{
+  TestReplaceCopyIfDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
 OutputIterator replace_copy_if(my_tag, InputIterator, InputIterator, OutputIterator result, Predicate, const T&)
@@ -358,7 +385,10 @@ void TestReplaceCopyIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceCopyIfDispatchImplicit);
+TEST_CASE("TestReplaceCopyIfDispatchImplicit", "[replace]")
+{
+  TestReplaceCopyIfDispatchImplicit();
+}
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilSimple()
@@ -395,7 +425,10 @@ void TestReplaceCopyIfStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceCopyIfStencilDispatchExplicit);
+TEST_CASE("TestReplaceCopyIfStencilDispatchExplicit", "[replace]")
+{
+  TestReplaceCopyIfStencilDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
 OutputIterator
@@ -419,7 +452,10 @@ void TestReplaceCopyIfStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceCopyIfStencilDispatchImplicit);
+TEST_CASE("TestReplaceCopyIfStencilDispatchImplicit", "[replace]")
+{
+  TestReplaceCopyIfStencilDispatchImplicit();
+}
 
 template <typename T>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIf(const size_t n)

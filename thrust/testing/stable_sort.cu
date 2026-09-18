@@ -19,7 +19,10 @@ void TestStableSortDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStableSortDispatchExplicit);
+TEST_CASE("TestStableSortDispatchExplicit", "[stable_sort]")
+{
+  TestStableSortDispatchExplicit();
+}
 
 template <typename RandomAccessIterator>
 void stable_sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
@@ -35,7 +38,10 @@ void TestStableSortDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStableSortDispatchImplicit);
+TEST_CASE("TestStableSortDispatchImplicit", "[stable_sort]")
+{
+  TestStableSortDispatchImplicit();
+}
 
 template <typename T>
 struct less_div_10

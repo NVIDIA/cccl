@@ -34,4 +34,7 @@ void TestNewDeleteResourceAlignedAllocation()
     }
   }
 }
-DECLARE_UNITTEST(TestNewDeleteResourceAlignedAllocation);
+TEST_CASE("TestNewDeleteResourceAlignedAllocation", "[mr_new]")
+{
+  TestNewDeleteResourceAlignedAllocation();
+}

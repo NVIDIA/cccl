@@ -40,13 +40,19 @@ void TestSetSymmetricDifferenceDeviceSeq()
 {
   TestSetSymmetricDifferenceDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceDeviceSeq);
+TEST_CASE("TestSetSymmetricDifferenceDeviceSeq", "[set_symmetric_difference]")
+{
+  TestSetSymmetricDifferenceDeviceSeq();
+}
 
 void TestSetSymmetricDifferenceDeviceDevice()
 {
   TestSetSymmetricDifferenceDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceDeviceDevice);
+TEST_CASE("TestSetSymmetricDifferenceDeviceDevice", "[set_symmetric_difference]")
+{
+  TestSetSymmetricDifferenceDeviceDevice();
+}
 #endif
 
 void TestSetSymmetricDifferenceCudaStreams()
@@ -64,4 +70,7 @@ void TestSetSymmetricDifferenceCudaStreams()
   REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {2, 3, 3, 6, 7});
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceCudaStreams);
+TEST_CASE("TestSetSymmetricDifferenceCudaStreams", "[set_symmetric_difference]")
+{
+  TestSetSymmetricDifferenceCudaStreams();
+}

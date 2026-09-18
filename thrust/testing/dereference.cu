@@ -40,7 +40,10 @@ void TestDeviceDereferenceDeviceVectorIterator()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceDeviceVectorIterator);
+TEST_CASE("TestDeviceDereferenceDeviceVectorIterator", "[dereference]")
+{
+  TestDeviceDereferenceDeviceVectorIterator();
+}
 
 void TestDeviceDereferenceDevicePtr()
 {
@@ -55,7 +58,10 @@ void TestDeviceDereferenceDevicePtr()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceDevicePtr);
+TEST_CASE("TestDeviceDereferenceDevicePtr", "[dereference]")
+{
+  TestDeviceDereferenceDevicePtr();
+}
 
 void TestDeviceDereferenceTransformIterator()
 {
@@ -68,7 +74,10 @@ void TestDeviceDereferenceTransformIterator()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceTransformIterator);
+TEST_CASE("TestDeviceDereferenceTransformIterator", "[dereference]")
+{
+  TestDeviceDereferenceTransformIterator();
+}
 
 void TestDeviceDereferenceTransformIteratorInputConversion()
 {
@@ -81,7 +90,10 @@ void TestDeviceDereferenceTransformIteratorInputConversion()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorInputConversion);
+TEST_CASE("TestDeviceDereferenceTransformIteratorInputConversion", "[dereference]")
+{
+  TestDeviceDereferenceTransformIteratorInputConversion();
+}
 
 void TestDeviceDereferenceTransformIteratorOutputConversion()
 {
@@ -94,7 +106,10 @@ void TestDeviceDereferenceTransformIteratorOutputConversion()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorOutputConversion);
+TEST_CASE("TestDeviceDereferenceTransformIteratorOutputConversion", "[dereference]")
+{
+  TestDeviceDereferenceTransformIteratorOutputConversion();
+}
 
 void TestDeviceDereferenceCountingIterator()
 {
@@ -108,7 +123,10 @@ void TestDeviceDereferenceCountingIterator()
   const thrust::device_vector<int> ref{1, 2, 3, 4, 5};
   REQUIRE(output == ref);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceCountingIterator);
+TEST_CASE("TestDeviceDereferenceCountingIterator", "[dereference]")
+{
+  TestDeviceDereferenceCountingIterator();
+}
 
 void TestDeviceDereferenceTransformedCountingIterator()
 {
@@ -124,6 +142,9 @@ void TestDeviceDereferenceTransformedCountingIterator()
   const thrust::device_vector<int> ref{-1, -2, -3, -4, -5};
   REQUIRE(output == ref);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceTransformedCountingIterator);
+TEST_CASE("TestDeviceDereferenceTransformedCountingIterator", "[dereference]")
+{
+  TestDeviceDereferenceTransformedCountingIterator();
+}
 
 _CCCL_DIAG_POP

@@ -22,7 +22,10 @@ void TestTransformReduceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformReduceDispatchExplicit);
+TEST_CASE("TestTransformReduceDispatchExplicit", "[transform_reduce]")
+{
+  TestTransformReduceDispatchExplicit();
+}
 
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
 OutputType transform_reduce(my_tag, InputIterator first, InputIterator, UnaryFunction, OutputType init, BinaryFunction)
@@ -39,7 +42,10 @@ void TestTransformReduceDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTransformReduceDispatchImplicit);
+TEST_CASE("TestTransformReduceDispatchImplicit", "[transform_reduce]")
+{
+  TestTransformReduceDispatchImplicit();
+}
 
 template <class Vector>
 void TestTransformReduceSimple()

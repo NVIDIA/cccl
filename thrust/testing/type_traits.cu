@@ -51,7 +51,10 @@ void TestIsContiguousIterator()
   REQUIRE_FALSE(thrust::is_contiguous_iterator_v<TransformIterator>);
   REQUIRE_FALSE(thrust::is_contiguous_iterator_v<ZipIterator>);
 }
-DECLARE_UNITTEST(TestIsContiguousIterator);
+TEST_CASE("TestIsContiguousIterator", "[type_traits]")
+{
+  TestIsContiguousIterator();
+}
 
 struct NonTriviallyCopyable
 {
@@ -100,4 +103,7 @@ void TestTriviallyRelocatable()
   static_assert(thrust::is_trivially_relocatable<cuda::std::tuple<NonTriviallyCopyable>>::value);
   static_assert(thrust::is_trivially_relocatable<::cuda::std::tuple<NonTriviallyCopyable>>::value);
 };
-DECLARE_UNITTEST(TestTriviallyRelocatable);
+TEST_CASE("TestTriviallyRelocatable", "[type_traits]")
+{
+  TestTriviallyRelocatable();
+}

@@ -60,7 +60,10 @@ void TestRemoveDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveDispatchExplicit);
+TEST_CASE("TestRemoveDispatchExplicit", "[remove]")
+{
+  TestRemoveDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename T>
 ForwardIterator remove(my_tag, ForwardIterator first, ForwardIterator, const T&)
@@ -77,7 +80,10 @@ void TestRemoveDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveDispatchImplicit);
+TEST_CASE("TestRemoveDispatchImplicit", "[remove]")
+{
+  TestRemoveDispatchImplicit();
+}
 
 template <typename Vector>
 void TestRemoveCopySimple()
@@ -114,7 +120,10 @@ void TestRemoveCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveCopyDispatchExplicit);
+TEST_CASE("TestRemoveCopyDispatchExplicit", "[remove]")
+{
+  TestRemoveCopyDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator remove_copy(my_tag, InputIterator, InputIterator, OutputIterator result, const T&)
@@ -132,7 +141,10 @@ void TestRemoveCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveCopyDispatchImplicit);
+TEST_CASE("TestRemoveCopyDispatchImplicit", "[remove]")
+{
+  TestRemoveCopyDispatchImplicit();
+}
 
 template <typename Vector>
 void TestRemoveIfSimple()
@@ -167,7 +179,10 @@ void TestRemoveIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveIfDispatchExplicit);
+TEST_CASE("TestRemoveIfDispatchExplicit", "[remove]")
+{
+  TestRemoveIfDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator remove_if(my_tag, ForwardIterator first, ForwardIterator, Predicate)
@@ -184,7 +199,10 @@ void TestRemoveIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveIfDispatchImplicit);
+TEST_CASE("TestRemoveIfDispatchImplicit", "[remove]")
+{
+  TestRemoveIfDispatchImplicit();
+}
 
 template <typename Vector>
 void TestRemoveIfStencilSimple()
@@ -219,7 +237,10 @@ void TestRemoveIfStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveIfStencilDispatchExplicit);
+TEST_CASE("TestRemoveIfStencilDispatchExplicit", "[remove]")
+{
+  TestRemoveIfStencilDispatchExplicit();
+}
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator remove_if(my_tag, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -237,7 +258,10 @@ void TestRemoveIfStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveIfStencilDispatchImplicit);
+TEST_CASE("TestRemoveIfStencilDispatchImplicit", "[remove]")
+{
+  TestRemoveIfStencilDispatchImplicit();
+}
 
 template <typename Vector>
 void TestRemoveCopyIfSimple()
@@ -274,7 +298,10 @@ void TestRemoveCopyIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveCopyIfDispatchExplicit);
+TEST_CASE("TestRemoveCopyIfDispatchExplicit", "[remove]")
+{
+  TestRemoveCopyIfDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 InputIterator remove_copy_if(my_tag, InputIterator first, InputIterator, OutputIterator, Predicate)
@@ -292,7 +319,10 @@ void TestRemoveCopyIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveCopyIfDispatchImplicit);
+TEST_CASE("TestRemoveCopyIfDispatchImplicit", "[remove]")
+{
+  TestRemoveCopyIfDispatchImplicit();
+}
 
 template <typename Vector>
 void TestRemoveCopyIfStencilSimple()
@@ -330,7 +360,10 @@ void TestRemoveCopyIfStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilDispatchExplicit);
+TEST_CASE("TestRemoveCopyIfStencilDispatchExplicit", "[remove]")
+{
+  TestRemoveCopyIfStencilDispatchExplicit();
+}
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator remove_copy_if(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator result, Predicate)
@@ -352,7 +385,10 @@ void TestRemoveCopyIfStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilDispatchImplicit);
+TEST_CASE("TestRemoveCopyIfStencilDispatchImplicit", "[remove]")
+{
+  TestRemoveCopyIfStencilDispatchImplicit();
+}
 
 template <typename T>
 void TestRemove(const size_t n)

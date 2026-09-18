@@ -51,7 +51,10 @@ void TestReduceIntoDispatchExplicit()
   REQUIRE(sys.is_valid());
   REQUIRE(o[0] == 13);
 }
-DECLARE_UNITTEST(TestReduceIntoDispatchExplicit);
+TEST_CASE("TestReduceIntoDispatchExplicit", "[reduce_into]")
+{
+  TestReduceIntoDispatchExplicit();
+}
 
 template <typename InputIterator, typename OutputIterator>
 void reduce_into(my_tag, InputIterator, InputIterator, OutputIterator output)
@@ -69,7 +72,10 @@ void TestReduceIntoDispatchImplicit()
 
   REQUIRE(o[0] == 13);
 }
-DECLARE_UNITTEST(TestReduceIntoDispatchImplicit);
+TEST_CASE("TestReduceIntoDispatchImplicit", "[reduce_into]")
+{
+  TestReduceIntoDispatchImplicit();
+}
 
 template <typename T>
 struct TestReduceInto
@@ -108,7 +114,10 @@ void TestReduceIntoMixedTypesHost()
   thrust::reduce_into(int_input.begin(), int_input.end(), float_output.begin(), float(0.5));
   REQUIRE(float_output[0] == 10.5);
 }
-DECLARE_UNITTEST(TestReduceIntoMixedTypesHost);
+TEST_CASE("TestReduceIntoMixedTypesHost", "[reduce_into]")
+{
+  TestReduceIntoMixedTypesHost();
+}
 void TestReduceIntoMixedTypesDevice()
 {
   // make sure we get types for default args and operators correct
@@ -126,7 +135,10 @@ void TestReduceIntoMixedTypesDevice()
   thrust::reduce_into(int_input.begin(), int_input.end(), float_output.begin(), float(0.5));
   REQUIRE(float_output[0] == 10.5);
 }
-DECLARE_UNITTEST(TestReduceIntoMixedTypesDevice);
+TEST_CASE("TestReduceIntoMixedTypesDevice", "[reduce_into]")
+{
+  TestReduceIntoMixedTypesDevice();
+}
 
 template <typename T>
 struct TestReduceIntoWithOperator
