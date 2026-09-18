@@ -306,7 +306,7 @@ Search Process
 
 During the Search Process we are covering all variants for all compile-time workloads to find a variant with a maximum (at least locally) score.
 
-You can run the tuning search for a specific algorithm and compile-time workload with a CCCL internal script.
+You can run the tuning search for a specific algorithm and compile-time workload with the ``search.py`` script.
 It configures its own build directories, so it is run from the CCCL source root,
 and forwards any :code:`-D` options to CMake:
 

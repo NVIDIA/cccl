@@ -4,6 +4,7 @@ import collections
 import contextlib
 import fcntl
 import json
+import math
 import multiprocessing
 import os
 import subprocess
@@ -219,7 +220,7 @@ def evaluate(request_path):
         with gpu_lock(request["lock"]):
             score = variant.score(ct_workload, rt_workload_space, estimator, estimator)
 
-    if score in (float("inf"), float("-inf")):
+    if not math.isfinite(score):
         score = INVALID_SCORE
 
     print("SCORE {}".format(score))
