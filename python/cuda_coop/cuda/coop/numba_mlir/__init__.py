@@ -24,36 +24,40 @@ from ._thread_group import (
 
 __all__ = [
     "Hierarchy",
-    "StatefulFunction",
     "TempStorage",
     "TempStorageLike",
     "ThreadData",
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "this_block",
+    "this_cluster",
+    "this_grid",
+    "this_thread",
+    "this_warp",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
     "load",
-    "local",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
-    "shared",
     "shuffle",
     "store",
     "sum",
-    "this_block",
-    "this_cluster",
-    "this_grid",
-    "this_thread",
-    "this_warp",
+    "StatefulFunction",
+    "local",
+    "shared",
 ]
 
 
 def __getattr__(name):
     if name in {
+        "merge_sort_keys",
+        "merge_sort_pairs",
         "exchange",
         "exclusive_scan",
         "exclusive_sum",
@@ -65,6 +69,8 @@ def __getattr__(name):
         "sum",
     }:
         module_name = {
+            "merge_sort_keys": "_group_merge_sort",
+            "merge_sort_pairs": "_group_merge_sort",
             "exchange": "_group_exchange",
             "exclusive_scan": "_group_scan",
             "exclusive_sum": "_group_scan",

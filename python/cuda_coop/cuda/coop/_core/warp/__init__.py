@@ -22,10 +22,20 @@ from .load_store import (
     make_warp_load_store_spec,
     make_warp_store_spec,
 )
+from .merge_sort import (
+    WarpMergeSortPayload,
+    WarpMergeSortSpec,
+    WarpMergeSortTilePolicy,
+    make_warp_merge_sort_spec,
+)
 from .reduce import WarpReduceOperation, WarpReduceSpec, make_warp_reduce_spec
 from .scan import WarpScanMode, WarpScanSpec, make_warp_scan_spec
 
 __all__ = [
+    "WarpMergeSortPayload",
+    "WarpMergeSortTilePolicy",
+    "WarpMergeSortSpec",
+    "make_warp_merge_sort_spec",
     "WarpExchangeMode",
     "WarpExchangeSpec",
     "WarpExchangeValueForm",
