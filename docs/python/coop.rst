@@ -27,15 +27,23 @@
    coop/programming_guide
    coop/developer_overview
 
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+   :caption: CUTLASS
+
+   coop_cutlass
+
 ``cuda.coop`` brings CCCL's optimized cooperative algorithms to Python GPU
 kernels. Use it when threads need to work together, such as summing a tile
 of values or arranging data for the next stage of a computation. These
 operations run inside a kernel, where you can combine them with your own
 code and reuse algorithms maintained and tuned for NVIDIA GPUs.
 
-The Numba-CUDA-MLIR integration compiles cooperative calls inside Python
-GPU kernels. You keep Numba's kernel syntax and launch conventions and
-use ``cuda.coop`` for the cooperative parts of the work.
+The common Python API has integrations for Numba-CUDA-MLIR and CUTLASS
+CuTe DSL, using CUB and CUDAX underneath. Each programming guide describes
+the operations its compiler supports. You keep your compiler's kernel
+syntax and launch conventions for the surrounding code.
 
 Get started
 -----------
@@ -52,6 +60,14 @@ Install the extra matching your CUDA major version:
 The guide covers :ref:`requirements and kernel reuse
 <coop-numba-requirements>`.
 
+For CuTe kernels, use the :doc:`CUTLASS Programming Guide <coop_cutlass>`
+and check its :ref:`runtime requirements <coop-cutlass-requirements>`.
+Install the base package alongside a compatible CuTe runtime:
+
+.. code-block:: console
+
+   python -m pip install cuda-coop
+
 Inside a kernel
 ---------------
 
@@ -59,8 +75,7 @@ A cooperative operation acts on a *group* of threads, usually a warp or a
 block. Each thread owns part of the group's data, held in ``ThreadData``.
 Together, those parts form a tile.
 
-These calls load a full tile, compute its prefix sums, and write the
-result back to memory:
+These calls copy a full tile from one array to another:
 
 .. code-block:: python
 
@@ -69,16 +84,12 @@ result back to memory:
    items = coop.ThreadData(items_per_thread)
 
    coop.load(block, source, items, offset=offset)
-   prefixes = coop.exclusive_sum(block, items)
-   coop.store(block, destination, prefixes, offset=offset)
+   coop.store(block, destination, items, offset=offset)
 
 The kernel supplies the tile's ``offset`` and a compile-time
 ``items_per_thread`` count. With 128 threads and four items per thread,
 the block processes 512 values. All threads in the group must reach the
 cooperative calls, including when only part of the tile is valid.
-
-Each block computes its own prefix sum; a device-wide scan also needs
-to combine results across blocks.
 
 The :doc:`programming concepts <coop/concepts>` explain participation,
 data layouts, operation results, and temporary storage.
@@ -92,6 +103,10 @@ cooperative part of a kernel independently of its compiler.
 The qualified ``cuda.coop.numba_mlir`` namespace provides Numba-specific
 operands and controls. The :ref:`Numba API comparison
 <coop-programming-api-choice>` explains when to use it.
+
+The qualified ``cuda.coop.cutlass`` namespace provides CuTe integration
+features. See the :ref:`CUTLASS API comparison <coop-cutlass-api-choice>`
+for its supported operations and payloads.
 
 Import your kernel compiler before ``cuda.coop`` to activate its
 integration automatically. For varying import order, use explicit
