@@ -19,18 +19,18 @@ _SCOPE = "cuda.coop.cutlass"
 _ALGORITHMS = frozenset({"raking_commutative_only", "raking", "warp_reductions"})
 
 
-def _classify_valid_items(value):
+def _classify_valid_items(value, *, primitive="reduce"):
     if value is None:
         return ArgumentBinding.omitted()
     if _is_boolean(value):
-        raise TypeError(f"{_SCOPE}.reduce valid_items must be an integer")
+        raise TypeError(f"{_SCOPE}.{primitive} valid_items must be an integer")
     if isinstance(value, Integral):
         return ArgumentBinding.static(int(value))
     from cutlass.base_dsl.typing import Integer
 
     if isinstance(value, Integer):
         return ArgumentBinding.runtime()
-    raise TypeError(f"{_SCOPE}.reduce valid_items must be an integer")
+    raise TypeError(f"{_SCOPE}.{primitive} valid_items must be an integer")
 
 
 def _normalize_algorithm(algorithm):
