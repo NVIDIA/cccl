@@ -2,14 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose common block radix operations for supported GPU compilers.
-
-These functions describe stable ranking and sorting of integral ThreadData
-keys. Decorators register each function so a supported compiler can recognize
-its calls; the Python bodies raise a compiler-context error. The static bound
-helper shares default and validation rules with frontends that need resolved
-compile-time bounds.
-"""
+"""Portable block radix ordering operations."""
 
 from __future__ import annotations
 
@@ -189,7 +182,7 @@ def radix_sort_pairs(
         A complete physical block; every thread participates.
     keys, values : ThreadDataLike
         Fixed-size per-thread payloads with matching extents. Keys use int32,
-        uint32, int64, or uint64. Values use the common API's numeric dtypes:
+        uint32, int64, or uint64. Values use the portable numeric dtypes:
         signed or unsigned 8-, 16-, 32-, or 64-bit integers, float32, or
         float64.
     begin_bit, end_bit : int or compiler integer
