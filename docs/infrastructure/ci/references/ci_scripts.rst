@@ -63,8 +63,10 @@ LTSC 2022, so the sibling defaults to ``mcr.microsoft.com/windows/servercore:lts
 Windows needs one more thing. ``python:3.14-slim`` still ships glibc and libstdc++,
 because every C/C++ Python extension links against them; Server Core ships neither of
 the Windows equivalents, since ``msvcp140.dll`` and ``vcruntime140*.dll`` come from the
-MSVC redistributable rather than from Windows itself. Without them numba and
-``cccl.c.parallel.dll`` both fail to load. The Windows payload installs the
+MSVC redistributable rather than from Windows itself. The cuda-cccl wheel itself does not
+depend on that because we run ``delvewheel repair`` (the Windows counterpart of the
+``auditwheel`` step on Linux) so the wheel carries its own ``msvcp140.dll``. However,
+other dependencies like numba's extensions do, so the Windows payloads install a
 redistributable before running anything, which leaves the comparison the lane exists to
 make intact: still no compiler, still no CUDA toolkit.
 
