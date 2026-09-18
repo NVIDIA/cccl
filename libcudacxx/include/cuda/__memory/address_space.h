@@ -273,6 +273,8 @@ template <typename = void>
 //! @return `true` if the pointer is from the specified address space, `false` otherwise.
 [[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const volatile void* __ptr, address_space __space) noexcept
 {
+  // The query inspects only the address.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return ::cuda::device::is_address_from(const_cast<const void*>(__ptr), __space);
 }
 

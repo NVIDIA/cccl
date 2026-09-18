@@ -445,6 +445,8 @@ private:
   template <typename System>
   _CCCL_HOST_DEVICE value_type strip_const_get_value(System const& system) const
   {
+    // Backend customization interfaces require mutable system references.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     System& non_const_system = const_cast<System&>(system);
 
     using thrust::system::detail::generic::get_value;
@@ -470,6 +472,8 @@ private:
   template <typename System, typename OtherPointer>
   _CCCL_HOST_DEVICE void strip_const_assign_value(System const& system, OtherPointer src) const
   {
+    // Backend customization interfaces require mutable system references.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     System& non_const_system = const_cast<System&>(system);
 
     using thrust::system::detail::generic::assign_value;

@@ -133,6 +133,8 @@ class __temporary_storage
                        || __dynamic_accessibility == ::cuda::mr::__memory_accessibility::__host_device,
                      "Memory resources need to provide device accessible memory");
       }
+      // The const policy query exposes the resource used by the mutable allocation interface.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
       return ::cuda::mr::resource_ref<>{const_cast<__resource_t&>(__resource)};
     }
     else if constexpr (__is_callable_v<::cuda::get_stream_t, const _Policy&>)
