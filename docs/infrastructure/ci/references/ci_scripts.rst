@@ -66,9 +66,10 @@ the Windows equivalents, since ``msvcp140.dll`` and ``vcruntime140*.dll`` come f
 MSVC redistributable rather than from Windows itself. The cuda-cccl wheel itself does not
 depend on that because we run ``delvewheel repair`` (the Windows counterpart of the
 ``auditwheel`` step on Linux) so the wheel carries its own ``msvcp140.dll``. However,
-other dependencies like numba's extensions do, so the Windows payloads install a
-redistributable before running anything, which leaves the comparison the lane exists to
-make intact: still no compiler, still no CUDA toolkit.
+the CuPy wheel on PyPI does (`cupy/cupy#10316
+<https://github.com/cupy/cupy/issues/10316>`_), so the examples payload installs a
+redistributable before running anything. Once CuPy bundles its own runtime, that install
+can go too.
 
 ``test_headers`` is the one lane here that needs no GPU -- it asserts that headers
 shipped in the wheel are on disk and never launches a kernel -- so its entry point sets
