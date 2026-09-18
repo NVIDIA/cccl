@@ -28,6 +28,7 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
         import importlib.util
         import inspect
         import os
+        import sys
         from pathlib import Path
 
         from cuda import coop
@@ -44,7 +45,13 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             distribution_root,
         )
         assert not module_file.is_relative_to(source_root), (module_file, source_root)
-        assert importlib.util.find_spec("cuda.coop.cutlass") is None
+        cutlass_spec = importlib.util.find_spec("cuda.coop.cutlass")
+        assert cutlass_spec is not None and cutlass_spec.origin is not None
+        cutlass_file = Path(cutlass_spec.origin).resolve()
+        assert cutlass_file.is_relative_to(distribution_root), cutlass_file
+        assert not cutlass_file.is_relative_to(source_root), cutlass_file
+        assert "cutlass" not in sys.modules
+        assert "cuda.coop.cutlass" not in sys.modules
 
         required = {
             "Hierarchy",
@@ -153,4 +160,52 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
         check=False,
     )
 
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_isolated_cutlass_backend_uses_installed_modules(tmp_path: Path) -> None:
+    try:
+        importlib.metadata.distribution("cuda-coop")
+        importlib.metadata.distribution("nvidia-cutlass-dsl")
+    except importlib.metadata.PackageNotFoundError:
+        pytest.skip("requires installed cuda-coop and CUTLASS DSL distributions")
+
+    probe = textwrap.dedent(
+        """
+        import importlib.metadata
+        import sys
+        from pathlib import Path
+
+        import cutlass
+        from cuda import coop
+        import cuda.coop.cutlass as cutlass_coop
+        from cuda.coop.cutlass._compiler import _bundle
+        from cuda.coop._core.api import _dispatch
+
+        distribution_root = Path(
+            importlib.metadata.distribution("cuda-coop").locate_file("")
+        ).resolve()
+        for name, module in tuple(sys.modules.items()):
+            if name == "cuda.coop" or name.startswith("cuda.coop."):
+                origin = getattr(module, "__file__", None)
+                assert origin is not None, name
+                assert Path(origin).resolve().is_relative_to(distribution_root), (
+                    name, origin, distribution_root
+                )
+        assert callable(coop.load) and callable(cutlass_coop.load)
+        assert "cuda.coop.cutlass" in _dispatch._COMPILER_CONTEXT_PROBES
+        assert _dispatch._backend_module_name() is None
+        """
+    )
+    environment = os.environ.copy()
+    environment.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)
+    environment["PYTHONPATH"] = str(_PACKAGE_ROOT)
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", probe],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
     assert result.returncode == 0, result.stdout + result.stderr

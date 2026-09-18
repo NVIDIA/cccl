@@ -102,7 +102,8 @@ def test_public_exports_are_only_the_supported_group_families():
     assert importlib.import_module("cuda.coop.numba_mlir._lowering").__all__ == ()
 
     coop_root = Path(common_coop.__file__).resolve().parent
-    assert not (coop_root / "cutlass").exists()
+    # Optional compiler adapters are packaged beside the Numba backend.
+    assert (coop_root / "cutlass" / "__init__.py").is_file()
 
 
 def test_qualified_surface_is_common_plus_backend_extensions():

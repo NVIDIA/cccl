@@ -81,13 +81,16 @@ def test_all_bundled_header_licenses_are_declared() -> None:
 def test_python_implementation_boundaries() -> None:
     package = _PACKAGE_ROOT / "cuda" / "coop"
     required = (
+        "cutlass/__init__.py",
+        "cutlass/__init__.pyi",
+        "cutlass/_compiler/_runtime.py",
+        "cutlass/_thread_data.pyi",
         "numba_mlir/_lowering/_thread_group.py",
         "numba_mlir/_stateful_function.py",
         "numba_mlir/_stateful_function.pyi",
     )
     forbidden = (
         "_aot_cli.py",
-        "cutlass",
         "numba_mlir/_dataclass.py",
         "numba_mlir/_scan_op.py",
     )

@@ -132,6 +132,9 @@ known-first-party = [
   "cuda.coop._core.api",
   "cuda.coop._core.block",
   "cuda.coop._core.group",
+  "cuda.coop.cutlass",
+  "cuda.coop.cutlass._compiler",
+  "cuda.coop.cutlass._lowering",
   "cuda.coop.numba_mlir",
   "cuda.coop.numba_mlir._compiler",
   "cuda.coop.numba_mlir._lowering",
@@ -147,6 +150,7 @@ addopts = [
 ]
 xfail_strict = true
 markers = [
+  "backend_cutlass: cuda.coop.cutlass backend test",
   "backend_numba_mlir: cuda.coop.numba_mlir backend test",
   "compile: compiler or lowering test that does not launch a kernel",
   "unit: backend-local unit test without GPU execution",
@@ -156,7 +160,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["cuda.coop._core", "cuda.coop.numba_mlir"]
+source = ["cuda.coop._core", "cuda.coop.cutlass", "cuda.coop.numba_mlir"]
 
 [tool.coverage.report]
 show_missing = true
