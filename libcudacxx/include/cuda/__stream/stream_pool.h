@@ -224,25 +224,6 @@ public:
     return __stream_at(__index % __streams_.size());
   }
 
-  //! @brief Creates every stream of the pool that does not exist yet
-  //!
-  //! Call this once after construction, or construct with `stream_pool::eager`, when the creation cost
-  //! must not land on the hot path. Does nothing in an eager pool, or when every stream exists already.
-  //!
-  //! @throws cuda_error if a stream creation fails
-  _CCCL_HOST_API void create_all_streams() const
-  {
-    if (!__lazy_)
-    {
-      return;
-    }
-    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
-    for (stream& __slot : __streams_)
-    {
-      __create_if_missing(__slot);
-    }
-  }
-
   //! @brief Number of stream slots in the pool
   //!
   //! Fixed at construction; every stream the pool ever hands out comes from one of these slots, whether or not
@@ -288,19 +269,14 @@ private:
       return __streams_[__i];
     }
     const ::std::lock_guard<::std::mutex> __lock{__mutex_};
-    __create_if_missing(__streams_[__i]);
-    return __streams_[__i];
-  }
-
-  //! Creates the stream of a slot that has none yet. The caller holds the mutex.
-  _CCCL_HOST_API void __create_if_missing(stream& __slot) const
-  {
+    stream& __slot = __streams_[__i];
     if (__slot.get() == ::cuda::__invalid_stream())
     {
       // Makes the stream creation capture-safe; a no-op when the calling thread is not capturing.
       const __relaxed_capture_scope __relaxed{};
       __slot = __create_stream();
     }
+    return __slot;
   }
 
   //! Creates one stream on the logical device of the pool.

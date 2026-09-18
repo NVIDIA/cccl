@@ -79,7 +79,6 @@ managing their lifetime.
 
 - ``get_stream()``: returns the next stream in round-robin order
 - ``get_stream(i)``: returns the stream in slot ``i % capacity()``
-- ``create_all_streams()``: creates the streams of a lazy pool that do not exist yet
 - ``capacity()``, ``device()``, ``priority()``: the parameters given at construction
 
 Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool. The streams are
@@ -87,15 +86,13 @@ destroyed with the pool, so the work submitted to them must be synchronized befo
 not do it. When the streams are created depends on a leading tag:
 
 - ``cuda::stream_pool::lazy``, the default: a stream is created the first time its slot is requested, and the
-  getters take a mutex to do so. Constructing the pool touches nothing on the device, which suits a pool per device
-  where some devices may never be used.
+  getters take a mutex to do so.
 - ``cuda::stream_pool::eager``: every stream is created in the constructor, and the getters take no lock at all.
 
 All getters can be called concurrently from several threads.
 
 A pool can be neither copied nor moved. Code that needs to hand a pool around, store it in a container, or share it
-between several owners should allocate it with ``std::make_unique`` or ``std::make_shared`` and pass the
-``std::unique_ptr`` or ``std::shared_ptr`` instead.
+between several owners should allocate it with ``std::make_unique`` or ``std::make_shared``.
 
 Availability: CCCL 3.6.0
 

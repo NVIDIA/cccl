@@ -295,10 +295,9 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     }
   }
 
-  SECTION("create_all_streams() creates every slot up front")
+  SECTION("Every slot of a lazy pool yields a distinct, valid stream")
   {
     const cuda::stream_pool pool{device, 4};
-    pool.create_all_streams();
 
     std::vector<cuda::stream_ref> all;
     for (cuda::std::size_t i = 0; i < pool.capacity(); ++i)
@@ -317,8 +316,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
       }
     }
 
-    // The getters keep handing out the same streams, and a second call creates nothing new.
-    pool.create_all_streams();
+    // The getters keep handing out the same streams.
     for (cuda::std::size_t i = 0; i < all.size(); ++i)
     {
       REQUIRE(pool.get_stream(i) == all[i]);
@@ -345,36 +343,6 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     const cuda::stream_pool defaulted{cuda::stream_pool::eager, device};
     REQUIRE(defaulted.capacity() == cuda::stream_pool::default_capacity);
     REQUIRE(defaulted.get_stream(0) != defaulted.get_stream(1));
-  }
-
-  SECTION("create_all_streams() keeps the streams created by earlier requests")
-  {
-    const cuda::stream_pool pool{device, 3};
-    const cuda::stream_ref s1 = pool.get_stream(1);
-
-    pool.create_all_streams();
-    REQUIRE(pool.get_stream(1) == s1);
-    const cuda::stream_ref s0 = pool.get_stream(0);
-    const cuda::stream_ref s2 = pool.get_stream(2);
-    REQUIRE(s0 != s1);
-    REQUIRE(s2 != s1);
-
-    pool.create_all_streams();
-    REQUIRE(pool.get_stream(0) == s0);
-    REQUIRE(pool.get_stream(1) == s1);
-    REQUIRE(pool.get_stream(2) == s2);
-  }
-
-  SECTION("create_all_streams() on an eager pool is a no-op")
-  {
-    const cuda::stream_pool pool{cuda::stream_pool::eager, device, 3};
-    const cuda::stream_ref s0 = pool.get_stream(0);
-    const cuda::stream_ref s1 = pool.get_stream(1);
-    const cuda::stream_ref s2 = pool.get_stream(2);
-    pool.create_all_streams();
-    REQUIRE(pool.get_stream(0) == s0);
-    REQUIRE(pool.get_stream(1) == s1);
-    REQUIRE(pool.get_stream(2) == s2);
   }
 
   SECTION("Every slot can be synchronized by index before the pool goes away")
