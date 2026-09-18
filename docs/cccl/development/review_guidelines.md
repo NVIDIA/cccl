@@ -88,6 +88,17 @@ When a kernel is launched with PDL enabled (either directly or via a launcher fa
 via `cub::detail::ptx_compute_cap`. PDL may only be enabled if
 `cc >= ::cuda::compute_capability{9, 0}` (see `dispatch_find.cuh`).
 
+## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
+
+<!-- provenance:
+  #8210→#8254 warp_shuffle static_assert(cuda::std::is_trivially_copyable_v) rejected __half/__nv_bfloat16 and composites, breaking CUB consumers; reverted
+-->
+
+Flag `cuda::std::is_trivially_copyable(_v)` (or `std::`) applied to a generic value-type parameter;
+use `cuda::is_trivially_copyable(_v)` instead, which supports more cases. The vendor headers give
+`__half`/`__nv_bfloat16` non-trivial special members, so the standard trait reports false for them
+(and aggregates of them) even though they are functionally copyable. Candidate for a pre-commit grep.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
