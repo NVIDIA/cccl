@@ -41,6 +41,6 @@ void TestSetIntersectionKeyValue(size_t n)
 
   d_result.resize(d_end - d_result.begin());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionKeyValue);

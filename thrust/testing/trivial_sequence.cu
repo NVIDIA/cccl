@@ -12,11 +12,11 @@ void test(Iterator first, Iterator last)
   thrust::detail::trivial_sequence<Iterator, System> ts(system, first, last);
   using ValueType = typename ::cuda::std::iterator_traits<Iterator>::value_type;
 
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[0], ValueType(0, 11));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[1], ValueType(2, 11));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[2], ValueType(1, 13));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[3], ValueType(0, 10));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[4], ValueType(1, 12));
+  REQUIRE((ValueType) ts.begin()[0] == ValueType(0, 11));
+  REQUIRE((ValueType) ts.begin()[1] == ValueType(2, 11));
+  REQUIRE((ValueType) ts.begin()[2] == ValueType(1, 13));
+  REQUIRE((ValueType) ts.begin()[3] == ValueType(0, 10));
+  REQUIRE((ValueType) ts.begin()[4] == ValueType(1, 12));
 
   ts.begin()[0] = ValueType(0, 0);
   ts.begin()[1] = ValueType(0, 0);

@@ -69,7 +69,7 @@ void TestSetIntersectionCudaStreams(ExecutionPolicy policy)
   const auto end = thrust::set_intersection(streampolicy, a.begin(), a.end(), b.begin(), b.end(), result.begin());
   stream.sync();
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {0, 4});
 }
 

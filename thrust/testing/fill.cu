@@ -112,28 +112,28 @@ void TestFillNSimple()
   Vector ref{0, 7, 7, 7, 4};
   REQUIRE(v == ref);
 
-  ASSERT_EQUAL_QUIET(v.begin() + 4, iter);
+  REQUIRE((v.begin() + 4 == iter));
 
   iter = thrust::fill_n(v.begin() + 0, 3, (T) 8);
 
   ref = {8, 8, 8, 7, 4};
   REQUIRE(v == ref);
 
-  ASSERT_EQUAL_QUIET(v.begin() + 3, iter);
+  REQUIRE((v.begin() + 3 == iter));
 
   iter = thrust::fill_n(v.begin() + 2, 3, (T) 9);
 
   ref = {8, 8, 9, 9, 9};
   REQUIRE(v == ref);
 
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE((v.end() == iter));
 
   iter = thrust::fill_n(v.begin(), v.size(), (T) 1);
 
   ref = Vector(5, 1);
   REQUIRE(v == ref);
 
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE((v.end() == iter));
 }
 DECLARE_VECTOR_UNITTEST(TestFillNSimple);
 
@@ -147,8 +147,8 @@ void TestFillNDiscardIterator()
 
   const thrust::discard_iterator<> reference(10);
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE((reference == h_result));
+  REQUIRE((reference == d_result));
 }
 DECLARE_UNITTEST(TestFillNDiscardIterator);
 
@@ -161,13 +161,13 @@ void TestFillNMixedTypes()
 
   Vector ref(4, 1);
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE((v.end() == iter));
 
   iter = thrust::fill_n(v.begin(), v.size(), char(20));
 
   ref = Vector(4, 20);
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE((v.end() == iter));
 }
 DECLARE_VECTOR_UNITTEST(TestFillNMixedTypes);
 
@@ -243,7 +243,7 @@ void TestFillTuple()
   thrust::fill(h.begin(), h.end(), Tuple(4, 7));
   thrust::fill(d.begin(), d.end(), Tuple(4, 7));
 
-  ASSERT_EQUAL_QUIET(h, d);
+  REQUIRE((h == d));
 };
 DECLARE_UNITTEST(TestFillTuple);
 

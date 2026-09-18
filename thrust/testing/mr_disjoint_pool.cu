@@ -78,7 +78,7 @@ public:
 
     REQUIRE(id_to_allocate != 0u);
     // Ensure that the allocation ID is unique
-    ASSERT_EQUAL_QUIET(find(allocation_ids.begin(), allocation_ids.end(), id_to_allocate), allocation_ids.end());
+    REQUIRE(find(allocation_ids.begin(), allocation_ids.end(), id_to_allocate) == allocation_ids.end());
 
     free_bytes -= bytes;
     used_bytes += bytes;
@@ -100,7 +100,7 @@ public:
     REQUIRE(p.alignment == alignment);
     REQUIRE(bytes <= used_bytes);
     // Check that the id has been previously allocated
-    ASSERT_NOT_EQUAL_QUIET(find(allocation_ids.begin(), allocation_ids.end(), p.id), allocation_ids.end());
+    REQUIRE(find(allocation_ids.begin(), allocation_ids.end(), p.id) != allocation_ids.end());
 
     free_bytes += bytes;
     used_bytes -= bytes;

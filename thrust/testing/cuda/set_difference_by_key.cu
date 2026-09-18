@@ -110,8 +110,8 @@ void TestSetDifferenceByKeyCudaStreams()
     result_key.begin(),
     result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   test_runtime::assert_equal(stream, result_key, {2, 5});
   test_runtime::assert_equal(stream, result_val, {0, 0});
 }

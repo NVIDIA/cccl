@@ -104,13 +104,13 @@ void TestDevicePointerNullptrCompatibility()
 {
   thrust::device_ptr<T> p0(nullptr);
 
-  ASSERT_EQUAL_QUIET(nullptr, p0);
-  ASSERT_EQUAL_QUIET(p0, nullptr);
+  REQUIRE(nullptr == p0);
+  REQUIRE(p0 == nullptr);
 
   p0 = nullptr;
 
-  ASSERT_EQUAL_QUIET(nullptr, p0);
-  ASSERT_EQUAL_QUIET(p0, nullptr);
+  REQUIRE(nullptr == p0);
+  REQUIRE(p0 == nullptr);
 }
 DECLARE_GENERIC_UNITTEST(TestDevicePointerNullptrCompatibility);
 
@@ -120,7 +120,7 @@ void TestDevicePointerBoolConversion()
   const thrust::device_ptr<T> p0(nullptr);
   auto const b = bool(p0);
 
-  ASSERT_EQUAL_QUIET(false, b);
+  REQUIRE_FALSE(b);
 }
 DECLARE_GENERIC_UNITTEST(TestDevicePointerBoolConversion);
 

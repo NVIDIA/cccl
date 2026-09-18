@@ -107,8 +107,8 @@ void TestSetIntersectionByKeyCudaStreams(ExecutionPolicy policy)
     result_val.begin());
   stream.sync();
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   test_runtime::assert_equal(stream, result_key, {0, 4});
   test_runtime::assert_equal(stream, result_val, {0, 0});
 }

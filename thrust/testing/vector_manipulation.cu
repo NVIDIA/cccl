@@ -44,7 +44,7 @@ void TestVectorManipulation(size_t n)
   // shrinking a vector should not invalidate iterators
   const Iterator first = vec1.begin();
   vec1.resize(10);
-  ASSERT_EQUAL_QUIET(first, vec1.begin());
+  REQUIRE(first == vec1.begin());
 
   vec1.resize(0);
   REQUIRE(vec1.size() == 0lu);

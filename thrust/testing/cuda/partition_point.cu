@@ -71,11 +71,11 @@ void TestPartitionPointCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
+  REQUIRE(ref == thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
 
   last = v.begin() + 3;
   ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
+  REQUIRE(ref == thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
 }

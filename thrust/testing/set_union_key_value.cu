@@ -40,7 +40,7 @@ void TestSetUnionKeyValue(size_t n)
   d_end = thrust::set_union(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin());
   d_result.erase(d_end, d_result.end());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionKeyValue);
 
@@ -82,6 +82,6 @@ void TestSetUnionKeyValueDescending(size_t n)
     thrust::set_union(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin(), ::cuda::std::greater<T>());
   d_result.erase(d_end, d_result.end());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionKeyValueDescending);

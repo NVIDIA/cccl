@@ -347,8 +347,8 @@ struct TestUniqueCopyByKeyToDiscardIterator
       thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)),
       thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask values output
     const cuda::std::pair<typename thrust::host_vector<K>::iterator, thrust::discard_iterator<>> h_result2 =
@@ -368,8 +368,8 @@ struct TestUniqueCopyByKeyToDiscardIterator
                            thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
     REQUIRE(h_keys_output == d_keys_output);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask keys output
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<V>::iterator> h_result3 =
@@ -389,8 +389,8 @@ struct TestUniqueCopyByKeyToDiscardIterator
                            d_vals_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys));
 
     REQUIRE(h_vals_output == d_vals_output);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyToDiscardIterator, IntegralTypes);

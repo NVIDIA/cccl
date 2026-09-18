@@ -84,7 +84,7 @@ void TestCountingIteratorCopyConstructor()
 
   const thrust::counting_iterator<int> iter1(iter0);
 
-  ASSERT_EQUAL_QUIET(iter0, iter1);
+  REQUIRE(iter0 == iter1);
   REQUIRE(*iter0 == *iter1);
 
   // construct from related space

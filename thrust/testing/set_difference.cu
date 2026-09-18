@@ -59,7 +59,7 @@ void TestSetDifferenceSimple()
 
   const Iterator end = thrust::set_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetDifferenceSimple);

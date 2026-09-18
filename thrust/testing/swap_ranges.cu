@@ -147,23 +147,23 @@ void TestSwapRangesUserSwap()
   // check that nothing is yet swapped
   type_with_swap ref = type_with_swap(0, false);
 
-  ASSERT_EQUAL_QUIET(ref, h_A[0]);
-  ASSERT_EQUAL_QUIET(ref, h_A[1]);
-  ASSERT_EQUAL_QUIET(ref, h_A[2]);
+  REQUIRE((ref == h_A[0]));
+  REQUIRE((ref == h_A[1]));
+  REQUIRE((ref == h_A[2]));
 
-  ASSERT_EQUAL_QUIET(ref, d_A[0]);
-  ASSERT_EQUAL_QUIET(ref, d_A[1]);
-  ASSERT_EQUAL_QUIET(ref, d_A[2]);
+  REQUIRE((ref == d_A[0]));
+  REQUIRE((ref == d_A[1]));
+  REQUIRE((ref == d_A[2]));
 
   ref = type_with_swap(1, false);
 
-  ASSERT_EQUAL_QUIET(ref, h_B[0]);
-  ASSERT_EQUAL_QUIET(ref, h_B[1]);
-  ASSERT_EQUAL_QUIET(ref, h_B[2]);
+  REQUIRE((ref == h_B[0]));
+  REQUIRE((ref == h_B[1]));
+  REQUIRE((ref == h_B[2]));
 
-  ASSERT_EQUAL_QUIET(ref, d_B[0]);
-  ASSERT_EQUAL_QUIET(ref, d_B[1]);
-  ASSERT_EQUAL_QUIET(ref, d_B[2]);
+  REQUIRE((ref == d_B[0]));
+  REQUIRE((ref == d_B[1]));
+  REQUIRE((ref == d_B[2]));
 
   // swap the ranges
 
@@ -173,22 +173,22 @@ void TestSwapRangesUserSwap()
   // check that things were swapped
   ref = type_with_swap(1, true);
 
-  ASSERT_EQUAL_QUIET(ref, h_A[0]);
-  ASSERT_EQUAL_QUIET(ref, h_A[1]);
-  ASSERT_EQUAL_QUIET(ref, h_A[2]);
+  REQUIRE((ref == h_A[0]));
+  REQUIRE((ref == h_A[1]));
+  REQUIRE((ref == h_A[2]));
 
-  ASSERT_EQUAL_QUIET(ref, d_A[0]);
-  ASSERT_EQUAL_QUIET(ref, d_A[1]);
-  ASSERT_EQUAL_QUIET(ref, d_A[2]);
+  REQUIRE((ref == d_A[0]));
+  REQUIRE((ref == d_A[1]));
+  REQUIRE((ref == d_A[2]));
 
   ref = type_with_swap(0, true);
 
-  ASSERT_EQUAL_QUIET(ref, h_B[0]);
-  ASSERT_EQUAL_QUIET(ref, h_B[1]);
-  ASSERT_EQUAL_QUIET(ref, h_B[2]);
+  REQUIRE((ref == h_B[0]));
+  REQUIRE((ref == h_B[1]));
+  REQUIRE((ref == h_B[2]));
 
-  ASSERT_EQUAL_QUIET(ref, d_B[0]);
-  ASSERT_EQUAL_QUIET(ref, d_B[1]);
-  ASSERT_EQUAL_QUIET(ref, d_B[2]);
+  REQUIRE((ref == d_B[0]));
+  REQUIRE((ref == d_B[1]));
+  REQUIRE((ref == d_B[2]));
 }
 DECLARE_UNITTEST(TestSwapRangesUserSwap);

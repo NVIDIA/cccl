@@ -451,8 +451,8 @@ void TestRemoveCopyToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_nonzeros));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestRemoveCopyToDiscardIterator);
 
@@ -489,8 +489,8 @@ void TestRemoveCopyToDiscardIteratorZipped(const size_t n)
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_nonzeros));
 
   REQUIRE(h_output == d_output);
-  ASSERT_EQUAL_QUIET(reference, cuda::std::get<1>(h_result.get_iterator_tuple()));
-  ASSERT_EQUAL_QUIET(reference, cuda::std::get<1>(d_result.get_iterator_tuple()));
+  REQUIRE(reference == cuda::std::get<1>(h_result.get_iterator_tuple()));
+  REQUIRE(reference == cuda::std::get<1>(d_result.get_iterator_tuple()));
 }
 DECLARE_VARIABLE_UNITTEST(TestRemoveCopyToDiscardIteratorZipped);
 
@@ -533,8 +533,8 @@ void TestRemoveCopyIfToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_false));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIfToDiscardIterator);
 
@@ -585,7 +585,7 @@ void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_false));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIfStencilToDiscardIterator);

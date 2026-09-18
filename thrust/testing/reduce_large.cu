@@ -19,7 +19,7 @@ void _TestReduceWithLargeTypes()
   const FixedVector<T, N> h_result = thrust::reduce(h_data.begin(), h_data.end(), FixedVector<T, N>(T{0}));
   const FixedVector<T, N> d_result = thrust::reduce(d_data.begin(), d_data.end(), FixedVector<T, N>(T{0}));
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
 void TestReduceWithLargeTypes()

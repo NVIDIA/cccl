@@ -332,8 +332,8 @@ struct TestTransformScanToDiscardIterator
 
     thrust::discard_iterator<> d_result = thrust::transform_inclusive_scan(
       d_input.begin(), d_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
 
     h_result = thrust::transform_inclusive_scan(
       h_input.begin(),
@@ -367,8 +367,8 @@ struct TestTransformScanToDiscardIterator
       (T) 11,
       ::cuda::std::plus<T>());
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScanToDiscardIterator, IntegralTypes);

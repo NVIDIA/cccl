@@ -419,8 +419,8 @@ struct TestPartitionCopyToDiscardIterator
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask the false range
     thrust::host_vector<T> h_trues(n_true);
@@ -441,8 +441,8 @@ struct TestPartitionCopyToDiscardIterator
       cuda::std::make_pair(d_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
 
     REQUIRE(h_trues == d_trues);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask the true range
     thrust::host_vector<T> h_falses(n_false);
@@ -463,8 +463,8 @@ struct TestPartitionCopyToDiscardIterator
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), d_falses.begin() + n_false);
 
     REQUIRE(h_falses == d_falses);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopyToDiscardIterator, PartitionTypes);
@@ -503,8 +503,8 @@ struct TestPartitionCopyStencilToDiscardIterator
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask the false range
     thrust::host_vector<T> h_trues(n_true);
@@ -525,8 +525,8 @@ struct TestPartitionCopyStencilToDiscardIterator
       cuda::std::make_pair(d_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
 
     REQUIRE(h_trues == d_trues);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask the true range
     thrust::host_vector<T> h_falses(n_false);
@@ -557,8 +557,8 @@ struct TestPartitionCopyStencilToDiscardIterator
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), d_falses.begin() + n_false);
 
     REQUIRE(h_falses == d_falses);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPartitionCopyStencilToDiscardIterator, PartitionTypes);
@@ -678,8 +678,8 @@ struct TestStablePartitionCopyToDiscardIterator
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask the false range
     thrust::host_vector<T> h_trues(n_true);
@@ -700,8 +700,8 @@ struct TestStablePartitionCopyToDiscardIterator
       cuda::std::make_pair(d_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
 
     REQUIRE(h_trues == d_trues);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask the true range
     thrust::host_vector<T> h_falses(n_false);
@@ -722,8 +722,8 @@ struct TestStablePartitionCopyToDiscardIterator
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), d_falses.begin() + n_false);
 
     REQUIRE(h_falses == d_falses);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopyToDiscardIterator, PartitionTypes);
@@ -764,8 +764,8 @@ struct TestStablePartitionCopyStencilToDiscardIterator
     const cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), thrust::make_discard_iterator(n_false));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask the false range
     thrust::host_vector<T> h_trues(n_true);
@@ -786,8 +786,8 @@ struct TestStablePartitionCopyStencilToDiscardIterator
       cuda::std::make_pair(d_trues.begin() + n_true, thrust::make_discard_iterator(n_false));
 
     REQUIRE(h_trues == d_trues);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask the true range
     thrust::host_vector<T> h_falses(n_false);
@@ -818,8 +818,8 @@ struct TestStablePartitionCopyStencilToDiscardIterator
       cuda::std::make_pair(thrust::make_discard_iterator(n_true), d_falses.begin() + n_false);
 
     REQUIRE(h_falses == d_falses);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStablePartitionCopyStencilToDiscardIterator, PartitionTypes);

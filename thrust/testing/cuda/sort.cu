@@ -309,7 +309,7 @@ struct TestSortAscendingKey
     std::sort(h_data.begin(), h_data.end(), ::cuda::std::less<T>{});
     thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::less<T>{});
 
-    ASSERT_EQUAL_QUIET(h_data, d_data);
+    REQUIRE((h_data == d_data));
   }
 };
 

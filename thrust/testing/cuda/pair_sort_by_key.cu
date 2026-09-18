@@ -53,7 +53,7 @@ void TestPairStableSortByKeyDevice(ExecutionPolicy exec)
   // sort on the host
   thrust::stable_sort_by_key(h_pairs.begin(), h_pairs.end(), h_values.begin());
 
-  ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
+  REQUIRE((h_pairs == d_pairs));
   REQUIRE(h_values == d_values);
 };
 

@@ -61,7 +61,7 @@ void TestSetUnionCudaStreams()
   auto end =
     thrust::set_union(thrust::cuda::par.on(stream.get()), a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {0, 2, 3, 3, 4});
 }
 DECLARE_UNITTEST(TestSetUnionCudaStreams);

@@ -246,8 +246,8 @@ struct TestUniqueCopyToDiscardIterator
     const thrust::discard_iterator<> d_result =
       thrust::unique_copy(d_data.begin(), d_data.end(), thrust::make_discard_iterator());
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyToDiscardIterator, IntegralTypes);
