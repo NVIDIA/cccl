@@ -156,6 +156,9 @@ several operations:
    * - Shifting values
      - Unit ``up`` and ``down`` shifts of a block's ``ThreadData`` tile
      - Also supports scalar block ``offset`` and ``rotate`` modes
+   * - Comparison sorting
+     - Ascending or descending Merge Sort of keys or key-value pairs
+     - Also accepts a custom ``compare_op`` and fixed local arrays
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -685,9 +688,9 @@ allocation. Its contents are opaque; keep application values in
      - Scratch behavior in the current backend
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
-   * - Block transpose-family Load/Store; Block Scan
+   * - Block transpose-family Load/Store; Block Scan; Block Merge Sort
      - Automatic scratch, or an explicit ``TempStorage``
-   * - Warp transpose Load/Store; Warp Scan
+   * - Warp transpose Load/Store; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
    * - Exchange and Shuffle
      - Compiler-owned scratch and reuse synchronization
@@ -1044,6 +1047,48 @@ Each block has its own state. Launching this kernel with several blocks
 would require separate input/output ranges and would create independent
 running sums. For a whole-array scan across many blocks, use an appropriate
 device-wide scan or design the additional inter-block algorithm explicitly.
+
+.. _coop-merge-sort:
+
+Sorting keys and associated values
+---------------------------------
+
+:func:`~cuda.coop.merge_sort_keys` orders a group's keys.
+:func:`~cuda.coop.merge_sort_pairs` moves an associated value with each key,
+such as an original array index. Both return new payloads and preserve their
+inputs. The payloads use :term:`blocked` order. Sorting each block's tile
+does not sort an array spanning several blocks.
+
+This example sorts 128 keys and carries their original positions through
+the same permutation:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py
+   :language: python
+   :start-after: # merge-sort-example-begin
+   :end-before: # merge-sort-example-end
+   :dedent: 4
+
+The default order is ascending; use ``descending=True`` to reverse it.
+Merge Sort does not promise to preserve the input order of equal keys.
+The keys and values in a pair call must have matching per-thread extents,
+but may have different dtypes.
+
+Merge Sort supports blocks with a power-of-two thread count, physical
+warps, and logical warps of 1, 2, 4, 8, 16, or 32 lanes. Warp calls sort
+each group's tile independently. Every member of the group participates.
+Only block calls accept an explicit ``temp_storage`` descriptor.
+
+For a partial tile, pass ``valid_items`` together with ``oob_default``.
+The latter must have the key dtype and sort after all valid keys: for
+example, a sufficiently large value for ascending order. Only the sorted
+valid prefix is defined. Load only the valid input elements and store only
+that output prefix; a sentinel does not make an out-of-bounds memory access
+valid.
+
+The qualified API accepts ``compare_op`` for a custom strict weak ordering.
+The comparator must be stateless, return a Boolean, and perform ordinary
+device computation. Supply the desired direction in the comparator rather
+than combining it with ``descending=True``.
 
 Checking and tuning a kernel
 ---------------------------
