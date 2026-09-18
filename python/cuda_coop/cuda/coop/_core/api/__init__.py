@@ -23,7 +23,7 @@ from .thread_group import (
 )
 
 # Constructors and group factories bypass the operation registration decorator.
-# Compiler rewrites require this tag and the exported function identity, so
+# The Numba rewrite requires this tag and the exported function identity, so
 # an unrelated callable with the same name is not treated as a constructor.
 for _member_name in (
     "TempStorage",

@@ -42,3 +42,9 @@ def __dir__() -> list[str]:
     """List public names for interactive completion."""
 
     return sorted(__all__)
+
+
+from ._core._auto_registration import _auto_register_known_dsls  # noqa: E402
+
+_auto_register_known_dsls()
+del _auto_register_known_dsls

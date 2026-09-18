@@ -3,15 +3,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Test the installed cuda-coop wheel's host-side API and header resolution.
-# These checks do not compile or launch GPU kernels.
+# Test the installed cuda-coop wheel's API, compilation, and GPU kernels.
+# Select host, compile, or runtime checks for the current CI job.
 
 set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$ci_dir/.." && pwd)"
 
-usage="Usage: $0 -py-version <python_version> [-stage contracts]"
+usage="Usage: $0 -py-version <python_version> [-stage contracts|numba-mlir-compile|numba-mlir-runtime]"
 
 # shellcheck source=ci/util/python/common_arg_parser.sh
 source "$ci_dir/util/python/common_arg_parser.sh"
@@ -55,14 +55,39 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$stage" != "contracts" ]]; then
-  echo "Error: unknown cuda.coop test stage '$stage'" >&2
-  echo "$usage" >&2
-  exit 1
+needs_cuda_toolkit=false
+case "$stage" in
+  contracts)
+    ;;
+  numba-mlir-compile)
+    needs_cuda_toolkit=true
+    ;;
+  numba-mlir-runtime)
+    needs_cuda_toolkit=true
+    ;;
+  *)
+    echo "Error: unknown cuda.coop test stage '$stage'" >&2
+    echo "$usage" >&2
+    exit 1
+    ;;
+esac
+
+if [[ "$stage" == "numba-mlir-compile" ]]; then
+  # Hide every device for the complete compiler-contract stage, including
+  # import and installed-wheel isolation probes.
+  export CUDA_VISIBLE_DEVICES=""
 fi
 
 # shellcheck source=ci/pyenv_helper.sh
 source "$ci_dir/pyenv_helper.sh"
+
+if [[ "$needs_cuda_toolkit" == true ]]; then
+  if ! command -v nvcc >/dev/null 2>&1; then
+    echo "Error: cuda.coop stage '$stage' requires nvcc on PATH" >&2
+    exit 1
+  fi
+  pin_cuda_toolkit "${ctk_mode}"
+fi
 
 setup_python_env "${py_version}" ".cccl-coop-test-venv"
 
@@ -81,7 +106,19 @@ if [[ ${#wheels[@]} -ne 1 ]]; then
   exit 1
 fi
 
-python -m pip install "${wheels[0]}[test]"
+case "$stage" in
+  contracts)
+    python -m pip install "${wheels[0]}[test]"
+    ;;
+  numba-mlir-compile | numba-mlir-runtime)
+    python -m pip install \
+      "${wheels[0]}[test,numba-cuda-mlir-cu${cuda_major_version}]"
+    ;;
+  *)
+    echo "Error: unhandled cuda.coop test stage '$stage'" >&2
+    exit 1
+    ;;
+esac
 
 python -m pip check
 # Isolated mode prevents the checkout or PYTHONPATH from hiding wheel defects.
@@ -116,9 +153,62 @@ PY
 
 tests_root="$repo_root/python/cuda_coop/tests"
 
-# Check shared helpers without requiring optional compiler backends.
-python -m pyright --warnings --project "$repo_root/python/cuda_coop/tests/typing/pyright-unused.json" \
-  --pythonpath "$(command -v python)"
+case "$stage" in
+  contracts)
+    # Check shared helpers without requiring optional compiler backends.
+    python -m pyright --warnings --project "$repo_root/python/cuda_coop/tests/typing/pyright-unused.json" \
+      --pythonpath "$(command -v python)"
+    cd "$tests_root"
+    python -m pytest -v contracts/ packaging/
+    ;;
+  numba-mlir-compile)
+    # The compile contract is deliberately GPU-free. Tests may replace only
+    # the backend's current-device query with a fixed compute capability; NVRTC
+    # and nvJitLink remain real.
+    python -I - <<'PY'
+import importlib.metadata
 
-cd "$tests_root"
-python -m pytest -v test_*.py
+from numba_cuda_mlir import cuda
+
+if cuda.is_available():
+    raise SystemExit("GPU-hidden cuda.coop compile stage can access a CUDA device")
+print(f"numba-cuda-mlir={importlib.metadata.version('numba-cuda-mlir')}")
+PY
+    cd "$tests_root"
+    python -m pytest -v \
+      backends/numba_mlir/unit/ \
+      backends/numba_mlir/compile/
+    ;;
+  numba-mlir-runtime)
+    python -I - <<'PY'
+import importlib.metadata
+
+from numba_cuda_mlir import cuda
+
+if not cuda.is_available():
+    raise SystemExit("numba-cuda-mlir cannot access an NVIDIA GPU")
+print(f"numba-cuda-mlir={importlib.metadata.version('numba-cuda-mlir')}")
+PY
+    nvidia-smi \
+      --query-gpu=name,compute_cap,driver_version \
+      --format=csv,noheader
+    cd "$tests_root"
+    python -m pytest -v backends/numba_mlir/runtime/
+
+    mapfile -t examples < <(
+      find "$repo_root/python/cuda_coop/examples/numba_mlir" \
+        -maxdepth 1 -name '*.py' ! -name '__init__.py' -print | sort
+    )
+    if [[ ${#examples[@]} -eq 0 ]]; then
+      echo "Error: no cuda.coop Numba-CUDA-MLIR examples were found" >&2
+      exit 1
+    fi
+    for example in "${examples[@]}"; do
+      python -I "$example"
+    done
+    ;;
+  *)
+    echo "Error: unhandled cuda.coop test stage '$stage'" >&2
+    exit 1
+    ;;
+esac
