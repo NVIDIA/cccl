@@ -7,7 +7,7 @@ Scan
 ====
 
 This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-operation support <coop-backend-operation-support>` for CUTLASS availability.
+coverage <coop-backends>` for CUTLASS availability.
 
 A scan gives each item the aggregate of earlier items in its group. An
 inclusive scan includes the current item; an exclusive scan stops before it.

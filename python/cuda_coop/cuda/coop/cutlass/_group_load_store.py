@@ -31,7 +31,10 @@ from cuda.coop._typing import (
 
 from .._core.api.thread_group import BlockGroup
 from ._thread_data import ThreadData
-from ._thread_group import _resolve_primitive_group_from_launch
+from ._thread_group import (
+    _require_complete_warp_partition,
+    _resolve_primitive_group_from_launch,
+)
 
 _SCOPE = "cuda.coop.cutlass"
 _MAX_STATIC_OFFSET = (1 << 63) - 1
@@ -47,9 +50,13 @@ def _resolve_group(group, algorithm, temp_storage, operation):
 
     if not isinstance(group, CommonThreadGroup):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
-    if group.kind != "block":
+    if group.kind not in {"block", "warp"}:
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} supports only block groups"
+            f"{_SCOPE}.{operation} requires a block or physical warp group"
+        )
+    if group.kind == "warp" and temp_storage is not None:
+        raise NotImplementedError(
+            f"{_SCOPE}.{operation} explicit TempStorage is supported only for block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
     if temp_storage is not None:
@@ -59,6 +66,9 @@ def _resolve_group(group, algorithm, temp_storage, operation):
     launch = current_kernel_launch_facts()
     resolved = _resolve_primitive_group_from_launch(
         group, launch, feature=operation
+    )
+    _require_complete_warp_partition(
+        resolved, feature=operation, exact_block_dim=launch.exact_block_dim
     )
     return resolved, launch, algorithm
 
@@ -75,7 +85,7 @@ def load(
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> None:
-    """Load a contiguous block tile into a writable per-thread payload.
+    """Load a contiguous group tile into a writable per-thread payload.
 
     Shared parameters and participation follow :func:`cuda.coop.load`. This
     implementation accepts block groups and all six block Load algorithms.
@@ -156,7 +166,7 @@ def store(
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> None:
-    """Store per-thread values into a contiguous block tile.
+    """Store per-thread values into a contiguous group tile.
 
     Shared parameters and participation follow :func:`cuda.coop.store`. This
     implementation accepts block groups and all six block Store algorithms.
@@ -270,8 +280,7 @@ def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
     if isinstance(value, Integer):
         return ArgumentBinding.runtime()
     raise TypeError(
-        f"{_SCOPE}.load/store {name} must be an integer, "
-        f"not {type(value).__name__}"
+        f"{_SCOPE}.load/store {name} must be an integer, not {type(value).__name__}"
     )
 
 
