@@ -13,7 +13,10 @@ from cuda.coop._core.api._payload import _validate_common_temp_storage
 from cuda.coop._core.thread_group import ThreadGroup as CommonThreadGroup
 
 from ._thread_data import ThreadData
-from ._thread_group import _resolve_primitive_group_from_launch
+from ._thread_group import (
+    _require_complete_warp_partition,
+    _resolve_primitive_group_from_launch,
+)
 
 _SCOPE = "cuda.coop.cutlass"
 _MAX_STATIC_OFFSET = (1 << 63) - 1
@@ -22,9 +25,13 @@ _MAX_STATIC_OFFSET = (1 << 63) - 1
 def _resolve_group(group, algorithm, temp_storage, operation):
     if not isinstance(group, CommonThreadGroup):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
-    if group.kind != "block":
+    if group.kind not in {"block", "warp"}:
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} supports only block groups"
+            f"{_SCOPE}.{operation} requires a block or physical warp group"
+        )
+    if group.kind == "warp" and temp_storage is not None:
+        raise NotImplementedError(
+            f"{_SCOPE}.{operation} explicit TempStorage is supported only for block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
     if temp_storage is not None:
@@ -32,8 +39,9 @@ def _resolve_group(group, algorithm, temp_storage, operation):
     from ._compiler._launch import current_kernel_launch_facts
 
     launch = current_kernel_launch_facts()
-    resolved = _resolve_primitive_group_from_launch(
-        group, launch, feature=operation
+    resolved = _resolve_primitive_group_from_launch(group, launch, feature=operation)
+    _require_complete_warp_partition(
+        resolved, feature=operation, exact_block_dim=launch.exact_block_dim
     )
     return resolved, launch, algorithm
 
@@ -50,7 +58,7 @@ def load(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> None:
-    """Load a contiguous block tile into a writable per-thread payload.
+    """Load a contiguous group tile into a writable per-thread payload.
 
     The payload is populated in place. Beyond ``valid_items``, slots have
     unspecified values unless ``oob_default`` is supplied, even if initialized
@@ -62,9 +70,7 @@ def load(
         raise TypeError(f"{_SCOPE}.load output must be ThreadData")
     if oob_default is not None and valid_items is None:
         raise ValueError(f"{_SCOPE}.load oob_default requires valid_items")
-    group, launch, algorithm = _resolve_group(
-        group, algorithm, temp_storage, "load"
-    )
+    group, launch, algorithm = _resolve_group(group, algorithm, temp_storage, "load")
     from ._lowering._load_store import provider_load
 
     provider_load(
@@ -74,9 +80,7 @@ def load(
         output=output,
         algorithm=algorithm,
         valid_items=valid_items,
-        valid_items_binding=_classify_integer_binding(
-            valid_items, name="valid_items"
-        ),
+        valid_items_binding=_classify_integer_binding(valid_items, name="valid_items"),
         oob_default=oob_default,
         oob_default_binding=_classify_oob_default(oob_default),
         offset=offset,
@@ -96,7 +100,7 @@ def store(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> None:
-    """Store per-thread values into a contiguous block tile.
+    """Store per-thread values into a contiguous group tile.
 
     ``valid_items`` limits the written prefix; ``offset`` is in elements.
     The value dtype must match the destination. Transpose algorithms may
@@ -105,9 +109,7 @@ def store(
     allocation and reuse.
     """
 
-    group, launch, algorithm = _resolve_group(
-        group, algorithm, temp_storage, "store"
-    )
+    group, launch, algorithm = _resolve_group(group, algorithm, temp_storage, "store")
     from ._lowering._load_store import provider_store
 
     provider_store(
@@ -117,9 +119,7 @@ def store(
         value=value,
         algorithm=algorithm,
         valid_items=valid_items,
-        valid_items_binding=_classify_integer_binding(
-            valid_items, name="valid_items"
-        ),
+        valid_items_binding=_classify_integer_binding(valid_items, name="valid_items"),
         offset=offset,
         offset_binding=_classify_integer_binding(offset, name="offset"),
         temp_storage=temp_storage,
@@ -173,8 +173,7 @@ def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
     if isinstance(value, Integer):
         return ArgumentBinding.runtime()
     raise TypeError(
-        f"{_SCOPE}.load/store {name} must be an integer, "
-        f"not {type(value).__name__}"
+        f"{_SCOPE}.load/store {name} must be an integer, not {type(value).__name__}"
     )
 
 
@@ -182,9 +181,7 @@ def _classify_oob_default(value: Any) -> ArgumentBinding:
     if value is None:
         return ArgumentBinding.omitted()
     if _is_boolean(value):
-        raise TypeError(
-            f"{_SCOPE}.load oob_default must be numeric, not boolean"
-        )
+        raise TypeError(f"{_SCOPE}.load oob_default must be numeric, not boolean")
     if isinstance(value, Integral):
         return ArgumentBinding.static(int(value))
     if isinstance(value, Real):
