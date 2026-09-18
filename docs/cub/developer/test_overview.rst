@@ -430,9 +430,10 @@ Recommended minimum checklist for a new single-phase API overload's ``_env.cu`` 
 2. ``"<algorithm> uses environment"`` — an environment carrying only
    ``expected_allocation_size(...)`` is honored: the algorithm neither over- nor under-allocates
    temporary storage compared to the two-phase API.
-3. ``"<algorithm> uses custom stream"`` — passing a ``cuda::stream_ref`` as custom environment
-   is honored: the algorithm's work actually runs on that stream (verified by explicitly
-   synchronizing it, not the default stream).
+3. ``"<algorithm> uses custom stream"`` — passing a ``cuda::stream_ref`` (created via
+   ``make_current_device_stream()``) as custom environment is honored: the algorithm's work
+   actually runs on that stream (verified by explicitly synchronizing it, not the default
+   stream).
 4. ``"<algorithm> can be tuned"`` — an environment carrying ``cuda::execution::tune(...)`` is
    honored: test with two distinct tunings that each modify the block size used by the kernel,
    and verify the applied block size on the device using ``block_size_extracting_op`` or
