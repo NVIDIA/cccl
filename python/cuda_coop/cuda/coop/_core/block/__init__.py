@@ -64,6 +64,10 @@ from .reduce import (
     make_block_reduce_specialization,
     normalize_block_reduce_algorithm,
 )
+from .run_length import (
+    BlockRunLengthDecodeSpecialization,
+    make_block_run_length_decode_specialization,
+)
 from .scan import (
     BlockScanAlgorithm,
     BlockScanSpecialization,
@@ -107,6 +111,7 @@ __all__ = [
     "BlockReduceSemantics",
     "BlockReduceSpecialization",
     "BlockReduceValueKind",
+    "BlockRunLengthDecodeSpecialization",
     "BlockScanAlgorithm",
     "BlockScanSpecialization",
     "BlockShuffleMode",
@@ -132,6 +137,7 @@ __all__ = [
     "make_block_radix_sort_specialization",
     "make_block_reduce_semantics",
     "make_block_reduce_specialization",
+    "make_block_run_length_decode_specialization",
     "make_block_scan_specialization",
     "make_block_shuffle_semantics",
     "make_block_shuffle_specialization",
