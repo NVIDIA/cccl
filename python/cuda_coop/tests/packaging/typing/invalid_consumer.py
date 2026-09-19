@@ -721,3 +721,14 @@ portable.histogram(  # expected-error: [call-overload]
     3,
     bins=32,
 )
+
+
+portable.reduce_batched(
+    portable.this_block(),  # expected-error: [arg-type]
+    portable_values,
+)
+portable.reduce_batched(
+    portable.this_warp(),
+    portable_values,
+    output_layout="broadcast",  # expected-error: [arg-type]
+)
