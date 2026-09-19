@@ -125,7 +125,8 @@ See the :ref:`Numba <coop-merge-sort>` and
 Radix sorting and ranking
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-See :ref:`the Numba Radix Sort and Rank examples <coop-radix>`.
+See the :ref:`Numba <coop-radix>` and
+:ref:`CUTLASS <coop-cutlass-radix>` Radix Sort and Rank examples.
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
@@ -293,6 +294,10 @@ ownership, providers, linking, and storage allocation.
      - CuTe register-tensor inputs return fresh ``ThreadData`` payloads;
        controls otherwise follow the common API. See
        :ref:`Merge Sort <coop-cutlass-merge-sort>`.
+   * - Radix Sort and Rank
+     - Scalar and CuTe register inputs; floating-point Sort keys and
+       ``blocked_to_striped`` results; writable Rank ``exclusive_digit_prefix``.
+       See :ref:`Radix Sort and Rank <coop-cutlass-radix>`.
 
 Custom operators and Scan prefix callbacks are not supported. See
 :ref:`CUTLASS-specific behavior and limits <coop-cutlass-differences>` and

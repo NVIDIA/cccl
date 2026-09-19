@@ -259,9 +259,7 @@ def test_register_retry(failure):
 
 
 @pytest.mark.skipif(not _CUTLASS_AVAILABLE, reason="requires CUTLASS DSL")
-@pytest.mark.parametrize(
-    "operation", ("radix_sort_keys", "radix_rank", "topk_min_keys")
-)
+@pytest.mark.parametrize("operation", ("topk_min_keys",))
 def test_unimplemented_family(operation):
     from cuda import coop
     from cuda.coop._core.api._dispatch import (
@@ -274,11 +272,8 @@ def test_unimplemented_family(operation):
         group = coop.this_block()
         values = coop.ThreadData(2, dtype=int)
         values[0], values[1] = 1, 2
-        options = {"k": 1} if operation == "topk_min_keys" else {}
-        if operation == "radix_rank":
-            options = {"radix_bits": 4}
         with pytest.raises(UnsupportedCoopBackendOperationError) as caught:
-            getattr(coop, operation)(group, values, **options)
+            getattr(coop, operation)(group, values, k=1)
     assert caught.value.operation == operation
     assert caught.value.backend_module == "cuda.coop.cutlass"
     assert caught.value.reason_code == "cuda-coop-backend-operation-unavailable"
