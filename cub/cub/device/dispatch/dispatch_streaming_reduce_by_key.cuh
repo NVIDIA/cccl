@@ -37,7 +37,7 @@ struct reduce_by_key_kernel_source
   template <typename PolicySelector, typename... KernelArgTs>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static constexpr auto reduce_by_key_kernel()
   {
-    return &DeviceReduceByKeyKernel<PolicySelector, KernelArgTs...>;
+    return &DeviceReduceByKeyKernel<PolicySelector, KernelArgTs..., false>;
   }
 };
 
