@@ -14,6 +14,11 @@ _EXPLORERS = {
     "shuffle": "coop-shuffle.js",
     "reduce": "coop-collectives.js",
     "scan": "coop-collectives.js",
+    "merge-sort": "coop-merge-sort.js",
+}
+
+_VISUALIZATION_TITLES = {
+    "merge-sort": "Merge Sort",
 }
 
 _API_VISUALIZATIONS = (
@@ -23,6 +28,7 @@ _API_VISUALIZATIONS = (
     )
     | {name: name for name in _EXPLORERS}
     | {"sum": "reduce"}
+    | dict.fromkeys(("merge_sort_keys", "merge_sort_pairs"), "merge-sort")
 )
 
 
@@ -32,12 +38,13 @@ def add_api_visualization_link(app, what, name, obj, options, lines):
         return
     visualization = _API_VISUALIZATIONS.get(function)
     if visualization is not None:
+        title = _VISUALIZATION_TITLES.get(visualization, visualization.title())
         lines.extend(
             [
                 "",
                 ".. seealso::",
                 "",
-                f"   :doc:`{visualization.title()} visualization "
+                f"   :doc:`{title} visualization "
                 f"</python/coop/visualizations/{visualization}>`",
                 "",
             ]
@@ -88,8 +95,8 @@ def setup(app):
     app.connect("autodoc-process-docstring", add_api_visualization_link)
     app.connect("html-page-context", add_visualization_assets)
     return {
-        "version": "3",
-        "env_version": 2,
+        "version": "4",
+        "env_version": 3,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }
