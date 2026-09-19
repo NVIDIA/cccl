@@ -16,11 +16,13 @@ import re
 import sys
 import sysconfig
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from enum import Enum
 from functools import cache, partial
 from types import CodeType, ModuleType
 from typing import Any
+
+from ._types import PythonOperator, StatefulOperator
 
 _ADDRESS_IN_REPR = re.compile(r"(?<= at )0x[0-9a-fA-F]+")
 _MISSING = object()
@@ -125,6 +127,7 @@ def _defined_module_name(value: Any) -> str | None:
 
 @dataclasses.dataclass
 class _TokenState:
+    normalize: Callable[[Any], Any] | None = None
     active: dict[int, int] = dataclasses.field(default_factory=dict)
     completed: dict[tuple[str, int], tuple[Any, Any]] = dataclasses.field(
         default_factory=dict
@@ -353,7 +356,28 @@ def _type_dependency_token(value: type, state: _TokenState) -> Any:
     return token
 
 
+def _dataclass_fields_token(value, state, tokenize):
+    operator = isinstance(value, (PythonOperator, StatefulOperator))
+    fields = []
+    for field in dataclasses.fields(value):
+        if operator and field.name == "op_tokenizer":
+            continue
+        item = getattr(value, field.name)
+        if operator and field.name == "op" and value.op_tokenizer is not None:
+            # Backend policy travels with the operator through core planning.
+            # Evaluate it here so changed callback dependencies remain visible.
+            token = value.op_tokenizer(item)
+        else:
+            token = tokenize(item, state)
+        fields.append((field.name, token))
+    return tuple(fields)
+
+
 def _dependency_token(value: Any, state: _TokenState) -> Any:
+    if state.normalize is not None:
+        normalized = state.normalize(value)
+        if normalized is not value:
+            return _dependency_token(normalized, state)
     if isinstance(value, type):
         return _type_reference_token(value, state)
     if not (
@@ -422,10 +446,7 @@ def _dependency_token(value: Any, state: _TokenState) -> Any:
             token = (
                 type(value).__module__,
                 type(value).__qualname__,
-                tuple(
-                    (field.name, _dependency_token(getattr(value, field.name), state))
-                    for field in dataclasses.fields(value)
-                ),
+                _dataclass_fields_token(value, state, _dependency_token),
             )
     finally:
         del state.active[value_id]
@@ -650,6 +671,10 @@ def _container_state_token(
 
 
 def _semantic_token(value: Any, state: _TokenState) -> Any:
+    if state.normalize is not None:
+        normalized = state.normalize(value)
+        if normalized is not value:
+            return _semantic_token(normalized, state)
     if isinstance(value, Enum):
         return type(value).__module__, type(value).__qualname__, value.value
     if isinstance(value, float):
@@ -711,10 +736,7 @@ def _semantic_token(value: Any, state: _TokenState) -> Any:
             token = (
                 type(value).__module__,
                 type(value).__qualname__,
-                tuple(
-                    (field.name, _semantic_token(getattr(value, field.name), state))
-                    for field in dataclasses.fields(value)
-                ),
+                _dataclass_fields_token(value, state, _semantic_token),
             )
         elif callable(value):
             token = _callable_token(value, state)
@@ -741,7 +763,12 @@ def _semantic_token(value: Any, state: _TokenState) -> Any:
     return token
 
 
-def semantic_token(value: Any) -> Any:
-    """Return a deterministic, hashable description of a semantic value."""
+def semantic_token(value: Any, *, normalize: Callable[[Any], Any] | None = None) -> Any:
+    """Describe a value, optionally normalizing backend values throughout it.
 
-    return _semantic_token(value, _TokenState())
+    ``normalize`` returns the original object for values it does not adapt.
+    Replacements must converge to values that do not need further adaptation.
+    The adapter applies to referenced dependencies as well as the root value.
+    """
+
+    return _semantic_token(value, _TokenState(normalize=normalize))
