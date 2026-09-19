@@ -692,6 +692,36 @@ coop.adjacent_difference(
     difference_op="minus",  # expected-error: [arg-type]
 )
 
+
+common.histogram(
+    common.this_warp(),  # expected-error: [arg-type]
+    common.ThreadData(2, np.int32),
+    bins=32,
+)
+histogram_floats = common.ThreadData(2, np.float32)
+common.histogram(
+    common_block,
+    histogram_floats,  # expected-error: [arg-type]
+    bins=32,
+)
+common.histogram(
+    common_block,
+    common.ThreadData(2, np.int32),
+    bins=32,
+    counter_dtype=np.float32,  # expected-error: [arg-type]
+)
+coop.histogram(  # expected-error: [call-overload]
+    qualified_block,
+    coop.ThreadData(2, np.int32),
+    bins=32,
+    algorithm="other",
+)
+common.histogram(  # expected-error: [call-overload]
+    common_block,
+    3,
+    bins=32,
+)
+
 common.sum(
     common.this_cluster(),  # expected-error: [arg-type]
     np.int32(1),
