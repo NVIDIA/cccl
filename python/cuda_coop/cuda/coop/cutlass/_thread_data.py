@@ -817,6 +817,40 @@ def _coerce_thread_payload(
         ) from exc
 
 
+def _snapshot_readable_payload(value, *, name, primitive):
+    """Read the common payload interface without requiring writable inputs."""
+
+    from cuda.coop._core.api._dispatch import _common_root_operation_name
+    from cuda.coop._core.api._payload import (
+        _ReadableThreadDataLike,
+        _validate_common_numeric_value,
+    )
+
+    common = _common_root_operation_name() == primitive
+    if common or isinstance(value, _ReadableThreadDataLike):
+        _validate_common_numeric_value(
+            primitive,
+            name,
+            value,
+            require_thread_data=True,
+            allow_readonly_thread_data=True,
+        )
+        return ThreadData(
+            value.items_per_thread,
+            dtype=value.dtype,
+            values=[value[index] for index in range(value.items_per_thread)],
+            alignment=getattr(value, "alignment", None),
+        )
+    value = _coerce_thread_payload(
+        value, scope=_ROOT_SCOPE, primitive_name=primitive, arg_name=name
+    )
+    if not isinstance(value, ThreadData):
+        raise TypeError(
+            f"{_ROOT_SCOPE}.{primitive} {name} must be a fixed-size ThreadData"
+        )
+    return value
+
+
 def _make_rmem_tensor(shape: Any, dtype: Any, alignment: int | None = None) -> Any:
     """Allocate CuTe register storage honoring a minimum byte alignment."""
 

@@ -391,3 +391,97 @@ def check_cutlass_shuffle_surface(scalar: Uint32) -> None:
         cutlass_coop.shuffle(block, values.to_tensor_ssa(), mode="up"),
         cutlass_coop.ThreadData[Any],
     )
+
+
+class _ReadOnlyKeys:
+    items_per_thread: int = 2
+    dtype: object | None = np.int32
+
+    def __len__(self) -> int:
+        return self.items_per_thread
+
+    def __getitem__(self, index: int, /) -> np.int32:
+        return np.int32(index)
+
+
+def check_cutlass_merge_sort_surface() -> None:
+    block = cutlass_coop.this_block()
+    warp = cutlass_coop.this_warp()
+    logical = warp.group_by(8)
+    keys = cutlass_coop.ThreadData(3, np.int32)
+    values = cutlass_coop.ThreadData(3, np.float64)
+    storage = cutlass_coop.TempStorage(alignment=32)
+    assert_type(
+        cutlass_coop.merge_sort_keys(block, keys), cutlass_coop.ThreadData[np.int32]
+    )
+    assert_type(
+        cutlass_coop.merge_sort_pairs(block, keys, values, temp_storage=storage),
+        tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.float64]],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_keys(
+            block,
+            keys,
+            valid_items=Uint32(63),
+            oob_default=1000,
+            temp_storage=storage,
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_pairs(
+            warp,
+            keys,
+            values,
+            descending=True,
+            valid_items=np.int64(31),
+            oob_default=-1000,
+        ),
+        tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.float64]],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_keys(
+            logical, keys, valid_items=23, oob_default=np.int32(1000)
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_keys(warp, _ReadOnlyKeys()),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_pairs(logical, _ReadOnlyKeys(), _ReadOnlyKeys()),
+        tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.int32]],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_keys(common_coop.this_block(), keys),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        common_coop.merge_sort_pairs(block, keys, values),
+        tuple[
+            common_coop.ThreadDataLike[np.int32], common_coop.ThreadDataLike[np.float64]
+        ],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_keys(block, keys.to_register_tensor()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_pairs(warp, keys.to_tensor_ssa(), values),
+        tuple[cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[np.float64]],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_pairs(logical, keys, values.to_register_tensor()),
+        tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[Any]],
+    )
+    assert_type(
+        cutlass_coop.merge_sort_pairs(
+            block,
+            keys.to_register_tensor(),
+            values.to_tensor_ssa(),
+            valid_items=95,
+            oob_default=np.int32(1000),
+        ),
+        tuple[cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[Any]],
+    )
