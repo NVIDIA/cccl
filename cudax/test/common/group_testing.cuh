@@ -20,6 +20,10 @@
 
 #include "testing.cuh"
 
+// global_barriers_storage is mutable device state. The unnamed namespace gives each
+// translation unit its own barrier storage; sharing one copy across translation units
+// would change the synchronization behavior of the tests.
+// NOLINTNEXTLINE(misc-anonymous-namespace-in-header)
 namespace
 {
 template <class T, cuda::std::size_t Id>
@@ -63,17 +67,17 @@ struct ThreadsInWarpMappingResult
     return 0;
   }
 
-  __device__ static constexpr ::cuda::std::size_t static_count()
+  __device__ static constexpr ::cuda::std::size_t static_unit_count()
   {
     return 32;
   }
 
-  __device__ unsigned count() const
+  __device__ unsigned unit_count() const
   {
     return 32;
   }
 
-  __device__ unsigned rank() const
+  __device__ unsigned unit_rank() const
   {
     return cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
   }

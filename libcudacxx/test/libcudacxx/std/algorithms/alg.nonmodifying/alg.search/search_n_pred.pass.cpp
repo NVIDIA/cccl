@@ -6,9 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // <algorithm>
 
 // template<class ForwardIterator, class Size, class T, class BinaryPredicate>
@@ -43,6 +40,7 @@ struct count_equal
   int& count;
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void test()
 {
@@ -187,6 +185,7 @@ struct Pred
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>>();
@@ -196,9 +195,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   // test bug reported in https://reviews.llvm.org/D124079?#3661721
   {

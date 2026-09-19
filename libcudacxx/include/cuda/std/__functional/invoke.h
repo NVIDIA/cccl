@@ -108,8 +108,8 @@ _CCCL_API inline __nat __invoke(__any, _Args&&... __args);
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet1<_Fp, _A0>>
-_CCCL_API constexpr decltype((::cuda::std::declval<_A0>()
-                              .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
+_CCCL_HOST_DEVICE_API constexpr decltype((::cuda::std::declval<_A0>()
+                                          .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f,
          _A0&& __a0,
          _Args&&... __args) noexcept(noexcept((static_cast<_A0&&>(__a0).*__f)(static_cast<_Args&&>(__args)...)))
@@ -119,8 +119,8 @@ __invoke(_Fp&& __f,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet2<_Fp, _A0>>
-_CCCL_API constexpr decltype((::cuda::std::declval<_A0>().get()
-                              .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
+_CCCL_HOST_DEVICE_API constexpr decltype((::cuda::std::declval<_A0>().get()
+                                          .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f, _A0&& __a0, _Args&&... __args) noexcept(noexcept((__a0.get().*__f)(static_cast<_Args&&>(__args)...)))
 {
   return (__a0.get().*__f)(static_cast<_Args&&>(__args)...);
@@ -128,8 +128,8 @@ __invoke(_Fp&& __f, _A0&& __a0, _Args&&... __args) noexcept(noexcept((__a0.get()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet3<_Fp, _A0>>
-_CCCL_API constexpr decltype(((*::cuda::std::declval<_A0>())
-                              .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
+_CCCL_HOST_DEVICE_API constexpr decltype(((*::cuda::std::declval<_A0>())
+                                          .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f,
          _A0&& __a0,
          _Args&&... __args) noexcept(noexcept(((*static_cast<_A0&&>(__a0)).*__f)(static_cast<_Args&&>(__args)...)))
@@ -141,7 +141,7 @@ __invoke(_Fp&& __f,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet4<_Fp, _A0>>
-_CCCL_API constexpr decltype(::cuda::std::declval<_A0>().*::cuda::std::declval<_Fp>())
+_CCCL_HOST_DEVICE_API constexpr decltype(::cuda::std::declval<_A0>().*::cuda::std::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(static_cast<_A0&&>(__a0).*__f))
 {
   return static_cast<_A0&&>(__a0).*__f;
@@ -149,7 +149,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(static_cast<_A0&&>(__a0).*__f)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet5<_Fp, _A0>>
-_CCCL_API constexpr decltype(::cuda::std::declval<_A0>().get().*::cuda::std::declval<_Fp>())
+_CCCL_HOST_DEVICE_API constexpr decltype(::cuda::std::declval<_A0>().get().*::cuda::std::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(__a0.get().*__f))
 {
   return __a0.get().*__f;
@@ -157,7 +157,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(__a0.get().*__f))
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet6<_Fp, _A0>>
-_CCCL_API constexpr decltype((*::cuda::std::declval<_A0>()).*::cuda::std::declval<_Fp>())
+_CCCL_HOST_DEVICE_API constexpr decltype((*::cuda::std::declval<_A0>()).*::cuda::std::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept((*static_cast<_A0&&>(__a0)).*__f))
 {
   return (*static_cast<_A0&&>(__a0)).*__f;
@@ -266,6 +266,7 @@ is_nothrow_invocable_r : bool_constant<is_nothrow_invocable_r_v<_Ret, _Fn, _Args
 template <class _Fn, class... _Args>
 using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fn, class... _Args>
 _CCCL_API constexpr invoke_result_t<_Fn, _Args...>
 invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args...>)
@@ -273,6 +274,7 @@ invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args.
   return ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Ret, class _Fn, class... _Args)
 _CCCL_REQUIRES(is_invocable_r_v<_Ret, _Fn, _Args...>)
 _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>)

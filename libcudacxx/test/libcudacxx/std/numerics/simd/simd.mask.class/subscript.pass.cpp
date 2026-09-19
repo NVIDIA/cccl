@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -28,7 +28,7 @@
 // subscript read-back
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_subscript()
+TEST_HOST_DEVICE_FUNC constexpr void test_subscript()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask mask(true);
@@ -52,13 +52,13 @@ TEST_FUNC constexpr void test_subscript()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <int Bytes>
-TEST_FUNC constexpr void test_bytes()
+TEST_HOST_DEVICE_FUNC constexpr void test_bytes()
 {
   test_subscript<Bytes, 1>();
   test_subscript<Bytes, 4>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_bytes<1>();
   test_bytes<2>();

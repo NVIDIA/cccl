@@ -7,10 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): nvcc + nvrtc fails to create stubs for kernels kernels that take constant_wrapper as an argument.
-// UNSUPPORTED: !clang || nvcc
+// todo(dabayer): Enable constant_wrapper for msvc.
+// UNSUPPORTED: msvc
 
-// REQUIRES: !c++17
+// This test requires kernel launch from host.
+// UNSUPPORTED: nvrtc
 
 // constant_wrapper
 

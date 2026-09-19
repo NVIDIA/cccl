@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-
 // UNSUPPORTED: nvrtc
 
 #include <cuda/iterator>

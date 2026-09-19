@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.bit], rotl
@@ -22,7 +25,7 @@
 template <typename T, int N>
 struct test_rotl_vec
 {
-  TEST_FUNC constexpr void operator()() const
+  TEST_HOST_DEVICE_FUNC constexpr void operator()() const
   {
     using Vec      = simd::basic_vec<T, simd::fixed_size<N>>;
     using ShiftVec = simd::rebind_t<cuda::std::make_signed_t<T>, Vec>;
@@ -44,7 +47,7 @@ struct test_rotl_vec
 template <typename T, int N>
 struct test_rotl_scalar
 {
-  TEST_FUNC constexpr void operator()() const
+  TEST_HOST_DEVICE_FUNC constexpr void operator()() const
   {
     using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
     Vec vec(bit_values<T>{});
@@ -80,7 +83,7 @@ struct has_simd_rotl_scalar<V, cuda::std::void_t<decltype(simd::rotl(cuda::std::
     : cuda::std::true_type
 {};
 
-TEST_FUNC constexpr void test_vec_constraints()
+TEST_HOST_DEVICE_FUNC constexpr void test_vec_constraints()
 {
   using IntVec     = simd::basic_vec<int, simd::fixed_size<4>>;
   using Uint16Vec  = simd::basic_vec<uint16_t, simd::fixed_size<4>>;
@@ -97,7 +100,7 @@ TEST_FUNC constexpr void test_vec_constraints()
   static_assert(!has_simd_rotl_vec<FloatVec2, Int32Vec2>::value);
 }
 
-TEST_FUNC constexpr void test_scalar_constraints()
+TEST_HOST_DEVICE_FUNC constexpr void test_scalar_constraints()
 {
   using IntVec    = simd::basic_vec<int, simd::fixed_size<4>>;
   using Uint32Vec = simd::basic_vec<unsigned, simd::fixed_size<4>>;
@@ -108,7 +111,7 @@ TEST_FUNC constexpr void test_scalar_constraints()
   static_assert(!has_simd_rotl_scalar<FloatVec2>::value);
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   _SIMD_BIT_TEST_UNSIGNED_TYPES(test_rotl_vec)
   _SIMD_BIT_TEST_UNSIGNED_TYPES(test_rotl_scalar)

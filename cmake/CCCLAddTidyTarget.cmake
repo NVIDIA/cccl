@@ -24,6 +24,16 @@ function(cccl_tidy_init)
 
   find_program(CCCL_CLANG_TIDY clang-tidy REQUIRED)
 
+  execute_process(
+    COMMAND ${CCCL_CLANG_TIDY} --version
+    OUTPUT_VARIABLE version
+    ERROR_VARIABLE version
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    COMMAND_ERROR_IS_FATAL ANY
+  )
+
+  message(STATUS "Found clang-tidy: ${CCCL_CLANG_TIDY} (${version})")
+
   add_custom_target(cccl.tidy COMMENT "clang-tidy CCCL")
 
   set(
@@ -161,7 +171,7 @@ function(cccl_tidy_add_target)
 
     if (TARGET "${tidy_target}")
       # We have seen this file before
-      return()
+      continue()
     endif()
 
     add_custom_target(

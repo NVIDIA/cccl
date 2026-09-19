@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -232,14 +234,11 @@ public:
 
   ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> cached_graphs_query(cudaGraph_t g)
   {
-    size_t nedges;
-    size_t nnodes;
-
-    cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
+    const size_t nnodes = cuda_try<cudaGraphGetNodes>(g, nullptr);
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
+    const size_t nedges = cuda_try<cudaGraphGetEdges>(g, nullptr, nullptr, nullptr);
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
+    const size_t nedges = cuda_try<cudaGraphGetEdges>(g, nullptr, nullptr);
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     _CCCL_ASSERT(pimpl, "async_resources_handle is not initialized");
@@ -273,7 +272,7 @@ public:
   {
     assert(pimpl);
     assert(dev_id < int(pimpl->per_device_gc_helper.size()));
-    pimpl->per_device_gc_helper[dev_id] = ::std::move(helper);
+    pimpl->per_device_gc_helper[dev_id] = ::cuda::std::move(helper);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
@@ -328,7 +327,7 @@ public:
  */
 UNITTEST("async_resources_handle is_default_constructible")
 {
-  static_assert(::std::is_default_constructible<async_resources_handle>::value,
+  static_assert(::cuda::std::is_default_constructible<async_resources_handle>::value,
                 "async_resources_handle must be default constructible");
 };
 #endif

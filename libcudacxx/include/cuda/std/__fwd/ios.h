@@ -27,7 +27,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-class _CCCL_TYPE_VISIBILITY_DEFAULT ios_base;
+class _CCCL_TYPE_VISIBILITY_DEFAULT ios_base; // NOLINT(bugprone-forward-declaration-namespace)
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_ios;

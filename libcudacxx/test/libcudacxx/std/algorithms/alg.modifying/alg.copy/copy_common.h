@@ -98,6 +98,7 @@ struct NonTrivialDestructor
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class InIter, class OutIter>
 TEST_CONSTEXPR_CXX20 TEST_FUNC void test()
 {

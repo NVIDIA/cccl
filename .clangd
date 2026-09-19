@@ -93,6 +93,8 @@ CompileFlags:
     # strip CUDA arch flags
     - "-gencode*"
     - "--generate-code*"
+    - "-arch*"
+    - "--gpu-architecture*"
     # strip gcc's -fcoroutines
     - -fcoroutines
     # strip CUDA flags unknown to clang

@@ -22,6 +22,7 @@
 #endif // no system header
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 #include <cuda/std/__memory/allocator.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
 

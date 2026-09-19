@@ -23,6 +23,7 @@
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__utility/unstable_unique.cuh>
 
@@ -94,59 +95,77 @@ public:
 
     // Find the stream structure in the driver API
     CUstream s2_driver = CUstream(s2);
-    CUcontext ctx;
-    cuda_safe_call(cuStreamGetCtx(s2_driver, &ctx));
+    CUcontext ctx      = cuda_try<cuStreamGetCtx>(s2_driver);
 
     // Query the context associated with a stream by using the underlying driver API
-    CUdevice s2_dev;
-    cuda_safe_call(cuCtxPushCurrent(ctx));
-    cuda_safe_call(cuCtxGetDevice(&s2_dev));
-    cuda_safe_call(cuCtxPopCurrent(&ctx));
+    cuda_try<cuCtxPushCurrent>(ctx);
+    SCOPE(exit)
+    {
+      cuda_safe_call(cuCtxPopCurrent(&ctx));
+    };
+    const CUdevice s2_dev = cuda_try<cuCtxGetDevice>();
 
     // ::std::cout << "STREAM DEVICE = " << s2_dev << ::'\n';
 
     exec_place::device(s2_dev)->*[&] {
       // Disable timing to avoid implicit barriers
-      cudaEvent_t sync_event;
-      cuda_safe_call(cudaEventCreateWithFlags(&sync_event, cudaEventDisableTiming));
-      cuda_safe_call(cudaEventRecord(sync_event, s2));
+      const cudaEvent_t sync_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
+      SCOPE(exit)
+      {
+        // Asynchronously destroy event to avoid a memleak
+        cuda_safe_call(cudaEventDestroy(sync_event));
+      };
+      cuda_try<cudaEventRecord>(sync_event, s2);
 
       // According to documentation "event may be from a different device than stream."
-      cuda_safe_call(cudaStreamWaitEvent(s1, sync_event, 0));
-
-      // Asynchronously destroy event to avoid a memleak
-      cuda_safe_call(cudaEventDestroy(sync_event));
+      cuda_try<cudaStreamWaitEvent>(s1, sync_event, 0);
     };
   }
 
-  void insert_event()
+  //! \brief Record the event that marks this stream position. Never throws.
+  //!
+  //! Every failure here is unrecoverable in practice. The CUDA calls fail either because we are
+  //! out of resources or -- far more often -- because a sticky error from earlier asynchronous
+  //! work is only now surfacing, since this is the next place we touch CUDA. Neither leaves a
+  //! usable context, and callers run this from task teardown where there is nothing to fall back
+  //! on. Report and abort rather than propagate.
+  //!
+  //! The wrap covers the whole body on purpose: get_device_from_stream and the device switch in
+  //! exec_place::operator->* throw too (cuda_try, plus bad_alloc from constructing the
+  //! exec_place), so converting only the two event calls would leave those uncovered.
+  void insert_event() noexcept
   {
-    // If needed, compute the underlying device
-    if (dstream.dev_id == -1)
+    ON_THROW(abort)
     {
-      dstream.dev_id = get_device_from_stream(dstream.stream);
-    }
+      // If needed, compute the underlying device
+      if (dstream.dev_id == -1)
+      {
+        dstream.dev_id = get_device_from_stream(dstream.stream);
+      }
 
-    // Save the current device
-    exec_place::device(dstream.dev_id)->*[&] {
-      // Disable timing to avoid implicit barriers
-      cuda_safe_call(cudaEventCreateWithFlags(&cudaEvent, cudaEventDisableTiming));
-      // fprintf(stderr, "CREATE EVENT %p %s\n", cudaEvent, get_symbol().c_str());
-      assert(cudaEvent);
-      cuda_safe_call(cudaEventRecord(cudaEvent, dstream.stream));
+      // Save the current device
+      exec_place::device(dstream.dev_id)->*[&] {
+        // Disable timing to avoid implicit barriers
+        cudaEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
+        SCOPE(fail)
+        {
+          cuda_safe_call(cudaEventDestroy(cudaEvent));
+          cudaEvent = nullptr;
+        };
+        // fprintf(stderr, "CREATE EVENT %p %s\n", cudaEvent, get_symbol().c_str());
+        assert(cudaEvent);
+        cuda_safe_call(cudaEventRecord(cudaEvent, dstream.stream));
+      };
     };
   }
 
   void insert_dep(async_resources_handle& async_resources, const stream_and_event& from)
   {
     // Otherwise streams will enforce dependencies
-    if (dstream.stream != from.dstream.stream)
+    if (dstream.stream != from.dstream.stream
+        && !async_resources.validate_sync_and_update(dstream.id, from.dstream.id, int(from.unique_prereq_id)))
     {
-      bool skip = async_resources.validate_sync_and_update(dstream.id, from.dstream.id, int(from.unique_prereq_id));
-      if (!skip)
-      {
-        cuda_safe_call(cudaStreamWaitEvent(dstream.stream, from.cudaEvent, 0));
-      }
+      cuda_try<cudaStreamWaitEvent>(dstream.stream, from.cudaEvent, 0);
     }
   }
 
@@ -366,14 +385,10 @@ private:
       assert(dynamic_cast<stream_and_event*>(e.operator->()));
       auto se = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
 
-      if (dstream.stream != se->get_stream())
+      if (dstream.stream != se->get_stream()
+          && !bctx.async_resources().validate_sync_and_update(dstream.id, se->get_stream_id(), se->unique_prereq_id))
       {
-        bool skip =
-          bctx.async_resources().validate_sync_and_update(dstream.id, se->get_stream_id(), se->unique_prereq_id);
-        if (!skip)
-        {
-          cuda_safe_call(cudaStreamWaitEvent(dstream.stream, se->get_cuda_event(), 0));
-        }
+        cuda_try<cudaStreamWaitEvent>(dstream.stream, se->get_cuda_event(), 0);
       }
       se->outbound_deps++;
 
@@ -407,13 +422,14 @@ private:
 
       // Find the stream structure in the driver API
       auto stream_driver = CUstream(stream);
-      CUcontext ctx;
-      cuda_safe_call(cuStreamGetCtx(stream_driver, &ctx));
+      CUcontext ctx      = cuda_try<cuStreamGetCtx>(stream_driver);
 
-      CUdevice stream_dev;
-      cuda_safe_call(cuCtxPushCurrent(ctx));
-      cuda_safe_call(cuCtxGetDevice(&stream_dev));
-      cuda_safe_call(cuCtxPopCurrent(&ctx));
+      cuda_try<cuCtxPushCurrent>(ctx);
+      SCOPE(exit)
+      {
+        cuda_safe_call(cuCtxPopCurrent(&ctx));
+      };
+      const CUdevice stream_dev = cuda_try<cuCtxGetDevice>();
 
       if (stream_dev == devid)
       {

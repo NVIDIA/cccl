@@ -5,7 +5,7 @@
 
 #include <thrust/tabulate.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <catch2_test_device_scan.cuh>
 
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
@@ -49,7 +49,7 @@
  *         op({write_B}, {write_A}) == {write_A}, which differ when A != B.
  *
  * This operator is used in applications such as stack-symbol propagation
- * during JSON or bracket parsing. A regression was found in the warpspeed
+ * during JSON or bracket parsing. A regression was found in the lookahead
  * ExclusiveScan kernel (sm_100+) introduced in CCCL 3.4, where the
  * inter-tile prefix was combined with the intra-tile prefix in the wrong
  * order, producing incorrect results for non-commutative operators.
@@ -122,11 +122,11 @@ struct populate_sparse_write_input
 } // namespace impl
 
 // Sizes chosen to cover: single-element, small, medium, the original bug-report size (8160),
-// and large enough to span multiple warpspeed tiles on any supported architecture.
-// On sm_100+ the warpspeed tile size is num_scan_stor_threads * items_per_thread, which is
+// and large enough to span multiple lookahead tiles on any supported architecture.
+// On sm_100+ the lookahead tile size is num_scan_stor_threads * items_per_thread, which is
 // ~4000–32000 elements depending on element size, so 50'000 guarantees multiple tiles for all types.
 
-C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid operator", "[scan][device]")
+CUB_TEST("Device exclusive scan works with non-commutative bicyclic monoid operator", "[scan][device]", CUB_SMALL)
 {
   using pair_t = cuda::std::pair<unsigned, unsigned>;
   using op_t   = impl::bicyclic_monoid_op<unsigned>;
@@ -145,7 +145,7 @@ C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid opera
   const pair_t init_value{0, 0}; // identity element of the bicyclic monoid
 
   size_t tmp_size{};
-  cudaError_t status1 =
+  const cudaError_t status1 =
     cub::DeviceScan::ExclusiveScan(nullptr, tmp_size, d_input, d_output, op_t{}, init_value, num_items);
   REQUIRE(cudaSuccess == status1);
   REQUIRE(tmp_size > 0);
@@ -155,13 +155,13 @@ C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid opera
   c2h::device_vector<byte> tmp(tmp_size);
   byte* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  cudaError_t status2 =
+  const cudaError_t status2 =
     cub::DeviceScan::ExclusiveScan(d_tmp, tmp_size, d_input, d_output, op_t{}, init_value, num_items);
   REQUIRE(cudaSuccess == status2);
 
   // transfer to host_vector is synchronizing
-  c2h::host_vector<pair_t> h_output(output);
-  c2h::host_vector<pair_t> h_input(input);
+  const c2h::host_vector<pair_t> h_output(output);
+  const c2h::host_vector<pair_t> h_input(input);
   c2h::host_vector<pair_t> h_expected(num_items);
 
   compute_exclusive_scan_reference(h_input.cbegin(), h_input.cend(), h_expected.begin(), init_value, op_t{});
@@ -169,11 +169,11 @@ C2H_TEST("Device exclusive scan works with non-commutative bicyclic monoid opera
   REQUIRE(h_expected == h_output);
 }
 
-C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan][device]")
+CUB_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan][device]", CUB_SMALL)
 {
   // PropagateLastWrite<char> uses char values: contiguous, trivially copyable, arithmetic —
-  // all conditions that enable the warpspeed kernel on sm_100+.
-  // The bug (CCCL 3.4 regression) was that the warpspeed kernel applied scan_op with operands
+  // all conditions that enable the lookahead kernel on sm_100+.
+  // The bug (CCCL 3.4 regression) was that the lookahead kernel applied scan_op with operands
   // in the wrong order when combining the inter-tile exclusive prefix with the intra-tile prefix,
   // producing incorrect results for non-commutative operators like this one.
 
@@ -202,7 +202,7 @@ C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
   symbol_t* d_output = thrust::raw_pointer_cast(output.data());
 
   size_t tmp_size{};
-  cudaError_t status1 =
+  const cudaError_t status1 =
     cub::DeviceScan::ExclusiveScan(nullptr, tmp_size, d_input, d_output, op, empty_stack_symbol, num_items);
   REQUIRE(cudaSuccess == status1);
   REQUIRE(tmp_size > 0);
@@ -212,13 +212,13 @@ C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
   c2h::device_vector<byte> tmp(tmp_size);
   byte* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  cudaError_t status2 =
+  const cudaError_t status2 =
     cub::DeviceScan::ExclusiveScan(d_tmp, tmp_size, d_input, d_output, op, empty_stack_symbol, num_items);
   REQUIRE(cudaSuccess == status2);
 
   // transfer to host_vector is synchronizing
-  c2h::host_vector<symbol_t> h_output(output);
-  c2h::host_vector<symbol_t> h_input(input);
+  const c2h::host_vector<symbol_t> h_output(output);
+  const c2h::host_vector<symbol_t> h_input(input);
   c2h::host_vector<symbol_t> h_expected(num_items);
 
   compute_exclusive_scan_reference(h_input.cbegin(), h_input.cend(), h_expected.begin(), empty_stack_symbol, op);
@@ -226,7 +226,7 @@ C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
   REQUIRE(h_expected == h_output);
 }
 
-C2H_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-report input", "[scan][device]")
+CUB_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-report input", "[scan][device]", CUB_SMALL)
 {
   // Regression test using the exact input pattern from the original bug report.
   // This input has a cluster of write symbols near the end that must be correctly
@@ -270,7 +270,7 @@ C2H_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-repor
   symbol_t* d_output = thrust::raw_pointer_cast(output.data());
 
   size_t tmp_size{};
-  cudaError_t status1 =
+  const cudaError_t status1 =
     cub::DeviceScan::ExclusiveScan(nullptr, tmp_size, d_input, d_output, op, empty_stack_symbol, num_elements);
   REQUIRE(cudaSuccess == status1);
 
@@ -279,10 +279,10 @@ C2H_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-repor
   c2h::device_vector<byte> tmp(tmp_size);
   byte* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  cudaError_t status2 =
+  const cudaError_t status2 =
     cub::DeviceScan::ExclusiveScan(d_tmp, tmp_size, d_input, d_output, op, empty_stack_symbol, num_elements);
   REQUIRE(cudaSuccess == status2);
 
-  c2h::host_vector<symbol_t> h_output(output);
+  const c2h::host_vector<symbol_t> h_output(output);
   REQUIRE(h_expected == h_output);
 }

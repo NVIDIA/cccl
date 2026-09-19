@@ -17,7 +17,7 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-#include "common_tests.cuh"
+#include "pool_availability.cuh"
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
 #  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref
@@ -61,13 +61,35 @@ Resource get_resource()
   }
 }
 
+static bool cuda_malloc_host_reports_memory_type(cudaMemoryType type)
+{
+  const cuda::__ensure_current_context guard(cuda::device_ref{0});
+  void* cuda_malloc_host_ptr = nullptr;
+  cudaError_t status         = cudaMallocHost(&cuda_malloc_host_ptr, 1);
+  if (status != cudaSuccess || cuda_malloc_host_ptr == nullptr)
+  {
+    return false;
+  }
+
+  cudaPointerAttributes attributes;
+  status                        = cudaPointerGetAttributes(&attributes, cuda_malloc_host_ptr);
+  const cudaError_t free_status = cudaFreeHost(cuda_malloc_host_ptr);
+  CHECK(free_status == cudaSuccess);
+
+  return status == cudaSuccess && free_status == cudaSuccess && attributes.type == type;
+}
+
 static void ensure_pinned_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
   cudaPointerAttributes attributes;
-  cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
+  const cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
-  CHECK(attributes.type == cudaMemoryTypeHost);
+  if (attributes.type != cudaMemoryTypeHost)
+  {
+    // Some platforms emulate pinned host allocations with another memory type.
+    CHECK(cuda_malloc_host_reports_memory_type(attributes.type));
+  }
   // Driver bug fixed in r575
   // TODO Re-enable one we start testing with r575
   // CHECK(attributes.devicePointer != nullptr);
@@ -76,15 +98,13 @@ static void ensure_pinned_ptr(void* ptr)
 C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
-
-#if _CCCL_CTK_AT_LEAST(12, 9)
-  if (!cuda::__is_host_memory_pool_supported() && cuda::std::is_same_v<pinned_resource, cuda::pinned_memory_pool_ref>)
+  if constexpr (test::is_memory_pool_type<pinned_resource>)
   {
-    return;
+    test::skip_if_unsupported_memory_pool<pinned_resource>();
   }
-#endif // _CCCL_CTK_AT_LEAST(12, 9)
+
   pinned_resource res = get_resource<pinned_resource>();
-  cuda::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}}; // NOLINT(misc-const-correctness)
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
@@ -202,9 +222,14 @@ static_assert(cuda::mr::synchronous_resource<derived_pinned_resource>);
 C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
-  pinned_resource first = get_resource<pinned_resource>();
+  if constexpr (test::is_memory_pool_type<pinned_resource>)
+  {
+    test::skip_if_unsupported_memory_pool<pinned_resource>();
+  }
+
+  const pinned_resource first = get_resource<pinned_resource>();
   { // comparison against a plain pinned_memory_resource
-    pinned_resource second = get_resource<pinned_resource>();
+    const pinned_resource second = get_resource<pinned_resource>();
     CHECK((first == second));
     CHECK(!(first != second));
   }
@@ -222,7 +247,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
   if constexpr (cuda::mr::resource<pinned_resource>)
   { // comparison against a pinned_memory_resource wrapped inside a resource_ref
     pinned_resource second = get_resource<pinned_resource>();
-    cuda::mr::resource_ref<::cuda::mr::device_accessible> second_ref{second};
+    const cuda::mr::resource_ref<::cuda::mr::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
@@ -234,6 +259,8 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
 #if _CCCL_CTK_AT_LEAST(12, 9)
 C2H_CCCLRT_TEST("pinned_memory_resource async.deallocate_sync", "[memory_resource]")
 {
+  test::skip_if_unsupported_memory_pool<cuda::pinned_memory_pool_ref>();
+
   cuda::pinned_memory_pool_ref resource = cuda::pinned_default_memory_pool();
   test_deallocate_async(resource);
 }

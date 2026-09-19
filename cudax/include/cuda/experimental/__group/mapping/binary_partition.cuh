@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/mapping/mapping_result.cuh>
@@ -52,11 +53,12 @@ public:
       : __fn_(::cuda::std::move(__fn))
   {}
 
-  template <class _ParentGroup, class _PrevMappingResult>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept(
-    ::cuda::std::is_nothrow_invocable_v<_Fn, const _PrevMappingResult&>)
+  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept(
+    ::cuda::std::is_nothrow_invocable_v<_Fn&, const _PrevMappingResult&>)
   {
+    static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "binary_partition can only group threads");
     static_assert(::cuda::std::is_same_v<typename _ParentGroup::level_type, warp_level>,
                   "binary_partition can be only used within warp_level");
 
@@ -71,7 +73,7 @@ public:
 
     if (!__prev_mapping_result.is_valid())
     {
-      return _MappingResult::invalid();
+      return _MappingResult::__invalid();
     }
 
     const auto __pred      = static_cast<bool>(__fn_(__prev_mapping_result));
@@ -85,8 +87,8 @@ public:
     return _MappingResult{
       __prev_mapping_result.group_count() * 2,
       __prev_mapping_result.group_rank() + ((__pred) ? __prev_mapping_result.group_count() : 0u),
-      static_cast<unsigned>(::cuda::std::popcount(__match_mask)),
-      static_cast<unsigned>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt())),
+      static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask)),
+      static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt())),
       ::cuda::device::lane_mask{__match_mask}};
   }
 };

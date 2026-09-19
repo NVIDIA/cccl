@@ -17,6 +17,7 @@
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <functional>
 #include <memory>
@@ -46,19 +47,19 @@ public:
   ctx_resource& operator=(const ctx_resource&) = delete;
 
   //! Release asynchronously (only called if can_release_in_callback() returns false)
-  virtual void release(cudaStream_t)
+  virtual void release(cudaStream_t) noexcept
   { /* Default implementation does nothing */
   }
   //! Returns true if this resource can be released in a host callback without using the stream
   //! Resources that return true will be batched together into a single callback to avoid
   //! the overhead of creating individual host callbacks for each resource release
-  virtual bool can_release_in_callback() const
+  virtual bool can_release_in_callback() const noexcept
   {
     return false;
   }
   //! Release synchronously on the host (only called if can_release_in_callback() returns true)
   //! This will be called from within a batched host callback to minimize callback overhead
-  virtual void release_in_callback()
+  virtual void release_in_callback() noexcept
   { /* Default implementation does nothing */
   }
 };
@@ -87,43 +88,48 @@ public:
   {
     _CCCL_ASSERT(!resources_released, "Resources have already been released on this context");
 
-    // Separate resources into stream-dependent and callback-batched
-    decltype(resources) callback_resources;
-
-    for (auto& r : resources)
+    // Release stream-dependent resources and compact them out of `resources` by
+    // pulling the last element into each vacated slot. A resource leaves
+    // `resources` only after it has been released, so if release(stream) throws,
+    // `resources` still holds the failing resource plus everything not yet
+    // processed -- release() can be retried with nothing lost or double-released.
+    for (size_t i = 0; i < resources.size();)
     {
-      if (r->can_release_in_callback())
+      if (resources[i]->can_release_in_callback())
       {
-        callback_resources.push_back(mv(r));
+        ++i;
+        continue;
       }
-      else
-      {
-        r->release(stream);
-      }
+      resources[i]->release(stream); // may throw -> resources[i] stays in place
+      resources[i] = mv(resources.back());
+      resources.pop_back();
     }
-    resources.clear();
 
-    // Batch all callback resources into a single host callback for efficiency
-    if (!callback_resources.empty())
+    if (!resources.empty())
     {
-      // Transfer ownership of callback resources to the callback
-      auto* callback_list = new ::std::vector<::std::shared_ptr<ctx_resource>>(mv(callback_resources));
+      // Transfer ownership of callback resources to the callback. Held in a
+      // unique_ptr until the callback is successfully enqueued so a throw from
+      // cudaStreamAddCallback does not leak the list.
+      auto callback_list = ::std::make_unique<::std::vector<::std::shared_ptr<ctx_resource>>>(mv(resources));
 
       // Add a single host callback using lambda that will release all callback resources
       auto release_lambda = [](cudaStream_t /*stream*/, cudaError_t /*status*/, void* userData) -> void {
-        auto* resources = static_cast<::std::vector<::std::shared_ptr<ctx_resource>>*>(userData);
-
-        // Release all callback resources
-        for (auto& resource : *resources)
+        // The CUDA runtime calls this back, so an exception must not leave it.
+        ON_THROW(abort)
         {
-          resource->release_in_callback();
-        }
+          auto* resources = static_cast<decltype(callback_list.get())>(userData);
 
-        // Clean up the callback list itself
-        delete resources;
+          for (auto& resource : *resources)
+          {
+            resource->release_in_callback();
+          }
+
+          delete resources;
+        };
       };
 
-      cuda_safe_call(cudaStreamAddCallback(stream, release_lambda, callback_list, 0));
+      cuda_try<cudaStreamAddCallback>(stream, release_lambda, callback_list.get(), 0);
+      callback_list.release();
     }
 
     // Mark as released to prevent double release
@@ -167,4 +173,53 @@ private:
   ::std::vector<::std::shared_ptr<ctx_resource>> resources;
   bool resources_released = false; // Safety flag to prevent double release
 };
+namespace reserved
+{
+//! \brief A `ctx_resource` that owns a heap-allocated payload referenced by a CUDA callback.
+//!
+//! The payload outlives the call that enqueues the callback, so it cannot live on the stack, and
+//! it may be referenced by a graph node that is replayed more than once, so the callback itself
+//! must not free it. The context frees it once, when it releases its resources.
+//!
+//! Ownership transfer is two-phase, and both phases matter:
+//!
+//!  1. The constructor takes a NON-OWNING pointer. The caller keeps its `unique_ptr` until
+//!     `ctx_resource_set::add()` has actually taken the resource, and only then releases it.
+//!     `add()` can throw from its `push_back`, and on that path no graph node exists yet, so the
+//!     caller is still the right owner and frees correctly.
+//!  2. After registration succeeds the context is responsible, and frees exactly once from the
+//!     stream-ordered release callback.
+//!
+//! The destructor deliberately does not free. The payload must
+//! outlive any asynchronous work referencing it, and only the stream-ordered release callback
+//! knows when that work has finished -- a destructor cannot. A context abandoned without
+//! `finalize()` therefore leaks the payload rather than freeing it out from under a graph node
+//! that is still pending. `mix_stream_and_graph.cu` does exactly that: it submits a graph_ctx
+//! and lets it go out of scope without syncing, and freeing here segfaults when the host node
+//! later runs.
+template <typename Payload>
+class callback_args_resource : public ctx_resource
+{
+public:
+  //! Non-owning until the caller releases its own pointer; see the two-phase note above.
+  explicit callback_args_resource(Payload* payload) noexcept
+      : payload_(payload)
+  {}
+
+  bool can_release_in_callback() const noexcept override
+  {
+    return true;
+  }
+
+  void release_in_callback() noexcept override
+  {
+    delete payload_;
+    payload_ = nullptr;
+  }
+
+private:
+  //! Raw and intentionally never freed by the destructor; see the note above.
+  Payload* payload_ = nullptr;
+};
+} // end namespace reserved
 } // end namespace cuda::experimental::stf

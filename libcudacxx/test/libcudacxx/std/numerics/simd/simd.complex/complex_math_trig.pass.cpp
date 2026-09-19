@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.complex.math] trigonometric and hyperbolic functions:
@@ -30,7 +33,7 @@ namespace simd = cuda::std::simd;
 // sin, cos, tan, asin, acos, atan
 
 template <typename T, int N>
-TEST_FUNC void test_trig()
+TEST_HOST_DEVICE_FUNC void test_trig()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -70,7 +73,7 @@ TEST_FUNC void test_trig()
 // sinh, cosh, tanh, asinh, acosh, atanh
 
 template <typename T, int N>
-TEST_FUNC void test_hyperbolic()
+TEST_HOST_DEVICE_FUNC void test_hyperbolic()
 {
   using Complex    = cuda::std::complex<T>;
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
@@ -113,13 +116,13 @@ TEST_FUNC void test_hyperbolic()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC void test_type()
+TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_trig<T, N>();
   test_hyperbolic<T, N>();
 }
 
-TEST_FUNC bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   test_type<float, 1>();
   test_type<float, 4>();
@@ -130,16 +133,17 @@ TEST_FUNC bool test()
   return true;
 }
 
-TEST_FUNC bool test_runtime()
+TEST_HOST_DEVICE_FUNC bool test_runtime()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   test_type<__half, 1>();
   test_type<__half, 4>();
 #endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+// precision issues with __nv_bfloat16
+#if _LIBCUDACXX_HAS_NVBF16() && !TEST_CUDA_COMPILER(NVCC, <, 13) && !TEST_COMPILER(NVRTC, <, 13)
   test_type<__nv_bfloat16, 1>();
   test_type<__nv_bfloat16, 4>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16()&& !TEST_CUDA_COMPILER(NVCC, <, 13) && !TEST_COMPILER(NVRTC, <, 13)
   return true;
 }
 

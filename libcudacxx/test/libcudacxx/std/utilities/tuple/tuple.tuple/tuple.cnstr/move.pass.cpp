@@ -12,6 +12,7 @@
 
 // tuple(tuple&& u);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
@@ -56,10 +57,9 @@ struct move_only_large final
 template <class Elem>
 TEST_FUNC void test_sfinae()
 {
-  using Tup = cuda::std::tuple<Elem>;
-  // cuda::std::allocator not supported
-  // using Alloc = cuda::std::allocator<void>;
-  // using Tag = cuda::std::allocator_arg_t;
+  using Tup   = cuda::std::tuple<Elem>;
+  using Alloc = cuda::std::allocator<void>;
+  using Tag   = cuda::std::allocator_arg_t;
   // special members
   {
     static_assert(cuda::std::is_default_constructible<Tup>::value);
@@ -73,22 +73,19 @@ TEST_FUNC void test_sfinae()
     static_assert(!cuda::std::is_constructible<Tup, Elem const&>::value);
     static_assert(!cuda::std::is_constructible<Tup, Elem&>::value);
   }
-  // cuda::std::allocator not supported
-  /*
   // uses-allocator special member constructors
   {
-      static_assert(cuda::std::is_constructible<Tup, Tag, Alloc>::value);
-      static_assert(cuda::std::is_constructible<Tup, Tag, Alloc, Tup&&>::value);
-      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Tup const&>::value);
-      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Tup &>::value);
+    static_assert(cuda::std::is_constructible<Tup, Tag, Alloc>::value);
+    static_assert(cuda::std::is_constructible<Tup, Tag, Alloc, Tup&&>::value);
+    static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Tup const&>::value);
+    static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Tup&>::value);
   }
   // uses-allocator args constructors
   {
-      static_assert(cuda::std::is_constructible<Tup, Tag, Alloc, Elem&&>::value);
-      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Elem const&>::value);
-      static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Elem &>::value);
+    static_assert(cuda::std::is_constructible<Tup, Tag, Alloc, Elem&&>::value);
+    static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Elem const&>::value);
+    static_assert(!cuda::std::is_constructible<Tup, Tag, Alloc, Elem&>::value);
   }
-  */
 }
 
 int main(int, char**)

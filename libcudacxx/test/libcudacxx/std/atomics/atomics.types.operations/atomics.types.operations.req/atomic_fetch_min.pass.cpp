@@ -6,12 +6,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 //  ... test crashes clang
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -42,7 +42,7 @@
 template <class T, template <typename, typename> class Selector, cuda::thread_scope>
 struct TestFn
 {
-  TEST_FUNC void operator()() const
+  TEST_HOST_DEVICE_FUNC void operator()() const
   {
     // op less than the stored value: replaced, old value returned
     {
@@ -82,7 +82,7 @@ struct TestFn
 };
 
 template <class T, template <typename, typename> class Selector>
-TEST_FUNC void testp()
+TEST_HOST_DEVICE_FUNC void testp()
 {
   using X = typename cuda::std::remove_pointer<T>::type;
   // Pointers into the same array have a well-defined ordering.

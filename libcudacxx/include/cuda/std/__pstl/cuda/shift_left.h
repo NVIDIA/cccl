@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -78,17 +79,18 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
     _InputIterator __last,
     iter_difference_t<_InputIterator> __num_shifted)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     using _OffsetType   = iter_difference_t<_InputIterator>;
     const auto __count  = ::cuda::std::distance(__first, __last);
     const auto __result = __first + static_cast<_OffsetType>(__count - __num_shifted);
     auto __flag_iter    = ::cuda::transform_iterator{
       ::cuda::counting_iterator<size_t>{0}, __shift_left_predicate{static_cast<size_t>(__num_shifted)}};
 
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-
     // Determine temporary device storage requirements for DeviceSelect::Flagged
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceSelect::Flagged,
       "__pstl_cuda_shift_left: determination of device storage for cub::DeviceSelect::Flagged failed",
       static_cast<void*>(nullptr),
@@ -97,22 +99,22 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
       __flag_iter,
       static_cast<_OffsetType*>(nullptr),
       __count,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceSelect::Flagged,
         "__pstl_cuda_shift_left: kernel launch of cub::DeviceSelect::Flagged failed",
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
         ::cuda::std::move(__flag_iter),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         __count,
-        __stream.get());
+        __policy);
     }
 
     __stream.sync();
@@ -121,11 +123,11 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
-    iter_difference_t<_InputIterator> __num_shifted) const
+    iter_difference_t<_InputIterator> __num_shifted)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

@@ -51,8 +51,8 @@ enum class arch_id : int
     _OP) " is deprecated and will be deleted in the next major release. Compare cuda::compute_capabilities of the " \
          "given "                                                                                                   \
          "cuda::arch_id instead.")
-[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<) _CCCL_HOST_DEVICE_API constexpr bool
-operator<(arch_id __lhs, arch_id __rhs) noexcept
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<) _CCCL_HOST_DEVICE_API
+  constexpr bool operator<(arch_id __lhs, arch_id __rhs) noexcept
 {
   return ::cuda::std::to_underlying(__lhs) < ::cuda::std::to_underlying(__rhs);
 }

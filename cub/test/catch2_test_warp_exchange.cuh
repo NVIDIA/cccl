@@ -62,7 +62,8 @@ __global__ void scatter_kernel(const InputT* input_data, OutputT* output_data)
   constexpr int tile_size = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
   __shared__ storage_t temp_storage[TOTAL_WARPS];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
   const int warp_id = tid / LOGICAL_WARP_THREADS;
@@ -124,7 +125,8 @@ __global__ void kernel(const InputT* input_data, OutputT* output_data, ActionT a
   constexpr int tile_size = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
   __shared__ storage_t temp_storage[TOTAL_WARPS];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
   const int warp_id = tid / LOGICAL_WARP_THREADS;
@@ -203,7 +205,7 @@ c2h::host_vector<T> compute_host_reference(const c2h::device_vector<T>& d_input,
 {
   c2h::host_vector<T> input = d_input;
 
-  int num_warps = cuda::ceil_div(static_cast<int>(d_input.size()), tile_size);
+  const int num_warps = cuda::ceil_div(static_cast<int>(d_input.size()), tile_size);
   for (int warp_id = 0; warp_id < num_warps; warp_id++)
   {
     const int warp_data_begin = tile_size * warp_id;

@@ -65,18 +65,12 @@ template <class _StridedMapping>
   using _RankType       = typename _StridedMapping::rank_type;
   constexpr auto __rank = _Extents::rank();
   // Check if any extent is zero - can't call mapping(0,...) in that case
-  bool __extent_is_zero = false;
   for (_RankType __r = 0; __r != __rank; ++__r)
   {
     if (__mapping.extents().extent(__r) == 0)
     {
-      __extent_is_zero = true;
-      break;
+      return typename _StridedMapping::index_type{0};
     }
-  }
-  if (__extent_is_zero)
-  {
-    return typename _StridedMapping::index_type{0};
   }
   return ::cuda::__layout_stride_relaxed_compute_offset(__mapping, ::cuda::std::make_index_sequence<__rank>{});
 }
@@ -147,16 +141,14 @@ private:
 
   [[nodiscard]] _CCCL_API constexpr bool __has_positive_strides() const noexcept
   {
-    bool __result = true;
     for (rank_type __r = 0; __r != __rank_; ++__r)
     {
       if (strides().stride(__r) <= 0)
       {
-        __result = false;
-        break;
+        return false;
       }
     }
-    return __result;
+    return true;
   }
 
 public:
@@ -273,14 +265,12 @@ public:
       // __min_dot tracks the total positive magnitude of the negative contributions
       index_type __dot{1};
       offset_type __min_dot{0};
-      bool __stride_is_negative = false;
       for (rank_type __r = 0; __r < __rank_; ++__r)
       {
         const auto __ext = extents().extent(__r);
         if (__ext == index_type{0})
         {
-          __stride_is_negative = true;
-          break;
+          return index_type{0};
         }
         const auto __stride_val = strides().stride(__r);
         _CCCL_ASSERT(::cuda::std::in_range<index_type>(::cuda::uabs(__stride_val)),
@@ -310,7 +300,7 @@ public:
                    "layout_stride_relaxed::mapping: offset is insufficient for negative strides");
       _CCCL_ASSERT(!::cuda::add_overflow<index_type>(__offset_val, __dot),
                    "layout_stride_relaxed::mapping: required_span_size is not representable as index_type");
-      return __stride_is_negative ? index_type{0} : static_cast<index_type>(__offset_val + __dot);
+      return static_cast<index_type>(__offset_val + __dot);
     }
   }
 

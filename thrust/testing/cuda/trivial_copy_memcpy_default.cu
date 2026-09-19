@@ -17,12 +17,12 @@ void TestTrivialCopyFromDevice_HostSource()
   int src[]  = {0, 10, 20, 30, 40};
   int dst[5] = {};
 
-  cudaError_t status = thrust::cuda_cub::trivial_copy_from_device(dst, src, 5, cudaStreamDefault);
+  const cudaError_t status = thrust::cuda_cub::trivial_copy_from_device(dst, src, 5, cudaStreamDefault);
 
-  ASSERT_EQUAL(status, cudaSuccess);
+  REQUIRE(status == cudaSuccess);
   for (int i = 0; i < 5; i++)
   {
-    ASSERT_EQUAL(dst[i], i * 10);
+    REQUIRE(dst[i] == i * 10);
   }
 }
 DECLARE_UNITTEST(TestTrivialCopyFromDevice_HostSource);
@@ -32,12 +32,12 @@ void TestTrivialCopyToDevice_HostDest()
   int src[]  = {0, 100, 200, 300, 400};
   int dst[5] = {};
 
-  cudaError_t status = thrust::cuda_cub::trivial_copy_to_device(dst, src, 5, cudaStreamDefault);
+  const cudaError_t status = thrust::cuda_cub::trivial_copy_to_device(dst, src, 5, cudaStreamDefault);
 
-  ASSERT_EQUAL(status, cudaSuccess);
+  REQUIRE(status == cudaSuccess);
   for (int i = 0; i < 5; i++)
   {
-    ASSERT_EQUAL(dst[i], i * 100);
+    REQUIRE(dst[i] == i * 100);
   }
 }
 DECLARE_UNITTEST(TestTrivialCopyToDevice_HostDest);

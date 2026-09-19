@@ -60,7 +60,7 @@ struct Transforms
                          CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
                          LevelIteratorT>;
 
-      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const WrappedLevelIteratorT wrapped_levels(d_levels);
 
       const int num_bins = num_output_levels - 1;
       if (valid)
@@ -173,8 +173,8 @@ struct Transforms
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
-    ComputeScale(int num_levels, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
+    _CCCL_HOST_DEVICE
+    _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
     {
       ScaleT result;
       NV_IF_ELSE_TARGET(
@@ -204,8 +204,8 @@ struct Transforms
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
+    _CCCL_HOST_DEVICE
+    _CCCL_FORCEINLINE int SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
     {
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                         (return __hge(sample, min_level) && __hlt(sample, max_level);),
@@ -344,14 +344,14 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
-  [[maybe_unused]] static constexpr histogram_policy policy = current_policy<PolicySelector>();
+  [[maybe_unused]] static constexpr HistogramPolicy policy = current_policy<PolicySelector>();
   _CCCL_PDL_GRID_DEPENDENCY_SYNC(); // TODO(bgruber): if we had the guarantee that there would be no pending
                                     // writes/reads to the temp storage, we could omit the sync here
 
   // we trigger the sweep kernel only if we have a small number of remaining writes in this kernel
   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                  if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end())
-                     <= policy.pdl_trigger_next_launch_in_init_kernel_max_bin_count)
+                     <= policy.init_kernel_pdl_trigger_max_bins)
                  {
                    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
                  }
@@ -362,7 +362,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
     tile_queue.ResetDrain();
   }
 
-  const int output_bin = (blockIdx.x * blockDim.x) + threadIdx.x;
+  const int output_bin = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -459,31 +459,31 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
-    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    const SampleIteratorT d_samples,
+    const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
-    _CCCL_GRID_CONSTANT const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
-    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
-    _CCCL_GRID_CONSTANT const OffsetT num_rows,
-    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
-    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
+    const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    const OffsetT num_row_pixels,
+    const OffsetT num_rows,
+    const OffsetT row_stride_samples,
+    const int tiles_per_row,
     GridQueue<int> tile_queue)
 {
-  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.threads_per_block,
-                         hp.pixels_per_thread,
-                         hp.load_algorithm,
-                         hp.load_modifier,
-                         hp.rle_compress,
-                         hp.mem_preference,
-                         hp.work_stealing,
-                         hp.vec_size>;
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    hp.threads_per_block,
+    hp.pixels_per_thread,
+    hp.load_algorithm,
+    hp.load_modifier,
+    hp.rle_compress,
+    hp.mem_preference,
+    hp.use_work_stealing,
+    hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,
@@ -619,20 +619,20 @@ template <typename PolicySelector,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
-    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
+    const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
-    _CCCL_GRID_CONSTANT const FirstLevelArrayT first_level_array,
-    _CCCL_GRID_CONSTANT const SecondLevelArrayT second_level_array,
-    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
-    _CCCL_GRID_CONSTANT const OffsetT num_rows,
-    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
-    _CCCL_GRID_CONSTANT const int tiles_per_row,
-    _CCCL_GRID_CONSTANT const GridQueue<int> tile_queue)
+    const FirstLevelArrayT first_level_array,
+    const SecondLevelArrayT second_level_array,
+    const OffsetT num_row_pixels,
+    const OffsetT num_rows,
+    const OffsetT row_stride_samples,
+    const int tiles_per_row,
+    const GridQueue<int> tile_queue)
 {
-  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
@@ -661,15 +661,15 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   }
 
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT =
-    AgentHistogramPolicy<hp.threads_per_block,
-                         hp.pixels_per_thread,
-                         hp.load_algorithm,
-                         hp.load_modifier,
-                         hp.rle_compress,
-                         hp.mem_preference,
-                         hp.work_stealing,
-                         hp.vec_size>;
+  using AgentHistogramPolicyT = agent_histogram_policy<
+    hp.threads_per_block,
+    hp.pixels_per_thread,
+    hp.load_algorithm,
+    hp.load_modifier,
+    hp.rle_compress,
+    hp.mem_preference,
+    hp.use_work_stealing,
+    hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,

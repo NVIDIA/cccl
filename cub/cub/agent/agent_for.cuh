@@ -41,7 +41,8 @@ struct agent_block_striped_t
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; item++)
     {
-      const auto idx = static_cast<OffsetT>(threads_per_block * item + threadIdx.x);
+      const auto idx =
+        static_cast<OffsetT>(threads_per_block * item + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
 
       if (IsFullTile || idx < items_in_tile)
       {

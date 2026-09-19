@@ -24,6 +24,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/iket_support.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
@@ -33,6 +34,32 @@
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
+// TODO(bgruber): remove when C++20 is the minimum, since then we can pass policy values as NTTPs
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockStoreAlgorithm StoreAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>,
+          typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
+struct agent_scan_policy : ScalingType
+{
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
+  static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
+  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = ScanAlgorithm;
+
+  struct detail
+  {
+    using delay_constructor_t = DelayConstructorT;
+  };
+};
+} // namespace detail
 
 /******************************************************************************
  * Tuning policy types
@@ -66,6 +93,7 @@ CUB_NAMESPACE_BEGIN
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
+//! Deprecated [Since 3.5]
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
@@ -75,18 +103,16 @@ template <int NominalThreadsPerBlock4B,
           BlockScanAlgorithm ScanAlgorithm,
           typename ScalingType = detail::MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>,
           typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
-struct AgentScanPolicy : ScalingType
-{
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
-  static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
-  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = ScanAlgorithm;
-
-  struct detail
-  {
-    using delay_constructor_t = DelayConstructorT;
-  };
-};
+using AgentScanPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") = detail::agent_scan_policy<
+  NominalThreadsPerBlock4B,
+  NominalItemsPerThread4B,
+  ComputeT,
+  LoadAlgorithm,
+  LoadModifier,
+  StoreAlgorithm,
+  ScanAlgorithm,
+  ScalingType,
+  DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -94,6 +120,10 @@ struct AgentScanPolicy : ScalingType
 
 namespace detail::scan
 {
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Load);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Scan);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Store);
+
 /**
  * @brief AgentScan implements a stateful abstraction of CUDA thread blocks for
  *        participating in device-wide prefix scan.
@@ -125,8 +155,9 @@ template <typename AgentScanPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive = false,
-          bool UsePDL         = false>
+          bool ForceInclusive       = false,
+          bool UsePDL               = false,
+          bool StableReductionOrder = false>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -174,8 +205,9 @@ struct AgentScan
   using BlockScanT = BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT     = typename AgentScanPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, DelayConstructorT>;
+  using DelayConstructorT = typename AgentScanPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT =
+    TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, DelayConstructorT, StableReductionOrder>;
 
   // Stateful BlockScan prefix callback type for managing a running total while
   // scanning consecutive tiles
@@ -314,6 +346,7 @@ struct AgentScan
     // Load items
     AccumT items[ITEMS_PER_THREAD];
 
+    _CCCL_IKET_RANGE_PUSH(Load);
     if constexpr (IS_LAST_TILE)
     {
       // Fill last element with the first element because collectives are
@@ -324,10 +357,12 @@ struct AgentScan
     {
       BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items);
     }
+    _CCCL_IKET_RANGE_POP();
 
     __syncthreads();
 
     // Perform tile scan
+    _CCCL_IKET_RANGE_PUSH(Scan);
     if (tile_idx == 0)
     {
       // Scan first tile
@@ -345,6 +380,7 @@ struct AgentScan
       TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, scan_op, tile_idx);
       ScanSubsequentTile(items, scan_op, prefix_op);
     }
+    _CCCL_IKET_RANGE_POP();
 
     __syncthreads();
 
@@ -354,6 +390,7 @@ struct AgentScan
     }
 
     // Store items
+    _CCCL_IKET_RANGE_PUSH(Store);
     if constexpr (IS_LAST_TILE)
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, num_remaining);
@@ -362,6 +399,7 @@ struct AgentScan
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items);
     }
+    _CCCL_IKET_RANGE_POP();
   }
 
   /**
@@ -382,7 +420,7 @@ struct AgentScan
     // block
 
     // Current tile index
-    int tile_idx = start_tile + blockIdx.x;
+    const int tile_idx = static_cast<int>(start_tile + blockIdx.x);
 
     // Global offset for the current tile
     OffsetT tile_offset = OffsetT(TILE_ITEMS) * tile_idx;
@@ -425,6 +463,7 @@ struct AgentScan
     // Load items
     AccumT items[ITEMS_PER_THREAD];
 
+    _CCCL_IKET_RANGE_PUSH(Load);
     if constexpr (IS_LAST_TILE)
     {
       // Fill last element with the first element because collectives are
@@ -435,10 +474,12 @@ struct AgentScan
     {
       BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items);
     }
+    _CCCL_IKET_RANGE_POP();
 
     __syncthreads();
 
     // Block scan
+    _CCCL_IKET_RANGE_PUSH(Scan);
     if constexpr (IS_FIRST_TILE)
     {
       AccumT block_aggregate;
@@ -449,10 +490,12 @@ struct AgentScan
     {
       ScanSubsequentTile(items, scan_op, prefix_op);
     }
+    _CCCL_IKET_RANGE_POP();
 
     __syncthreads();
 
     // Store items
+    _CCCL_IKET_RANGE_PUSH(Store);
     if constexpr (IS_LAST_TILE)
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, valid_items);
@@ -461,6 +504,7 @@ struct AgentScan
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items);
     }
+    _CCCL_IKET_RANGE_POP();
   }
 
   /**

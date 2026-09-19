@@ -60,6 +60,18 @@ readonly cuda13_image
 
 mkdir -p wheelhouse
 
+# Shared caches across the cu12 + cu13 wheel builds. Both jobs compile an
+# identical LLVM/clang tree (LLVM has no CUDA dep), so a shared ccache cuts
+# the second build's LLVM phase from ~10 min to under 2 min; a shared CPM
+# source cache skips the second LLVM git clone entirely.
+#
+# The `mkdir`s run inside the (dev)container where only the container-side
+# paths are visible. The docker bind-mount uses the host-side paths
+# (${HOST_WORKSPACE}) since the inner docker daemon is the host's.
+mkdir -p ./.ccache ./.cpm-cache
+host_ccache_dir="${HOST_WORKSPACE:?}/.ccache"
+host_cpm_cache_dir="${HOST_WORKSPACE:?}/.cpm-cache"
+
 for ctk in 12 13; do
   image="cuda${ctk}_image"
   image="${!image}"
@@ -70,11 +82,17 @@ for ctk in 12 13; do
     docker run --rm -i \
         --workdir /workspace/python/cuda_cccl \
         --mount "type=bind,source=${HOST_WORKSPACE:?},target=/workspace/" \
+        --mount "type=bind,source=${host_ccache_dir},target=/root/.ccache" \
+        --mount "type=bind,source=${host_cpm_cache_dir},target=/root/.cpm-cache" \
         "${action_mounts[@]}" \
         --env "py_version=${py_version}" \
         --env "GITHUB_ACTIONS=${GITHUB_ACTIONS:-}" \
         --env "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}" \
         --env "JOB_ID=${JOB_ID:-}" \
+        --env "CCCL_PYTHON_USE_V2=${CCCL_PYTHON_USE_V2:-}" \
+        --env "CCCL_C_PARALLEL_SANITIZE_THREAD=${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" \
+        --env "CCACHE_DIR=/root/.ccache" \
+        --env "CPM_SOURCE_CACHE=/root/.cpm-cache" \
         "$image" \
         /workspace/ci/build_cuda_cccl_wheel.sh
     # Prevent GHA runners from exhausting available storage with leftover images:
@@ -116,6 +134,14 @@ echo "Found CUDA 13 wheel: $cu13_wheel"
 # Merge the wheels
 python python/cuda_cccl/merge_cuda_wheels.py "$cu12_wheel" "$cu13_wheel" --output-dir wheelhouse_merged
 
+# A ThreadSanitizer wheel links libtsan; keep it external (excluded) so it is
+# NOT bundled -- the TSan test lane LD_PRELOADs the runner's matching libtsan
+# instead. Harmless for normal builds (the .so has no libtsan dependency).
+tsan_exclude=()
+if [[ "${CCCL_C_PARALLEL_SANITIZE_THREAD:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+  tsan_exclude=(--exclude 'libtsan.so.2')
+fi
+
 # Install auditwheel and repair the merged wheel
 python -m pip install patchelf auditwheel
 for wheel in wheelhouse_merged/cuda_cccl-*.whl; do
@@ -125,7 +151,10 @@ for wheel in wheelhouse_merged/cuda_cccl-*.whl; do
         --exclude 'libnvrtc.so.13' \
         --exclude 'libnvJitLink.so.12' \
         --exclude 'libnvJitLink.so.13' \
+        --exclude 'libcudart.so.12' \
+        --exclude 'libcudart.so.13' \
         --exclude 'libcuda.so.1' \
+        "${tsan_exclude[@]}" \
         "$wheel" \
         --wheel-dir wheelhouse_final
 done

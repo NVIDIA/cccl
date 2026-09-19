@@ -22,72 +22,6 @@
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 
-#if TEST_HALF_T()
-// Half support is provided by SM53+. We currently test against a few older architectures.
-// The specializations below can be removed once we drop these architectures.
-
-template <>
-_CCCL_HOST_DEVICE_API inline __half
-cuda::minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
-{
-#  if defined(__CUDA_NO_HALF_OPERATORS__)
-  return ::cuda::std::min(__half2float(a), __half2float(b));
-#  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_53, (return ::cuda::std::min(a, b);), (return ::cuda::std::min(__half2float(a), __half2float(b));));
-#  endif // !__CUDA_NO_HALF_OPERATORS__
-}
-
-template <>
-_CCCL_HOST_DEVICE_API inline __half
-cuda::maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
-{
-#  if defined(__CUDA_NO_HALF_OPERATORS__)
-  return ::cuda::std::max(__half2float(a), __half2float(b));
-#  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_53, (return ::cuda::std::max(a, b);), (return ::cuda::std::max(__half2float(a), __half2float(b));));
-#  endif // !__CUDA_NO_HALF_OPERATORS__
-}
-
-CUB_NAMESPACE_BEGIN
-
-template <>
-__host__ __device__ __forceinline__ //
-  KeyValuePair<int, __half>
-  ArgMin::operator()(const KeyValuePair<int, __half>& a, const KeyValuePair<int, __half>& b) const
-{
-  const float av = __half2float(a.value);
-  const float bv = __half2float(b.value);
-
-  if ((bv < av) || ((av == bv) && (b.key < a.key)))
-  {
-    return b;
-  }
-
-  return a;
-}
-
-template <>
-__host__ __device__ __forceinline__ //
-  KeyValuePair<int, __half>
-  ArgMax::operator()(const KeyValuePair<int, __half>& a, const KeyValuePair<int, __half>& b) const
-{
-  const float av = __half2float(a.value);
-  const float bv = __half2float(b.value);
-
-  if ((bv > av) || ((av == bv) && (b.key < a.key)))
-  {
-    return b;
-  }
-
-  return a;
-}
-
-CUB_NAMESPACE_END
-
-#endif // TEST_HALF_T()
-
 // Comparing results computed on CPU and GPU for extended floating point types is impossible.
 // For instance, when used with a constant iterator of two, the accumulator in sequential reference
 // computation (CPU) bumps into the 4096 limits, which will never change (`4096 + 2 = 4096`).
@@ -204,6 +138,7 @@ inline void init_default_constant(uchar3& val, int element_val = 2)
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 inline void init_default_constant(ulonglong4& val, int element_val = 2)
 {
   const auto element_init = static_cast<unsigned long long>(element_val);
@@ -223,7 +158,7 @@ template <typename InputItT,
           typename OffsetItT,
           typename SizeItT,
           typename ReductionOpT,
-          typename InitT,
+          typename InitValueT,
           typename ResultOutItT>
 inline void compute_host_reference(
   InputItT h_in,
@@ -231,7 +166,7 @@ inline void compute_host_reference(
   SizeItT h_sizes_begin,
   std::size_t num_segments,
   ReductionOpT reduction_op,
-  InitT init,
+  InitValueT init,
   ResultOutItT h_data_out)
 {
   for (std::size_t segment = 0; segment < num_segments; segment++)
@@ -276,8 +211,8 @@ inline AccumulatorT
 compute_single_problem_reference(const c2h::device_vector<ItemT>& d_in, ReductionOpT reduction_op, AccumulatorT init)
 {
   constexpr std::size_t num_segments = 1;
-  c2h::host_vector<ItemT> h_items(d_in);
-  c2h::host_vector<AccumulatorT> h_results(num_segments);
+  const c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<AccumulatorT> h_results(num_segments);
 
   return compute_single_problem_reference(h_items.cbegin(), h_items.cend(), reduction_op, init);
 }
@@ -294,13 +229,13 @@ void compute_segmented_problem_reference(
   AccumulatorT init,
   ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
-  c2h::host_vector<OffsetT> h_offsets(d_offsets);
+  const c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it   = h_offsets.cbegin();
   auto seg_sizes_it = cuda::transform_iterator(cuda::counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
     return offsets_it[i + 1] - offsets_it[i];
   });
-  std::size_t num_segments = h_offsets.size() - 1;
+  const std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(
     h_items.cbegin(), h_offsets.cbegin(), seg_sizes_it, num_segments, reduction_op, init, h_results);
@@ -318,12 +253,12 @@ void compute_segmented_problem_reference(
   AccumulatorT init,
   ResultItT h_results)
 {
-  c2h::host_vector<OffsetT> h_offsets(d_offsets);
+  const c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it   = h_offsets.cbegin();
   auto seg_sizes_it = cuda::transform_iterator(cuda::counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
     return offsets_it[i + 1] - offsets_it[i];
   });
-  std::size_t num_segments = h_offsets.size() - 1;
+  const std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(in_it, h_offsets.cbegin(), seg_sizes_it, num_segments, reduction_op, init, h_results);
 }
@@ -336,7 +271,7 @@ template <typename ItemT, typename OffsetT, typename ResultItT>
 void compute_segmented_argmin_reference(
   const c2h::device_vector<ItemT>& d_in, const c2h::device_vector<OffsetT>& d_offsets, ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
@@ -349,7 +284,7 @@ void compute_segmented_argmin_reference(
     {
       auto expected_result_it =
         std::min_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset =
+      const int result_offset =
         static_cast<int>(cuda::std::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
       h_results[seg] = {result_offset, *expected_result_it};
     }
@@ -364,7 +299,7 @@ template <typename ItemT, typename OffsetT, typename ResultItT>
 void compute_segmented_argmax_reference(
   const c2h::device_vector<ItemT>& d_in, const c2h::device_vector<OffsetT>& d_offsets, ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
@@ -377,7 +312,7 @@ void compute_segmented_argmax_reference(
     {
       auto expected_result_it =
         std::max_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset =
+      const int result_offset =
         static_cast<int>(cuda::std::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
       h_results[seg] = {result_offset, *expected_result_it};
     }
@@ -397,12 +332,12 @@ void compute_fixed_size_segmented_problem_reference(
   AccumulatorT init,
   ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<ItemT> h_items(d_in);
   auto h_begin = h_items.cbegin();
 
   for (int segment = 0; segment < num_segments; segment++)
   {
-    auto seg_begin = h_begin + segment * segment_size;
+    auto seg_begin = h_begin + static_cast<long>(segment) * segment_size;
     auto seg_end   = seg_begin + segment_size;
     h_results[segment] =
       static_cast<cub::detail::it_value_t<ResultItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
@@ -428,10 +363,10 @@ void compute_fixed_size_segmented_argmax_reference(
     }
     else
     {
-      auto seg_begin          = h_begin + seg * segment_size;
+      auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::max_element(seg_begin, seg_end);
-      int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      const int result_offset = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
       h_results[seg]          = {result_offset, *expected_result_it};
     }
   }
@@ -456,10 +391,10 @@ void compute_fixed_size_segmented_argmin_reference(
     }
     else
     {
-      auto seg_begin          = h_begin + seg * segment_size;
+      auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::min_element(seg_begin, seg_end);
-      int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      const int result_offset = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
       h_results[seg]          = {result_offset, *expected_result_it};
     }
   }
@@ -495,7 +430,7 @@ inline OutputItT compute_unique_keys_reference(InputItT h_in_begin, std::size_t 
 template <typename ItemT>
 inline c2h::host_vector<ItemT> compute_unique_keys_reference(const c2h::device_vector<ItemT>& d_keys)
 {
-  c2h::host_vector<ItemT> h_keys(d_keys);
+  const c2h::host_vector<ItemT> h_keys(d_keys);
   c2h::host_vector<ItemT> h_unique_keys_out(d_keys.size());
 
   auto end_it = compute_unique_keys_reference(h_keys.cbegin(), h_keys.size(), h_unique_keys_out.begin());

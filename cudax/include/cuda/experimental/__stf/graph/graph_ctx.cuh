@@ -73,7 +73,7 @@ public:
       cuda_try(cudaMallocHost(&result, s));
       SCOPE(fail)
       {
-        cudaFreeHost(&result);
+        cuda_safe_call(cudaFreeHost(result));
       };
       out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
     }
@@ -175,6 +175,21 @@ private:
 /**
  * @brief A graph context, which is a CUDA graph that we can automatically built using tasks.
  *
+ * @par Caller-stream finalize semantics
+ *
+ * Default-constructed `graph_ctx` instances launch their CUDA graph on an
+ * internal stream and block in `finalize()` until that stream drains.
+ * Instances constructed with `graph_ctx(user_stream, handle)` (or the
+ * matching explicit-graph constructor) instead launch every graph on the
+ * caller-provided `user_stream`, set `blocking_finalize = false`, and make
+ * `finalize()` non-blocking: the graph launch and the context's
+ * resource-release callback are enqueued on `user_stream` and `finalize()`
+ * returns without synchronizing it. The caller must therefore drive
+ * `user_stream` to completion (e.g. via `cudaStreamSynchronize(user_stream)`)
+ * before observing results on the host or destroying any shared
+ * `async_resources_handle` that was passed to the context (which is
+ * particularly relevant for graph contexts because the handle also owns the
+ * executable-graph cache).
  */
 class graph_ctx : public backend_ctx<graph_ctx>
 {
@@ -348,14 +363,26 @@ public:
     // Make sure we release resources attached to this context
     state.release_ctx_resources(state.submitted_stream);
 
+    // Finalization has to complete even when the synchronize below reports a failure, which is
+    // the likely case rather than the exotic one: cudaStreamSynchronize is where asynchronous
+    // errors from earlier work surface. Leaving the context in `submitted` with its resources
+    // already released makes it unusable AND unretryable -- a second finalize() re-enters
+    // release_ctx_resources and trips its "already released" assertion. The guard is armed
+    // after that release so that a failure there still leaves the context retryable, which it
+    // is today: release() only sets its released flag once it has finished.
+    //
+    // The error still propagates; the caller simply gets a consistent context along with it.
+    SCOPE(exit)
+    {
+      state.submitted_stream = nullptr;
+      state.cleanup();
+      set_phase(backend_ctx_untyped::phase::finalized);
+    };
+
     if (state.blocking_finalize)
     {
       cuda_try(cudaStreamSynchronize(state.submitted_stream));
     }
-
-    state.submitted_stream = nullptr;
-    state.cleanup();
-    set_phase(backend_ctx_untyped::phase::finalized);
   }
 
   void submit(cudaStream_t stream = nullptr)
@@ -543,17 +570,30 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    typename owning_container_of<T>::type out;
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      host_launch(ldata.read()).set_symbol("wait")->*[]() {};
 
-    host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
-      out = owning_container_of<T>::get_value(data);
-    };
+      /* This forces the completion of the host callback, so that the host
+       * thread can use it as a synchronization point for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    /* This forces the completion of the host callback, so that the host
-     * thread can use the content for dynamic control flow */
-    cuda_safe_call(cudaStreamSynchronize(fence()));
+      host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
+      /* This forces the completion of the host callback, so that the host
+       * thread can use the content for dynamic control flow */
+      cuda_safe_call(cudaStreamSynchronize(fence()));
+
+      return out;
+    }
   }
 
 private:
@@ -588,14 +628,20 @@ private:
   // Instantiate a CUDA graph
   static ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
   {
-    // Custom deleter specifically for cudaGraphExec_t
+    // Custom deleter specifically for cudaGraphExec_t. The handle is
+    // value-initialized and stays null if instantiation throws: do not
+    // destroy it in that case (that would mask the instantiation error).
     auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-      cudaGraphExecDestroy(*pGraphExec);
+      if (*pGraphExec)
+      {
+        cudaGraphExecDestroy(*pGraphExec);
+      }
+      delete pGraphExec;
     };
 
-    ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
+    ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t{}, cudaGraphExecDeleter);
 
-    cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
+    cuda_try<cudaGraphInstantiateWithFlags>(res.get(), g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
     return res;
   }

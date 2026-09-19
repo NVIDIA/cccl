@@ -10,29 +10,31 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts env with stream and determinism requirements",
-         "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Sum accepts env with stream and determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-reduce-sum-env
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
 
   auto req_env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto env = ::cuda::std::execution::env{req_env, stream_ref};
 
   auto error =
     cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-  thrust::device_vector<int> expected{21, 0, 17};
+  const thrust::device_vector<int> expected{21, 0, 17};
 
   if (error != cudaSuccess)
   {
@@ -45,21 +47,21 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts env with stream and determinis
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts stream", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Sum accepts stream", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin segmented-reduce-sum-env-stream
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::Sum(
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
-  thrust::device_vector<int> expected{21, 0, 17};
+  const thrust::device_vector<int> expected{21, 0, 17};
 
   if (error != cudaSuccess)
   {
@@ -72,10 +74,12 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts stream", "[segmented_reduce][e
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts run_to_run determinism requirements", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Sum accepts run_to_run determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-reduce-sum-env-determinism
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -85,7 +89,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts run_to_run determinism require
 
   auto error =
     cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-  thrust::device_vector<int> expected{21, 0, 17};
+  const thrust::device_vector<int> expected{21, 0, 17};
 
   if (error != cudaSuccess)
   {
@@ -97,10 +101,12 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts run_to_run determinism require
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism requirements", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-reduce-sum-env-non-determinism
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -110,7 +116,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism req
 
   auto error =
     cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-  thrust::device_vector<int> expected{21, 0, 17};
+  const thrust::device_vector<int> expected{21, 0, 17};
 
   if (error != cudaSuccess)
   {
@@ -122,21 +128,21 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism req
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Reduce env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Reduce env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin segmented-reduce-reduce-env
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::Reduce(
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0, stream_ref);
-  thrust::device_vector<int> expected{21, 0, 17};
+  const thrust::device_vector<int> expected{21, 0, 17};
 
   if (error != cudaSuccess)
   {
@@ -149,21 +155,21 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce env-based API", "[segmented_reduce]
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Min env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Min env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin segmented-reduce-min-env
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::Min(
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
-  thrust::device_vector<int> expected{6, std::numeric_limits<int>::max(), 0};
+  const thrust::device_vector<int> expected{6, std::numeric_limits<int>::max(), 0};
 
   if (error != cudaSuccess)
   {
@@ -176,21 +182,21 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min env-based API", "[segmented_reduce][en
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Max env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Max env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin segmented-reduce-max-env
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::Max(
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
-  thrust::device_vector<int> expected{8, std::numeric_limits<int>::lowest(), 9};
+  const thrust::device_vector<int> expected{8, std::numeric_limits<int>::lowest(), 9};
 
   if (error != cudaSuccess)
   {
@@ -203,17 +209,17 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max env-based API", "[segmented_reduce][en
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMin env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMin env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin segmented-reduce-argmin-env
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::ArgMin(
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
@@ -225,21 +231,22 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin env-based API", "[segmented_reduce]
   // example-end segmented-reduce-argmin-env
   stream.sync();
 
-  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{1, 6}, {1, std::numeric_limits<int>::max()}, {2, 0}};
+  const thrust::device_vector<cub::KeyValuePair<int, int>> expected{
+    {1, 6}, {1, std::numeric_limits<int>::max()}, {2, 0}};
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMax env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMax env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin segmented-reduce-argmax-env
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::ArgMax(
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
@@ -251,13 +258,16 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax env-based API", "[segmented_reduce]
   // example-end segmented-reduce-argmax-env
   stream.sync();
 
-  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {1, std::numeric_limits<int>::lowest()}, {3, 9}};
+  const thrust::device_vector<cub::KeyValuePair<int, int>> expected{
+    {0, 8}, {1, std::numeric_limits<int>::lowest()}, {3, 9}};
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Min accepts run_to_run determinism requirements", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Min accepts run_to_run determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -267,15 +277,17 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min accepts run_to_run determinism require
 
   auto error =
     cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-  thrust::device_vector<int> expected{6, std::numeric_limits<int>::max(), 0};
+  const thrust::device_vector<int> expected{6, std::numeric_limits<int>::max(), 0};
 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Min accepts not_guaranteed determinism requirements", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Min accepts not_guaranteed determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -285,15 +297,17 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min accepts not_guaranteed determinism req
 
   auto error =
     cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-  thrust::device_vector<int> expected{6, std::numeric_limits<int>::max(), 0};
+  const thrust::device_vector<int> expected{6, std::numeric_limits<int>::max(), 0};
 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Max accepts run_to_run determinism requirements", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Max accepts run_to_run determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -303,15 +317,17 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max accepts run_to_run determinism require
 
   auto error =
     cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-  thrust::device_vector<int> expected{8, std::numeric_limits<int>::lowest(), 9};
+  const thrust::device_vector<int> expected{8, std::numeric_limits<int>::lowest(), 9};
 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Max accepts not_guaranteed determinism requirements", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Max accepts not_guaranteed determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -321,15 +337,17 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max accepts not_guaranteed determinism req
 
   auto error =
     cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-  thrust::device_vector<int> expected{8, std::numeric_limits<int>::lowest(), 9};
+  const thrust::device_vector<int> expected{8, std::numeric_limits<int>::lowest(), 9};
 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMin accepts run_to_run determinism requirements", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMin accepts run_to_run determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -342,14 +360,16 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin accepts run_to_run determinism requ
 
   REQUIRE(error == cudaSuccess);
 
-  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{1, 6}, {1, std::numeric_limits<int>::max()}, {2, 0}};
+  const thrust::device_vector<cub::KeyValuePair<int, int>> expected{
+    {1, 6}, {1, std::numeric_limits<int>::max()}, {2, 0}};
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMin accepts not_guaranteed determinism requirements",
-         "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMin accepts not_guaranteed determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -362,13 +382,16 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin accepts not_guaranteed determinism 
 
   REQUIRE(error == cudaSuccess);
 
-  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{1, 6}, {1, std::numeric_limits<int>::max()}, {2, 0}};
+  const thrust::device_vector<cub::KeyValuePair<int, int>> expected{
+    {1, 6}, {1, std::numeric_limits<int>::max()}, {2, 0}};
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMax accepts run_to_run determinism requirements", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMax accepts run_to_run determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -381,14 +404,16 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax accepts run_to_run determinism requ
 
   REQUIRE(error == cudaSuccess);
 
-  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {1, std::numeric_limits<int>::lowest()}, {3, 9}};
+  const thrust::device_vector<cub::KeyValuePair<int, int>> expected{
+    {0, 8}, {1, std::numeric_limits<int>::lowest()}, {3, 9}};
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMax accepts not_guaranteed determinism requirements",
-         "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMax accepts not_guaranteed determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -401,14 +426,17 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax accepts not_guaranteed determinism 
 
   REQUIRE(error == cudaSuccess);
 
-  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {1, std::numeric_limits<int>::lowest()}, {3, 9}};
+  const thrust::device_vector<cub::KeyValuePair<int, int>> expected{
+    {0, 8}, {1, std::numeric_limits<int>::lowest()}, {3, 9}};
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts run_to_run determinism requirements", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Reduce accepts run_to_run determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-reduce-reduce-env-determinism
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -418,7 +446,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts run_to_run determinism requ
 
   auto error = cub::DeviceSegmentedReduce::Reduce(
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0, env);
-  thrust::device_vector<int> expected{21, 0, 17};
+  const thrust::device_vector<int> expected{21, 0, 17};
 
   if (error != cudaSuccess)
   {
@@ -430,10 +458,11 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts run_to_run determinism requ
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts not_guaranteed determinism requirements",
-         "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Reduce accepts not_guaranteed determinism requirements",
+         "[segmented_reduce][env]",
+         CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
@@ -443,7 +472,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts not_guaranteed determinism 
 
   auto error = cub::DeviceSegmentedReduce::Reduce(
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0, env);
-  thrust::device_vector<int> expected{21, 0, 17};
+  const thrust::device_vector<int> expected{21, 0, 17};
 
   if (error != cudaSuccess)
   {
@@ -453,20 +482,20 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts not_guaranteed determinism 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
-C2H_TEST("cub::DeviceSegmentedReduce::Reduce fixed-size env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Reduce fixed-size env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-reduce-env
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::Reduce(
     d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0, stream_ref);
-  thrust::device_vector<int> expected{21, 8};
+  const thrust::device_vector<int> expected{21, 8};
 
   if (error != cudaSuccess)
   {
@@ -479,19 +508,19 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce fixed-size env-based API", "[segmen
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Sum fixed-size env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Sum fixed-size env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-sum-env
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
-  thrust::device_vector<int> expected{21, 8};
+  const thrust::device_vector<int> expected{21, 8};
 
   if (error != cudaSuccess)
   {
@@ -504,19 +533,19 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum fixed-size env-based API", "[segmented
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Min fixed-size env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Min fixed-size env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-min-env
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
-  thrust::device_vector<int> expected{6, 0};
+  const thrust::device_vector<int> expected{6, 0};
 
   if (error != cudaSuccess)
   {
@@ -529,19 +558,19 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min fixed-size env-based API", "[segmented
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::Max fixed-size env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::Max fixed-size env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-max-env
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
-  thrust::device_vector<int> expected{8, 5};
+  const thrust::device_vector<int> expected{8, 5};
 
   if (error != cudaSuccess)
   {
@@ -554,16 +583,16 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max fixed-size env-based API", "[segmented
   REQUIRE(error == cudaSuccess);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMin fixed-size env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMin fixed-size env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-argmin-env
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
 
@@ -574,20 +603,20 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin fixed-size env-based API", "[segmen
   // example-end fixed-size-segmented-reduce-argmin-env
   stream.sync();
 
-  thrust::device_vector<cuda::std::pair<int, int>> expected{{1, 6}, {2, 0}};
+  const thrust::device_vector<cuda::std::pair<int, int>> expected{{1, 6}, {2, 0}};
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedReduce::ArgMax fixed-size env-based API", "[segmented_reduce][env]")
+CUB_TEST("cub::DeviceSegmentedReduce::ArgMax fixed-size env-based API", "[segmented_reduce][env]", CUB_SMALL)
 {
   // example-begin fixed-size-segmented-reduce-argmax-env
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
 
@@ -598,6 +627,65 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax fixed-size env-based API", "[segmen
   // example-end fixed-size-segmented-reduce-argmax-env
   stream.sync();
 
-  thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 8}, {0, 5}};
+  const thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 8}, {0, 5}};
   REQUIRE(d_out == expected);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin segmented-reduce-sum-policy-selector
+struct SegmentedReducePolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::SegmentedReducePolicy
+  {
+    auto rp = cub::ReducePassPolicy{
+      .threads_per_block = 128,
+      .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 11 : 7,
+      .vec_size          = 4,
+      .reduce_algorithm  = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      .load_modifier     = cub::LOAD_LDG};
+    return {
+      .large_reduce  = rp,
+      .medium_reduce = {.threads_per_block = rp.threads_per_block,
+                        .threads_per_warp  = 32,
+                        .items_per_thread  = rp.items_per_thread,
+                        .vec_size          = rp.vec_size,
+                        .load_modifier     = rp.load_modifier},
+      .small_reduce  = {.threads_per_block = rp.threads_per_block,
+                        .threads_per_warp  = 1,
+                        .items_per_thread  = rp.items_per_thread,
+                        .vec_size          = rp.vec_size,
+                        .load_modifier     = rp.load_modifier}};
+  }
+};
+// example-end segmented-reduce-sum-policy-selector
+
+CUB_TEST("cub::DeviceSegmentedReduce::Sum accepts a custom policy selector", "[segmented_reduce][env]", CUB_SMALL)
+{
+  // example-begin segmented-reduce-sum-tuning
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> d_out(3, thrust::no_init);
+
+  const auto error = cub::DeviceSegmentedReduce::Sum(
+    d_in.begin(),
+    d_out.begin(),
+    num_segments,
+    d_offsets_it,
+    d_offsets_it + 1,
+    cuda::execution::tune(SegmentedReducePolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{21, 0, 17};
+  // example-end segmented-reduce-sum-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020

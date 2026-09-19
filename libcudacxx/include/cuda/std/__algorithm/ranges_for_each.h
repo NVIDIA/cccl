@@ -57,7 +57,7 @@ public:
   _CCCL_REQUIRES(input_iterator<_Iter> _CCCL_AND sentinel_for<_Sent, _Iter> _CCCL_AND
                    indirectly_unary_invocable<_Func, projected<_Iter, _Proj>>)
   _CCCL_API constexpr for_each_result<_Iter, _Func>
-  operator()(_Iter __first, _Sent __last, _Func __func, _Proj __proj = {}) const
+  _CCCL_STATIC_CALL_OPERATOR(_Iter __first, _Sent __last, _Func __func, _Proj __proj = {})
   {
     return __for_each_impl(::cuda::std::move(__first), ::cuda::std::move(__last), __func, __proj);
   }
@@ -65,10 +65,9 @@ public:
   _CCCL_TEMPLATE(class _Range, class _Func, class _Proj = identity)
   _CCCL_REQUIRES(input_range<_Range> _CCCL_AND indirectly_unary_invocable<_Func, projected<iterator_t<_Range>, _Proj>>)
   _CCCL_API constexpr for_each_result<borrowed_iterator_t<_Range>, _Func>
-  operator()(_Range&& __range, _Func __func, _Proj __proj = {}) const
+  _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Func __func, _Proj __proj = {})
   {
-    return __for_each_impl(
-      ::cuda::std::ranges::__begin_cpo{}(__range), ::cuda::std::ranges::__end_cpo{}(__range), __func, __proj);
+    return __for_each_impl(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __func, __proj);
   }
 };
 _CCCL_END_NAMESPACE_CPO

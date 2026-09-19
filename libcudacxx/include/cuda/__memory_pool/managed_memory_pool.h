@@ -85,7 +85,7 @@ public:
 //! @brief Returns the default managed memory pool.
 //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
 //! @returns The default managed memory pool.
-[[nodiscard]] inline managed_memory_pool_ref& managed_default_memory_pool()
+[[nodiscard]] _CCCL_HOST_API inline managed_memory_pool_ref& managed_default_memory_pool()
 {
   static managed_memory_pool_ref __pool{::cuda::__get_default_memory_pool(
     ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED)};
@@ -129,11 +129,11 @@ struct managed_memory_pool : managed_memory_pool_ref
   // TODO add a constructor that accepts memory location one a type for it is
   // added
 
-  ~managed_memory_pool() noexcept
+  _CCCL_HOST_API ~managed_memory_pool() noexcept
   {
     if (__pool_ != nullptr)
     {
-      _CCCL_ASSERT_CUDA_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool_);
+      _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool_);
     }
   }
 
@@ -163,7 +163,7 @@ struct managed_memory_pool : managed_memory_pool_ref
   managed_memory_pool& operator=(const managed_memory_pool&) = delete;
 
 private:
-  managed_memory_pool(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API managed_memory_pool(::cudaMemPool_t __pool) noexcept
       : managed_memory_pool_ref(__pool)
   {}
 };

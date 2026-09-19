@@ -82,6 +82,7 @@ class Configuration(object):
         self.use_clang_verify = False
         self.long_tests = None
         self.execute_external = False
+        self.test_executable_mode = "normal"
 
     def get_lit_conf(self, name, default=None):
         val = self.lit_config.params.get(name, None)
@@ -272,6 +273,7 @@ class Configuration(object):
 
     def configure(self):
         self.configure_executor()
+        self.configure_test_executable_mode()
         self.configure_target_info()
         self.configure_cxx()
         self.configure_triple()
@@ -330,7 +332,18 @@ class Configuration(object):
             self.execute_external,
             self.executor,
             exec_env=self.exec_env,
+            test_executable_mode=self.test_executable_mode,
         )
+
+    def configure_test_executable_mode(self):
+        mode = self.get_lit_conf("test_executable_mode", "normal")
+        if mode not in ("normal", "build", "replay"):
+            self.lit_config.fatal(
+                "parameter 'test_executable_mode' should be normal, build, or replay"
+            )
+        self.test_executable_mode = mode
+        if mode != "normal":
+            self.lit_config.note("Using test executable mode: %s" % mode)
 
     def configure_executor(self):
         exec_str = self.get_lit_conf("executor", "None")
@@ -600,7 +613,11 @@ class Configuration(object):
         self.execute_external = not use_lit_shell
 
     def configure_no_execute(self):
-        if isinstance(self.executor, NoopExecutor):
+        # Build mode must compile runtime-only tests for the replay job.
+        if (
+            isinstance(self.executor, NoopExecutor)
+            and self.test_executable_mode != "build"
+        ):
             self.config.available_features.add("no_execute")
 
     def configure_ccache(self):
@@ -667,6 +684,9 @@ class Configuration(object):
         if self.get_lit_bool("enable_tile", False):
             self.config.available_features.add("enable-tile")
 
+        if self.get_lit_bool("force_tile", False):
+            self.config.available_features.add("force-tile")
+
         if "msvc" not in self.config.available_features:
             macros = self._dump_macros_verbose()
             if "__cpp_if_constexpr" not in macros:
@@ -713,6 +733,8 @@ class Configuration(object):
         self.cxx.compile_flags += shlex.split(compile_flags_str)
         if self.get_lit_bool("enable_pedantic_warnings", default=True):
             self.cxx.compile_flags += ["-D_CCCL_NO_SYSTEM_HEADER"]
+        if self.get_lit_bool("force_tile", default=False):
+            self.cxx.compile_flags += ["-DCCCL_FORCE_TILE_TESTS"]
         if self.is_windows:
             # FIXME: Can we remove this?
             self.cxx.compile_flags += ["-D_CRT_SECURE_NO_WARNINGS"]
@@ -820,6 +842,8 @@ class Configuration(object):
         if not std:
             # Choose the newest possible language dialect if none is given.
             possible_stds = [
+                "c++23",
+                "c++2b",
                 "c++20",
                 "c++2a",
                 "c++17",
@@ -872,7 +896,10 @@ class Configuration(object):
             # We found a dialect flag.
             stdflag = "-std={0}".format(std)
             if self.cxx.type == "msvc":
-                stdflag = "/std:{0}".format(std)
+                if std in ("23", "c++23", "c++2b"):
+                    stdflag = "/std:c++23preview"
+                else:
+                    stdflag = "/std:{0}".format(std)
 
             extraflags = []
             if self.cxx.type == "clang":
@@ -897,6 +924,7 @@ class Configuration(object):
         std_feature = std.replace("gnu++", "c++")
         std_feature = std.replace("1z", "17")
         std_feature = std.replace("2a", "20")
+        std_feature = std.replace("2b", "23")
         self.config.available_features.add(std_feature)
         # Configure include paths
         self.configure_compile_flags_header_includes()
@@ -914,6 +942,16 @@ class Configuration(object):
         gcc_toolchain = self.get_lit_conf("gcc_toolchain")
         if gcc_toolchain:
             self.cxx.flags += ["--gcc-toolchain=" + gcc_toolchain]
+
+        # Suppress attribute related warnings when compiling with nvcc 12.0 and gcc because they lead to warnings in
+        # compute_XX.cudafe1.stub.c which are promoted to errors.
+        if (
+            self.cxx.type == "nvcc"
+            and self.cxx.version[0] == 12
+            and self.cxx.version[1] == 0
+            and self.cxx.host_cxx.type == "gcc"
+        ):
+            self.cxx.flags += ["-Xcompiler", "-Wno-attributes"]
 
         if self.use_target:
             if not self.cxx.addFlagIfSupported(
@@ -1199,14 +1237,11 @@ class Configuration(object):
         enable_warnings = self.get_lit_bool("enable_warnings", default_enable_warnings)
         enable_pedantic = self.get_lit_bool("enable_pedantic_warnings", default=True)
         self.cxx.useWarnings(enable_warnings)
+        self.cxx.treatWarningsAsErrors(enable_pedantic)
         if "nvcc" in self.config.available_features:
             self.cxx.warning_flags += ["-Xcudafe", "--display_error_number"]
-            if enable_pedantic:
-                self.cxx.warning_flags += ["-Werror=all-warnings"]
             if "msvc" in self.config.available_features:
                 self.cxx.warning_flags += ["-Xcompiler", "/W4"]
-                if enable_pedantic:
-                    self.cxx.warning_flags += ["-Xcompiler", "/WX"]
                 # warning C4100: 'quack': unreferenced formal parameter
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4100"]
                 # warning C4127: conditional expression is constant
@@ -1230,8 +1265,6 @@ class Configuration(object):
 
                 addIfHostSupports("-Wall")
                 addIfHostSupports("-Wextra")
-                if enable_pedantic:
-                    addIfHostSupports("-Werror")
                 if "gcc" in self.config.available_features:
                     addIfHostSupports(
                         "-Wno-literal-suffix"
@@ -1266,7 +1299,6 @@ class Configuration(object):
             if enable_pedantic:
                 self.cxx.warning_flags += [
                     "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER",
-                    "-Werror",
                 ]
             if self.cxx.hasWarningFlag("-Wuser-defined-warnings"):
                 self.cxx.warning_flags += ["-Wuser-defined-warnings"]

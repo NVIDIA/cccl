@@ -9,6 +9,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_segmented_scan.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -51,6 +58,25 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! @cdp_class{DeviceSegmentedScan}
+//!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceSegmentedScan that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedScanPolicy`, as shown in
+//! the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-scan-policy-selector
+//!      :end-before: example-end segmented-scan-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-scan-tuning
+//!      :end-before: example-end segmented-scan-tuning
 //!
 //! @endrst
 struct DeviceSegmentedScan
@@ -137,8 +163,7 @@ public:
   //!   @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -191,10 +216,10 @@ public:
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
-    scan_op_t scan_op{};
+    const scan_op_t scan_op{};
 
     using init_value_t = detail::it_value_t<InputIteratorT>;
-    init_value_t init_value{};
+    const init_value_t init_value{};
 
     return detail::segmented_scan::dispatch(
       d_temp_storage,
@@ -302,7 +327,7 @@ public:
     BeginOffsetIteratorInputT d_in_begin_offsets,
     EndOffsetIteratorInputT d_in_end_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
@@ -314,8 +339,13 @@ public:
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<scan_op_t, detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -329,7 +359,8 @@ public:
           detail::InputValue<init_value_t>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -376,8 +407,7 @@ public:
   //!   @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -441,10 +471,10 @@ public:
                                             BeginOffsetIteratorOutputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
-    scan_op_t scan_op{};
+    const scan_op_t scan_op{};
 
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
-    init_value_t init_value{};
+    const init_value_t init_value{};
 
     return cub::detail::segmented_scan::dispatch(
       d_temp_storage,
@@ -556,7 +586,7 @@ public:
     EndOffsetIteratorInputT d_in_end_offsets,
     BeginOffsetIteratorOutputT d_out_begin_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
@@ -570,8 +600,13 @@ public:
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<scan_op_t, detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -585,7 +620,8 @@ public:
           detail::InputValue<init_value_t>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -638,8 +674,7 @@ public:
   //!  **[inferred]** Type of the `init_value`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -820,14 +855,19 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -841,7 +881,8 @@ public:
           detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -885,8 +926,7 @@ public:
   //!  **[inferred]** Type of the `init_value`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1091,7 +1131,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
@@ -1099,8 +1139,13 @@ public:
                                             EndOffsetIteratorInputT,
                                             BeginOffsetIteratorOutputT>();
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -1114,7 +1159,8 @@ public:
           detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -1160,8 +1206,7 @@ public:
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1214,7 +1259,7 @@ public:
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
-    scan_op_t scan_op{};
+    const scan_op_t scan_op{};
 
     return cub::detail::segmented_scan::dispatch(
       d_temp_storage,
@@ -1314,7 +1359,7 @@ public:
     BeginOffsetIteratorInputT d_in_begin_offsets,
     EndOffsetIteratorInputT d_in_end_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
@@ -1323,8 +1368,12 @@ public:
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::deduced_accum_t<scan_op_t, NullType, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -1338,7 +1387,8 @@ public:
           NullType(),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -1388,8 +1438,7 @@ public:
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1453,7 +1502,7 @@ public:
                                             BeginOffsetIteratorOutputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
-    scan_op_t scan_op{};
+    const scan_op_t scan_op{};
 
     return cub::detail::segmented_scan::dispatch(
       d_temp_storage,
@@ -1567,7 +1616,7 @@ public:
     EndOffsetIteratorInputT d_in_end_offsets,
     BeginOffsetIteratorOutputT d_out_begin_offsets,
     ::cuda::std::int64_t num_segments,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
@@ -1578,8 +1627,12 @@ public:
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::deduced_accum_t<scan_op_t, NullType, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -1593,7 +1646,8 @@ public:
           NullType(),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -1628,8 +1682,7 @@ public:
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1795,14 +1848,18 @@ public:
     EndOffsetIteratorInputT d_in_end_offsets,
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::deduced_accum_t<ScanOpT, NullType, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -1816,7 +1873,8 @@ public:
           NullType(),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -1868,8 +1926,7 @@ public:
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2060,7 +2117,7 @@ public:
     BeginOffsetIteratorOutputT d_out_begin_offsets,
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
@@ -2068,8 +2125,12 @@ public:
                                             EndOffsetIteratorInputT,
                                             BeginOffsetIteratorOutputT>();
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::deduced_accum_t<ScanOpT, NullType, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch(
           d_temp_storage,
           temp_storage_bytes,
@@ -2083,7 +2144,8 @@ public:
           NullType(),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -2137,8 +2199,7 @@ public:
   //!  **[inferred]** Type of the `init_value`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2320,15 +2381,20 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
           d_temp_storage,
           temp_storage_bytes,
@@ -2342,7 +2408,8 @@ public:
           detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 
@@ -2387,8 +2454,7 @@ public:
   //!  **[inferred]** Type of the `init_value`
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2595,7 +2661,7 @@ public:
     ::cuda::std::int64_t num_segments,
     ScanOpT scan_op,
     InitValueT init_value,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
@@ -2604,10 +2670,13 @@ public:
                                             BeginOffsetIteratorOutputT>();
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
-    using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
+    using accum_t = detail::segmented_scan::
+      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
           d_temp_storage,
           temp_storage_bytes,
@@ -2621,7 +2690,8 @@ public:
           detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
-          stream);
+          stream,
+          policy_selector);
       });
   }
 };

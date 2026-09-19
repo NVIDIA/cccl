@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <memory>
 
@@ -42,11 +42,11 @@ _CCCL_CONSTINIT cuda::std::unique_ptr<int[]> global_static_unique_ptr_runtime;
 struct NonDefaultDeleter
 {
   NonDefaultDeleter() = delete;
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
 template <class ElemType>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
@@ -66,7 +66,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 }
 
 template <class ElemType>
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test_basic()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test_basic()
 {
   {
     using U1 = cuda::std::unique_ptr<ElemType>;
@@ -105,7 +105,7 @@ DEFINE_AND_RUN_IS_INCOMPLETE_TEST(
   })
 #endif // !_CCCL_CUDA_COMPILATION()
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_sfinae<int>();

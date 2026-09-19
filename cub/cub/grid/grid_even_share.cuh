@@ -115,8 +115,8 @@ public:
     this->num_items    = num_items_;
     this->total_tiles  = static_cast<int>(
       ::cuda::std::min(OffsetT{::cuda::std::numeric_limits<int>::max()}, ::cuda::ceil_div(num_items_, tile_items)));
-    this->grid_size         = ::cuda::std::min(total_tiles, max_grid_size);
-    int avg_tiles_per_block = total_tiles / grid_size;
+    this->grid_size               = ::cuda::std::min(total_tiles, max_grid_size);
+    const int avg_tiles_per_block = total_tiles / grid_size;
     // leftover grains go to big blocks:
     this->big_shares         = total_tiles - (avg_tiles_per_block * grid_size);
     this->normal_share_items = static_cast<OffsetT>(avg_tiles_per_block) * tile_items;
@@ -158,8 +158,8 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockInit(int block_id, detail::constant_t<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
   {
-    block_stride = grid_size * TILE_ITEMS;
-    block_offset = (block_id * TILE_ITEMS);
+    block_stride = grid_size * OffsetT{TILE_ITEMS};
+    block_offset = block_id * OffsetT{TILE_ITEMS};
     block_end    = num_items;
   }
 

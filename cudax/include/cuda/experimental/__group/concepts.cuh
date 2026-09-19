@@ -25,7 +25,9 @@
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -34,28 +36,44 @@
 namespace cuda::experimental
 {
 template <class _Group>
-_CCCL_CONCEPT is_group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
+_CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
+  // Member types.
   typename(typename _Group::unit_type),
   requires(__is_hierarchy_level_v<typename _Group::unit_type>),
   typename(typename _Group::level_type),
   requires(__is_hierarchy_level_v<typename _Group::level_type>),
   typename(typename _Group::hierarchy_type),
   requires(__is_hierarchy_v<typename _Group::hierarchy_type>),
+
+  // Getters.
+  _Same_as(const typename _Group::hierarchy_type&) __cg.hierarchy(),
+
+  // Synchronization.
   _Same_as(void) __g.sync(),
   _Same_as(void) __g.sync_aligned(),
-  _Same_as(const typename _Group::hierarchy_type&) __cg.hierarchy()
+
+  // Properties.
+  _Same_as(bool) _Group::is_always_exhaustive(),
+  _Same_as(bool) _Group::is_always_contiguous(),
+  (::cuda::std::bool_constant<_Group::is_always_exhaustive()>::value),
+  (::cuda::std::bool_constant<_Group::is_always_contiguous()>::value)
+
   // todo: add __sub_unit_queryable and __super_unit_queryable
 );
 
+//! @brief Semantic requirement: @c is_always_contiguous() is true only if each group
+//! occupies a contiguous range of physical units and @c unit_rank() numbers them
+//! in ascending physical order, starting at zero. This must hold after mapping
+//! composition as well; contiguous membership alone is insufficient.
 template <class _Tp>
 _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v)(
   requires(::cuda::std::is_copy_constructible_v<_Tp>),
   _Same_as(::cuda::std::size_t) _Tp::static_group_count(),
-  _Same_as(unsigned) __v.group_count(),
-  _Same_as(unsigned) __v.group_rank(),
-  _Same_as(::cuda::std::size_t) _Tp::static_count(),
-  _Same_as(unsigned) __v.count(),
-  _Same_as(unsigned) __v.rank(),
+  _Same_as(::cuda::std::uint32_t) __v.group_count(),
+  _Same_as(::cuda::std::uint32_t) __v.group_rank(),
+  _Same_as(::cuda::std::size_t) _Tp::static_unit_count(),
+  _Same_as(::cuda::std::uint32_t) __v.unit_count(),
+  _Same_as(::cuda::std::uint32_t) __v.unit_rank(),
   _Same_as(::cuda::device::lane_mask) __v.lane_mask(),
   _Same_as(bool) _Tp::is_always_exhaustive(),
   _Same_as(bool) _Tp::is_always_contiguous());

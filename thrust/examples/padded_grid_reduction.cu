@@ -33,7 +33,7 @@ struct transform_tuple
 
   __host__ __device__ OutputTuple operator()(const InputTuple& t) const
   {
-    bool is_valid = (cuda::std::get<0>(t) % N) < n;
+    const bool is_valid = (cuda::std::get<0>(t) % N) < n;
     return OutputTuple(is_valid, cuda::std::get<1>(t), cuda::std::get<1>(t));
   }
 };
@@ -57,22 +57,18 @@ struct reduce_tuple
     {
       return t0;
     }
-    else if (cuda::std::get<0>(t1))
-    {
-      return t1;
-    }
     else
     {
-      return t1; // if neither is valid then it doesn't matter what we return
+      return t1; // if t0 is not valid, return t1 whether it is valid or not
     }
   }
 };
 
 int main()
 {
-  int M = 10; // number of rows
-  int n = 11; // number of columns excluding padding
-  int N = 16; // number of columns including padding
+  const int M = 10; // number of rows
+  const int n = 11; // number of columns excluding padding
+  const int N = 16; // number of columns including padding
 
   thrust::default_random_engine rng(12345);
   thrust::uniform_real_distribution<float> dist(0.0f, 1.0f);
@@ -84,7 +80,7 @@ int main()
   {
     for (int j = 0; j < n; j++)
     {
-      data[i * N + j] = dist(rng);
+      data[static_cast<std::size_t>(i) * N + j] = dist(rng);
     }
   }
 
@@ -96,7 +92,7 @@ int main()
     std::cout << " ";
     for (int j = 0; j < N; j++)
     {
-      std::cout << data[i * N + j] << " ";
+      std::cout << data[(static_cast<std::size_t>(i) * N) + j] << " ";
     }
     std::cout << "\n";
   }
@@ -106,12 +102,13 @@ int main()
   using result_type = cuda::std::tuple<bool, float, float>;
 
   result_type init(true, FLT_MAX, -FLT_MAX); // initial value
-  transform_tuple<int, float> unary_op(n, N); // transformation operator
-  reduce_tuple<int, float> binary_op; // reduction operator
+  const transform_tuple<int, float> unary_op(n, N); // transformation operator
+  const reduce_tuple<int, float> binary_op; // reduction operator
 
   result_type result = thrust::transform_reduce(
     thrust::make_zip_iterator(thrust::counting_iterator<int>(0), data.begin()),
-    thrust::make_zip_iterator(cuda::std::tuple(thrust::counting_iterator<int>(0), data.begin())) + data.size(),
+    thrust::make_zip_iterator(cuda::std::tuple(thrust::counting_iterator<int>(0), data.begin()))
+      + static_cast<std::ptrdiff_t>(data.size()),
     unary_op,
     init,
     binary_op);

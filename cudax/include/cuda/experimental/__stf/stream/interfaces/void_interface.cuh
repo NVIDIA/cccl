@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -44,7 +45,7 @@ public:
   using base::shape_t;
 
   void_stream_interface(void_interface m)
-      : base(::std::move(m))
+      : base(::cuda::std::move(m))
   {}
   void_stream_interface(typename base::shape_t s)
       : base(s)

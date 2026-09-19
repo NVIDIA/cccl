@@ -69,7 +69,7 @@ cccl_add_compile_test(
 cccl_add_compile_test(
   test_name
   cccl.example
-  ccclrt
+  image_pipeline
   "default"
   CTEST_COMMAND "${CCCL_EXAMPLE_CTEST_COMMAND}"
   ${cmake_opts}

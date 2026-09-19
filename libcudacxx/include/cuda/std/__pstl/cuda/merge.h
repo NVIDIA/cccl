@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -71,13 +72,16 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
     _OutputIterator __result,
     _Compare __comp)
   {
-    iter_difference_t<_InputIterator1> __count1 = ::cuda::std::distance(__first1, __last1);
-    iter_difference_t<_InputIterator2> __count2 = ::cuda::std::distance(__first2, __last2);
-    auto __ret                                  = __result + static_cast<iter_difference_t<_OutputIterator>>(__count1)
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
+    const iter_difference_t<_InputIterator1> __count1 = ::cuda::std::distance(__first1, __last1);
+    const iter_difference_t<_InputIterator2> __count2 = ::cuda::std::distance(__first2, __last2);
+    auto __ret = __result + static_cast<iter_difference_t<_OutputIterator>>(__count1)
                + static_cast<iter_difference_t<_OutputIterator>>(__count2);
 
     // We pass the policy as an environment to DeviceMerge
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
       "__pstl_cuda_merge: kernel launch of cub::DeviceMerge::MergeKeys failed",
       ::cuda::std::move(__first1),
@@ -88,8 +92,6 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
       ::cuda::std::move(__comp),
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __ret;
@@ -97,14 +99,14 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare)
   _CCCL_REQUIRES(__has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator1 __first1,
     _InputIterator1 __last1,
     _InputIterator2 __first2,
     _InputIterator2 __last2,
     _OutputIterator __result,
-    _Compare __comp) const
+    _Compare __comp)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator1>
                   && ::cuda::std::__has_random_access_traversal<_InputIterator2>

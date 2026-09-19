@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 // <memory>
 
 // unique_ptr
@@ -23,27 +26,27 @@ class Deleter
 {
   int state_;
 
-  TEST_FUNC Deleter(Deleter&);
-  TEST_FUNC Deleter& operator=(Deleter&);
+  TEST_HOST_DEVICE_FUNC Deleter(Deleter&);
+  TEST_HOST_DEVICE_FUNC Deleter& operator=(Deleter&);
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 Deleter()
       : state_(0)
   {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*)
   {
     ++state_;
   }
 };
 
 template <class T>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   Deleter d;
   assert(d.state() == 0);
@@ -55,7 +58,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
   assert(d.state() == 0);
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic<int>();
   test_basic<int[]>();

@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: a return statement inside a loop is not currently supported in a tile function
 
 // <algorithm>
@@ -73,6 +73,7 @@ template <class T, class U>
 void make_pair(T&&, U&&) = delete;
 } // namespace User
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2>
 TEST_FUNC constexpr void test()
 {
@@ -111,6 +112,7 @@ TEST_FUNC constexpr void test()
   assert(cuda::std::search(Iter1(ij), Iter1(ij + sj), Iter2(ik), Iter2(ik + sk)) == Iter1(ij + 6));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void adl_test()
 {
@@ -118,6 +120,7 @@ TEST_FUNC constexpr void adl_test()
   assert(cuda::std::search(Iter(ua), Iter(ua), Iter(ua), Iter(ua)) == Iter(ua));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>, forward_iterator<const int*>>();
@@ -133,9 +136,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   adl_test<forward_iterator<User::S*>>();
   adl_test<random_access_iterator<User::S*>>();

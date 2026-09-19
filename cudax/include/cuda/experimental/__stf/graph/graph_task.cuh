@@ -18,6 +18,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -32,6 +34,7 @@
 #include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <mutex>
 
@@ -55,9 +58,6 @@ template <>
 class graph_task<> : public task
 {
 public:
-  // A cudaGraph_t is needed
-  graph_task() = delete;
-
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
              ::std::mutex& graph_mutex,
@@ -100,16 +100,18 @@ public:
       }
     }
 
+    auto& dot = *ctx.get_dot();
+
     if (is_capture_enabled())
     {
       // Select a stream from the pool
-      capture_stream = get_exec_place().getStream(ctx.async_resources().get_place_resources(), true).stream;
+      const cudaStream_t stream = get_exec_place().getStream(ctx.async_resources().get_place_resources(), true).stream;
 #if _CCCL_CTK_AT_LEAST(12, 3)
       // New path: capture directly into ctx_graph via cudaStreamBeginCaptureToGraph.
       // ctx_graph is mutated for the full capture interval, so graph_mutex must
       // stay held across the start()/end_uncleared() boundary; transfer ownership
       // into the task-owned capture_lock_ member here.
-      begin_capture_into_ctx_graph(capture_stream, ctx_graph, ready_dependencies);
+      begin_capture_into_ctx_graph(stream, ctx_graph, ready_dependencies);
       capture_lock_ = mv(lock);
 #else // _CCCL_CTK_AT_LEAST(12, 3)
       // Legacy path (CTK 12.0-12.2): capture into a fresh per-task graph and
@@ -119,167 +121,184 @@ public:
       // keep ordinary STF capture working.
       // Use relaxed capture mode to allow capturing workloads that lazily
       // initialize resources (e.g., set up memory pools)
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
+      cuda_try<cudaStreamBeginCapture>(stream, cudaStreamCaptureModeRelaxed);
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
+      // Publish only after BeginCapture succeeds so a non-null capture_stream
+      // means an active capture.
+      capture_stream = stream;
     }
 
-    auto& dot = *ctx.get_dot();
-    if (dot.is_tracing())
+    // DOT tracing and set_ready_prereqs must not throw after capture has begun,
+    // or the stream would be left capturing. Abort instead.
+    ON_THROW(abort)
     {
-      dot.template add_vertex<task, logical_data_untyped>(*this);
-    }
+      if (dot.is_tracing())
+      {
+        dot.template add_vertex<task, logical_data_untyped>(*this);
+      }
 
-    set_ready_prereqs(mv(ready_prereqs));
+      set_ready_prereqs(mv(ready_prereqs));
+    };
 
     return *this;
   }
 
   /* End the task, but do not clear its data structures yet */
-  graph_task<>& end_uncleared()
+  //! \brief Finish the task without clearing it. Never throws.
+  //!
+  //! Same reasoning as the stream backend's counterpart: acquire() has locked this task's
+  //! logical-data mutexes and release() below is what unlocks them, so reporting a failure and
+  //! resuming would leave them held and deadlock the next task touching that data. The failures
+  //! reachable here are allocation failures and CUDA errors from ending the capture, embedding
+  //! the child graph, or wiring node dependencies -- by which point the graph under
+  //! construction is unusable. Report and abort.
+  graph_task<>& end_uncleared() noexcept
   {
-#if _CCCL_CTK_AT_LEAST(12, 3)
-    // On the capture path, graph_mutex was acquired in start() and lives in
-    // capture_lock_. Move it into a local unique_lock so RAII releases it at
-    // the end of this function. On the non-capture path, acquire a fresh lock
-    // here just like the legacy code did.
-    ::std::unique_lock<::std::mutex> lock = is_capture_enabled() ? mv(capture_lock_) : lock_ctx_graph();
-#else // _CCCL_CTK_AT_LEAST(12, 3)
-    ::std::scoped_lock<::std::mutex> lock(graph_mutex);
-#endif // _CCCL_CTK_AT_LEAST(12, 3)
-
-    if (is_capture_enabled())
+    ON_THROW(abort)
     {
 #if _CCCL_CTK_AT_LEAST(12, 3)
-      // New path: end capture and emit one explicit empty done node into
-      // ctx_graph. The done_nodes branch below then takes care of wiring it
-      // up as the task's completion event.
-      done_nodes.push_back(end_capture_into_ctx_graph_and_emit_done(capture_stream, ctx_graph));
+      // On the capture path, graph_mutex was acquired in start() and lives in
+      // capture_lock_. Move it into a local unique_lock so RAII releases it at
+      // the end of this function. On the non-capture path, acquire a fresh lock
+      // here just like the legacy code did.
+      ::std::unique_lock<::std::mutex> lock = is_capture_enabled() ? mv(capture_lock_) : lock_ctx_graph();
+#else // _CCCL_CTK_AT_LEAST(12, 3)
+      ::std::scoped_lock<::std::mutex> lock(graph_mutex);
+#endif // _CCCL_CTK_AT_LEAST(12, 3)
+
+      if (is_capture_enabled())
+      {
+#if _CCCL_CTK_AT_LEAST(12, 3)
+        // New path: end capture and emit one explicit empty done node into
+        // ctx_graph. The done_nodes branch below then takes care of wiring it
+        // up as the task's completion event.
+        done_nodes.push_back(end_capture_into_ctx_graph_and_emit_done(capture_stream, ctx_graph));
 #else // _CCCL_CTK_AT_LEAST(12, 3)
       // Legacy path: end capture into a fresh per-task graph and let the
       // child-graph embed branch below splice it into ctx_graph.
-      cudaGraph_t childGraph = nullptr;
-      cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
-      set_child_graph(childGraph);
+        set_child_graph(cuda_try<cudaStreamEndCapture>(capture_stream));
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
-    }
-
-    auto done_prereqs = event_list();
-
-    if (done_nodes.size() > 0)
-    {
-      // We added CUDA graph nodes by hand, dependencies are already set, except the output nodes which define
-      // done_prereqs
-      for (auto& node : done_nodes)
-      {
-        auto gnp = reserved::graph_event(node, stage, ctx_graph);
-        gnp->set_symbol(ctx, "done " + get_symbol());
-        /* This node is now the output dependency of the task */
-        done_prereqs.add(mv(gnp));
       }
-    }
-    else
-    {
-      // We either created independent task nodes, a chain of tasks, or a child
-      // graph. We need to inject input dependencies, and make the task
-      // completion depend on task nodes, task chain, or the child graph.
-      if (task_nodes.size() > 0)
+
+      auto done_prereqs = event_list();
+
+      if (!done_nodes.empty())
       {
-        for (auto& node : task_nodes)
+        // We added CUDA graph nodes by hand, dependencies are already set, except the output nodes which define
+        // done_prereqs
+        for (auto& node : done_nodes)
         {
-#ifndef NDEBUG
-          // Ensure the node does not have dependencies yet
-          size_t num_deps;
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, nullptr, &num_deps));
-#  else // _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, &num_deps));
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
-          assert(num_deps == 0);
-
-          // Ensure there are no output dependencies either (or we could not
-          // add input dependencies later)
-          size_t num_deps_out;
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, nullptr, &num_deps_out));
-#  else // _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, &num_deps_out));
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
-          assert(num_deps_out == 0);
-#endif
-
-          // Repeat node as many times as there are input dependencies
-          ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
-#if _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(cudaGraphAddDependencies(
-            ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size()));
-#else // _CCCL_CTK_AT_LEAST(13, 0)
-          cuda_safe_call(cudaGraphAddDependencies(
-            ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
-
           auto gnp = reserved::graph_event(node, stage, ctx_graph);
           gnp->set_symbol(ctx, "done " + get_symbol());
           /* This node is now the output dependency of the task */
           done_prereqs.add(mv(gnp));
         }
       }
-      else if (chained_task_nodes.size() > 0)
-      {
-        // First node depends on ready_dependencies
-        ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
-#if _CCCL_CTK_AT_LEAST(13, 0)
-        cuda_safe_call(cudaGraphAddDependencies(
-          ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size()));
-#else // _CCCL_CTK_AT_LEAST(13, 0)
-        cuda_safe_call(
-          cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
-
-        // Overall the task depends on the completion of the last node
-        auto gnp = reserved::graph_event(chained_task_nodes.back(), stage, ctx_graph);
-        gnp->set_symbol(ctx, "done " + get_symbol());
-        done_prereqs.add(mv(gnp));
-      }
       else
       {
-        // Note that if nothing was done in the task, this will create a child
-        // graph too, which will be useful as a node to synchronize with anyway.
-        const cudaGraph_t childGraph = get_graph();
-
-        const cudaGraphNode_t* deps = ready_dependencies.data();
-
-        assert(ctx_graph);
-        cudaGraphNode_t n;
-#if _CCCL_CTK_AT_LEAST(13, 0)
-        // Move ownership so child graphs with memory alloc/free nodes
-        // (e.g. from cudaMallocAsync during stream capture) are accepted.
-        cudaGraphNodeParams nodeParams = {};
-        nodeParams.type                = cudaGraphNodeTypeGraph;
-        nodeParams.graph.graph         = childGraph;
-        nodeParams.graph.ownership     = cudaGraphChildGraphOwnershipMove;
-        cuda_safe_call(cudaGraphAddNode(&n, ctx_graph, deps, nullptr, ready_dependencies.size(), &nodeParams));
-#else // _CCCL_CTK_AT_LEAST(13, 0)
-        cuda_safe_call(cudaGraphAddChildGraphNode(&n, ctx_graph, deps, ready_dependencies.size(), childGraph));
-        // Destroy the child graph unless we should not
-        if (must_destroy_child_graph)
+        // We either created independent task nodes, a chain of tasks, or a child
+        // graph. We need to inject input dependencies, and make the task
+        // completion depend on task nodes, task chain, or the child graph.
+        if (task_nodes.size() > 0)
         {
-          cuda_safe_call(cudaGraphDestroy(childGraph));
-        }
+          for (auto& node : task_nodes)
+          {
+#ifndef NDEBUG
+            // Ensure the node does not have dependencies yet
+            const size_t num_deps =
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+              cuda_try<cudaGraphNodeGetDependencies>(node, nullptr, nullptr);
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+              cuda_try<cudaGraphNodeGetDependencies>(node, nullptr);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+            assert(num_deps == 0);
+
+            // Ensure there are no output dependencies either (or we could not
+            // add input dependencies later)
+            const size_t num_deps_out =
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+              cuda_try<cudaGraphNodeGetDependentNodes>(node, nullptr, nullptr);
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+              cuda_try<cudaGraphNodeGetDependentNodes>(node, nullptr);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+            assert(num_deps_out == 0);
+#endif
+
+            // Repeat node as many times as there are input dependencies
+            ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
+#if _CCCL_CTK_AT_LEAST(13, 0)
+            cuda_try<cudaGraphAddDependencies>(
+              ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size());
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+            cuda_try<cudaGraphAddDependencies>(
+              ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size());
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-        auto gnp = reserved::graph_event(n, stage, ctx_graph);
-        gnp->set_symbol(ctx, "done " + get_symbol());
-        /* This node is now the output dependency of the task */
-        done_prereqs.add(mv(gnp));
-      }
-    }
+            auto gnp = reserved::graph_event(node, stage, ctx_graph);
+            gnp->set_symbol(ctx, "done " + get_symbol());
+            /* This node is now the output dependency of the task */
+            done_prereqs.add(mv(gnp));
+          }
+        }
+        else if (chained_task_nodes.size() > 0)
+        {
+          // First node depends on ready_dependencies
+          ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
+#if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_try<cudaGraphAddDependencies>(
+            ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size());
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_try<cudaGraphAddDependencies>(
+            ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size());
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-    release(ctx, done_prereqs);
+          // Overall the task depends on the completion of the last node
+          auto gnp = reserved::graph_event(chained_task_nodes.back(), stage, ctx_graph);
+          gnp->set_symbol(ctx, "done " + get_symbol());
+          done_prereqs.add(mv(gnp));
+        }
+        else
+        {
+          // Note that if nothing was done in the task, this will create a child
+          // graph too, which will be useful as a node to synchronize with anyway.
+          const cudaGraph_t childGraph = get_graph();
+
+          const cudaGraphNode_t* deps = ready_dependencies.data();
+
+          assert(ctx_graph);
+          cudaGraphNode_t n;
+#if _CCCL_CTK_AT_LEAST(13, 0)
+          // Move ownership so child graphs with memory alloc/free nodes
+          // (e.g. from cudaMallocAsync during stream capture) are accepted.
+          cudaGraphNodeParams nodeParams = {};
+          nodeParams.type                = cudaGraphNodeTypeGraph;
+          nodeParams.graph.graph         = childGraph;
+          nodeParams.graph.ownership     = cudaGraphChildGraphOwnershipMove;
+          n = cuda_try<cudaGraphAddNode>(ctx_graph, deps, nullptr, ready_dependencies.size(), &nodeParams);
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+          n = cuda_try<cudaGraphAddChildGraphNode>(ctx_graph, deps, ready_dependencies.size(), childGraph);
+          // Destroy the child graph unless we should not
+          if (must_destroy_child_graph)
+          {
+            cuda_try<cudaGraphDestroy>(childGraph);
+          }
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+          auto gnp = reserved::graph_event(n, stage, ctx_graph);
+          gnp->set_symbol(ctx, "done " + get_symbol());
+          /* This node is now the output dependency of the task */
+          done_prereqs.add(mv(gnp));
+        }
+      }
+
+      release(ctx, done_prereqs);
+    };
 
     return *this;
   }
 
-  graph_task<>& end()
+  //! \brief Finish the task. Never throws, because neither of its steps does.
+  graph_task<>& end() noexcept
   {
     end_uncleared();
     clear();
@@ -355,12 +374,7 @@ public:
 
     // cudaEvent_t start_event, end_event;
 
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
 
     start();
 
@@ -397,7 +411,7 @@ public:
     };
 
     // Default for the first argument is a `cudaStream_t`.
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
+    if constexpr (::cuda::std::is_invocable_v<Fun, cudaStream_t>)
     {
       //
       // CAPTURE the lambda
@@ -411,6 +425,26 @@ public:
       // the full capture interval, so graph_mutex must be held throughout.
       auto lock = lock_ctx_graph();
       begin_capture_into_ctx_graph(capture_stream, ctx_graph, ready_dependencies);
+      // If the user lambda throws, end the capture so the stream is not left
+      // capturing. EndCapture returns ctx_graph here — do not destroy it.
+      SCOPE(fail)
+      {
+        // This guard can fire after the success path has already ended the
+        // capture (throwing work follows EndCapture within this scope), so
+        // only end a capture that is still active.
+        cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
+        // cuda_safe_call: a failing status query here (e.g. a prior sticky
+        // error surfacing through this API) must not be mistaken for "not
+        // capturing" -- report and abort instead of skipping the EndCapture.
+        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
+        // != None on purpose: an Invalidated capture must still be ended to
+        // restore the stream.
+        if (status != cudaStreamCaptureStatusNone)
+        {
+          cudaGraph_t discarded = nullptr;
+          cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
+        }
+      };
 
       // Launch the user provided function
       f(capture_stream);
@@ -422,16 +456,44 @@ public:
       cudaGraph_t childGraph = nullptr;
       // Use relaxed capture mode to allow capturing workloads that lazily
       // initialize resources (e.g., set up memory pools)
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
+      cuda_try<cudaStreamBeginCapture>(capture_stream, cudaStreamCaptureModeRelaxed);
+      SCOPE(fail)
+      {
+        // May fire after the success path already ended the capture; only
+        // end a capture that is still active. Past that point the captured
+        // graph sits in childGraph until set_child_graph takes ownership
+        // (childGraph is nulled right after); destroy it rather than leak.
+        cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
+        // cuda_safe_call: a failing status query here (e.g. a prior sticky
+        // error surfacing through this API) must not be mistaken for "not
+        // capturing" -- report and abort instead of skipping the EndCapture.
+        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
+        // != None on purpose: an Invalidated capture must still be ended to
+        // restore the stream.
+        if (status != cudaStreamCaptureStatusNone)
+        {
+          cudaGraph_t discarded = nullptr;
+          cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
+          if (discarded)
+          {
+            cuda_safe_call(cudaGraphDestroy(discarded));
+          }
+        }
+        else if (childGraph != nullptr)
+        {
+          cuda_safe_call(cudaGraphDestroy(childGraph));
+        }
+      };
 
       // Launch the user provided function
       f(capture_stream);
 
-      cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
+      childGraph = cuda_try<cudaStreamEndCapture>(capture_stream);
 
       // This implements the child graph of the `graph_task<>`, we will later
       // insert the proper dependencies around it
       set_child_graph(childGraph);
+      childGraph = nullptr; // owned by the task now; disarm the fail guard's cleanup
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
     }
     else
@@ -454,11 +516,15 @@ public:
     // We either use a child graph or task nodes, not both
     _CCCL_ASSERT(task_nodes.empty(), "cannot use both get_graph() and get_node()");
     _CCCL_ASSERT(chained_task_nodes.empty(), "cannot use both get_graph() and get_node_chain()");
+    // The explicit-graph path is mutually exclusive with stream capture: with
+    // capture enabled, end_uncleared() takes the done_nodes path and never
+    // embeds this child graph, so nodes added here would be silently dropped.
+    _CCCL_VERIFY(!is_capture_enabled(), "cannot use both get_graph() and enable_capture()");
 
     // Lazy creation
     if (child_graph == nullptr)
     {
-      cuda_safe_call(cudaGraphCreate(&child_graph, 0));
+      child_graph              = cuda_try<cudaGraphCreate>(0u);
       must_destroy_child_graph = true;
     }
 
@@ -551,8 +617,8 @@ private:
   {
     // Use relaxed capture mode to allow capturing workloads that lazily
     // initialize resources (e.g., set up memory pools).
-    cuda_safe_call(
-      cudaStreamBeginCaptureToGraph(s, ctx_graph, deps.data(), nullptr, deps.size(), cudaStreamCaptureModeRelaxed));
+    cuda_try<cudaStreamBeginCaptureToGraph>(
+      s, ctx_graph, deps.data(), nullptr, deps.size(), cudaStreamCaptureModeRelaxed);
   }
 
   // Snapshots the capture frontier, ends capture, and emits exactly one empty
@@ -572,24 +638,24 @@ private:
     // CTK 13 dropped the _v2 suffix and added an `edgeData_out` parameter
     // between the dependency-array and dependency-count outputs; we don't
     // need edge metadata here, so pass nullptr.
-    cuda_safe_call(cudaStreamGetCaptureInfo(s, &status, nullptr, nullptr, &deps_out, nullptr, &ndeps));
+    // Multiple outputs — keep the runtime-status form of cuda_try.
+    cuda_try(cudaStreamGetCaptureInfo(s, &status, nullptr, nullptr, &deps_out, nullptr, &ndeps));
 #  else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaStreamGetCaptureInfo_v2(s, &status, nullptr, nullptr, &deps_out, &ndeps));
+    cuda_try(cudaStreamGetCaptureInfo_v2(s, &status, nullptr, nullptr, &deps_out, &ndeps));
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
     ::std::vector<cudaGraphNode_t> frontier(deps_out, deps_out + ndeps);
 
     // Ignore the returned graph handle: with BeginCaptureToGraph it is the
     // caller-supplied ctx_graph; do not make correctness depend on identity.
-    [[maybe_unused]] cudaGraph_t captured = nullptr;
-    cuda_safe_call(cudaStreamEndCapture(s, &captured));
+    [[maybe_unused]] cudaGraph_t captured = cuda_try<cudaStreamEndCapture>(s);
 
     cudaGraphNode_t done_node = nullptr;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
     cudaGraphNodeParams params = {};
     params.type                = cudaGraphNodeTypeEmpty;
-    cuda_safe_call(cudaGraphAddNode(&done_node, ctx_graph, frontier.data(), nullptr, frontier.size(), &params));
+    done_node = cuda_try<cudaGraphAddNode>(ctx_graph, frontier.data(), nullptr, frontier.size(), &params);
 #  else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphAddEmptyNode(&done_node, ctx_graph, frontier.data(), frontier.size()));
+    done_node = cuda_try<cudaGraphAddEmptyNode>(ctx_graph, frontier.data(), frontier.size());
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
     return done_node;
   }
@@ -698,12 +764,7 @@ public:
 
     // cudaEvent_t start_event, end_event;
 
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
 
     start();
 
@@ -739,7 +800,7 @@ public:
       clear();
     };
 
-    constexpr bool fun_invocable_stream_deps = ::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
+    constexpr bool fun_invocable_stream_deps = ::cuda::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
     constexpr bool fun_invocable_stream_non_void_deps =
       reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Deps...>>;
 
@@ -766,6 +827,26 @@ public:
 #if _CCCL_CTK_AT_LEAST(12, 3)
       // New path: capture directly into ctx_graph.
       begin_capture_into_ctx_graph(capture_stream, ctx_graph, ready_dependencies);
+      // If the user lambda throws, end the capture so the stream is not left
+      // capturing. EndCapture returns ctx_graph here — do not destroy it.
+      SCOPE(fail)
+      {
+        // This guard can fire after the success path has already ended the
+        // capture (throwing work follows EndCapture within this scope), so
+        // only end a capture that is still active.
+        cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
+        // cuda_safe_call: a failing status query here (e.g. a prior sticky
+        // error surfacing through this API) must not be mistaken for "not
+        // capturing" -- report and abort instead of skipping the EndCapture.
+        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
+        // != None on purpose: an Invalidated capture must still be ended to
+        // restore the stream.
+        if (status != cudaStreamCaptureStatusNone)
+        {
+          cudaGraph_t discarded = nullptr;
+          cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
+        }
+      };
 
       // Launch the user provided function
       if constexpr (fun_invocable_stream_deps)
@@ -775,7 +856,7 @@ public:
       else if constexpr (fun_invocable_stream_non_void_deps)
       {
         // Remove void arguments
-        ::std::apply(::std::forward<Fun>(f),
+        ::std::apply(::cuda::std::forward<Fun>(f),
                      tuple_prepend(mv(capture_stream), reserved::remove_void_interface(typed_deps())));
       }
 
@@ -786,7 +867,34 @@ public:
       cudaGraph_t childGraph = nullptr;
       // Use relaxed capture mode to allow capturing workloads that lazily initialize
       // resources (e.g., set up memory pools)
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
+      cuda_try<cudaStreamBeginCapture>(capture_stream, cudaStreamCaptureModeRelaxed);
+      SCOPE(fail)
+      {
+        // May fire after the success path already ended the capture; only
+        // end a capture that is still active. Past that point the captured
+        // graph sits in childGraph until set_child_graph takes ownership
+        // (childGraph is nulled right after); destroy it rather than leak.
+        cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
+        // cuda_safe_call: a failing status query here (e.g. a prior sticky
+        // error surfacing through this API) must not be mistaken for "not
+        // capturing" -- report and abort instead of skipping the EndCapture.
+        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
+        // != None on purpose: an Invalidated capture must still be ended to
+        // restore the stream.
+        if (status != cudaStreamCaptureStatusNone)
+        {
+          cudaGraph_t discarded = nullptr;
+          cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
+          if (discarded)
+          {
+            cuda_safe_call(cudaGraphDestroy(discarded));
+          }
+        }
+        else if (childGraph != nullptr)
+        {
+          cuda_safe_call(cudaGraphDestroy(childGraph));
+        }
+      };
 
       // Launch the user provided function
       if constexpr (fun_invocable_stream_deps)
@@ -796,22 +904,23 @@ public:
       else if constexpr (fun_invocable_stream_non_void_deps)
       {
         // Remove void arguments
-        ::std::apply(::std::forward<Fun>(f),
+        ::std::apply(::cuda::std::forward<Fun>(f),
                      tuple_prepend(mv(capture_stream), reserved::remove_void_interface(typed_deps())));
       }
 
-      cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
+      childGraph = cuda_try<cudaStreamEndCapture>(capture_stream);
 
       // Save this child graph as the implementation of the
       // graph_task<>. CUDASTF will then add all necessary
       // dependencies, or data transfers, allocations etc.
       // Since this was captured, we will not destroy that graph (should we ?)
       set_child_graph(childGraph);
+      childGraph = nullptr; // owned by the task now; disarm the fail guard's cleanup
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
     }
     else
     {
-      constexpr bool fun_invocable_graph_deps = ::std::is_invocable_v<Fun, cudaGraph_t, Deps...>;
+      constexpr bool fun_invocable_graph_deps = ::cuda::std::is_invocable_v<Fun, cudaGraph_t, Deps...>;
       constexpr bool fun_invocable_graph_non_void_deps =
         reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaGraph_t, Deps...>>;
 

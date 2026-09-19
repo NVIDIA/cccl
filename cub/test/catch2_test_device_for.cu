@@ -13,7 +13,7 @@
 #include <cuda/iterator>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -63,7 +63,7 @@ struct referencing_operator_t
   }
 };
 
-C2H_TEST("Device for each works", "[for][device]")
+CUB_TEST("Device for each works", "[for][device]", CUB_SMALL)
 {
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
@@ -90,7 +90,7 @@ C2H_TEST("Device for each works", "[for][device]")
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
-C2H_TEST("Device for each works with bad operators", "[for][device]")
+CUB_TEST("Device for each works with bad operators", "[for][device]", CUB_SMALL)
 {
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
@@ -111,7 +111,7 @@ C2H_TEST("Device for each works with bad operators", "[for][device]")
   REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), cuda::counting_iterator(std::size_t{})));
 }
 
-C2H_TEST("Device for each works with unaligned vectors", "[for][device]")
+CUB_TEST("Device for each works with unaligned vectors", "[for][device]", CUB_SMALL)
 {
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
@@ -142,7 +142,7 @@ C2H_TEST("Device for each works with unaligned vectors", "[for][device]")
 
 using offset_type = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t, std::int64_t>;
 
-C2H_TEST("Device for each n works", "[for][device]", offset_type)
+CUB_TEST("Device for each n works", "[for][device]", CUB_SMALL, offset_type)
 {
   using offset_t = c2h::get<0, TestType>;
 
@@ -170,7 +170,7 @@ C2H_TEST("Device for each n works", "[for][device]", offset_type)
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
-C2H_TEST("Device for each n works with bad operators", "[for][device]", offset_type)
+CUB_TEST("Device for each n works with bad operators", "[for][device]", CUB_SMALL, offset_type)
 {
   using offset_t = c2h::get<0, TestType>;
 
@@ -184,7 +184,7 @@ C2H_TEST("Device for each n works with bad operators", "[for][device]", offset_t
       max_items,
     })));
 
-  const std::size_t magic_value = num_items + 1;
+  const std::size_t magic_value = static_cast<std::size_t>(num_items) + 1;
   c2h::device_vector<std::size_t> input(num_items, magic_value);
   const std::size_t* d_input = thrust::raw_pointer_cast(input.data());
 
@@ -193,7 +193,7 @@ C2H_TEST("Device for each n works with bad operators", "[for][device]", offset_t
   REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), cuda::counting_iterator(std::size_t{})));
 }
 
-C2H_TEST("Device for each n works with unaligned vectors", "[for][device]", offset_type)
+CUB_TEST("Device for each n works with unaligned vectors", "[for][device]", CUB_SMALL, offset_type)
 {
   using offset_t = c2h::get<0, TestType>;
 
@@ -224,7 +224,7 @@ C2H_TEST("Device for each n works with unaligned vectors", "[for][device]", offs
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
-C2H_TEST("Device for each works with counting iterator", "[for][device]")
+CUB_TEST("Device for each works with counting iterator", "[for][device]", CUB_SMALL)
 {
   using offset_t               = int;
   constexpr offset_t max_items = 5000000;

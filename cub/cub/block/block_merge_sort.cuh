@@ -59,19 +59,10 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   return keys1_begin;
 }
 
-//! Merges elements from two sorted sequences
-//! \tparam ItemsPerThread The number of elements to merge and write to \c output
-//! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
-//! \param keys1_beg The index into \c keys_shared where the first sequence starts
-//! \param keys2_beg The index into \c keys_shared where the second sequence starts
-//! \param keys1_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
-//! used.
-//! \param keys2_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
-//! used.
-//! \param output The output array
-//! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
-template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
-_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
+namespace detail
+{
+template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+_CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
@@ -88,7 +79,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;
   KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
 
-  _CCCL_SORT_MAYBE_UNROLL()
+  _CCCL_PRAGMA_UNROLL(Unroll ? ItemsPerThread : 1)
   for (int item = 0; item < ItemsPerThread; ++item)
   {
     const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
@@ -105,6 +96,49 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   }
 }
 
+template <bool Unroll = true, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+_CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
+  KeyIt keys_shared,
+  int keys1_beg,
+  int keys2_beg,
+  int keys1_count,
+  int keys2_count,
+  KeyT (&output)[ItemsPerThread],
+  int (&indices)[ItemsPerThread],
+  CompareOp compare_op)
+{
+  serial_merge<Unroll>(
+    keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
+}
+} // namespace detail
+
+//! Merges elements from two sorted sequences
+//! \tparam ItemsPerThread The number of elements to merge and write to \c output
+//! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
+//! \param keys1_beg The index into \c keys_shared where the first sequence starts
+//! \param keys2_beg The index into \c keys_shared where the second sequence starts
+//! \param keys1_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
+//! used.
+//! \param keys2_count The maximum number of keys to merge from the second sequence. One more item may be read but is
+//! not used.
+//! \param output The output array
+//! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
+template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
+_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
+  KeyIt keys_shared,
+  int keys1_beg,
+  int keys2_beg,
+  int keys1_count,
+  int keys2_count,
+  KeyT (&output)[ItemsPerThread],
+  int (&indices)[ItemsPerThread],
+  CompareOp compare_op,
+  KeyT oob_default)
+{
+  detail::serial_merge(
+    keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, oob_default);
+}
+
 template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
@@ -116,7 +150,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
-  SerialMerge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
+  detail::serial_merge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
 }
 
 /**
@@ -171,7 +205,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
  *   Provides a way of synchronizing threads. Should be derived from
  *   `BlockMergeSortStrategy`.
  */
-template <typename KeyT, typename ValueT, int NumThreads, int ItemsPerThread, typename SynchronizationPolicy>
+template <typename KeyT,
+          typename ValueT,
+          int NumThreads,
+          int ItemsPerThread,
+          typename SynchronizationPolicy,
+          bool _Unroll = true>
 class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
@@ -183,7 +222,16 @@ private:
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  /// Shared memory type required by this thread block
+  /// Shared memory type required by this thread block.
+  /// The tile is padded by one element because the serial merge prefetches one element past the
+  /// end of a run without using its value. ITEMS_PER_TILE is a tight bound for every other read:
+  /// when a partial tile truncates a run, the serial merge may walk up to ItemsPerThread
+  /// positions past that run's end, but the walk is always absorbed by the rest of the group
+  /// (`size >= ItemsPerThread` and `start + 2 * size <= ITEMS_PER_TILE`). The padding slot's
+  /// value never influences the result, but it is written before every merge round (it cannot
+  /// persist across rounds: the items exchange of a pairs sort aliases the same storage), so
+  /// that no read is of uninitialized memory, e.g. for compute-sanitizer initcheck when the
+  /// temporary storage is virtualized to global memory.
   union _TempStorage
   {
     KeyT keys_shared[ITEMS_PER_TILE + 1];
@@ -266,10 +314,10 @@ public:
    * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
    *   are equivalent: neither one is less than the other. It is not guaranteed
    *   that the relative order of these two elements will be preserved by sort.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries. It's expected that `oob_default` is ordered
-   *   after any value in the `valid_items` boundaries. The algorithm always
-   *   sorts a fixed amount of elements, which is equal to
+   * - It is required that `oob_default` is ordered after any value in the
+   *   `valid_items` boundaries and that all threads provide the same
+   *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
+   *   amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
@@ -293,7 +341,8 @@ public:
    *   Number of valid items to sort
    *
    * @param[in] oob_default
-   *   Default value to assign out-of-bound items
+   *   Value that must be ordered after any value within the `valid_items`
+   *   boundaries
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
@@ -349,10 +398,10 @@ public:
    * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
    *   are equivalent: neither one is less than the other. It is not guaranteed
    *   that the relative order of these two elements will be preserved by sort.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries. It's expected that `oob_default` is ordered
-   *   after any value in the `valid_items` boundaries. The algorithm always
-   *   sorts a fixed amount of elements, which is equal to
+   * - It is required that `oob_default` is ordered after any value in the
+   *   `valid_items` boundaries and that all threads provide the same
+   *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
+   *   amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
@@ -382,7 +431,8 @@ public:
    *   Number of valid items to sort
    *
    * @param[in] oob_default
-   *   Default value to assign out-of-bound items
+   *   Value that must be ordered after any value within the `valid_items`
+   *   boundaries
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
@@ -396,122 +446,113 @@ public:
   {
     if constexpr (IS_LAST_TILE)
     {
-      // if last tile, find valid max_key
-      // and fill the remaining keys with it
-      //
-      KeyT max_key = oob_default;
-
-      _CCCL_SORT_MAYBE_UNROLL()
-      for (int item = 1; item < ItemsPerThread; ++item)
-      {
-        if (ItemsPerThread * linear_tid + item < valid_items)
-        {
-          max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
-        }
-        else
-        {
-          keys[item] = max_key;
-        }
-      }
+      // Clamping the merge runs to valid_items, rather than padding the tile with oob_default and
+      // sorting the full tile, means oob_default only ever bounds a thread's own padding. Its
+      // ordering relative to the valid keys therefore cannot affect the sorted prefix, so callers
+      // that violate the documented ordering requirement still get their valid items sorted. Keys
+      // beyond the boundary are left unspecified.
+      SortPartialTile<true>(keys, items, compare_op, valid_items, oob_default);
     }
-
-    // if first element of thread is in input range, stable sort items
-    //
-    if (!IS_LAST_TILE || ItemsPerThread * linear_tid < valid_items)
+    else
     {
-      StableOddEvenSort(keys, items, compare_op);
-    }
+      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
 
-    // each thread has sorted keys
-    // merge sort keys in shared memory
-    //
-    for (int target_merged_threads_number = 2; target_merged_threads_number <= NumThreads;
-         target_merged_threads_number *= 2)
-    {
-      const int merged_threads_number = target_merged_threads_number / 2;
-      const int mask                  = target_merged_threads_number - 1;
-
-      Sync();
-
-      // store keys in shmem
+      // each thread has sorted keys
+      // merge sort keys in shared memory
       //
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int item = 0; item < ItemsPerThread; ++item)
-      {
-        int idx                       = ItemsPerThread * linear_tid + item;
-        temp_storage.keys_shared[idx] = keys[item];
-      }
-
-      Sync();
-
-      int indices[ItemsPerThread];
-
-      const int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
-      const int start = ItemsPerThread * first_thread_idx_in_thread_group_being_merged;
-      const int size  = ItemsPerThread * merged_threads_number;
-
-      const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
-
-      const int diag = (::cuda::std::min) (valid_items, ItemsPerThread * thread_idx_in_thread_group_being_merged);
-
-      const int keys1_beg = (::cuda::std::min) (valid_items, start);
-      const int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
-      const int keys2_beg = keys1_end;
-      const int keys2_end = (::cuda::std::min) (valid_items, keys2_beg + size);
-
-      const int keys1_count = keys1_end - keys1_beg;
-      const int keys2_count = keys2_end - keys2_beg;
-
-      const int partition_diag = MergePath(
-        &temp_storage.keys_shared[keys1_beg],
-        &temp_storage.keys_shared[keys2_beg],
-        keys1_count,
-        keys2_count,
-        diag,
-        compare_op);
-
-      const int keys1_beg_loc   = keys1_beg + partition_diag;
-      const int keys1_end_loc   = keys1_end;
-      const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
-      const int keys2_end_loc   = keys2_end;
-      const int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
-      const int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
-      SerialMerge(
-        &temp_storage.keys_shared[0],
-        keys1_beg_loc,
-        keys2_beg_loc,
-        keys1_count_loc,
-        keys2_count_loc,
-        keys,
-        indices,
-        compare_op,
-        oob_default);
-
-      if constexpr (!KEYS_ONLY)
-      {
-        Sync();
-
-        // store keys in shmem
-        //
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < ItemsPerThread; ++item)
-        {
-          int idx                        = ItemsPerThread * linear_tid + item;
-          temp_storage.items_shared[idx] = items[item];
-        }
-
-        Sync();
-
-        // gather items from shmem
-        //
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < ItemsPerThread; ++item)
-        {
-          items[item] = temp_storage.items_shared[indices[item]];
-        }
-      }
+      MergeRounds<false>(keys, items, compare_op);
     }
   } // func block_merge_sort
+
+  /**
+   * @brief Sorts items partitioned across a CUDA thread block using
+   *        a merge sorting method. Only the first `valid_items` elements are
+   *        sorted; no out-of-bounds default value is required.
+   *
+   * @par
+   * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
+   *   are equivalent: neither one is less than the other. It is not guaranteed
+   *   that the relative order of these two elements will be preserved by sort.
+   * - On output, the first `valid_items` positions of the tile hold the sorted
+   *   valid keys; keys beyond the `valid_items` boundary have unspecified
+   *   values. Unlike the overload taking `oob_default`, no sentinel value that
+   *   orders after all valid keys is required, which supports comparators and
+   *   types without one.
+   * - All threads in the thread block must provide the same `valid_items`.
+   *
+   * @rst
+   * .. versionadded:: 3.6
+   * @endrst
+   *
+   * @tparam CompareOp
+   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
+   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *
+   * @param[in,out] keys
+   *   Keys to sort
+   *
+   * @param[in,out] items
+   *   Values to sort
+   *
+   * @param[in] compare_op
+   *   Comparison function object which returns true if the first argument is
+   *   ordered before the second
+   *
+   * @param[in] valid_items
+   *   Number of valid items to sort
+   *
+   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+   */
+  template <typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op, int valid_items)
+  {
+    // keys[0] only binds a reference here; without a sentinel it is never read.
+    SortPartialTile<false>(keys, items, compare_op, valid_items, keys[0]);
+  }
+
+  /**
+   * @brief Sorts items partitioned across a CUDA thread block using
+   *        a merge sorting method. Only the first `valid_items` elements are
+   *        sorted; no out-of-bounds default value is required.
+   *
+   * @par
+   * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
+   *   are equivalent: neither one is less than the other. It is not guaranteed
+   *   that the relative order of these two elements will be preserved by sort.
+   * - On output, the first `valid_items` positions of the tile hold the sorted
+   *   valid keys; keys beyond the `valid_items` boundary have unspecified
+   *   values. Unlike the overload taking `oob_default`, no sentinel value that
+   *   orders after all valid keys is required, which supports comparators and
+   *   types without one.
+   * - All threads in the thread block must provide the same `valid_items`.
+   *
+   * @rst
+   * .. versionadded:: 3.6
+   * @endrst
+   *
+   * @tparam CompareOp
+   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
+   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *
+   * @param[in,out] keys
+   *   Keys to sort
+   *
+   * @param[in] compare_op
+   *   Comparison function object which returns true if the first argument is
+   *   ordered before the second
+   *
+   * @param[in] valid_items
+   *   Number of valid items to sort
+   *
+   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+   */
+  template <typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items)
+  {
+    ValueT items[ItemsPerThread];
+    Sort(keys, items, compare_op, valid_items);
+  }
 
   /**
    * @brief Sorts items partitioned across a CUDA thread block using
@@ -594,10 +635,10 @@ public:
    *   elements. That is, if `x` and `y` are elements such that `x` precedes
    *   `y`, and if the two elements are equivalent (neither `x < y` nor `y < x`)
    *   then a postcondition of StableSort is that `x` still precedes `y`.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries. It's expected that `oob_default` is ordered
-   *   after any value in the `valid_items` boundaries. The algorithm always
-   *   sorts a fixed amount of elements, which is equal to
+   * - It is required that `oob_default` is ordered after any value in the
+   *   `valid_items` boundaries and that all threads provide the same
+   *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
+   *   amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`.
    *   If there is a value that is ordered after `oob_default`, it won't be
    *   placed within `valid_items` boundaries.
@@ -622,7 +663,8 @@ public:
    *   Number of valid items to sort
    *
    * @param[in] oob_default
-   *   Default value to assign out-of-bound items
+   *   Value that must be ordered after any value within the `valid_items`
+   *   boundaries
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
@@ -642,10 +684,10 @@ public:
    *   elements. That is, if `x` and `y` are elements such that `x` precedes
    *   `y`, and if the two elements are equivalent (neither `x < y` nor `y < x`)
    *   then a postcondition of StableSort is that `x` still precedes `y`.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries. It's expected that `oob_default` is ordered
-   *   after any value in the `valid_items` boundaries. The algorithm always
-   *   sorts a fixed amount of elements, which is equal to
+   * - It is required that `oob_default` is ordered after any value in the
+   *   `valid_items` boundaries and that all threads provide the same
+   *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
+   *   amount of elements, which is equal to
    *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
@@ -675,7 +717,8 @@ public:
    *   Number of valid items to sort
    *
    * @param[in] oob_default
-   *   Default value to assign out-of-bound items
+   *   Value that must be ordered after any value within the `valid_items`
+   *   boundaries
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
@@ -690,7 +733,283 @@ public:
     Sort<CompareOp, IS_LAST_TILE>(keys, items, compare_op, valid_items, oob_default);
   }
 
+  /**
+   * @brief Sorts items partitioned across a CUDA thread block using
+   *        a merge sorting method. Only the first `valid_items` elements are
+   *        sorted; no out-of-bounds default value is required.
+   *
+   * @par
+   * - StableSort is stable: it preserves the relative ordering of equivalent
+   *   elements. That is, if `x` and `y` are elements such that `x` precedes
+   *   `y`, and if the two elements are equivalent (neither `x < y` nor `y < x`)
+   *   then a postcondition of StableSort is that `x` still precedes `y`.
+   * - On output, the first `valid_items` positions of the tile hold the sorted
+   *   valid keys; keys beyond the `valid_items` boundary have unspecified
+   *   values. Unlike the overload taking `oob_default`, no sentinel value that
+   *   orders after all valid keys is required, which supports comparators and
+   *   types without one.
+   * - All threads in the thread block must provide the same `valid_items`.
+   *
+   * @rst
+   * .. versionadded:: 3.6
+   * @endrst
+   *
+   * @tparam CompareOp
+   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
+   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *
+   * @param[in,out] keys
+   *   Keys to sort
+   *
+   * @param[in] compare_op
+   *   Comparison function object which returns true if the first argument is
+   *   ordered before the second
+   *
+   * @param[in] valid_items
+   *   Number of valid items to sort
+   *
+   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+   */
+  template <typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items)
+  {
+    Sort(keys, compare_op, valid_items);
+  }
+
+  /**
+   * @brief Sorts items partitioned across a CUDA thread block using
+   *        a merge sorting method. Only the first `valid_items` elements are
+   *        sorted; no out-of-bounds default value is required.
+   *
+   * @par
+   * - StableSort is stable: it preserves the relative ordering of equivalent
+   *   elements. That is, if `x` and `y` are elements such that `x` precedes
+   *   `y`, and if the two elements are equivalent (neither `x < y` nor `y < x`)
+   *   then a postcondition of StableSort is that `x` still precedes `y`.
+   * - On output, the first `valid_items` positions of the tile hold the sorted
+   *   valid keys; keys beyond the `valid_items` boundary have unspecified
+   *   values. Unlike the overload taking `oob_default`, no sentinel value that
+   *   orders after all valid keys is required, which supports comparators and
+   *   types without one.
+   * - All threads in the thread block must provide the same `valid_items`.
+   *
+   * @rst
+   * .. versionadded:: 3.6
+   * @endrst
+   *
+   * @tparam CompareOp
+   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
+   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *
+   * @param[in,out] keys
+   *   Keys to sort
+   *
+   * @param[in,out] items
+   *   Values to sort
+   *
+   * @param[in] compare_op
+   *   Comparison function object which returns true if the first argument is
+   *   ordered before the second
+   *
+   * @param[in] valid_items
+   *   Number of valid items to sort
+   *
+   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+   */
+  template <typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  StableSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op, int valid_items)
+  {
+    Sort(keys, items, compare_op, valid_items);
+  }
+
 private:
+  //! Stores the tile of keys to shared memory and gives the padding slot one past the tile a
+  //! defined value: the serial merge prefetches (but never uses) one element past the end of a
+  //! run, and the run ending at ITEMS_PER_TILE would otherwise read an uninitialized value
+  //! (see NVIDIA/cccl#5327). The items side needs no such store: the gather indices record
+  //! pre-increment positions, which never exceed ITEMS_PER_TILE - 1.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreKeys(KeyT (&keys)[ItemsPerThread])
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 0; item < ItemsPerThread; ++item)
+    {
+      const int idx                 = ItemsPerThread * linear_tid + item;
+      temp_storage.keys_shared[idx] = keys[item];
+    }
+    if (linear_tid == 0)
+    {
+      temp_storage.keys_shared[ITEMS_PER_TILE] = keys[0];
+    }
+  }
+
+  //! Moves this thread's values into the positions given by \p indices, via shared memory.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeItems(ValueT (&items)[ItemsPerThread], int (&indices)[ItemsPerThread])
+  {
+    Sync();
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 0; item < ItemsPerThread; ++item)
+    {
+      const int idx                  = ItemsPerThread * linear_tid + item;
+      temp_storage.items_shared[idx] = items[item];
+    }
+
+    Sync();
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 0; item < ItemsPerThread; ++item)
+    {
+      items[item] = temp_storage.items_shared[indices[item]];
+    }
+  }
+
+  //! Sorts the first \p valid_items elements of the tile, clamping every merge run to that
+  //! boundary.
+  //!
+  //! Threads holding at least one valid key pad their out-of-range registers with an upper bound of
+  //! their own valid keys, seeded from keys[0], which is valid for such threads. The thread-local
+  //! sort therefore keeps the thread's valid keys in front of its padding. When \p HasOobDefault is
+  //! true, \p oob_default joins that upper bound, so the padding equals \p oob_default whenever
+  //! \p oob_default is ordered after the thread's keys, while a sentinel that is not cannot displace
+  //! a valid key past the boundary.
+  //!
+  //! Threads lying entirely beyond \p valid_items are left untouched: their keys may hold
+  //! indeterminate values, which are copied around but never compared and never placed within the
+  //! valid prefix, because the merge rounds clamp every run to \p valid_items.
+  template <bool HasOobDefault, typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SortPartialTile(
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&items)[ItemsPerThread],
+    CompareOp compare_op,
+    int valid_items,
+    const KeyT& oob_default)
+  {
+    if (ItemsPerThread * linear_tid < valid_items)
+    {
+      KeyT max_key = keys[0];
+      if constexpr (HasOobDefault)
+      {
+        max_key = compare_op(max_key, oob_default) ? oob_default : max_key;
+      }
+
+      _CCCL_PRAGMA_UNROLL(_Unroll ? ItemsPerThread : 1)
+      for (int item = 1; item < ItemsPerThread; ++item)
+      {
+        if (ItemsPerThread * linear_tid + item < valid_items)
+        {
+          max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
+        }
+        else
+        {
+          keys[item] = max_key;
+        }
+      }
+
+      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
+    }
+
+    MergeRounds<true>(keys, items, compare_op, valid_items);
+  }
+
+  //! Runs the log2(NumThreads) merge rounds.
+  //! When \p Clamped is false, the full tile is merged: all run boundaries are exact, no boundary
+  //! handling, and every thread merges exactly ItemsPerThread elements. This is the fastest path;
+  //! partial tiles use it after padding with oob_default.
+  //! When \p Clamped is true, every run is clamped to the valid_items boundary, so out-of-range
+  //! values never reach the valid prefix and no sentinel is required; keys beyond the boundary
+  //! end up with unspecified values, and trailing rounds whose input runs already cover all valid
+  //! items are skipped.
+  template <bool Clamped, typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void MergeRounds(
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&items)[ItemsPerThread],
+    CompareOp compare_op,
+    int valid_items = ITEMS_PER_TILE)
+  {
+    for (int target_merged_threads_number = 2; target_merged_threads_number <= NumThreads;
+         target_merged_threads_number *= 2)
+    {
+      const int merged_threads_number = target_merged_threads_number / 2;
+      const int mask                  = target_merged_threads_number - 1;
+      const int size                  = ItemsPerThread * merged_threads_number;
+
+      if constexpr (Clamped)
+      {
+        // The tile's first `size` positions already form a single sorted run covering every valid
+        // item: this and all remaining rounds would be identity copies. valid_items is uniform
+        // across the thread block, so the break is uniform and barrier-safe.
+        if (size >= valid_items)
+        {
+          break;
+        }
+      }
+
+      Sync();
+      StoreKeys(keys);
+      Sync();
+
+      int indices[ItemsPerThread];
+
+      const int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
+      const int start = ItemsPerThread * first_thread_idx_in_thread_group_being_merged;
+
+      const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
+
+      int keys1_beg, keys1_end, keys2_end, diag;
+      if constexpr (Clamped)
+      {
+        keys1_beg = (::cuda::std::min) (valid_items, start);
+        keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
+        keys2_end = (::cuda::std::min) (valid_items, keys1_end + size);
+        // The diagonal is additionally clamped to the number of items actually present in this
+        // group's two runs: a group lying entirely beyond valid_items would otherwise request a
+        // diagonal larger than its (empty) runs, violating the MergePath precondition and
+        // producing negative slice counts downstream.
+        diag = (::cuda::std::min) (keys2_end - keys1_beg,
+                                   (::cuda::std::min) (valid_items,
+                                                       ItemsPerThread * thread_idx_in_thread_group_being_merged));
+      }
+      else
+      {
+        keys1_beg = start;
+        keys1_end = start + size;
+        keys2_end = keys1_end + size;
+        diag      = ItemsPerThread * thread_idx_in_thread_group_being_merged;
+      }
+      const int keys2_beg   = keys1_end;
+      const int keys1_count = keys1_end - keys1_beg;
+      const int keys2_count = keys2_end - keys2_beg;
+
+      const int partition_diag = MergePath(
+        &temp_storage.keys_shared[keys1_beg],
+        &temp_storage.keys_shared[keys2_beg],
+        keys1_count,
+        keys2_count,
+        diag,
+        compare_op);
+
+      const int keys1_beg_loc   = keys1_beg + partition_diag;
+      const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
+      const int keys1_count_loc = keys1_end - keys1_beg_loc;
+      const int keys2_count_loc = keys2_end - keys2_beg_loc;
+      detail::serial_merge<_Unroll>(
+        &temp_storage.keys_shared[0],
+        keys1_beg_loc,
+        keys2_beg_loc,
+        keys1_count_loc,
+        keys2_count_loc,
+        keys,
+        indices,
+        compare_op);
+
+      if constexpr (!KEYS_ONLY)
+      {
+        ExchangeItems(items, indices);
+      }
+    }
+  }
+
   _CCCL_DEVICE _CCCL_FORCEINLINE void Sync() const
   {
     static_cast<const SynchronizationPolicy*>(this)->SyncImplementation();
@@ -775,20 +1094,29 @@ private:
  *
  * This example can be easily adapted to the storage required by BlockMergeSort.
  */
-template <typename KeyT, int BlockDimX, int ItemsPerThread, typename ValueT = NullType, int BlockDimY = 1, int BlockDimZ = 1>
+template <typename KeyT,
+          int BlockDimX,
+          int ItemsPerThread,
+          typename ValueT = NullType,
+          int BlockDimY   = 1,
+          int BlockDimZ   = 1,
+          bool _Unroll    = true>
 class BlockMergeSort
-    : public BlockMergeSortStrategy<KeyT,
-                                    ValueT,
-                                    BlockDimX * BlockDimY * BlockDimZ,
-                                    ItemsPerThread,
-                                    BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ>>
+    : public BlockMergeSortStrategy<
+        KeyT,
+        ValueT,
+        BlockDimX * BlockDimY * BlockDimZ,
+        ItemsPerThread,
+        BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, _Unroll>,
+        _Unroll>
 {
 private:
   // The thread block size in threads
   static constexpr int BLOCK_THREADS  = BlockDimX * BlockDimY * BlockDimZ;
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;
 
-  using BlockMergeSortStrategyT = BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort>;
+  using BlockMergeSortStrategyT =
+    BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort, _Unroll>;
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()

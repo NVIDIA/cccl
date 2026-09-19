@@ -5,7 +5,7 @@
 
 #include <cuda/std/__algorithm/find_if.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using cuda::compute_capability;
 
@@ -60,7 +60,9 @@ struct closure_all
   }
 };
 
-C2H_TEST("dispatch_compute_cap prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
+CUB_TEST("dispatch_compute_cap prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST",
+         "[util][dispatch]",
+         CUB_SMALL)
 {
   for (const auto cc : cuda::__target_compute_capabilities())
   {
@@ -115,7 +117,7 @@ struct policy_selector_minimal
   }
 };
 
-C2H_TEST("dispatch_compute_cap invokes correct policy", "[util][dispatch]")
+CUB_TEST("dispatch_compute_cap invokes correct policy", "[util][dispatch]", CUB_SMALL)
 {
   for (const auto cc : cuda::__target_compute_capabilities())
   {
@@ -140,7 +142,7 @@ struct policy_selector_not_regular
   }
 };
 
-C2H_TEST("policy_selector concept", "[util][dispatch]")
+CUB_TEST("policy_selector concept", "[util][dispatch]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cub::detail::policy_selector<policy_selector_all, a_policy>);
   STATIC_REQUIRE(::cub::detail::policy_selector<policy_selector_some, a_policy>);

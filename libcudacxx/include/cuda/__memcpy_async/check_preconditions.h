@@ -24,6 +24,7 @@
 #include <cuda/__memory/aligned_size.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -53,10 +54,10 @@ _CCCL_HOST_DEVICE_API inline bool __memcpy_async_check_pre(_Tp* __dst, const _Tp
   const auto __src_val = reinterpret_cast<uintptr_t>(__src);
 
   // check src and dst alignment
+  _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(::cuda::std::is_sufficiently_aligned<__align>(__dst),
+                                      "destination pointer must be aligned to the specified alignment");
   _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(
-    __dst_val % __align == 0, "destination pointer must be aligned to the specified alignment");
-  _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(
-    __src_val % __align == 0, "source pointer must be aligned to the specified alignment");
+    ::cuda::std::is_sufficiently_aligned<__align>(__src), "source pointer must be aligned to the specified alignment");
 
   // check src and dst overlap
   _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(

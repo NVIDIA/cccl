@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.ctor] complex constructor, [simd.complex.access] complex accessors: real(), imag()
@@ -32,7 +35,7 @@ namespace simd = cuda::std::simd;
 // complex constructor
 
 template <typename T, typename Complex, int N>
-TEST_FUNC constexpr void test_complex_ctor()
+TEST_HOST_DEVICE_FUNC constexpr void test_complex_ctor()
 {
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
   using RealVec    = simd::basic_vec<T, simd::fixed_size<N>>;
@@ -64,7 +67,7 @@ TEST_FUNC constexpr void test_complex_ctor()
 // real() / imag() getters
 
 template <typename T, typename Complex, int N>
-TEST_FUNC constexpr void test_getters()
+TEST_HOST_DEVICE_FUNC constexpr void test_getters()
 {
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
 
@@ -89,7 +92,7 @@ TEST_FUNC constexpr void test_getters()
 // real(vec) / imag(vec) setters
 
 template <typename T, typename Complex, int N>
-TEST_FUNC constexpr void test_setters()
+TEST_HOST_DEVICE_FUNC constexpr void test_setters()
 {
   using ComplexVec = simd::basic_vec<Complex, simd::fixed_size<N>>;
   using RealVec    = simd::basic_vec<T, simd::fixed_size<N>>;
@@ -122,7 +125,7 @@ TEST_FUNC constexpr void test_setters()
 
 // cuda::complex<T> does not support extended fp types
 template <typename T, int N>
-TEST_FUNC constexpr void test_cuda_complex_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_cuda_complex_type()
 {
   using CudaComplex = ::cuda::complex<T>;
   test_complex_ctor<T, CudaComplex, N>();
@@ -133,7 +136,7 @@ TEST_FUNC constexpr void test_cuda_complex_type()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   using CudaStdComplex = cuda::std::complex<T>;
   test_complex_ctor<T, CudaStdComplex, N>();
@@ -147,7 +150,7 @@ TEST_FUNC constexpr void test_type()
 #endif // _CCCL_HAS_HOST_STD_LIB()
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_type<float, 1>();
   test_type<float, 4>();
@@ -162,7 +165,7 @@ TEST_FUNC constexpr bool test()
   return true;
 }
 
-TEST_FUNC bool test_runtime()
+TEST_HOST_DEVICE_FUNC bool test_runtime()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   test_type<__half, 1>();

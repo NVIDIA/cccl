@@ -1,5 +1,5 @@
-Thrust Developer Overview
-#########################
+Developer Overview
+##################
 
 .. toctree::
    :hidden:

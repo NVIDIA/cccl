@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <memory>
 
@@ -25,7 +25,7 @@
 #include "unique_ptr_test_helper.h"
 
 template <class APtr, class BPtr>
-TEST_FUNC void testAssign(APtr& aptr, BPtr& bptr)
+TEST_HOST_DEVICE_FUNC void testAssign(APtr& aptr, BPtr& bptr)
 {
   A* p = bptr.get();
   assert(A_count == 2);
@@ -37,7 +37,7 @@ TEST_FUNC void testAssign(APtr& aptr, BPtr& bptr)
 }
 
 template <class LHS, class RHS>
-TEST_FUNC void checkDeleter(LHS& lhs, RHS& rhs, int LHSState, int RHSState)
+TEST_HOST_DEVICE_FUNC void checkDeleter(LHS& lhs, RHS& rhs, int LHSState, int RHSState)
 {
   assert(lhs.get_deleter().state() == LHSState);
   assert(rhs.get_deleter().state() == RHSState);
@@ -51,10 +51,10 @@ struct NCConvertingDeleter
   NCConvertingDeleter(NCConvertingDeleter&&)      = default;
 
   template <class U>
-  TEST_FUNC NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_HOST_DEVICE_FUNC NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  TEST_FUNC void operator()(T*) const {}
+  TEST_HOST_DEVICE_FUNC void operator()(T*) const {}
 };
 
 template <class T>
@@ -65,15 +65,15 @@ struct NCConvertingDeleter<T[]>
   NCConvertingDeleter(NCConvertingDeleter&&)      = default;
 
   template <class U>
-  TEST_FUNC NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_HOST_DEVICE_FUNC NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  TEST_FUNC void operator()(T*) const {}
+  TEST_HOST_DEVICE_FUNC void operator()(T*) const {}
 };
 
 struct GenericDeleter
 {
-  TEST_FUNC void operator()(void*) const;
+  TEST_HOST_DEVICE_FUNC void operator()(void*) const;
 };
 
 struct NCGenericDeleter
@@ -82,10 +82,10 @@ struct NCGenericDeleter
   NCGenericDeleter(NCGenericDeleter const&) = delete;
   NCGenericDeleter(NCGenericDeleter&&)      = default;
 
-  TEST_FUNC void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC void operator()(void*) const {}
 };
 
-TEST_FUNC void test_sfinae()
+TEST_HOST_DEVICE_FUNC void test_sfinae()
 {
   using DA  = NCConvertingDeleter<A[]>; // non-copyable deleters
   using DAC = NCConvertingDeleter<const A[]>; // non-copyable deleters

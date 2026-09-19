@@ -18,6 +18,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
@@ -96,17 +97,17 @@ template <
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
   typename PolicySelector = policy_selector_from_types<AccumT>,
   typename KernelSource   = device_segmented_scan_kernel_source<
-      PolicySelector,
-      InputIteratorT,
-      OutputIteratorT,
-      BeginOffsetIteratorInputT,
-      EndOffsetIteratorInputT,
-      BeginOffsetIteratorOutputT,
-      OffsetT,
-      ScanOpT,
-      InitValueT,
-      AccumT,
-      EnforceInclusive>,
+    PolicySelector,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorInputT,
+    EndOffsetIteratorInputT,
+    BeginOffsetIteratorOutputT,
+    OffsetT,
+    ScanOpT,
+    InitValueT,
+    AccumT,
+    EnforceInclusive>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
@@ -143,7 +144,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const segmented_scan_policy active_policy = policy_selector(cc);
+  const SegmentedScanPolicy active_policy = policy_selector(cc);
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
@@ -153,6 +154,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
              cc.major_cap(),
              cc.minor_cap(),
              ss.str().c_str());))
+#else // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceSegmentedScan", cc, active_policy);
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   if (d_temp_storage == nullptr)
@@ -174,6 +177,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         constexpr int workers_per_block = 1;
         const auto max_segments         = active_policy.block.max_segments;
         const auto threads_per_block    = active_policy.block.threads_per_block;
+        _CCCL_ASSERT(active_policy.block.threads_per_block > 0, "Policy value for threads_per_block is not positive");
+        _CCCL_ASSERT(active_policy.block.items_per_thread > 0, "Policy value for items_per_thread is not positive");
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
         return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};

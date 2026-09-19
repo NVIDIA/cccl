@@ -40,8 +40,7 @@ __is_sorted_until(_ForwardIterator __first, _ForwardIterator __last, _Compare __
     {
       if (__comp(*__i, *__first))
       {
-        __last = __i;
-        break;
+        return __i;
       }
       __first = __i;
     }

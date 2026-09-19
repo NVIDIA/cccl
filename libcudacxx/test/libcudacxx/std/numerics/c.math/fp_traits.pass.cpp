@@ -44,6 +44,12 @@ TEST_FUNC void test_isgreater(float val)
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreater((__nv_bfloat16) 0, (double) 0)), bool>) );
 #endif // _LIBCUDACXX_HAS_NVBF16()
   assert(cuda::std::isgreater(-1.0, 0.F) == false);
+#if _CCCL_HAS_FLOAT128()
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreater((__float128) 0, (__float128) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreater((__float128) 0, (float) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreater((__float128) 0, (double) 0)), bool>) );
+  assert(cuda::std::isgreater((__float128) 1, 0.F) == true);
+#endif // _CCCL_HAS_FLOAT128()
 }
 
 TEST_FUNC void test_isgreaterequal(float val)
@@ -74,6 +80,12 @@ TEST_FUNC void test_isgreaterequal(float val)
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreaterequal((__nv_bfloat16) 0, (double) 0)), bool>) );
 #endif // _LIBCUDACXX_HAS_NVBF16()
   assert(cuda::std::isgreaterequal(-1.0, 0.F) == false);
+#if _CCCL_HAS_FLOAT128()
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreaterequal((__float128) 0, (__float128) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreaterequal((__float128) 0, (float) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreaterequal((__float128) 0, (double) 0)), bool>) );
+  assert(cuda::std::isgreaterequal((__float128) 0, 0.F) == true);
+#endif // _CCCL_HAS_FLOAT128()
 }
 
 TEST_FUNC void test_isless(float val)
@@ -103,6 +115,12 @@ TEST_FUNC void test_isless(float val)
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isless((__nv_bfloat16) 0, (double) 0)), bool>) );
 #endif // _LIBCUDACXX_HAS_NVBF16()
   assert(cuda::std::isless(-1.0, 0.F) == true);
+#if _CCCL_HAS_FLOAT128()
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isless((__float128) 0, (__float128) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isless((__float128) 0, (float) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isless((__float128) 0, (double) 0)), bool>) );
+  assert(cuda::std::isless((__float128) -1, 0.F) == true);
+#endif // _CCCL_HAS_FLOAT128()
 }
 
 TEST_FUNC void test_islessequal(float val)
@@ -132,6 +150,12 @@ TEST_FUNC void test_islessequal(float val)
   static_assert((cuda::std::is_same_v<decltype(cuda::std::islessequal((__nv_bfloat16) 0, (double) 0)), bool>) );
 #endif // _LIBCUDACXX_HAS_NVBF16()
   assert(cuda::std::islessequal(-1.0, 0.F) == true);
+#if _CCCL_HAS_FLOAT128()
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::islessequal((__float128) 0, (__float128) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::islessequal((__float128) 0, (float) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::islessequal((__float128) 0, (double) 0)), bool>) );
+  assert(cuda::std::islessequal((__float128) 0, 0.F) == true);
+#endif // _CCCL_HAS_FLOAT128()
 }
 
 TEST_FUNC void test_islessgreater(float val)
@@ -162,6 +186,12 @@ TEST_FUNC void test_islessgreater(float val)
   static_assert((cuda::std::is_same_v<decltype(cuda::std::islessgreater((__nv_bfloat16) 0, (double) 0)), bool>) );
 #endif // _LIBCUDACXX_HAS_NVBF16()
   assert(cuda::std::islessgreater(-1.0, 0.F) == true);
+#if _CCCL_HAS_FLOAT128()
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::islessgreater((__float128) 0, (__float128) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::islessgreater((__float128) 0, (float) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::islessgreater((__float128) 0, (double) 0)), bool>) );
+  assert(cuda::std::islessgreater((__float128) -1, 0.F) == true);
+#endif // _CCCL_HAS_FLOAT128()
 }
 
 TEST_FUNC void test_isunordered(float val)
@@ -191,6 +221,13 @@ TEST_FUNC void test_isunordered(float val)
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isunordered((__nv_bfloat16) 0, (double) 0)), bool>) );
 #endif // _LIBCUDACXX_HAS_NVBF16()
   assert(cuda::std::isunordered(-1.0, 0.F) == false);
+#if _CCCL_HAS_FLOAT128()
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isunordered((__float128) 0, (__float128) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isunordered((__float128) 0, (float) 0)), bool>) );
+  static_assert((cuda::std::is_same_v<decltype(cuda::std::isunordered((__float128) 0, (double) 0)), bool>) );
+  assert(cuda::std::isunordered((__float128) -1, 0.F) == false);
+  assert(cuda::std::isunordered(cuda::std::numeric_limits<__float128>::quiet_NaN(), (__float128) 0) == true);
+#endif // _CCCL_HAS_FLOAT128()
 }
 
 TEST_FUNC void test(float val)

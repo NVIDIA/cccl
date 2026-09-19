@@ -28,6 +28,7 @@ std::unordered_set<std::string_view> primitive_types = {
   "::cuda::std::int64_t",
   "::cuda::std::uint64_t",
   "__half",
+  "__nv_bfloat16",
   "float",
   "double",
   "bool",

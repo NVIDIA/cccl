@@ -53,6 +53,11 @@ option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." OFF)
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." OFF)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." OFF)
 option(CCCL_ENABLE_C_PARALLEL "Enable CUDA C Parallel Library." OFF)
+option(
+  CCCL_ENABLE_C_PARALLEL_V2
+  "Enable CUDA C Parallel Library v2 (HostJIT-based)."
+  OFF
+)
 option(CCCL_ENABLE_C_EXPERIMENTAL_STF "Enable CUDA C CUDASTF Library." OFF)
 option(CCCL_ENABLE_NVBENCH_HELPER "Enable the NVBench Helper Dev Build." OFF)
 
@@ -62,7 +67,8 @@ else()
   option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 endif()
 
-option(CCCL_ENABLE_TILE "Enable tile support" OFF)
+option(CCCL_FORCE_TILE_TESTS "Force tests to be run as a tile program" OFF)
+option(CCCL_ENABLE_TILE "Enable tile support" ${CCCL_FORCE_TILE_TESTS})
 
 option(
   CCCL_ENABLE_UNSTABLE
@@ -129,7 +135,11 @@ if (CCCL_ENABLE_UNSTABLE)
   add_subdirectory(cudax)
 endif()
 
-if (CCCL_ENABLE_C_PARALLEL OR CCCL_ENABLE_C_EXPERIMENTAL_STF)
+if (
+  CCCL_ENABLE_C_PARALLEL
+  OR CCCL_ENABLE_C_PARALLEL_V2
+  OR CCCL_ENABLE_C_EXPERIMENTAL_STF
+)
   add_subdirectory(c)
 endif()
 

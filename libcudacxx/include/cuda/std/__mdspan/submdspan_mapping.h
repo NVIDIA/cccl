@@ -148,6 +148,7 @@ template <class _LayoutMapping, class _SliceType>
 _CCCL_API constexpr bool __is_unit_stride_slice()
 {
   // [mdspan.sub.map.common-9.1]
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (__is_strided_slice_stride_of_one<_SliceType>)
   {
     return true;
@@ -166,6 +167,7 @@ _CCCL_API constexpr bool __is_unit_stride_slice()
   {
     return false;
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 
 // [mdspan.sub.map.left]

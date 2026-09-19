@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.creation], cat (basic_vec)
@@ -26,7 +29,7 @@
 // cat(basic_vec) - single argument
 
 template <typename T>
-TEST_FUNC constexpr void test_cat_one_vec()
+TEST_HOST_DEVICE_FUNC constexpr void test_cat_one_vec()
 {
   using Vec4 = simd::basic_vec<T, simd::fixed_size<4>>;
 
@@ -44,7 +47,7 @@ TEST_FUNC constexpr void test_cat_one_vec()
 // cat(basic_vec, basic_vec, basic_vec)
 
 template <typename T>
-TEST_FUNC constexpr void test_cat_three_vec()
+TEST_HOST_DEVICE_FUNC constexpr void test_cat_three_vec()
 {
   using Vec2 = simd::basic_vec<T, simd::fixed_size<2>>;
   using Vec6 = simd::basic_vec<T, simd::fixed_size<6>>;
@@ -66,13 +69,13 @@ TEST_FUNC constexpr void test_cat_three_vec()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_cat_one_vec<T>();
   test_cat_three_vec<T>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_type<cuda::std::int16_t>();
   test_type<float>();

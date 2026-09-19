@@ -73,26 +73,26 @@ DECLARE_UNITTEST(TestCountingIteratorTraits);
 template <typename T>
 void TestCountingDefaultConstructor()
 {
-  thrust::counting_iterator<T> iter0;
-  ASSERT_EQUAL(*iter0, T{});
+  const thrust::counting_iterator<T> iter0;
+  REQUIRE(*iter0 == T{});
 }
 DECLARE_GENERIC_UNITTEST(TestCountingDefaultConstructor);
 
 void TestCountingIteratorCopyConstructor()
 {
-  thrust::counting_iterator<int> iter0(100);
+  const thrust::counting_iterator<int> iter0(100);
 
-  thrust::counting_iterator<int> iter1(iter0);
+  const thrust::counting_iterator<int> iter1(iter0);
 
-  ASSERT_EQUAL_QUIET(iter0, iter1);
-  ASSERT_EQUAL(*iter0, *iter1);
+  REQUIRE(iter0 == iter1);
+  REQUIRE(*iter0 == *iter1);
 
   // construct from related space
-  thrust::counting_iterator<int, thrust::host_system_tag> h_iter = iter0;
-  ASSERT_EQUAL(*iter0, *h_iter);
+  const thrust::counting_iterator<int, thrust::host_system_tag> h_iter = iter0;
+  REQUIRE(*iter0 == *h_iter);
 
-  thrust::counting_iterator<int, thrust::device_system_tag> d_iter = iter0;
-  ASSERT_EQUAL(*iter0, *d_iter);
+  const thrust::counting_iterator<int, thrust::device_system_tag> d_iter = iter0;
+  REQUIRE(*iter0 == *d_iter);
 }
 DECLARE_UNITTEST(TestCountingIteratorCopyConstructor);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value);
@@ -102,24 +102,24 @@ void TestCountingIteratorIncrement()
 {
   thrust::counting_iterator<int> iter(0);
 
-  ASSERT_EQUAL(*iter, 0);
+  REQUIRE(*iter == 0);
 
   iter++;
 
-  ASSERT_EQUAL(*iter, 1);
+  REQUIRE(*iter == 1);
 
   iter++;
   iter++;
 
-  ASSERT_EQUAL(*iter, 3);
+  REQUIRE(*iter == 3);
 
   iter += 5;
 
-  ASSERT_EQUAL(*iter, 8);
+  REQUIRE(*iter == 8);
 
   iter -= 10;
 
-  ASSERT_EQUAL(*iter, -2);
+  REQUIRE(*iter == -2);
 }
 DECLARE_UNITTEST(TestCountingIteratorIncrement);
 
@@ -128,24 +128,24 @@ void TestCountingIteratorComparison()
   thrust::counting_iterator<int> iter1(0);
   thrust::counting_iterator<int> iter2(0);
 
-  ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
+  REQUIRE(iter1 - iter2 == 0);
+  REQUIRE(iter1 == iter2);
 
   iter1++;
 
-  ASSERT_EQUAL(iter1 - iter2, 1);
-  ASSERT_EQUAL(iter1 == iter2, false);
+  REQUIRE(iter1 - iter2 == 1);
+  REQUIRE_FALSE(iter1 == iter2);
 
   iter2++;
 
-  ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
+  REQUIRE(iter1 - iter2 == 0);
+  REQUIRE(iter1 == iter2);
 
   iter1 += 100;
   iter2 += 100;
 
-  ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
+  REQUIRE(iter1 - iter2 == 0);
+  REQUIRE(iter1 == iter2);
 }
 DECLARE_UNITTEST(TestCountingIteratorComparison);
 
@@ -154,62 +154,62 @@ void TestCountingIteratorFloatComparison()
   thrust::counting_iterator<float> iter1(0);
   thrust::counting_iterator<float> iter2(0);
 
-  ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
-  ASSERT_EQUAL(iter1 < iter2, false);
-  ASSERT_EQUAL(iter2 < iter1, false);
+  REQUIRE(iter1 - iter2 == 0);
+  REQUIRE(iter1 == iter2);
+  REQUIRE_FALSE(iter1 < iter2);
+  REQUIRE_FALSE(iter2 < iter1);
 
   iter1++;
 
-  ASSERT_EQUAL(iter1 - iter2, 1);
-  ASSERT_EQUAL(iter1 == iter2, false);
-  ASSERT_EQUAL(iter2 < iter1, true);
-  ASSERT_EQUAL(iter1 < iter2, false);
+  REQUIRE(iter1 - iter2 == 1);
+  REQUIRE_FALSE(iter1 == iter2);
+  REQUIRE(iter2 < iter1);
+  REQUIRE_FALSE(iter1 < iter2);
 
   iter2++;
 
-  ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
-  ASSERT_EQUAL(iter1 < iter2, false);
-  ASSERT_EQUAL(iter2 < iter1, false);
+  REQUIRE(iter1 - iter2 == 0);
+  REQUIRE(iter1 == iter2);
+  REQUIRE_FALSE(iter1 < iter2);
+  REQUIRE_FALSE(iter2 < iter1);
 
   iter1 += 100;
   iter2 += 100;
 
-  ASSERT_EQUAL(iter1 - iter2, 0);
-  ASSERT_EQUAL(iter1 == iter2, true);
-  ASSERT_EQUAL(iter1 < iter2, false);
-  ASSERT_EQUAL(iter2 < iter1, false);
+  REQUIRE(iter1 - iter2 == 0);
+  REQUIRE(iter1 == iter2);
+  REQUIRE_FALSE(iter1 < iter2);
+  REQUIRE_FALSE(iter2 < iter1);
 
   thrust::counting_iterator<float> iter3(0);
   thrust::counting_iterator<float> iter4(0.5);
 
-  ASSERT_EQUAL(iter3 - iter4, 0);
-  ASSERT_EQUAL(iter3 == iter4, true);
-  ASSERT_EQUAL(iter3 < iter4, false);
-  ASSERT_EQUAL(iter4 < iter3, false);
+  REQUIRE(iter3 - iter4 == 0);
+  REQUIRE(iter3 == iter4);
+  REQUIRE_FALSE(iter3 < iter4);
+  REQUIRE_FALSE(iter4 < iter3);
 
   iter3++; // iter3 = 1.0, iter4 = 0.5
 
-  ASSERT_EQUAL(iter3 - iter4, 0);
-  ASSERT_EQUAL(iter3 == iter4, true);
-  ASSERT_EQUAL(iter3 < iter4, false);
-  ASSERT_EQUAL(iter4 < iter3, false);
+  REQUIRE(iter3 - iter4 == 0);
+  REQUIRE(iter3 == iter4);
+  REQUIRE_FALSE(iter3 < iter4);
+  REQUIRE_FALSE(iter4 < iter3);
 
   iter4++; // iter3 = 1.0, iter4 = 1.5
 
-  ASSERT_EQUAL(iter3 - iter4, 0);
-  ASSERT_EQUAL(iter3 == iter4, true);
-  ASSERT_EQUAL(iter3 < iter4, false);
-  ASSERT_EQUAL(iter4 < iter3, false);
+  REQUIRE(iter3 - iter4 == 0);
+  REQUIRE(iter3 == iter4);
+  REQUIRE_FALSE(iter3 < iter4);
+  REQUIRE_FALSE(iter4 < iter3);
 
   iter4++; // iter3 = 1.0, iter4 = 2.5
 
-  ASSERT_EQUAL(iter3 - iter4, -1);
-  ASSERT_EQUAL(iter4 - iter3, 1);
-  ASSERT_EQUAL(iter3 == iter4, false);
-  ASSERT_EQUAL(iter3 < iter4, true);
-  ASSERT_EQUAL(iter4 < iter3, false);
+  REQUIRE(iter3 - iter4 == -1);
+  REQUIRE(iter4 - iter3 == 1);
+  REQUIRE_FALSE(iter3 == iter4);
+  REQUIRE(iter3 < iter4);
+  REQUIRE_FALSE(iter4 < iter3);
 }
 DECLARE_UNITTEST(TestCountingIteratorFloatComparison);
 
@@ -218,34 +218,34 @@ void TestCountingIteratorDistance()
   thrust::counting_iterator<int> iter1(0);
   thrust::counting_iterator<int> iter2(5);
 
-  ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 5);
+  REQUIRE(::cuda::std::distance(iter1, iter2) == 5);
 
   iter1++;
 
-  ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 4);
+  REQUIRE(::cuda::std::distance(iter1, iter2) == 4);
 
   iter2 += 100;
 
-  ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 104);
+  REQUIRE(::cuda::std::distance(iter1, iter2) == 104);
 }
 DECLARE_UNITTEST(TestCountingIteratorDistance);
 
 void TestCountingIteratorUnsignedType()
 {
-  thrust::counting_iterator<unsigned int> iter0(0);
-  thrust::counting_iterator<unsigned int> iter1(5);
+  const thrust::counting_iterator<unsigned int> iter0(0);
+  const thrust::counting_iterator<unsigned int> iter1(5);
 
-  ASSERT_EQUAL(iter1 - iter0, 5);
-  ASSERT_EQUAL(iter0 - iter1, -5);
-  ASSERT_EQUAL(iter0 != iter1, true);
-  ASSERT_EQUAL(iter0 < iter1, true);
-  ASSERT_EQUAL(iter1 < iter0, false);
+  REQUIRE(iter1 - iter0 == 5);
+  REQUIRE(iter0 - iter1 == -5);
+  REQUIRE(iter0 != iter1);
+  REQUIRE(iter0 < iter1);
+  REQUIRE_FALSE(iter1 < iter0);
 }
 DECLARE_UNITTEST(TestCountingIteratorUnsignedType);
 
 void TestCountingIteratorLowerBound()
 {
-  size_t n       = 10000;
+  const size_t n = 10000;
   const size_t M = 100;
 
   thrust::host_vector<unsigned int> h_data = unittest::random_integers<unsigned int>(n);
@@ -258,8 +258,8 @@ void TestCountingIteratorLowerBound()
 
   thrust::device_vector<unsigned int> d_data = h_data;
 
-  thrust::counting_iterator<unsigned int> search_begin(0);
-  thrust::counting_iterator<unsigned int> search_end(M);
+  const thrust::counting_iterator<unsigned int> search_begin(0);
+  const thrust::counting_iterator<unsigned int> search_end(M);
 
   thrust::host_vector<unsigned int> h_result(M);
   thrust::device_vector<unsigned int> d_result(M);
@@ -268,7 +268,7 @@ void TestCountingIteratorLowerBound()
 
   thrust::lower_bound(d_data.begin(), d_data.end(), search_begin, search_end, d_result.begin());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_UNITTEST(TestCountingIteratorLowerBound);
 
@@ -277,12 +277,12 @@ void TestCountingIteratorDifference()
   using Iterator   = thrust::counting_iterator<std::uint64_t>;
   using Difference = thrust::detail::it_difference_t<Iterator>;
 
-  Difference diff = std::numeric_limits<std::uint32_t>::max() + 1;
+  const Difference diff = std::numeric_limits<std::uint32_t>::max() + 1; // NOLINT(bugprone-misplaced-widening-cast)
 
-  Iterator first(0);
-  Iterator last = first + diff;
+  const Iterator first(0);
+  const Iterator last = first + diff;
 
-  ASSERT_EQUAL(diff, last - first);
+  REQUIRE(diff == last - first);
 }
 DECLARE_UNITTEST(TestCountingIteratorDifference);
 
@@ -291,16 +291,16 @@ void TestCountingIteratorDynamicStride()
   auto iter = thrust::make_counting_iterator(0, 2);
   static_assert(sizeof(iter) == 2 * sizeof(int));
 
-  ASSERT_EQUAL(*iter, 0);
+  REQUIRE(*iter == 0);
   iter++;
-  ASSERT_EQUAL(*iter, 2);
+  REQUIRE(*iter == 2);
   iter++;
   iter++;
-  ASSERT_EQUAL(*iter, 6);
+  REQUIRE(*iter == 6);
   iter += 5;
-  ASSERT_EQUAL(*iter, 16);
+  REQUIRE(*iter == 16);
   iter -= 10;
-  ASSERT_EQUAL(*iter, -4);
+  REQUIRE(*iter == -4);
 }
 DECLARE_UNITTEST(TestCountingIteratorDynamicStride);
 
@@ -309,16 +309,16 @@ void TestCountingIteratorStaticStride()
   auto iter = thrust::make_counting_iterator<2>(0);
   static_assert(sizeof(decltype(iter)) == sizeof(int));
 
-  ASSERT_EQUAL(*iter, 0);
+  REQUIRE(*iter == 0);
   iter++;
-  ASSERT_EQUAL(*iter, 2);
+  REQUIRE(*iter == 2);
   iter++;
   iter++;
-  ASSERT_EQUAL(*iter, 6);
+  REQUIRE(*iter == 6);
   iter += 5;
-  ASSERT_EQUAL(*iter, 16);
+  REQUIRE(*iter == 16);
   iter -= 10;
-  ASSERT_EQUAL(*iter, -4);
+  REQUIRE(*iter == -4);
 }
 DECLARE_UNITTEST(TestCountingIteratorStaticStride);
 
@@ -329,21 +329,21 @@ void TestCountingIteratorPointer()
 
   auto iter = thrust::make_counting_iterator(&arr[2]);
 
-  ASSERT_EQUAL(*iter, &arr[2]);
-  ASSERT_EQUAL(**iter, 2);
+  REQUIRE(*iter == &arr[2]);
+  REQUIRE(**iter == 2);
   iter++;
-  ASSERT_EQUAL(*iter, &arr[3]);
-  ASSERT_EQUAL(**iter, 3);
+  REQUIRE(*iter == &arr[3]);
+  REQUIRE(**iter == 3);
   iter++;
   iter++;
-  ASSERT_EQUAL(*iter, &arr[5]);
-  ASSERT_EQUAL(**iter, 5);
+  REQUIRE(*iter == &arr[5]);
+  REQUIRE(**iter == 5);
   iter += 5;
-  ASSERT_EQUAL(*iter, &arr[10]);
-  ASSERT_EQUAL(**iter, 10);
+  REQUIRE(*iter == &arr[10]);
+  REQUIRE(**iter == 10);
   iter -= 10;
-  ASSERT_EQUAL(*iter, &arr[0]);
-  ASSERT_EQUAL(**iter, 0);
+  REQUIRE(*iter == &arr[0]);
+  REQUIRE(**iter == 0);
 }
 DECLARE_UNITTEST(TestCountingIteratorPointer);
 
@@ -353,9 +353,9 @@ _CCCL_DIAG_POP
 // MSVC C4244 (implicit float-to-integer conversion) without suppression.
 void TestCountingIteratorFloatDistanceTo()
 {
-  thrust::counting_iterator<float> iter1(0);
-  thrust::counting_iterator<float> iter2(5);
+  const thrust::counting_iterator<float> iter1(0);
+  const thrust::counting_iterator<float> iter2(5);
 
-  ASSERT_EQUAL(iter2 - iter1, 5);
+  REQUIRE(iter2 - iter1 == 5);
 }
 DECLARE_UNITTEST(TestCountingIteratorFloatDistanceTo);

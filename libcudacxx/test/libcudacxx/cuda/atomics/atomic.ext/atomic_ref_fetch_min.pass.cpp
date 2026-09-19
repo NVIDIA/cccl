@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/atomic>
 
@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class T, template <typename, typename> class Selector>
-TEST_FUNC void test_arithmetic()
+TEST_HOST_DEVICE_FUNC void test_arithmetic()
 {
   using A = cuda::atomic_ref<T>;
   {
@@ -42,7 +42,7 @@ TEST_FUNC void test_arithmetic()
 }
 
 template <class T, template <typename, typename> class Selector>
-TEST_FUNC void test_pointer()
+TEST_HOST_DEVICE_FUNC void test_pointer()
 {
   using X = cuda::std::remove_pointer_t<T>;
   using A = cuda::atomic_ref<T>;
@@ -63,7 +63,7 @@ TEST_FUNC void test_pointer()
 }
 
 template <template <typename, typename> class Selector>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_arithmetic<int, Selector>();
   test_arithmetic<unsigned int, Selector>();

@@ -7,15 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// gcc-10 segfaults with any use of constant_wrapper, gcc-11 fails to evaluate:
-//   typename decltype(__cw_fixed_value(_Xp))::type
-// UNSUPPORTED: gcc-10 || gcc-11
+// todo(dabayer): Enable constant_wrapper for msvc.
+// UNSUPPORTED: msvc
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
-
-// REQUIRES: !c++17
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -25,8 +22,6 @@
 #include <cuda/std/utility>
 
 #include "test_macros.h"
-
-TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
 
 struct S
 {
@@ -43,43 +38,32 @@ TEST_FUNC constexpr bool test()
 {
   {
     // int conversion
-    cuda::std::__constant_wrapper<6> cw6;
-    const int& result = cw6;
+    cuda::std::__constant_wrapper<6> cw6{};
+    int result = cw6;
     assert(result == 6);
-    assert(&result == &cw6.value);
 
-    static_assert(noexcept(static_cast<const int&>(cw6)));
+    static_assert(noexcept(static_cast<int>(cw6)));
   }
 
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
   {
     // struct conversion
     constexpr S s{42};
     cuda::std::__constant_wrapper<s> cws;
     const S& result = cws;
     assert(result.value == 42);
-    assert(&result == &cws.value);
+    assert(&result == &cws.__get());
 
     static_assert(noexcept(static_cast<const S&>(cws)));
   }
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
-  {
-    // array conversion
-    constexpr int arr[] = {1, 2, 3};
-    cuda::std::__constant_wrapper<arr> cwArr;
-    const int (&result)[3] = cwArr;
-    assert(result[0] == 1);
-    assert(result[1] == 2);
-    assert(result[2] == 3);
-    assert(&result == &cwArr.value);
-
-    static_assert(noexcept(static_cast<const int (&)[3]>(cwArr)));
-  }
-
+#if !_CCCL_TILE_COMPILATION() // error: indirect call is unsupported in tile code
   {
     // gcc < 13 fails this test with:
-    //   ‘test()::<lambda(int)>::_FUN’ is not a valid template argument of type ‘int (*)(int)’ because it is not
+    //   'test()::<lambda(int)>::_FUN' is not a valid template argument of type 'int (*)(int)' because it is not
     //   a variable
-#if !_CCCL_COMPILER(GCC, <, 13)
+#  if !_CCCL_COMPILER(GCC, <, 13)
     // function pointer conversion
     constexpr int (*fptr)(int) = [](int x) constexpr {
       return x * 2;
@@ -88,23 +72,26 @@ TEST_FUNC constexpr bool test()
     int (*result)(int) = cwFptr;
     assert(result(5) == 10);
 
-    // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
-#  if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3)
+    // nvcc fails to produce correct input file for host compiler. NVHPC fails, too. See nvbug 6249821.
+#    if (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_HOST_COMPILATION()) || _CCCL_COMPILER(NVHPC)
     static_assert(noexcept(static_cast<int (*)(int)>(decltype(cwFptr)::value)));
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) vvv
+#    else // ^^^ (nvcc && host compilation) || nvhpc ^^^ / vvv !((nvcc && host compilation) || nvhpc) vvv
     static_assert(noexcept(static_cast<int (*)(int)>(cwFptr)));
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
-#endif // !_CCCL_COMPILER(GCC, <, 13)
+#    endif // ^^^ !((nvcc && host compilation) || nvhpc) ^^^
+#  endif // !_CCCL_COMPILER(GCC, <, 13)
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
+// nvcc < 13.3 fails to generate correct input file for host compiler.
+#  if !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
   {
-    // nvcc < 13.2 fails to evaluate the call properly.
-#if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
     // conversion is implicit
     cuda::std::__constant_wrapper<S{42}> cws;
     f1(cws);
-#endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
   }
+#  endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   return true;
 }

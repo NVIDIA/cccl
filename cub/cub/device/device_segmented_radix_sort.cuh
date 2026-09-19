@@ -10,6 +10,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_segmented_radix_sort.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -55,6 +62,25 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! @cdp_class{DeviceSegmentedRadixSort}
+//!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceSegmentedRadixSort that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SegmentedRadixSortPolicy`, as shown
+//! in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-radix-sort-policy-selector
+//!      :end-before: example-end segmented-radix-sort-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-radix-sort-keys-tuning
+//!      :end-before: example-end segmented-radix-sort-keys-tuning
 //!
 //! @endrst
 struct DeviceSegmentedRadixSort
@@ -153,8 +179,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -339,8 +364,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -540,9 +564,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -693,9 +717,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -806,8 +830,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -997,8 +1020,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1198,9 +1220,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1351,9 +1373,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1460,8 +1482,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage.
-  //!   When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1632,9 +1653,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1821,9 +1840,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1961,9 +1980,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -2071,8 +2090,7 @@ public:
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2242,8 +2260,7 @@ public:
   //!   ending offsets @iterator
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2427,9 +2444,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -2567,9 +2584,9 @@ public:
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8,
-    EnvT env      = {})
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 

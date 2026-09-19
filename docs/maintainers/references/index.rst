@@ -8,3 +8,4 @@ Reference documentation for maintainers.
 
    ../branching_strategy
    ../coderabbit
+   compile_time

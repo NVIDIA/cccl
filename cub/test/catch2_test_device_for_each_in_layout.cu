@@ -13,7 +13,7 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 
@@ -54,18 +54,21 @@ template <bool IsLayoutRight, typename T, typename IndexType, size_t... Extents>
 static void fill_linear([[maybe_unused]] c2h::host_vector<T>& vector,
                         [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext)
 {
-  [[maybe_unused]] size_t pos = 0;
   if constexpr (sizeof...(Extents) == 0)
   {
     return;
   }
-  else if constexpr (IsLayoutRight)
-  {
-    fill_linear_impl<IsLayoutRight, 0>(vector, ext, pos);
-  }
   else
   {
-    fill_linear_impl<IsLayoutRight, (sizeof...(Extents) - 1)>(vector, ext, pos);
+    size_t pos = 0;
+    if constexpr (IsLayoutRight)
+    {
+      fill_linear_impl<IsLayoutRight, 0>(vector, ext, pos);
+    }
+    else
+    {
+      fill_linear_impl<IsLayoutRight, (sizeof...(Extents) - 1)>(vector, ext, pos);
+    }
   }
 }
 
@@ -136,7 +139,8 @@ auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
   return {};
 }
 
-C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]", index_types, dimensions, layouts)
+CUB_TEST(
+  "DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]", CUB_SMALL, index_types, dimensions, layouts)
 {
   using index_type    = c2h::get<0, TestType>;
   using dims          = c2h::get<1, TestType>;
@@ -153,17 +157,17 @@ C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]
   CAPTURE(c2h::type_name<index_type>(), c2h::type_name<dims>(), c2h::type_name<layout_t>());
 
   device_for_each_in_layout(mapping_t{ext}, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
-  constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
+  constexpr bool is_layout_right              = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
-// MSVC error: C3546: '...': there are no parameter packs available to expand in
-//             make_tuple_types.h:__make_tuple_types_flat
-#if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output_expected == h_output_gpu);
-#endif // !_CCCL_COMPILER(MSVC)
 }
 
-C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][device]", index_types_dynamic, layouts)
+CUB_TEST("DeviceFor::ForEachInLayout 3D dynamic",
+         "[ForEachInLayout][dynamic][device]",
+         CUB_SMALL,
+         index_types_dynamic,
+         layouts)
 {
   [[maybe_unused]] constexpr int rank = 3;
   using index_type                    = c2h::get<0, TestType>;
@@ -175,15 +179,15 @@ C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][de
   auto X                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Y                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Z                              = GENERATE_COPY(take(3, random(2, 10)));
-  ext_t ext{X, Y, Z};
+  const ext_t ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{1});
   c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{2});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
   device_for_each_in_layout(mapping_t{ext}, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
-  constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
+  constexpr bool is_layout_right              = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
 
 #if !_CCCL_COMPILER(MSVC)
@@ -205,7 +209,7 @@ struct incrementer_t
   }
 };
 
-C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_duplicates][device]", layouts)
+CUB_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_duplicates][device]", CUB_SMALL, layouts)
 {
   constexpr int min_items = 1;
   constexpr int max_items = 5000000;

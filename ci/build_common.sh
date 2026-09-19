@@ -20,6 +20,7 @@ GLOBAL_CMAKE_OPTIONS=()
 DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
 PEDANTIC=${PEDANTIC:-} # Enable strict warnings. Default: on in CI, off locally.
 CONFIGURE_ONLY=false
+CTEST_PARALLEL_LEVEL=1
 
 # Check if the correct number of arguments has been provided
 function usage {
@@ -34,6 +35,8 @@ function usage {
     echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
+    echo "  -enable-tile: Enable tile support"
+    echo "  --test-par: CTest parallel level (Defaults to 1)"
     echo "  -pedantic/--pedantic: Enable strict warnings-as-errors and expose CCCL header warnings (default in CI)"
     echo "  -cmake-options: Additional options to pass to CMake"
     echo
@@ -52,7 +55,7 @@ function check_required_dependencies() {
     local missing_deps=()
 
     # Check for essential tools
-    local required_tools=("cmake" "git" "ninja" "nproc")
+    local required_tools=("cmake" "git" "jq" "ninja" "nproc")
     for tool in "${required_tools[@]}"; do
         command -v "$tool" &>/dev/null || missing_deps+=("$tool")
     done
@@ -78,6 +81,8 @@ while [[ "${#args[@]}" -ne 0 ]]; do
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
+    -enable-tile) GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_TILE=ON"); args=("${args[@]:1}");;
+    --test-par) CTEST_PARALLEL_LEVEL="${args[1]}"; args=("${args[@]:2}");;
     -pedantic | --pedantic) PEDANTIC=1; args=("${args[@]:1}");;
     -disable-benchmarks) export DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
@@ -154,11 +159,14 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all --ignore=1)}
+N_CPUS="$(nproc --all --ignore=1)"
+readonly N_CPUS
+readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
 fi
+export CCCL_BUILD_INFIX
 
 mkdir -p ../build
 # Absolute path to cccl/build
@@ -185,8 +193,9 @@ function symlink_latest_preset {
 BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
 # Prepare environment for CMake:
-export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
-export CTEST_PARALLEL_LEVEL="1"
+export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS ? N_CPUS : PARALLEL_LEVEL))"
+
+export CTEST_PARALLEL_LEVEL
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
@@ -364,7 +373,7 @@ function configure_preset()
       export RUN_COMMAND_RETRY_PARAMS=(5 30)
     fi
     status=0
-    run_command "$GROUP_NAME" cmake --preset="$PRESET" --log-level=VERBOSE "${CMAKE_OPTIONS[@]}" "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
+    SCCACHE_NO_DIST_COMPILE=1 run_command "$GROUP_NAME" cmake --preset="$PRESET" --log-level=VERBOSE "${CMAKE_OPTIONS[@]}" "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         unset RUN_COMMAND_RETRY_PARAMS
     fi
@@ -417,7 +426,7 @@ function build_preset() {
 
     pushd .. > /dev/null
     status=0
-    run_ci_timed_command "$GROUP_NAME" cmake --build --preset="$PRESET" -v "${BUILD_COMMANDS[@]}" || status=$?
+    run_ci_timed_command "$GROUP_NAME" cmake --build --parallel "$PARALLEL_LEVEL" --preset="$PRESET" ${VERBOSE:+-v} "${BUILD_COMMANDS[@]}" || status=$?
     popd > /dev/null
 
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
@@ -472,7 +481,7 @@ function test_preset()
 
     pushd .. > /dev/null
     status=0
-    run_ci_timed_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset="$PRESET" || status=$?
+    run_ci_timed_command "$GROUP_NAME" ctest --output-on-failure --output-log "${ctest_log}" --preset="$PRESET" || status=$?
     popd > /dev/null
 
     print_test_time_summary "${ctest_log}"

@@ -35,9 +35,11 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
 //! @param ComputeT If void, use NOMINAL_4B_NUM_PARTS directly for NUM_PARTS. Otherwise, perform scaling.
 template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
-struct AgentRadixSortHistogramPolicy
+struct agent_radix_sort_histogram_policy
 {
   static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
@@ -67,11 +69,22 @@ struct AgentRadixSortHistogramPolicy
 };
 
 template <int ThreadsPerBlock, int RadixBits>
-struct AgentRadixSortExclusiveSumPolicy
+struct agent_radix_sort_exclusive_sum_policy
 {
   static constexpr int BLOCK_THREADS = ThreadsPerBlock;
   static constexpr int RADIX_BITS    = RadixBits;
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
+using AgentRadixSortHistogramPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") =
+  detail::agent_radix_sort_histogram_policy<ThreadsPerBlock, ItemsPerThread, NOMINAL_4B_NUM_PARTS, ComputeT, RadixBits>;
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock, int RadixBits>
+using AgentRadixSortExclusiveSumPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") =
+  detail::agent_radix_sort_exclusive_sum_policy<ThreadsPerBlock, RadixBits>;
 
 namespace detail::radix_sort
 {
@@ -153,7 +166,7 @@ struct AgentRadixSortHistogram
   {
     // Initialize bins to 0.
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
@@ -171,7 +184,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
     // tile_offset < num_items always, hence the line below works
-    bool full_tile = num_items - tile_offset >= TILE_ITEMS;
+    const bool full_tile = num_items - tile_offset >= TILE_ITEMS;
     if (full_tile)
     {
       LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, keys);
@@ -192,7 +205,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AccumulateSharedHistograms(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
-    int part = ::cuda::ptx::get_sreg_laneid() % NUM_PARTS;
+    const int part = ::cuda::ptx::get_sreg_laneid() % NUM_PARTS;
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
@@ -202,7 +215,7 @@ struct AgentRadixSortHistogram
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < ITEMS_PER_THREAD; ++u)
       {
-        uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
+        const uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
         // Using cuda::atomic<> results in lower performance on GP100,
         // so atomicAdd() is used instead.
         atomicAdd(&s.bins[pass][bin][part], 1);
@@ -213,7 +226,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
@@ -234,6 +247,7 @@ struct AgentRadixSortHistogram
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     // Within a portion, avoid overflowing (u)int32 counters.
     // Between portions, accumulate results in global memory.
     constexpr OffsetT MAX_PORTION_SIZE = 1 << 30;
@@ -242,12 +256,12 @@ struct AgentRadixSortHistogram
     {
       // Reset the counters.
       Init();
-      __syncthreads();
 
       // Process the tiles.
       OffsetT portion_offset = portion * MAX_PORTION_SIZE;
       OffsetT portion_size   = ::cuda::std::min(MAX_PORTION_SIZE, num_items - portion_offset);
-      for (OffsetT offset = blockIdx.x * TILE_ITEMS; offset < portion_size; offset += TILE_ITEMS * gridDim.x)
+      for (OffsetT offset = static_cast<OffsetT>(blockIdx.x) * TILE_ITEMS; offset < portion_size;
+           offset += OffsetT{TILE_ITEMS} * gridDim.x)
       {
         OffsetT tile_offset = portion_offset + offset;
         bit_ordered_type keys[ITEMS_PER_THREAD];
@@ -257,6 +271,8 @@ struct AgentRadixSortHistogram
       __syncthreads();
 
       // Accumulate the result in global memory.
+      // Wait for global histogram init
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       AccumulateGlobalHistograms();
       __syncthreads();
     }

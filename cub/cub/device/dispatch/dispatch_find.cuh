@@ -21,6 +21,7 @@
 
 #include <cub/agent/agent_find.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_find.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
@@ -55,7 +56,7 @@ template <typename PolicySelector, typename IteratorT, typename OffsetT, typenam
 __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) _CCCL_KERNEL_ATTRIBUTES void find_kernel(
   IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
 {
-  constexpr find_policy policy = current_policy<PolicySelector>();
+  constexpr FindIfPolicy policy = current_policy<PolicySelector>();
   using agent_find_t =
     agent_t<policy.threads_per_block,
             policy.items_per_thread,
@@ -112,7 +113,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const find_policy active_policy = policy_selector(cc);
+  const FindIfPolicy active_policy = policy_selector(cc);
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
@@ -123,6 +124,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceFind", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
@@ -155,8 +158,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   const int findif_grid_size = ::cuda::std::min(num_tiles, max_blocks);
 
   // Temporary storage allocation requirements
-  void* allocations[1]       = {};
-  size_t allocation_sizes[1] = {sizeof(OffsetT)};
+  void* allocations[1]             = {};
+  const size_t allocation_sizes[1] = {sizeof(OffsetT)};
   if (const auto error =
         CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
@@ -168,7 +171,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return cudaSuccess;
   }
 
-  OffsetT* found_pos_ptr = [&] {
+  OffsetT* found_pos_ptr = [&] { // NOLINT(misc-const-correctness)
     if constexpr (can_write_to_output_directly)
     {
       return reinterpret_cast<OffsetT*>(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out));

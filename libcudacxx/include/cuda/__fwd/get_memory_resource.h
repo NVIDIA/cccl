@@ -27,7 +27,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
-struct __get_memory_resource_t;
+struct get_memory_resource_t;
 
 _CCCL_END_NAMESPACE_CUDA_MR
 

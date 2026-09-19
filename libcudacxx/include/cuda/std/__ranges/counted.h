@@ -68,9 +68,9 @@ struct __fn
 
   _CCCL_TEMPLATE(class _It, class _Diff)
   _CCCL_REQUIRES(convertible_to<_Diff, iter_difference_t<_It>> _CCCL_AND input_or_output_iterator<decay_t<_It>>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_It&& __it, _Diff&& __count) const
-    noexcept(noexcept(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count))))
-      -> decltype(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_It&& __it, _Diff&& __count) noexcept(
+    noexcept(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count))))
+    -> decltype(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count)))
   {
     return __go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count));
   }

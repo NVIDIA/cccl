@@ -224,7 +224,7 @@ __dtor<__traits<_Types...>, _Trait::_Available> : public __base<_Trait::_Availab
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Alt>
-    _CCCL_API void operator()(_Alt& __alt) const noexcept
+    _CCCL_API void _CCCL_STATIC_CALL_OPERATOR(_Alt& __alt) noexcept
     {
       using __alt_type = remove_cvref_t<decltype(__alt)>;
       __alt.~__alt_type();

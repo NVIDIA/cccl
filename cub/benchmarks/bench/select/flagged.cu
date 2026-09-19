@@ -17,20 +17,22 @@
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
+// %RANGE% TUNE_PREFETCH pf 0:3:1
 
 #if !TUNE_BASE
 template <typename InputT>
 struct bench_policy_selector
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::select::select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SelectPolicy
   {
-    return {TUNE_THREADS_PER_BLOCK,
-            TUNE_ITEMS_PER_THREAD,
-            (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
-            (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
-            cub::BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy};
+    return {cub::SelectAlgorithm::lookback,
+            {TUNE_THREADS_PER_BLOCK,
+             TUNE_ITEMS_PER_THREAD,
+             (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
+             (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
+             cub::BLOCK_SCAN_WARP_SCANS,
+             lookback_delay_policy,
+             static_cast<cub::detail::LoadPrefetch>(TUNE_PREFETCH)}};
   }
 };
 #endif // !TUNE_BASE
@@ -55,7 +57,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
   thrust::device_vector<T> out(selected_elements, thrust::no_init);
 
   T* d_in                  = thrust::raw_pointer_cast(in.data());
-  T* d_out                 = thrust::raw_pointer_cast(out.data());
+  T* d_out                 = thrust::raw_pointer_cast(out.data()); // NOLINT(misc-const-correctness)
   const bool* d_flags      = thrust::raw_pointer_cast(flags.data());
   offset_t* d_num_selected = thrust::raw_pointer_cast(num_selected.data());
 
@@ -77,7 +79,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
     );
     if constexpr (InPlace::value)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Flagged,
         "DeviceSelect::Flagged failed",
         d_in,
@@ -88,7 +90,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
     }
     else
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Flagged,
         "DeviceSelect::Flagged failed",
         static_cast<const T*>(d_in),

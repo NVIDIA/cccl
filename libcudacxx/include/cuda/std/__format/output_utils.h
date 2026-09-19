@@ -23,7 +23,9 @@
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/fill_n.h>
 #include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
@@ -33,26 +35,30 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr char __fmt_hex_to_upper(char __c) noexcept
+// Needs to be a functor for tile mode
+struct __fmt_hex_to_upper
 {
-  switch (__c)
+  [[nodiscard]] _CCCL_API constexpr char _CCCL_STATIC_CALL_OPERATOR(char __c) noexcept
   {
-    case 'a':
-      return 'A';
-    case 'b':
-      return 'B';
-    case 'c':
-      return 'C';
-    case 'd':
-      return 'D';
-    case 'e':
-      return 'E';
-    case 'f':
-      return 'F';
-    default:
-      return __c;
+    switch (__c)
+    {
+      case 'a':
+        return 'A';
+      case 'b':
+        return 'B';
+      case 'c':
+        return 'C';
+      case 'd':
+        return 'D';
+      case 'e':
+        return 'E';
+      case 'f':
+        return 'F';
+      default:
+        return __c;
+    }
   }
-}
+};
 
 struct __fmt_padding_size_result
 {
@@ -100,12 +106,20 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 
 //! Copy wrapper.
 //!
-//! This uses a "mass output function" of __format::__output_buffer when possible.
+//! This uses a "mass output function" of __fmt_output_buffer when possible.
 template <class _CharT, class _OutCharT = _CharT, class _OutIt>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_copy(basic_string_view<_CharT> __str, _OutIt __out_it)
 {
-  // todo: handle __fmt_output_buffer and __fmt_retarget_buffer when they are implemented
-  return ::cuda::std::copy(__str.begin(), __str.end(), ::cuda::std::move(__out_it));
+  // todo: handle __fmt_retarget_buffer once implemented
+  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
+  {
+    __out_it.__get_container()->__copy(__str);
+    return __out_it;
+  }
+  else
+  {
+    return ::cuda::std::copy(__str.begin(), __str.end(), ::cuda::std::move(__out_it));
+  }
 }
 
 template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT, class _OutIt>
@@ -120,25 +134,58 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
   return ::cuda::std::__fmt_copy(basic_string_view{::cuda::std::to_address(__first), __n}, ::cuda::std::move(__out_it));
 }
 
+// Needed to ensure the tile compiler does break trying to
+template <class _UnaryOp>
+struct __transform_wrapper
+{
+  _UnaryOp& __op_;
+
+  _CCCL_API constexpr __transform_wrapper(_UnaryOp& __op) noexcept
+      : __op_(__op)
+  {}
+
+  template <class _Arg>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Arg&& __arg) const noexcept
+  {
+    return ::cuda::std::invoke(__op_, ::cuda::std::forward<_Arg>(__arg));
+  }
+};
+
 //! Transform wrapper.
 //!
-//! This uses a "mass output function" of __format::__output_buffer when possible.
+//! This uses a "mass output function" of __fmt_output_buffer when possible.
 template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT, class _OutIt, class _UnaryOp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt
 __fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
 {
-  // todo: handle __fmt_output_buffer and __fmt_retarget_buffer when they are implemented
-  return ::cuda::std::transform(__first, __last, ::cuda::std::move(__out_it), __operation);
+  // todo: handle __fmt_retarget_buffer once implemented
+  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_OutCharT>>>)
+  {
+    __out_it.__get_container()->__transform(__first, __last, ::cuda::std::move(__operation));
+    return __out_it;
+  }
+  else
+  {
+    return ::cuda::std::transform(__first, __last, ::cuda::std::move(__out_it), __transform_wrapper{__operation});
+  }
 }
 
 //! Fill wrapper.
 //!
-//! This uses a "mass output function" of __format::__output_buffer when possible.
+//! This uses a "mass output function" of __fmt_output_buffer when possible.
 template <class _CharT, class _OutIt>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _OutIt __fmt_fill(_OutIt __out_it, size_t __n, _CharT __value)
 {
-  // todo: handle __fmt_output_buffer and __fmt_retarget_buffer when they are implemented
-  return ::cuda::std::fill_n(::cuda::std::move(__out_it), __n, __value);
+  // todo: handle __fmt_retarget_buffer once implemented
+  if constexpr (same_as<decltype(__out_it), __back_insert_iterator<__fmt_output_buffer<_CharT>>>)
+  {
+    __out_it.__get_container()->__fill(__n, __value);
+    return __out_it;
+  }
+  else
+  {
+    return ::cuda::std::fill_n(::cuda::std::move(__out_it), __n, __value);
+  }
 }
 
 template <class _CharT, class _OutIt>

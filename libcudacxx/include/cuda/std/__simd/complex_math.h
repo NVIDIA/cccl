@@ -44,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 struct __fn_real
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return __z.real();
   }
@@ -53,7 +53,7 @@ struct __fn_real
 struct __fn_imag
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return __z.imag();
   }
@@ -62,7 +62,7 @@ struct __fn_imag
 struct __fn_abs
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::abs(__z);
   }
@@ -71,7 +71,7 @@ struct __fn_abs
 struct __fn_arg
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::arg(__z);
   }
@@ -80,7 +80,7 @@ struct __fn_arg
 struct __fn_norm
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::norm(__z);
   }
@@ -89,7 +89,7 @@ struct __fn_norm
 struct __fn_conj
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::conj(__z);
   }
@@ -98,7 +98,7 @@ struct __fn_conj
 struct __fn_proj
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::proj(__z);
   }
@@ -107,7 +107,7 @@ struct __fn_proj
 struct __fn_exp
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::exp(__z);
   }
@@ -116,7 +116,7 @@ struct __fn_exp
 struct __fn_log
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::log(__z);
   }
@@ -125,7 +125,7 @@ struct __fn_log
 struct __fn_log10
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::log10(__z);
   }
@@ -134,7 +134,7 @@ struct __fn_log10
 struct __fn_sqrt
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::sqrt(__z);
   }
@@ -143,7 +143,7 @@ struct __fn_sqrt
 struct __fn_sin
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::sin(__z);
   }
@@ -152,7 +152,7 @@ struct __fn_sin
 struct __fn_asin
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::asin(__z);
   }
@@ -161,7 +161,7 @@ struct __fn_asin
 struct __fn_cos
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::cos(__z);
   }
@@ -170,7 +170,7 @@ struct __fn_cos
 struct __fn_acos
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::acos(__z);
   }
@@ -179,7 +179,7 @@ struct __fn_acos
 struct __fn_tan
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::tan(__z);
   }
@@ -188,7 +188,7 @@ struct __fn_tan
 struct __fn_atan
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::atan(__z);
   }
@@ -197,7 +197,7 @@ struct __fn_atan
 struct __fn_sinh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::sinh(__z);
   }
@@ -206,7 +206,7 @@ struct __fn_sinh
 struct __fn_asinh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::asinh(__z);
   }
@@ -215,7 +215,7 @@ struct __fn_asinh
 struct __fn_cosh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::cosh(__z);
   }
@@ -224,7 +224,7 @@ struct __fn_cosh
 struct __fn_acosh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::acosh(__z);
   }
@@ -233,7 +233,7 @@ struct __fn_acosh
 struct __fn_tanh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::tanh(__z);
   }
@@ -242,7 +242,7 @@ struct __fn_tanh
 struct __fn_atanh
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __z) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __z) noexcept
   {
     return ::cuda::std::atanh(__z);
   }
@@ -480,7 +480,7 @@ _CCCL_REQUIRES(__is_complex_vectorizable_v<_Tp>)
 struct __fn_polar_binary
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __rho, const _Tp& __theta) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __rho, const _Tp& __theta)
   {
     return ::cuda::std::polar(__rho, __theta);
   }
@@ -489,7 +489,7 @@ struct __fn_polar_binary
 struct __fn_pow_binary
 {
   template <typename _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Tp& __x, const _Tp& __y) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Tp& __x, const _Tp& __y)
   {
     return ::cuda::std::pow(__x, __y);
   }

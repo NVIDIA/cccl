@@ -67,11 +67,15 @@ void print_peer_accessibility()
     {
       if (dev_i != dev_j)
       {
-        bool can_access_peer = dev_i.has_peer_access_to(dev_j);
-        printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
-               dev_i.name().data(),
+        const bool can_access_peer = dev_i.has_peer_access_to(dev_j);
+        const auto dev_i_name      = dev_i.name();
+        const auto dev_j_name      = dev_j.name();
+        printf("> Peer access from %.*s (GPU%d) -> %.*s (GPU%d) : %s\n",
+               static_cast<int>(dev_i_name.size()),
+               dev_i_name.data(),
                dev_i.get(),
-               dev_j.name().data(),
+               static_cast<int>(dev_j_name.size()),
+               dev_j_name.data(),
                dev_j.get(),
                can_access_peer ? "Yes" : "No");
       }
@@ -101,19 +105,20 @@ void benchmark_cross_device_ping_pong_copy(
 
   auto end_event = dev1_stream.record_timed_event();
   dev1_stream.sync();
-  cuda::std::chrono::duration<double> duration(end_event - start_event);
+  const cuda::std::chrono::duration<double> duration(end_event - start_event);
   printf("Peer copy between GPU%d and GPU%d: %.2fGB/s\n",
          dev0_stream.device().get(),
          dev1_stream.device().get(),
-         (static_cast<float>(cpy_count * dev0_buffer.size_bytes()) / (1024 * 1024 * 1024) / duration.count()));
+         (static_cast<float>(cpy_count * dev0_buffer.size_bytes()) / static_cast<float>(1024 * 1024 * 1024)
+          / duration.count()));
 }
 
 template <typename BufferType>
 void test_cross_device_access_from_kernel(
   cudax::stream_ref dev0_stream, cudax::stream_ref dev1_stream, BufferType& dev0_buffer, BufferType& dev1_buffer)
 {
-  cuda::device_ref dev0 = dev0_stream.device();
-  cuda::device_ref dev1 = dev1_stream.device();
+  const cuda::device_ref dev0 = dev0_stream.device();
+  const cuda::device_ref dev1 = dev1_stream.device();
 
   // Prepare host buffer and copy to GPU 0
   printf("Preparing host buffer and copy to GPU%d...\n", dev0.get());
@@ -157,9 +162,9 @@ void test_cross_device_access_from_kernel(
   int error_count = 0;
   for (size_t i = 0; i < host_buffer.size(); i++)
   {
-    cuda::std::span<float> host_span(host_buffer);
+    const cuda::std::span<float> host_span(host_buffer);
     // Re-generate input data and apply 2x '* 2.0f' computation of both kernel runs
-    float expected = float(i % 4096) * 2.0f * 2.0f;
+    const float expected = float(i % 4096) * 2.0f * 2.0f;
     if (host_span[i] != expected)
     {
       printf("Verification error @ element %zu: val = %f, ref = %f\n", i, host_span[i], expected);
@@ -215,8 +220,8 @@ try
     return 0;
   }
 
-  cuda::stream dev0_stream(peers[0]);
-  cuda::stream dev1_stream(peers[1]);
+  const cuda::stream dev0_stream(peers[0]);
+  const cuda::stream dev1_stream(peers[1]);
 
   printf("Enabling peer access between GPU%d and GPU%d...\n", peers[0].get(), peers[1].get());
   cuda::device_memory_pool_ref dev0_resource = cuda::device_default_memory_pool(peers[0]);

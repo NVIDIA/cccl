@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -140,15 +140,38 @@
 #  define _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() 0
 #endif // ^^^ no static operator[] ^^^
 
-// nvcc 13+, clang 16+ and gcc 13+ backport the static call operator back to c++17.
-#if __cpp_static_call_operator >= 202207L                                              \
-  || ((_CCCL_COMPILER(CLANG, >=, 16) || _CCCL_COMPILER(GCC, >=, 13)                    \
-       || (_CCCL_COMPILER(NVHPC, >=, 26, 1) && _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 13))) \
-      && (!_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(NVCC, >=, 13, 0) || _CCCL_CUDA_COMPILER(CLANG)))
+// clang 16+, gcc 13+ and nvhpc 26.1 backport the static call operator back to c++17.
+#if __cpp_static_call_operator >= 202207L                          \
+  || (_CCCL_COMPILER(CLANG, >=, 16) || _CCCL_COMPILER(GCC, >=, 13) \
+      || (_CCCL_COMPILER(NVHPC, >=, 26, 1) && _CCCL_HOST_STD_LIB(LIBSTDCXX, >=, 13)))
 #  define _CCCL_HAS_STATIC_CALL_OPERATOR() 1
 #else // ^^^ has static operator() ^^^ / vvv no static operator() vvv
 #  define _CCCL_HAS_STATIC_CALL_OPERATOR() 0
 #endif // ^^^ no static operator() ^^^
+
+// nvcc supports the static call operator since 13.0.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 0) && _CCCL_CUDA_COMPILATION()
+#  undef _CCCL_HAS_STATIC_CALL_OPERATOR
+#  define _CCCL_HAS_STATIC_CALL_OPERATOR() 0
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 0) && _CCCL_CUDA_COMPILATION()
+
+// Intel LLVM 2023.0 reports to be based on clang-16, but doesn't have static call operator support.
+#if (__INTEL_LLVM_COMPILER / 100) == 202300
+#  undef _CCCL_HAS_STATIC_CALL_OPERATOR
+#  define _CCCL_HAS_STATIC_CALL_OPERATOR() 0
+#endif // (__INTEL_LLVM_COMPILER / 100) == 202300
+
+// Force static call operator in tile mode to make CPOs work.
+#if _CCCL_DEVICE_COMPILATION() && _CCCL_TILE_COMPILATION()
+#  undef _CCCL_HAS_STATIC_CALL_OPERATOR
+#  define _CCCL_HAS_STATIC_CALL_OPERATOR() 1
+#endif // _CCCL_DEVICE_COMPILATION() && _CCCL_TILE_COMPILATION()
+
+#if _CCCL_HAS_STATIC_CALL_OPERATOR()
+#  define _CCCL_STATIC_CALL_OPERATOR(...) static operator()(__VA_ARGS__)
+#else // ^^^ _CCCL_HAS_STATIC_CALL_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_CALL_OPERATOR() vvv
+#  define _CCCL_STATIC_CALL_OPERATOR(...) operator()(__VA_ARGS__) const
+#endif // ^^^ !_CCCL_HAS_STATIC_CALL_OPERATOR() ^^^
 
 // if consteval requires C++23, but most compilers support it even in C++20 mode while emitting some warnings. Those are
 // silenced in prologue/epilogue. nvcc is happy about using it in C++20 since 13.0, but only when compiling host code.
@@ -213,5 +236,18 @@
 #else // ^^^ has long double ^^^ / vvv no long double vvv
 #  define _CCCL_HAS_LONG_DOUBLE() 0
 #endif // ^^^ no long double ^^^
+
+// clang-21+ and gcc-16+ allow structured bindings to introduce a pack since C++17.
+#if __cpp_structured_bindings >= 202411L || _CCCL_COMPILER(CLANG, >=, 21) || _CCCL_COMPILER(GCC, >=, 16)
+#  define _CCCL_HAS_STRUCTURED_BINDINGS_PACK() 1
+#else // ^^^ has structured bindings with pack ^^^ / vvv no structured bindings with pack vvv
+#  define _CCCL_HAS_STRUCTURED_BINDINGS_PACK() 0
+#endif // ^^^ no structured bindings with pack ^^^
+
+// nvcc doesn't implement structured bindings pack yet.
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_HAS_STRUCTURED_BINDINGS_PACK
+#  define _CCCL_HAS_STRUCTURED_BINDINGS_PACK() 0
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #endif // __CCCL_DIALECT_H

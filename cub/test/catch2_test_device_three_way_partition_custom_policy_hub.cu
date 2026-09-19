@@ -1,13 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the three way partition dispatcher
+
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -18,7 +22,7 @@ template <class InputT, class OffsetT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB three-way partition tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ThreeWayPartitionPolicy =
       AgentThreeWayPartitionPolicy<256,
@@ -46,7 +50,7 @@ struct equal_zero_t
   }
 };
 
-C2H_TEST("DispatchThreeWayPartitionIf::Dispatch: custom policy hub", "[partition][device]")
+CUB_TEST("DispatchThreeWayPartitionIf::Dispatch: custom policy hub", "[partition][device]", CUB_SMALL)
 {
   using value_t  = int;
   using offset_t = int;
@@ -79,15 +83,15 @@ C2H_TEST("DispatchThreeWayPartitionIf::Dispatch: custom policy hub", "[partition
 
   using policy_hub_t = my_policy_hub<value_t, offset_t>;
   using dispatch_t   = DispatchThreeWayPartitionIf<
-      value_t*,
-      value_t*,
-      value_t*,
-      value_t*,
-      offset_t*,
-      less_than_zero_t,
-      equal_zero_t,
-      offset_t,
-      policy_hub_t>;
+    value_t*,
+    value_t*,
+    value_t*,
+    value_t*,
+    offset_t*,
+    less_than_zero_t,
+    equal_zero_t,
+    offset_t,
+    policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(

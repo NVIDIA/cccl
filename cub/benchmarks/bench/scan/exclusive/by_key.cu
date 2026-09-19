@@ -17,16 +17,16 @@
 #if !TUNE_BASE
 struct bench_scan_by_key_policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::scan_by_key::scan_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::ScanByKeyPolicy
   {
-    return {TUNE_THREADS,
-            TUNE_ITEMS,
-            TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
-            TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
-            TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
-            cub::BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy};
+    return {cub::ScanByKeyAlgorithm::lookback,
+            {TUNE_THREADS,
+             TUNE_ITEMS,
+             TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+             TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+             TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
+             cub::BLOCK_SCAN_WARP_SCANS,
+             lookback_delay_policy}};
   }
 };
 #endif // !TUNE_BASE
@@ -63,7 +63,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
       cuda::execution::tune(bench_scan_by_key_policy_selector{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceScan::ExclusiveScanByKey,
       "ExclusiveScanByKey failed",
       d_keys,

@@ -16,6 +16,8 @@
 
 #include <testing.cuh>
 
+#include "pool_availability.cuh"
+
 #if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
 #  define SHARED_TEST_TYPES \
     cuda::shared_managed_memory_pool, cuda::shared_device_memory_pool, cuda::shared_pinned_memory_pool
@@ -46,6 +48,42 @@ PoolType construct_shared_pool(cuda::memory_pool_properties props = {})
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 }
 
+#if _CCCL_CTK_AT_LEAST(13, 3)
+template <typename PoolType>
+void check_shared_pool_creation_attributes(const PoolType& pool, const cuda::memory_pool_properties props)
+{
+  auto expected_allocation_type = ::cudaMemAllocationTypePinned;
+  auto expected_location_type   = ::cudaMemLocationTypeDevice;
+  auto expected_location_id     = 0;
+
+#  if _CCCL_CTK_AT_LEAST(12, 9)
+  if constexpr (cuda::std::is_same_v<PoolType, cuda::shared_pinned_memory_pool>)
+  {
+    expected_location_type = ::cudaMemLocationTypeHostNuma;
+    expected_location_id   = 0;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(12, 9)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  if constexpr (cuda::std::is_same_v<PoolType, cuda::shared_managed_memory_pool>)
+  {
+    expected_allocation_type = ::cudaMemAllocationTypeManaged;
+    expected_location_type   = ::cudaMemLocationTypeNone;
+    expected_location_id     = 0;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::allocation_type) == expected_allocation_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::export_handle_types) == props.allocation_handle_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_id) == expected_location_id);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::location_type) == expected_location_type);
+  const auto location = pool.attribute(cuda::memory_pool_attributes::location);
+  REQUIRE(location.id == expected_location_id);
+  REQUIRE(location.type == expected_location_type);
+  REQUIRE(pool.attribute(cuda::memory_pool_attributes::max_pool_size) >= props.max_pool_size);
+  REQUIRE(!pool.attribute(cuda::memory_pool_attributes::hw_decompress_enabled));
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
+
 // --- static assertions ---
 
 template <typename PoolType>
@@ -75,22 +113,26 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool construction", "[memory_resource]", SHA
 
   SECTION("Construct and get handle")
   {
-    shared_pool pool = construct_shared_pool<shared_pool>();
+    test::skip_if_unsupported_memory_pool<shared_pool>();
+
+    const shared_pool pool = construct_shared_pool<shared_pool>();
     CHECK(pool.get() != nullptr);
   }
 
   SECTION("Construct with no_init")
   {
-    shared_pool pool(cuda::no_init);
+    const shared_pool pool(cuda::no_init);
     CHECK(pool.get() == nullptr);
   }
 
   SECTION("from_native_handle")
   {
+    test::skip_if_unsupported_memory_pool<cuda::shared_device_memory_pool>();
+
     // Create an owning pool, release the handle, and wrap it via from_native_handle.
     cuda::device_memory_pool owning_pool{cuda::device_ref{0}};
-    cudaMemPool_t raw    = owning_pool.release();
-    shared_pool from_raw = shared_pool::from_native_handle(raw);
+    cudaMemPool_t raw          = owning_pool.release();
+    const shared_pool from_raw = shared_pool::from_native_handle(raw);
     CHECK(from_raw.get() == raw);
     // from_raw owns the handle and will destroy it on scope exit.
   }
@@ -101,13 +143,14 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool construction", "[memory_resource]", SHA
 C2H_CCCLRT_TEST_LIST("shared_memory_pool copy and move", "[memory_resource]", SHARED_TEST_TYPES)
 {
   using shared_pool = TestType;
+  test::skip_if_unsupported_memory_pool<shared_pool>();
 
   shared_pool pool = construct_shared_pool<shared_pool>();
   auto handle      = pool.get();
 
   SECTION("Copy construction shares the pool")
   {
-    shared_pool copy(pool); // NOLINT(performance-unnecessary-copy-initialization)
+    const shared_pool copy(pool); // NOLINT(performance-unnecessary-copy-initialization)
     CHECK(copy.get() == handle);
     CHECK(pool.get() == handle);
   }
@@ -122,7 +165,7 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool copy and move", "[memory_resource]", SH
 
   SECTION("Move construction transfers ownership")
   {
-    shared_pool moved(cuda::std::move(pool));
+    const shared_pool moved(cuda::std::move(pool));
     CHECK(moved.get() == handle);
   }
 
@@ -138,8 +181,8 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool copy and move", "[memory_resource]", SH
     shared_pool outer = construct_shared_pool<shared_pool>();
     auto saved_handle = outer.get();
     {
-      shared_pool copy1(outer); // NOLINT(performance-unnecessary-copy-initialization)
-      shared_pool copy2(outer); // NOLINT(performance-unnecessary-copy-initialization)
+      const shared_pool copy1(outer); // NOLINT(performance-unnecessary-copy-initialization)
+      const shared_pool copy2(outer); // NOLINT(performance-unnecessary-copy-initialization)
       CHECK(copy1.get() == saved_handle);
       CHECK(copy2.get() == saved_handle);
       // copy1, copy2 destroyed here — pool should survive
@@ -157,9 +200,10 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool copy and move", "[memory_resource]", SH
 C2H_CCCLRT_TEST_LIST("shared_memory_pool comparison", "[memory_resource]", SHARED_TEST_TYPES)
 {
   using shared_pool = TestType;
+  test::skip_if_unsupported_memory_pool<shared_pool>();
 
-  shared_pool pool1 = construct_shared_pool<shared_pool>();
-  shared_pool pool2 = construct_shared_pool<shared_pool>();
+  const shared_pool pool1 = construct_shared_pool<shared_pool>();
+  const shared_pool pool2 = construct_shared_pool<shared_pool>();
 
   SECTION("Different pools are not equal")
   {
@@ -168,7 +212,7 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool comparison", "[memory_resource]", SHARE
 
   SECTION("Copies are equal")
   {
-    shared_pool copy(pool1); // NOLINT(performance-unnecessary-copy-initialization)
+    const shared_pool copy(pool1); // NOLINT(performance-unnecessary-copy-initialization)
     CHECK(pool1 == copy);
   }
 
@@ -183,12 +227,13 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool comparison", "[memory_resource]", SHARE
 C2H_CCCLRT_TEST_LIST("shared_memory_pool operations", "[memory_resource]", SHARED_TEST_TYPES)
 {
   using shared_pool = TestType;
+  test::skip_if_unsupported_memory_pool<shared_pool>();
 
   shared_pool pool = construct_shared_pool<shared_pool>();
 
   SECTION("allocate and deallocate")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     void* ptr = pool.allocate(stream, 1024, cuda::mr::default_cuda_malloc_alignment);
     CHECK(ptr != nullptr);
     pool.deallocate(stream, ptr, 1024, cuda::mr::default_cuda_malloc_alignment);
@@ -204,7 +249,7 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool operations", "[memory_resource]", SHARE
 
   SECTION("trim_to")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     void* ptr = pool.allocate(stream, 2048 * sizeof(int));
     pool.deallocate(stream, ptr, 2048 * sizeof(int));
     stream.sync();
@@ -213,22 +258,27 @@ C2H_CCCLRT_TEST_LIST("shared_memory_pool operations", "[memory_resource]", SHARE
 
   SECTION("attribute access")
   {
-    size_t threshold = pool.attribute(cuda::memory_pool_attributes::release_threshold);
+    const size_t threshold = pool.attribute(cuda::memory_pool_attributes::release_threshold);
     CHECK(threshold == cuda::std::numeric_limits<size_t>::max());
+
+#if _CCCL_CTK_AT_LEAST(13, 3)
+    cuda::memory_pool_properties expected_props{};
+    check_shared_pool_creation_attributes(pool, expected_props);
+#endif // _CCCL_CTK_AT_LEAST(13, 3)
   }
 
   SECTION("set_attribute")
   {
-    bool attr = pool.attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies);
+    const bool attr = pool.attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies);
     pool.set_attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies, !attr);
-    bool new_attr = pool.attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies);
+    const bool new_attr = pool.attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies);
     CHECK(attr == !new_attr);
   }
 
   SECTION("Operations work through a copy")
   {
     shared_pool copy(pool);
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     void* ptr = copy.allocate(stream, 512);
     CHECK(ptr != nullptr);
     copy.deallocate(stream, ptr, 512);
@@ -242,8 +292,10 @@ C2H_CCCLRT_TEST("shared_device_memory_pool satisfies resource_with", "[memory_re
 {
   static_assert(cuda::mr::resource_with<cuda::shared_device_memory_pool, cuda::mr::device_accessible>);
 
+  test::skip_if_unsupported_memory_pool<cuda::shared_device_memory_pool>();
+
   cuda::shared_device_memory_pool pool{cuda::device_ref{0}};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref = pool;
+  const cuda::mr::resource_ref<cuda::mr::device_accessible> ref = pool;
   (void) ref;
 }
 
@@ -253,8 +305,10 @@ C2H_CCCLRT_TEST("shared_pinned_memory_pool satisfies resource_with", "[memory_re
   static_assert(cuda::mr::resource_with<cuda::shared_pinned_memory_pool, cuda::mr::device_accessible>);
   static_assert(cuda::mr::resource_with<cuda::shared_pinned_memory_pool, cuda::mr::host_accessible>);
 
+  test::skip_if_unsupported_memory_pool<cuda::shared_pinned_memory_pool>();
+
   cuda::shared_pinned_memory_pool pool{0};
-  cuda::mr::resource_ref<cuda::mr::device_accessible, cuda::mr::host_accessible> ref = pool;
+  const cuda::mr::resource_ref<cuda::mr::device_accessible, cuda::mr::host_accessible> ref = pool;
   (void) ref;
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 9)
@@ -264,6 +318,8 @@ C2H_CCCLRT_TEST("shared_managed_memory_pool satisfies resource_with", "[memory_r
 {
   static_assert(cuda::mr::resource_with<cuda::shared_managed_memory_pool, cuda::mr::device_accessible>);
   static_assert(cuda::mr::resource_with<cuda::shared_managed_memory_pool, cuda::mr::host_accessible>);
+
+  test::skip_if_unsupported_memory_pool<cuda::shared_managed_memory_pool>();
 
   cuda::shared_managed_memory_pool pool{};
   cuda::mr::resource_ref<cuda::mr::device_accessible, cuda::mr::host_accessible> ref = pool;

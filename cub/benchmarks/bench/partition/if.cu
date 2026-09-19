@@ -35,15 +35,15 @@
 template <typename InputT>
 struct policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::select::select_if_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::PartitionPolicy
   {
-    return {TUNE_THREADS_PER_BLOCK,
-            TUNE_ITEMS_PER_THREAD,
-            TUNE_LOAD_ALGORITHM,
-            TUNE_LOAD_MODIFIER,
-            cub::BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy};
+    return {cub::PartitionAlgorithm::lookback,
+            {TUNE_THREADS_PER_BLOCK,
+             TUNE_ITEMS_PER_THREAD,
+             TUNE_LOAD_ALGORITHM,
+             TUNE_LOAD_MODIFIER,
+             cub::BLOCK_SCAN_WARP_SCANS,
+             lookback_delay_policy}};
   }
 };
 #endif // !TUNE_BASE
@@ -107,7 +107,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinct
       cuda::execution::tune(policy_selector<T>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DevicePartition::If,
       "If failed",
       d_in,

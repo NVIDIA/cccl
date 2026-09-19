@@ -7,9 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: indirect call is unsupported in tile code
+
 // UNSUPPORTED: enable-tile
-// error: function-to-pointer decay is unsupported in tile code
-// error: taking address of a function is unsupported in tile code
+// BUGBUG: codegen error
 
 // <functional>
 

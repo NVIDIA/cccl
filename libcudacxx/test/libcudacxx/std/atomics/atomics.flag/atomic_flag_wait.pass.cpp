@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <template <typename, typename> class Selector>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   SHARED cuda::std::atomic_flag* t;
   execute_on_main_thread([&] {

@@ -45,7 +45,7 @@ struct IsEvenPredFn
   template <class MappingResult>
   __device__ bool operator()(MappingResult mapping_result)
   {
-    return mapping_result.rank() % 2 == 0;
+    return mapping_result.unit_rank() % 2 == 0;
   }
 };
 
@@ -60,7 +60,7 @@ __device__ void test_binary_partition(Config config)
     // Test constructor from pred_fn.
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Pred>);
-      cudax::binary_partition mapping{Pred{}};
+      const cudax::binary_partition mapping{Pred{}};
     }
 
     // Test map(...).
@@ -68,21 +68,21 @@ __device__ void test_binary_partition(Config config)
       const cudax::this_warp parent_group{config};
       const ThreadsInWarpMappingResult prev_mapping_result;
 
-      static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result))>);
-      static_assert(!noexcept(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result)));
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(!noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       Mapping mapping{Pred{}};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 2);
       REQUIRE(result.group_count() == 2);
       REQUIRE(result.group_rank() == 1);
 
-      static_assert(Result::static_count() == cuda::std::dynamic_extent);
-      REQUIRE(result.count() == cuda::gpu_thread.count(cuda::warp));
-      REQUIRE(result.rank() == cuda::gpu_thread.rank(cuda::warp));
+      static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
+      REQUIRE(result.unit_count() == cuda::gpu_thread.count(cuda::warp));
+      REQUIRE(result.unit_rank() == cuda::gpu_thread.rank(cuda::warp));
 
       REQUIRE(result.lane_mask() == cuda::device::lane_mask::all());
 
@@ -100,7 +100,7 @@ __device__ void test_binary_partition(Config config)
     // Test constructor from pred_fn.
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Pred>);
-      cudax::binary_partition mapping{Pred{}};
+      const cudax::binary_partition mapping{Pred{}};
     }
 
     // Test map(...).
@@ -108,21 +108,21 @@ __device__ void test_binary_partition(Config config)
       const cudax::this_warp parent_group{config};
       const ThreadsInWarpMappingResult prev_mapping_result;
 
-      static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result)));
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       Mapping mapping{Pred{}};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 2);
       REQUIRE(result.group_count() == 2);
       REQUIRE(result.group_rank() == 0);
 
-      static_assert(Result::static_count() == cuda::std::dynamic_extent);
-      REQUIRE(result.count() == cuda::gpu_thread.count(cuda::warp));
-      REQUIRE(result.rank() == cuda::gpu_thread.rank(cuda::warp));
+      static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
+      REQUIRE(result.unit_count() == cuda::gpu_thread.count(cuda::warp));
+      REQUIRE(result.unit_rank() == cuda::gpu_thread.rank(cuda::warp));
 
       REQUIRE(result.lane_mask() == cuda::device::lane_mask::all());
 
@@ -140,7 +140,7 @@ __device__ void test_binary_partition(Config config)
     // Test constructor from pred_fn.
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Pred>);
-      cudax::binary_partition mapping{Pred{}};
+      const cudax::binary_partition mapping{Pred{}};
     }
 
     // Test map(...).
@@ -148,21 +148,21 @@ __device__ void test_binary_partition(Config config)
       const cudax::this_warp parent_group{config};
       const ThreadsInWarpMappingResult prev_mapping_result;
 
-      static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result))>);
-      static_assert(!noexcept(cuda::std::declval<Mapping>().map(parent_group, prev_mapping_result)));
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
+      static_assert(!noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       Mapping mapping{Pred{}};
-      auto result  = mapping.map(parent_group, prev_mapping_result);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 2);
       REQUIRE(result.group_count() == 2);
       REQUIRE(result.group_rank() == (cuda::gpu_thread.rank(cuda::warp) % 2 == 0));
 
-      static_assert(Result::static_count() == cuda::std::dynamic_extent);
-      REQUIRE(result.count() == cuda::gpu_thread.count(cuda::warp) / 2);
-      REQUIRE(result.rank() == cuda::gpu_thread.rank(cuda::warp) / 2);
+      static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
+      REQUIRE(result.unit_count() == cuda::gpu_thread.count(cuda::warp) / 2);
+      REQUIRE(result.unit_rank() == cuda::gpu_thread.rank(cuda::warp) / 2);
 
       const auto lane_mask_ref =
         (cuda::gpu_thread.rank(cuda::warp) % 2 == 0)

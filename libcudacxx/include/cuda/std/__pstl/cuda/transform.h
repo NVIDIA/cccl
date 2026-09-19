@@ -48,6 +48,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/move.h>
@@ -73,8 +74,11 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     _UnaryOp __func,
     _Predicate __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     // We pass the policy as an environment to DeviceTransform
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
       "cuda::std::transform: failed inside CUDA backend",
       ::cuda::std::move(__first),
@@ -84,8 +88,6 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
       ::cuda::std::move(__func),
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __result + __count;
@@ -95,13 +97,13 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     class _Policy, class _InputIterator, class _OutputIterator, class _UnaryOp, class _Predicate = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
                    is_invocable_v<_UnaryOp, iter_reference_t<_InputIterator>>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
     _OutputIterator __result,
     _UnaryOp __func,
-    _Predicate __pred = {}) const
+    _Predicate __pred = {})
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
@@ -147,14 +149,14 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
                  class _Predicate = ::cuda::always_true)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator1> _CCCL_AND __has_forward_traversal<_InputIterator2> _CCCL_AND
                    __has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator1 __first1,
     _InputIterator1 __last1,
     _InputIterator2 __first2,
     _OutputIterator __result,
     _BinaryOp __func,
-    _Predicate __pred = {}) const
+    _Predicate __pred = {})
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator1>
                   && ::cuda::std::__has_random_access_traversal<_InputIterator2>

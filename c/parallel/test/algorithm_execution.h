@@ -50,7 +50,7 @@ public:
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, device_id);
 
-    static BuildInformation singleton{
+    static const BuildInformation singleton{
       deviceProp.major, deviceProp.minor, TEST_CUB_PATH, TEST_THRUST_PATH, TEST_LIBCUDACXX_PATH, TEST_CTK_PATH};
     return singleton;
   }
@@ -118,8 +118,8 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
 
   if (cache_and_key)
   {
-    auto& cache_v     = cache.value();
-    const auto& key_v = lookup_key.value();
+    auto& cache_v     = cache.value(); // NOLINT(bugprone-unchecked-optional-access)
+    const auto& key_v = lookup_key.value(); // NOLINT(bugprone-unchecked-optional-access)
     if (cache_v.contains(key_v))
     {
       build = cache_v.get(key_v).get();
@@ -142,15 +142,15 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
 
     if (cache_and_key)
     {
-      auto& cache_v     = cache.value();
-      const auto& key_v = lookup_key.value();
+      auto& cache_v     = cache.value(); // NOLINT(bugprone-unchecked-optional-access)
+      const auto& key_v = lookup_key.value(); // NOLINT(bugprone-unchecked-optional-access)
       cache_v.insert(key_v, build);
     }
   }
 
   if constexpr (check_ldl_stl_in_sass && build_traits<Build>::should_check_sass(build_info.get_cc_major()))
   {
-    const std::string sass = inspect_sass(build.cubin, build.cubin_size);
+    const std::string sass = inspect_sass(build.payload, build.payload_size);
     REQUIRE(sass.find("LDL") == std::string::npos);
     REQUIRE(sass.find("STL") == std::string::npos);
   }
@@ -160,7 +160,7 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
   size_t temp_storage_bytes = 0;
   REQUIRE(CUDA_SUCCESS == Run{}(build, nullptr, &temp_storage_bytes, args..., null_stream));
 
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
 
   REQUIRE(CUDA_SUCCESS == Run{}(build, temp_storage.ptr, &temp_storage_bytes, args..., null_stream));
 

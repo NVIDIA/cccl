@@ -61,7 +61,7 @@ _CCCL_CONCEPT __integer_like_with_usable_difference_type =
   __signed_integer_like<_Tp> || (__integer_like<_Tp> && weakly_incrementable<_Tp>);
 
 template <class _Tp>
-using __repeat_view_iterator_difference_t _CCCL_NODEBUG_ALIAS = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
+using __repeat_view_iterator_difference_t _CCCL_NODEBUG = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
 
 #if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp, semiregular _Bound = unreachable_sentinel_t>
@@ -86,7 +86,7 @@ public:
   {
     friend class repeat_view;
 
-    using _IndexT _CCCL_NODEBUG_ALIAS = conditional_t<same_as<_Bound, unreachable_sentinel_t>, ptrdiff_t, _Bound>;
+    using _IndexT _CCCL_NODEBUG = conditional_t<same_as<_Bound, unreachable_sentinel_t>, ptrdiff_t, _Bound>;
 
     _CCCL_API constexpr explicit __iterator(const _Tp* __value, _IndexT __bound_sentinel = _IndexT()) noexcept(
       is_nothrow_copy_constructible_v<_IndexT>)
@@ -305,30 +305,34 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _B
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
-// clang-format off
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
-_CCCL_BEGIN_NAMESPACE_CPO(__repeat)
-struct __fn {
-  template <class _Tp>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __value) const
-    noexcept(noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value))))
-    -> repeat_view<remove_cvref_t<_Tp>>
-    { return          ranges::repeat_view(::cuda::std::forward<_Tp>(__value)); }
 
+_CCCL_BEGIN_NAMESPACE_CPO(__repeat)
+struct __fn
+{
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __value) noexcept(noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value))))
+    -> repeat_view<remove_cvref_t<_Tp>>
+  {
+    return ranges::repeat_view(::cuda::std::forward<_Tp>(__value));
+  }
 
   template <class _Tp, class _Bound>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __value, _Bound&& __bound_sentinel) const
-    noexcept(noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel))))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __value, _Bound&& __bound_sentinel) noexcept(
+    noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel))))
     -> repeat_view<remove_cvref_t<_Tp>, remove_cvref_t<_Bound>>
-    { return          ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel)); }
+  {
+    return ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel));
+  }
 };
 _CCCL_END_NAMESPACE_CPO
-// clang-format on
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto repeat = __repeat::__fn{};
 } // namespace __cpo
+
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES

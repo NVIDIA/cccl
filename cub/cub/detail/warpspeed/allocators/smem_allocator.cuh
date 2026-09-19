@@ -56,7 +56,7 @@ struct SmemAllocator
     ::cuda::std::uint32_t ptrAllocation32 = (mPtrSmem32 + (align - 1)) & ~(align - 1);
 
     // Move base pointer and update allocated size
-    mAllocatedSize += size + ptrAllocation32 - mPtrSmem32;
+    mAllocatedSize += static_cast<int>(size + ptrAllocation32 - mPtrSmem32);
     mPtrSmem32 = ptrAllocation32 + size;
 
     // we only need the pointer at runtime in device code
@@ -66,7 +66,7 @@ struct SmemAllocator
         NV_IS_DEVICE,
         (
           // Convert allocated smem address to generic pointer
-          void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
+          const void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
           // Ensure alignment calculation does not move down into rest of kernel code.
           return optimizeSmemPtr(mPtrAllocation);))
     }

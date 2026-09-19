@@ -50,7 +50,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr __feistel_bijection() noexcept = default;
 
   template <class _RNG>
-  _CCCL_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
+  _CCCL_HOST_DEVICE_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
   {
     // Calculate number of bits needed to represent num_elements - 1
     // Prevent zero
@@ -64,7 +64,7 @@ public:
     __R_bits_ = __total_bits - __L_bits_;
     __R_mask_ = (1ull << __R_bits_) - 1;
 
-    ::cuda::std::uniform_int_distribution<uint32_t> __dist{};
+    ::cuda::std::uniform_int_distribution<uint32_t> __dist{}; // NOLINT(misc-const-correctness)
     _CCCL_PRAGMA_UNROLL_FULL()
     for (auto& __key : __keys_)
     {
@@ -72,12 +72,12 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_API constexpr uint64_t size() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t size() const noexcept
   {
     return 1ull << (__L_bits_ + __R_bits_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr uint64_t operator()(const uint64_t __val) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t operator()(const uint64_t __val) const noexcept
   {
     // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
     // (2022): 1-20.
@@ -87,13 +87,13 @@ public:
     {
       constexpr uint64_t __m0  = 0xD2B74407B1CE6E93;
       const uint64_t __product = __m0 * __L;
-      uint32_t __F_k           = (__product >> 32) ^ __key;
-      uint32_t __B_k           = static_cast<uint32_t>(__product);
-      uint32_t __L_prime       = __F_k ^ __R;
+      const uint32_t __F_k     = (__product >> 32) ^ __key;
+      const uint32_t __B_k     = static_cast<uint32_t>(__product);
+      const uint32_t __L_prime = __F_k ^ __R;
 
-      uint32_t __R_prime = (__B_k << (__R_bits_ - __L_bits_)) | __R >> __L_bits_;
-      __L                = __L_prime & __L_mask_;
-      __R                = __R_prime & __R_mask_;
+      const uint32_t __R_prime = (__B_k << (__R_bits_ - __L_bits_)) | __R >> __L_bits_;
+      __L                      = __L_prime & __L_mask_;
+      __R                      = __R_prime & __R_mask_;
     }
     // Combine the left and right sides together to get result
     return (static_cast<uint64_t>(__L) << __R_bits_) | static_cast<uint64_t>(__R);

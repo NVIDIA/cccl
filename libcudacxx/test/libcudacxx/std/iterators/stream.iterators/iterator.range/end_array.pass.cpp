@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // <cuda/std/iterator>
 
 // template <class T, size_t N> T* end(T (&array)[N]);
@@ -22,8 +19,9 @@
 int main(int, char**)
 {
   int ia[] = {1, 2, 3};
-  int* i   = cuda::std::begin(ia);
-  int* e   = cuda::std::end(ia);
+
+  int* i = cuda::std::begin(ia);
+  int* e = cuda::std::end(ia);
   assert(e == ia + 3);
   assert(e - i == 3);
 

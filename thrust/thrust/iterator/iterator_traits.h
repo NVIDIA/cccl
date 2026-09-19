@@ -81,6 +81,7 @@ using iterator_traits
   CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits instead") = ::cuda::std::iterator_traits<T>;
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 // value
 

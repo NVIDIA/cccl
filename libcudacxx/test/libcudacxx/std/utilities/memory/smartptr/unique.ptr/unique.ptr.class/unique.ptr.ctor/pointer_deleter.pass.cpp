@@ -8,8 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
+// UNSUPPORTED: enable-tile
+// error: assertion failed
 
 // <memory>
 
@@ -35,14 +38,14 @@
 
 TEST_GLOBAL_VARIABLE bool my_free_called = false;
 
-TEST_FUNC void my_free(void*)
+TEST_HOST_DEVICE_FUNC void my_free(void*)
 {
   my_free_called = true;
 }
 
 struct DeleterBase
 {
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 struct CopyOnlyDeleter : DeleterBase
 {
@@ -62,7 +65,7 @@ struct NoCopyMoveDeleter : DeleterBase
 };
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using VT = typename cuda::std::conditional<!IsArray, int, int[]>::type;
   {
@@ -111,7 +114,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 }
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   using VT = typename cuda::std::conditional<!IsArray, int, int[]>::type;
   {
@@ -141,7 +144,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
 {
   {
     using D = CopyOnlyDeleter;
@@ -211,7 +214,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
 }
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT               = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   const int expect_alive = IsArray ? 5 : 1;
@@ -294,7 +297,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic_single()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_basic_single()
 {
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
@@ -332,7 +335,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic_single()
 }
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_nullptr()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_nullptr()
 {
   using VT = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   {
@@ -351,7 +354,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_nullptr()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_basic</*IsArray*/ false>();

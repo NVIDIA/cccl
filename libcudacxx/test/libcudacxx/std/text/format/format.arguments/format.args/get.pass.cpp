@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: bit field read/write is unsupported in tile code
 
 // <cuda/std/format>
@@ -22,7 +22,7 @@
 #include "literal.h"
 
 template <class Context>
-TEST_FUNC bool
+TEST_HOST_DEVICE_FUNC bool
 test_format_arg_eq(const cuda::std::basic_format_arg<Context>& lhs, const cuda::std::basic_format_arg<Context>& rhs)
 {
   if (lhs.__type_ != rhs.__type_)
@@ -68,7 +68,7 @@ test_format_arg_eq(const cuda::std::basic_format_arg<Context>& lhs, const cuda::
 }
 
 template <class CharT>
-TEST_FUNC void test_get()
+TEST_HOST_DEVICE_FUNC void test_get()
 {
   using Context = cuda::std::basic_format_context<CharT*, CharT>;
 
@@ -130,7 +130,7 @@ TEST_FUNC void test_get()
   }
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_get<char>();
 #if _CCCL_HAS_WCHAR_T()

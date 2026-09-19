@@ -121,11 +121,11 @@ struct __memcpy_completion_impl
                        // completed writing to shared memory.
                        asm volatile("cp.async.wait_all;" :: : "memory");));
         return async_contract_fulfillment::async;
-      case __completion_mechanism::__mbarrier_complete_tx:
-        // Non-smem barriers do not have an mbarrier_complete_tx mechanism..
-        _CCCL_UNREACHABLE();
       case __completion_mechanism::__async_bulk_group:
+        [[fallthrough]];
         // This completion mechanism is currently not expected to be used with barriers.
+      case __completion_mechanism::__mbarrier_complete_tx:
+        // Non-smem barriers do not have an mbarrier_complete_tx mechanism.
         _CCCL_UNREACHABLE();
       case __completion_mechanism::__sync:
         // sync: In this case, we do not need to do anything.
@@ -143,9 +143,9 @@ struct __memcpy_completion_impl
     switch (__cm)
     {
       case __completion_mechanism::__async_group:
-        return async_contract_fulfillment::async;
+        [[fallthrough]];
       case __completion_mechanism::__async_bulk_group:
-        return async_contract_fulfillment::async;
+        [[fallthrough]];
       case __completion_mechanism::__mbarrier_complete_tx:
         return async_contract_fulfillment::async;
       case __completion_mechanism::__sync:

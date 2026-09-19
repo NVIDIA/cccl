@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: function-to-pointer decay is unsupported in tile code
 // error: taking address of a function is unsupported in tile code
 
@@ -43,7 +43,7 @@ static_assert(cuda::__extension_of<iempty<>, cuda::__iunknown>);
 template <class...>
 struct ibase : cuda::__basic_interface<ibase, cuda::__extends<cuda::__imovable<>>>
 {
-  TEST_FUNC int foo(int i)
+  TEST_HOST_DEVICE_FUNC int foo(int i)
   {
     return cuda::__virtcall<&ibase::foo>(this, i);
   }
@@ -55,7 +55,7 @@ struct ibase : cuda::__basic_interface<ibase, cuda::__extends<cuda::__imovable<>
 template <class...>
 struct iderived : cuda::__basic_interface<iderived, cuda::__extends<ibase<>, cuda::__icopyable<>>>
 {
-  TEST_FUNC int bar(int i)
+  TEST_HOST_DEVICE_FUNC int bar(int i)
   {
     return cuda::__virtcall<&iderived::bar>(this, i);
   }
@@ -92,14 +92,14 @@ using LargeType = SmallOrLarge<Large>;
 template <bool Small>
 struct Foo
 {
-  TEST_FUNC Foo(int i, TestCounters* c)
+  TEST_HOST_DEVICE_FUNC Foo(int i, TestCounters* c)
       : j(i)
       , counters(c)
   {
     ++counters->objects;
   }
 
-  TEST_FUNC Foo(Foo&& other) noexcept
+  TEST_HOST_DEVICE_FUNC Foo(Foo&& other) noexcept
       : j(other.j)
       , counters(other.counters)
   {
@@ -107,33 +107,33 @@ struct Foo
     other.j = INT_MAX;
   }
 
-  TEST_FUNC Foo(Foo const& other) noexcept // TODO: test that types with throwing moves are "large"
+  TEST_HOST_DEVICE_FUNC Foo(Foo const& other) noexcept // TODO: test that types with throwing moves are "large"
       : j(other.j)
       , counters(other.counters)
   {
     ++counters->objects;
   }
 
-  TEST_FUNC ~Foo()
+  TEST_HOST_DEVICE_FUNC ~Foo()
   {
     --counters->objects;
   }
 
-  TEST_FUNC Foo& operator=(Foo&& other) noexcept
+  TEST_HOST_DEVICE_FUNC Foo& operator=(Foo&& other) noexcept
   {
     operator=(other);
     other.j = INT_MAX;
     return *this;
   }
 
-  TEST_FUNC Foo& operator=(Foo const& other) noexcept
+  TEST_HOST_DEVICE_FUNC Foo& operator=(Foo const& other) noexcept
   {
     j        = other.j;
     counters = other.counters;
     return *this;
   }
 
-  TEST_FUNC int foo(int i)
+  TEST_HOST_DEVICE_FUNC int foo(int i)
   {
     return i + j;
   }
@@ -148,7 +148,7 @@ struct Bar : Foo<Small>
 {
   using Foo<Small>::Foo;
 
-  TEST_FUNC int bar(int i)
+  TEST_HOST_DEVICE_FUNC int bar(int i)
   {
     return i * this->j;
   }
@@ -161,12 +161,12 @@ struct iregular
 
 struct Regular
 {
-  TEST_FUNC bool operator==(Regular const& other) const
+  TEST_HOST_DEVICE_FUNC bool operator==(Regular const& other) const
   {
     return i == other.i;
   }
 
-  TEST_FUNC bool operator!=(Regular const& other) const
+  TEST_HOST_DEVICE_FUNC bool operator!=(Regular const& other) const
   {
     return !operator==(other);
   }
@@ -189,14 +189,14 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 {
   static constexpr bool IsSmall = ::cuda::std::is_same_v<TestType, SmallType>;
 
-  TEST_FUNC void test_type_traits()
+  TEST_HOST_DEVICE_FUNC void test_type_traits()
   {
     static_assert(::cuda::std::is_standard_layout_v<cuda::__basic_any<iregular<>>>);
     static_assert(::cuda::std::is_standard_layout_v<cuda::__basic_any<iregular<>*>>);
     static_assert(::cuda::std::is_standard_layout_v<cuda::__basic_any<iregular<>&>>);
   }
 
-  TEST_FUNC void test_empty_interface_can_hold_anything()
+  TEST_HOST_DEVICE_FUNC void test_empty_interface_can_hold_anything()
   {
     static_assert(!::cuda::std::move_constructible<cuda::__basic_any<iempty<>>>);
     cuda::__basic_any<iempty<>> a{42};
@@ -218,7 +218,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(a.interface() == _CCCL_TYPEID(iempty<>));
   }
 
-  TEST_FUNC void test_interface_with_one_member_function()
+  TEST_HOST_DEVICE_FUNC void test_interface_with_one_member_function()
   {
     static_assert(::cuda::std::move_constructible<cuda::__basic_any<ibase<>>>);
     static_assert(!::cuda::std::copy_constructible<cuda::__basic_any<ibase<>>>);
@@ -242,7 +242,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(this->objects == 0);
   }
 
-  TEST_FUNC void test_single_interface_extension()
+  TEST_HOST_DEVICE_FUNC void test_single_interface_extension()
   {
     static_assert(::cuda::std::move_constructible<cuda::__basic_any<iderived<>>>);
     static_assert(::cuda::std::copy_constructible<cuda::__basic_any<iderived<>>>);
@@ -279,7 +279,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(this->objects == 0);
   }
 
-  TEST_FUNC void test_any_iempty_pointer_to_model()
+  TEST_HOST_DEVICE_FUNC void test_any_iempty_pointer_to_model()
   {
     static_assert(::cuda::std::regular<cuda::__basic_any<iempty<>*>>);
     static_assert(sizeof(cuda::__basic_any<iempty<>*>) == 2 * sizeof(void*));
@@ -329,7 +329,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     static_assert(!::cuda::std::constructible_from<cuda::__basic_any<cuda::__imovable<>>, decltype(*c)>);
   }
 
-  TEST_FUNC void test_any_ibase_pointer_to_model()
+  TEST_HOST_DEVICE_FUNC void test_any_ibase_pointer_to_model()
   {
     Foo<IsSmall> foo{42, this};
     cuda::__basic_any<ibase<>*> a = &foo;
@@ -352,7 +352,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(this->objects == 2);
   }
 
-  TEST_FUNC void test_any_pointers_from_derived_to_base_conversions()
+  TEST_HOST_DEVICE_FUNC void test_any_pointers_from_derived_to_base_conversions()
   {
     static_assert(::cuda::std::constructible_from<cuda::__basic_any<ibase<>*>, cuda::__basic_any<iderived<>*>>);
     static_assert(::cuda::std::constructible_from<cuda::__basic_any<ibase<> const*>, cuda::__basic_any<iderived<>*>>);
@@ -411,7 +411,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(this->objects == 2);
   }
 
-  TEST_FUNC void test_any_value_pointer_interop()
+  TEST_HOST_DEVICE_FUNC void test_any_value_pointer_interop()
   {
     cuda::__basic_any<iderived<>> a{::cuda::std::in_place_type<Bar<IsSmall>>, 42, this};
     assert(a.__in_situ() == IsSmall);
@@ -459,7 +459,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(bar.j == INT_MAX); // bar is moved from
   }
 
-  TEST_FUNC void test_cuda_basic_any_references()
+  TEST_HOST_DEVICE_FUNC void test_cuda_basic_any_references()
   {
     Bar<IsSmall> bar{42, this};
     cuda::__basic_any<iderived<>&> a{bar};
@@ -515,11 +515,11 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
   struct cast_to_derived
   {
     template <class _Tp>
-    TEST_FUNC auto operator()(_Tp&& arg) const
+    TEST_HOST_DEVICE_FUNC auto operator()(_Tp&& arg) const
       -> decltype(cuda::__dynamic_any_cast<iderived<>>(static_cast<_Tp&&>(arg)));
   };
 
-  TEST_FUNC void test_cuda_dynamic_any_cast()
+  TEST_HOST_DEVICE_FUNC void test_cuda_dynamic_any_cast()
   {
     static_assert(!::cuda::std::__is_callable_v<cast_to_derived, cuda::__basic_any<ibase<>>&>);
     static_assert(!::cuda::std::__is_callable_v<cast_to_derived, cuda::__basic_any<ibase<>&>>);
@@ -547,7 +547,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(cuda::__any_cast<Bar<IsSmall>>(&*pd)->j == 42);
   }
 
-  TEST_FUNC void test_equality_comparable()
+  TEST_HOST_DEVICE_FUNC void test_equality_comparable()
   {
     cuda::__basic_any<iregular<>> a{42};
     cuda::__basic_any<iregular<>> b{42};
@@ -578,9 +578,26 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(42 == a);
     assert(a != 43);
     assert(43 != a);
+
+    cuda::__basic_any<iregular<>> empty1;
+    cuda::__basic_any<iregular<>> empty2;
+    assert(empty1 == empty2);
+    assert(!(empty1 != empty2));
+    assert(empty1 != a);
+    assert(a != empty1);
+    assert(empty1 != 42);
+    assert(42 != empty1);
+
+    a.reset();
+    assert(a == empty1);
+
+    cuda::__basic_any<iregular<>> moved{::cuda::std::move(b)};
+    assert(!b.has_value());
+    assert(b == empty1);
+    assert(b != moved);
   }
 
-  TEST_FUNC void test_basic_any_test_for_ambiguous_conversions()
+  TEST_HOST_DEVICE_FUNC void test_basic_any_test_for_ambiguous_conversions()
   {
     int i = 42;
     any_regular_ref ref{i};
@@ -589,7 +606,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     a             = ref;
   }
 
-  TEST_FUNC void test_basic_any_test_for_emplacing_immovable_object()
+  TEST_HOST_DEVICE_FUNC void test_basic_any_test_for_emplacing_immovable_object()
   {
     // Can emplace an immovable object into a basic_any:
     cuda::__basic_any<iempty<>> a{cuda::in_place_from_type<Immovable>, [] {
@@ -601,7 +618,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 };
 
 template <class TestType>
-TEST_FUNC void test_basic_any()
+TEST_HOST_DEVICE_FUNC void test_basic_any()
 {
   BasicAnyTest<TestType> test;
   test.test_type_traits();

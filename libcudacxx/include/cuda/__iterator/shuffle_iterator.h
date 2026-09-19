@@ -161,7 +161,7 @@ public:
     return static_cast<value_type>(__bijection_(static_cast<typename _Bijection::index_type>(__current_ + __n)));
   }
 
-  //! @brief Increments the @c permutation_iterator
+  //! @brief Increments the @c shuffle_iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator& operator++() noexcept
   {
@@ -169,7 +169,7 @@ public:
     return *this;
   }
 
-  //! @brief Increments the @c permutation_iterator
+  //! @brief Increments the @c shuffle_iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator operator++(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Bijection>)
   {
@@ -178,7 +178,7 @@ public:
     return __tmp;
   }
 
-  //! @brief Decrements the @c permutation_iterator
+  //! @brief Decrements the @c shuffle_iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator& operator--() noexcept
   {
@@ -186,7 +186,7 @@ public:
     return *this;
   }
 
-  //! @brief Decrements the @c permutation_iterator
+  //! @brief Decrements the @c shuffle_iterator
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr shuffle_iterator
   operator--(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Bijection>)
@@ -196,7 +196,7 @@ public:
     return __tmp;
   }
 
-  //! @brief Advances the @c permutation_iterator by a given number of elements
+  //! @brief Advances the @c shuffle_iterator by a given number of elements
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator& operator+=(difference_type __n) noexcept
@@ -241,7 +241,7 @@ public:
     return __iter;
   }
 
-  //! @brief Decrements the @c permutation_iterator by a given number of elements
+  //! @brief Decrements the @c shuffle_iterator by a given number of elements
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr shuffle_iterator& operator-=(difference_type __n) noexcept

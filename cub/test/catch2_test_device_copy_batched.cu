@@ -11,6 +11,7 @@
 
 #include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/std/execution>
 
 #include <cstdint>
 
@@ -18,7 +19,7 @@
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -93,7 +94,7 @@ struct object_with_non_trivial_ctor
   }
 };
 
-C2H_TEST("DeviceCopy::Batched works", "[copy]")
+CUB_TEST("DeviceCopy::Batched works", "[copy]", CUB_SMALL)
 try
 {
   // Type used for indexing into the array of ranges
@@ -122,8 +123,8 @@ try
     take(c2h::adjust_seed_count(4),
          map(
            [](const std::vector<range_size_t>& chunk) {
-             range_size_t lhs = chunk[0];
-             range_size_t rhs = chunk[1];
+             const range_size_t lhs = chunk[0];
+             const range_size_t rhs = chunk[1];
              // Optionally ensure lhs < rhs, for example:
              return (lhs < rhs) ? std::make_tuple(lhs, rhs) : std::make_tuple(rhs, lhs);
            },
@@ -137,7 +138,7 @@ try
   // Generate the range sizes: Make sure range sizes are a multiple of the most granular unit (one AtomicT) being
   // copied (round down)
   c2h::gen(C2H_SEED(2), d_range_sizes, min_range_size, max_range_size);
-  item_offset_t num_total_items = thrust::reduce(d_range_sizes.cbegin(), d_range_sizes.cend());
+  const item_offset_t num_total_items = thrust::reduce(d_range_sizes.cbegin(), d_range_sizes.cend());
 
   // Shuffle output range destination-offsets
   auto d_range_dst_offsets = get_shuffled_buffer_offsets<range_offset_t, item_offset_t>(d_range_sizes, C2H_SEED(1));
@@ -148,48 +149,126 @@ try
   c2h::gen(C2H_SEED(1), d_in);
 
   // Prepare host-side input data for verification
-  c2h::host_vector<std::uint8_t> h_in(d_in);
+  const c2h::host_vector<std::uint8_t> h_in(d_in);
   c2h::host_vector<std::uint8_t> h_out(num_total_items);
   c2h::host_vector<range_size_t> h_range_sizes(d_range_sizes);
   c2h::host_vector<item_offset_t> h_dst_offsets(d_range_dst_offsets);
 
   // Prepare d_range_srcs
-  offset_to_constant_it<std::uint8_t> offset_to_index_op{};
+  const offset_to_constant_it<std::uint8_t> offset_to_index_op{};
   auto d_range_srcs = cuda::transform_iterator(cuda::counting_iterator(range_offset_t{0}), offset_to_index_op);
 
   // Prepare d_range_dsts
-  offset_to_transform_it<std::uint8_t*> dst_transform_op{
+  const offset_to_transform_it<std::uint8_t*> dst_transform_op{
     static_cast<std::uint8_t*>(thrust::raw_pointer_cast(d_out.data()))};
   auto d_range_dsts = cuda::transform_iterator(d_range_dst_offsets.begin(), dst_transform_op);
 
-  // Invoke device-side algorithm
-  copy_batched(d_range_srcs, d_range_dsts, d_range_sizes.begin(), num_ranges);
-
-  // Prepare CPU-side result for verification
-  for (range_offset_t i = 0; i < num_ranges; i++)
+  SECTION("With environment")
   {
-    auto out_begin = h_out.begin() + h_dst_offsets[i];
-    auto out_end   = out_begin + h_range_sizes[i];
-    std::fill(out_begin, out_end, static_cast<std::uint8_t>(i));
+    // Invoke device-side algorithm
+    copy_batched(d_range_srcs, d_range_dsts, d_range_sizes.begin(), num_ranges);
+
+    // Prepare CPU-side result for verification
+    for (range_offset_t i = 0; i < num_ranges; i++)
+    {
+      auto out_begin = h_out.begin() + h_dst_offsets[i];
+      auto out_end   = out_begin + h_range_sizes[i];
+      std::fill(out_begin, out_end, static_cast<std::uint8_t>(i));
+    }
+    REQUIRE(d_out == h_out);
   }
 
-  REQUIRE(d_out == h_out);
+#if TEST_LAUNCH == 0
+  SECTION("With user provided memory and environment")
+  {
+    auto test_copy_batched = [&](const auto& env) {
+      size_t num_bytes = 0;
+      auto error       = cub::DeviceCopy::Batched(
+        static_cast<void*>(nullptr), num_bytes, d_range_srcs, d_range_dsts, d_range_sizes.begin(), num_ranges, env);
+      REQUIRE(error == cudaSuccess);
+      REQUIRE(cudaSuccess == cudaPeekAtLastError());
+      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+      auto d_temp        = c2h::device_vector<uint8_t>(num_bytes, thrust::no_init);
+      void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+      error = cub::DeviceCopy::Batched(
+        temp_storage, num_bytes, d_range_srcs, d_range_dsts, d_range_sizes.begin(), num_ranges, env);
+      REQUIRE(error == cudaSuccess);
+      REQUIRE(cudaSuccess == cudaPeekAtLastError());
+      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+      // Prepare CPU-side result for verification
+      for (range_offset_t i = 0; i < num_ranges; i++)
+      {
+        auto out_begin = h_out.begin() + h_dst_offsets[i];
+        auto out_end   = out_begin + h_range_sizes[i];
+        std::fill(out_begin, out_end, static_cast<std::uint8_t>(i));
+      }
+      REQUIRE(d_out == h_out);
+    };
+
+    int current_device;
+    auto error = cudaGetDevice(&current_device);
+    REQUIRE(error == cudaSuccess);
+
+    SECTION("DeviceCopy::Batched works with cudaStream_t")
+    {
+      const cuda::stream stream{cuda::devices[current_device]};
+      test_copy_batched(stream.get());
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::stream")
+    {
+      const cuda::stream stream{cuda::devices[current_device]};
+      test_copy_batched(stream);
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::stream_ref")
+    {
+      const cuda::stream stream{cuda::devices[current_device]};
+      const cuda::stream_ref stream_ref{stream};
+      test_copy_batched(stream_ref);
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::std::execution::env")
+    {
+      const cuda::std::execution::env env{};
+      test_copy_batched(env);
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::execution::gpu")
+    {
+      const auto policy = cuda::execution::gpu;
+      test_copy_batched(policy);
+    }
+
+    SECTION("DeviceCopy::Batched works with cuda::execution::gpu with stream")
+    {
+      const cuda::stream stream{cuda::devices[current_device]};
+      const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+      test_copy_batched(policy);
+    }
+  }
+#endif // TEST_LAUNCH == 0
 }
 catch (std::bad_alloc& e)
 {
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
-C2H_TEST("DeviceCopy::Batched works for a very large range",
-         "[copy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceCopy::Batched works for a very large range",
+         "[copy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE)
 try
 {
   using data_t        = uint64_t;
   using byte_offset_t = uint64_t;
   using buffer_size_t = uint64_t;
 
-  byte_offset_t large_target_copy_size = static_cast<byte_offset_t>(std::numeric_limits<uint32_t>::max()) + (32 << 20);
-  byte_offset_t num_items              = large_target_copy_size;
+  const byte_offset_t large_target_copy_size =
+    static_cast<byte_offset_t>(std::numeric_limits<uint32_t>::max()) + (32 << 20);
+  const byte_offset_t num_items = large_target_copy_size;
 
   // Input iterator for the items of a single range
   auto input_data_it = cuda::counting_iterator(data_t{42});
@@ -213,7 +292,7 @@ catch (std::bad_alloc& e)
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
-C2H_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]")
+CUB_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]", CUB_SMALL)
 {
   using iterator = c2h::device_vector<object_with_non_trivial_ctor>::iterator;
 
@@ -231,8 +310,9 @@ C2H_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]")
   REQUIRE(in == out);
 }
 
-C2H_TEST("DeviceMemcpy::Batched works for a very large number of ranges",
-         "[copy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceMemcpy::Batched works for a very large number of ranges",
+         "[copy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE)
 try
 {
   using item_t         = uint8_t;
@@ -250,7 +330,7 @@ try
   const item_offset_t num_total_items = thrust::reduce(d_range_sizes.cbegin(), d_range_sizes.cend());
 
   // Prepare iterator that returns empty ranges for the first num_empty_ranges
-  prepend_n_constants_op<decltype(d_range_sizes.cbegin()), range_size_t> skip_first_n_sizes_op{
+  const prepend_n_constants_op<decltype(d_range_sizes.cbegin()), range_size_t> skip_first_n_sizes_op{
     d_range_sizes.cbegin(), range_size_t{0}, num_empty_ranges};
   auto d_range_sizes_it_skipped =
     cuda::transform_iterator(cuda::counting_iterator(range_offset_t{0}), skip_first_n_sizes_op);
@@ -264,11 +344,11 @@ try
   thrust::exclusive_scan(d_range_sizes.cbegin(), d_range_sizes.cend(), d_range_offsets.begin());
 
   // Use the offsets to generate an iterator over the ranges, where each range is an iterator into in_it
-  offset_to_ptr_op<range_it_t> src_transform_op{in_it};
+  const offset_to_ptr_op<range_it_t> src_transform_op{in_it};
   auto d_ranges_src_it = cuda::transform_iterator(thrust::raw_pointer_cast(d_range_offsets.data()), src_transform_op);
 
   // Wrap the iterator into an iterator that returns empty ranges for the first num_empty_ranges
-  prepend_n_constants_op<decltype(d_ranges_src_it), range_it_t> src_skip_first_n_op{
+  const prepend_n_constants_op<decltype(d_ranges_src_it), range_it_t> src_skip_first_n_op{
     d_ranges_src_it, in_it, num_empty_ranges};
   auto d_ranges_src_it_skipped =
     cuda::transform_iterator(cuda::counting_iterator(range_offset_t{0}), src_skip_first_n_op);
@@ -279,9 +359,9 @@ try
   using range_out_it_t     = decltype(check_result_it);
 
   // Helper iterator that offsets the checking output iterator by the offset for a given range
-  offset_to_ptr_op<decltype(check_result_it)> dst_transform_op{check_result_it};
+  const offset_to_ptr_op<decltype(check_result_it)> dst_transform_op{check_result_it};
   auto ranges_dst_it = cuda::transform_iterator(d_range_offsets.cbegin(), dst_transform_op);
-  prepend_n_constants_op<decltype(ranges_dst_it), range_out_it_t> dst_skip_first_n_op{
+  const prepend_n_constants_op<decltype(ranges_dst_it), range_out_it_t> dst_skip_first_n_op{
     ranges_dst_it, check_result_it, num_empty_ranges};
   auto d_ranges_dst_it_skipped =
     cuda::transform_iterator(cuda::counting_iterator(range_offset_t{0}), dst_skip_first_n_op);

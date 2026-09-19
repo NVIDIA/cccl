@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// hangs
+
 // <cuda/mdspan>
 
 // Converting constructor from strided layout mappings:

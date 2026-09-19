@@ -222,6 +222,7 @@ struct __bind_return<_Fp, const tuple<_BoundArgs...>, _TupleUj, true>
 template <class _Fp, class _BoundArgs, class _TupleUj>
 using __bind_return_t = typename __bind_return<_Fp, _BoundArgs, _TupleUj>::type;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _BoundArgs, size_t... _Indx, class _Args>
 _CCCL_API inline __bind_return_t<_Fp, _BoundArgs, _Args>
 __apply_functor(_Fp& __f, _BoundArgs& __bound_args, __tuple_indices<_Indx...>, _Args&& __args)

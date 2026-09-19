@@ -24,13 +24,16 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+// TODO(bgruber): drop in CCCL 4.0
 template <int ThreadsPerBlock,
           int WarpThreadsArg,
           int ItemsPerThreadArg,
           cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifierArg    = cub::LOAD_LDG,
           cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
-struct AgentSubWarpMergeSortPolicy
+struct agent_sub_warp_merge_sort_policy
 {
   static constexpr int BLOCK_THREADS      = ThreadsPerBlock;
   static constexpr int WARP_THREADS       = WarpThreadsArg;
@@ -42,6 +45,23 @@ struct AgentSubWarpMergeSortPolicy
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LoadModifierArg;
   static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = StoreAlgorithmArg;
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int WarpThreadsArg,
+          int ItemsPerThreadArg,
+          cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifierArg    = cub::LOAD_LDG,
+          cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
+using AgentSubWarpMergeSortPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") = detail::agent_sub_warp_merge_sort_policy<
+    ThreadsPerBlock,
+    WarpThreadsArg,
+    ItemsPerThreadArg,
+    LoadAlgorithmArg,
+    LoadModifierArg,
+    StoreAlgorithmArg>;
 
 namespace detail::sub_warp_merge_sort
 {
@@ -149,25 +169,6 @@ class AgentSubWarpSort
     return lhs == rhs;
   }
 
-  _CCCL_DEVICE static bool get_oob_default(::cuda::std::true_type /* is bool */)
-  {
-    // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
-    // comparison with oob unreliable.
-    return !IS_DESCENDING;
-  }
-
-  _CCCL_DEVICE static KeyT get_oob_default(::cuda::std::false_type /* is bool */)
-  {
-    // For FP64 the difference is:
-    // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
-    // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
-
-    // Segmented sort doesn't support custom types at the moment.
-    bit_ordered_type default_key_bits = IS_DESCENDING ? traits::min_raw_binary_key(identity_decomposer_t{})
-                                                      : traits::max_raw_binary_key(identity_decomposer_t{});
-    return reinterpret_cast<KeyT&>(default_key_bits);
-  }
-
 public:
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, cub::NullType>;
 
@@ -225,7 +226,25 @@ public:
       KeyT keys[PolicyT::ITEMS_PER_THREAD];
       ValueT values[PolicyT::ITEMS_PER_THREAD];
 
-      KeyT oob_default = AgentSubWarpSort::get_oob_default(bool_constant_v<::cuda::std::is_same_v<bool, KeyT>>);
+      KeyT oob_default = [&] {
+        if constexpr (::cuda::std::is_same_v<bool, KeyT>)
+        {
+          // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
+          // comparison with oob unreliable.
+          return !IS_DESCENDING;
+        }
+        else
+        {
+          // For FP64 the difference is:
+          // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
+          // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
+
+          // Segmented sort doesn't support custom types at the moment.
+          bit_ordered_type default_key_bits = IS_DESCENDING ? traits::min_raw_binary_key(identity_decomposer_t{})
+                                                            : traits::max_raw_binary_key(identity_decomposer_t{});
+          return reinterpret_cast<KeyT&>(default_key_bits);
+        }
+      }();
 
       WarpLoadKeysT(storage.load_keys).Load(keys_input, keys, segment_size, oob_default);
       __syncwarp(warp_merge_sort.get_member_mask());

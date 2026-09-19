@@ -37,9 +37,9 @@
 
 #include <nv/target>
 
-#if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
 #  include <intrin.h>
-#endif // _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#endif // _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -179,7 +179,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API overflow_result<_Tp> __sub_overflow_host(_Tp __lhs, _Tp __rhs) noexcept
 {
-#  if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#  if _CCCL_COMPILER(MSVC) && _CCCL_HOST_ARCH(X86_64)
   if constexpr (sizeof(_Tp) <= 8)
   {
 #    if _CCCL_COMPILER(MSVC, >=, 19, 37)
@@ -233,7 +233,7 @@ template <class _Tp>
       }
   }
   else
-#  endif // ^^^ _CCCL_COMPILER(MSVC) || _CCCL_ARCH(X86_64) ^^^
+#  endif // ^^^ _CCCL_COMPILER(MSVC) || _CCCL_HOST_ARCH(X86_64) ^^^
   {
     return ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
   }

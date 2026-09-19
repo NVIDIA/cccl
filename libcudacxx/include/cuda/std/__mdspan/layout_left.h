@@ -146,16 +146,14 @@ public:
   {
     // avoid warning when comparing signed and unsigner integers and pick the wider of two types
     using _CommonType = common_type_t<index_type, typename _OtherMappping::index_type>;
-    bool __result     = true;
     for (rank_type __r = 0; __r != extents_type::rank(); __r++)
     {
       if (static_cast<_CommonType>(stride(__r)) != static_cast<_CommonType>(__other.stride(__r)))
       {
-        __result = false;
-        break;
+        return false;
       }
     }
-    return __result;
+    return true;
   }
 
   _CCCL_TEMPLATE(class _OtherExtents)

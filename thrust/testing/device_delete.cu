@@ -27,14 +27,14 @@ struct Foo
 
 void TestDeviceDeleteDestructorInvocation()
 {
-  thrust::device_ptr<Foo> foo_ptr = thrust::device_new<Foo>();
+  const thrust::device_ptr<Foo> foo_ptr = thrust::device_new<Foo>();
 
   thrust::device_vector<bool> destructor_flag(1, false);
   *thrust::device_ptr<bool*>(&foo_ptr.get()->destroyed) = destructor_flag.data().get();
 
-  ASSERT_EQUAL(false, destructor_flag[0]);
+  REQUIRE_FALSE(destructor_flag[0]);
   thrust::device_delete(foo_ptr);
-  ASSERT_EQUAL(true, destructor_flag[0]);
+  REQUIRE(destructor_flag[0]);
 }
 DECLARE_UNITTEST(TestDeviceDeleteDestructorInvocation);
 
@@ -73,19 +73,19 @@ struct derived : base
 void TestDeviceDeleteVirtualDestructorInvocation()
 {
   {
-    thrust::device_ptr<derived> ptr = thrust::device_new<derived>();
+    const thrust::device_ptr<derived> ptr = thrust::device_new<derived>();
 
     thrust::device_vector<bool> destructor_flags(2, false);
     *thrust::device_ptr<bool*>(&ptr.get()->base_destroyed)    = destructor_flags.data().get() + 0;
     *thrust::device_ptr<bool*>(&ptr.get()->derived_destroyed) = destructor_flags.data().get() + 1;
 
-    thrust::device_ptr<derived> base_ptr = ptr;
+    const thrust::device_ptr<derived> base_ptr = ptr;
 
-    ASSERT_EQUAL(false, destructor_flags[0]);
-    ASSERT_EQUAL(false, destructor_flags[1]);
+    REQUIRE_FALSE(destructor_flags[0]);
+    REQUIRE_FALSE(destructor_flags[1]);
     thrust::device_delete(base_ptr); // delete through the base pointer
-    ASSERT_EQUAL(true, destructor_flags[0]);
-    ASSERT_EQUAL(true, destructor_flags[1]);
+    REQUIRE(destructor_flags[0]);
+    REQUIRE(destructor_flags[1]);
   }
 }
 DECLARE_UNITTEST(TestDeviceDeleteVirtualDestructorInvocation);

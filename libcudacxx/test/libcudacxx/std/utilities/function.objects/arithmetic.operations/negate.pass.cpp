@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-// ensure that we allow `TEST_DEVICE_FUNC` functions too
+// ensure that we allow `__device__` functions too
 struct with_device_op
 {
   TEST_DEVICE_FUNC friend constexpr with_device_op operator-(const with_device_op&)
@@ -36,6 +36,27 @@ __global__ void test_global_kernel()
   const cuda::std::negate<with_device_op> f;
   assert(f({}));
 }
+
+#if _CCCL_TILE_COMPILATION()
+// ensure that we allow `__tile__` functions too
+struct with_tile_op
+{
+  TEST_TILE_FUNC friend constexpr with_tile_op operator-(const with_tile_op&)
+  {
+    return {};
+  }
+  TEST_TILE_FUNC constexpr operator bool() const
+  {
+    return true;
+  }
+};
+
+__tile_global__ void test_tile_kernel()
+{
+  const cuda::std::negate<with_tile_op> f;
+  assert(f({}));
+}
+#endif // _CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {

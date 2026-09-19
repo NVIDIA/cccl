@@ -187,7 +187,17 @@ struct NoScaling
 #  elif _CCCL_DEVICE_COMPILATION()
   return ::cuda::device::current_compute_capability();
 #  else
+  // clang 22+ supports __CUDA_ARCH_LIST__ and also instantiates tuning policies inside kernels during the **host**
+  // pass (e.g. to compute the value for __launch_bounds__), where we rely on current_tuning_cc(), which is then passed
+  // to the policy selector. In the rare case that the policy selector is an adapter over a policy hub and invokes
+  // ChainedPolicy (e.g. test cub.test.device.histogram_custom_policy_hub.lid_0), it will fail to compile during
+  // constant evaluation, since it cannot find a policy for a PTX version of zero. As a workaround, we return the oldest
+  // CC we are compiling for during the host pass. And for consistency, we do the same for all compilers.
+#    if _CCCL_CUDA_COMPILER(CLANG)
+  return ::cuda::__target_compute_capabilities().front();
+#    else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
   return {};
+#    endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
 #  endif
 }
 

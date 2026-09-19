@@ -8,10 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 #include "utils.h"
 
 template <typename T, typename P>
-TEST_FUNC __noinline__ void test_ctor()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_ctor()
 {
   // default ctor, cpy and cpy assignment
   cuda::annotated_ptr<T, P> def;
@@ -32,12 +35,12 @@ TEST_FUNC __noinline__ void test_ctor()
 }
 
 template <typename T, typename P>
-TEST_FUNC __noinline__ void test_global_ctor()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_global_ctor()
 {
   test_ctor<T, P>();
 }
 
-TEST_FUNC __noinline__ void test_global_ctors()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_global_ctors()
 {
   test_global_ctor<int, cuda::access_property::normal>();
 }

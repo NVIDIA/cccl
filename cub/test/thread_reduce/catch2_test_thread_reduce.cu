@@ -16,9 +16,9 @@
 #include <limits>
 #include <numeric>
 
-#include "c2h/catch2_test_helper.h"
 #include "c2h/extended_types.h"
 #include "c2h/generators.h"
+#include "cub_test_macros.h"
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 /***********************************************************************************************************************
@@ -60,7 +60,7 @@ __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperato
   {
     thread_data[i] = d_in[i];
   }
-  cuda::std::span<T, NUM_ITEMS> span(thread_data);
+  const cuda::std::span<T, NUM_ITEMS> span(thread_data);
   *d_out = cub::ThreadReduce(span, reduce_operator);
 }
 
@@ -75,7 +75,7 @@ __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOpera
     thread_data[i] = d_in[i];
   }
   using Extent = cuda::std::extents<int, NUM_ITEMS>;
-  cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NUM_ITEMS>{});
+  const cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NUM_ITEMS>{});
   *d_out = cub::ThreadReduce(mdspan, reduce_operator);
 }
 
@@ -263,7 +263,8 @@ constexpr int num_seeds = 10;
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_list, cub_operator_integral_list)
+CUB_TEST(
+  "ThreadReduce Integral Type Tests", "[reduce][thread]", CUB_SMALL, integral_type_list, cub_operator_integral_list)
 {
   using value_t                    = c2h::get<0, TestType>;
   using op_t                       = c2h::get<1, TestType>;
@@ -283,7 +284,7 @@ C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_l
   }
 }
 
-C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_list, cub_operator_fp_list)
+CUB_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", CUB_SMALL, fp_type_list, cub_operator_fp_list)
 {
   using value_t                = c2h::get<0, TestType>;
   using op_t                   = c2h::get<1, TestType>;
@@ -305,8 +306,9 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_l
 
 #if TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
+CUB_TEST("ThreadReduce Narrow PrecisionType Tests",
          "[reduce][thread][narrow]",
+         CUB_SMALL,
          narrow_precision_type_list,
          cub_operator_fp_list)
 {
@@ -331,7 +333,7 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
 
 #endif // TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
+CUB_TEST("ThreadReduce Container Tests", "[reduce][thread]", CUB_SMALL)
 {
   c2h::device_vector<int> d_in(max_size);
   c2h::device_vector<int> d_out(1);

@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -56,8 +57,9 @@ class thread_hierarchy
   // Depth of this hierarchy (each level has two spec values, `sync` and `width`)
   static constexpr size_t depth = [](auto x, auto y, auto...) {
     // Also run some checks
-    static_assert(::std::is_same_v<decltype(x), bool>, "You must use bool for the odd arguments of thread_hierarchy.");
-    static_assert(::std::is_same_v<decltype(y), size_t>,
+    static_assert(::cuda::std::is_same_v<decltype(x), bool>,
+                  "You must use bool for the odd arguments of thread_hierarchy.");
+    static_assert(::cuda::std::is_same_v<decltype(y), size_t>,
                   "You must use size_t for the even arguments of thread_hierarchy.");
     // Two spec parameters per depth level
     return sizeof...(spec) / 2;
@@ -442,7 +444,7 @@ UNITTEST("thread hierarchy indexing")
   auto config = p.get_config();
   reserved::unit_test_thread_hierarchy<<<config[1], config[2]>>>(h);
 
-  cuda_safe_call(cudaDeviceSynchronize());
+  cuda_try(cudaDeviceSynchronize());
 };
 
 namespace reserved
@@ -473,7 +475,7 @@ UNITTEST("thread hierarchy sync")
   auto config = p.get_config();
 
   void* args[] = {&h};
-  cuda_safe_call(cudaLaunchCooperativeKernel(
+  cuda_try(cudaLaunchCooperativeKernel(
     (void*) reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>,
     config[1],
     config[2],
@@ -481,7 +483,7 @@ UNITTEST("thread hierarchy sync")
     0,
     0));
 
-  cuda_safe_call(cudaDeviceSynchronize());
+  cuda_try(cudaDeviceSynchronize());
 };
 
 namespace reserved
@@ -511,7 +513,7 @@ UNITTEST("thread hierarchy inner sync")
   auto config = p.get_config();
   reserved::unit_test_thread_hierarchy_inner_sync<false, size_t(0), true, size_t(0)><<<config[1], config[2]>>>(h);
 
-  cuda_safe_call(cudaDeviceSynchronize());
+  cuda_try(cudaDeviceSynchronize());
 };
 
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()

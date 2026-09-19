@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: nvrtc, pre-sm-70
 // UNSUPPORTED: clang && (!nvcc)
+
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
 
 // uncomment for a really verbose output detailing what test steps are being launched
 #define DEBUG_TESTERS
@@ -31,7 +31,7 @@ struct barrier_and_token
   cuda::std::atomic<bool> token_set{false};
 
   template <typename... Args>
-  TEST_FUNC barrier_and_token(Args&&... args)
+  TEST_HOST_DEVICE_FUNC barrier_and_token(Args&&... args)
       : barrier{cuda::std::forward<Args>(args)...}
   {}
 };
@@ -43,7 +43,7 @@ struct barrier_and_token_with_completion
   {
     cuda::std::atomic<bool>& completed;
 
-    TEST_FUNC void operator()() const
+    TEST_HOST_DEVICE_FUNC void operator()() const
     {
       assert(completed.load() == false);
       completed.store(true);
@@ -59,7 +59,7 @@ struct barrier_and_token_with_completion
   cuda::std::atomic<bool> completed{false};
 
   template <typename Arg>
-  TEST_FUNC barrier_and_token_with_completion(Arg&& arg)
+  TEST_HOST_DEVICE_FUNC barrier_and_token_with_completion(Arg&& arg)
       : barrier{std::forward<Arg>(arg), completion_t{completed}}
   {}
 };
@@ -71,7 +71,7 @@ struct barrier_arrive
   static constexpr size_t threadcount = N;
 
   template <typename Data>
-  TEST_FUNC static void perform(Data& data)
+  TEST_HOST_DEVICE_FUNC static void perform(Data& data)
   {
     data.token.store(data.barrier.arrive(), cuda::std::memory_order_release);
     data.token_set.store(true, cuda::std::memory_order_release);
@@ -84,7 +84,7 @@ struct barrier_wait
   using async = cuda::std::true_type;
 
   template <typename Data>
-  TEST_FUNC static void perform(Data& data)
+  TEST_HOST_DEVICE_FUNC static void perform(Data& data)
   {
     while (data.token_set.load(cuda::std::memory_order_acquire) == false)
     {
@@ -97,7 +97,7 @@ struct barrier_wait
 struct validate_completion_result
 {
   template <typename Data>
-  TEST_FUNC static void perform(Data& data)
+  TEST_HOST_DEVICE_FUNC static void perform(Data& data)
   {
     assert(data.completed.load(cuda::std::memory_order_acquire) == true);
     data.completed.store(false, cuda::std::memory_order_release);
@@ -107,7 +107,7 @@ struct validate_completion_result
 struct clear_token
 {
   template <typename Data>
-  TEST_FUNC static void perform(Data& data)
+  TEST_HOST_DEVICE_FUNC static void perform(Data& data)
   {
     data.token_set.store(false, cuda::std::memory_order_release);
   }

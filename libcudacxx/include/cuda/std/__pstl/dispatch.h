@@ -35,6 +35,7 @@ enum class __pstl_algorithm
   __adjacent_difference,
   __copy_if,
   __copy_n,
+  __mdspan_copy,
   __exclusive_scan,
   __find_if,
   __for_each_n,
@@ -56,6 +57,7 @@ enum class __pstl_algorithm
   __transform,
   __transform_reduce,
   __unique,
+  __unique_copy,
 };
 
 //! @brief tag type to indicate that we cannot dispatch to a parallel algorithm and should run the algorithm serially

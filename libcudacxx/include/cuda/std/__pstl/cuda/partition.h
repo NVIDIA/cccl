@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -65,6 +66,9 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
   [[nodiscard]] _CCCL_HOST_API static _InputIterator
   __par_impl(const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     using _OffsetType = size_t;
     using value_type  = iter_value_t<_InputIterator>;
 
@@ -73,7 +77,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
 
     // Determine temporary device storage requirements for device_partition
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DevicePartition::If,
       "__pstl_cuda_partition: determination of device storage for cub::DevicePartition::If failed",
       static_cast<void*>(nullptr),
@@ -83,15 +87,13 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      nullptr);
+      __policy);
 
-    // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     {
       __temporary_storage<_OffsetType, value_type> __storage{__policy, __num_bytes, 1, __count};
 
       // Partition cannot run inplace, so we need to first copy the input into temporary storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
         "__pstl_cuda_partition: kernel launch of cub::DeviceTransform::TransformIf failed",
         tuple<_InputIterator>{__first},
@@ -102,7 +104,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         __policy);
 
       // Run the kernel, the standard requires that the input and output range do not overlap
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DevicePartition::If,
         "__pstl_cuda_partition: kernel launch of cub::DevicePartition::If failed",
         __storage.__get_temp_storage(),
@@ -112,10 +114,10 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_partition: copy of result from device to host failed",
         ::cuda::std::addressof(__num_selected),
@@ -131,8 +133,8 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _UnaryPred)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
-    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred) const
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

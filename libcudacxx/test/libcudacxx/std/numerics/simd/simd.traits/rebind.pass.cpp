@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -28,7 +28,7 @@ namespace simd = cuda::std::simd;
 // rebind with basic_vec
 
 template <typename NewT, typename OldT, int N>
-TEST_FUNC void test_rebind_vec()
+TEST_HOST_DEVICE_FUNC void test_rebind_vec()
 {
   using OldVec = simd::basic_vec<OldT, simd::fixed_size<N>>;
   using Result = simd::rebind_t<NewT, OldVec>;
@@ -37,7 +37,7 @@ TEST_FUNC void test_rebind_vec()
 }
 
 template <typename NewT, typename OldT>
-TEST_FUNC void test_rebind_vec_sizes()
+TEST_HOST_DEVICE_FUNC void test_rebind_vec_sizes()
 {
   test_rebind_vec<NewT, OldT, 1>();
   test_rebind_vec<NewT, OldT, 2>();
@@ -49,7 +49,7 @@ TEST_FUNC void test_rebind_vec_sizes()
 // rebind with basic_mask
 
 template <typename NewT, typename OldT, int N>
-TEST_FUNC void test_rebind_mask()
+TEST_HOST_DEVICE_FUNC void test_rebind_mask()
 {
   using OldMask = simd::mask<OldT, N>;
   using Result  = simd::rebind_t<NewT, OldMask>;
@@ -58,7 +58,7 @@ TEST_FUNC void test_rebind_mask()
 }
 
 template <typename NewT, typename OldT>
-TEST_FUNC void test_rebind_mask_sizes()
+TEST_HOST_DEVICE_FUNC void test_rebind_mask_sizes()
 {
   test_rebind_mask<NewT, OldT, 1>();
   test_rebind_mask<NewT, OldT, 2>();
@@ -70,12 +70,12 @@ TEST_FUNC void test_rebind_mask_sizes()
 // rebind_t matches rebind::type
 
 template <typename NewT, typename V>
-TEST_FUNC void test_rebind_t_alias()
+TEST_HOST_DEVICE_FUNC void test_rebind_t_alias()
 {
   static_assert(cuda::std::is_same_v<simd::rebind_t<NewT, V>, typename simd::rebind<NewT, V>::type>);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // rebind basic_vec
   test_rebind_vec_sizes<int, int>();

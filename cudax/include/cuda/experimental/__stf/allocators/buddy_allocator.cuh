@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -116,7 +117,7 @@ public:
       block_prereqs.merge(it->prereqs);
 
       buddy_list.erase(it);
-      index = ::std::min(index, ::std::ptrdiff_t(buddy_index));
+      index = ::cuda::std::min(index, ::std::ptrdiff_t(buddy_index));
       level++;
     }
 

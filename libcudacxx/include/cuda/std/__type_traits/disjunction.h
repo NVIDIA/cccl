@@ -33,7 +33,7 @@ template <>
 struct _OrImpl<true>
 {
   template <class _Res, class _First, class... _Rest>
-  using _Result _CCCL_NODEBUG_ALIAS =
+  using _Result _CCCL_NODEBUG =
     typename _OrImpl<!bool(_First::value) && sizeof...(_Rest) != 0>::template _Result<_First, _Rest...>;
 };
 
@@ -51,7 +51,7 @@ struct _OrImpl<false>
 // If you want to defer the evaluation of `_Or<_Pred...>` itself, use `_Lazy<_Or, _Pred...>`
 // or `disjunction<_Pred...>` directly.
 template <class... _Args>
-using _Or _CCCL_NODEBUG_ALIAS = typename _OrImpl<sizeof...(_Args) != 0>::template _Result<false_type, _Args...>;
+using _Or _CCCL_NODEBUG = typename _OrImpl<sizeof...(_Args) != 0>::template _Result<false_type, _Args...>;
 
 #if _CCCL_COMPILER(MSVC)
 template <class... _Args>

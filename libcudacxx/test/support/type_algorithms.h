@@ -89,7 +89,7 @@ struct apply_type_identity
 };
 
 template <class T>
-apply_type_identity(T) -> apply_type_identity<T>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES apply_type_identity(T) -> apply_type_identity<T>;
 
 template <template <class...> class T, class... Args>
 struct partial_instantiation

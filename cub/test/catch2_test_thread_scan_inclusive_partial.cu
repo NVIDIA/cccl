@@ -11,8 +11,8 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
+#include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
-#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
 #include <c2h/operator.cuh>
@@ -141,8 +141,9 @@ using items_per_thread_list = c2h::enum_type_list<int, 1, 3, max_size - 1, max_s
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("ThreadScanInclusive Integral Type Tests",
+CUB_TEST("ThreadScanInclusive Integral Type Tests",
          "[scan][thread]",
+         CUB_SMALL,
          integral_type_list,
          cub_operator_integral_list,
          items_per_thread_list)
@@ -178,7 +179,7 @@ C2H_TEST("ThreadScanInclusive Integral Type Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, static_cast<output_t>(filler));
 
   compute_inclusive_scan_reference(
@@ -201,8 +202,9 @@ C2H_TEST("ThreadScanInclusive Integral Type Tests",
   REQUIRE(reference_result == d_out);
 }
 
-C2H_TEST("ThreadScanInclusive Floating-Point Type Tests",
+CUB_TEST("ThreadScanInclusive Floating-Point Type Tests",
          "[scan][thread]",
+         CUB_SMALL,
          fp_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -238,7 +240,7 @@ C2H_TEST("ThreadScanInclusive Floating-Point Type Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, filler);
 
   compute_inclusive_scan_reference(
@@ -263,8 +265,9 @@ C2H_TEST("ThreadScanInclusive Floating-Point Type Tests",
 
 #if TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
+CUB_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
          "[scan][thread][narrow]",
+         CUB_SMALL,
          narrow_precision_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -294,7 +297,7 @@ C2H_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, filler);
 
   compute_inclusive_scan_reference(
@@ -319,14 +322,14 @@ C2H_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
 
 #endif // TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
+CUB_TEST("ThreadScanInclusive Container Tests", "[scan][thread]", CUB_SMALL)
 {
   c2h::device_vector<int> d_in(max_size, thrust::no_init);
   c2h::device_vector<int> d_out(max_size, thrust::no_init);
   using dist_param = dist_interval<int, cuda::std::plus<>, max_size>;
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<int> h_in = d_in;
-  const int valid_items      = GENERATE_COPY(
+  const c2h::host_vector<int> h_in = d_in;
+  const int valid_items            = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, max_size - 1))),
     take(1, random(max_size + 2, cuda::std::numeric_limits<int>::max())),
     values({1, max_size, max_size + 1}));
@@ -371,7 +374,7 @@ C2H_TEST("ThreadScanInclusive Container Tests", "[scan][thread]")
   REQUIRE(reference_result == d_out);
 }
 
-C2H_TEST("ThreadScanInclusive Invalid Test", "[scan][thread]")
+CUB_TEST("ThreadScanInclusive Invalid Test", "[scan][thread]", CUB_SMALL)
 {
   const auto in_it = cuda::make_transform_iterator(
     thrust::make_zip_iterator(cuda::counting_iterator<segment::offset_t>{1},

@@ -3,12 +3,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD__FORMAT_FORMATERS_FP_H
-#define _CUDA_STD__FORMAT_FORMATERS_FP_H
+#ifndef _CUDA_STD___FORMAT_FORMATERS_FP_H
+#define _CUDA_STD___FORMAT_FORMATERS_FP_H
 
 #include <cuda/std/detail/__config>
 
@@ -64,7 +64,6 @@ struct __fmt_formatter_fp
     return __ctx.out();
   }
 
-private:
   __fmt_spec_parser<_CharT> __parser_; //!< The parser for format specifications.
 };
 
@@ -74,11 +73,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<float, char> : __fmt_formatter_fp
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<double, char> : __fmt_formatter_fp<char>
 {};
-#if _CCCL_HAS_LONG_DOUBLE()
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<long double, char> : __fmt_formatter_fp<char>
 {};
-#endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _CCCL_HAS_WCHAR_T()
 template <>
@@ -87,11 +84,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<float, wchar_t> : __fmt_formatter
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<double, wchar_t> : __fmt_formatter_fp<wchar_t>
 {};
-#  if _CCCL_HAS_LONG_DOUBLE()
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<long double, wchar_t> : __fmt_formatter_fp<wchar_t>
 {};
-#  endif // _CCCL_HAS_LONG_DOUBLE()
 #endif // _CCCL_HAS_WCHAR_T()
 
 _CCCL_END_NAMESPACE_CUDA_STD

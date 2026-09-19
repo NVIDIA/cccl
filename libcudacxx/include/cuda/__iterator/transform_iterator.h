@@ -161,7 +161,7 @@ class transform_iterator : public __transform_iterator_category_base<_Fn, _Iter>
   static_assert(::cuda::std::is_object_v<_Fn>, "cuda::transform_iterator requires that _Fn is a functor object");
   static_assert(::cuda::std::regular_invocable<_Fn&, ::cuda::std::iter_reference_t<_Iter>>,
                 "cuda::transform_iterator requires that _Fn is invocable with iter_reference_t<_Iter>");
-  static_assert(::cuda::std::__can_reference<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,
+  static_assert(::cuda::std::__referenceable<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,
                 "cuda::transform_iterator requires that the return type of _Fn is referenceable");
 
   // Not a base because then the friend operators would be ambiguous

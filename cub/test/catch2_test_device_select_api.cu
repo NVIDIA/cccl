@@ -11,7 +11,7 @@
 
 #include <cstddef>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // example-begin segmented-select-iseven
 struct is_even_t
@@ -23,7 +23,7 @@ struct is_even_t
 };
 // example-end segmented-select-iseven
 
-C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]")
+CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]", CUB_SMALL)
 {
   // example-begin segmented-select-flaggedif
   constexpr int num_items         = 8;
@@ -31,7 +31,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_out(num_items);
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  const is_even_t is_even{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
@@ -59,7 +59,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
     num_items,
     is_even);
 
-  c2h::device_vector<int> expected{0, 1, 5};
+  const c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
@@ -67,14 +67,14 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "[select][device]")
+CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "[select][device]", CUB_SMALL)
 {
   // example-begin segmented-select-flaggedif-inplace
   constexpr int num_items         = 8;
   c2h::device_vector<int> d_data  = {0, 1, 2, 3, 4, 5, 6, 7};
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  const is_even_t is_even{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
@@ -94,7 +94,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
     num_items,
     is_even);
 
-  c2h::device_vector<int> expected{0, 1, 5};
+  const c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif-inplace
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
@@ -102,7 +102,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
   REQUIRE(d_data == expected);
 }
 
-C2H_TEST("cub::DeviceSelect::Unique in-place works with int data elements", "[select][device]")
+CUB_TEST("cub::DeviceSelect::Unique in-place works with int data elements", "[select][device]", CUB_SMALL)
 {
   // example-begin select-unique-inplace
   constexpr int num_items                       = 8;
@@ -127,7 +127,7 @@ C2H_TEST("cub::DeviceSelect::Unique in-place works with int data elements", "[se
   // Resize input to new length
   d_data.resize(d_num_selected_out[0]);
 
-  thrust::device_vector<int> expected{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected{0, 2, 9, 5, 8};
   // example-end select-unique-inplace
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
@@ -144,13 +144,15 @@ struct my_equality_op
 };
 // example-end select-unique-inplace-eqop-myequalityop
 
-C2H_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int data elements", "[select][device]")
+CUB_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int data elements",
+         "[select][device]",
+         CUB_SMALL)
 {
   // example-begin select-unique-inplace-eqop
   constexpr int num_items                       = 8;
   thrust::device_vector<int> d_data             = {0, 2, 2, 9, 5, 5, 5, 8};
   thrust::device_vector<int> d_num_selected_out = {0};
-  my_equality_op equality_op{};
+  const my_equality_op equality_op{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
@@ -172,7 +174,7 @@ C2H_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int dat
   // Resize input to new length
   d_data.resize(d_num_selected_out[0]);
 
-  thrust::device_vector<int> expected{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected{0, 2, 9, 5, 8};
   // example-end select-unique-inplace-eqop
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
@@ -193,7 +195,7 @@ struct select_always_true_t
   }
 };
 
-C2H_TEST("DeviceSelect::Flagged legacy size-query is unambiguous", "[select][device]")
+CUB_TEST("DeviceSelect::Flagged legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -207,7 +209,7 @@ C2H_TEST("DeviceSelect::Flagged legacy size-query is unambiguous", "[select][dev
           == cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected, n));
 }
 
-C2H_TEST("DeviceSelect::Flagged in-place legacy size-query is unambiguous", "[select][device]")
+CUB_TEST("DeviceSelect::Flagged in-place legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -220,7 +222,7 @@ C2H_TEST("DeviceSelect::Flagged in-place legacy size-query is unambiguous", "[se
     cudaSuccess == cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected, n));
 }
 
-C2H_TEST("DeviceSelect::If legacy size-query is unambiguous", "[select][device]")
+CUB_TEST("DeviceSelect::If legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -234,7 +236,7 @@ C2H_TEST("DeviceSelect::If legacy size-query is unambiguous", "[select][device]"
             d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected, n, select_always_true_t{}));
 }
 
-C2H_TEST("DeviceSelect::If in-place legacy size-query is unambiguous", "[select][device]")
+CUB_TEST("DeviceSelect::If in-place legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -247,7 +249,7 @@ C2H_TEST("DeviceSelect::If in-place legacy size-query is unambiguous", "[select]
     == cub::DeviceSelect::If(d_temp_storage, temp_storage_bytes, d_data, d_num_selected, n, select_always_true_t{}));
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf legacy size-query is unambiguous", "[select][device]")
+CUB_TEST("DeviceSelect::FlaggedIf legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -262,7 +264,7 @@ C2H_TEST("DeviceSelect::FlaggedIf legacy size-query is unambiguous", "[select][d
             d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected, n, select_always_true_t{}));
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf in-place legacy size-query is unambiguous", "[select][device]")
+CUB_TEST("DeviceSelect::FlaggedIf in-place legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -276,7 +278,7 @@ C2H_TEST("DeviceSelect::FlaggedIf in-place legacy size-query is unambiguous", "[
             d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected, n, select_always_true_t{}));
 }
 
-C2H_TEST("DeviceSelect::Unique legacy size-query is unambiguous", "[select][device]")
+CUB_TEST("DeviceSelect::Unique legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -288,7 +290,7 @@ C2H_TEST("DeviceSelect::Unique legacy size-query is unambiguous", "[select][devi
   REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected, n));
 }
 
-C2H_TEST("DeviceSelect::UniqueByKey legacy size-query is unambiguous", "[select][device]")
+CUB_TEST("DeviceSelect::UniqueByKey legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -297,7 +299,7 @@ C2H_TEST("DeviceSelect::UniqueByKey legacy size-query is unambiguous", "[select]
   int* d_keys_out           = nullptr;
   int* d_values_out         = nullptr;
   int* d_num_selected       = nullptr;
-  int n                     = 0;
+  const int n               = 0;
 
   REQUIRE(cudaSuccess
           == cub::DeviceSelect::UniqueByKey(

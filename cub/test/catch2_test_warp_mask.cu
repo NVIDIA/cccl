@@ -6,7 +6,7 @@
 
 #include <cuda/__cmath/pow2.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <int logical_warp_threads>
 struct total_warps_t
@@ -30,7 +30,7 @@ bool is_lane_involved(unsigned int member_mask, unsigned int lane)
 using logical_warp_threads      = c2h::iota<1, 32>;
 using power_of_two_warp_threads = c2h::enum_type_list<int, 1, 2, 4, 8, 16, 32>;
 
-C2H_TEST("Warp mask ignores lanes before current logical warp", "[mask][warp]", power_of_two_warp_threads)
+CUB_TEST("Warp mask ignores lanes before current logical warp", "[mask][warp]", CUB_SMALL, power_of_two_warp_threads)
 {
   constexpr int logical_warp_thread  = c2h::get<0, TestType>::value;
   constexpr unsigned int total_warps = total_warps_t<logical_warp_thread>::value();
@@ -47,7 +47,7 @@ C2H_TEST("Warp mask ignores lanes before current logical warp", "[mask][warp]", 
   }
 }
 
-C2H_TEST("Warp mask involves lanes of current logical warp", "[mask][warp]", logical_warp_threads)
+CUB_TEST("Warp mask involves lanes of current logical warp", "[mask][warp]", CUB_SMALL, logical_warp_threads)
 {
   constexpr int logical_warp_thread  = c2h::get<0, TestType>::value;
   constexpr unsigned int total_warps = total_warps_t<logical_warp_thread>::value();
@@ -65,7 +65,7 @@ C2H_TEST("Warp mask involves lanes of current logical warp", "[mask][warp]", log
   }
 }
 
-C2H_TEST("Warp mask ignores lanes after current logical warp", "[mask][warp]", logical_warp_threads)
+CUB_TEST("Warp mask ignores lanes after current logical warp", "[mask][warp]", CUB_SMALL, logical_warp_threads)
 {
   constexpr int logical_warp_thread  = c2h::get<0, TestType>::value;
   constexpr unsigned int total_warps = total_warps_t<logical_warp_thread>::value();

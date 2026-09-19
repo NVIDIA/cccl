@@ -5,6 +5,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_merge_sort.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -85,6 +92,27 @@ CUB_NAMESPACE_BEGIN
  *   num_items,
  *   CustomLess());
  * @endcode
+ *
+ * @rst
+ *
+ * Tuning
+ * +++++++++++++++++++++++++++++++++++++++++++++
+ *
+ * All algorithms in DeviceMergeSort that accept an environment can be tuned by passing a custom :ref:`policy selector
+ * <cub-policy-selectors>` that returns a :cpp:struct:`cub::MergeSortPolicy`, as shown in the example below:
+ *
+ *  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
+ *      :language: c++
+ *      :dedent:
+ *      :start-after: example-begin sort-pairs-policy-selector
+ *      :end-before: example-end sort-pairs-policy-selector
+ *
+ *  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
+ *      :language: c++
+ *      :dedent:
+ *      :start-after: example-begin sort-pairs-tuning
+ *      :end-before: example-end sort-pairs-tuning
+ * @endrst
  *
  * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
  */
@@ -187,9 +215,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -294,8 +320,8 @@ public:
             typename OffsetT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortPairs(KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+    KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -395,9 +421,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -549,7 +573,7 @@ public:
     ValueIteratorT d_output_values,
     OffsetT num_items,
     CompareOpT compare_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -656,9 +680,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -750,7 +772,7 @@ public:
   //!   @endrst
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  SortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -869,9 +891,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -980,7 +1000,11 @@ public:
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysCopy(
-    KeyInputIteratorT d_input_keys, KeyIteratorT d_output_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1067,9 +1091,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -1176,8 +1198,8 @@ public:
             typename OffsetT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  StableSortPairs(KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t StableSortPairs(
+    KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1259,9 +1281,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -1355,7 +1375,7 @@ public:
   //!   @endrst
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  StableSortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  StableSortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1447,9 +1467,7 @@ public:
    *   the [Strict Weak Ordering] concept.
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
+   *   @devicestorage
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
@@ -1558,7 +1576,11 @@ public:
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t StableSortKeysCopy(
-    KeyInputIteratorT d_input_keys, KeyIteratorT d_output_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 

@@ -13,8 +13,13 @@
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh> // cub::DispatchSegmentedReduce
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
+#include <cstdlib>
+#include <cstring>
 #include <exception> // std::exception
 #include <format>
+#include <mutex>
 #include <string> // std::string
 #include <string_view> // std::string_view
 #include <type_traits> // std::is_same_v
@@ -26,7 +31,10 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
+#include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include <cccl/c/segmented_reduce.h>
+#include <cccl/c/serialization.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
@@ -112,7 +120,7 @@ struct segmented_reduce_start_offset_iterator_tag;
 struct segmented_reduce_end_offset_iterator_tag;
 struct segmented_reduce_operation_tag;
 
-CUresult cccl_device_segmented_reduce_build_ex(
+CUresult cccl_device_segmented_reduce_compile(
   cccl_device_segmented_reduce_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -239,48 +247,157 @@ static_assert(
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  // Collect all LTO-IRs to be linked.
+  const bool kernel_only = is_custom_op(op);
+
+  // Collect all LTO-IRs to be linked (empty in kernel-only mode).
   nvrtc_linkable_list linkable_list;
   nvrtc_linkable_list_appender appender{linkable_list};
 
-  // add definition of binary operation op
   appender.append_operation(op);
-  // add iterator definitions
   appender.add_iterator_definition(input_it);
   appender.add_iterator_definition(output_it);
   appender.add_iterator_definition(start_offset_it);
   appender.add_iterator_definition(end_offset_it);
 
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
+  auto post_build =
+    begin_linking_nvrtc_program(kernel_only ? 0 : num_lto_args, kernel_only ? nullptr : lopts)
       ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
       ->add_expression({segmented_reduce_kernel_name})
       ->compile_program({args.data(), args.size()})
-      ->get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
+      ->get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name});
 
-  // populate build struct members
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(
-    &build_ptr->segmented_reduce_kernel, build_ptr->library, segmented_reduce_kernel_lowered_name.c_str()));
+  struct free_deleter
+  {
+    void operator()(void* p) const
+    {
+      std::free(p);
+    }
+  };
+  static_assert(::cuda::is_trivially_copyable_v<cub::detail::segmented_reduce::policy_selector>);
+  const size_t policy_size = sizeof(policy_sel);
+  std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
+  if (!policy_ptr)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
+  auto kernel_name = std::unique_ptr<char[]>(duplicate_c_string(segmented_reduce_kernel_lowered_name));
 
   build_ptr->cc               = cc_major * 10 + cc_minor;
-  build_ptr->cubin            = (void*) result.data.release();
-  build_ptr->cubin_size       = result.size;
   build_ptr->accumulator_size = accum_t.size;
-  build_ptr->runtime_policy   = new cub::detail::segmented_reduce::policy_selector{policy_sel};
+  // Zero-init fields set by _load, not _compile.
+  build_ptr->library                 = nullptr;
+  build_ptr->segmented_reduce_kernel = nullptr;
+
+  // All potentially-throwing operations come before any release() calls so that
+  // unique_ptrs automatically clean up on exception.
+  if (kernel_only)
+  {
+    auto [ltoir_size, ltoir_data] = post_build->get_program_ltoir();
+    build_ptr->payload            = ltoir_data.release();
+    build_ptr->payload_size       = ltoir_size;
+    build_ptr->payload_kind       = CCCL_PAYLOAD_LTOIR;
+  }
+  else
+  {
+    nvrtc_link_result result = post_build->link_program()->add_link_list(linkable_list)->finalize_program();
+    build_ptr->payload       = (void*) result.data.release();
+    build_ptr->payload_size  = result.size;
+    build_ptr->payload_kind  = CCCL_PAYLOAD_CUBIN;
+  }
+
+  build_ptr->runtime_policy                       = policy_ptr.release();
+  build_ptr->runtime_policy_size                  = policy_size;
+  build_ptr->segmented_reduce_kernel_lowered_name = kernel_name.release();
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_segmented_reduce_build(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_segmented_reduce_compile(): %s\n", exc.what());
   fflush(stdout);
 
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_reduce_load(cccl_device_segmented_reduce_build_result_t* build_ptr)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_CUBIN || build_ptr->segmented_reduce_kernel_lowered_name == nullptr
+      || build_ptr->segmented_reduce_kernel_lowered_name[0] == '\0')
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  CUresult status =
+    cuLibraryLoadData(&build_ptr->library, build_ptr->payload, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  if (status != CUDA_SUCCESS)
+  {
+    return status;
+  }
+  try
+  {
+    check(cuLibraryGetKernel(
+      &build_ptr->segmented_reduce_kernel, build_ptr->library, build_ptr->segmented_reduce_kernel_lowered_name));
+  }
+  catch (...)
+  {
+    cuLibraryUnload(build_ptr->library);
+    build_ptr->library = nullptr;
+    throw;
+  }
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_segmented_reduce_load(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_reduce_build_ex(
+  cccl_device_segmented_reduce_build_result_t* build_ptr,
+  cccl_iterator_t input_it,
+  cccl_iterator_t output_it,
+  cccl_iterator_t start_offset_it,
+  cccl_iterator_t end_offset_it,
+  cccl_op_t op,
+  cccl_value_t init,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config)
+{
+  CUresult r = cccl_device_segmented_reduce_compile(
+    build_ptr,
+    input_it,
+    output_it,
+    start_offset_it,
+    end_offset_it,
+    op,
+    init,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config);
+  if (r != CUDA_SUCCESS)
+  {
+    return r;
+  }
+  CUresult load_r = cccl_device_segmented_reduce_load(build_ptr);
+  if (load_r != CUDA_SUCCESS)
+  {
+    cccl_device_segmented_reduce_cleanup(build_ptr);
+  }
+  return load_r;
 }
 
 CUresult cccl_device_segmented_reduce(
@@ -381,19 +498,158 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  // allocation behind cubin is owned by unique_ptr with delete[] deleter now
-  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<cub::detail::segmented_reduce::policy_selector> policy(
-    static_cast<cub::detail::segmented_reduce::policy_selector*>(build_ptr->runtime_policy));
-  check(cuLibraryUnload(build_ptr->library));
+  std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
+  std::free(build_ptr->runtime_policy);
+  std::unique_ptr<char[]> kernel_name(build_ptr->segmented_reduce_kernel_lowered_name);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
 {
   fflush(stderr);
-  printf("\nEXCEPTION in cccl_device_reduce_cleanup(): %s\n", exc.what());
+  printf("\nEXCEPTION in cccl_device_segmented_reduce_cleanup(): %s\n", exc.what());
   fflush(stdout);
 
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_reduce_link_ltoir(
+  cccl_device_segmented_reduce_build_result_t* build_ptr,
+  const void** input_blobs,
+  const size_t* input_sizes,
+  size_t num_inputs)
+try
+{
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->payload_kind != CCCL_PAYLOAD_LTOIR)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const int cc_major = build_ptr->cc / 10;
+  const int cc_minor = build_ptr->cc % 10;
+  std::vector<const void*> all_blobs;
+  std::vector<size_t> all_sizes;
+  all_blobs.push_back(build_ptr->payload);
+  all_sizes.push_back(build_ptr->payload_size);
+  if (num_inputs > 0 && (input_blobs == nullptr || input_sizes == nullptr))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  for (size_t i = 0; i < num_inputs; ++i)
+  {
+    if (input_blobs[i] == nullptr || input_sizes[i] == 0)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+    all_blobs.push_back(input_blobs[i]);
+    all_sizes.push_back(input_sizes[i]);
+  }
+  auto [cubin, cubin_size] = nvjitlink_link(all_blobs.data(), all_sizes.data(), all_blobs.size(), cc_major, cc_minor);
+  delete[] static_cast<char*>(build_ptr->payload);
+  build_ptr->payload      = (void*) cubin.release();
+  build_ptr->payload_size = cubin_size;
+  build_ptr->payload_kind = CCCL_PAYLOAD_CUBIN;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  printf("\nEXCEPTION in cccl_device_segmented_reduce_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_reduce_serialize(
+  const cccl_device_segmented_reduce_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0 || build_ptr->runtime_policy == nullptr
+      || build_ptr->runtime_policy_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::serialization;
+  buffer_writer w;
+  write_header(w, CCCL_SERIALIZATION_ALGO_SEGMENTED_REDUCE, build_ptr->payload_kind, build_ptr->cc);
+  w.write_pod<uint64_t>(build_ptr->accumulator_size);
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
+  w.write_cstring(build_ptr->segmented_reduce_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_segmented_reduce_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_reduce_deserialize(
+  cccl_device_segmented_reduce_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::serialization;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_SEGMENTED_REDUCE);
+
+  const uint64_t accum_size = r.read_pod<uint64_t>();
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  if (payload_size == 0)
+  {
+    throw std::runtime_error("serialization blob: empty payload");
+  }
+
+  std::unique_ptr<cub::detail::segmented_reduce::policy_selector, decltype(&std::free)> policy(
+    static_cast<cub::detail::segmented_reduce::policy_selector*>(
+      std::malloc(sizeof(cub::detail::segmented_reduce::policy_selector))),
+    std::free);
+  if (!policy)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  r.read_into(policy.get(), sizeof(cub::detail::segmented_reduce::policy_selector));
+
+  std::unique_ptr<char[]> n_kernel{r.read_cstring_dup()};
+
+  cccl_device_segmented_reduce_build_result_t result{};
+  result.cc                                   = static_cast<int>(h.cc);
+  result.payload_kind                         = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.accumulator_size                     = accum_size;
+  result.payload                              = payload_owner.release();
+  result.payload_size                         = payload_size;
+  result.runtime_policy                       = policy.release();
+  result.runtime_policy_size                  = sizeof(cub::detail::segmented_reduce::policy_selector);
+  result.segmented_reduce_kernel_lowered_name = n_kernel.release();
+  *build_ptr                                  = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_segmented_reduce_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }

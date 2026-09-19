@@ -47,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__numeric/exclusive_scan.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -70,8 +71,11 @@ struct __pstl_dispatch<__pstl_algorithm::__exclusive_scan, __execution_backend::
     _BinaryOp __binary_op,
     _Tp __init)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     // We pass the policy as an environment to DeviceScan
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceScan::ExclusiveScan,
       "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::ExclusiveScan failed",
       ::cuda::std::move(__first),
@@ -81,21 +85,19 @@ struct __pstl_dispatch<__pstl_algorithm::__exclusive_scan, __execution_backend::
       __count,
       __policy);
 
-    // Get the stream for synchronization after the algorithm is run
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
 
     return __result + iter_difference_t<_OutputIterator>(__count);
   }
 
   template <class _Policy, class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
     _OutputIterator __result,
     _Tp __init,
-    _BinaryOp __binary_op) const
+    _BinaryOp __binary_op)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)

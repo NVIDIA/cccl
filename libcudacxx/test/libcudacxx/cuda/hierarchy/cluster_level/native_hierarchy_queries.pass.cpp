@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
 
 #include <cuda/hierarchy>

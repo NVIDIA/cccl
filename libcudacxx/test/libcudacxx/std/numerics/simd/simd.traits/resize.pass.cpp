@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -32,7 +32,7 @@ namespace simd = cuda::std::simd;
 // resize with basic_vec
 
 template <typename T, int OldN, int NewN>
-TEST_FUNC void test_resize_vec()
+TEST_HOST_DEVICE_FUNC void test_resize_vec()
 {
   using OldVec   = simd::basic_vec<T, simd::fixed_size<OldN>>;
   using Result   = simd::resize_t<NewN, OldVec>;
@@ -43,7 +43,7 @@ TEST_FUNC void test_resize_vec()
 }
 
 template <typename T>
-TEST_FUNC void test_resize_vec_all()
+TEST_HOST_DEVICE_FUNC void test_resize_vec_all()
 {
   test_resize_vec<T, 4, 4>();
   test_resize_vec<T, 4, 2>();
@@ -54,7 +54,7 @@ TEST_FUNC void test_resize_vec_all()
 // resize with basic_mask
 
 template <typename T, int OldN, int NewN>
-TEST_FUNC void test_resize_mask()
+TEST_HOST_DEVICE_FUNC void test_resize_mask()
 {
   using OldMask  = simd::mask<T, OldN>;
   using Result   = simd::resize_t<NewN, OldMask>;
@@ -64,7 +64,7 @@ TEST_FUNC void test_resize_mask()
 }
 
 template <typename T>
-TEST_FUNC void test_resize_mask_all()
+TEST_HOST_DEVICE_FUNC void test_resize_mask_all()
 {
   test_resize_mask<T, 4, 4>();
   test_resize_mask<T, 4, 2>();
@@ -75,12 +75,12 @@ TEST_FUNC void test_resize_mask_all()
 // resize_t matches resize::type
 
 template <int N, typename V>
-TEST_FUNC void test_resize_t_alias()
+TEST_HOST_DEVICE_FUNC void test_resize_t_alias()
 {
   static_assert(cuda::std::is_same_v<simd::resize_t<N, V>, typename simd::resize<N, V>::type>);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // resize basic_vec
   test_resize_vec_all<char>();

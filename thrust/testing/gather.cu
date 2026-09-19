@@ -9,14 +9,6 @@
 
 #include <unittest/unittest.h>
 
-// There is an unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 11)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
@@ -30,7 +22,7 @@ void TestGatherSimple()
   thrust::gather(map.begin(), map.end(), src.begin(), dst.begin());
 
   Vector ref{6, 2, 1, 7, 2};
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestGatherSimple);
 
@@ -45,10 +37,10 @@ void TestGatherDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::gather(sys, vec.begin(), vec.end(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestGatherDispatchExplicit);
 
@@ -68,7 +60,7 @@ void TestGatherDispatchImplicit()
                  thrust::retag<my_tag>(vec.begin()),
                  thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestGatherDispatchImplicit);
 
@@ -98,7 +90,7 @@ void TestGather(const size_t n)
   thrust::gather(h_map.begin(), h_map.end(), h_source.begin(), h_output.begin());
   thrust::gather(d_map.begin(), d_map.end(), d_source.begin(), d_output.begin());
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestGather);
 
@@ -121,16 +113,16 @@ void TestGatherToDiscardIterator(const size_t n)
 
   thrust::device_vector<unsigned int> d_map = h_map;
 
-  thrust::discard_iterator<> h_result =
+  const thrust::discard_iterator<> h_result =
     thrust::gather(h_map.begin(), h_map.end(), h_source.begin(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> d_result =
+  const thrust::discard_iterator<> d_result =
     thrust::gather(d_map.begin(), d_map.end(), d_source.begin(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(n);
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestGatherToDiscardIterator);
 
@@ -145,7 +137,7 @@ void TestGatherIfSimple()
   thrust::gather_if(map.begin(), map.end(), flg.begin(), src.begin(), dst.begin());
 
   Vector ref{0, 2, 0, 7, 0};
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestGatherIfSimple);
 
@@ -175,10 +167,10 @@ void TestGatherIfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::gather_if(sys, vec.begin(), vec.end(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestGatherIfDispatchExplicit);
 
@@ -206,7 +198,7 @@ void TestGatherIfDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestGatherIfDispatchImplicit);
 
@@ -258,7 +250,7 @@ void TestGatherIf(const size_t n)
     d_output.begin(),
     is_even_gather_if<unsigned int>());
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestGatherIf);
 
@@ -291,7 +283,7 @@ void TestGatherIfToDiscardIterator(const size_t n)
 
   thrust::device_vector<unsigned int> d_stencil = h_stencil;
 
-  thrust::discard_iterator<> h_result = thrust::gather_if(
+  const thrust::discard_iterator<> h_result = thrust::gather_if(
     h_map.begin(),
     h_map.end(),
     h_stencil.begin(),
@@ -299,7 +291,7 @@ void TestGatherIfToDiscardIterator(const size_t n)
     thrust::make_discard_iterator(),
     is_even_gather_if<unsigned int>());
 
-  thrust::discard_iterator<> d_result = thrust::gather_if(
+  const thrust::discard_iterator<> d_result = thrust::gather_if(
     d_map.begin(),
     d_map.end(),
     d_stencil.begin(),
@@ -307,10 +299,10 @@ void TestGatherIfToDiscardIterator(const size_t n)
     thrust::make_discard_iterator(),
     is_even_gather_if<unsigned int>());
 
-  thrust::discard_iterator<> reference(n);
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestGatherIfToDiscardIterator);
 
@@ -329,7 +321,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestGatherCountingIterator()
   thrust::fill(output.begin(), output.end(), 0);
   thrust::gather(map.begin(), map.end(), thrust::make_counting_iterator(0), output.begin());
 
-  ASSERT_EQUAL(output, map);
+  REQUIRE(output == map);
 
   // map has any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
@@ -338,7 +330,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestGatherCountingIterator()
                  source.begin(),
                  output.begin());
 
-  ASSERT_EQUAL(output, map);
+  REQUIRE(output == map);
 
   // source and map have any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
@@ -347,7 +339,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestGatherCountingIterator()
                  thrust::make_counting_iterator(0),
                  output.begin());
 
-  ASSERT_EQUAL(output, map);
+  REQUIRE(output == map);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestGatherCountingIterator);
 

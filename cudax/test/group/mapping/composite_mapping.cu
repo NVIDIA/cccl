@@ -32,6 +32,7 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
 
   // Test construction from 2 mappings.
   {
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     cudax::composite_mapping mapping{mapping1, mapping2};
     static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Mapping1, Mapping2>
@@ -46,27 +47,28 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(mapping.get()));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.unit_count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.count(0) == 1);
-    CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.unit_count(0) == 1);
+    CHECK(mapping2_ref.unit_count(1) == 3);
   }
 
   // Test map(...).
   {
     const cudax::this_warp parent_group{config};
     const ThreadsInWarpMappingResult prev_mapping_result;
-    const cudax::composite_mapping mapping{mapping1, mapping2};
+    cudax::composite_mapping mapping{mapping1, mapping2};
 
-    static_assert(cudax::__group_mapping_result<decltype(mapping.map(parent_group, prev_mapping_result))>);
+    static_assert(
+      cudax::__group_mapping_result<decltype(mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result))>);
 
-    auto result  = mapping.map(parent_group, prev_mapping_result);
+    auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
     using Result = decltype(result);
 
     const auto rank_in_warp = cuda::gpu_thread.rank_as<unsigned>(parent_group);
 
-    if constexpr (Mapping1::static_count() != cuda::std::dynamic_extent
+    if constexpr (Mapping1::static_unit_count() != cuda::std::dynamic_extent
                   && Mapping2::static_group_count() != cuda::std::dynamic_extent)
     {
       static_assert(Result::static_group_count() == 16);
@@ -78,9 +80,9 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     CHECK(result.group_count() == 16);
     CHECK(result.group_rank() == (rank_in_warp / 4 * 2 + (rank_in_warp % 4 > 0)));
 
-    static_assert(Result::static_count() == cuda::std::dynamic_extent);
-    CHECK(result.count() == ((rank_in_warp % 4 > 0) ? 3 : 1));
-    CHECK(result.rank() == ((rank_in_warp % 4 > 0) ? (rank_in_warp % 4 - 1) : 0));
+    static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
+    CHECK(result.unit_count() == ((rank_in_warp % 4 > 0) ? 3 : 1));
+    CHECK(result.unit_rank() == ((rank_in_warp % 4 > 0) ? (rank_in_warp % 4 - 1) : 0));
 
     const auto lane_mask_ref = ((rank_in_warp % 4 > 0) ? 0b1110u : 0b0001u) << ((rank_in_warp / 4) * 4);
     CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
@@ -98,11 +100,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(mapping1 | mapping2));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.unit_count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.count(0) == 1);
-    CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.unit_count(0) == 1);
+    CHECK(mapping2_ref.unit_count(1) == 3);
   }
   {
     auto mapping = cudax::composite_mapping{mapping1} | mapping2;
@@ -111,11 +113,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(cudax::composite_mapping{mapping1} | mapping2));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.unit_count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.count(0) == 1);
-    CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.unit_count(0) == 1);
+    CHECK(mapping2_ref.unit_count(1) == 3);
   }
   {
     auto mapping = mapping1 | cudax::composite_mapping{mapping2};
@@ -124,11 +126,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(mapping1 | cudax::composite_mapping{mapping2}));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.unit_count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.count(0) == 1);
-    CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.unit_count(0) == 1);
+    CHECK(mapping2_ref.unit_count(1) == 3);
   }
   {
     auto mapping = cudax::composite_mapping{mapping1} | cudax::composite_mapping{mapping2};
@@ -137,11 +139,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(noexcept(cudax::composite_mapping{mapping1} | cudax::composite_mapping{mapping2}));
 
     const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.count() == 4);
+    CHECK(mapping1_ref.unit_count() == 4);
 
     const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.count(0) == 1);
-    CHECK(mapping2_ref.count(1) == 3);
+    CHECK(mapping2_ref.unit_count(0) == 1);
+    CHECK(mapping2_ref.unit_count(1) == 3);
   }
 }
 

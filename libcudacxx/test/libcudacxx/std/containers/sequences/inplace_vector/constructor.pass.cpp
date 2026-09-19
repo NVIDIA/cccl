@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6080486 : error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
-
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>

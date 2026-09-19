@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_merge_sort.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/util_device.cuh>
@@ -92,7 +93,8 @@ struct DeviceMergeSortKernelSource
  * Policy
  ******************************************************************************/
 
-// TODO(bgruber): deprecate this when we make the tuning API public and remove in CCCL 4.0
+// TODO(bgruber): remove in CCCL 4.0
+//! Deprecated [Since 3.5]
 template <typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -111,7 +113,7 @@ template <typename KeyInputIteratorT,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
           typename KeyT                  = cub::detail::it_value_t<KeyIteratorT>,
           typename ValueT                = cub::detail::it_value_t<ValueIteratorT>>
-struct DispatchMergeSort
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceMergeSort") DispatchMergeSort
 {
   /// Whether or not there are values to be trucked along with keys
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
@@ -185,7 +187,7 @@ private:
   template <typename ActivePolicyT>
   struct policy_getter
   {
-    _CCCL_HOST_DEVICE_API constexpr auto operator()() -> detail::merge_sort::merge_sort_policy
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() -> MergeSortPolicy
     {
       using mp = typename ActivePolicyT::MergeSortPolicy;
       return {mp::BLOCK_THREADS, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
@@ -195,7 +197,7 @@ private:
 public:
   // Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke([[maybe_unused]] ActivePolicyT policy = {})
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke([[maybe_unused]] ActivePolicyT = {})
   {
     if (num_items == 0)
     {
@@ -206,18 +208,21 @@ public:
       return cudaSuccess;
     }
 
-    constexpr auto tile_size =
-      detail::merge_sort::merge_sort_vsmem_helper_t<
-        policy_getter<ActivePolicyT>,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyIteratorT,
-        ValueIteratorT,
-        OffsetT,
-        CompareOpT,
-        KeyT,
-        ValueT>::policy.items_per_tile();
-    const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
+    static constexpr auto policy = detail::merge_sort::merge_sort_vsmem_helper_t<
+      policy_getter<ActivePolicyT>,
+      KeyInputIteratorT,
+      ValueInputIteratorT,
+      KeyIteratorT,
+      ValueIteratorT,
+      OffsetT,
+      CompareOpT,
+      KeyT,
+      ValueT>::policy;
+    static_assert(1 <= policy.threads_per_block && policy.threads_per_block <= 1024,
+                  "Number of threads per block need to be inside [1;1024]");
+    static_assert(1 <= policy.items_per_thread, "Number of items per thread needs to be at least 1");
+    constexpr auto tile_size = policy.threads_per_block * policy.items_per_thread;
+    const auto num_tiles     = ::cuda::ceil_div(num_items, tile_size);
 
     const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
     const auto temporary_keys_storage_size   = static_cast<size_t>(num_items * kernel_source.KeySize());
@@ -244,8 +249,8 @@ public:
       num_tiles * detail::vsmem_helper_impl<typename merge_sort_vsmem_t::merge_agent_t>::vsmem_per_block;
     const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
 
-    void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
-    size_t allocation_sizes[4] = {
+    void* allocations[4]             = {nullptr, nullptr, nullptr, nullptr};
+    const size_t allocation_sizes[4] = {
       merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
 
     if (const auto error =
@@ -279,17 +284,7 @@ public:
     auto keys_buffer      = static_cast<KeyT*>(allocations[1]);
     auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
-    const int threads_per_block =
-      detail::merge_sort::merge_sort_vsmem_helper_t<
-        policy_getter<ActivePolicyT>,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyIteratorT,
-        ValueIteratorT,
-        OffsetT,
-        CompareOpT,
-        KeyT,
-        ValueT>::policy.threads_per_block;
+    const int threads_per_block = policy.threads_per_block;
 
     // Invoke DeviceMergeSortBlockSortKernel
     launcher_factory(
@@ -495,7 +490,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
 #ifdef CUB_DEFINE_RUNTIME_POLICIES
-    const merge_sort_policy active_policy = policy_getter();
+    const MergeSortPolicy active_policy = policy_getter();
 #else // CUB_DEFINE_RUNTIME_POLICIES
     using vsmem_adapted_agents = merge_sort_vsmem_helper_t<
       decltype(policy_getter),
@@ -507,7 +502,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       CompareOpT,
       KeyT,
       ValueT>;
-  constexpr merge_sort_policy active_policy = vsmem_adapted_agents::policy;
+  constexpr MergeSortPolicy active_policy = vsmem_adapted_agents::policy;
 #endif // CUB_DEFINE_RUNTIME_POLICIES
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
@@ -519,9 +514,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                            cc.minor_cap(),
                            ss.str().c_str());
                  }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    log_dispatch("DeviceMergeSort", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-    const auto tile_size = active_policy.items_per_tile();
+    _CCCL_ASSERT(1 <= active_policy.threads_per_block && active_policy.threads_per_block <= 1024,
+                 "Number of threads per block need to be inside [1;1024]");
+    _CCCL_ASSERT(1 <= active_policy.items_per_thread, "Number of items per thread needs to be at least 1");
+    const auto tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
     const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
     const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
@@ -538,8 +538,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #endif // CUB_DEFINE_RUNTIME_POLICIES
     const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
 
-    void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
-    size_t allocation_sizes[4] = {
+    void* allocations[4]             = {nullptr, nullptr, nullptr, nullptr};
+    const size_t allocation_sizes[4] = {
       merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
 
     if (const auto error =

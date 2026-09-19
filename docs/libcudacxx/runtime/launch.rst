@@ -1,32 +1,25 @@
 .. _cccl-runtime-launch:
 
-.. |cuda_launch| replace:: ``cuda::launch``
-.. _cuda_launch: ../api/namespacecuda_1afd43c8d92fdb84879aed04f3e2ea25d2.html
-.. |cuda_kernel_config| replace:: ``cuda::kernel_config``
-.. _cuda_kernel_config: ../api/structcuda_1_1kernel__config.html
-.. |cuda_make_config| replace:: ``cuda::make_config``
-.. _cuda_make_config: ../api/namespacecuda_1aa7b277627ddc60563f1818ae8e05ba2d.html
-.. |cuda_cooperative_launch| replace:: ``cuda::cooperative_launch``
-.. _cuda_cooperative_launch: ../api/structcuda_1_1cooperative__launch.html
-.. |cuda_dynamic_shared_memory| replace:: ``cuda::dynamic_shared_memory``
-.. _cuda_dynamic_shared_memory: ../api/namespacecuda_1a737c80f87e6e727a865cd05b82ec2405.html
-.. |cuda_launch_priority| replace:: ``cuda::launch_priority``
-.. _cuda_launch_priority: ../api/structcuda_1_1launch__priority.html
-.. |cuda_host_launch| replace:: ``cuda::host_launch``
-.. _cuda_host_launch: ../api/namespacecuda_1a5af4f59c915edb056f346b904197ff3d.html
+.. |cuda_launch| replace:: :ref:`cuda::launch <libcudacxx-api-function-cuda-ns-launch>`
+.. |cuda_kernel_config| replace:: :ref:`cuda::kernel_config <libcudacxx-api-struct-cuda-ns-kernel_config>`
+.. |cuda_make_config| replace:: :ref:`cuda::make_config <libcudacxx-api-function-cuda-ns-make_config>`
+.. |cuda_cooperative_launch| replace:: :ref:`cuda::cooperative_launch <libcudacxx-api-struct-cuda-ns-cooperative_launch>`
+.. |cuda_dynamic_shared_memory| replace:: :ref:`cuda::dynamic_shared_memory <libcudacxx-api-function-cuda-ns-dynamic_shared_memory>`
+.. |cuda_launch_priority| replace:: :ref:`cuda::launch_priority <libcudacxx-api-struct-cuda-ns-launch_priority>`
+.. |cuda_host_launch| replace:: :ref:`cuda::host_launch <libcudacxx-api-function-cuda-ns-host_launch>`
 
 Launch
 ======
 
 The launch API provides abstractions for launching CUDA kernels with a given configuration. It supports kernel functions and device callable objects, cooperative launches, dynamic shared memory, and other launch options.
 
-|cuda_launch|_
+|cuda_launch|
 --------------------------------------------------------------------------------------------
 .. _cccl-runtime-launch-launch:
 
-|cuda_launch|_ launches a kernel function or a device callable object on the specified stream with a given
+|cuda_launch| launches a kernel function or a device callable object on the specified stream with a given
 configuration. The kernel can accept the configuration as its first argument to enable some device-side functionality,
-but it is not required. If the kernel does accept the configuration as its first argument, |cuda_launch|_
+but it is not required. If the kernel does accept the configuration as its first argument, |cuda_launch|
 will automatically pass it into the kernel without the need to pass the configuration as an argument twice.
 
 *Note:* Configuration won't be passed automatically into the kernel if it is an extended device lambda, it needs to be passed as the second launch function argument and as the first kernel argument.
@@ -97,14 +90,14 @@ Example with extended device lambda:
      cuda::launch(stream, config, lambda, config, 42);
    }
 
-|cuda_kernel_config|_
+|cuda_kernel_config|
 -------------------------------------------------------------------------------
 .. _cccl-runtime-launch-kernel-config:
 
-|cuda_kernel_config|_ represents a kernel launch configuration combining hierarchy dimensions and launch
-options. It should be created using |cuda_make_config|_ rather than being constructed directly.
+|cuda_kernel_config| represents a kernel launch configuration combining hierarchy dimensions and launch
+options. It should be created using |cuda_make_config| rather than being constructed directly.
 
-A |cuda_kernel_config|_ provides:
+A |cuda_kernel_config| provides:
 
 - ``hierarchy()`` - Access to the hierarchy dimensions
 - ``options()`` - Access to launch options
@@ -114,11 +107,11 @@ A |cuda_kernel_config|_ provides:
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
-|cuda_make_config|_
+|cuda_make_config|
 -------------------------------------------------------------------------------------------------
 .. _cccl-runtime-launch-make-config:
 
-|cuda_make_config|_ creates a kernel configuration from `hierarchy dimensions <cccl-runtime-hierarchy>` and
+|cuda_make_config| creates a kernel configuration from :ref:`hierarchy dimensions <cccl-runtime-hierarchy>` and
 optional launch options. It can be called with:
 
 - A hierarchy and options: ``make_config(hierarchy, option1, option2, ...)``
@@ -173,7 +166,7 @@ Launch Options
 
 The launch API provides several launch options:
 
-|cuda_cooperative_launch|_
+|cuda_cooperative_launch|
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Enables cooperative launch, restricting the grid to a number of blocks that can simultaneously execute on the device. This enables usage of ``cooperative_groups::grid_group::sync()`` in the kernel. This is a struct that can be default-constructed.
 
@@ -197,15 +190,15 @@ Example:
      cuda::launch(stream, config, kernel<decltype(config)>);
    }
 
-|cuda_dynamic_shared_memory|_
+|cuda_dynamic_shared_memory|
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Specifies dynamic shared memory configuration. It provides a type-safe way to specify shared memory content and later access it through the configuration object passed to the kernel.
 
-- For non-array ``T`` (e.g., a struct), call |cuda_dynamic_shared_memory|_ with no size argument.
-- For bounded array ``T[n]`` (e.g., ``int[10]``), call |cuda_dynamic_shared_memory|_ with no size argument.
-- For unbounded array ``T[]`` (e.g., ``float[]``), pass the element count to |cuda_dynamic_shared_memory|_.
+- For non-array ``T`` (e.g., a struct), call |cuda_dynamic_shared_memory| with no size argument.
+- For bounded array ``T[n]`` (e.g., ``int[10]``), call |cuda_dynamic_shared_memory| with no size argument.
+- For unbounded array ``T[]`` (e.g., ``float[]``), pass the element count to |cuda_dynamic_shared_memory|.
 - To opt in to non-portable dynamic shared memory sizes (greater than 48 KiB per block), pass
-  :cpp:any:`cuda::non_portable` to |cuda_dynamic_shared_memory|_.
+  :cpp:any:`cuda::non_portable` to |cuda_dynamic_shared_memory|.
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
@@ -239,7 +232,7 @@ Example:
      cuda::launch(stream, config, kernel<decltype(config)>);
    }
 
-|cuda_launch_priority|_
+|cuda_launch_priority|
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Specifies the priority launch option used when scheduling the kernel launch. Overrides the priority specified in the stream.
 
@@ -257,11 +250,11 @@ Example:
      cuda::launch_priority{0}
    );
 
-|cuda_host_launch|_
+|cuda_host_launch|
 -------------------------------------------------------------------------------------------------
 .. _cccl-runtime-launch-host-launch:
 
-|cuda_host_launch|_ launches a host callable for a stream-ordered execution. The callable can be a lambda
+|cuda_host_launch| launches a host callable for a stream-ordered execution. The callable can be a lambda
 function, a function pointer, or a callable object.
 The callable and arguments are taken by value and stored for later execution. This requires a dynamic allocation to store the callable and arguments. If the callable is a function pointer or cuda::std::reference_wrapper and there are no arguments, the dynamic allocation is avoided.
 

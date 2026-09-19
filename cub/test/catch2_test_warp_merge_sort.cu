@@ -12,7 +12,7 @@
 
 #include <algorithm>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 struct CustomLess
@@ -39,7 +39,7 @@ __global__ void warp_merge_sort_kernel(T* in, T* out, SegmentSizeItT segment_siz
   using storage_t         = typename warp_merge_sort_t::TempStorage;
 
   // Get linear thread and warp index
-  const int tid     = threadIdx.x;
+  const int tid     = static_cast<int>(threadIdx.x);
   const int warp_id = tid / LOGICAL_WARP_THREADS;
 
   // Test case of partially finished CTA
@@ -102,7 +102,8 @@ __global__ void warp_merge_sort_kernel(
   using storage_t         = typename warp_merge_sort_t::TempStorage;
 
   // Get linear thread and warp index
-  const int tid     = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
   const int warp_id = tid / LOGICAL_WARP_THREADS;
 
   // Test case of partially finished CTA
@@ -332,7 +333,7 @@ void compute_host_reference(
 {
   for (unsigned int segment_id = 0; segment_id < num_segments; segment_id++)
   {
-    unsigned int segment_size = segment_sizes[segment_id];
+    const unsigned int segment_size = segment_sizes[segment_id];
     std::stable_sort(h_data, h_data + segment_size);
     std::fill(h_data + segment_size, h_data + logical_warp_items, oob_default);
     h_data += logical_warp_items;
@@ -377,8 +378,13 @@ struct params_t
   static constexpr bool is_stable           = c2h::get<3, TestType>::value == stability::stable;
 };
 
-C2H_TEST(
-  "Warp sort on keys-only works", "[sort][warp]", key_types, logical_warp_threads, items_per_thread_list, stability_list)
+CUB_TEST("Warp sort on keys-only works",
+         "[sort][warp]",
+         CUB_SMALL,
+         key_types,
+         logical_warp_threads,
+         items_per_thread_list,
+         stability_list)
 {
   using params             = params_t<TestType>;
   using type               = typename params::type;
@@ -403,8 +409,9 @@ C2H_TEST(
   REQUIRE(h_in_out == d_out);
 }
 
-C2H_TEST("Warp sort keys-only on partial warp-tile works",
+CUB_TEST("Warp sort keys-only on partial warp-tile works",
          "[sort][warp]",
+         CUB_SMALL,
          key_types,
          logical_warp_threads,
          items_per_thread_list,
@@ -428,16 +435,17 @@ C2H_TEST("Warp sort keys-only on partial warp-tile works",
     d_in, d_out, d_segment_sizes.cbegin(), oob_default, warp_sort_delegate{});
 
   // Prepare verification data
-  c2h::host_vector<type> h_in_out     = d_in;
-  c2h::host_vector<int> segment_sizes = d_segment_sizes;
+  c2h::host_vector<type> h_in_out           = d_in;
+  const c2h::host_vector<int> segment_sizes = d_segment_sizes;
   compute_host_reference(h_in_out.begin(), segment_sizes, params::total_warps, oob_default, params::logical_warp_items);
 
   // Verify results
   REQUIRE(h_in_out == d_out);
 }
 
-C2H_TEST("Warp sort on keys-value pairs works",
+CUB_TEST("Warp sort on keys-value pairs works",
          "[sort][warp]",
+         CUB_SMALL,
          key_types,
          logical_warp_threads,
          items_per_thread_list,
@@ -478,8 +486,9 @@ C2H_TEST("Warp sort on keys-value pairs works",
   REQUIRE(h_values_in_out == d_values_out);
 }
 
-C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
+CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
          "[sort][warp]",
+         CUB_SMALL,
          key_types,
          logical_warp_threads,
          items_per_thread_list,
@@ -509,7 +518,7 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   // Prepare verification data
   c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
   c2h::host_vector<value_type> h_values_in_out = d_values_in;
-  c2h::host_vector<int> segment_sizes          = d_segment_sizes;
+  const c2h::host_vector<int> segment_sizes    = d_segment_sizes;
   auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
   compute_host_reference(
     cpu_kv_pairs,

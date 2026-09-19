@@ -18,14 +18,15 @@ template <typename InputT>
 struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::three_way_partition::three_way_partition_policy
+    -> cub::ThreeWayPartitionPolicy
   {
-    return {TUNE_THREADS_PER_BLOCK,
-            TUNE_ITEMS_PER_THREAD,
-            TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
-            cub::LOAD_DEFAULT,
-            cub::BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy};
+    return {cub::ThreeWayPartitionAlgorithm::lookback,
+            {TUNE_THREADS_PER_BLOCK,
+             TUNE_ITEMS_PER_THREAD,
+             TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+             cub::LOAD_DEFAULT,
+             cub::BLOCK_SCAN_WARP_SCANS,
+             lookback_delay_policy}};
   }
 };
 #endif // !TUNE_BASE
@@ -76,7 +77,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(policy_selector<T>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DevicePartition::If,
       "If three-way failed",
       d_in,

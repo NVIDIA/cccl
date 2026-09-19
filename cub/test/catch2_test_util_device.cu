@@ -13,7 +13,7 @@
 #include <cuda/std/array>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 CUB_NAMESPACE_BEGIN
 
@@ -43,22 +43,22 @@ CUB_NAMESPACE_END
 // %PARAM% TEST_LAUNCH lid 0:1:2
 DECLARE_LAUNCH_WRAPPER(cub::get_cuda_cc_from_kernel, get_cuda_cc_from_kernel);
 
-C2H_TEST("CUB correctly identifies the ptx version the kernel was compiled for", "[util][dispatch]")
+CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for", "[util][dispatch]", CUB_SMALL)
 {
   constexpr std::size_t single_item = 1;
   c2h::device_vector<int> cuda_cc(single_item);
 
   // Query the arch the kernel was actually compiled for
-  int ptx_version = [&]() -> int {
+  const int ptx_version = [&]() -> int {
     int* buffer{};
     cudaMallocHost(&buffer, sizeof(*buffer));
     get_cuda_cc_from_kernel(thrust::raw_pointer_cast(cuda_cc.data()), buffer);
-    int result = *buffer;
+    const int result = *buffer;
     cudaFreeHost(buffer);
     return result;
   }();
 
-  int kernel_cuda_cc = cuda_cc[0];
+  const int kernel_cuda_cc = cuda_cc[0];
 
   // Host cub::PtxVersion
   int host_ptx_version{};
@@ -81,7 +81,7 @@ C2H_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
 #endif
 
 #ifdef CUDA_SM_LIST
-C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
+CUB_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]", CUB_SMALL)
 {
   int ptx_version = 0;
   REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
@@ -94,10 +94,10 @@ C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGE
 }
 #endif
 
-#define GEN_POLICY(cur, prev)                                             \
-  struct policy##cur : cub::ChainedPolicy<cur, policy##cur, policy##prev> \
-  {                                                                       \
-    static constexpr int value = cur;                                     \
+#define GEN_POLICY(cur, prev)                                                      \
+  struct policy##cur : cub::detail::chained_policy<cur, policy##cur, policy##prev> \
+  {                                                                                \
+    static constexpr int value = cur;                                              \
   }
 
 #ifdef CUDA_SM_LIST
@@ -125,7 +125,8 @@ struct policy_hub_all
   GEN_POLICY(1000, 900);
   GEN_POLICY(1010, 1000);
   GEN_POLICY(1030, 1010);
-  GEN_POLICY(1100, 1030);
+  GEN_POLICY(1070, 1030);
+  GEN_POLICY(1100, 1070);
   GEN_POLICY(1200, 1100);
   GEN_POLICY(1210, 1200);
   // add more policies here when new architectures emerge
@@ -174,7 +175,8 @@ check_chained_policy_prunes_to_cc_list(void* d_temp_storage, size_t& temp_storag
 
 DECLARE_LAUNCH_WRAPPER(check_chained_policy_prunes_to_cc_list, check_wrapper_all);
 
-C2H_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
+// TODO(bgruber): drop in CCCL 4.0
+CUB_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]", CUB_SMALL)
 {
   check_wrapper_all();
 }
@@ -263,7 +265,8 @@ struct policy_hub_minimal
   using max_policy = policy500;
 };
 
-C2H_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
+// TODO(bgruber): drop in CCCL 4.0
+CUB_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]", CUB_SMALL)
 {
   SECTION("policy_hub_some")
   {
@@ -293,9 +296,9 @@ __global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
 }
 #endif // CUB_RDC_ENABLED
 
-C2H_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]")
+CUB_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]", CUB_SMALL)
 {
-  cuda::device_ref device{0};
+  const cuda::device_ref device{0};
 
   // Calculate the expected max potential dynamic shared memory size.
   const auto max_smem_per_block_optin = device.attribute(cuda::device_attributes::max_shared_memory_per_block_optin);

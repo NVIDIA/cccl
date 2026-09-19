@@ -44,6 +44,34 @@ __global__ void test_cp_async_bulk_multicast(void** fn_ptr)
                                cuda::std::uint64_t*,
                                const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));));
   NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
+        // size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
+        // size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));));
+
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
@@ -56,5 +84,247 @@ __global__ void test_cp_async_bulk_multicast(void** fn_ptr)
                                const cuda::std::uint32_t&,
                                cuda::std::uint64_t*,
                                const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
+        // size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
+        // size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
+        // size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
+        // size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));));
+
 #endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b [dstMem], [srcMem],
+        // size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b [dstMem], [srcMem],
+        // size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_16bytes::80000000
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_16bytes_80000000_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_16bytes::80000000
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_16bytes_80000000_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_16bytes::8000
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_16bytes_8000_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_16bytes::8000
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_16bytes_8000_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_16bytes::80
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_16bytes_80_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_16bytes::80
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_16bytes_80_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_16bytes::8
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_16bytes_8_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_16bytes::8
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_16bytes_8_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_element::ff
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_element_ff_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster::32b.mbarrier::report::validity::per_element::ff
+        // [dstMem], [srcMem], size, [smem_bar], ctaMask;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_cluster_t,
+                               cuda::ptx::space_global_t,
+                               cuda::ptx::mbarrier_report_valid_per_element_ff_t,
+                               void*,
+                               const void*,
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint32_t&)>(cuda::ptx::cp_async_bulk_multicast_32b));));
+
+#endif // __cccl_ptx_isa >= 940
 }
