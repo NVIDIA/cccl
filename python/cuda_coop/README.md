@@ -14,17 +14,18 @@ headers from the active CUDA Toolkit.
 
 ## Installation
 
-Install the common API without a compiler backend:
+Install `cuda-coop` without adding Python package dependencies:
 
 ```bash
 python -m pip install cuda-coop
 ```
 
-The base distribution has no Python package dependencies. It provides the
-common API, type declarations, and bundled CCCL headers. You can import
-`cuda.coop` without a compiler or GPU. Running its primitives inside a kernel
-requires a supported backend. Numba-CUDA-MLIR is the first backend; CUTLASS
-support is planned.
+The wheel includes the common API, every shipped DSL integration (including
+`cuda.coop.numba_mlir`), type declarations, and bundled CCCL headers. The base
+install declares no Python package dependencies. You can import `cuda.coop`
+without a compiler or GPU; using an integration requires its backend
+dependencies to be installed. Numba-CUDA-MLIR is the first supported backend;
+CUTLASS support is planned.
 
 For Numba-CUDA-MLIR, choose the extra matching the CUDA Toolkit major version:
 
@@ -32,6 +33,11 @@ For Numba-CUDA-MLIR, choose the extra matching the CUDA Toolkit major version:
 python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
 # Use numba-cuda-mlir-cu12 with CUDA 12.
 ```
+
+Both commands install the same `cuda-coop` wheel with the same DSL
+integrations. The extra only adds the dependency requirements declared in
+`pyproject.toml` so pip installs the supported Numba-CUDA-MLIR stack for the
+selected CUDA major version.
 
 Python 3.10 through 3.14 is supported. The current backend integration requires
 `numba-cuda-mlir>=0.5.0,<0.6`.
