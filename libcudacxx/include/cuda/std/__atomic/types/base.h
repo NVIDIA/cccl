@@ -23,6 +23,7 @@
 
 #include <cuda/std/__atomic/functions.h>
 #include <cuda/std/__atomic/types/common.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
@@ -75,15 +76,39 @@ struct __atomic_storage
                      NV_IS_HOST,                                                 \
                      (return _Fn(__cuda_atomic_host_backend{}, __VA_ARGS__);))
 
-#define _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(_Fn, _Scope, ...)                           \
-  NV_DISPATCH_TARGET(NV_IS_DEVICE,                                                       \
-                     (return _Fn(__cuda_atomic_device_backend{}, __VA_ARGS__, _Scope);), \
-                     NV_IS_HOST,                                                         \
-                     (return _Fn(__cuda_atomic_host_backend{}, __VA_ARGS__, __thread_scope_tag{});))
+template <class _Scope>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __cuda_atomic_widen_cluster_scope(_Scope __scope)
+{
+  if constexpr (is_same_v<_Scope, __thread_scope_cluster_tag>)
+  {
+    // Thread block clusters are unavailable before SM90. Widen cluster-scoped
+    // operations to device scope on those architectures.
+    return __thread_scope_device_tag{};
+  }
+  else
+  {
+    return __scope;
+  }
+}
+
+#define _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(_Fn, _Scope, ...)                                                          \
+  NV_DISPATCH_TARGET(                                                                                                   \
+    NV_PROVIDES_SM_90,                                                                                                  \
+    (return _Fn(__cuda_atomic_device_backend{}, __VA_ARGS__, _Scope);),                                                 \
+    NV_IS_DEVICE,                                                                                                       \
+    (return _Fn(__cuda_atomic_device_backend{}, __VA_ARGS__, ::cuda::std::__cuda_atomic_widen_cluster_scope(_Scope));), \
+    NV_IS_HOST,                                                                                                         \
+    (return _Fn(__cuda_atomic_host_backend{}, __VA_ARGS__, __thread_scope_tag{});))
+
+template <class _Sco>
+_CCCL_HOST_DEVICE_API void __atomic_thread_fence_dispatch(memory_order __order, [[maybe_unused]] _Sco __scope)
+{
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_thread_fence, __scope, __order);
+}
 
 _CCCL_HOST_DEVICE_API inline void __atomic_thread_fence_dispatch(memory_order __order)
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_thread_fence, __thread_scope_system_tag{}, __order);
+  ::cuda::std::__atomic_thread_fence_dispatch(__order, __thread_scope_system_tag{});
 }
 
 _CCCL_HOST_DEVICE_API inline void __atomic_signal_fence_dispatch(memory_order __order)

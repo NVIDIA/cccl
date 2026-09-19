@@ -40,7 +40,8 @@ template <allocation_fn Alloc, deallocation_fn Dealloc, typename Pointer>
 class cuda_memory_resource final : public mr::memory_resource<Pointer>
 {
 public:
-  Pointer do_allocate(std::size_t bytes, [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  Pointer do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
+                      [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     void* ret;
     const cudaError_t status = Alloc(&ret, bytes);

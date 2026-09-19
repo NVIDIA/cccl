@@ -19,7 +19,7 @@ void TestScatterSimple()
   thrust::scatter(src.begin(), src.end(), map.begin(), dst.begin());
 
   Vector ref{0, 2, 4, 1, 0, 0, 0, 3};
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterSimple);
 
@@ -36,7 +36,7 @@ void TestScatterDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::scatter(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestScatterDispatchExplicit);
 
@@ -55,7 +55,7 @@ void TestScatterDispatchImplicit()
                   thrust::retag<my_tag>(vec.begin()),
                   thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestScatterDispatchImplicit);
 
@@ -82,7 +82,7 @@ void TestScatter(const size_t n)
   thrust::scatter(h_input.begin(), h_input.end(), h_map.begin(), h_output.begin());
   thrust::scatter(d_input.begin(), d_input.end(), d_map.begin(), d_output.begin());
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestScatter);
 
@@ -121,7 +121,7 @@ void TestScatterIfSimple()
   thrust::scatter_if(src.begin(), src.end(), map.begin(), flg.begin(), dst.begin());
 
   Vector ref{0, 0, 0, 1, 0, 0, 0, 3};
-  ASSERT_EQUAL(dst, ref);
+  REQUIRE(dst == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterIfSimple);
 
@@ -138,7 +138,7 @@ void TestScatterIfDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::scatter_if(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestScatterIfDispatchExplicit);
 
@@ -159,7 +159,7 @@ void TestScatterIfDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestScatterIfDispatchImplicit);
 
@@ -198,7 +198,7 @@ void TestScatterIf(const size_t n)
   thrust::scatter_if(
     d_input.begin(), d_input.end(), d_map.begin(), d_map.begin(), d_output.begin(), is_even_scatter_if<unsigned int>());
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestScatterIf);
 
@@ -251,13 +251,13 @@ void TestScatterCountingIterator()
   thrust::fill(output.begin(), output.end(), 0);
   thrust::scatter(thrust::make_counting_iterator(0), thrust::make_counting_iterator(10), map.begin(), output.begin());
 
-  ASSERT_EQUAL(output, map);
+  REQUIRE(output == map);
 
   // map has any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
   thrust::scatter(source.begin(), source.end(), thrust::make_counting_iterator(0), output.begin());
 
-  ASSERT_EQUAL(output, map);
+  REQUIRE(output == map);
 
   // source and map have any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
@@ -266,7 +266,7 @@ void TestScatterCountingIterator()
                   thrust::make_counting_iterator(0),
                   output.begin());
 
-  ASSERT_EQUAL(output, map);
+  REQUIRE(output == map);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterCountingIterator);
 
@@ -288,13 +288,13 @@ void TestScatterIfCountingIterator()
   thrust::scatter_if(
     thrust::make_counting_iterator(0), thrust::make_counting_iterator(10), map.begin(), stencil.begin(), output.begin());
 
-  ASSERT_EQUAL(output, map);
+  REQUIRE(output == map);
 
   // map has any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
   thrust::scatter_if(source.begin(), source.end(), thrust::make_counting_iterator(0), stencil.begin(), output.begin());
 
-  ASSERT_EQUAL(output, map);
+  REQUIRE(output == map);
 
   // source and map have any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
@@ -305,6 +305,6 @@ void TestScatterIfCountingIterator()
     stencil.begin(),
     output.begin());
 
-  ASSERT_EQUAL(output, map);
+  REQUIRE(output == map);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterIfCountingIterator);

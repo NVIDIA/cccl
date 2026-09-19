@@ -6,6 +6,12 @@ __global__ void cas_device_relaxed_non_volatile(int* data, int* out, int n)
   ref.compare_exchange_strong(*out, n, cuda::std::memory_order_relaxed);
 }
 
+__global__ void cas_cluster_relaxed_non_volatile(int* data, int* out, int n)
+{
+  auto ref = cuda::atomic_ref<int, cuda::thread_scope_cluster>{*(data)};
+  ref.compare_exchange_strong(*out, n, cuda::std::memory_order_relaxed);
+}
+
 // clang-format off
 /*
 
@@ -19,5 +25,17 @@ __global__ void cas_device_relaxed_non_volatile(int* data, int* out, int n)
 ; SMXX-NEXT: {{/*[[:space:]] *}}atom.cas.relaxed.gpu.b32 %r[[#DEST:]],[%rd[[#ATOM]]],%r[[#LOCALEXP]],%r[[#INPUT]];{{[[:space:]]/*}}
 ; SMXX-NEXT: st.global.{{b|u}}32 [%rd[[#GOUT]]], %r[[#DEST]];
 ; SMXX-NEXT: ret;
+
+; NOT-SM90-PLUS-LABEL: .visible .entry {{_.*cas_cluster_relaxed_non_volatile.*}}(
+; NOT-SM90-PLUS-NOT: {{.*}}atom{{.*}}.cluster{{.*}}
+; NOT-SM90-PLUS: {{.*}}atom.cas.relaxed.gpu.b32{{.*}}
+; NOT-SM90-PLUS-NOT: {{.*}}atom{{.*}}.cluster{{.*}}
+; NOT-SM90-PLUS: ret;
+
+; SM90-PLUS-LABEL: .visible .entry {{_.*cas_cluster_relaxed_non_volatile.*}}(
+; SM90-PLUS-NOT: {{.*}}atom{{.*}}.gpu{{.*}}
+; SM90-PLUS: {{.*}}atom.cas.relaxed.cluster.b32{{.*}}
+; SM90-PLUS-NOT: {{.*}}atom{{.*}}.gpu{{.*}}
+; SM90-PLUS: ret;
 
 */

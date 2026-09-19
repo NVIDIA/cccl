@@ -54,16 +54,16 @@ public:
 
   ~dummy_resource() override // NOLINT(bugprone-exception-escape)
   {
-    ASSERT_EQUAL(id_to_allocate, 0u);
-    ASSERT_EQUAL(id_to_deallocate, 0u);
-    ASSERT_EQUAL(used_bytes, 0u);
-    ASSERT_EQUAL(allocation_ids.size(), 0u);
+    REQUIRE(id_to_allocate == 0u);
+    REQUIRE(id_to_deallocate == 0u);
+    REQUIRE(used_bytes == 0u);
+    REQUIRE(allocation_ids.size() == 0u);
   }
 
   void assert_empty_and_reset()
   {
-    ASSERT_EQUAL(used_bytes, 0u);
-    ASSERT_EQUAL(allocation_ids.size(), 0u);
+    REQUIRE(used_bytes == 0u);
+    REQUIRE(allocation_ids.size() == 0u);
     free_bytes       = 1ull << 63;
     id_to_allocate   = 0;
     id_to_deallocate = 0;
@@ -76,9 +76,9 @@ public:
       throw thrust::system::detail::bad_alloc("Dummy allocation failed: insufficient free bytes.");
     }
 
-    ASSERT_NOT_EQUAL(id_to_allocate, 0u);
+    REQUIRE(id_to_allocate != 0u);
     // Ensure that the allocation ID is unique
-    ASSERT_EQUAL_QUIET(find(allocation_ids.begin(), allocation_ids.end(), id_to_allocate), allocation_ids.end());
+    REQUIRE(find(allocation_ids.begin(), allocation_ids.end(), id_to_allocate) == allocation_ids.end());
 
     free_bytes -= bytes;
     used_bytes += bytes;
@@ -96,11 +96,11 @@ public:
 
   void do_deallocate(alloc_id p, std::size_t bytes, std::size_t alignment) override
   {
-    ASSERT_EQUAL(p.size, bytes);
-    ASSERT_EQUAL(p.alignment, alignment);
-    ASSERT_LEQUAL(bytes, used_bytes);
+    REQUIRE(p.size == bytes);
+    REQUIRE(p.alignment == alignment);
+    REQUIRE(bytes <= used_bytes);
     // Check that the id has been previously allocated
-    ASSERT_NOT_EQUAL_QUIET(find(allocation_ids.begin(), allocation_ids.end(), p.id), allocation_ids.end());
+    REQUIRE(find(allocation_ids.begin(), allocation_ids.end(), p.id) != allocation_ids.end());
 
     free_bytes += bytes;
     used_bytes -= bytes;
@@ -108,7 +108,7 @@ public:
 
     if (id_to_deallocate != 0)
     {
-      ASSERT_EQUAL(p.id, id_to_deallocate);
+      REQUIRE(p.id == id_to_deallocate);
       id_to_deallocate = 0;
     }
   }
@@ -141,53 +141,53 @@ void TestDisjointPool()
 
   // first allocation
   const alloc_id a1 = pool->do_allocate(12, THRUST_MR_DEFAULT_ALIGNMENT);
-  ASSERT_EQUAL(a1.id, 1u);
+  REQUIRE(a1.id == 1u);
 
   // due to chunking, the above allocation should be enough for the next one too
   const alloc_id a2 = pool->do_allocate(16, THRUST_MR_DEFAULT_ALIGNMENT);
-  ASSERT_EQUAL(a2.id, 1u);
+  REQUIRE(a2.id == 1u);
 
   // deallocating and allocating back should give the same resource back
   pool->do_deallocate(a1, 12, THRUST_MR_DEFAULT_ALIGNMENT);
   const alloc_id a3 = pool->do_allocate(12, THRUST_MR_DEFAULT_ALIGNMENT);
-  ASSERT_EQUAL(a1.id, a3.id);
-  ASSERT_EQUAL(a1.size, a3.size);
-  ASSERT_EQUAL(a1.alignment, a3.alignment);
-  ASSERT_EQUAL(a1.offset, a3.offset);
+  REQUIRE(a1.id == a3.id);
+  REQUIRE(a1.size == a3.size);
+  REQUIRE(a1.alignment == a3.alignment);
+  REQUIRE(a1.offset == a3.offset);
 
   // allocating over-aligned memory should give non-cached results
   upstream.id_to_allocate = 2;
   const alloc_id a4       = pool->do_allocate(32, THRUST_MR_DEFAULT_ALIGNMENT * 2);
-  ASSERT_EQUAL(a4.id, 2u);
-  ASSERT_EQUAL(a4.size, 32u);
-  ASSERT_EQUAL(a4.alignment, (std::size_t) THRUST_MR_DEFAULT_ALIGNMENT * 2);
+  REQUIRE(a4.id == 2u);
+  REQUIRE(a4.size == 32u);
+  REQUIRE(a4.alignment == (std::size_t) THRUST_MR_DEFAULT_ALIGNMENT * 2);
 
   // and deallocating it should return it back to upstream
   upstream.id_to_deallocate = 2;
   pool->do_deallocate(a4, 32u, THRUST_MR_DEFAULT_ALIGNMENT * 2);
-  ASSERT_EQUAL(upstream.id_to_deallocate, 0u);
+  REQUIRE(upstream.id_to_deallocate == 0u);
 
   // release actually returns properly sized memory to upstream
   upstream.id_to_deallocate = 1;
   pool->release();
-  ASSERT_EQUAL(upstream.id_to_deallocate, 0u);
+  REQUIRE(upstream.id_to_deallocate == 0u);
 
   // and does the same for oversized/overaligned memory
   upstream.id_to_allocate = 3;
   const alloc_id a5       = pool->do_allocate(1024, THRUST_MR_DEFAULT_ALIGNMENT * 2);
-  ASSERT_EQUAL(upstream.id_to_allocate, 0u);
-  ASSERT_EQUAL(a5.id, 3u);
+  REQUIRE(upstream.id_to_allocate == 0u);
+  REQUIRE(a5.id == 3u);
 
   upstream.id_to_deallocate = 3;
   pool->release();
-  ASSERT_EQUAL(upstream.id_to_deallocate, 0u);
+  REQUIRE(upstream.id_to_deallocate == 0u);
 
   // and after that, the formerly cached memory isn't used anymore,
   // so new memory from upstream is returned back
   upstream.id_to_allocate = 4;
   const alloc_id a6       = pool->do_allocate(16, THRUST_MR_DEFAULT_ALIGNMENT);
-  ASSERT_EQUAL(upstream.id_to_allocate, 0u);
-  ASSERT_EQUAL(a6.id, 4u);
+  REQUIRE(upstream.id_to_allocate == 0u);
+  REQUIRE(a6.id == 4u);
 
   // destruction also returns memory
   upstream.id_to_deallocate = 4;
@@ -195,7 +195,7 @@ void TestDisjointPool()
   // actually destroy the pool; reasons why RAII is not used outlined at the beginning
   // of this function
   delete pool;
-  ASSERT_EQUAL(upstream.id_to_deallocate, 0u);
+  REQUIRE(upstream.id_to_deallocate == 0u);
 }
 
 void TestDisjointUnsynchronizedPool()
@@ -226,21 +226,21 @@ void TestDisjointPoolCachingOversized()
 
   upstream.id_to_allocate = 1;
   const alloc_id a1       = pool.do_allocate(2048, 32);
-  ASSERT_EQUAL(a1.id, 1u);
+  REQUIRE(a1.id == 1u);
 
   upstream.id_to_allocate = 2;
   const alloc_id a2       = pool.do_allocate(64, 32);
-  ASSERT_EQUAL(a2.id, 2u);
+  REQUIRE(a2.id == 2u);
 
   pool.do_deallocate(a2, 64, 32);
   pool.do_deallocate(a1, 2048, 32);
 
   // make sure a good fit is used from the cache
   const alloc_id a3 = pool.do_allocate(32, 32);
-  ASSERT_EQUAL(a3.id, 2u);
+  REQUIRE(a3.id == 2u);
 
   const alloc_id a4 = pool.do_allocate(1024, 32);
-  ASSERT_EQUAL(a4.id, 1u);
+  REQUIRE(a4.id == 1u);
 
   pool.do_deallocate(a4, 1024, 32);
 
@@ -248,18 +248,18 @@ void TestDisjointPoolCachingOversized()
   // the required alignment
   upstream.id_to_allocate = 3;
   const alloc_id a5       = pool.do_allocate(32, 64);
-  ASSERT_EQUAL(a5.id, 3u);
+  REQUIRE(a5.id == 3u);
 
   pool.release();
 
   // make sure that release actually clears caches
   upstream.id_to_allocate = 4;
   const alloc_id a6       = pool.do_allocate(32, 64);
-  ASSERT_EQUAL(a6.id, 4u);
+  REQUIRE(a6.id == 4u);
 
   upstream.id_to_allocate = 5;
   const alloc_id a7       = pool.do_allocate(2048, 1024);
-  ASSERT_EQUAL(a7.id, 5u);
+  REQUIRE(a7.id == 5u);
 
   pool.do_deallocate(a7, 2048, 1024);
 
@@ -267,13 +267,13 @@ void TestDisjointPoolCachingOversized()
   // is respected
   upstream.id_to_allocate = 6;
   const alloc_id a8       = pool.do_allocate(24, 1024);
-  ASSERT_EQUAL(a8.id, 6u);
+  REQUIRE(a8.id == 6u);
 
   // make sure that the 'ridiculousness' factor for alignment (options.cached_alignment_cutoff_factor)
   // is respected
   upstream.id_to_allocate = 7;
   const alloc_id a9       = pool.do_allocate(2048, 32);
-  ASSERT_EQUAL(a9.id, 7u);
+  REQUIRE(a9.id == 7u);
 }
 
 void TestDisjointUnsynchronizedPoolCachingOversized()
@@ -293,7 +293,7 @@ void TestDisjointGlobalPool()
 {
   using Pool = PoolTemplate<thrust::mr::new_delete_resource, thrust::mr::new_delete_resource>;
 
-  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != nullptr, true);
+  REQUIRE(thrust::mr::get_global_resource<Pool>() != nullptr);
 }
 
 void TestUnsynchronizedDisjointGlobalPool()
@@ -335,8 +335,13 @@ void TestDisjointPoolSqueeze()
   // Test that OOM throws bad_alloc
   {
     upstream.free_bytes = not_enough_bytes;
-    ASSERT_THROWS(pool->do_allocate(small_block), thrust::system::detail::bad_alloc);
-    ASSERT_EQUAL(upstream.free_bytes, not_enough_bytes);
+    REQUIRE_THROWS_MATCHES(
+      pool->do_allocate(small_block),
+      thrust::system::detail::bad_alloc,
+      Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring(
+        "Dummy allocation failed: insufficient free "
+        "bytes.")));
+    REQUIRE(upstream.free_bytes == not_enough_bytes);
     upstream.assert_empty_and_reset();
   }
 
@@ -344,29 +349,39 @@ void TestDisjointPoolSqueeze()
     // Allocate several blocks from different pools + oversized:
     upstream.id_to_allocate = 1u;
     const alloc_id a1       = pool->do_allocate(small_block);
-    ASSERT_EQUAL(a1.id, 1u);
-    ASSERT_EQUAL(upstream.id_to_allocate, 0u);
+    REQUIRE(a1.id == 1u);
+    REQUIRE(upstream.id_to_allocate == 0u);
 
     upstream.id_to_allocate = 2u;
     const alloc_id a2       = pool->do_allocate(large_block);
-    ASSERT_EQUAL(a2.id, 2u);
-    ASSERT_EQUAL(upstream.id_to_allocate, 0u);
+    REQUIRE(a2.id == 2u);
+    REQUIRE(upstream.id_to_allocate == 0u);
 
     upstream.id_to_allocate = 3u;
     const alloc_id a3       = pool->do_allocate(oversized_block);
-    ASSERT_EQUAL(a3.id, 3u);
-    ASSERT_EQUAL(upstream.id_to_allocate, 0u);
+    REQUIRE(a3.id == 3u);
+    REQUIRE(upstream.id_to_allocate == 0u);
 
     // Simulate OOM, ensure that the allocations are still in place:
     const std::size_t old_free_bytes = upstream.free_bytes;
     upstream.free_bytes              = not_enough_bytes;
-    ASSERT_THROWS(pool->do_allocate(medium_block), thrust::system::detail::bad_alloc);
-    ASSERT_THROWS(pool->do_allocate(oversized_block), thrust::system::detail::bad_alloc);
-    ASSERT_EQUAL(upstream.free_bytes, not_enough_bytes);
-    ASSERT_EQUAL(upstream.allocation_ids.size(), 3u);
-    ASSERT_EQUAL(upstream.allocation_ids[0], 1u);
-    ASSERT_EQUAL(upstream.allocation_ids[1], 2u);
-    ASSERT_EQUAL(upstream.allocation_ids[2], 3u);
+    REQUIRE_THROWS_MATCHES(
+      pool->do_allocate(medium_block),
+      thrust::system::detail::bad_alloc,
+      Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring(
+        "Dummy allocation failed: insufficient free "
+        "bytes.")));
+    REQUIRE_THROWS_MATCHES(
+      pool->do_allocate(oversized_block),
+      thrust::system::detail::bad_alloc,
+      Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring(
+        "Dummy allocation failed: insufficient free "
+        "bytes.")));
+    REQUIRE(upstream.free_bytes == not_enough_bytes);
+    REQUIRE(upstream.allocation_ids.size() == 3u);
+    REQUIRE(upstream.allocation_ids[0] == 1u);
+    REQUIRE(upstream.allocation_ids[1] == 2u);
+    REQUIRE(upstream.allocation_ids[2] == 3u);
     upstream.free_bytes = old_free_bytes;
 
     // Allocate enough blocks to create a few more chunks and then
@@ -418,13 +433,13 @@ void TestDisjointPoolSqueeze()
     upstream.free_bytes     = not_enough_bytes;
     upstream.id_to_allocate = 4u;
     const alloc_id a4       = pool->do_allocate(extra_large_block);
-    ASSERT_EQUAL(a4.id, 4u);
-    ASSERT_EQUAL(upstream.id_to_allocate, 0u);
-    ASSERT_EQUAL(upstream.allocation_ids.size(), 4u);
-    ASSERT_EQUAL(upstream.allocation_ids[0], 1u);
-    ASSERT_EQUAL(upstream.allocation_ids[1], 2u);
-    ASSERT_EQUAL(upstream.allocation_ids[2], 3u);
-    ASSERT_EQUAL(upstream.allocation_ids[3], 4u);
+    REQUIRE(a4.id == 4u);
+    REQUIRE(upstream.id_to_allocate == 0u);
+    REQUIRE(upstream.allocation_ids.size() == 4u);
+    REQUIRE(upstream.allocation_ids[0] == 1u);
+    REQUIRE(upstream.allocation_ids[1] == 2u);
+    REQUIRE(upstream.allocation_ids[2] == 3u);
+    REQUIRE(upstream.allocation_ids[3] == 4u);
 
     pool->release();
     upstream.assert_empty_and_reset();
@@ -479,10 +494,10 @@ void TestDisjointPoolSqueeze()
     upstream.free_bytes     = not_enough_bytes;
     upstream.id_to_allocate = 1u;
     const alloc_id a5       = pool->do_allocate(extra_large_block);
-    ASSERT_EQUAL(a5.id, 1u);
-    ASSERT_EQUAL(upstream.id_to_allocate, 0u);
-    ASSERT_EQUAL(upstream.allocation_ids.size(), 1u);
-    ASSERT_EQUAL(upstream.allocation_ids[0], 1u);
+    REQUIRE(a5.id == 1u);
+    REQUIRE(upstream.id_to_allocate == 0u);
+    REQUIRE(upstream.allocation_ids.size() == 1u);
+    REQUIRE(upstream.allocation_ids[0] == 1u);
 
     pool->release();
     upstream.assert_empty_and_reset();
@@ -491,7 +506,7 @@ void TestDisjointPoolSqueeze()
   // actually destroy the pool; reasons why RAII is not used outlined at the beginning
   // of this function
   delete pool;
-  ASSERT_EQUAL(upstream.id_to_deallocate, 0u);
+  REQUIRE(upstream.id_to_deallocate == 0u);
 }
 
 void TestDisjointUnsynchronizedPoolSqueeze()
