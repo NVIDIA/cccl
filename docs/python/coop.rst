@@ -188,7 +188,7 @@ Build-time CMake variables
 Kernel API
 ----------
 
-The portable root and qualified backend expose matching entry points:
+The common and qualified APIs expose matching entry points:
 
 .. code-block:: python
 
@@ -241,15 +241,15 @@ physical warp can be partitioned with ``this_warp().group_by(width)`` into
 consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
 Exchange, Scan, and Merge Sort support block, physical-Warp, and logical-Warp
 forms; Shuffle, Radix Sort, Radix Rank, and TopK are block-only. For Warp
-collectives, the enclosing block must contain a multiple of 32 threads, with
+primitives, the enclosing block must contain a multiple of 32 threads, with
 no incomplete final physical warp. For a multidimensional block, threads are
 linearized in x-major order. Every member of a participating group must reach
-its collective; complete sibling logical groups may take different control-flow
+its primitive; complete sibling logical groups may take different control-flow
 paths.
 
-The portable group vocabulary also includes thread, cluster, grid, and mapped
+The common group vocabulary also includes thread, cluster, grid, and mapped
 groups of physical warps. Full built-in Reduce uses the thread, cluster, and
-mapped forms; data movement and Scan do not. Grid collectives remain
+mapped forms; data movement and Scan do not. Grid primitives remain
 unsupported. ``ThreadGroup`` exposes the C++ hierarchy query surface.
 ``rank(level="thread")`` and ``count(level="thread")`` accept ``thread`` (or
 ``gpu_thread``), ``warp``, ``block``, ``cluster``, and ``grid``. Their default
@@ -273,12 +273,12 @@ the immediate physical parent are rejected. Mapped warps-within-block groups
 support queries and ``is_member()`` but not ``sync()`` or ``sync_aligned()``;
 their block-barrier lifetime requires a future planner-owned contract. For a
 non-exhaustive partition, use ``is_member()`` to guard rank-dependent work for
-excluded threads. Do not use that branch to skip a collective unless the
-collective's participation contract explicitly permits it; every required
-group or parent-group participant must still reach the collective.
+excluded threads. Do not use that branch to skip a primitive unless the
+primitive's participation contract explicitly permits it; every required
+group or parent-group participant must still reach the primitive.
 
 ``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes the
-fixed-size register payload owned by each participating thread. Portable and
+fixed-size register payload owned by each participating thread. Common and
 qualified calls use the same inference rules: an untyped Load output infers
 its dtype from the source, and Store combines the destination dtype with
 payload writes. Load fills the supplied output in place and returns ``None``.
@@ -379,7 +379,7 @@ value explicitly before storing it:
    value = types.int32(source[cuda.threadIdx.x] + 1)
    coop.store(block, destination, value, algorithm="direct")
 
-Both portable and qualified entry points use the same string algorithm
+Both common and qualified entry points use the same string algorithm
 vocabulary: ``direct``, ``striped``,
 ``vectorize``, ``transpose``, ``warp_transpose``, and
 ``warp_transpose_timesliced``. All six algorithms are executable with the
@@ -395,7 +395,7 @@ Physical and logical Warp Load and Store support ``direct``, ``striped``,
 ``vectorize``, and ``transpose``. Their layouts follow the same rules at the
 selected group width: ``direct`` and ``vectorize`` expose blocked payloads,
 ``striped`` exposes a striped payload, and ``transpose`` uses striped memory
-transactions while exposing a blocked payload. Portable and qualified calls
+transactions while exposing a blocked payload. Common and qualified calls
 use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
@@ -408,7 +408,7 @@ its in-place reordering.
 Exchange semantics
 ------------------
 
-The portable signature is:
+The common signature is:
 
 .. code-block:: python
 
@@ -425,7 +425,7 @@ Block, physical Warp, and logical Warp groups support
 The qualified :func:`cuda.coop.numba_mlir.exchange` entry point also accepts
 local arrays. Block groups additionally support warp-striped conversions,
 scatter-to-blocked, scatter-to-striped, guarded scatter, flagged scatter, and
-warp time slicing. Physical and logical Warp groups retain the two portable
+warp time slicing. Physical and logical Warp groups retain the two common
 layout modes. Scatter ``ranks`` are relative to the block tile, must have a
 signed integer dtype, and must have the same extent as ``value``.
 ``valid_flags`` are required only by flagged scatter, must have a non-boolean
@@ -443,13 +443,13 @@ available for Warp groups or guarded and flagged scatter modes.
 Shuffle semantics
 -----------------
 
-Shuffle is block-only. The portable signature is:
+Shuffle is block-only. The common signature is:
 
 .. code-block:: python
 
    shuffle(group, value, /, *, mode="down", distance=1) -> ThreadData
 
-The portable API accepts only ``ThreadData``, ``up`` or ``down``, and the
+The common API accepts only ``ThreadData``, ``up`` or ``down``, and the
 fixed distance ``1``. The flattened blocked tile moves by one item. The first
 ``up`` result or last ``down`` result is unspecified; all other slots come
 from the adjacent tile position. The returned payload is fresh and ``value``
@@ -471,7 +471,7 @@ release.
 Scan semantics
 --------------
 
-The five portable spellings are ``scan``, ``exclusive_scan``,
+The five common spellings are ``scan``, ``exclusive_scan``,
 ``inclusive_scan``, ``exclusive_sum``, and ``inclusive_sum``. ``scan`` chooses
 its form with ``mode="exclusive"`` or ``mode="inclusive"``. Every spelling
 returns a fresh value with the same scalar or per-thread-array shape and dtype
@@ -499,8 +499,8 @@ aggregate excludes an exclusive initial value. Warp forms also accept
 value and ``valid_items`` must be uniform across all participating members.
 Invalid runtime values execute a device trap before CUB's integer argument is
 formed and invalidate the current CUDA context. Block Scan rejects
-``valid_items``. These two controls are intentionally absent from the portable
-root API.
+``valid_items``. These two controls are intentionally absent from the common
+API.
 
 Block prefix callbacks
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -557,14 +557,14 @@ The state must be a numeric one-item ``ThreadData`` or local array. Its dtype
 must exactly match ``StatefulFunction.dtype``, but may differ from the scanned
 payload dtype. Keep the same state payload alive across repeated scans to
 carry the prefix between tiles. Every participating thread must initialize
-its state cell to the same contents before the first collective.
+its state cell to the same contents before the first primitive.
 
 CUB may invoke the prefix callback in every lane of the block's first warp,
 but only lane 0's returned prefix is applied to the scan. Other per-thread
 state copies are not authoritative; after one or more calls, consume the final
 state only from thread 0. The callback is mutually exclusive with
 ``initial_value`` and ``aggregate_output``. It is not available for physical
-or logical Warp Scan, through the portable :mod:`cuda.coop` API, as a stateful
+or logical Warp Scan, through the common :mod:`cuda.coop` API, as a stateful
 binary ``scan_op``, or with structured state.
 
 All Scan forms use CUB temporary storage. Block calls may use compiler-owned,
@@ -660,7 +660,7 @@ merged region, even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 ``@cuda.jit(device=True, inline="always")`` when selecting the helper's
-policy explicitly. Standalone collective helpers and collectives inside
+policy explicitly. Standalone primitive helpers and primitives inside
 standalone callbacks are unsupported. For the MVP, ``literal_unroll``
 values cannot determine cooperative payload extents, group dimensions,
 selectors, or descriptor constructor arguments. Write separate calls with
@@ -671,7 +671,7 @@ Warp ``transpose``, Warp Exchange, and Warp Scan use compiler-owned storage
 with one disjoint slice per physical or logical group. The compiler inserts
 ``syncwarp`` with the exact logical-group mask. Exchange and Shuffle always use
 compiler-owned storage and append a group-scoped reuse barrier. Block Scan may
-instead use implicit, caller-owned, or dynamic storage. Both the portable and
+instead use implicit, caller-owned, or dynamic storage. Both the common and
 qualified APIs reject explicit ``TempStorage`` for every Warp Load and Store
 algorithm, including the storage-free modes, and for Warp Scan.
 

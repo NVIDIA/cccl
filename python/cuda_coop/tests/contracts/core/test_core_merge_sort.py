@@ -75,7 +75,7 @@ class _ThreadData(_ReadonlyThreadData):
         ),
     ],
 )
-def test_portable_merge_sort_accepts_readonly_inputs(
+def test_common_merge_sort_accepts_readonly_inputs(
     monkeypatch, group, operation, payload_types
 ):
     dispatch = import_module("cuda.coop._core.api._dispatch")

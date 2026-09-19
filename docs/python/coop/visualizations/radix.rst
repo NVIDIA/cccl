@@ -117,7 +117,7 @@ preserve their input order; NaNs follow CUB's transformed-bit ordering.
 The unsigned explorer does not model these floating-point cases.
 
 Common calls accept ``ThreadData`` keys with ``int32``, ``uint32``,
-``int64``, or ``uint64`` dtype. Associated values may use the portable
+``int64``, or ``uint64`` dtype. Associated values may use the common
 numeric dtypes and must have the same extent as the keys. Qualified calls
 also accept scalar and local-array payloads; floating-point keys are
 supported for Sort, while Rank requires integral keys.

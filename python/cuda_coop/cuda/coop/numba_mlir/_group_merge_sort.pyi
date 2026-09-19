@@ -10,23 +10,23 @@ import numpy as np
 from typing_extensions import TypeVar
 
 from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     ContextualInitialValue,
     IntegerValue,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
 
 from ._thread_group import BlockGroup, WarpGroup
 
-_KeyT = TypeVar("_KeyT", bound=PortableNumericScalar)
-_ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
+_KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
 
 @overload
 def merge_sort_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
     descending: bool = False,
@@ -38,7 +38,7 @@ def merge_sort_keys(
 @overload
 def merge_sort_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
     descending: Literal[False] = False,
@@ -50,7 +50,7 @@ def merge_sort_keys(
 @overload
 def merge_sort_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
     descending: bool = False,
@@ -62,7 +62,7 @@ def merge_sort_keys(
 @overload
 def merge_sort_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
     descending: Literal[False] = False,
@@ -74,7 +74,7 @@ def merge_sort_keys(
 @overload
 def merge_sort_keys(
     group: WarpGroup,
-    keys: PortableThreadDataLike[_KeyT],
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
     descending: bool = False,
@@ -86,7 +86,7 @@ def merge_sort_keys(
 @overload
 def merge_sort_keys(
     group: WarpGroup,
-    keys: PortableThreadDataLike[_KeyT],
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
     descending: Literal[False] = False,
@@ -98,7 +98,7 @@ def merge_sort_keys(
 @overload
 def merge_sort_keys(
     group: WarpGroup,
-    keys: PortableThreadDataLike[_KeyT],
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
     descending: bool = False,
@@ -110,7 +110,7 @@ def merge_sort_keys(
 @overload
 def merge_sort_keys(
     group: WarpGroup,
-    keys: PortableThreadDataLike[_KeyT],
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
     descending: Literal[False] = False,
@@ -122,8 +122,8 @@ def merge_sort_keys(
 @overload
 def merge_sort_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
-    values: PortableThreadDataLike[_ValueT],
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -135,8 +135,8 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
-    values: PortableThreadDataLike[_ValueT],
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
     descending: Literal[False] = False,
@@ -148,8 +148,8 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
-    values: PortableThreadDataLike[_ValueT],
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -161,8 +161,8 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
-    values: PortableThreadDataLike[_ValueT],
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
     descending: Literal[False] = False,
@@ -174,8 +174,8 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: WarpGroup,
-    keys: PortableThreadDataLike[_KeyT],
-    values: PortableThreadDataLike[_ValueT],
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -187,8 +187,8 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: WarpGroup,
-    keys: PortableThreadDataLike[_KeyT],
-    values: PortableThreadDataLike[_ValueT],
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
     descending: Literal[False] = False,
@@ -200,8 +200,8 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: WarpGroup,
-    keys: PortableThreadDataLike[_KeyT],
-    values: PortableThreadDataLike[_ValueT],
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
@@ -213,8 +213,8 @@ def merge_sort_pairs(
 @overload
 def merge_sort_pairs(
     group: WarpGroup,
-    keys: PortableThreadDataLike[_KeyT],
-    values: PortableThreadDataLike[_ValueT],
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
     descending: Literal[False] = False,

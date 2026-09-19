@@ -18,7 +18,7 @@ import pytest
 
 _PACKAGE_ROOT = Path(__file__).parents[2]
 _CONSUMER_ROOT = Path(__file__).with_name("typing")
-_VALID_CONSUMERS = ("portable_consumer.py", "numba_consumer.py")
+_VALID_CONSUMERS = ("common_consumer.py", "numba_consumer.py")
 _THREAD_GROUP_HIERARCHY_METHODS = frozenset(
     {
         "count",
@@ -92,7 +92,7 @@ def _expected_diagnostics(consumer: Path) -> set[tuple[int, str]]:
 @pytest.mark.parametrize(
     "relative_path",
     ("_core/api/thread_group.pyi", "numba_mlir/_thread_group.pyi"),
-    ids=("portable", "qualified"),
+    ids=("common", "qualified"),
 )
 def test_thread_group_stubs_expose_hierarchy_operations(relative_path: str) -> None:
     stub = _package_stub_source() / relative_path

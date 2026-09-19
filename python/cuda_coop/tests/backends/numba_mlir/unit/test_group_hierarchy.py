@@ -9,7 +9,7 @@ from numba_cuda_mlir import types
 from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 from numba_cuda_mlir.numbair_transforms import ir
 
-import cuda.coop as portable_coop
+import cuda.coop as common_coop
 import cuda.coop.numba_mlir as coop
 from cuda.coop._core import LaunchFactOrigin, LaunchFacts, resolve_thread_group
 from cuda.coop.numba_mlir._compiler import _nvrtc
@@ -583,8 +583,8 @@ def test_group_marker_detection_follows_merged_group_by_receivers(monkeypatch):
     assert has_group_markers(run_frontend(grouped))
 
 
-@pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
-def test_standalone_collective_helper_is_rejected_without_requesting_launch(
+@pytest.mark.parametrize("api", (common_coop, coop), ids=("common", "qualified"))
+def test_standalone_primitive_helper_is_rejected_without_requesting_launch(
     api, monkeypatch
 ):
     from cuda.coop.numba_mlir._compiler import _group_planner
@@ -616,7 +616,7 @@ def test_standalone_collective_helper_is_rejected_without_requesting_launch(
     } == before
 
 
-@pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
+@pytest.mark.parametrize("api", (common_coop, coop), ids=("common", "qualified"))
 @pytest.mark.parametrize(("constructor_name", "kind"), _GROUP_KINDS)
 def test_planner_recognizes_the_full_group_descriptor_vocabulary(
     api,
@@ -635,7 +635,7 @@ def test_planner_recognizes_the_full_group_descriptor_vocabulary(
 
     assert planned_group is not None
     assert planned_group.kind == kind
-    expected_source = "common_root" if api is portable_coop else "current"
+    expected_source = "common_root" if api is common_coop else "current"
     assert planned_group.source == expected_source
 
 
@@ -745,8 +745,8 @@ def test_core_resolves_every_physical_group_from_exact_launch_facts(
 
 @pytest.mark.parametrize(
     "constructor",
-    (portable_coop.this_block, coop.this_block),
-    ids=("portable", "qualified"),
+    (common_coop.this_block, coop.this_block),
+    ids=("common", "qualified"),
 )
 def test_descriptor_values_cannot_escape_to_runtime(constructor):
     def escapes():

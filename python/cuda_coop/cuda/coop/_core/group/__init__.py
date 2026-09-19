@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable planning for the initial cooperative primitive families."""
+"""Backend-neutral planning for the initial cooperative primitive families."""
 
 from ._dispatch import (
     GroupOperationSemantics,

@@ -2,25 +2,25 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for portable per-thread payload storage."""
+"""Typing contract for common per-thread payload storage."""
 
 from typing import Any, overload
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import PortableNumericScalar, ThreadDataLike
+from cuda.coop._typing import CommonNumericScalar, ThreadDataLike
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
+_CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
 
 __all__ = ["ThreadData", "ThreadDataLike"]
 
 @overload
 def ThreadData(
     items_per_thread: int,
-    dtype: type[_PortableNumericT],
+    dtype: type[_CommonNumericT],
     *,
     alignment: int | None = None,
-) -> ThreadDataLike[_PortableNumericT]:
+) -> ThreadDataLike[_CommonNumericT]:
     """Construct a payload; builtin int and float mean 32-bit dtypes."""
 
 @overload

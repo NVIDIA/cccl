@@ -25,12 +25,12 @@ from cuda.coop._core import (
 )
 
 from ._group_errors import (
+    CommonLoadPayloadError,
+    CommonStorePayloadError,
     DefaultDtypeMismatchError,
     InvalidLoadStoreAlgorithmError,
     MemoryDtypeMismatchError,
     NonConstantTempStorageError,
-    PortableLoadPayloadError,
-    PortableStorePayloadError,
     UnknownBlockDimensionError,
     UnknownLoadStoreDtypeError,
     UnknownLoadStoreExtentError,
@@ -496,13 +496,13 @@ class _LoadStorePlanning:
                 if not self._context.is_thread_data(
                     operation, "output", bound.arguments["output"]
                 ):
-                    raise PortableLoadPayloadError()
+                    raise CommonLoadPayloadError()
             else:
                 value = bound.arguments["value"]
                 if self._context.is_array(operation, value) and (
                     not self._context.is_thread_data(operation, "value", value)
                 ):
-                    raise PortableStorePayloadError()
+                    raise CommonStorePayloadError()
         plan = self._plan_load_store(
             operation=operation,
             group=group,

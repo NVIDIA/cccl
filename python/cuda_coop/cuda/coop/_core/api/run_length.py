@@ -8,17 +8,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..dtype_policy import validate_portable_integer_value_dtype_name
+from ..dtype_policy import validate_common_integer_value_dtype_name
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
     _group_primitive_marker,
-    _portable_group_operation,
 )
 from ._payload import _validate_common_numeric_value
 
 
-@_portable_group_operation("run_length_decode", group_kinds=("block",))
+@_common_group_operation("run_length_decode", group_kinds=("block",))
 def run_length_decode(
     group: ThreadGroup,
     run_values: Any,
@@ -94,7 +94,7 @@ def run_length_decode(
             allow_readonly_thread_data=True,
             require_thread_data=True,
         )
-        validate_portable_integer_value_dtype_name(
+        validate_common_integer_value_dtype_name(
             length_dtype, operation="run_length_decode", parameter="run_lengths"
         )
     return _group_primitive_marker(
@@ -108,7 +108,7 @@ def run_length_decode(
     )
 
 
-@_portable_group_operation("run_length_decode_into", group_kinds=("block",))
+@_common_group_operation("run_length_decode_into", group_kinds=("block",))
 def run_length_decode_into(
     group: ThreadGroup,
     run_values: Any,
@@ -180,7 +180,7 @@ def run_length_decode_into(
             allow_readonly_thread_data=True,
             require_thread_data=True,
         )
-        validate_portable_integer_value_dtype_name(
+        validate_common_integer_value_dtype_name(
             length_dtype, operation="run_length_decode", parameter="run_lengths"
         )
     return _group_primitive_marker(

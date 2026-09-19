@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable constructors for the current CUDA thread groups.
+"""Common constructors for the current CUDA thread groups.
 
 The constructors either delegate to the active compiler backend or return the
 backend-neutral symbolic group used during characterization and planning. This
@@ -91,7 +91,7 @@ def this_warp() -> ThreadGroup:
 
     Notes
     -----
-    Warp collectives require a block size divisible by 32; the descriptor
+    Warp primitives require a block size divisible by 32; the descriptor
     does not turn a partial final warp into a complete group. The primitive
     documents its supported logical widths and
     :ref:`participation requirements <coop-participation>`.
@@ -140,7 +140,7 @@ def this_cluster() -> ThreadGroup:
     The descriptor obtains its dimensions from the launch; it does not
     create a cluster or enable cluster scheduling. See
     :ref:`thread groups <coop-thread-groups>` and each primitive's supported
-    scopes. Grid collectives are a separate, unsupported scope.
+    scopes. Grid primitives are a separate, unsupported scope.
 
     Examples
     --------
@@ -173,7 +173,7 @@ def this_grid() -> ThreadGroup:
 
     Notes
     -----
-    Grid collectives and grid synchronization are unavailable. Constructing
+    Grid primitives and grid synchronization are unavailable. Constructing
     this descriptor does not request a cooperative launch. See
     :ref:`thread groups <coop-thread-groups>` and
     :ref:`ranks and sizes <coop-group-queries>`.
@@ -182,7 +182,7 @@ def this_grid() -> ThreadGroup:
     group = _group_constructor("this_grid", _core_this_grid)
     if _backend_module_name() is not None and isinstance(group, ThreadGroup):
         assert group.hierarchy is not None
-        # Backends distinguish portable grid policy from qualified grid access.
+        # Backends distinguish common grid policy from qualified grid access.
         return group.with_hierarchy(group.hierarchy, source="common_root")
     return group
 

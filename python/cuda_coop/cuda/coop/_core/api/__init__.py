@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Import-light portable API organized by cooperative primitive family.
+"""Import-light common API organized by cooperative primitive family.
 
 Leaf modules own public argument capture and validation; this facade preserves
 the documented root export order and compiler-backend marker contract. It does

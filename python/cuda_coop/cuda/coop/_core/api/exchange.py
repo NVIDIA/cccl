@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable cooperative exchange entry point."""
+"""Common cooperative exchange entry point."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from typing import Any
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
+    _common_selector,
     _group_primitive_marker,
-    _portable_group_operation,
-    _portable_selector,
 )
 from ._payload import (
     ThreadDataLike,
@@ -21,7 +21,7 @@ from ._payload import (
     _validate_common_numeric_value,
 )
 
-_PORTABLE_EXCHANGE_MODES = frozenset(
+_COMMON_EXCHANGE_MODES = frozenset(
     {
         "striped_to_blocked",
         "blocked_to_striped",
@@ -29,7 +29,7 @@ _PORTABLE_EXCHANGE_MODES = frozenset(
 )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "exchange",
     group_kinds=("block", "warp", "threads_within_warp"),
 )
@@ -47,7 +47,7 @@ def exchange(
     group : cuda.coop.ThreadGroup
         Participating :ref:`thread group <coop-thread-groups>`: a complete
         block, physical warp, or logical warp. Logical warp widths must be
-        powers of two between 1 and 32. Every member must call the collective;
+        powers of two between 1 and 32. Every member must call the primitive;
         warp operations require an enclosing block size divisible by 32.
     value : cuda.coop.ThreadDataLike
         Readable :ref:`per-thread payload <coop-thread-data>` with a fixed
@@ -95,11 +95,11 @@ def exchange(
         :dedent: 4
     """
 
-    mode = _portable_selector(
+    mode = _common_selector(
         "exchange",
         "mode",
         mode,
-        _PORTABLE_EXCHANGE_MODES,
+        _COMMON_EXCHANGE_MODES,
     )
     if _backend_module_name() is not None:
         _validate_common_numeric_value(

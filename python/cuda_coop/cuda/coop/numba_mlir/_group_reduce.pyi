@@ -10,16 +10,16 @@ from typing import Literal, Protocol, TypeAlias, overload
 from typing_extensions import TypeVar
 
 from .._typing import (
-    PortableNumericScalar,
-    PortableThreadDataLike,
+    CommonNumericScalar,
+    CommonThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
     ValidItems,
 )
 from ._thread_group import BlockGroup, ReductionGroup, WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
-_ScalarT = TypeVar("_ScalarT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ScalarT = TypeVar("_ScalarT", bound=CommonNumericScalar)
 
 _NumpyReduceUfuncName: TypeAlias = Literal[
     "add",
@@ -51,7 +51,7 @@ _CallbackReduceAlgorithm: TypeAlias = Literal["raking", "warp_reductions"]
 @overload
 def reduce(
     group: ReductionGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     binary_op: _CudaxReduceOperator | None = None,
@@ -73,7 +73,7 @@ def reduce(
 @overload
 def reduce(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     binary_op: _CudaxReduceOperator | None = None,
@@ -84,7 +84,7 @@ def reduce(
 @overload
 def reduce(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     binary_op: Callable[[_ItemT, _ItemT], _ItemT],
@@ -130,7 +130,7 @@ def reduce(
 @overload
 def sum(
     group: ReductionGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     broadcast: bool = True,
@@ -150,7 +150,7 @@ def sum(
 @overload
 def sum(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     broadcast: Literal[False],

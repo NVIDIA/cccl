@@ -313,7 +313,7 @@ def _structured_exchange_kernel(
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("mode", ("striped_to_blocked", "blocked_to_striped"))
 @pytest.mark.parametrize(
     ("scope", "group_width"),
@@ -644,7 +644,7 @@ def test_warp_exchange_inverse_round_trip(width: int) -> None:
 
 @lru_cache(maxsize=None)
 def _array_shuffle_kernel(mode: str, api: str):
-    if api == "portable":
+    if api == "common":
 
         @cuda.jit
         def kernel(source, observed, preserved):
@@ -715,7 +715,7 @@ def _array_shuffle_kernel(mode: str, api: str):
 
 @pytest.mark.parametrize(
     "api",
-    ("portable", "qualified-thread-data", "qualified-local-array"),
+    ("common", "qualified-thread-data", "qualified-local-array"),
 )
 @pytest.mark.parametrize("mode", ("up", "down"))
 def test_array_shuffle_matches_a_flattened_oracle_and_preserves_input(

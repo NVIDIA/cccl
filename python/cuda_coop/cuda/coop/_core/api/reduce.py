@@ -2,20 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable cooperative reduction entry points."""
+"""Common cooperative reduction entry points."""
 
 from __future__ import annotations
 
 from enum import Enum
 from typing import Any
 
-from ..dtype_policy import validate_portable_integer_value_dtype_name
+from ..dtype_policy import validate_common_integer_value_dtype_name
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
     _group_primitive_marker,
-    _portable_group_operation,
-    _validate_portable_operation_group,
+    _validate_common_operation_group,
 )
 from ._payload import (
     _ReadableThreadDataLike,
@@ -24,7 +24,7 @@ from ._payload import (
 )
 
 _PARTIAL_REDUCTION_GROUP_KINDS = frozenset({"block", "warp", "threads_within_warp"})
-_PORTABLE_REDUCTION_GROUP_KINDS = (
+_COMMON_REDUCTION_GROUP_KINDS = (
     "thread",
     "warp",
     "threads_within_warp",
@@ -32,10 +32,10 @@ _PORTABLE_REDUCTION_GROUP_KINDS = (
     "warps_within_block",
     "cluster",
 )
-_PORTABLE_REDUCE_ALGORITHMS = frozenset(
+_COMMON_REDUCE_ALGORITHMS = frozenset(
     {"raking_commutative_only", "raking", "warp_reductions"}
 )
-_PORTABLE_OPERATOR_ALIASES = {
+_COMMON_OPERATOR_ALIASES = {
     "+": "sum",
     "sum": "sum",
     "add": "sum",
@@ -62,14 +62,14 @@ def _is_plain_string(value: Any) -> bool:
     return isinstance(value, str) and not isinstance(value, Enum)
 
 
-def _portable_reduce_algorithm(operation: str, value: Any) -> Any:
+def _common_reduce_algorithm(operation: str, value: Any) -> Any:
     if _backend_module_name() is None or value is None:
         return value
     if not _is_plain_string(value):
         raise TypeError(f"cuda.coop.{operation} algorithm must be a string")
     token = value.strip().lower().replace("-", "_")
-    if token not in _PORTABLE_REDUCE_ALGORITHMS:
-        choices = ", ".join(sorted(_PORTABLE_REDUCE_ALGORITHMS))
+    if token not in _COMMON_REDUCE_ALGORITHMS:
+        choices = ", ".join(sorted(_COMMON_REDUCE_ALGORITHMS))
         raise ValueError(
             f"cuda.coop.{operation} algorithm must be one of: {choices}; "
             "use a backend-qualified import for backend-only controls"
@@ -77,23 +77,23 @@ def _portable_reduce_algorithm(operation: str, value: Any) -> Any:
     return token
 
 
-def _portable_reduce_operator(value: Any) -> Any:
+def _common_reduce_operator(value: Any) -> Any:
     if _backend_module_name() is None or value is None:
         return value
     if not _is_plain_string(value):
         raise TypeError("cuda.coop.reduce binary_op must be a string")
     token = value.strip().lower().replace("-", "_")
     try:
-        return _PORTABLE_OPERATOR_ALIASES[token]
+        return _COMMON_OPERATOR_ALIASES[token]
     except KeyError:
-        choices = ", ".join(sorted(set(_PORTABLE_OPERATOR_ALIASES.values())))
+        choices = ", ".join(sorted(set(_COMMON_OPERATOR_ALIASES.values())))
         raise ValueError(
             "cuda.coop.reduce binary_op must be one of: "
             f"{choices}; use a backend-qualified import for custom operators"
         ) from None
 
 
-def _validate_portable_reduce_options(
+def _validate_common_reduce_options(
     operation: str,
     group: ThreadGroup,
     value: Any,
@@ -109,7 +109,7 @@ def _validate_portable_reduce_options(
             f"cuda.coop.{operation} does not support grid groups because grid "
             "reduction requires hidden per-launch workspace"
         )
-    _validate_portable_operation_group(operation, group)
+    _validate_common_operation_group(operation, group)
     if not isinstance(broadcast, bool):
         raise TypeError(f"cuda.coop.{operation} broadcast must be a bool")
     if valid_items is not None:
@@ -151,7 +151,7 @@ def _validate_portable_reduce_options(
             )
 
 
-def _validate_portable_reduce_value(
+def _validate_common_reduce_value(
     operation: str,
     value: Any,
     operator: Any,
@@ -164,16 +164,16 @@ def _validate_portable_reduce_value(
     )
     assert dtype_name is not None
     if operator in _BITWISE_OPERATORS:
-        validate_portable_integer_value_dtype_name(
+        validate_common_integer_value_dtype_name(
             dtype_name,
             operation=operation,
             parameter="value",
         )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "reduce",
-    group_kinds=_PORTABLE_REDUCTION_GROUP_KINDS,
+    group_kinds=_COMMON_REDUCTION_GROUP_KINDS,
 )
 def reduce(
     group: ThreadGroup,
@@ -193,7 +193,7 @@ def reduce(
         Participating :ref:`thread group <coop-thread-groups>`. Supports a
         single thread, physical or logical warp, block, mapped group of warps,
         or cluster. Grid reductions are unsupported. Every member must call
-        the collective, including members excluded by ``valid_items``.
+        the primitive, including members excluded by ``valid_items``.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's contribution. A :ref:`per-thread payload
         <coop-thread-data>` contributes all its elements to the same scalar
@@ -220,7 +220,7 @@ def reduce(
     algorithm : str, optional
         Compile-time block algorithm: ``"raking_commutative_only"``,
         ``"raking"``, or ``"warp_reductions"``. An explicit choice requires
-        a block and ``broadcast=False``. All portable operators support these
+        a block and ``broadcast=False``. All common operators support these
         choices. ``None`` lets the implementation select an algorithm.
 
     Returns
@@ -254,11 +254,11 @@ def reduce(
         :dedent: 4
     """
 
-    algorithm = _portable_reduce_algorithm("reduce", algorithm)
-    binary_op = _portable_reduce_operator(binary_op)
+    algorithm = _common_reduce_algorithm("reduce", algorithm)
+    binary_op = _common_reduce_operator(binary_op)
     if _backend_module_name() is not None:
-        _validate_portable_reduce_value("reduce", value, binary_op)
-    _validate_portable_reduce_options(
+        _validate_common_reduce_value("reduce", value, binary_op)
+    _validate_common_reduce_options(
         "reduce",
         group,
         value,
@@ -277,9 +277,9 @@ def reduce(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "sum",
-    group_kinds=_PORTABLE_REDUCTION_GROUP_KINDS,
+    group_kinds=_COMMON_REDUCTION_GROUP_KINDS,
 )
 def sum(
     group: ThreadGroup,
@@ -300,7 +300,7 @@ def sum(
         Participating :ref:`thread group <coop-thread-groups>`. Supports a
         single thread, physical or logical warp, block, mapped group of warps,
         or cluster. Grid reductions are unsupported. Every member must call
-        the collective.
+        the primitive.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's contribution. A :ref:`per-thread payload
         <coop-thread-data>` contributes all its elements; its dtype and fixed
@@ -355,10 +355,10 @@ def sum(
         :dedent: 4
     """
 
-    algorithm = _portable_reduce_algorithm("sum", algorithm)
+    algorithm = _common_reduce_algorithm("sum", algorithm)
     if _backend_module_name() is not None:
-        _validate_portable_reduce_value("sum", value, None)
-    _validate_portable_reduce_options(
+        _validate_common_reduce_value("sum", value, None)
+    _validate_common_reduce_options(
         "sum",
         group,
         value,

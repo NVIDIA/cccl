@@ -1,7 +1,7 @@
 # `cuda.coop`
 
-`cuda.coop` provides portable cooperative data-movement and reduction
-constructs for CUDA thread groups in Python kernel DSLs. The first backend
+`cuda.coop` provides cooperative data-movement and reduction
+primitives for CUDA thread groups in Python kernel DSLs. The first backend
 targets Numba-CUDA-MLIR and lowers data movement to CUB and hierarchy-aware
 reductions to CUDAX or CUB.
 
@@ -66,9 +66,14 @@ automatically. A standalone `cuda.coop` import does not load optional
 compilers. Explicit registration works when a dependency or earlier notebook
 cell already imported `cuda.coop`.
 
-The common namespace describes operations shared across compiler backends.
-To use Numba-specific features, import the backend namespace; this also
-registers it:
+The common API exposed by `cuda.coop` describes operations independently of
+a particular compiler backend. Its public entry points are implemented in
+`cuda/coop/_core/api/`; the private `_core` package also contains shared
+implementation used by the backends. Each backend implements its supported
+operations, so a common spelling does not guarantee support in every compiler.
+
+To use Numba-specific features, import the qualified backend namespace; this
+also registers it:
 
 ```python
 import cuda.coop.numba_mlir as numba_coop
@@ -126,7 +131,7 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 
 ## Block and Warp Load and Store
 
-The portable `cuda.coop` entry points and the qualified
+The common `cuda.coop` entry points and the qualified
 `cuda.coop.numba_mlir` entry points have matching signatures. The following
 kernel-body example clamps a grid tile tail, where `source`, `destination`, and
 `count` are kernel arguments:
@@ -199,7 +204,7 @@ value = types.int32(source[cuda.threadIdx.x] + 1)
 coop.store(block, destination, value, algorithm="direct")
 ```
 
-Both portable and qualified entry points use the same lowercase string
+Both common and qualified entry points use the same lowercase string
 algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
 `warp_transpose`, and `warp_transpose_timesliced`. All six are executable.
 `striped` exposes a striped per-thread payload; the other Load algorithms expose
@@ -216,7 +221,7 @@ Warp Load and Store accept `this_warp()` and support `direct`, `striped`,
 logical groups with `this_warp().group_by(width)`, where `width` is 1, 2, 4, 8,
 16, or 32. The enclosing block must contain a multiple of 32 threads and must
 not have an incomplete final physical warp. Every member of a participating
-group must reach the collective; complete sibling logical groups may diverge.
+group must reach the primitive; complete sibling logical groups may diverge.
 `direct` and `vectorize` expose blocked payloads, `striped` exposes a striped
 payload, and `transpose` uses striped memory transactions while exposing a
 blocked payload.
@@ -256,9 +261,9 @@ immediate physical parent are rejected. Mapped warps-within-block groups expose
 queries and `is_member()` but not `sync()` or `sync_aligned()`; their block
 barrier lifetime must be owned by a future planner contract. For a
 non-exhaustive partition, use `is_member()` to guard rank-dependent work for
-excluded threads. Do not use that branch to skip a collective unless the
-collective's participation contract explicitly permits it; every required
-group or parent-group participant must still reach the collective.
+excluded threads. Do not use that branch to skip a primitive unless the
+primitive's participation contract explicitly permits it; every required
+group or parent-group participant must still reach the primitive.
 
 ## Temporary storage
 
@@ -323,7 +328,7 @@ merged region, even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 `@cuda.jit(device=True, inline="always")` when selecting the helper's
-policy explicitly. Standalone collective helpers and collectives inside
+policy explicitly. Standalone primitive helpers and primitives inside
 standalone callbacks are unsupported. For the MVP, `literal_unroll`
 values cannot determine cooperative payload extents, group dimensions,
 selectors, or descriptor constructor arguments. Write separate calls with
@@ -332,13 +337,13 @@ An unrelated `literal_unroll` loop does not add this restriction.
 
 Warp `transpose` uses compiler-owned storage with one disjoint slice per
 physical or logical group and inserts `syncwarp` with the exact group mask.
-Explicit `TempStorage` is rejected by both the portable and qualified APIs for
+Explicit `TempStorage` is rejected by both the common and qualified APIs for
 every Warp Load and Store algorithm, including the storage-free modes.
 
 ## Reduce and Sum
 
 `sum(group, value, ...)` and `reduce(group, value, binary_op=..., ...)` return
-one scalar with the payload element dtype. The portable API accepts a numeric
+one scalar with the payload element dtype. The common API accepts a numeric
 scalar or fixed-size `ThreadData`; reducing a `ThreadData` payload combines all
 items contributed by every participating member. The qualified
 `cuda.coop.numba_mlir` API also accepts fixed-size `cuda.local.array` payloads.
@@ -405,7 +410,7 @@ Three controls select a direct CUB reduction instead:
   are deferred.
 
 Full CUDAX reductions have no external temporary-storage ABI, backing
-allocation, or compiler-inserted post-call barrier; the collective call still
+allocation, or compiler-inserted post-call barrier; the primitive call still
 requires converged group participation. Direct CUB reductions use
 compiler-owned shared storage. Block paths append a block reuse barrier, while
 physical and logical Warp paths append `syncwarp` for the exact participating
@@ -438,8 +443,7 @@ checked and converted in that context. A block-prefix callback can supply that
 prefix instead. Inclusive scans reject an initial value. The aggregate reports
 only the input reduction and does not include the exclusive initial value.
 
-The portable root API intentionally exposes only the common surface above. The
-qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
+The qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
 `ThreadData` or local array populated with the group aggregate. Warp forms also
 accept `valid_items`, which selects the first N lanes by group rank and requires
 `1 <= N <= warp_width`; only those N result lanes are defined. The initial
@@ -518,8 +522,8 @@ synchronization enabled or issue `cuda.syncthreads()` after each call when
 `auto_sync=False`. The prefix state is persistent per-thread data, not CUB
 temporary storage.
 
-This portable example loads a block tile, computes its exclusive sum, and
-stores the out-of-place result:
+This example uses the common API to load a block tile, compute its exclusive
+sum, and store the out-of-place result:
 
 ```python
 import numpy as np
@@ -542,7 +546,7 @@ The complete runnable form is in `examples/numba_mlir/block_scan.py`.
 ## Exchange and Shuffle
 
 `exchange(group, value, mode=...)` returns a fresh payload and leaves `value`
-unchanged. The portable API accepts `striped_to_blocked` and
+unchanged. The common API accepts `striped_to_blocked` and
 `blocked_to_striped` for block, physical Warp, and logical Warp groups. A
 blocked tile gives each thread consecutive items. A striped tile gives item
 `i` to lane `i % group_size` at per-thread position `i // group_size`.
@@ -560,7 +564,7 @@ holes and duplicate destinations are otherwise unspecified.
 `warp_time_slicing=True` is available only for block Exchange and is not valid
 for guarded or flagged scatter.
 
-`shuffle(block, value, mode=...)` is block-only. The portable API accepts a
+`shuffle(block, value, mode=...)` is block-only. The common API accepts a
 `ThreadData` payload, `up` or `down`, and the fixed distance `1`; the vacated
 edge item is unspecified. The qualified API also accepts scalar `offset` and
 `rotate` modes. Offset distance is signed, may vary by thread, and must fit a

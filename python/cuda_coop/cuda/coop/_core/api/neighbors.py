@@ -12,8 +12,8 @@ from ..block.neighbors import validate_neighbor_options
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
     _group_primitive_marker,
-    _portable_group_operation,
 )
 from ._payload import (
     TempStorageLike,
@@ -37,7 +37,7 @@ def _validate_payload(operation, values, temp_storage):
             _validate_common_temp_storage(operation, temp_storage)
 
 
-@_portable_group_operation("adjacent_difference", group_kinds=("block",))
+@_common_group_operation("adjacent_difference", group_kinds=("block",))
 def adjacent_difference(
     group: ThreadGroup,
     values: _ReadableThreadDataLike[Any],
@@ -83,7 +83,7 @@ def adjacent_difference(
     )
 
 
-@_portable_group_operation("discontinuity", group_kinds=("block",))
+@_common_group_operation("discontinuity", group_kinds=("block",))
 def discontinuity(
     group: ThreadGroup,
     values: _ReadableThreadDataLike[Any],

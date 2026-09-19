@@ -11,13 +11,13 @@ from typing import Any
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
     _group_primitive_marker,
-    _portable_group_operation,
 )
 from ._payload import _validate_common_numeric_value
 
 
-@_portable_group_operation("topk_min_keys", group_kinds=("block",))
+@_common_group_operation("topk_min_keys", group_kinds=("block",))
 def topk_min_keys(
     group: ThreadGroup,
     keys: Any,
@@ -50,7 +50,7 @@ def topk_min_keys(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -94,7 +94,7 @@ def topk_min_keys(
     )
 
 
-@_portable_group_operation("topk_min_pairs", group_kinds=("block",))
+@_common_group_operation("topk_min_pairs", group_kinds=("block",))
 def topk_min_pairs(
     group: ThreadGroup,
     keys: Any,
@@ -132,7 +132,7 @@ def topk_min_pairs(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -185,7 +185,7 @@ def topk_min_pairs(
     )
 
 
-@_portable_group_operation("topk_max_keys", group_kinds=("block",))
+@_common_group_operation("topk_max_keys", group_kinds=("block",))
 def topk_max_keys(
     group: ThreadGroup,
     keys: Any,
@@ -218,7 +218,7 @@ def topk_max_keys(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -262,7 +262,7 @@ def topk_max_keys(
     )
 
 
-@_portable_group_operation("topk_max_pairs", group_kinds=("block",))
+@_common_group_operation("topk_max_pairs", group_kinds=("block",))
 def topk_max_pairs(
     group: ThreadGroup,
     keys: Any,
@@ -300,7 +300,7 @@ def topk_max_pairs(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------

@@ -11,8 +11,8 @@ from typing import Any
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
     _group_primitive_marker,
-    _portable_group_operation,
 )
 from ._payload import (
     TempStorageLike,
@@ -23,7 +23,7 @@ from ._payload import (
 )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "merge_sort_keys", group_kinds=("block", "warp", "threads_within_warp")
 )
 def merge_sort_keys(
@@ -123,7 +123,7 @@ def merge_sort_keys(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "merge_sort_pairs", group_kinds=("block", "warp", "threads_within_warp")
 )
 def merge_sort_pairs(

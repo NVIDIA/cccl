@@ -237,7 +237,7 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 def test_direct_multi_item_load_store_matches_oracles_for_every_dtype(
     qualified: bool,
@@ -311,7 +311,7 @@ def _expected_stored_payload(
     return expected
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid_items",
@@ -344,7 +344,7 @@ def test_each_warp_load_algorithm_matches_an_independent_two_warp_oracle(
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid_items",
@@ -474,7 +474,7 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 def test_logical_warp_algorithms_use_independent_group_tiles(
     qualified: bool,
@@ -574,7 +574,7 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_logical_transpose_load_preserves_invalid_slots_in_nonzero_groups(
     qualified: bool,
 ) -> None:
@@ -649,7 +649,7 @@ def _logical_width_direct_kernel(width: int, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 def test_every_logical_warp_width_addresses_consecutive_tiles(
     qualified: bool,
@@ -729,7 +729,7 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 def test_logical_direct_load_store_matches_every_dtype_oracle(
     qualified: bool,
@@ -803,7 +803,7 @@ def _partial_load_preserving_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 def test_partial_load_preserves_invalid_slots_for_each_layout_and_warp(
     qualified: bool,
@@ -880,7 +880,7 @@ def _per_warp_valid_items_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_runtime_valid_items_can_differ_between_physical_warps(
     qualified: bool,
 ) -> None:
@@ -946,7 +946,7 @@ def _multidimensional_load_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize(
     "block_shape",
     ((16, 4), (8, 4, 2)),
@@ -1009,7 +1009,7 @@ def _logical_multidimensional_load_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_logical_warp_origin_uses_x_major_multidimensional_rank(
     qualified: bool,
 ) -> None:
@@ -1071,7 +1071,7 @@ def _static_control_load_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_physical_warp_static_controls_share_runtime_addressing(
     qualified: bool,
 ) -> None:
@@ -1124,7 +1124,7 @@ def _scalar_store_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_physical_warp_scalar_store_uses_destination_dtype(
     qualified: bool,
 ) -> None:
@@ -1167,7 +1167,7 @@ def _literal_scalar_store_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_physical_warp_scalar_literal_infers_the_destination_dtype(
     qualified: bool,
 ) -> None:
@@ -1245,7 +1245,7 @@ def _grid_stride_transpose_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_grid_stride_tail_clamps_valid_items_per_physical_warp(
     qualified: bool,
 ) -> None:
@@ -1327,7 +1327,7 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_grid_stride_tail_clamps_valid_items_per_logical_warp(
     qualified: bool,
 ) -> None:
@@ -1409,8 +1409,8 @@ np.testing.assert_array_equal(observed, expected)
     )
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
-def test_one_physical_warp_can_take_a_transpose_collective_path(
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+def test_one_physical_warp_can_take_a_transpose_primitive_path(
     qualified: bool,
 ) -> None:
     result = _run_divergent_warp_probe(qualified)
@@ -1490,7 +1490,7 @@ np.testing.assert_array_equal(observed, expected)
     )
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_one_logical_warp_per_physical_warp_can_diverge_at_transpose(
     qualified: bool,
 ) -> None:

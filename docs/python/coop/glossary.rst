@@ -23,10 +23,24 @@ Terms
       positions ``t * K`` through ``t * K + K - 1``. See
       :ref:`blocked versus striped <coop-glossary-layouts>`.
 
-   collective
-      An operation executed together by a :term:`thread group`. Every
-      required participant must reach the same invocation. See
+   primitive
+      .. raw:: html
+
+         <span id="term-collective"></span>
+
+      A cooperative operation provided by ``cuda.coop``, such as ``load``,
+      ``reduce``, or ``exclusive_sum``. Each primitive defines which threads
+      participate, how it uses their data, and where its results are
+      available. See
       :ref:`participation and synchronization <coop-participation>`.
+
+   family
+      A group of related :term:`primitives <primitive>` that share semantics
+      and implementation. For example, the Scan family includes ``scan``,
+      ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
+      ``inclusive_sum``. Families organize implementation modules; a
+      :term:`thread group` describes the threads executing a primitive.
+      See :ref:`implementation families <coop-implementation-families>`.
 
    payload
       The values contributed or received by one thread. ``ThreadData(K)``
@@ -52,12 +66,16 @@ Terms
       ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
       requested bit interval. See :ref:`radix sorting and ranks <coop-radix>`.
 
-   portable API
-      The common API available through ``from cuda import coop``. Its
-      operations describe groups, values, and storage independently of a
-      particular kernel compiler. Each backend implements its supported
-      operations; a common spelling does not guarantee support in every
-      compiler. See :ref:`choosing an API <coop-programming-api-choice>`.
+   common API
+      .. raw:: html
+
+         <span id="term-portable-API"></span>
+
+      The backend-independent API exposed through ``from cuda import coop``.
+      It describes operations on thread groups, values, and storage.
+      Support for particular operations and argument types depends on the
+      backend. Qualified APIs provide backend-specific extensions. See
+      :ref:`choosing an API <coop-programming-api-choice>`.
 
    qualified API
       A backend's namespace, such as ``cuda.coop.numba_mlir``. It provides
@@ -71,14 +89,14 @@ Terms
       :ref:`blocked versus striped <coop-glossary-layouts>`.
 
    temporary storage
-      Shared-memory scratch used internally by a collective. The compiler
+      Shared-memory scratch used internally by a primitive. The compiler
       allocates it automatically when needed. An explicit ``TempStorage``
       descriptor can control allocation sharing and synchronization for
       supported operations. Keep application data in payloads or arrays.
       See :ref:`the temporary-storage FAQ <coop-faq-temp-storage>`.
 
    thread group
-      The threads participating in a collective, such as a block, a physical
+      The threads participating in a primitive, such as a block, a physical
       warp, or a logical group within a warp. A thread's rank identifies its
       position within that group. See :ref:`groups <coop-thread-groups>`.
 

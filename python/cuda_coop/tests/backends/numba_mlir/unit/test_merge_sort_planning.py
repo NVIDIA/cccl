@@ -145,7 +145,7 @@ def test_warp_cannot_use_caller_storage():
         _plan(kernel)
 
 
-def test_portable_rejects_qualified_local_array():
+def test_common_rejects_qualified_local_array():
     from numba_cuda_mlir import cuda, types
 
     from cuda import coop

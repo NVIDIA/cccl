@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable explicit temporary-storage construction.
+"""Common explicit temporary-storage construction.
 
 This frontend delegates caller-selected size, alignment, synchronization, and
 sharing controls to the active backend. Allocation layout and reuse barriers

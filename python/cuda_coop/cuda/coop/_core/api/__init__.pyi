@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Re-export the typing contracts owned by portable API families."""
+"""Re-export the typing contracts owned by common API families."""
 
 from .exchange import exchange
 from .histogram import histogram as histogram
