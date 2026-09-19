@@ -11,13 +11,13 @@ from pathlib import Path
 
 import pytest
 
-import cuda.coop as portable_coop
+import cuda.coop as common_coop
 import cuda.coop.numba_mlir as coop
 from cuda.coop.numba_mlir import _temp_storage, _thread_data
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
-_PORTABLE_EXPORTS = [
+_COMMON_EXPORTS = [
     "__version__",
     "register",
     "adjacent_difference",
@@ -43,7 +43,7 @@ _PORTABLE_EXPORTS = [
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
-    "radix_rank_keys",
+    "radix_rank",
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
@@ -60,11 +60,7 @@ _PORTABLE_EXPORTS = [
     "topk_min_pairs",
 ]
 _QUALIFIED_EXPORTS = [
-    *(
-        name
-        for name in _PORTABLE_EXPORTS
-        if name not in {"__version__", "register"}
-    ),
+    *(name for name in _COMMON_EXPORTS if name not in {"__version__", "register"}),
     "StatefulFunction",
     "local",
     "shared",
@@ -78,9 +74,9 @@ _EXCLUDED_BACKEND_MODULES = (
 
 
 def test_public_exports_are_only_the_supported_group_families():
-    assert sorted(portable_coop.__all__) == sorted(_PORTABLE_EXPORTS)
-    assert dir(portable_coop) == sorted(_PORTABLE_EXPORTS)
-    assert sorted(coop.__all__) == sorted(_QUALIFIED_EXPORTS)
+    assert common_coop.__all__ == _COMMON_EXPORTS
+    assert dir(common_coop) == sorted(_COMMON_EXPORTS)
+    assert coop.__all__ == _QUALIFIED_EXPORTS
     assert dir(coop) == sorted(_QUALIFIED_EXPORTS)
 
     excluded_exports = {
@@ -92,65 +88,49 @@ def test_public_exports_are_only_the_supported_group_families():
         "WarpLoadAlgorithm",
         "WarpStoreAlgorithm",
     }
-    assert excluded_exports.isdisjoint(portable_coop.__all__)
+    assert excluded_exports.isdisjoint(common_coop.__all__)
     assert excluded_exports.isdisjoint(coop.__all__)
     assert not hasattr(coop, "BlockScanAlgorithm")
-    assert "StatefulFunction" not in portable_coop.__all__
+    assert "StatefulFunction" not in common_coop.__all__
     assert "StatefulFunction" in coop.__all__
 
     loaded = set(sys.modules)
-    assert "cuda.coop.numba_mlir._group._load_store" in loaded
+    assert "cuda.coop.numba_mlir._group_load_store" in loaded
     assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
     assert set(_EXCLUDED_BACKEND_MODULES).isdisjoint(loaded)
-    assert (
-        importlib.import_module("cuda.coop.numba_mlir._lowering").__all__ == ()
-    )
+    assert importlib.import_module("cuda.coop.numba_mlir._lowering").__all__ == ()
 
-    coop_root = Path(portable_coop.__file__).resolve().parent
+    coop_root = Path(common_coop.__file__).resolve().parent
     assert not (coop_root / "cutlass").exists()
 
 
-def test_qualified_surface_is_portable_plus_backend_extensions():
-    assert set(coop.__all__) - set(portable_coop.__all__) == {
+def test_qualified_surface_is_common_plus_backend_extensions():
+    assert set(coop.__all__) - set(common_coop.__all__) == {
         "StatefulFunction",
         "local",
         "shared",
     }
-    assert set(portable_coop.__all__) - set(coop.__all__) == {
-        "__version__",
-        "register",
-    }
+    assert set(common_coop.__all__) - set(coop.__all__) == {"__version__", "register"}
 
     def call_shape(function):
         return tuple(
             (name, parameter.kind, parameter.default)
-            for name, parameter in inspect.signature(
-                function
-            ).parameters.items()
+            for name, parameter in inspect.signature(function).parameters.items()
         )
 
     for operation in ("load", "reduce", "shuffle", "store", "sum"):
-        assert call_shape(getattr(coop, operation)) == call_shape(
-            getattr(portable_coop, operation)
+        assert inspect.signature(getattr(coop, operation)) == inspect.signature(
+            getattr(common_coop, operation)
         )
 
-    assert call_shape(coop.reduce_batched) == call_shape(
-        portable_coop.reduce_batched
-    )
+    assert call_shape(coop.reduce_batched) == call_shape(common_coop.reduce_batched)
 
-    portable_exchange = inspect.signature(portable_coop.exchange)
+    common_exchange = inspect.signature(common_coop.exchange)
     qualified_exchange = inspect.signature(coop.exchange)
-    for name, parameter in portable_exchange.parameters.items():
-        qualified_parameter = qualified_exchange.parameters[name]
-        assert qualified_parameter.kind == parameter.kind
-        assert qualified_parameter.default == parameter.default
-    assert (
-        qualified_exchange.return_annotation
-        == portable_exchange.return_annotation
-    )
-    assert tuple(qualified_exchange.parameters)[
-        len(portable_exchange.parameters) :
-    ] == (
+    for name, parameter in common_exchange.parameters.items():
+        assert qualified_exchange.parameters[name] == parameter
+    assert qualified_exchange.return_annotation == common_exchange.return_annotation
+    assert tuple(qualified_exchange.parameters)[len(common_exchange.parameters) :] == (
         "ranks",
         "valid_flags",
         "warp_time_slicing",
@@ -163,27 +143,23 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         "inclusive_sum",
         "scan",
     ):
-        portable_scan = inspect.signature(getattr(portable_coop, operation))
+        common_scan = inspect.signature(getattr(common_coop, operation))
         qualified_scan = inspect.signature(getattr(coop, operation))
-        for name, parameter in portable_scan.parameters.items():
-            qualified_parameter = qualified_scan.parameters[name]
-            assert qualified_parameter.kind == parameter.kind
-            assert qualified_parameter.default == parameter.default
-        assert (
-            qualified_scan.return_annotation == portable_scan.return_annotation
-        )
-        portable_names = tuple(portable_scan.parameters)
+        for name, parameter in common_scan.parameters.items():
+            assert qualified_scan.parameters[name] == parameter
+        assert qualified_scan.return_annotation == common_scan.return_annotation
+        common_names = tuple(common_scan.parameters)
         assert tuple(qualified_scan.parameters) == (
             "group",
             "value",
             "prefix_state",
-            *portable_names[2:],
+            *common_names[2:],
             "valid_items",
             "aggregate_output",
             "prefix_op",
         )
 
-    assert call_shape(coop.TempStorage) == call_shape(portable_coop.TempStorage)
+    assert call_shape(coop.TempStorage) == call_shape(common_coop.TempStorage)
     for constructor in (
         "this_thread",
         "this_warp",
@@ -192,12 +168,12 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         "this_grid",
     ):
         assert call_shape(getattr(coop, constructor)) == call_shape(
-            getattr(portable_coop, constructor)
+            getattr(common_coop, constructor)
         )
 
-    portable_thread_data = call_shape(portable_coop.ThreadData)
+    common_thread_data = call_shape(common_coop.ThreadData)
     qualified_thread_data = call_shape(coop.ThreadData)
-    assert qualified_thread_data == portable_thread_data
+    assert qualified_thread_data == common_thread_data
     assert qualified_thread_data[-1] == (
         "alignment",
         inspect.Parameter.KEYWORD_ONLY,
@@ -220,52 +196,45 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
     ):
         assert inspect.signature(
             getattr(coop.ThreadGroup, method)
-        ) == inspect.signature(getattr(portable_coop.ThreadGroup, method))
+        ) == inspect.signature(getattr(common_coop.ThreadGroup, method))
     assert call_shape(coop.ThreadGroup.group_by) == call_shape(
-        portable_coop.ThreadGroup.group_by
+        common_coop.ThreadGroup.group_by
     )
 
-    assert coop.ThreadDataLike is portable_coop.ThreadDataLike
-    assert coop.TempStorageLike is portable_coop.TempStorageLike
-    assert coop.ThreadHierarchy is portable_coop.ThreadHierarchy
-    assert coop.Hierarchy is portable_coop.Hierarchy
+    assert coop.ThreadDataLike is common_coop.ThreadDataLike
+    assert coop.TempStorageLike is common_coop.TempStorageLike
+    assert coop.ThreadHierarchy is common_coop.ThreadHierarchy
+    assert coop.Hierarchy is common_coop.Hierarchy
 
-    portable_load_annotations = inspect.get_annotations(
-        portable_coop.load,
+    common_load_annotations = inspect.get_annotations(
+        common_coop.load,
         eval_str=True,
     )
     qualified_load_annotations = inspect.get_annotations(
         coop.load,
         eval_str=True,
     )
-    assert (
-        qualified_load_annotations["output"]
-        == portable_load_annotations["output"]
-    )
-    assert (
-        qualified_load_annotations["return"]
-        == portable_load_annotations["return"]
-    )
+    assert qualified_load_annotations["output"] == common_load_annotations["output"]
+    assert qualified_load_annotations["return"] == common_load_annotations["return"]
 
-    coop_root = Path(portable_coop.__file__).resolve().parent
+    coop_root = Path(common_coop.__file__).resolve().parent
 
     def stub_signatures(path):
         module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         return [
             (node.name, ast.dump(node.args), ast.dump(node.returns))
             for node in module.body
-            if isinstance(node, ast.FunctionDef)
-            and node.name in {"load", "store"}
+            if isinstance(node, ast.FunctionDef) and node.name in {"load", "store"}
         ]
 
-    assert stub_signatures(
-        coop_root / "numba_mlir" / "_group" / "_load_store.pyi"
-    ) == (stub_signatures(coop_root / "_core" / "api" / "load_store.pyi"))
+    assert stub_signatures(coop_root / "numba_mlir" / "_group_load_store.pyi") == (
+        stub_signatures(coop_root / "_core" / "api" / "load_store.pyi")
+    )
 
 
 def test_group_descriptors_expose_only_canonical_extent_names():
-    assert not hasattr(portable_coop.ThreadHierarchy, "thread_count")
-    for group_type in (portable_coop.ThreadGroup, coop.ThreadGroup):
+    assert not hasattr(common_coop.ThreadHierarchy, "thread_count")
+    for group_type in (common_coop.ThreadGroup, coop.ThreadGroup):
         assert not hasattr(group_type, "static_thread_count")
         assert not hasattr(group_type, "thread_count")
         assert hasattr(group_type, "static_size")
@@ -273,12 +242,12 @@ def test_group_descriptors_expose_only_canonical_extent_names():
 
 
 def test_stub_only_group_aliases_exist_at_runtime_without_becoming_exports():
-    from cuda.coop._core.api import thread_group as portable_groups
+    from cuda.coop._core.api import thread_group as common_groups
     from cuda.coop.numba_mlir import _thread_group as qualified_groups
 
     for name in ("MemoryGroup", "ReductionGroup", "BlockGroup", "WarpGroup"):
-        assert getattr(portable_groups, name) is portable_groups.ThreadGroup
-        assert name not in portable_groups.__all__
+        assert getattr(common_groups, name) is common_groups.ThreadGroup
+        assert name not in common_groups.__all__
     for name in ("ReductionGroup", "BlockGroup", "WarpGroup"):
         assert getattr(qualified_groups, name) is qualified_groups.ThreadGroup
         assert name not in qualified_groups.__all__
@@ -288,7 +257,7 @@ def test_stub_only_group_aliases_exist_at_runtime_without_becoming_exports():
 def test_excluded_backend_implementation_modules_remain_absent(module_name):
     assert importlib.util.find_spec(module_name) is None
 
-    coop_root = Path(portable_coop.__file__).resolve().parent
+    coop_root = Path(common_coop.__file__).resolve().parent
     relative_module = module_name.removeprefix("cuda.coop.")
     module_path = coop_root.joinpath(*relative_module.split("."))
     assert not module_path.with_suffix(".py").exists()
@@ -303,9 +272,9 @@ def test_python_operator_compilation_supports_explicit_state():
     assert hasattr(_types, "StatelessOperator")
     assert hasattr(_types, "DependentStatefulOperator")
     assert hasattr(_types, "StatefulOperator")
-    assert tuple(
-        inspect.signature(_types.numba_type_to_wrapper).parameters
-    ) == ("numba_type",)
+    assert tuple(inspect.signature(_types.numba_type_to_wrapper).parameters) == (
+        "numba_type",
+    )
 
 
 @pytest.mark.parametrize(
@@ -322,7 +291,7 @@ def test_python_operator_compilation_supports_explicit_state():
         "load",
         "merge_sort_keys",
         "merge_sort_pairs",
-        "radix_rank_keys",
+        "radix_rank",
         "radix_sort_keys",
         "radix_sort_pairs",
         "reduce",
@@ -402,9 +371,7 @@ def test_physical_warp_factories_use_exact_callable_identity(operation):
             operation=operation,
             namespace="warp",
             storage_abi=(
-                StorageABI.LEADING_POINTER
-                if storage_bearing
-                else StorageABI.NONE
+                StorageABI.LEADING_POINTER if storage_bearing else StorageABI.NONE
             ),
             execution_scope=SynchronizationScope.WARP,
             synchronization_scope=(
@@ -427,7 +394,7 @@ def test_public_runtime_helpers_have_semantic_module_owners():
     assert coop.shared is importlib.import_module("numba_cuda_mlir.cuda").shared
     assert coop.ThreadData is _thread_data.ThreadData
     assert coop.TempStorage is _temp_storage.TempStorage
-    assert coop.ThreadDataLike is portable_coop.ThreadDataLike
-    assert coop.TempStorageLike is portable_coop.TempStorageLike
+    assert coop.ThreadDataLike is common_coop.ThreadDataLike
+    assert coop.TempStorageLike is common_coop.TempStorageLike
     assert coop.ThreadData.__module__ == "cuda.coop.numba_mlir._thread_data"
     assert coop.TempStorage.__module__ == "cuda.coop.numba_mlir._temp_storage"

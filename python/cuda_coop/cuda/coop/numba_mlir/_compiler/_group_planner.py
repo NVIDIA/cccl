@@ -35,8 +35,8 @@ from numba_cuda_mlir.cuda.local import array as _cuda_local_array
 from numba_cuda_mlir.extending import require_launch_config
 from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
 
-import cuda.coop._core.api as _portable_api
-import cuda.coop._core.api._dispatch as _portable_dispatch
+import cuda.coop._core.api as _common_api
+import cuda.coop._core.api._dispatch as _common_dispatch
 from cuda.coop._core import (
     LaunchFactOrigin,
     LaunchFacts,
@@ -65,7 +65,7 @@ from ._group_planner_support import (
     _GROUP_METHODS,
     _NAME_COUNTER,
     _PAYLOAD_DTYPE_LIKE,
-    _PORTABLE_GROUP_CONSTRUCTORS,
+    _COMMON_GROUP_CONSTRUCTORS,
     GroupRewriteError,
     _group_operation_name,
     _is_common_root_operation,
@@ -156,9 +156,7 @@ class _GroupCallPlanner:
             return None
 
     def _all_definitions(self, value: ir.Var) -> tuple[Any, ...]:
-        definitions = getattr(self.func_ir, "_definitions", {}).get(
-            value.name, ()
-        )
+        definitions = getattr(self.func_ir, "_definitions", {}).get(value.name, ())
         if definitions:
             return tuple(definitions)
         definition = self._definition(value)
@@ -245,7 +243,7 @@ class _GroupCallPlanner:
         if depends_on_unroll(value, set()):
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir does not support literal_unroll values "
-                f"that determine {parameter}. Write separate "
+                f"that determine {parameter} in the MVP. Write separate "
                 "cooperative calls with explicit constant shapes/selectors, "
                 "or use an ordinary loop with a fixed cooperative shape."
             )
@@ -255,9 +253,9 @@ class _GroupCallPlanner:
             *_GROUP_CONSTRUCTORS,
             ThreadHierarchy,
             ThreadData,
-            _portable_api.ThreadData,
+            _common_api.ThreadData,
             TempStorage,
-            _portable_api.TempStorage,
+            _common_api.TempStorage,
         }
         for block in self.func_ir.blocks.values():
             for inst in block.body:
@@ -336,8 +334,7 @@ class _GroupCallPlanner:
                 if isinstance(argtype, _numba_types.Literal):
                     return (True, argtype.literal_value)
                 if isinstance(argtype, _numba_types.NoneType) or (
-                    isinstance(argtype, _numba_types.Omitted)
-                    and argtype.value is None
+                    isinstance(argtype, _numba_types.Omitted) and argtype.value is None
                 ):
                     return (True, None)
                 return (False, None)
@@ -356,9 +353,7 @@ class _GroupCallPlanner:
             value,
             definitions=self._all_definitions,
             argument_type=lambda index: (
-                self.state.args[index]
-                if 0 <= index < len(self.state.args)
-                else None
+                self.state.args[index] if 0 <= index < len(self.state.args) else None
             ),
         )
 
@@ -367,9 +362,7 @@ class _GroupCallPlanner:
             value,
             definitions=self._all_definitions,
             argument_type=lambda index: (
-                self.state.args[index]
-                if 0 <= index < len(self.state.args)
-                else None
+                self.state.args[index] if 0 <= index < len(self.state.args) else None
             ),
         )
 
@@ -379,9 +372,7 @@ class _GroupCallPlanner:
                 "cuda.coop.numba_mlir group calls do not support *args/**kwargs"
             )
         try:
-            bound = inspect.signature(function).bind(
-                *call.args, **dict(call.kws)
-            )
+            bound = inspect.signature(function).bind(*call.args, **dict(call.kws))
         except TypeError as exc:
             raise GroupRewriteError(str(exc)) from exc
         bound.apply_defaults()
@@ -402,9 +393,7 @@ class _GroupCallPlanner:
         if token is None and allow_none:
             return None
         if not isinstance(token, str) or isinstance(token, Enum):
-            raise TypeError(
-                f"cuda.coop.{operation} {parameter} must be a string"
-            )
+            raise TypeError(f"cuda.coop.{operation} {parameter} must be a string")
         token = token.strip().lower().replace("-", "_")
         if token not in allowed:
             choices = ", ".join(sorted(allowed))
@@ -507,11 +496,9 @@ class _GroupCallPlanner:
                 elif parameter.kind is inspect.Parameter.KEYWORD_ONLY:
                     kwargs[name] = argument
             group = _GROUP_CONSTRUCTORS[function](*args, **kwargs)
-            if function in _PORTABLE_GROUP_CONSTRUCTORS:
+            if function in _COMMON_GROUP_CONSTRUCTORS:
                 assert group.hierarchy is not None
-                group = group.with_hierarchy(
-                    group.hierarchy, source="common_root"
-                )
+                group = group.with_hierarchy(group.hierarchy, source="common_root")
             self._group_cache[value.name] = group
             return group
         function_definition = self._definition(definition.func)
@@ -551,9 +538,7 @@ class _GroupCallPlanner:
                 raise GroupRewriteError("ThreadGroup.group_by requires count")
             self._reject_literal_unroll_value(count_arg, "group_by count")
             exhaustive_arg = raw_kwargs.get("exhaustive", True)
-            self._reject_literal_unroll_value(
-                exhaustive_arg, "group_by exhaustive"
-            )
+            self._reject_literal_unroll_value(exhaustive_arg, "group_by exhaustive")
             count_value = self._constant(count_arg)
             exhaustive = self._constant(exhaustive_arg)
             group = parent.group_by(count_value, exhaustive=exhaustive)
@@ -562,11 +547,7 @@ class _GroupCallPlanner:
         return None
 
     def _resolve_group(
-        self,
-        group: ThreadGroup,
-        *,
-        feature: str,
-        through_level: str | None = None,
+        self, group: ThreadGroup, *, feature: str, through_level: str | None = None
     ) -> ThreadGroup:
         resolution = resolve_thread_group(
             group, self.launch, through_level=through_level
@@ -574,14 +555,10 @@ class _GroupCallPlanner:
         try:
             resolved = resolution.require_supported()
         except NotImplementedError as exc:
-            raise NotImplementedError(
-                f"cuda.coop.numba_mlir.{feature} {exc}"
-            ) from exc
+            raise NotImplementedError(f"cuda.coop.numba_mlir.{feature} {exc}") from exc
         if group.source == "common_root":
             assert resolved.hierarchy is not None
-            resolved = resolved.with_hierarchy(
-                resolved.hierarchy, source="common_root"
-            )
+            resolved = resolved.with_hierarchy(resolved.hierarchy, source="common_root")
         return resolved
 
     def _is_none(self, value: Any) -> bool:
@@ -625,12 +602,7 @@ class _GroupCallPlanner:
         return result, bound
 
     def _is_array_tuple_item(
-        self,
-        value: Any,
-        index: int,
-        *,
-        seen: set[str],
-        thread_data_only: bool = False,
+        self, value: Any, index: int, *, seen: set[str], thread_data_only: bool = False
     ) -> bool | None:
         if not isinstance(value, ir.Var):
             return False
@@ -651,12 +623,7 @@ class _GroupCallPlanner:
         )
 
     def _is_array_tuple_item_definition(
-        self,
-        definition: Any,
-        index: int,
-        *,
-        seen: set[str],
-        thread_data_only: bool,
+        self, definition: Any, index: int, *, seen: set[str], thread_data_only: bool
     ) -> bool | None:
         if isinstance(definition, ir.Var):
             return self._is_array_tuple_item(
@@ -666,10 +633,7 @@ class _GroupCallPlanner:
             return False
         if definition.op in {"cast", "exhaust_iter"}:
             return self._is_array_tuple_item(
-                definition.value,
-                index,
-                seen=seen,
-                thread_data_only=thread_data_only,
+                definition.value, index, seen=seen, thread_data_only=thread_data_only
             )
         if definition.op == "phi":
             incoming_values = getattr(definition, "incoming_values", ())
@@ -764,9 +728,7 @@ class _GroupCallPlanner:
         return self._merge_array_states(
             tuple(
                 self._is_array_definition(
-                    definition,
-                    seen=set(seen),
-                    thread_data_only=thread_data_only,
+                    definition, seen=set(seen), thread_data_only=thread_data_only
                 )
                 for definition in self._all_definitions(value)
             )
@@ -790,9 +752,7 @@ class _GroupCallPlanner:
             return self._merge_array_states(
                 tuple(
                     self._is_array_value(
-                        incoming,
-                        seen=set(seen),
-                        thread_data_only=thread_data_only,
+                        incoming, seen=set(seen), thread_data_only=thread_data_only
                     )
                     for incoming in incoming_values
                 )
@@ -814,7 +774,7 @@ class _GroupCallPlanner:
         if definition.op != "call":
             return False
         function = self._callable(definition.func)
-        if function in {ThreadData, _portable_api.ThreadData}:
+        if function in {ThreadData, _common_api.ThreadData}:
             return True
         if function is _typed_group_payload_like:
             return self._is_array_value(
@@ -838,18 +798,10 @@ class _GroupCallPlanner:
 
     @staticmethod
     def _new_var(scope: Any, loc: ir.Loc, stem: str) -> ir.Var:
-        return ir.Var(
-            scope, f"__cuda_coop_group_{stem}_{next(_NAME_COUNTER)}__", loc
-        )
+        return ir.Var(scope, f"__cuda_coop_group_{stem}_{next(_NAME_COUNTER)}__", loc)
 
     def _value_var(
-        self,
-        statements: list[Any],
-        *,
-        scope: Any,
-        loc: ir.Loc,
-        stem: str,
-        value: Any,
+        self, statements: list[Any], *, scope: Any, loc: ir.Loc, stem: str, value: Any
     ) -> ir.Var:
         if isinstance(value, ir.Var):
             return value
@@ -879,9 +831,7 @@ class _GroupCallPlanner:
             kwargs.setdefault("_common_root_operation", common_root_operation)
         function_var = self._new_var(scope, loc, "factory")
         statements.append(
-            ir.Assign(
-                ir.Global(function_var.name, factory, loc), function_var, loc
-            )
+            ir.Assign(ir.Global(function_var.name, factory, loc), function_var, loc)
         )
         rewritten_args = [
             self._value_var(
@@ -907,9 +857,7 @@ class _GroupCallPlanner:
         )
         statements.append(
             ir.Assign(
-                ir.Expr.call(
-                    function_var, rewritten_args, rewritten_kwargs, loc
-                ),
+                ir.Expr.call(function_var, rewritten_args, rewritten_kwargs, loc),
                 call_target,
                 loc,
             )
@@ -917,9 +865,7 @@ class _GroupCallPlanner:
         if isinstance(return_alias, tuple):
             statements.append(
                 ir.Assign(
-                    ir.Expr.build_tuple(list(return_alias), loc),
-                    inst.target,
-                    loc,
+                    ir.Expr.build_tuple(list(return_alias), loc), inst.target, loc
                 )
             )
         elif return_alias is not None:
@@ -938,8 +884,7 @@ class _GroupCallPlanner:
         state = self._is_array_value(value, thread_data_only=True)
         if state is None:
             raise GroupRewriteError(
-                f"cuda.coop.{operation} could not "
-                f"resolve {parameter} payload provenance"
+                f"cuda.coop.{operation} could not resolve {parameter} payload provenance"
             )
         return state
 
@@ -1025,9 +970,7 @@ class _GroupCallPlanner:
         if not isinstance(definition, ir.Expr):
             return None
         if definition.op in {"cast", "exhaust_iter"}:
-            return self._array_extent_tuple_item(
-                definition.value, index, seen=seen
-            )
+            return self._array_extent_tuple_item(definition.value, index, seen=seen)
         if definition.op == "phi":
             extents = {
                 extent
@@ -1075,8 +1018,7 @@ class _GroupCallPlanner:
             extents = {
                 extent
                 for incoming in getattr(definition, "incoming_values", ())
-                if (extent := self._array_extent(incoming, seen=set(seen)))
-                is not None
+                if (extent := self._array_extent(incoming, seen=set(seen))) is not None
             }
             if len(extents) > 1:
                 raise InconsistentLoopPayloadExtentError()
@@ -1105,15 +1047,13 @@ class _GroupCallPlanner:
                     extent = self._constant(definition.args[3])
                 except GroupRewriteError:
                     return None
-                if isinstance(extent, Integral) and (
-                    not isinstance(extent, bool)
-                ):
+                if isinstance(extent, Integral) and (not isinstance(extent, bool)):
                     return int(extent)
                 return None
             if is_array is False:
                 return 1
             return self._array_extent(definition.args[0], seen=seen)
-        if function in {ThreadData, _portable_api.ThreadData}:
+        if function in {ThreadData, _common_api.ThreadData}:
             bound = self._bind(function, definition)
             extent_argument = bound.arguments["items_per_thread"]
             self._reject_literal_unroll_value(extent_argument, "payload extent")
@@ -1148,9 +1088,7 @@ class _GroupCallPlanner:
             return result.extent_resolver(self.context, bound)
         if result.array_parameter is None:
             return 1
-        return self._array_extent(
-            bound.arguments[result.array_parameter], seen=seen
-        )
+        return self._array_extent(bound.arguments[result.array_parameter], seen=seen)
 
     def _copy_array_payload(
         self,
@@ -1180,12 +1118,8 @@ class _GroupCallPlanner:
                 stem=f"{operation}_copy_index_{item_index}",
                 value=item_index,
             )
-            item = self._new_var(
-                scope, loc, f"{operation}_copy_item_{item_index}"
-            )
-            statements.append(
-                ir.Assign(ir.Expr.getitem(source, index, loc), item, loc)
-            )
+            item = self._new_var(scope, loc, f"{operation}_copy_item_{item_index}")
+            statements.append(ir.Assign(ir.Expr.getitem(source, index, loc), item, loc))
             statements.append(ir.SetItem(destination, index, item, loc))
 
     def _typed_payload_like(
@@ -1209,11 +1143,7 @@ class _GroupCallPlanner:
             )
         )
         is_array_var = self._value_var(
-            statements,
-            scope=scope,
-            loc=loc,
-            stem=f"{stem}_is_array",
-            value=is_array,
+            statements, scope=scope, loc=loc, stem=f"{stem}_is_array", value=is_array
         )
         dtype_policy_var = self._value_var(
             statements,
@@ -1294,9 +1224,7 @@ class _GroupCallPlanner:
             value=0,
         )
         result = self._new_var(scope, loc, f"{stem}_scalar")
-        statements.append(
-            ir.Assign(ir.Expr.getitem(payload, index, loc), result, loc)
-        )
+        statements.append(ir.Assign(ir.Expr.getitem(payload, index, loc), result, loc))
         return result
 
     def _lower_root_operation(
@@ -1306,30 +1234,22 @@ class _GroupCallPlanner:
         if bound.arguments.get("kwargs"):
             names = ", ".join(sorted(bound.arguments["kwargs"]))
             raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} "
-                f"got unexpected keyword(s): {names}"
+                f"cuda.coop.numba_mlir.{operation} got unexpected keyword(s): {names}"
             )
         group = self._group(bound.arguments["group"])
         if group is None:
             raise NonConstantThreadGroupError(operation)
         is_common_root = _is_common_root_operation(function, operation)
         if is_common_root:
-            _portable_dispatch._validate_portable_operation_group(
-                operation, group
-            )
+            _common_dispatch._validate_common_operation_group(operation, group)
         group = self._resolve_group(group, feature=operation)
         registration = group_primitive(operation)
         if registration is None:
             raise GroupRewriteError(
                 f"cuda.coop.numba_mlir operation {operation!r} has no planner"
             )
-        if (
-            is_common_root
-            and registration.validate_common_arguments is not None
-        ):
-            registration.validate_common_arguments(
-                self.context, operation, bound
-            )
+        if is_common_root and registration.validate_common_arguments is not None:
+            registration.validate_common_arguments(self.context, operation, bound)
         replacement = registration.lower(
             self.context,
             inst,
@@ -1359,17 +1279,13 @@ class _GroupCallPlanner:
         self, inst: ir.Assign, call: ir.Expr, *, method: str, group: ThreadGroup
     ) -> None:
         if call.vararg is not None or call.varkwarg is not None:
-            raise GroupRewriteError(
-                f"ThreadGroup.{method} does not support splats"
-            )
+            raise GroupRewriteError(f"ThreadGroup.{method} does not support splats")
         kwargs = dict(call.kws)
         dtype = None
         level = "thread"
         if method in {"rank", "count"}:
             if len(call.args) > 1 or any(name != "level" for name in kwargs):
-                raise GroupRewriteError(
-                    f"invalid ThreadGroup.{method} arguments"
-                )
+                raise GroupRewriteError(f"invalid ThreadGroup.{method} arguments")
             if call.args and "level" in kwargs:
                 raise GroupRewriteError(
                     f"ThreadGroup.{method} received level more than once"
@@ -1383,9 +1299,7 @@ class _GroupCallPlanner:
             if len(call.args) > 2 or any(
                 name not in {"dtype", "level"} for name in kwargs
             ):
-                raise GroupRewriteError(
-                    f"invalid ThreadGroup.{method} arguments"
-                )
+                raise GroupRewriteError(f"invalid ThreadGroup.{method} arguments")
             if call.args and "dtype" in kwargs:
                 raise GroupRewriteError(
                     f"ThreadGroup.{method} received dtype more than once"
@@ -1405,9 +1319,7 @@ class _GroupCallPlanner:
             operation = method.removesuffix("_as")
         else:
             if call.args or kwargs:
-                raise GroupRewriteError(
-                    f"ThreadGroup.{method} accepts no arguments"
-                )
+                raise GroupRewriteError(f"ThreadGroup.{method} accepts no arguments")
             operation = method
 
         if operation in {"rank", "count"}:
@@ -1427,16 +1339,13 @@ class _GroupCallPlanner:
                 if level_order[level] > level_order[group.mapping.parent]:
                     raise NotImplementedError(
                         "cuda.coop.numba_mlir mapped ThreadGroup queries above "
-                        "the immediate parent require "
-                        "recursive group composition"
+                        "the immediate parent require recursive group composition"
                     )
             group = self._resolve_group(
                 group, feature=f"ThreadGroup.{operation}", through_level=level
             )
         else:
-            group = self._resolve_group(
-                group, feature=f"ThreadGroup.{operation}"
-            )
+            group = self._resolve_group(group, feature=f"ThreadGroup.{operation}")
         if group.kind == "warps_within_block" and operation in {
             "sync",
             "sync_aligned",
@@ -1448,8 +1357,7 @@ class _GroupCallPlanner:
         if group.kind == "grid" and operation in {"sync", "sync_aligned"}:
             raise NotImplementedError(
                 "cuda.coop.numba_mlir grid synchronization requires a verified "
-                "cooperative launch, which the "
-                "current launch descriptor cannot "
+                "cooperative launch, which the current launch descriptor cannot "
                 "request"
             )
 
@@ -1489,10 +1397,7 @@ class _GroupCallPlanner:
                 if not isinstance(call, ir.Expr) or call.op != "call":
                     continue
                 function = self._callable(call.func)
-                if (
-                    function is ThreadHierarchy
-                    or function in _GROUP_CONSTRUCTORS
-                ):
+                if function is ThreadHierarchy or function in _GROUP_CONSTRUCTORS:
                     self.descriptor_assigns.add(inst)
                     self.dead_func_names.add(call.func.name)
                     continue
@@ -1505,9 +1410,7 @@ class _GroupCallPlanner:
                 ):
                     self.descriptor_assigns.add(inst)
                     self.dead_func_names.add(call.func.name)
-        descriptor_names = {
-            inst.target.name for inst in self.descriptor_assigns
-        }
+        descriptor_names = {inst.target.name for inst in self.descriptor_assigns}
         changed = True
         while changed:
             changed = False
@@ -1528,9 +1431,7 @@ class _GroupCallPlanner:
                         changed = True
 
     def _validate_descriptor_uses(self) -> None:
-        descriptor_names = {
-            inst.target.name for inst in self.descriptor_assigns
-        }
+        descriptor_names = {inst.target.name for inst in self.descriptor_assigns}
         if not descriptor_names:
             return
         for block in self.func_ir.blocks.values():
@@ -1624,9 +1525,7 @@ class _GroupCallPlanner:
                         group=group,
                     )
         self._validate_descriptor_uses()
-        if not (
-            self.descriptor_assigns or self.replacements or self.dead_func_names
-        ):
+        if not (self.descriptor_assigns or self.replacements or self.dead_func_names):
             return False
         for block in self.func_ir.blocks.values():
             rewritten: list[Any] = []
@@ -1640,9 +1539,7 @@ class _GroupCallPlanner:
                     or inst.target.name in self.dead_func_names
                 ):
                     rewritten.append(
-                        ir.Assign(
-                            ir.Const(None, inst.loc), inst.target, inst.loc
-                        )
+                        ir.Assign(ir.Const(None, inst.loc), inst.target, inst.loc)
                     )
                     continue
                 rewritten.append(inst)
@@ -1697,9 +1594,7 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
             return False
         seen = {*seen, value.name}
         for definition in analyzer._all_definitions(value):
-            if isinstance(definition, ir.Var) and is_group_descriptor(
-                definition, seen
-            ):
+            if isinstance(definition, ir.Var) and is_group_descriptor(definition, seen):
                 return True
             if isinstance(definition, (ir.Global, ir.FreeVar, ir.Const)):
                 if isinstance(definition.value, ThreadGroup):
@@ -1707,9 +1602,7 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
                 continue
             if not isinstance(definition, ir.Expr):
                 continue
-            if definition.op == "cast" and is_group_descriptor(
-                definition.value, seen
-            ):
+            if definition.op == "cast" and is_group_descriptor(definition.value, seen):
                 return True
             if definition.op == "phi" and any(
                 is_group_descriptor(incoming, seen)
@@ -1827,8 +1720,7 @@ class _GroupPlanning:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir cooperative calls in device function "
                 f"{function_name!r} must be inlined into a kernel. Standalone "
-                "collective helpers and collectives inside standalone "
-                "callbacks "
+                "primitive helpers and primitives inside standalone callbacks "
                 "are unsupported; use inline='always' for a kernel helper or "
                 "move the cooperative calls into the kernel."
             )

@@ -20,6 +20,19 @@ class _UnitDistance(IntEnum):
     ONE = 1
 
 
+class _ReadOnlyPayload:
+    items_per_thread = 1
+    dtype = int
+
+    def __len__(self):
+        return self.items_per_thread
+
+    def __getitem__(self, index):
+        if index != 0:
+            raise IndexError(index)
+        return 0
+
+
 def _plan(function, *, arg_types=(), block=(64, 1, 1)):
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
@@ -131,7 +144,7 @@ def test_exchange_and_shuffle_register_declarative_result_and_rewrite_contracts(
 
 def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
 
     assert tuple(signature(qualified.shuffle).parameters) == (
         "group",
@@ -139,7 +152,7 @@ def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
         "mode",
         "distance",
     )
-    assert tuple(signature(portable.shuffle).parameters) == (
+    assert tuple(signature(common.shuffle).parameters) == (
         "group",
         "value",
         "mode",
@@ -147,7 +160,30 @@ def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
     )
 
 
-@pytest.mark.parametrize("api", ("portable", "qualified"))
+@pytest.mark.parametrize(
+    ("operation", "mode"),
+    (
+        ("exchange", SimpleNamespace(value="blocked_to_striped")),
+        ("exchange", _StringMode.BLOCKED_TO_STRIPED),
+        ("shuffle", SimpleNamespace(value="down")),
+        ("shuffle", _StringMode.DOWN),
+    ),
+)
+def test_common_python_entry_points_require_plain_string_modes(operation, mode):
+    import importlib
+
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.thread_group import this_block
+
+    api = importlib.import_module(f"cuda.coop._core.api.{operation}")
+    group = this_block()
+
+    with _dispatch._compiler_scope("test.backend"):
+        with pytest.raises(TypeError, match="mode must be a string"):
+            getattr(api, operation)(group, object(), mode=mode)
+
+
+@pytest.mark.parametrize("api", ("common", "qualified"))
 @pytest.mark.parametrize("mode_kind", ("value_object", "string_enum"))
 @pytest.mark.parametrize(
     ("operation", "valid_mode"),
@@ -163,10 +199,10 @@ def test_public_modes_reject_non_plain_strings_before_provider(
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop.numba_mlir._compiler import _group_exchange, _group_shuffle
 
-    coop = portable if api == "portable" else qualified
+    coop = common if api == "common" else qualified
     mode = (
         SimpleNamespace(value=valid_mode)
         if mode_kind == "value_object"
@@ -258,6 +294,49 @@ def test_rewrite_mode_validation_requires_plain_strings(operation):
             CoopSinglePhaseRewriteError, match="compile-time string"
         ):
             rewrite._mode_token(mode)
+
+
+@pytest.mark.parametrize("operation", ("exchange", "shuffle"))
+def test_common_frontends_accept_read_only_thread_data(monkeypatch, operation):
+    import importlib
+
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.thread_group import this_block
+
+    api = importlib.import_module(f"cuda.coop._core.api.{operation}")
+    monkeypatch.setattr(
+        api,
+        "_group_primitive_marker",
+        lambda *_args, **_kwargs: "validated",
+    )
+
+    kwargs = {"mode": "blocked_to_striped" if operation == "exchange" else "down"}
+    group = this_block()
+    with _dispatch._compiler_scope("test.backend"):
+        assert (
+            getattr(api, operation)(
+                group,
+                _ReadOnlyPayload(),
+                **kwargs,
+            )
+            == "validated"
+        )
+
+
+@pytest.mark.parametrize(
+    "distance",
+    (SimpleNamespace(value=1), _UnitDistance.ONE),
+    ids=("value-impostor", "integer-enum"),
+)
+def test_common_shuffle_validates_the_actual_distance(distance):
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.shuffle import shuffle
+    from cuda.coop._core.api.thread_group import this_block
+
+    group = this_block()
+    with _dispatch._compiler_scope("test.backend"):
+        with pytest.raises(ValueError, match="distance must be exactly 1"):
+            shuffle(group, _ReadOnlyPayload(), distance=distance)
 
 
 @pytest.mark.parametrize(

@@ -5,20 +5,20 @@
 from typing_extensions import TypeVar
 
 from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     IntegralScalar,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     ThreadDataLike,
 )
 from .temp_storage import TempStorageLike as TempStorage
 from .thread_group import BlockGroup
 
-_K = TypeVar("_K", bound=PortableNumericScalar)
-_V = TypeVar("_V", bound=PortableNumericScalar)
+_K = TypeVar("_K", bound=CommonNumericScalar)
+_V = TypeVar("_V", bound=CommonNumericScalar)
 
 def topk_min_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_K],
+    keys: CommonThreadDataLike[_K],
     /,
     *,
     k: IntegralScalar,
@@ -27,8 +27,8 @@ def topk_min_keys(
 ) -> ThreadDataLike[_K]: ...
 def topk_min_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_K],
-    values: PortableThreadDataLike[_V],
+    keys: CommonThreadDataLike[_K],
+    values: CommonThreadDataLike[_V],
     /,
     *,
     k: IntegralScalar,
@@ -37,7 +37,7 @@ def topk_min_pairs(
 ) -> tuple[ThreadDataLike[_K], ThreadDataLike[_V]]: ...
 def topk_max_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_K],
+    keys: CommonThreadDataLike[_K],
     /,
     *,
     k: IntegralScalar,
@@ -46,8 +46,8 @@ def topk_max_keys(
 ) -> ThreadDataLike[_K]: ...
 def topk_max_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_K],
-    values: PortableThreadDataLike[_V],
+    keys: CommonThreadDataLike[_K],
+    values: CommonThreadDataLike[_V],
     /,
     *,
     k: IntegralScalar,

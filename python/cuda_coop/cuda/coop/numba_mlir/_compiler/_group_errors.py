@@ -26,8 +26,7 @@ class InvalidGroupSelectorError(ValueError):
     def __init__(self, operation, parameter, choices):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.{operation} {parameter}"
-                f" must be one of: {choices}; use "
+                f"cuda.coop.{operation} {parameter} must be one of: {choices}; use "
                 f"a backend-qualified import for backend-only controls",
             )
         )
@@ -37,8 +36,7 @@ class CyclicArrayProvenanceError(GroupRewriteError):
     def __init__(self, operation):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation}"
-                f" could not resolve cyclic array "
+                f"cuda.coop.numba_mlir.{operation} could not resolve cyclic array "
                 f"provenance to a concrete scalar or array value",
             )
         )
@@ -120,10 +118,8 @@ class EscapingGroupDescriptorError(GroupRewriteError):
         super().__init__(
             _wrap_diagnostic(
                 f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are "
-                f"compile-time descriptors and may "
-                f"only feed this_*(), group_by(), "
-                f"group methods, or group-first primitives; descriptor use "
-                f"involving {names!r} "
+                f"compile-time descriptors and may only feed this_*(), group_by(), "
+                f"group methods, or group-first primitives; descriptor use involving {names!r} "
                 f"would escape to runtime",
             )
         )
@@ -134,8 +130,7 @@ class InvalidLoadStoreAlgorithmError(ValueError):
         group = "" if group_kind is None else f" for {group_kind} groups"
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation} "
-                f"algorithm{group} must be one of: {choices}",
+                f"cuda.coop.numba_mlir.{operation} algorithm{group} must be one of: {choices}",
             )
         )
 
@@ -164,8 +159,7 @@ class UnknownLoadStoreDtypeError(GroupRewriteError):
     def __init__(self, operation):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation}"
-                f" could not infer a dtype before "
+                f"cuda.coop.numba_mlir.{operation} could not infer a dtype before "
                 f"provider selection",
             )
         )
@@ -185,8 +179,7 @@ class NonConstantTempStorageError(GroupRewriteError):
     def __init__(self, operation):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation}"
-                f" temp_storage must resolve to a "
+                f"cuda.coop.numba_mlir.{operation} temp_storage must resolve to a "
                 f"compile-time TempStorage descriptor",
             )
         )
@@ -196,8 +189,7 @@ class UnsupportedLoadStoreTargetError(GroupRewriteError):
     def __init__(self, target):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir Load/Store "
-                f"received an unsupported lowering "
+                f"cuda.coop.numba_mlir Load/Store received an unsupported lowering "
                 f"target {target!r}",
             )
         )
@@ -206,8 +198,7 @@ class UnsupportedLoadStoreTargetError(GroupRewriteError):
 class DefaultDtypeMismatchError(TypeError):
     def __init__(self, value_dtype, payload_dtype):
         super().__init__(
-            f"cuda.coop.numba_mlir.load runtime "
-            f"oob_default dtype {value_dtype}\n"
+            f"cuda.coop.numba_mlir.load runtime oob_default dtype {value_dtype}\n"
             f"does not match payload dtype {payload_dtype}"
         )
 
@@ -222,24 +213,23 @@ class UnknownLoadStoreProviderError(GroupRewriteError):
         )
 
 
-class PortableLoadPayloadError(TypeError):
+class CommonLoadPayloadError(TypeError):
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
                 "cuda.coop.load requires output to be a fixed-size ThreadData "
-                "payload in the portable API; use cuda.coop.numba_mlir for "
+                "payload in the common API; use cuda.coop.numba_mlir for "
                 "backend-qualified local-array payload support",
             )
         )
 
 
-class PortableStorePayloadError(TypeError):
+class CommonStorePayloadError(TypeError):
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
-                "cuda.coop.store accepts only a scalar or fixed-size "
-                "ThreadData value payload in the portable API; use "
-                "cuda.coop.numba_mlir for "
+                "cuda.coop.store accepts only a scalar or fixed-size ThreadData "
+                "value payload in the common API; use cuda.coop.numba_mlir for "
                 "backend-qualified local-array payload support",
             )
         )

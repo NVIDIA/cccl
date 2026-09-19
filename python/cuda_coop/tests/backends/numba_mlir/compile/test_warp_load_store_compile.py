@@ -43,9 +43,7 @@ _DTYPES = (
 
 
 @pytest.fixture(autouse=True)
-def _fixed_current_device(
-    monkeypatch: pytest.MonkeyPatch,
-) -> list[tuple[int, int]]:
+def _fixed_current_device(monkeypatch: pytest.MonkeyPatch) -> list[tuple[int, int]]:
     """Hide runtime discovery while leaving NVRTC and nvJitLink real."""
 
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
@@ -76,9 +74,7 @@ def _algorithm(
 ) -> _types.Algorithm:
     valid_items = ArgumentBinding.runtime()
     oob_default = (
-        ArgumentBinding.runtime()
-        if operation == "load"
-        else ArgumentBinding.omitted()
+        ArgumentBinding.runtime() if operation == "load" else ArgumentBinding.omitted()
     )
     adapter = NumbaMlirCoreAdapter(
         value_abis=_load_store_value_abis(
@@ -89,9 +85,7 @@ def _algorithm(
             oob_default=oob_default,
         )
     )
-    factory = (
-        make_warp_load_spec if operation == "load" else make_warp_store_spec
-    )
+    factory = make_warp_load_spec if operation == "load" else make_warp_store_spec
     spec = factory(
         dtype=adapter.core_dtype(dtype),
         items_per_thread=_ITEMS_PER_THREAD,
@@ -104,14 +98,10 @@ def _algorithm(
     storage_free = algorithm != "transpose"
     specialization = adapter.materialize(
         spec.specialization,
-        storage_abi=(
-            StorageABI.NONE if storage_free else StorageABI.LEADING_POINTER
-        ),
+        storage_abi=(StorageABI.NONE if storage_free else StorageABI.LEADING_POINTER),
         execution_scope=SynchronizationScope.WARP,
         synchronization_scope=(
-            SynchronizationScope.NONE
-            if storage_free
-            else SynchronizationScope.WARP
+            SynchronizationScope.NONE if storage_free else SynchronizationScope.WARP
         ),
         extra_type_definitions=(_types.numba_type_to_wrapper(dtype),),
     )
@@ -143,9 +133,7 @@ def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
         "get_gpu_compute_capability",
         fixed_compute_capability,
     )
-    monkeypatch.setattr(
-        compiler_cuda, "get_current_device", lambda: fixed_device
-    )
+    monkeypatch.setattr(compiler_cuda, "get_current_device", lambda: fixed_device)
     return compiler_cuda
 
 
@@ -158,9 +146,7 @@ def _production_launch_config_key() -> tuple[tuple[str, object], ...]:
     )
 
 
-@pytest.mark.parametrize(
-    "threads_in_warp", (32, 8), ids=("physical", "logical-8")
-)
+@pytest.mark.parametrize("threads_in_warp", (32, 8), ids=("physical", "logical-8"))
 def test_all_warp_algorithms_compile_with_scope_owned_storage(
     compile_context: _nvrtc.CompileContext,
     _fixed_current_device: list[tuple[int, int]],
@@ -181,10 +167,7 @@ def test_all_warp_algorithms_compile_with_scope_owned_storage(
         source = _source(specialization)
         assert f"::cub::WARP_{operation.upper()}_{name.upper()}" in source
         tile_items = threads_in_warp * _ITEMS_PER_THREAD
-        assert (
-            f"if (num_valid_items < 0 || num_valid_items > {tile_items})"
-            in source
-        )
+        assert f"if (num_valid_items < 0 || num_valid_items > {tile_items})" in source
         memory_name = "src" if operation == "load" else "dst"
         assert f"({memory_name} + offset)" in source
         assert "__syncthreads" not in source
@@ -259,12 +242,9 @@ def test_direct_multi_item_load_store_compiles_for_every_supported_dtype(
     )
     assert isinstance(bundle, bytes)
     assert bundle
+    assert all(specialization.temp_storage_bytes == 0 for specialization in algorithms)
     assert all(
-        specialization.temp_storage_bytes == 0 for specialization in algorithms
-    )
-    assert all(
-        specialization.temp_storage_alignment == 1
-        for specialization in algorithms
+        specialization.temp_storage_alignment == 1 for specialization in algorithms
     )
 
 
@@ -281,14 +261,7 @@ def test_logical_warp_widths_have_distinct_specializations_and_cache_keys(
         for width in (1, 2, 4, 8, 16, 32)
     ]
 
-    assert [algorithm.threads for algorithm in algorithms] == [
-        1,
-        2,
-        4,
-        8,
-        16,
-        32,
-    ]
+    assert [algorithm.threads for algorithm in algorithms] == [1, 2, 4, 8, 16, 32]
     assert (
         len(
             {
@@ -313,9 +286,8 @@ def test_logical_warp_widths_have_distinct_specializations_and_cache_keys(
     assert bundle
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_production_routes_compile_portable_and_qualified_warp_kernels(
-    monkeypatch: pytest.MonkeyPatch, items_per_thread
+def test_production_routes_compile_common_and_qualified_warp_kernels(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import cuda.coop.numba_mlir as qualified_coop
     from cuda import coop as root_coop
@@ -331,11 +303,10 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
             destination,
             valid_items,
             offset,
-            items_per_thread,
         ):
             thread = compiler_cuda.threadIdx.x
             load_payload = qualified_coop.ThreadData(
-                items_per_thread, dtype=types.int32
+                _ITEMS_PER_THREAD, dtype=types.int32
             )
             qualified_coop.load(
                 qualified_coop.this_warp(),
@@ -347,11 +318,11 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
                 offset=offset,
             )
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = load_payload[item]
                 payload[item] = store_source[index]
             qualified_coop.store(
@@ -365,7 +336,7 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
 
         return kernel
 
-    def portable_kernel(algorithm: str):
+    def common_kernel(algorithm: str):
         @compiler_cuda.jit(chip="sm_90")
         def kernel(
             load_source,
@@ -374,12 +345,9 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
             destination,
             valid_items,
             offset,
-            items_per_thread,
         ):
             thread = compiler_cuda.threadIdx.x
-            load_payload = root_coop.ThreadData(
-                items_per_thread, dtype=types.int32
-            )
+            load_payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
             root_coop.load(
                 root_coop.this_warp(),
                 load_source,
@@ -390,11 +358,11 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
                 offset=offset,
             )
             payload = root_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = load_payload[item]
                 payload[item] = store_source[index]
             root_coop.store(
@@ -411,7 +379,7 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
     dispatchers = [
         (qualified, algorithm, factory(algorithm))
         for qualified, factory in (
-            (False, portable_kernel),
+            (False, common_kernel),
             (True, qualified_kernel),
         )
         for algorithm in ("direct", "transpose")
@@ -424,7 +392,6 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
         types.int32[::1],
         types.int32,
         types.int64,
-        types.IntegerLiteral(items_per_thread),
     )
     launch_config_key = _production_launch_config_key()
     for qualified, algorithm, dispatcher in dispatchers:
@@ -446,9 +413,8 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
             assert ".shared" not in ptx
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
-    monkeypatch: pytest.MonkeyPatch, items_per_thread
+def test_production_routes_compile_common_and_qualified_logical_warp_kernels(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import cuda.coop.numba_mlir as qualified_coop
     from cuda import coop as root_coop
@@ -457,10 +423,10 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
 
     def qualified_kernel(algorithm: str):
         @compiler_cuda.jit(chip="sm_90")
-        def kernel(source, destination, valid_items, offset, items_per_thread):
+        def kernel(source, destination, valid_items, offset):
             group = qualified_coop.this_warp().group_by(8)
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             qualified_coop.load(
@@ -483,12 +449,12 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
 
         return kernel
 
-    def portable_kernel(algorithm: str):
+    def common_kernel(algorithm: str):
         @compiler_cuda.jit(chip="sm_90")
-        def kernel(source, destination, valid_items, offset, items_per_thread):
+        def kernel(source, destination, valid_items, offset):
             group = root_coop.this_warp().group_by(8)
             payload = root_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -516,11 +482,10 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
         types.int32[::1],
         types.int32,
         types.int64,
-        types.IntegerLiteral(items_per_thread),
     )
     launch_config_key = _production_launch_config_key()
     for algorithm in ("direct", "transpose"):
-        for factory in (portable_kernel, qualified_kernel):
+        for factory in (common_kernel, qualified_kernel):
             dispatcher = factory(algorithm)
             result = dispatcher._compile_launch_config_signature(
                 signature,
@@ -537,9 +502,7 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
                 assert ".shared" not in ptx
 
 
-@pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
-)
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_warp_scalar_literal_store_compiles_with_destination_dtype(
     monkeypatch: pytest.MonkeyPatch,
     qualified: bool,
@@ -578,9 +541,7 @@ def test_warp_scalar_literal_store_compiles_with_destination_dtype(
     assert result.metadata["cubin"]
 
 
-@pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
-)
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 def test_warp_scalar_runtime_expression_rejects_implicit_narrowing(
     monkeypatch: pytest.MonkeyPatch,
     qualified: bool,

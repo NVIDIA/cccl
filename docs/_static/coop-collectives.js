@@ -106,7 +106,7 @@
       state.ownership === "broadcast" ? "The built-in group path broadcasts one aggregate to every member." : "With broadcast=False, only rank zero of each group has a defined return value; ? marks every other return.",
       "The partial-combine rows show an illustrative legal reduction tree, not a CUB instruction trace. Floating-point results can depend on combination order.",
     ];
-    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir, with broadcast=False; the common namespace accepts built-in operator names.");
+    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir, with broadcast=False; the common API accepts built-in operator names.");
     if (state.scope === "cluster") notes.push("Cluster reduction is implemented for compute capability 9.0 or newer and requires a cluster launch. The picture uses two teaching blocks; grid reduction is unsupported.");
     if (state.scope === "mapped_warps") notes.push("this_block().group_by(2) selects groups of two physical warps (64 threads in executable code); it does not select two individual threads.");
     return {

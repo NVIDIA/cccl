@@ -105,7 +105,7 @@ def radix_sort_pairs(
     keys, values : scalar, ThreadDataLike, or local array
         Both operands must have matching scalar or array shape and extent.
         Keys support 32- and 64-bit signed integers, unsigned integers, and
-        floating-point values. Associated values support the portable numeric
+        floating-point values. Associated values support the common API's numeric
         dtypes, including 8- and 16-bit integers.
     begin_bit, end_bit : int or compiler integer
         Block-uniform half-open interval in CUB's transformed key bits, with

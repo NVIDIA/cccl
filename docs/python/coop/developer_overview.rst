@@ -9,7 +9,7 @@
 
 ``cuda.coop`` makes CUB and CUDAX cooperative primitives callable inside a
 Python GPU kernel. The Python compiler compiles the surrounding kernel;
-``cuda.coop`` generates the C++ device functions for its collective calls.
+``cuda.coop`` generates the C++ device functions for its primitive calls.
 The two are linked together before the kernel runs.
 
 This overview follows a call through the Numba-CUDA-MLIR implementation. It
@@ -53,7 +53,7 @@ threads, with two items per thread:
    np.testing.assert_array_equal(destination, source)
 
 The example uses NumPy arrays, which Numba-CUDA-MLIR handles at the launch
-boundary. An application can supply device arrays instead. The collective
+boundary. An application can supply device arrays instead. The primitive
 sees device pointers in either case.
 
 Each thread owns a separate ``items`` payload. With the direct algorithm,
@@ -74,7 +74,7 @@ All 128 threads execute both calls. There is one kernel launch. Neither
 Positional operands and keyword-only options
 -------------------------------------------
 
-Collective calls take the participating group first, followed by their data
+Primitive calls take the participating group first, followed by their data
 operands. These arguments are positional-only. Options such as
 ``algorithm``, ``valid_items``, and ``broadcast`` are keyword-only:
 
@@ -85,7 +85,7 @@ operands. These arguments are positional-only. Options such as
    coop.load(block, source, items, algorithm="direct", valid_items=n)
 
 Reduction and Scan usually need just a group and a value. Load and Store
-add a source or destination. This short operand list keeps collective
+add a source or destination. This short operand list keeps primitive
 calls compact inside a kernel, while named options make choices such as
 partial-tile handling and result broadcasting explicit. New optional
 keyword parameters can be added without changing existing calls.
@@ -174,7 +174,7 @@ Numba-CUDA-MLIR owns the final kernel compilation, loading, and launch.
 Compared with the :doc:`cuda.compute overview <../compute/developer_overview>`,
 the same runtime compilation tools appear at a different boundary. Here
 the generated C++ implements a device call within a kernel supplied by the
-user. That means the group shape and the kernel's other collective calls
+user. That means the group shape and the kernel's other primitive calls
 matter to compilation.
 
 .. _cuda.coop.generated_shims:
@@ -404,7 +404,7 @@ type inference, and some comes from the configured launch:
 
 ``this_block()`` is a compile-time group descriptor. The planner resolves
 it against the launch and removes the descriptor from the runtime code.
-The user does not need to repeat the block size in the collective call.
+The user does not need to repeat the block size in the primitive call.
 Launching the same kernel with a different block shape can require a
 different specialization.
 
@@ -427,7 +427,7 @@ call.
 Group methods such as ``rank()`` and ``count()`` produce integer values
 that the kernel can use. The group descriptor itself remains compile-time
 information. Adding a descriptor or query for a scope does not supply an
-implementation of a collective with a runtime group size.
+implementation of a primitive with a runtime group size.
 
 There is also a distinction between a static group size and a runtime
 quantity measured within that group. A tail Load may use:
@@ -494,7 +494,7 @@ device call is not supported by this mechanism.
 Descriptor validation waits for default helper inlining and recursively follows
 aliases and conditional definitions. A surviving unsupported helper or
 descriptor escape is diagnosed with its name. Standalone callbacks cannot
-contain collectives because they lack the caller's cooperative launch context.
+contain primitives because they lack the caller's cooperative launch context.
 
 For the MVP, ``literal_unroll`` values shaping cooperative groups, selectors,
 payloads, or storage are explicitly unsupported. The planner diagnoses those
@@ -503,15 +503,31 @@ unrelated to cooperative planning remains available. Supporting shaped unrolling
 would require revisiting planner ordering; this implementation does not move
 planning after SSA or unrolling.
 
-The portable functions in ``_core/api/`` are compiler markers with shared
+The common API primitives in ``_core/api/`` are compiler markers with shared
 signatures and validation rules. Numba's planner recognizes their identity
 and binds the call arguments. Reading the Python body alone does not show
 the path that runs during kernel compilation.
 
-The portable core and the Numba backend
---------------------------------------
+.. _the-portable-core-and-the-numba-backend:
+.. _coop-implementation-families:
 
-The core describes what a collective means and which C++ implementation
+The shared core and implementation families
+-------------------------------------------
+
+The common API is exposed through ``cuda.coop`` and implemented in
+``_core/api/``. The private ``_core/`` package also contains shared
+implementation used by the backends. The package name describes that
+implementation layer; the user-facing API is called the common API.
+
+A :term:`family` groups related primitives and their implementation. The
+Scan family, for example, has shared API declarations in
+``_core/api/scan.py`` and ``scan.pyi``, semantic descriptions in
+``_core/group/scan.py``, and Numba-specific entry points in
+``numba_mlir/_group_scan.py`` and ``_group_scan.pyi``. Compiler analysis and
+lowering have their own Scan modules. A family can span several modules
+and include both common operations and qualified extensions.
+
+The shared core describes what a primitive means and which C++ implementation
 can perform it. It does not import Numba or invoke a compiler. The Numba
 backend reads compiler IR and types, then converts the core's plan into
 code that Numba-CUDA-MLIR can compile.
@@ -567,7 +583,7 @@ must be known at compile time. The compiler may keep its elements in
 registers; indexing, address-taking, and register pressure determine the
 final placement.
 
-Both portable and qualified ``ThreadData`` constructors accept an optional
+Both common and qualified ``ThreadData`` constructors accept an optional
 ``alignment`` keyword. It specifies a minimum power-of-two alignment in
 bytes when the compiler materializes payload storage. It does not assert
 alignment of the source or destination arrays passed to Load and Store.
@@ -613,7 +629,7 @@ The qualified namespace accepts additional compiler-specific values, such
 as local-array payloads where supported. Type support is still checked by
 each primitive. An ABI helper for aggregate values does not imply that
 public Load, Reduce, or Scan accepts arbitrary structures. The current
-portable payload APIs require their supported numeric dtypes.
+common payload APIs require their supported numeric dtypes.
 
 Shared memory and reuse
 -----------------------
@@ -645,11 +661,11 @@ different participation domains interchangeable.
 After a storage-bearing block call, the rewrite normally emits a block
 reuse barrier. For supported physical and logical Warp calls, it emits
 ``syncwarp`` with the participating group's mask. CUB's synchronization
-inside a collective does not generally establish that a later collective
+inside a primitive does not generally establish that a later primitive
 can immediately overwrite the same scratch.
 Automatic synchronization adds a trailing barrier after each storage-consuming
 call. It does not establish that arbitrary user control flow is safe: callers
-must still ensure that all group members reach the collective and barrier.
+must still ensure that all group members reach the primitive and barrier.
 
 A block operation can expose that reuse choice through ``TempStorage``:
 
@@ -675,7 +691,7 @@ which the planner can strengthen to meet the requirements of its uses.
 and exclusive descriptors both default to automatic synchronization; layout and
 synchronization are independent. ``auto_sync=False`` leaves synchronization to
 the caller. A loop that reaches the same call site again still needs safe reuse,
-including with an exclusive descriptor. For a block collective, put the required
+including with an exclusive descriptor. For a block primitive, put the required
 block barrier where every thread reaches it before the next use. The planner
 conservatively rejects collapsing multiple manually synchronized constructors
 into one descriptor. This is a validation limit, not proof that each rejected
@@ -711,7 +727,7 @@ shared memory.
 Adding a Scan
 -------------
 
-With Load and Store connected, we can put a collective between them:
+With Load and Store connected, we can put a primitive between them:
 
 .. code-block:: python
 
@@ -783,7 +799,7 @@ The operator's LTO-IR joins the provider's link inputs. No Python callback
 runs while the GPU executes the scan.
 
 This uses the same general technique as Python operators in
-``cuda.compute``. The operator must satisfy the collective's mathematical
+``cuda.compute``. The operator must satisfy the primitive's mathematical
 contract, including associativity, and the supported input and output
 dtype contract. Successful compilation cannot establish associativity.
 
@@ -1281,7 +1297,7 @@ These choices determine which signatures the backend can implement.
 The existing Load/Store and Scan families show the usual path:
 
 #. Add the shared signature and type declarations in ``_core/api/`` when
-   the operation belongs in the portable API. Put compiler-specific
+   the operation belongs in the common API. Put compiler-specific
    extensions in the qualified namespace.
 #. Describe the operation and C++ overload in the core family. Its group
    planner selects a supported implementation and returns complete result,
@@ -1344,7 +1360,7 @@ Paths below are relative to ``python/cuda_coop/cuda/coop/``:
    * - Path
      - Responsibility
    * - ``_core/api/`` and the adjacent ``.pyi`` files
-     - Portable signatures, descriptors, and argument rules.
+     - Common signatures, descriptors, and argument rules.
    * - ``_core/group/``
      - Group resolution, primitive semantics, and lowering contracts.
    * - ``_core/block/`` and ``_core/warp/``

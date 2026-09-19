@@ -2,9 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Histogram type, capacity, ownership, and import-light API contracts."""
+
+from importlib import import_module
+
 import numpy as np
 import pytest
 
+from cuda import coop
 from cuda.coop._core import (
     INT32,
     UINT64,
@@ -78,3 +83,30 @@ def test_warp_is_unsupported():
         plan_group_primitive(
             make_group_primitive_call(this_warp(), operation), LaunchFacts(64)
         ).require_supported()
+
+
+class _ReadonlySamples:
+    items_per_thread = 3
+    dtype = np.uint8
+
+    def __len__(self):
+        return 3
+
+    def __getitem__(self, index):
+        return (1, 2, 1)[index]
+
+
+def test_common_readonly_inputs_and_typed_controls(monkeypatch):
+    api = import_module("cuda.coop._core.api.histogram")
+    dispatch = import_module("cuda.coop._core.api._dispatch")
+    samples = _ReadonlySamples()
+    sentinel = object()
+    monkeypatch.setattr(api, "_group_primitive_marker", lambda *a, **k: sentinel)
+    with dispatch._compiler_scope("test.backend"):
+        assert (
+            coop.histogram(this_block(), samples, bins=4, counter_dtype=np.int64)
+            is sentinel
+        )
+        with pytest.raises(TypeError, match="ThreadData"):
+            coop.histogram(this_block(), 1, bins=4)
+    assert list(samples) == [1, 2, 1]

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Executable examples included in the portable scan API docstrings."""
+"""Executable examples included in the common scan API docstrings."""
 
 import pytest
 

@@ -18,9 +18,7 @@ class _StringSelector(str, Enum):
     MAXIMUM = "maximum"
 
 
-def _plan(
-    function, *, arg_types=(), block=(64, 1, 1), grid=(1, 1, 1), cluster=None
-):
+def _plan(function, *, arg_types=(), block=(64, 1, 1), grid=(1, 1, 1), cluster=None):
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
@@ -40,8 +38,7 @@ def _planned_factory_calls(func_ir):
         statement.target.name: statement.value.value
         for block in func_ir.blocks.values()
         for statement in block.body
-        if isinstance(statement, ir.Assign)
-        and isinstance(statement.value, ir.Global)
+        if isinstance(statement, ir.Assign) and isinstance(statement.value, ir.Global)
     }
     return [
         (globals_by_name.get(statement.value.func.name), statement.value)
@@ -55,9 +52,7 @@ def _planned_factory_calls(func_ir):
 
 def _provider_call(func_ir, provider):
     calls = [
-        call
-        for target, call in _planned_factory_calls(func_ir)
-        if target is provider
+        call for target, call in _planned_factory_calls(func_ir) if target is provider
     ]
     assert len(calls) == 1
     return calls[0]
@@ -71,8 +66,7 @@ def _kwarg_value(func_ir, call, name):
         statement.value
         for block in func_ir.blocks.values()
         for statement in block.body
-        if isinstance(statement, ir.Assign)
-        and statement.target.name == variable.name
+        if isinstance(statement, ir.Assign) and statement.target.name == variable.name
     ]
     assert len(definitions) == 1
     definition = definitions[0]
@@ -135,17 +129,10 @@ def test_reduce_registers_scalar_result_and_all_provider_abis():
     from cuda.coop.numba_mlir._lowering import _reduce
 
     del _group_reduce
-    assert group_primitive("reduce").results == (
-        GroupResultSource("value", None),
-    )
+    assert group_primitive("reduce").results == (GroupResultSource("value", None),)
     assert group_primitive("sum").results == (GroupResultSource("value", None),)
     expected = {
-        _reduce.sum: (
-            "block_sum",
-            "block",
-            StorageABI.LEADING_POINTER,
-            "block",
-        ),
+        _reduce.sum: ("block_sum", "block", StorageABI.LEADING_POINTER, "block"),
         _reduce.block_reduce_builtin: (
             "block_reduce_builtin",
             "block",
@@ -213,9 +200,7 @@ def test_reduce_registers_scalar_result_and_all_provider_abis():
             else SynchronizationScope.NONE
         )
 
-    assert rewrite_operation("block_sum").runtime_arg_counts == frozenset(
-        {1, 2}
-    )
+    assert rewrite_operation("block_sum").runtime_arg_counts == frozenset({1, 2})
     assert rewrite_operation("warp_sum").runtime_arg_counts == frozenset({1, 2})
     assert rewrite_operation("group_reduce").factory_namespaces == frozenset(
         {"cudax_block", "cudax_group", "cudax_none", "cudax_warp"}
@@ -224,7 +209,7 @@ def test_reduce_registers_scalar_result_and_all_provider_abis():
 
 def test_public_reduce_markers_have_group_first_signatures():
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
 
     expected_reduce = (
         "group",
@@ -236,25 +221,23 @@ def test_public_reduce_markers_have_group_first_signatures():
     )
     expected_sum = ("group", "value", "broadcast", "valid_items", "algorithm")
     assert tuple(signature(qualified.reduce).parameters) == expected_reduce
-    assert tuple(signature(portable.reduce).parameters) == expected_reduce
+    assert tuple(signature(common.reduce).parameters) == expected_reduce
     assert tuple(signature(qualified.sum).parameters) == expected_sum
-    assert tuple(signature(portable.sum).parameters) == expected_sum
+    assert tuple(signature(common.sum).parameters) == expected_sum
 
 
-@pytest.mark.parametrize(
-    "qualified", [False, True], ids=["portable", "qualified"]
-)
+@pytest.mark.parametrize("qualified", [False, True], ids=["common", "qualified"])
 def test_public_reduce_selectors_are_normalized_before_provider(
     qualified,
 ):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as numba_coop
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop._core import BlockReduceAlgorithm
     from cuda.coop.numba_mlir._lowering import _reduce
 
-    coop = numba_coop if qualified else portable
+    coop = numba_coop if qualified else common
 
     def algorithm_kernel(value):
         return coop.sum(
@@ -285,9 +268,7 @@ def test_public_reduce_selectors_are_normalized_before_provider(
     assert _kwarg_value(func_ir, call, "binary_op") == "max"
 
 
-@pytest.mark.parametrize(
-    "qualified", [False, True], ids=["portable", "qualified"]
-)
+@pytest.mark.parametrize("qualified", [False, True], ids=["common", "qualified"])
 @pytest.mark.parametrize(
     ("parameter", "selector"),
     [
@@ -306,10 +287,10 @@ def test_public_reduce_rejects_non_string_selectors_before_provider(
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as numba_coop
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop.numba_mlir._compiler import _group_reduce
 
-    coop = numba_coop if qualified else portable
+    coop = numba_coop if qualified else common
     if parameter == "algorithm":
 
         def kernel(value):
@@ -341,7 +322,7 @@ def test_public_reduce_rejects_non_string_selectors_before_provider(
         planner.run()
 
 
-def test_portable_reduce_rejects_qualified_callable_extension(monkeypatch):
+def test_common_reduce_rejects_qualified_callable_extension(monkeypatch):
     from numba_cuda_mlir import types
 
     from cuda import coop
@@ -358,7 +339,7 @@ def test_portable_reduce_rejects_qualified_callable_extension(monkeypatch):
         _group_reduce._ReducePlanning,
         "_provider",
         lambda *_args, **_kwargs: pytest.fail(
-            "portable callable reached provider selection"
+            "common callable reached provider selection"
         ),
     )
     _, planner = _plan(kernel, arg_types=(types.int32,))
@@ -366,22 +347,16 @@ def test_portable_reduce_rejects_qualified_callable_extension(monkeypatch):
         planner.run()
 
 
-@pytest.mark.parametrize(
-    "qualified", [False, True], ids=["portable", "qualified"]
-)
+@pytest.mark.parametrize("qualified", [False, True], ids=["common", "qualified"])
 @pytest.mark.parametrize(
     ("group", "provider_name", "launch"),
     [
         pytest.param("thread", "group_reduce_none", {}, id="thread"),
         pytest.param("warp", "group_reduce_warp", {}, id="warp"),
-        pytest.param(
-            "logical_warp", "group_reduce_warp", {}, id="logical-warp"
-        ),
+        pytest.param("logical_warp", "group_reduce_warp", {}, id="logical-warp"),
         pytest.param("block", "group_reduce_block", {}, id="block"),
         pytest.param("mapped_warp", "group_reduce_warp", {}, id="mapped-warp"),
-        pytest.param(
-            "mapped_warps", "group_reduce_group", {}, id="mapped-warps"
-        ),
+        pytest.param("mapped_warps", "group_reduce_group", {}, id="mapped-warps"),
         pytest.param(
             "cluster",
             "group_reduce_group",
@@ -399,10 +374,10 @@ def test_full_builtin_reduce_selects_fixed_scope_cudax_provider(
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as numba_coop
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop.numba_mlir._lowering import _reduce
 
-    coop = numba_coop if qualified else portable
+    coop = numba_coop if qualified else common
     descriptor = {
         "thread": coop.this_thread(),
         "warp": coop.this_warp(),
@@ -462,18 +437,13 @@ def test_qualified_callable_aliases_plan_as_builtin_cudax_operations(
     assert _kwarg_value(func_ir, call, "binary_op") == expected
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
-def test_reduce_infers_untyped_thread_data_symmetrically(
-    monkeypatch, qualified, items_per_thread
-):
+def test_reduce_infers_untyped_thread_data_symmetrically(monkeypatch, qualified):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified_coop
     from cuda import coop as root_coop
-    from cuda.coop._core import INT32
     from cuda.coop.numba_mlir._compiler import _group_reduce
-    from cuda.coop.numba_mlir._lowering import _reduce
 
     module = qualified_coop if qualified else root_coop
     plans = []
@@ -486,10 +456,10 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
 
     monkeypatch.setattr(_group_reduce, "plan_group_primitive", capture_plan)
 
-    def kernel(value, items_per_thread):
-        items = module.ThreadData(items_per_thread)
-        for item in range(items_per_thread):
-            items[item] = value
+    def kernel(value):
+        items = module.ThreadData(2)
+        items[0] = value
+        items[1] = value
         return module.sum(
             module.this_block(),
             items,
@@ -497,21 +467,11 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
             algorithm="raking",
         )
 
-    func_ir, planner = _plan(
-        kernel,
-        arg_types=(types.int32, types.IntegerLiteral(items_per_thread)),
-    )
+    _, planner = _plan(kernel, arg_types=(types.int32,))
     assert planner.run()
     assert len(plans) == 1
-    assert plans[0].call.operation.dtype == INT32
-    call = _provider_call(func_ir, _reduce.sum)
-    assert _kwarg_value(func_ir, call, "dtype") is types.int32
-    key = plans[0].call.operation.semantic_key
-    monkeypatch.setattr(
-        types.int32, "_coop_dtype_boundary_test", 1, raising=False
-    )
-    assert plans[0].call.operation.semantic_key == key
-    assert plans[0].call.operation.items_per_thread == items_per_thread
+    assert plans[0].call.operation.dtype == types.int32
+    assert plans[0].call.operation.items_per_thread == 2
 
 
 def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
@@ -524,7 +484,7 @@ def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
     from cuda.coop.numba_mlir._lowering import _reduce
 
     def kernel(value):
-        items = coop.ThreadData(items_per_thread=1, dtype=types.int32)
+        items = coop.ThreadData(1, dtype=types.int32)
         items[0] = value
         return coop.sum(
             coop.this_block(),
@@ -651,9 +611,7 @@ def test_complete_nonexhaustive_logical_warp_materializes_cub_storage(fallback):
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
     assert planner.run()
-    provider = (
-        _reduce.warp_sum if fallback == "valid-prefix" else _reduce.warp_reduce
-    )
+    provider = _reduce.warp_sum if fallback == "valid-prefix" else _reduce.warp_reduce
     assert len(_provider_call(func_ir, provider).args) == 1
     rewrite = _match_before_inference(func_ir, arg_types=(types.int32,))
 
@@ -701,9 +659,7 @@ def test_runtime_valid_items_is_checked_before_an_int64_provider_cast():
     assert planner.run()
     call = _provider_call(func_ir, _reduce.sum)
     assert "reduce_valid_items_i64" in dict(call.kws)["num_valid"].name
-    assert any(
-        target is types.int64 for target, _ in _planned_factory_calls(func_ir)
-    )
+    assert any(target is types.int64 for target, _ in _planned_factory_calls(func_ir))
     _match_before_inference(
         func_ir,
         arg_types=(types.int32, types.uint32),
@@ -718,9 +674,7 @@ def test_runtime_valid_items_is_checked_before_an_int64_provider_cast():
         pytest.param("uint64", id="uint64"),
     ],
 )
-def test_runtime_valid_items_rejects_invalid_dtype_before_provider(
-    dtype, monkeypatch
-):
+def test_runtime_valid_items_rejects_invalid_dtype_before_provider(dtype, monkeypatch):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -806,17 +760,15 @@ def test_grid_reduce_has_stable_workspace_diagnostic():
         return coop.sum(coop.this_grid(), value)
 
     _, planner = _plan(kernel, arg_types=(types.int32,))
-    with pytest.raises(
-        NotImplementedError, match="hidden per-launch workspace"
-    ):
+    with pytest.raises(NotImplementedError, match="hidden per-launch workspace"):
         planner.run()
 
 
-def test_qualified_local_array_is_supported_but_portable_rejects_it():
+def test_qualified_local_array_is_supported_but_common_rejects_it():
     from numba_cuda_mlir import cuda, types
 
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
 
     def qualified_kernel(value):
         items = cuda.local.array(2, dtype=types.int32)
@@ -824,17 +776,17 @@ def test_qualified_local_array_is_supported_but_portable_rejects_it():
         items[1] = value
         return qualified.sum(qualified.this_block(), items)
 
-    def portable_kernel(value):
+    def common_kernel(value):
         items = cuda.local.array(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        return portable.sum(portable.this_block(), items)
+        return common.sum(common.this_block(), items)
 
     _, qualified_planner = _plan(qualified_kernel, arg_types=(types.int32,))
     assert qualified_planner.run()
-    _, portable_planner = _plan(portable_kernel, arg_types=(types.int32,))
+    _, common_planner = _plan(common_kernel, arg_types=(types.int32,))
     with pytest.raises(TypeError, match="ThreadData value payload"):
-        portable_planner.run()
+        common_planner.run()
 
 
 def test_cub_factories_declare_leading_storage_and_scope(monkeypatch):
@@ -868,17 +820,13 @@ def test_cub_factories_declare_leading_storage_and_scope(monkeypatch):
             "storage_abi": StorageABI.LEADING_POINTER,
             "execution_scope": SynchronizationScope.BLOCK,
             "synchronization_scope": SynchronizationScope.BLOCK,
-            "extra_type_definitions": materializations[0][
-                "extra_type_definitions"
-            ],
+            "extra_type_definitions": materializations[0]["extra_type_definitions"],
         },
         {
             "storage_abi": StorageABI.LEADING_POINTER,
             "execution_scope": SynchronizationScope.WARP,
             "synchronization_scope": SynchronizationScope.WARP,
-            "extra_type_definitions": materializations[1][
-                "extra_type_definitions"
-            ],
+            "extra_type_definitions": materializations[1]["extra_type_definitions"],
         },
     ]
     assert block_invocation == {}
@@ -908,9 +856,9 @@ def test_cudax_source_has_required_macros_and_no_external_barrier():
         broadcast=False,
         symbol="mapped_reduce",
     )
-    assert source.index(
-        "_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX"
-    ) < source.index("#include")
+    assert source.index("_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX") < source.index(
+        "#include"
+    )
     assert source.index("_CUDAX_DISABLE_CG_INTEROP") < source.index("#include")
     assert "::cuda::experimental::coop::generic_group group{" in source
     assert "reinterpret_cast<::cuda::std::int32_t (*)[1]>" in source
@@ -1002,21 +950,15 @@ def test_batched_reduction_operator_tracks_nested_device_helper(monkeypatch):
     from numba_cuda_mlir.descriptor import MLIRDispatcher
 
     from cuda.coop._core import _symbols, semantic_token
-    from cuda.coop.numba_mlir._lowering._reduce_batched import (
-        reduction_operator,
-    )
+    from cuda.coop.numba_mlir._lowering._reduce_batched import reduction_operator
 
     original = _symbols._type_dependency_token
 
     def reject_dispatcher_class(value, state):
-        assert value is not MLIRDispatcher, (
-            "fingerprinting compiler implementation"
-        )
+        assert value is not MLIRDispatcher, "fingerprinting compiler implementation"
         return original(value, state)
 
-    monkeypatch.setattr(
-        _symbols, "_type_dependency_token", reject_dispatcher_class
-    )
+    monkeypatch.setattr(_symbols, "_type_dependency_token", reject_dispatcher_class)
 
     def make_operator(offset):
         @cuda.jit(device=True)

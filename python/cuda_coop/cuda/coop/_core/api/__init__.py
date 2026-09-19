@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Import-light common API organized by cooperative primitive family.
+
+Leaf modules own public argument capture and validation; this facade preserves
+the documented root export order and compiler-backend marker contract. It does
+not own semantic lowering, provider rendering, or backend compiler state.
+"""
+
 from .exchange import exchange
 from .histogram import histogram as histogram
 from .load_store import load, store
