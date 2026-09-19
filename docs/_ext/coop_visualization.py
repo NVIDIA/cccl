@@ -16,11 +16,13 @@ _EXPLORERS = {
     "scan": "coop-collectives.js",
     "merge-sort": "coop-merge-sort.js",
     "radix": "coop-radix.js",
+    "topk": "coop-topk.js",
 }
 
 _VISUALIZATION_TITLES = {
     "merge-sort": "Merge Sort",
     "radix": "Radix Rank/Sort",
+    "topk": "TopK",
 }
 
 _API_VISUALIZATIONS = (
@@ -32,6 +34,9 @@ _API_VISUALIZATIONS = (
     | {"sum": "reduce"}
     | dict.fromkeys(("merge_sort_keys", "merge_sort_pairs"), "merge-sort")
     | dict.fromkeys(("radix_sort_keys", "radix_sort_pairs", "radix_rank"), "radix")
+    | dict.fromkeys(
+        ("topk_min_keys", "topk_max_keys", "topk_min_pairs", "topk_max_pairs"), "topk"
+    )
 )
 
 
@@ -98,8 +103,8 @@ def setup(app):
     app.connect("autodoc-process-docstring", add_api_visualization_link)
     app.connect("html-page-context", add_visualization_assets)
     return {
-        "version": "5",
-        "env_version": 4,
+        "version": "6",
+        "env_version": 5,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }
