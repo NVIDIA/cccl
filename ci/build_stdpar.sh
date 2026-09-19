@@ -19,6 +19,11 @@ while [[ "${#args[@]}" -ne 0 ]]; do
     esac
 done
 
+# shellcheck source=ci/build_common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"
+
+print_environment_details
+
 mkdir -p "${workdir}"
 cd "${workdir}"
 

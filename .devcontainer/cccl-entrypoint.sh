@@ -9,8 +9,12 @@ if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
 fi
 
 devcontainer-utils-post-create-command;
+# Install latest sccache client
+# devcontainer-utils-install-sccache --version rapids;
+devcontainer-utils-install-sccache --repo trxcllnt/sccache --version latest;
 devcontainer-utils-init-git;
 devcontainer-utils-post-attach-command;
+
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
     echo "::endgroup::"
 fi
