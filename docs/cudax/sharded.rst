@@ -104,6 +104,19 @@ an explicit-environments form ``algo(view, envs, ...)`` and, for self-bound
 structures, the one-argument form ``algo(view, ...)``; a trailing per-call
 environment selects the contract):
 
+- ``for_each_shard``: the map family's driver as a public verb — run a
+  caller-supplied body once per non-empty shard, on the shard's stream and
+  in its execution context, under the same call contract as every
+  algorithm below (environment-count guard, lane-ordered or bracketed
+  composition, synchronous no-stream form, capture-time refusal). The body
+  receives ``(g, shard, env)``, ``(g, shard, stream)`` or ``(shard, stream)``
+  and only enqueues. This is the extension point for work the tier does not
+  name — a CUB or cuco call per shard, a hand-written or generated kernel,
+  a per-shard reduction whose P results the caller keeps as a vector, a
+  per-shard scan without cross-shard carry, the emit step of a
+  data-dependent expansion — with scratch drawn from
+  ``cuda::mr::get_memory_resource(env)`` so temporaries land on the shard's
+  place;
 - elementwise (asynchronous forms available): ``fill``, ``sequence``,
   ``iota``, ``tabulate``, ``generate``, ``for_each``, ``transform``
   (in place); ``zip_transform`` is the out-of-place spelling for any arity
