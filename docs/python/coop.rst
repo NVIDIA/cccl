@@ -9,6 +9,7 @@
 
    Overview <self>
    coop/programming_guide
+   coop/neighbor-operations
    coop/developer_overview
    coop/visualizations/index
    coop/glossary
@@ -24,7 +25,13 @@ Threads work together to :doc:`load <coop/visualizations/load>` and
 :doc:`sort keys and associated values <coop/visualizations/merge-sort>` within a group or
 compute :doc:`radix sorts and digit ranks <coop/visualizations/radix>` within a block.
 :doc:`TopK <coop/visualizations/topk>` selects a block's smallest or largest keys without
-sorting the full tile.
+sorting the full tile. Blocks can compare neighboring items with
+:doc:`Adjacent Difference <coop/visualizations/adjacent-difference>` and
+:doc:`Discontinuity <coop/visualizations/discontinuity>`, count samples with
+:doc:`Histogram <coop/visualizations/histogram>`, or expand compressed runs
+with :doc:`Run Length Decode <coop/visualizations/run-length-decode>`.
+:doc:`Batched Warp Reduction <coop/visualizations/reduce-batched>` computes
+an independent reduction for each per-thread payload slot.
 
 The common ``cuda.coop`` API describes those operations independently of a
 kernel compiler. Numba-CUDA-MLIR is the first supported backend; CUTLASS
@@ -240,8 +247,9 @@ Groups and thread data
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
 consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
 Exchange, Scan, and Merge Sort support block, physical-Warp, and logical-Warp
-forms; Shuffle, Radix Sort, Radix Rank, and TopK are block-only. For Warp
-primitives, the enclosing block must contain a multiple of 32 threads, with
+forms. Shuffle, Radix Sort, Radix Rank, TopK, Adjacent Difference,
+Discontinuity, Histogram, and Run Length Decode are block-only. Batched
+Reduction supports physical and logical warps. For Warp primitives, the enclosing block must contain a multiple of 32 threads, with
 no incomplete final physical warp. For a multidimensional block, threads are
 linearized in x-major order. Every member of a participating group must reach
 its primitive; complete sibling logical groups may take different control-flow
@@ -673,7 +681,11 @@ with one disjoint slice per physical or logical group. The compiler inserts
 compiler-owned storage and append a group-scoped reuse barrier. Block Scan may
 instead use implicit, caller-owned, or dynamic storage. Both the common and
 qualified APIs reject explicit ``TempStorage`` for every Warp Load and Store
-algorithm, including the storage-free modes, and for Warp Scan.
+algorithm, including the storage-free modes, and for Warp Scan. Batched
+Reduction also uses compiler-owned storage per warp and has no
+``temp_storage`` argument. Adjacent Difference, Discontinuity, Histogram,
+and both Run Length Decode forms accept explicit block scratch; prepared
+RLD tables live only for the duration of each call.
 
 Compilation and headers
 -----------------------
