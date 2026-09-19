@@ -49,6 +49,7 @@ from .radix import (
     GroupRadixSortSemantics,
 )
 from .reduce import GroupReduceSemantics
+from .run_length import GroupRunLengthDecodeSemantics
 from .scan import GroupScanMode, GroupScanSemantics
 from .shuffle import GroupShuffleSemantics
 from .topk import GroupTopKSemantics
@@ -72,6 +73,7 @@ __all__ = [
     "GroupRadixRankSemantics",
     "GroupRadixSortSemantics",
     "GroupReduceSemantics",
+    "GroupRunLengthDecodeSemantics",
     "GroupScanMode",
     "GroupScanSemantics",
     "GroupShuffleSemantics",
