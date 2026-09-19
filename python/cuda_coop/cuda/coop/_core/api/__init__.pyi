@@ -5,6 +5,7 @@
 """Re-export the typing contracts owned by portable API families."""
 
 from .exchange import exchange
+from .histogram import histogram as histogram
 from .load_store import load, store
 from .merge_sort import merge_sort_keys as merge_sort_keys
 from .merge_sort import merge_sort_pairs as merge_sort_pairs
@@ -45,6 +46,7 @@ __all__ = [
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
+    "histogram",
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
