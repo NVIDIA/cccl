@@ -155,21 +155,22 @@ struct BlockReduceWarpReductions
 
     __syncthreads();
 
-    // Update total aggregate in warp 0, lane 0
-    if (linear_tid == 0)
+    // Fold the published warp aggregates in every thread, walking them in one fixed order, so the
+    // block aggregate is already identical across the block and no broadcast pass is needed. The
+    // order matters: starting each thread from its own warp aggregate would leave different warps
+    // with different floating point results. All threads read the same address per step, which the
+    // hardware serves as a single broadcast.
+    T total = temp_storage.warp_aggregates[0];
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
     {
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
+      if (FullTile || (warp_idx * logical_warp_size < num_valid))
       {
-        if (FullTile || (warp_idx * logical_warp_size < num_valid))
-        {
-          T addend       = temp_storage.warp_aggregates[warp_idx];
-          warp_aggregate = reduction_op(warp_aggregate, addend);
-        }
+        total = reduction_op(total, temp_storage.warp_aggregates[warp_idx]);
       }
     }
 
-    return warp_aggregate;
+    return total;
   }
 
   //! @rst
