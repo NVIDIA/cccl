@@ -69,9 +69,9 @@ def topk_min_keys(
     numeric ordering.
 
     Call this operation inside a kernel compiled by a registered
-    backend. The Numba-CUDA-MLIR implementation accepts signed
-    runtime counts up to 64 bits and unsigned counts up to 32 bits.
-    It rejects invalid static counts during compilation and traps
+    backend. The Numba-CUDA-MLIR and CUTLASS implementations accept
+    signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    They reject invalid static counts during compilation and trap
     on invalid runtime counts.
     """
     raise CoopCompilerContextRequiredError(
@@ -139,9 +139,9 @@ def topk_min_pairs(
     numeric ordering.
 
     Call this operation inside a kernel compiled by a registered
-    backend. The Numba-CUDA-MLIR implementation accepts signed
-    runtime counts up to 64 bits and unsigned counts up to 32 bits.
-    It rejects invalid static counts during compilation and traps
+    backend. The Numba-CUDA-MLIR and CUTLASS implementations accept
+    signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    They reject invalid static counts during compilation and trap
     on invalid runtime counts.
     """
     raise CoopCompilerContextRequiredError(
@@ -203,9 +203,9 @@ def topk_max_keys(
     numeric ordering.
 
     Call this operation inside a kernel compiled by a registered
-    backend. The Numba-CUDA-MLIR implementation accepts signed
-    runtime counts up to 64 bits and unsigned counts up to 32 bits.
-    It rejects invalid static counts during compilation and traps
+    backend. The Numba-CUDA-MLIR and CUTLASS implementations accept
+    signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    They reject invalid static counts during compilation and trap
     on invalid runtime counts.
     """
     raise CoopCompilerContextRequiredError(
@@ -273,9 +273,9 @@ def topk_max_pairs(
     numeric ordering.
 
     Call this operation inside a kernel compiled by a registered
-    backend. The Numba-CUDA-MLIR implementation accepts signed
-    runtime counts up to 64 bits and unsigned counts up to 32 bits.
-    It rejects invalid static counts during compilation and traps
+    backend. The Numba-CUDA-MLIR and CUTLASS implementations accept
+    signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    They reject invalid static counts during compilation and trap
     on invalid runtime counts.
     """
     raise CoopCompilerContextRequiredError(
