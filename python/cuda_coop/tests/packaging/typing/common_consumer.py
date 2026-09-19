@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Strict consumer of the portable cooperative data-movement surface."""
+"""Strict consumer of the common cooperative data-movement surface."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ class _ReadOnlyThreadData(Generic[_ItemT]):
         return self._value
 
 
-def check_portable_surface(
+def check_common_surface(
     source: object,
     destination: object,
     compiler_integer_dtype: Any,

@@ -31,7 +31,17 @@ def ThreadData(
     *,
     alignment=None,
 ):
-    """Create fixed-size thread-local storage for cooperative operations."""
+    """Create a fixed-size Numba local array for cooperative operations.
+
+    The parameters, uninitialized contents, and example follow
+    :func:`cuda.coop.ThreadData`. This qualified constructor returns the
+    active Numba-CUDA-MLIR runtime's local-array representation. The compiler
+    can infer an omitted dtype from supported producers such as Load.
+
+    ``alignment`` requests a minimum alignment in bytes. This backend also
+    enforces the compiler's pointer-alignment requirement. See
+    :ref:`per-thread payloads <coop-thread-data>` for indexing and lifetime.
+    """
 
     if isinstance(items_per_thread, bool):
         raise TypeError("items_per_thread must be an integer")

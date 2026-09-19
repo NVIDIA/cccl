@@ -17,7 +17,7 @@ if not cuda.is_available():
 from numba_cuda_mlir import types
 
 import cuda.coop.numba_mlir as qualified_coop
-from cuda import coop as portable_coop
+from cuda import coop as common_coop
 
 pytestmark = [
     pytest.mark.backend_numba_mlir,
@@ -37,11 +37,11 @@ _QUERY_FIELDS = 19
 @cuda.jit
 def _group_query_kernel(output):
     block_thread = cuda.threadIdx.x
-    thread = portable_coop.this_thread()
+    thread = common_coop.this_thread()
     warp = qualified_coop.this_warp()
-    block = portable_coop.this_block()
+    block = common_coop.this_block()
     lanes = qualified_coop.this_warp().group_by(8)
-    warps = portable_coop.this_block().group_by(2, exhaustive=False)
+    warps = common_coop.this_block().group_by(2, exhaustive=False)
 
     thread.sync()
     warp.sync_aligned()
@@ -122,7 +122,7 @@ def test_physical_and_mapped_group_queries_match_independent_oracles() -> None:
 
 @cuda.jit
 def _partial_warp_query_kernel(observed_rank, observed_count):
-    block = portable_coop.this_block()
+    block = common_coop.this_block()
     observed_rank[cuda.threadIdx.x] = block.rank("warp")
     observed_count[cuda.threadIdx.x] = block.count("warp")
 

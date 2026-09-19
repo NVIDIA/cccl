@@ -85,7 +85,7 @@ def test_rank_plan_has_fixed_result_dtype_and_rejects_warp_scope():
         ("radix_rank", {"end_bit": 6, "radix_bits": 4}),
     ],
 )
-def test_portable_frontend_rejects_invalid_controls_before_dispatch(operation, options):
+def test_common_frontend_rejects_invalid_controls_before_dispatch(operation, options):
     from cuda.coop._core.api import _dispatch, radix
 
     class Payload:

@@ -40,17 +40,17 @@ def test_production_kernel_compiles_physical_and_mapped_group_methods(
     cuda = _production_compile_environment(monkeypatch)
 
     import cuda.coop.numba_mlir as qualified_coop
-    from cuda import coop as portable_coop
+    from cuda import coop as common_coop
 
     @cuda.jit(chip="sm_90")
     def kernel(output):
         thread_index = cuda.threadIdx.x
-        thread = portable_coop.this_thread()
+        thread = common_coop.this_thread()
         warp = qualified_coop.this_warp()
-        block = portable_coop.this_block()
+        block = common_coop.this_block()
         grid = qualified_coop.this_grid()
         lanes = qualified_coop.this_warp().group_by(8)
-        warps = portable_coop.this_block().group_by(2)
+        warps = common_coop.this_block().group_by(2)
 
         thread.sync()
         warp.sync_aligned()

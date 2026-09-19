@@ -2,29 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for portable cooperative Shuffle."""
+"""Typing contract for common cooperative Shuffle."""
 
 from typing import Literal
 
 from typing_extensions import TypeVar
 
 from cuda.coop._typing import (
-    PortableNumericScalar,
-    PortableShuffleMode,
-    PortableThreadDataLike,
+    CommonNumericScalar,
+    CommonShuffleMode,
+    CommonThreadDataLike,
     ThreadDataLike,
 )
 
 from .thread_group import BlockGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 def shuffle(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
-    mode: PortableShuffleMode = "down",
+    mode: CommonShuffleMode = "down",
     distance: Literal[1] = 1,
 ) -> ThreadDataLike[_ItemT]:
     """Return a unit-shifted payload without mutating ``value``."""

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable Block Load/Store planning and root API contracts."""
+"""Common Block Load/Store planning and root API contracts."""
 
 from dataclasses import replace
 from importlib import import_module
@@ -88,7 +88,7 @@ class _TempStorage:
         pytest.param(this_warp().group_by(8), id="logical-warp"),
     ],
 )
-def test_portable_load_mutates_output_and_returns_none(monkeypatch, group):
+def test_common_load_mutates_output_and_returns_none(monkeypatch, group):
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.load_store")
     output = _ThreadData()
@@ -108,7 +108,7 @@ def test_portable_load_mutates_output_and_returns_none(monkeypatch, group):
     assert list(output) == source
 
 
-def test_portable_load_store_validate_block_payloads_and_options(monkeypatch):
+def test_common_load_store_validate_block_payloads_and_options(monkeypatch):
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.load_store")
     monkeypatch.setattr(
@@ -137,9 +137,9 @@ def test_portable_load_store_validate_block_payloads_and_options(monkeypatch):
             api.load(this_block(), object(), object())
         with pytest.raises(ValueError, match="must match the payload item count"):
             api.load(this_block(), object(), _ThreadData(length=1))
-        with pytest.raises(TypeError, match="portable API"):
+        with pytest.raises(TypeError, match="common API"):
             api.load(this_block(), object(), _ThreadData(dtype=np.float16))
-        with pytest.raises(TypeError, match="portable API"):
+        with pytest.raises(TypeError, match="common API"):
             api.store(this_block(), object(), np.complex64(1))
         warp_output = _ThreadData()
         assert api.load(this_warp(), object(), warp_output) is None
@@ -180,7 +180,7 @@ def test_portable_load_store_validate_block_payloads_and_options(monkeypatch):
         np.float64,
     ],
 )
-def test_portable_load_store_accept_every_advertised_dtype(monkeypatch, dtype):
+def test_common_load_store_accept_every_advertised_dtype(monkeypatch, dtype):
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.load_store")
     calls = []
@@ -198,7 +198,7 @@ def test_portable_load_store_accept_every_advertised_dtype(monkeypatch, dtype):
     assert calls == ["load", "store"]
 
 
-def test_portable_static_controls_fail_closed_before_delegation(monkeypatch):
+def test_common_static_controls_fail_closed_before_delegation(monkeypatch):
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.load_store")
     calls = []
@@ -210,8 +210,12 @@ def test_portable_static_controls_fail_closed_before_delegation(monkeypatch):
 
     with dispatch._compiler_scope("test.backend"):
         for kwargs, exception, message in [
-            ({"valid_items": 1.5}, TypeError, "portable integer"),
-            ({"offset": "4"}, TypeError, "portable integer"),
+            (
+                {"valid_items": 1.5},
+                TypeError,
+                "integer value supported by the common API",
+            ),
+            ({"offset": "4"}, TypeError, "integer value supported by the common API"),
             ({"valid_items": -1}, ValueError, "between 0"),
             ({"offset": -1}, ValueError, "between 0"),
             ({"offset": 1 << 63}, ValueError, "between 0"),

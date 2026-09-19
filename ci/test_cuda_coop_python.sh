@@ -199,7 +199,16 @@ PY
       exit 1
     fi
     for example in "${examples[@]}"; do
-      python -I "$example"
+      case "${example##*/}" in
+        source_dumps.py)
+          for source_dump_mode in direct transpose scan; do
+            python -I "$example" "$source_dump_mode"
+          done
+          ;;
+        *)
+          python -I "$example"
+          ;;
+      esac
     done
     ;;
   *)

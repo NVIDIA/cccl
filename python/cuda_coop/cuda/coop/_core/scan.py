@@ -29,7 +29,7 @@ class ScanMode(str, Enum):
 
 
 class ScanValueKind(str, Enum):
-    """Per-thread operand form presented to the collective."""
+    """Per-thread operand form presented to the primitive."""
 
     SCALAR = "scalar"
     ARRAY = "array"

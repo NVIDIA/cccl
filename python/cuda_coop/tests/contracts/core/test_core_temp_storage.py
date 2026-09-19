@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable TempStorage alignment validation and backend forwarding."""
+"""Common TempStorage alignment validation and backend forwarding."""
 
 from importlib import import_module
 

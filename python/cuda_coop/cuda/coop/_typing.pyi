@@ -110,9 +110,9 @@ BlockExchangeMode: TypeAlias = (
     ]
 )
 WarpExchangeMode: TypeAlias = ExchangeMode
-PortableShuffleMode: TypeAlias = Literal["down", "up"]
+CommonShuffleMode: TypeAlias = Literal["down", "up"]
 ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
-ShuffleMode: TypeAlias = PortableShuffleMode | ScalarShuffleMode
+ShuffleMode: TypeAlias = CommonShuffleMode | ScalarShuffleMode
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
@@ -131,7 +131,7 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
 
     signed: bool
 
-PortableNumericScalar: TypeAlias = (
+CommonNumericScalar: TypeAlias = (
     int
     | float
     | numpy.int8
@@ -147,7 +147,7 @@ PortableNumericScalar: TypeAlias = (
     | CompilerScalarLike
 )
 ContextualInitialValue: TypeAlias = ItemT | int | float
-_ReadableItemT = TypeVar("_ReadableItemT", bound=PortableNumericScalar, covariant=True)
+_ReadableItemT = TypeVar("_ReadableItemT", bound=CommonNumericScalar, covariant=True)
 ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
 )
@@ -169,7 +169,7 @@ TraceInteger: TypeAlias = int | numpy.integer[Any]
 ValidItems: TypeAlias = IntegerValue
 
 class ThreadDataLike(Protocol[ItemT]):
-    """Portable mutable, indexable per-thread payload contract.
+    """Common mutable, indexable per-thread payload contract.
 
     Concrete compiler backends may attach additional helpers and metadata, but
     common operations rely only on this payload shape and item access contract.
@@ -189,8 +189,8 @@ class ThreadDataLike(Protocol[ItemT]):
     def __setitem__(self, index: int, value: ItemT, /) -> None:
         """Replace one thread-local item."""
 
-class PortableThreadDataLike(Protocol[_ReadableItemT]):
-    """Thread payload whose readable item type is in the portable closure."""
+class CommonThreadDataLike(Protocol[_ReadableItemT]):
+    """Thread payload whose readable items use the common API's numeric types."""
 
     items_per_thread: int
     dtype: object | None
@@ -199,10 +199,10 @@ class PortableThreadDataLike(Protocol[_ReadableItemT]):
         """Return the number of items owned by this thread."""
 
     def __getitem__(self, index: int, /) -> _ReadableItemT:
-        """Return one portable numeric register value."""
+        """Return one numeric register value supported by the common API."""
 
 class TempStorageLike(Protocol):
-    """Portable explicit scratch-storage descriptor contract."""
+    """Common explicit scratch-storage descriptor contract."""
 
     size_in_bytes: int | None
     alignment: int | None
@@ -215,7 +215,7 @@ __all__ = [
     "ContextualInitialValue",
     "ExchangeMode",
     "LoadStoreAlgorithm",
-    "PortableShuffleMode",
+    "CommonShuffleMode",
     "ReduceAlgorithm",
     "ReduceOperator",
     "ScanAlgorithm",

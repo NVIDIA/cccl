@@ -220,7 +220,7 @@ def test_reduce_providers_load_only_during_reduce_planning():
         from numba_cuda_mlir import types
         from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
-        from cuda import coop as portable
+        from cuda import coop as common
         import cuda.coop.numba_mlir as qualified
         from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
         from cuda.coop.numba_mlir._compiler._operations import _FACTORY_OPERATIONS
@@ -235,8 +235,8 @@ def test_reduce_providers_load_only_during_reduce_planning():
             }
 
         assert provider_module not in sys.modules
-        assert callable(portable.reduce)
-        assert callable(portable.sum)
+        assert callable(common.reduce)
+        assert callable(common.sum)
         assert callable(qualified.reduce)
         assert callable(qualified.sum)
         assert provider_module not in sys.modules

@@ -398,7 +398,7 @@ def test_static_warp_prefix_is_bounded_to_group_width(valid_items):
             _plan(this_warp().group_by(8), operation)
 
 
-def test_portable_scan_validates_payload_and_option_matrix(monkeypatch):
+def test_common_scan_validates_payload_and_option_matrix(monkeypatch):
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.scan")
     delegated = object()
@@ -423,7 +423,9 @@ def test_portable_scan_validates_payload_and_option_matrix(monkeypatch):
             )
             is delegated
         )
-        with pytest.raises(TypeError, match="portable numeric scalar"):
+        with pytest.raises(
+            TypeError, match="numeric scalar for warp scans in the common API"
+        ):
             api.inclusive_sum(this_warp(), _ThreadData())
         with pytest.raises(ValueError, match="require initial_value"):
             api.exclusive_scan(this_block(), np.int32(1), scan_op="max")
@@ -441,7 +443,7 @@ def test_portable_scan_validates_payload_and_option_matrix(monkeypatch):
     assert calls[2][1]["algorithm"] == "raking_memoize"
 
 
-def test_portable_scan_rejects_inclusive_initial_before_delegation(monkeypatch):
+def test_common_scan_rejects_inclusive_initial_before_delegation(monkeypatch):
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.scan")
     calls = []
@@ -458,7 +460,7 @@ def test_portable_scan_rejects_inclusive_initial_before_delegation(monkeypatch):
     assert calls == []
 
 
-def test_portable_scan_defers_to_compiler_activation_and_exports_root():
+def test_common_scan_defers_to_compiler_activation_and_exports_root():
     import cuda.coop as coop
 
     api = import_module("cuda.coop._core.api.scan")
@@ -476,7 +478,7 @@ def test_portable_scan_defers_to_compiler_activation_and_exports_root():
         assert name in coop.__all__
 
 
-def test_portable_surface_keeps_qualified_only_scan_controls_out():
+def test_common_surface_keeps_qualified_only_scan_controls_out():
     api = import_module("cuda.coop._core.api.scan")
 
     with pytest.raises(TypeError, match="aggregate_output"):

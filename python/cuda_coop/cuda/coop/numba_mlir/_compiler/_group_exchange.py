@@ -40,13 +40,13 @@ from ._parameters import _validate_common_numeric_dtype, normalize_dtype_param
 from ._rewrite_exchange import infer_exchange_payload
 
 _BLOCK_MODES = frozenset(mode.value for mode in BlockExchangeMode)
-_PORTABLE_MODES = frozenset(
+_COMMON_MODES = frozenset(
     {
         BlockExchangeMode.STRIPED_TO_BLOCKED.value,
         BlockExchangeMode.BLOCKED_TO_STRIPED.value,
     }
 )
-_WARP_MODES = _PORTABLE_MODES
+_WARP_MODES = _COMMON_MODES
 
 
 def _mode_token(value: object, *, group_kind: str) -> str:
@@ -154,7 +154,7 @@ class _ExchangePlanning:
             operation,
             "mode",
             bound.arguments["mode"],
-            _PORTABLE_MODES,
+            _COMMON_MODES,
         )
 
     @staticmethod
@@ -204,8 +204,8 @@ class _ExchangePlanning:
             self._context.constant(bound.arguments["mode"]),
             group_kind=group.kind,
         )
-        if is_common_root and mode not in _PORTABLE_MODES:
-            choices = ", ".join(sorted(_PORTABLE_MODES))
+        if is_common_root and mode not in _COMMON_MODES:
+            choices = ", ".join(sorted(_COMMON_MODES))
             raise ValueError(
                 "cuda.coop.exchange mode must be one of: "
                 f"{choices}; use cuda.coop.numba_mlir for backend-qualified "

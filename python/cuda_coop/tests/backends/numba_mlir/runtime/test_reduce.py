@@ -196,7 +196,7 @@ def _mixed_thread_data_builtins(source, observed, preserved):
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
-    portable_sum = root_coop.sum(root_coop.this_block(), payload)
+    common_sum = root_coop.sum(root_coop.this_block(), payload)
     qualified_maximum = qualified_coop.reduce(
         qualified_coop.this_block(), payload, binary_op="max"
     )
@@ -210,7 +210,7 @@ def _mixed_thread_data_builtins(source, observed, preserved):
         qualified_coop.this_block(), source[thread], binary_op="min"
     )
 
-    observed[0 * _BLOCK_THREADS + thread] = portable_sum
+    observed[0 * _BLOCK_THREADS + thread] = common_sum
     observed[1 * _BLOCK_THREADS + thread] = qualified_maximum
     observed[2 * _BLOCK_THREADS + thread] = qualified_xor
     observed[3 * _BLOCK_THREADS + thread] = qualified_or
@@ -219,7 +219,7 @@ def _mixed_thread_data_builtins(source, observed, preserved):
         preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-def test_consecutive_portable_and_qualified_builtins_preserve_thread_data():
+def test_consecutive_common_and_qualified_builtins_preserve_thread_data():
     source = (
         (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 13) % 251
     ) - 117

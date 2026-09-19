@@ -27,7 +27,42 @@ def reduce(
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> Any:
-    """Reduce values across a group."""
+    """Reduce values with a built-in alias or custom device operator.
+
+    See :func:`cuda.coop.reduce` for the shared parameters, defaults, supported
+    groups, and examples. Qualified operand forms are described below.
+
+    Parameters
+    ----------
+    value : numeric scalar, cuda.coop.ThreadDataLike, or local array
+        Also accepts a one-dimensional ``cuda.local.array`` with a fixed
+        extent. Its elements contribute to one scalar result, just like
+        :ref:`ThreadData <coop-thread-data>`. The input is preserved.
+    binary_op : str or callable, optional
+        Also accepts ``operator``/NumPy aliases such as ``operator.add`` and
+        ``numpy.add``, which retain the built-in behavior, or a stateless
+        device callable ``op(left, right)`` returning the input dtype.
+        Custom operators must be associative and require
+        ``broadcast=False`` and a complete block or physical or logical warp.
+        Warp custom reductions accept scalar inputs only. For a block, use
+        ``algorithm=None``, ``"raking"``, or ``"warp_reductions"``;
+        ``"raking_commutative_only"`` requires proven commutativity and is
+        unavailable for Python callables. ``None`` selects sum.
+
+    Returns
+    -------
+    numeric scalar
+        Reduced value with the input dtype, defined at every member when
+        ``broadcast=True`` and only at group rank zero otherwise.
+
+    See Also
+    --------
+    cuda.coop.reduce
+        Shared reduction contract and executable examples.
+    :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
+        C++ primitives used for custom operators, valid prefixes, and explicit
+        block algorithms. Full-group built-in reductions use CUDAX.
+    """
 
     return group_primitive_marker(
         "reduce",
@@ -53,7 +88,27 @@ def sum(
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> Any:
-    """Sum values across a group."""
+    """Sum values with Numba-CUDA-MLIR.
+
+    See :func:`cuda.coop.sum` for all parameters, defaults, supported groups,
+    and examples. The qualified API also accepts a one-dimensional
+    ``cuda.local.array`` with a fixed extent as ``value``. Its elements
+    contribute to one scalar result, and the input is preserved.
+
+    Returns
+    -------
+    numeric scalar
+        Sum with the input dtype, defined at every member when
+        ``broadcast=True`` and only at group rank zero otherwise.
+
+    See Also
+    --------
+    cuda.coop.sum
+        Shared sum contract and executable example.
+    :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
+        C++ primitives used for valid prefixes and explicit block algorithms.
+        Full-group built-in reductions use CUDAX.
+    """
 
     return group_primitive_marker(
         "sum",

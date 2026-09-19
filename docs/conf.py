@@ -54,6 +54,7 @@ extensions = [
     # "exhale",  # Disabled - causing build timeouts, API docs handled by breathe
     "sphinx_design",  # For dropdown, card, and other directives
     "sphinx_copybutton",
+    "coop_visualization",  # Interactive cooperative primitives with RST fallbacks
     "nbsphinx",
     # "rst_processor",  # Disabled - breathe handles embed:rst natively
     "auto_api_generator",  # Automatically generate API reference pages from Doxygen XML
@@ -219,6 +220,9 @@ primary_domain = "py"
 
 # Mock imports for Python documentation - these modules may not be installed
 autodoc_mock_imports = [
+    # Render real cooperative markers without initializing an optional compiler.
+    "numba_cuda_mlir",
+    "cuda.coop.numba_mlir._compiler._activation",
     "numba",
     "numba.core",
     "numba.core.cgutils",

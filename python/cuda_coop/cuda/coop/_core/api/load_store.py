@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable cooperative load and store entry points.
+"""Common cooperative load and store entry points.
 
 These frontends validate the shared algorithm subset and delegate one call to
 the active compiler backend. ThreadData allocation and backend-specific CUB
@@ -16,10 +16,10 @@ from typing import Any
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
+    _common_selector,
     _group_primitive_marker,
-    _portable_group_operation,
-    _portable_selector,
-    _validate_portable_operation_group,
+    _validate_common_operation_group,
 )
 from ._payload import (
     ThreadDataLike,
@@ -33,7 +33,7 @@ from ._payload import (
 
 _I32_MAX = (1 << 31) - 1
 _I64_MAX = (1 << 63) - 1
-_PORTABLE_LOAD_STORE_ALGORITHMS = frozenset(
+_COMMON_LOAD_STORE_ALGORITHMS = frozenset(
     {
         "direct",
         "striped",
@@ -53,7 +53,7 @@ _WARP_LOAD_STORE_ALGORITHMS = frozenset(
 )
 
 
-def _validate_portable_load_store_options(
+def _validate_common_load_store_options(
     operation: str,
     group: ThreadGroup,
     *,
@@ -64,11 +64,11 @@ def _validate_portable_load_store_options(
     offset: Any,
     temp_storage: Any,
 ) -> None:
-    """Enforce the group-dependent portable overload matrix."""
+    """Enforce the group-dependent common overload matrix."""
 
     if _backend_module_name() is None:
         return
-    _validate_portable_operation_group(operation, group)
+    _validate_common_operation_group(operation, group)
     if operation == "load" and oob_default is not None and valid_items is None:
         raise ValueError("cuda.coop.load oob_default requires valid_items")
     if valid_items is not None:
@@ -129,7 +129,7 @@ def _validate_portable_load_store_options(
         _validate_common_temp_storage(operation, temp_storage)
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "load",
     group_kinds=("block", "warp", "threads_within_warp"),
 )
@@ -145,13 +145,84 @@ def load(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> None:
-    """Populate ``output`` cooperatively in place and return ``None``.
+    """Load a group tile from memory into per-thread values.
 
-    Use the qualified ``cuda.coop.<backend>`` API for backend-specific behavior.
+    Parameters
+    ----------
+    group : cuda.coop.ThreadGroup
+        Participating threads; see :ref:`thread groups <coop-thread-groups>`.
+        Supports blocks and physical or logical warps. Warp loads require
+        an enclosing block size divisible by 32.
+    source : array
+        One-dimensional contiguous source array in device-accessible memory.
+        Its element dtype must match ``output``; an untyped ``ThreadData``
+        infers its dtype from this array. The array must contain all elements
+        selected by ``offset`` and ``valid_items``.
+    output : cuda.coop.ThreadDataLike
+        Writable :ref:`per-thread payload <coop-thread-data>`.
+        Load populates this payload in place. The group's tile contains
+        ``group_size * items_per_thread`` elements.
+    algorithm : str, optional
+        Compile-time load algorithm, default ``"direct"``. ``"direct"`` gives
+        each thread consecutive elements (blocked order); ``"striped"`` gives
+        neighboring threads neighboring elements at each item index.
+        ``"vectorize"`` uses vector accesses when possible, and ``"transpose"``
+        uses shared scratch to rearrange striped accesses into blocked order.
+        Both return blocked order. Blocks also support ``"warp_transpose"``
+        and ``"warp_transpose_timesliced"``, which return blocked order and
+        require a block size divisible by 32.
+    valid_items : int or integer scalar, optional
+        Number of valid elements in the group's tile, shared by all threads
+        in that group. Supply a value between zero and the tile size,
+        inclusive. ``None`` loads the full tile. Slots beyond this valid
+        prefix retain their previous values unless ``oob_default`` is given.
+    oob_default : numeric scalar, optional
+        Value written to slots beyond ``valid_items``. Requires an explicit
+        ``valid_items`` count. For example, use zero to pad a partial tile
+        before summing it. A runtime value must have the payload dtype and
+        be uniform across the group. ``None`` leaves those slots unchanged;
+        initialize them before reading them.
+    offset : int or integer scalar, optional
+        Nonnegative offset in elements from the start of ``source``, uniform
+        across the group. ``None`` means zero. For block tiles, supply the
+        block's starting offset explicitly. For Warp tiles, the backend adds
+        ``(linear_thread_rank // group_size) * tile_size`` automatically;
+        do not include that within-block group offset a second time.
+    temp_storage : cuda.coop.TempStorageLike, optional
+        :ref:`Scratch descriptor <coop-temp-storage>` for block
+        transpose-family algorithms. ``None`` uses automatic scratch.
+        Direct, striped, and vectorized loads need no shared scratch.
+        Warp loads require ``None``.
+
+    Returns
+    -------
+    None
+        The call populates ``output`` in place.
+
+    See Also
+    --------
+    :cpp:class:`cub::BlockLoad`, :cpp:class:`cub::WarpLoad`
+        C++ block and warp Load primitives.
+
+    Examples
+    --------
+    Copy an array with Numba-CUDA-MLIR, using 128 threads and two values per
+    thread. Each block loads up to 256 elements. The last block pads its
+    missing values with zero and stores only the valid prefix.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_load_example.py
+        :language: python
+        :start-after: # example-begin
+        :end-before: # example-end
+        :dedent: 4
+
+    The qualified import activates the Numba-CUDA-MLIR backend even if another
+    module imported ``cuda.coop`` first. Use the qualified
+    ``cuda.coop.<backend>`` API for backend-specific behavior.
     """
 
-    algorithm = _portable_selector(
-        "load", "algorithm", algorithm, _PORTABLE_LOAD_STORE_ALGORITHMS
+    algorithm = _common_selector(
+        "load", "algorithm", algorithm, _COMMON_LOAD_STORE_ALGORITHMS
     )
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -161,7 +232,7 @@ def load(
             allow_untyped_thread_data=True,
             require_thread_data=True,
         )
-    _validate_portable_load_store_options(
+    _validate_common_load_store_options(
         "load",
         group,
         algorithm=algorithm,
@@ -185,7 +256,7 @@ def load(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "store",
     group_kinds=("block", "warp", "threads_within_warp"),
 )
@@ -200,13 +271,77 @@ def store(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> None:
-    """Store values cooperatively through the compiler-selected backend.
+    """Store a group tile from per-thread values into memory.
 
-    Use the qualified ``cuda.coop.<backend>`` API for backend-specific behavior.
+    Parameters
+    ----------
+    group : cuda.coop.ThreadGroup
+        Participating threads; see :ref:`thread groups <coop-thread-groups>`.
+        Supports blocks and physical or logical warps. Warp stores require
+        an enclosing block size divisible by 32.
+    destination : array
+        Writable one-dimensional contiguous array in device-accessible
+        memory, with the same element dtype as ``value``. It must contain
+        every element selected by ``offset`` and ``valid_items``.
+    value : numeric scalar or cuda.coop.ThreadDataLike
+        This thread's value or readable :ref:`payload <coop-thread-data>`.
+        Initialize every item that will be stored. The tile contains
+        ``group_size * items_per_thread`` elements, with one item per thread
+        for a scalar. Store preserves the input, including when its algorithm
+        rearranges values internally.
+    algorithm : str, optional
+        Compile-time store algorithm, default ``"direct"``. ``"direct"``
+        expects blocked values; ``"striped"`` expects striped values.
+        ``"vectorize"`` and ``"transpose"`` also expect blocked values and
+        use vector accesses or shared-memory rearrangement, respectively.
+        Blocks additionally support ``"warp_transpose"`` and
+        ``"warp_transpose_timesliced"``, both requiring a block size divisible
+        by 32. See :ref:`data layouts <coop-data-layouts>` before pairing
+        different Load and Store algorithms.
+    valid_items : int or integer scalar, optional
+        Number of valid elements in the group's tile, uniform across the
+        group and between zero and the tile size, inclusive. ``None`` stores
+        the entire tile. Elements outside the valid prefix are not written.
+    offset : int or integer scalar, optional
+        Nonnegative offset in elements from the start of ``destination``,
+        uniform across the group. ``None`` means zero. Supply each block's
+        origin explicitly. Warp stores also add the within-block group
+        origin automatically, using the same addressing rule as
+        :func:`cuda.coop.load`.
+    temp_storage : cuda.coop.TempStorageLike, optional
+        :ref:`Scratch descriptor <coop-temp-storage>` for block
+        transpose-family algorithms. ``None`` uses automatic scratch.
+        Direct, striped, and vectorized stores need no shared scratch.
+        Warp stores require ``None``.
+
+    Returns
+    -------
+    None
+        The call writes to ``destination`` and leaves ``value`` unchanged.
+
+    See Also
+    --------
+    :cpp:class:`cub::BlockStore`, :cpp:class:`cub::WarpStore`
+        C++ block and warp Store primitives.
+
+    Examples
+    --------
+    Store a partial tile at an element offset. The untouched prefix and
+    suffix keep their sentinel values. A second output checks that transpose
+    Store preserved every thread's input payload.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_store_example.py
+        :language: python
+        :start-after: # example-begin
+        :end-before: # example-end
+        :dedent: 4
+
+    See :ref:`participation and synchronization <coop-participation>` for
+    control-flow requirements at primitive calls.
     """
 
-    algorithm = _portable_selector(
-        "store", "algorithm", algorithm, _PORTABLE_LOAD_STORE_ALGORITHMS
+    algorithm = _common_selector(
+        "store", "algorithm", algorithm, _COMMON_LOAD_STORE_ALGORITHMS
     )
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -215,7 +350,7 @@ def store(
             value,
             allow_readonly_thread_data=True,
         )
-    _validate_portable_load_store_options(
+    _validate_common_load_store_options(
         "store",
         group,
         algorithm=algorithm,
