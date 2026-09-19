@@ -176,16 +176,16 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
   return ::cuda::std::make_pair(index1, (diag - index1) + star);
 } // func balanced_path
 
-template <int _BLOCK_THREADS,
+template <int BlockThreads,
           int _ITEMS_PER_THREAD                   = 1,
           cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_LDG,
           cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
+  static constexpr int block_threads    = BlockThreads;
   static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD - 1;
+  static constexpr int ITEMS_PER_TILE   = BlockThreads * _ITEMS_PER_THREAD - 1;
 
   static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
   static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
@@ -231,7 +231,7 @@ struct Tuning<core::detail::sm60, T, U>
 
 // a helper metaprogram that returns type of a block loader
 template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
-using BlockLoad = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
+using BlockLoad = cub::BlockLoad<T, PtxPlan::block_threads, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
 
 template <class KeysIt1,
           class KeysIt2,
@@ -272,7 +272,7 @@ struct SetOpAgent
 
     using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
 
-    using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
+    using BlockScan = cub::BlockScan<Size, PtxPlan::block_threads, PtxPlan::SCAN_ALGORITHM, 1, 1>;
 
     // gather required temporary storage in a union
     //
@@ -286,7 +286,7 @@ struct SetOpAgent
 
       struct LoadStorage
       {
-        ::cuda::__uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
+        ::cuda::__uninitialized_array<int, PtxPlan::block_threads> offset;
         union
         {
           // FIXME These don't appear to be used anywhere?
@@ -298,9 +298,9 @@ struct SetOpAgent
           // Allocate extra shmem than truly necessary
           // This will permit to avoid range checks in
           // serial set operations, e.g. serial_set_difference
-          ::cuda::__uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
+          ::cuda::__uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::block_threads> keys_shared;
 
-          ::cuda::__uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
+          ::cuda::__uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::block_threads> values_shared;
         }; // anon union
       } load_storage; // struct LoadStorage
     }; // union TempStorage
@@ -324,7 +324,7 @@ struct SetOpAgent
   using TempStorage = typename ptx_plan::TempStorage;
 
   static constexpr int ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD;
-  static constexpr int BLOCK_THREADS    = ptx_plan::BLOCK_THREADS;
+  static constexpr int block_threads    = ptx_plan::block_threads;
 
   struct impl
   {
@@ -360,14 +360,14 @@ struct SetOpAgent
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ++ITEM)
         {
-          const int idx = BLOCK_THREADS * ITEM + threadIdx.x;
+          const int idx = block_threads * ITEM + threadIdx.x;
           output[ITEM]  = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
         }
 
         // last ITEM might be a conditional load even for full tiles
         // please check first before attempting to load.
         const int ITEM = ITEMS_PER_THREAD - 1;
-        const int idx  = BLOCK_THREADS * ITEM + threadIdx.x;
+        const int idx  = block_threads * ITEM + threadIdx.x;
         if (idx < count1 + count2)
         {
           output[ITEM] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -378,7 +378,7 @@ struct SetOpAgent
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
-          const int idx = BLOCK_THREADS * ITEM + threadIdx.x;
+          const int idx = block_threads * ITEM + threadIdx.x;
           if (idx < count1 + count2)
           {
             output[ITEM] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -393,7 +393,7 @@ struct SetOpAgent
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
-        const int idx = BLOCK_THREADS * ITEM + threadIdx.x;
+        const int idx = block_threads * ITEM + threadIdx.x;
         output[idx]   = input[ITEM];
       }
     }
@@ -420,7 +420,7 @@ struct SetOpAgent
       }
       __syncthreads();
 
-      for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += block_threads)
       {
         output[tile_output_prefix + item] = shared[item]; // NOLINT(bugprone-misplaced-widening-cast)
       }
@@ -490,7 +490,7 @@ struct SetOpAgent
       const int value =
         threadIdx.x == 0 ? (num_keys1 << 16) | num_keys2 : (partition_loc.first << 16) | partition_loc.second;
 
-      const int dst                    = threadIdx.x == 0 ? BLOCK_THREADS - 1 : threadIdx.x - 1;
+      const int dst                    = threadIdx.x == 0 ? block_threads - 1 : threadIdx.x - 1;
       storage.load_storage.offset[dst] = value;
 
       __syncthreads();

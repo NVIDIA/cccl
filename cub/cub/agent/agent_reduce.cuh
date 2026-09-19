@@ -107,7 +107,7 @@ struct agent_warp_reduce_policy
   static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Number of threads per block
-  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
+  static constexpr int block_threads = ThreadsPerBlock;
 
   /// Number of items per thread. When `ComputeT` is `void`, the nominal value is used as-is (no scaling),
   /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.
@@ -123,9 +123,9 @@ struct agent_warp_reduce_policy
   constexpr static int ITEMS_PER_TILE = ITEMS_PER_THREAD * WARP_THREADS;
 
   /// Number of segments per block
-  constexpr static int SEGMENTS_PER_BLOCK = BLOCK_THREADS / WARP_THREADS;
+  constexpr static int SEGMENTS_PER_BLOCK = block_threads / WARP_THREADS;
 
-  static_assert((BLOCK_THREADS % WARP_THREADS) == 0, "Block should be multiple of warp");
+  static_assert((block_threads % WARP_THREADS) == 0, "Block should be multiple of warp");
 };
 } // namespace detail
 
@@ -520,8 +520,8 @@ struct AgentReduce
                       ReductionOp,
                       AccumT,
                       TransformOp,
-                      BlockReduce<AccumT, AgentReducePolicy::BLOCK_THREADS, AgentReducePolicy::BLOCK_ALGORITHM>,
-                      AgentReducePolicy::BLOCK_THREADS>
+                      BlockReduce<AccumT, AgentReducePolicy::block_threads, AgentReducePolicy::BLOCK_ALGORITHM>,
+                      AgentReducePolicy::block_threads>
 {
   using base_t =
     AgentReduceImpl<AgentReducePolicy,
@@ -530,8 +530,8 @@ struct AgentReduce
                     ReductionOp,
                     AccumT,
                     TransformOp,
-                    BlockReduce<AccumT, AgentReducePolicy::BLOCK_THREADS, AgentReducePolicy::BLOCK_ALGORITHM>,
-                    AgentReducePolicy::BLOCK_THREADS>;
+                    BlockReduce<AccumT, AgentReducePolicy::block_threads, AgentReducePolicy::BLOCK_ALGORITHM>,
+                    AgentReducePolicy::block_threads>;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduce(
     typename base_t::TempStorage& temp_storage,

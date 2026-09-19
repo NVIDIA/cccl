@@ -166,7 +166,7 @@ struct policy_hub
                           cub::LOAD_LDG>;
 
     using SmallReducePolicy =
-      agent_warp_reduce_policy<ReducePolicy::BLOCK_THREADS,
+      agent_warp_reduce_policy<ReducePolicy::block_threads,
                                small_threads_per_warp,
                                nominal_4b_small_items_per_thread,
                                AccumT,
@@ -174,7 +174,7 @@ struct policy_hub
                                cub::LOAD_LDG>;
 
     using MediumReducePolicy =
-      agent_warp_reduce_policy<ReducePolicy::BLOCK_THREADS,
+      agent_warp_reduce_policy<ReducePolicy::block_threads,
                                medium_threads_per_warp,
                                nominal_4b_medium_items_per_thread,
                                AccumT,

@@ -39,14 +39,14 @@ namespace cuda_cub::core::detail
 {
 #  if _CCCL_DEVICE_COMPILATION()
 template <class Agent, class... Args>
-_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::block_threads) _kernel_agent(Args... args)
 {
   extern __shared__ char shmem[];
   Agent::entry(args..., shmem);
 }
 
 template <class Agent, class... Args>
-_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::block_threads)
   _kernel_agent_vshmem(char* vshmem, Args... args)
 {
   extern __shared__ char shmem[];

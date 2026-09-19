@@ -229,7 +229,7 @@ CUB_NAMESPACE_BEGIN
 //! - Incurs zero bank conflicts for most types
 //! - Computation is slightly more efficient (i.e., having lower instruction overhead) for:
 //!   - Summation (vs. generic reduction)
-//!   - ``BLOCK_THREADS`` is a multiple of the architecture's warp size
+//!   - ``block_threads`` is a multiple of the architecture's warp size
 //!   - Every thread has a valid input (i.e., full vs. partial-tiles)
 //! - See cub::BlockReduceAlgorithm for performance details regarding algorithmic alternatives
 //!
@@ -295,7 +295,7 @@ class BlockReduce
 {
 private:
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   using WarpReductions                 = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
   using WarpReductionsNondeterministic = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false>;
@@ -418,7 +418,7 @@ public:
   template <typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
   {
-    return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
+    return InternalBlockReduce(temp_storage).template Reduce<true>(input, block_threads, reduction_op);
   }
 
   //! @rst
@@ -529,12 +529,12 @@ public:
   //!   Binary reduction functor
   //!
   //! @param[in] num_valid
-  //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
+  //!   Number of threads containing valid elements (may be less than block_threads)
   template <typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
   {
     // Determine if we skip bounds checking
-    if (num_valid >= BLOCK_THREADS)
+    if (num_valid >= block_threads)
     {
       return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
     }
@@ -591,7 +591,7 @@ public:
   //!   Calling thread's input
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {
-    return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
+    return InternalBlockReduce(temp_storage).template Sum<true>(input, block_threads);
   }
 
   //! @rst
@@ -691,11 +691,11 @@ public:
   //!   Calling thread's input
   //!
   //! @param[in] num_valid
-  //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
+  //!   Number of threads containing valid elements (may be less than block_threads)
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
     // Determine if we skip bounds checking
-    if (num_valid >= BLOCK_THREADS)
+    if (num_valid >= block_threads)
     {
       return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);
     }

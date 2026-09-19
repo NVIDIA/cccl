@@ -53,7 +53,7 @@ template <typename T, int BlockDimX, int ItemsPerThread, int Bins, int BlockDimY
 struct BlockHistogramSort
 {
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   // Parameterize BlockRadixSort type for our thread block
   using BlockRadixSortT =
@@ -143,7 +143,7 @@ struct BlockHistogramSort
   template <typename CounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
-    static constexpr int TILE_SIZE = BLOCK_THREADS * ItemsPerThread;
+    static constexpr int TILE_SIZE = block_threads * ItemsPerThread;
 
     // Sort bytes in blocked arrangement
     BlockRadixSortT(temp_storage.sort).Sort(items);
@@ -154,13 +154,13 @@ struct BlockHistogramSort
     int histo_offset = 0;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + BLOCK_THREADS <= Bins; histo_offset += BLOCK_THREADS)
+    for (; histo_offset + block_threads <= Bins; histo_offset += block_threads)
     {
       temp_storage.discontinuities.run_begin[histo_offset + linear_tid] = TILE_SIZE;
       temp_storage.discontinuities.run_end[histo_offset + linear_tid]   = TILE_SIZE;
     }
     // Finish up with guarded initialization if necessary
-    if ((Bins % BLOCK_THREADS != 0) && (histo_offset + linear_tid < Bins))
+    if ((Bins % block_threads != 0) && (histo_offset + linear_tid < Bins))
     {
       temp_storage.discontinuities.run_begin[histo_offset + linear_tid] = TILE_SIZE;
       temp_storage.discontinuities.run_end[histo_offset + linear_tid]   = TILE_SIZE;
@@ -186,7 +186,7 @@ struct BlockHistogramSort
     histo_offset = 0;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + BLOCK_THREADS <= Bins; histo_offset += BLOCK_THREADS)
+    for (; histo_offset + block_threads <= Bins; histo_offset += block_threads)
     {
       const int thread_offset = histo_offset + linear_tid;
       CounterT count =
@@ -195,7 +195,7 @@ struct BlockHistogramSort
     }
 
     // Finish up with guarded composition if necessary
-    if ((Bins % BLOCK_THREADS != 0) && (histo_offset + linear_tid < Bins))
+    if ((Bins % block_threads != 0) && (histo_offset + linear_tid < Bins))
     {
       const int thread_offset = histo_offset + linear_tid;
       CounterT count =

@@ -73,16 +73,16 @@ template <>
 struct is_true<true> : thrust::detail::true_type
 {};
 
-template <int _BLOCK_THREADS,
+template <int BlockThreads,
           int _ITEMS_PER_THREAD                   = 1,
           cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_DEFAULT,
           cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
+  static constexpr int block_threads    = BlockThreads;
   static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = block_threads * ITEMS_PER_THREAD;
 
   static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
   static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
@@ -112,7 +112,7 @@ struct Tuning<core::detail::sm52, Key, Value>
 
 // a helper metaprogram that returns type of a block loader
 template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
-using BlockLoad = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
+using BlockLoad = cub::BlockLoad<T, PtxPlan::block_threads, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
 
 template <class KeysInputIt,
           class ValuesInputIt,
@@ -145,10 +145,10 @@ struct ReduceByKeyAgent
     using BlockLoadKeys   = BlockLoad<PtxPlan, KeysLoadIt>;
     using BlockLoadValues = BlockLoad<PtxPlan, ValuesLoadIt>;
 
-    using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1>;
+    using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::block_threads, 1, 1>;
 
     using TilePrefixCallback = cub::TilePrefixCallbackOp<size_value_pair_t, ReduceBySegmentOp, ScanTileState>;
-    using BlockScan          = cub::BlockScan<size_value_pair_t, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
+    using BlockScan          = cub::BlockScan<size_value_pair_t, PtxPlan::block_threads, PtxPlan::SCAN_ALGORITHM, 1, 1>;
 
     union TempStorage
     {
@@ -177,7 +177,7 @@ struct ReduceByKeyAgent
   using BlockScan              = typename ptx_plan::BlockScan;
   using TempStorage            = typename ptx_plan::TempStorage;
 
-  static constexpr int BLOCK_THREADS      = ptx_plan::BLOCK_THREADS;
+  static constexpr int block_threads      = ptx_plan::block_threads;
   static constexpr int ITEMS_PER_THREAD   = ptx_plan::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE     = ptx_plan::ITEMS_PER_TILE;
   static constexpr bool TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
@@ -328,7 +328,7 @@ struct ReduceByKeyAgent
 
       __syncthreads();
 
-      for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += block_threads)
       {
         const size_type idx         = num_tile_segments_prefix + item;
         const key_value_pair_t pair = storage.raw_exchange[item];
@@ -348,7 +348,7 @@ struct ReduceByKeyAgent
     {
       // Do a one-phase scatter if (a) two-phase is disabled or
       // (b) the average number of selected items per thread is less than one
-      if (TWO_PHASE_SCATTER && (num_tile_segments > BLOCK_THREADS))
+      if (TWO_PHASE_SCATTER && (num_tile_segments > block_threads))
       {
         scatter_two_phase(scatter_items, segment_flags, segment_indices, num_tile_segments, num_tile_segments_prefix);
       }
@@ -368,7 +368,7 @@ struct ReduceByKeyAgent
     finalize_last_tile(size_type num_segments, size_type num_remaining, key_type last_key, value_type last_value)
     {
       // Last thread will output final count and last item, if necessary
-      if (threadIdx.x == BLOCK_THREADS - 1)
+      if (threadIdx.x == block_threads - 1)
       {
         // If the last tile is a whole tile, the inclusive prefix
         // contains accumulated value reduction for the last segment

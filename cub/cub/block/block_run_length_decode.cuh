@@ -31,7 +31,7 @@ CUB_NAMESPACE_BEGIN
 //! ("decompression"), the output size of the run-length decoded array is runtime-dependent and
 //! potentially without any upper bound. To address this, BlockRunLengthDecode allows retrieving a
 //! "window" from the run-length decoded array. The window's offset can be specified and
-//! BLOCK_THREADS * DecodedItemsPerThread (i.e., referred to as window_size) decoded items from
+//! block_threads * DecodedItemsPerThread (i.e., referred to as window_size) decoded items from
 //! the specified window will be returned.
 //!
 //! .. note::
@@ -137,10 +137,10 @@ class BlockRunLengthDecode
 
 private:
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   /// The number of runs that the block decodes (out-of-bounds items may be padded with run lengths of '0')
-  static constexpr int BLOCK_RUNS = BLOCK_THREADS * RunsPerThread;
+  static constexpr int BLOCK_RUNS = block_threads * RunsPerThread;
 
   /// BlockScan used to determine the beginning of each run (i.e., prefix sum over the runs' length)
   using RunOffsetScanT = BlockScan<DecodedOffsetT, BlockDimX, BLOCK_SCAN_RAKING_MEMOIZE, BlockDimY, BlockDimZ>;
@@ -338,7 +338,7 @@ public:
   /**
    * \brief Run-length decodes the runs previously passed via a call to Init(...) and returns the run-length decoded
    * items in a blocked arrangement to \p decoded_items. If the number of run-length decoded items exceeds the
-   * run-length decode buffer (i.e., `DecodedItemsPerThread * BLOCK_THREADS`), only the items that fit within
+   * run-length decode buffer (i.e., `DecodedItemsPerThread * block_threads`), only the items that fit within
    * the buffer are returned. Subsequent calls to `RunLengthDecode` adjusting \p from_decoded_offset can be
    * used to retrieve the remaining run-length decoded items. Calling __syncthreads() between any two calls to
    * `RunLengthDecode` is not required.
@@ -411,7 +411,7 @@ public:
   /**
    * \brief Run-length decodes the runs previously passed via a call to Init(...) and returns the run-length decoded
    * items in a blocked arrangement to `decoded_items`. If the number of run-length decoded items exceeds the
-   * run-length decode buffer (i.e., `DecodedItemsPerThread * BLOCK_THREADS`), only the items that fit within
+   * run-length decode buffer (i.e., `DecodedItemsPerThread * block_threads`), only the items that fit within
    * the buffer are returned. Subsequent calls to `RunLengthDecode` adjusting `from_decoded_offset` can be
    * used to retrieve the remaining run-length decoded items. Calling __syncthreads() between any two calls to
    * `RunLengthDecode` is not required.

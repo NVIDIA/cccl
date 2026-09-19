@@ -233,7 +233,7 @@ class BlockScan
 {
 private:
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   /**
    * Ensure the template parameterization meets the requirements of the
@@ -242,7 +242,7 @@ private:
    * architectural warp size.
    */
   static constexpr BlockScanAlgorithm SAFE_ALGORITHM =
-    ((Algorithm == BLOCK_SCAN_WARP_SCANS) && (BLOCK_THREADS % detail::warp_threads != 0))
+    ((Algorithm == BLOCK_SCAN_WARP_SCANS) && (block_threads % detail::warp_threads != 0))
       ? BLOCK_SCAN_RAKING
       : Algorithm;
 

@@ -53,7 +53,7 @@ struct AgentSegmentedRadixSort
   OffsetT num_items;
 
   static constexpr int ITEMS_PER_THREAD = SegmentedPolicyT::ITEMS_PER_THREAD;
-  static constexpr int BLOCK_THREADS    = SegmentedPolicyT::BLOCK_THREADS;
+  static constexpr int block_threads    = SegmentedPolicyT::block_threads;
   static constexpr int RADIX_BITS       = SegmentedPolicyT::RADIX_BITS;
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
   static constexpr int KEYS_ONLY        = ::cuda::std::is_same_v<ValueT, NullType>;
@@ -63,7 +63,7 @@ struct AgentSegmentedRadixSort
 
   // Huge segment handlers
   using BlockUpsweepT   = AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
-  using DigitScanT      = BlockScan<OffsetT, BLOCK_THREADS>;
+  using DigitScanT      = BlockScan<OffsetT, block_threads>;
   using BlockDownsweepT = AgentRadixSortDownsweep<SegmentedPolicyT, IsDescending, KeyT, ValueT, OffsetT, DecomposerT>;
 
   /// Number of bin-starting offsets tracked per thread
@@ -72,16 +72,16 @@ struct AgentSegmentedRadixSort
   // Small segment handlers
   using BlockRadixSortT =
     BlockRadixSort<KeyT,
-                   BLOCK_THREADS,
+                   block_threads,
                    ITEMS_PER_THREAD,
                    ValueT,
                    RADIX_BITS,
                    (SegmentedPolicyT::RANK_ALGORITHM == RADIX_RANK_MEMOIZE),
                    SegmentedPolicyT::SCAN_ALGORITHM>;
 
-  using BlockKeyLoadT = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
+  using BlockKeyLoadT = BlockLoad<KeyT, block_threads, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
 
-  using BlockValueLoadT = BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
+  using BlockValueLoadT = BlockLoad<ValueT, block_threads, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
 
   union _TempStorage
   {
@@ -151,11 +151,11 @@ struct AgentSegmentedRadixSort
         bool_constant_v<KEYS_ONLY>,
         decomposer);
 
-    cub::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_out, thread_keys, num_items);
+    cub::StoreDirectStriped<block_threads>(threadIdx.x, d_keys_out, thread_keys, num_items);
 
     if (!KEYS_ONLY)
     {
-      cub::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_values_out, thread_values, num_items);
+      cub::StoreDirectStriped<block_threads>(threadIdx.x, d_values_out, thread_values, num_items);
     }
   }
 
@@ -187,7 +187,7 @@ struct AgentSegmentedRadixSort
       {
         const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
-        if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+        if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
           temp_storage.unbound_sort.reverse_counts_in[bin_idx] = bin_count[track];
         }
@@ -200,7 +200,7 @@ struct AgentSegmentedRadixSort
       {
         const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
-        if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+        if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
           bin_count[track] = temp_storage.unbound_sort.reverse_counts_in[RADIX_DIGITS - bin_idx - 1];
         }
@@ -221,7 +221,7 @@ struct AgentSegmentedRadixSort
       {
         const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
-        if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+        if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
           temp_storage.unbound_sort.reverse_counts_out[threadIdx.x] = bin_offset[track];
         }
@@ -234,7 +234,7 @@ struct AgentSegmentedRadixSort
       {
         const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
-        if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+        if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
           bin_offset[track] = temp_storage.unbound_sort.reverse_counts_out[RADIX_DIGITS - bin_idx - 1];
         }

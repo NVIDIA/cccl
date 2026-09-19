@@ -389,7 +389,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       AccumT,
       streaming_context_t>;
 
-    constexpr int threads_per_block = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
+    constexpr int threads_per_block = vsmem_helper_t::agent_policy_t::block_threads;
     constexpr int items_per_thread  = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
 
     cudaError error = cudaSuccess;
@@ -684,7 +684,7 @@ _CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_get
                         policy.lookback.lookback_delay.delay,
                         policy.lookback.lookback_delay.l2_write_latency>>;
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<Policy, AgentReduceByKey, Args...>;
-  return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
+  return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::block_threads,
                             vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,
                             vsmem_helper_t::vsmem_per_block};
 }

@@ -46,7 +46,7 @@ template <int ThreadsPerBlock,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct agent_reduce_by_key_policy
 {
-  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
+  static constexpr int block_threads                 = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
@@ -179,9 +179,9 @@ struct AgentReduceByKey
   };
 
   // Constants
-  static constexpr int BLOCK_THREADS     = AgentReduceByKeyPolicyT::BLOCK_THREADS;
+  static constexpr int block_threads     = AgentReduceByKeyPolicyT::block_threads;
   static constexpr int ITEMS_PER_THREAD  = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS        = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS        = block_threads * ITEMS_PER_THREAD;
   static constexpr int TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
@@ -216,16 +216,16 @@ struct AgentReduceByKey
 
   // Parameterized BlockLoad type for keys
   using BlockLoadKeysT =
-    BlockLoad<KeyOutputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
+    BlockLoad<KeyOutputT, block_threads, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockLoad type for values
-  using BlockLoadValuesT = BlockLoad<AccumT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadValuesT = BlockLoad<AccumT, block_threads, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for keys
-  using BlockDiscontinuityKeys = BlockDiscontinuity<KeyOutputT, BLOCK_THREADS>;
+  using BlockDiscontinuityKeys = BlockDiscontinuity<KeyOutputT, block_threads>;
 
   // Parameterized BlockScan type
-  using BlockScanT = BlockScan<OffsetValuePairT, BLOCK_THREADS, AgentReduceByKeyPolicyT::SCAN_ALGORITHM>;
+  using BlockScanT = BlockScan<OffsetValuePairT, block_threads, AgentReduceByKeyPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentReduceByKeyPolicyT::detail::delay_constructor_t;
@@ -429,7 +429,7 @@ struct AgentReduceByKey
 
     __syncthreads();
 
-    for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
+    for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += block_threads)
     {
       const KeyValuePairT pair                          = temp_storage.raw_exchange.Alias()[item];
       d_unique_out[num_tile_segments_prefix + item]     = pair.key; // NOLINT(bugprone-misplaced-widening-cast)
@@ -449,7 +449,7 @@ struct AgentReduceByKey
   {
     // Do a one-phase scatter if (a) two-phase is disabled or (b) the average
     // number of selected items per thread is less than one
-    if (TWO_PHASE_SCATTER && (num_tile_segments > BLOCK_THREADS))
+    if (TWO_PHASE_SCATTER && (num_tile_segments > block_threads))
     {
       ScatterTwoPhase(scatter_items, segment_flags, segment_indices, num_tile_segments, num_tile_segments_prefix);
     }
@@ -666,7 +666,7 @@ struct AgentReduceByKey
     Scatter(scatter_items, head_flags, segment_indices, num_tile_segments, num_segments_prefix);
 
     // Last thread in last tile will output final count (and last pair, if necessary)
-    if ((IS_LAST_TILE) && (threadIdx.x == BLOCK_THREADS - 1))
+    if ((IS_LAST_TILE) && (threadIdx.x == block_threads - 1))
     {
       OffsetT num_segments = num_segments_prefix + num_tile_segments;
 

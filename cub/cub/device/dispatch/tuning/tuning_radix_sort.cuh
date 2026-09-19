@@ -992,7 +992,7 @@ struct RadixSortPolicyWrapper<
   template <typename PolicyT>
   _CCCL_HOST_DEVICE static constexpr int ThreadsPerBlock(PolicyT /*policy*/)
   {
-    return PolicyT::BLOCK_THREADS;
+    return PolicyT::block_threads;
   }
 
   CUB_DEFINE_SUB_POLICY_GETTER(SingleTile);
@@ -1020,7 +1020,7 @@ template <typename DownsweepPolicy>
 _CCCL_HOST_DEVICE_API constexpr auto convert_downsweep_policy(DownsweepPolicy)
 {
   return RadixSortDownsweepPolicy{
-    DownsweepPolicy::BLOCK_THREADS,
+    DownsweepPolicy::block_threads,
     DownsweepPolicy::ITEMS_PER_THREAD,
     DownsweepPolicy::LOAD_ALGORITHM,
     DownsweepPolicy::LOAD_MODIFIER,
@@ -1037,14 +1037,14 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> RadixSortPolicy
 
   using hist_pol       = typename active_policy::HistogramPolicy;
   const auto histogram = RadixSortHistogramPolicy{
-    hist_pol::BLOCK_THREADS, hist_pol::ITEMS_PER_THREAD, hist_pol::NUM_PARTS, hist_pol::RADIX_BITS};
+    hist_pol::block_threads, hist_pol::ITEMS_PER_THREAD, hist_pol::NUM_PARTS, hist_pol::RADIX_BITS};
 
   using exc_sum_pol        = typename active_policy::ExclusiveSumPolicy;
-  const auto exclusive_sum = RadixSortExclusiveSumPolicy{exc_sum_pol::BLOCK_THREADS, exc_sum_pol::RADIX_BITS};
+  const auto exclusive_sum = RadixSortExclusiveSumPolicy{exc_sum_pol::block_threads, exc_sum_pol::RADIX_BITS};
 
   using one_pol       = typename active_policy::OnesweepPolicy;
   const auto onesweep = RadixSortOnesweepPolicy{
-    one_pol::BLOCK_THREADS,
+    one_pol::block_threads,
     one_pol::ITEMS_PER_THREAD,
     one_pol::STORE_ALGORITHM,
     one_pol::RANK_ALGORITHM,
@@ -1056,7 +1056,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> RadixSortPolicy
   const auto scan = ScanPolicy{
     ScanAlgorithm::lookback,
     ScanLookbackPolicy{
-      scan_pol::BLOCK_THREADS,
+      scan_pol::block_threads,
       scan_pol::ITEMS_PER_THREAD,
       scan_pol::LOAD_ALGORITHM,
       scan_pol::LOAD_MODIFIER,
@@ -1070,11 +1070,11 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> RadixSortPolicy
 
   using up_pol = typename active_policy::UpsweepPolicy;
   const auto upsweep =
-    RadixSortUpsweepPolicy{up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::LOAD_MODIFIER, up_pol::RADIX_BITS};
+    RadixSortUpsweepPolicy{up_pol::block_threads, up_pol::ITEMS_PER_THREAD, up_pol::LOAD_MODIFIER, up_pol::RADIX_BITS};
 
   using alt_up_pol       = typename active_policy::AltUpsweepPolicy;
   const auto alt_upsweep = RadixSortUpsweepPolicy{
-    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::LOAD_MODIFIER, alt_up_pol::RADIX_BITS};
+    alt_up_pol::block_threads, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::LOAD_MODIFIER, alt_up_pol::RADIX_BITS};
 
   const auto single_tile = radix_sort::convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
 

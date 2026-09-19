@@ -704,7 +704,7 @@ _CCCL_CONCEPT always_true = true;
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 // Generic agent policy
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  GenericAgentPolicy, (always_true), (BLOCK_THREADS, ThreadsPerBlock, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
+  GenericAgentPolicy, (always_true), (block_threads, ThreadsPerBlock, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
 
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 _CCCL_TEMPLATE(typename PolicyT)

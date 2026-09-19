@@ -257,13 +257,13 @@ private:
   static constexpr DigitCounter max_tile_size = ::cuda::std::numeric_limits<DigitCounter>::max();
 
   // The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   static constexpr int RADIX_DIGITS = 1 << RadixBits;
 
   static constexpr int LOG_WARP_THREADS = detail::log2_warp_threads;
   static constexpr int WARP_THREADS     = 1 << LOG_WARP_THREADS;
-  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
+  static constexpr int WARPS            = (block_threads + WARP_THREADS - 1) / WARP_THREADS;
 
   static constexpr int BYTES_PER_COUNTER     = sizeof(DigitCounter);
   static constexpr int LOG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE;
@@ -282,7 +282,7 @@ private:
 public:
   /// Number of bin-starting offsets tracked per thread
   static constexpr int BINS_TRACKED_PER_THREAD =
-    ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS);
+    ::cuda::std::max(1, (RADIX_DIGITS + block_threads - 1) / block_threads);
 
 private:
   /// BlockScan type
@@ -293,8 +293,8 @@ private:
   {
     union Aliasable
     {
-      DigitCounter digit_counters[PADDED_COUNTER_LANES][BLOCK_THREADS][PACKING_RATIO];
-      PackedCounter raking_grid[BLOCK_THREADS][RAKING_SEGMENT];
+      DigitCounter digit_counters[PADDED_COUNTER_LANES][block_threads][PACKING_RATIO];
+      PackedCounter raking_grid[block_threads][RAKING_SEGMENT];
 
     } aliasable;
 
@@ -459,7 +459,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], DigitExtractorT digit_extractor)
   {
-    static_assert(BLOCK_THREADS * KEYS_PER_THREAD <= max_tile_size,
+    static_assert(block_threads * KEYS_PER_THREAD <= max_tile_size,
                   "DigitCounter type is too small to hold this number of keys");
 
     DigitCounter thread_prefixes[KEYS_PER_THREAD]; // For each key, the count of previous keys in this tile having the
@@ -540,7 +540,7 @@ public:
            DigitExtractorT digit_extractor,
            int (&exclusive_digit_prefix)[BINS_TRACKED_PER_THREAD])
   {
-    static_assert(BLOCK_THREADS * KEYS_PER_THREAD <= max_tile_size,
+    static_assert(block_threads * KEYS_PER_THREAD <= max_tile_size,
                   "DigitCounter type is too small to hold this number of keys");
 
     // Rank keys
@@ -552,7 +552,7 @@ public:
     {
       int bin_idx = (linear_tid * BINS_TRACKED_PER_THREAD) + track;
 
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         if (IsDescending)
         {
@@ -588,29 +588,29 @@ private:
   using DigitCounterT = int32_t;
 
   // The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   static constexpr int RADIX_DIGITS = 1 << RadixBits;
 
   static constexpr int LOG_WARP_THREADS     = detail::log2_warp_threads;
   static constexpr int WARP_THREADS         = 1 << LOG_WARP_THREADS;
-  static constexpr int PARTIAL_WARP_THREADS = BLOCK_THREADS % WARP_THREADS;
-  static constexpr int WARPS                = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
+  static constexpr int PARTIAL_WARP_THREADS = block_threads % WARP_THREADS;
+  static constexpr int WARPS                = (block_threads + WARP_THREADS - 1) / WARP_THREADS;
 
   static constexpr int PADDED_WARPS = ((WARPS & 0x1) == 0) ? WARPS + 1 : WARPS;
 
   static constexpr int COUNTERS              = PADDED_WARPS * RADIX_DIGITS;
-  static constexpr int RAKING_SEGMENT        = (COUNTERS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+  static constexpr int RAKING_SEGMENT        = (COUNTERS + block_threads - 1) / block_threads;
   static constexpr int PADDED_RAKING_SEGMENT = ((RAKING_SEGMENT & 0x1) == 0) ? RAKING_SEGMENT + 1 : RAKING_SEGMENT;
 
 public:
   /// Number of bin-starting offsets tracked per thread
   static constexpr int BINS_TRACKED_PER_THREAD =
-    ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS);
+    ::cuda::std::max(1, (RADIX_DIGITS + block_threads - 1) / block_threads);
 
 private:
   /// BlockScan type
-  using BlockScanT = BlockScan<DigitCounterT, BLOCK_THREADS, InnerScanAlgorithm, BlockDimY, BlockDimZ>;
+  using BlockScanT = BlockScan<DigitCounterT, block_threads, InnerScanAlgorithm, BlockDimY, BlockDimZ>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   struct __align__(16) _TempStorage
@@ -620,7 +620,7 @@ private:
     union __align__(16) Aliasable
     {
       volatile DigitCounterT warp_digit_counters[RADIX_DIGITS][PADDED_WARPS];
-      DigitCounterT raking_grid[BLOCK_THREADS][PADDED_RAKING_SEGMENT];
+      DigitCounterT raking_grid[block_threads][PADDED_RAKING_SEGMENT];
     } aliasable;
   };
 #endif // !_CCCL_DOXYGEN_INVOKED
@@ -678,9 +678,9 @@ public:
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx              = (linear_tid * BINS_TRACKED_PER_THREAD) + track;
-      constexpr int TILE_ITEMS = KEYS_PER_THREAD * BLOCK_THREADS;
+      constexpr int TILE_ITEMS = KEYS_PER_THREAD * block_threads;
 
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         if (IsDescending)
         {
@@ -859,7 +859,7 @@ public:
     {
       int bin_idx = (linear_tid * BINS_TRACKED_PER_THREAD) + track;
 
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         if (IsDescending)
         {
@@ -918,15 +918,19 @@ template <int BlockDimX,
           int NUM_PARTS                         = 1>
 struct BlockRadixRankMatchEarlyCounts
 {
+private:
   // constants
-  static constexpr int BLOCK_THREADS           = BlockDimX;
+  static constexpr int block_threads = BlockDimX;
+
+public:
+  static constexpr int BLOCK_THREADS           = block_threads; // NOLINT(readability-identifier-naming)
   static constexpr int RADIX_DIGITS            = 1 << RadixBits;
-  static constexpr int BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+  static constexpr int BINS_PER_THREAD         = (RADIX_DIGITS + block_threads - 1) / block_threads;
   static constexpr int BINS_TRACKED_PER_THREAD = BINS_PER_THREAD;
-  static constexpr int FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS;
+  static constexpr int FULL_BINS               = BINS_PER_THREAD * block_threads == RADIX_DIGITS;
   static constexpr int WARP_THREADS            = detail::warp_threads;
-  static constexpr int PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS;
-  static constexpr int BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS;
+  static constexpr int PARTIAL_WARP_THREADS    = block_threads % WARP_THREADS;
+  static constexpr int BLOCK_WARPS             = block_threads / WARP_THREADS;
   static constexpr int PARTIAL_WARP_ID         = BLOCK_WARPS - 1;
   static constexpr int WARP_MASK               = ~0;
   static constexpr int NUM_MATCH_MASKS         = MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR ? BLOCK_WARPS : 0;
@@ -934,7 +938,7 @@ struct BlockRadixRankMatchEarlyCounts
   static constexpr int MATCH_MASKS_ALLOC_SIZE = NUM_MATCH_MASKS < 1 ? 1 : NUM_MATCH_MASKS;
 
   // types
-  using BlockScan = cub::BlockScan<int, BLOCK_THREADS, InnerScanAlgorithm>;
+  using BlockScan = cub::BlockScan<int, block_threads, InnerScanAlgorithm>;
 
   struct TempStorage
   {

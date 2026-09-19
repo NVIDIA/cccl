@@ -163,7 +163,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanPolicy
   return ScanPolicy{
     ScanAlgorithm::lookback,
     ScanLookbackPolicy{
-      scan_policy_t::BLOCK_THREADS,
+      scan_policy_t::block_threads,
       scan_policy_t::ITEMS_PER_THREAD,
       scan_policy_t::LOAD_ALGORITHM,
       scan_policy_t::LOAD_MODIFIER,

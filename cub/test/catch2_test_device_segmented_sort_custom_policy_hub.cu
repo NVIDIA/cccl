@@ -24,12 +24,12 @@ struct my_policy_hub
   // from Policy500 of the CUB segmented sort tunings
   struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
-    static constexpr int BLOCK_THREADS          = 256;
+    static constexpr int block_threads          = 256;
     static constexpr int RADIX_BITS             = 6;
     static constexpr int PARTITIONING_THRESHOLD = 300;
 
     using LargeSegmentPolicy = AgentRadixSortDownsweepPolicy<
-      BLOCK_THREADS,
+      block_threads,
       16,
       KeyT,
       BLOCK_LOAD_DIRECT,
@@ -39,13 +39,13 @@ struct my_policy_hub
       RADIX_BITS>;
 
     using SmallSegmentPolicy =
-      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+      AgentSubWarpMergeSortPolicy<block_threads,
                                   4 /* Threads per segment */,
                                   7 /* items per thread */,
                                   WARP_LOAD_DIRECT,
                                   LOAD_DEFAULT>;
     using MediumSegmentPolicy =
-      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+      AgentSubWarpMergeSortPolicy<block_threads,
                                   32 /* Threads per segment */,
                                   7 /* items per thread */,
                                   WARP_LOAD_DIRECT,

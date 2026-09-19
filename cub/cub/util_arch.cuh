@@ -146,7 +146,7 @@ private:
 
 public:
   static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
-  static constexpr int BLOCK_THREADS    = result.threads_per_block;
+  static constexpr int block_threads    = result.threads_per_block;
 };
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr auto
@@ -170,14 +170,14 @@ private:
 
 public:
   static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
-  static constexpr int BLOCK_THREADS    = result.threads_per_block;
+  static constexpr int block_threads    = result.threads_per_block;
 };
 
 template <int Nominal4ByteThreadsPerBlock, int Nominal4ByteItemsPerThread, typename = void>
 struct NoScaling
 {
   static constexpr int ITEMS_PER_THREAD = Nominal4ByteItemsPerThread;
-  static constexpr int BLOCK_THREADS    = Nominal4ByteThreadsPerBlock;
+  static constexpr int block_threads    = Nominal4ByteThreadsPerBlock;
 };
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::compute_capability current_tuning_cc() noexcept

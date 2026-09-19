@@ -190,7 +190,7 @@ private:
     _CCCL_HOST_DEVICE_API constexpr auto operator()() -> MergeSortPolicy
     {
       using mp = typename ActivePolicyT::MergeSortPolicy;
-      return {mp::BLOCK_THREADS, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
+      return {mp::block_threads, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
     }
   };
 

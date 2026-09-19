@@ -195,7 +195,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
   constexpr int begin_bit = 0;
   constexpr int end_bit   = sizeof(KeyT) * 8;
 
-  constexpr int cacheable_tile_size = LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
+  constexpr int cacheable_tile_size = LargeSegmentPolicyT::block_threads * LargeSegmentPolicyT::ITEMS_PER_THREAD;
 
   d_keys_in_orig += segment_begin;
   d_keys_out_orig += segment_begin;
@@ -493,7 +493,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
 
   using local_segment_index_t = local_segment_index_t;
 
-  constexpr int small_tile_size = LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
+  constexpr int small_tile_size = LargeSegmentPolicyT::block_threads * LargeSegmentPolicyT::ITEMS_PER_THREAD;
 
   using AgentSegmentedRadixSortT =
     radix_sort::AgentSegmentedRadixSort<Order == SortOrder::Descending, LargeSegmentPolicyT, KeyT, ValueT, OffsetT>;

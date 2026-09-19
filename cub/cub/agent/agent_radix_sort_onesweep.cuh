@@ -154,15 +154,15 @@ struct AgentRadixSortOnesweep
   // constants
   static constexpr int ITEMS_PER_THREAD      = AgentRadixSortOnesweepPolicy::ITEMS_PER_THREAD;
   static constexpr bool KEYS_ONLY            = ::cuda::std::is_same_v<ValueT, NullType>;
-  static constexpr int BLOCK_THREADS         = AgentRadixSortOnesweepPolicy::BLOCK_THREADS;
+  static constexpr int block_threads         = AgentRadixSortOnesweepPolicy::block_threads;
   static constexpr int RANK_NUM_PARTS        = AgentRadixSortOnesweepPolicy::RANK_NUM_PARTS;
-  static constexpr int TILE_ITEMS            = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS            = block_threads * ITEMS_PER_THREAD;
   static constexpr int RADIX_BITS            = AgentRadixSortOnesweepPolicy::RADIX_BITS;
   static constexpr int RADIX_DIGITS          = 1 << RADIX_BITS;
-  static constexpr int BINS_PER_THREAD       = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
-  static constexpr bool FULL_BINS            = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS;
+  static constexpr int BINS_PER_THREAD       = (RADIX_DIGITS + block_threads - 1) / block_threads;
+  static constexpr bool FULL_BINS            = BINS_PER_THREAD * block_threads == RADIX_DIGITS;
   static constexpr int WARP_THREADS          = warp_threads;
-  static constexpr int BLOCK_WARPS           = BLOCK_THREADS / WARP_THREADS;
+  static constexpr int BLOCK_WARPS           = block_threads / WARP_THREADS;
   static constexpr int WARP_MASK             = ~0;
   static constexpr int LOOKBACK_PARTIAL_MASK = 1 << (PortionOffsetT(sizeof(PortionOffsetT)) * 8 - 2);
   static constexpr int LOOKBACK_GLOBAL_MASK  = 1 << (PortionOffsetT(sizeof(PortionOffsetT)) * 8 - 1);
@@ -193,11 +193,11 @@ struct AgentRadixSortOnesweep
 
   using BlockRadixRankT = ::cuda::std::_If<
     RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
-    BlockRadixRankMatchEarlyCounts<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM, WARP_MATCH_ATOMIC_OR, RANK_NUM_PARTS>,
+    BlockRadixRankMatchEarlyCounts<block_threads, RADIX_BITS, false, SCAN_ALGORITHM, WARP_MATCH_ATOMIC_OR, RANK_NUM_PARTS>,
     ::cuda::std::_If<
       RANK_ALGORITHM == RADIX_RANK_MATCH,
-      BlockRadixRankMatch<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM>,
-      BlockRadixRankMatchEarlyCounts<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM, WARP_MATCH_ANY, RANK_NUM_PARTS>>>;
+      BlockRadixRankMatch<block_threads, RADIX_BITS, false, SCAN_ALGORITHM>,
+      BlockRadixRankMatchEarlyCounts<block_threads, RADIX_BITS, false, SCAN_ALGORITHM, WARP_MATCH_ANY, RANK_NUM_PARTS>>>;
 
   // temporary storage
   struct TempStorage_
@@ -527,7 +527,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      const int idx              = threadIdx.x + u * BLOCK_THREADS;
+      const int idx              = threadIdx.x + u * block_threads;
       const bit_ordered_type key = s.keys_out[idx];
       OffsetT global_idx         = idx + s.global_offsets[Digit(key)];
       if (FULL_TILE || idx < tile_items)
@@ -546,7 +546,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      const int idx      = threadIdx.x + u * BLOCK_THREADS;
+      const int idx      = threadIdx.x + u * block_threads;
       ValueT value       = s.values_out[idx];
       OffsetT global_idx = idx + s.global_offsets[digits[u]];
       if (FULL_TILE || idx < tile_items)
@@ -636,7 +636,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      const int idx = threadIdx.x + u * BLOCK_THREADS;
+      const int idx = threadIdx.x + u * block_threads;
       digits[u]     = Digit(s.keys_out[idx]);
     }
   }

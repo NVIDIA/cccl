@@ -60,10 +60,10 @@ template <typename T, int BlockDimX, int BlockDimY, int BlockDimZ>
 struct BlockReduceRaking
 {
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Layout type for padded thread block raking grid
-  using BlockRakingLayout = BlockRakingLayout<T, BLOCK_THREADS>;
+  using BlockRakingLayout = BlockRakingLayout<T, block_threads>;
 
   ///  WarpReduce utility type
   using WarpReduce = typename WarpReduce<T, BlockRakingLayout::RAKING_THREADS>::InternalWarpReduce;
@@ -76,7 +76,7 @@ struct BlockReduceRaking
   static constexpr int SEGMENT_LENGTH = BlockRakingLayout::SEGMENT_LENGTH;
 
   /// Cooperative work can be entirely warp synchronous
-  static constexpr bool WARP_SYNCHRONOUS = (RAKING_THREADS == BLOCK_THREADS);
+  static constexpr bool WARP_SYNCHRONOUS = (RAKING_THREADS == block_threads);
 
   /// Whether or not warp-synchronous reduction should be unguarded (i.e., the warp-reduction elements is a power of
   /// two
@@ -117,7 +117,7 @@ struct BlockReduceRaking
    *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
    *
    * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
+   *   Number of valid elements (may be less than block_threads)
    */
   template <bool IS_FULL_TILE, typename ReductionOp, int ITERATION>
   _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(
@@ -140,7 +140,7 @@ struct BlockReduceRaking
    *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
    *
    * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
+   *   Number of valid elements (may be less than block_threads)
    */
   template <bool IS_FULL_TILE, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(
@@ -162,7 +162,7 @@ struct BlockReduceRaking
    *   Calling thread's input partial reductions
    *
    * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
+   *   Number of valid elements (may be less than block_threads)
    *
    * @param[in] reduction_op
    *   Binary reduction operator
@@ -216,7 +216,7 @@ struct BlockReduceRaking
    *   Calling thread's input partial reductions
    *
    * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
+   *   Number of valid elements (may be less than block_threads)
    */
   template <bool IS_FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)

@@ -163,10 +163,10 @@ struct AgentRadixSortDownsweep
   static constexpr RadixRankAlgorithm RANK_ALGORITHM = AgentRadixSortDownsweepPolicy::RANK_ALGORITHM;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = AgentRadixSortDownsweepPolicy::SCAN_ALGORITHM;
 
-  static constexpr int BLOCK_THREADS    = AgentRadixSortDownsweepPolicy::BLOCK_THREADS;
+  static constexpr int block_threads    = AgentRadixSortDownsweepPolicy::block_threads;
   static constexpr int ITEMS_PER_THREAD = AgentRadixSortDownsweepPolicy::ITEMS_PER_THREAD;
   static constexpr int RADIX_BITS       = AgentRadixSortDownsweepPolicy::RADIX_BITS;
-  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = block_threads * ITEMS_PER_THREAD;
 
   static constexpr int RADIX_DIGITS = 1 << RADIX_BITS;
   static constexpr bool KEYS_ONLY   = ::cuda::std::is_same_v<ValueT, NullType>;
@@ -179,7 +179,7 @@ struct AgentRadixSortDownsweep
   using ValuesItr = CacheModifiedInputIterator<LOAD_MODIFIER, ValueT, OffsetT>;
 
   // Radix ranking type to use
-  using BlockRadixRankT = block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
+  using BlockRadixRankT = block_radix_rank_t<RANK_ALGORITHM, block_threads, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
 
   // Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
@@ -189,10 +189,10 @@ struct AgentRadixSortDownsweep
   static constexpr int BINS_TRACKED_PER_THREAD = BlockRadixRankT::BINS_TRACKED_PER_THREAD;
 
   // BlockLoad type (keys)
-  using BlockLoadKeysT = BlockLoad<bit_ordered_type, BLOCK_THREADS, ITEMS_PER_THREAD, LOAD_ALGORITHM>;
+  using BlockLoadKeysT = BlockLoad<bit_ordered_type, block_threads, ITEMS_PER_THREAD, LOAD_ALGORITHM>;
 
   // BlockLoad type (values)
-  using BlockLoadValuesT = BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, LOAD_ALGORITHM>;
+  using BlockLoadValuesT = BlockLoad<ValueT, block_threads, ITEMS_PER_THREAD, LOAD_ALGORITHM>;
 
   // Value exchange array type
   using ValueExchangeT = ValueT[TILE_ITEMS];
@@ -275,17 +275,17 @@ struct AgentRadixSortDownsweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      bit_ordered_type key       = temp_storage.keys_and_offsets.exchange_keys[threadIdx.x + (ITEM * BLOCK_THREADS)];
+      bit_ordered_type key       = temp_storage.keys_and_offsets.exchange_keys[threadIdx.x + (ITEM * block_threads)];
       const uint32_t digit       = digit_extractor().Digit(key);
       relative_bin_offsets[ITEM] = temp_storage.keys_and_offsets.relative_bin_offsets[digit];
 
       key = bit_ordered_conversion::from_bit_ordered(decomposer, key);
 
       if (FULL_TILE
-          || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) // NOLINT(bugprone-misplaced-widening-cast)
+          || (static_cast<OffsetT>(threadIdx.x + (ITEM * block_threads)) // NOLINT(bugprone-misplaced-widening-cast)
               < valid_items))
       {
-        d_keys_out[relative_bin_offsets[ITEM] + threadIdx.x + (ITEM * BLOCK_THREADS)] = key;
+        d_keys_out[relative_bin_offsets[ITEM] + threadIdx.x + (ITEM * block_threads)] = key;
       }
     }
   }
@@ -315,13 +315,13 @@ struct AgentRadixSortDownsweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      ValueT value = exchange_values[threadIdx.x + (ITEM * BLOCK_THREADS)];
+      ValueT value = exchange_values[threadIdx.x + (ITEM * block_threads)];
 
       if (FULL_TILE
-          || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) // NOLINT(bugprone-misplaced-widening-cast)
+          || (static_cast<OffsetT>(threadIdx.x + (ITEM * block_threads)) // NOLINT(bugprone-misplaced-widening-cast)
               < valid_items))
       {
-        d_values_out[relative_bin_offsets[ITEM] + threadIdx.x + (ITEM * BLOCK_THREADS)] = value;
+        d_values_out[relative_bin_offsets[ITEM] + threadIdx.x + (ITEM * block_threads)] = value;
       }
     }
   }
@@ -463,7 +463,7 @@ struct AgentRadixSortDownsweep
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         // Store exclusive prefix
         temp_storage.exclusive_digit_prefix[bin_idx] = exclusive_digit_prefix[track];
@@ -479,20 +479,20 @@ struct AgentRadixSortDownsweep
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         if (IS_DESCENDING)
         {
           // Get inclusive digit prefix from exclusive prefix (higher bins come first)
           inclusive_digit_prefix[track] =
-            (bin_idx == 0) ? (BLOCK_THREADS * ITEMS_PER_THREAD) : temp_storage.exclusive_digit_prefix[bin_idx - 1];
+            (bin_idx == 0) ? (block_threads * ITEMS_PER_THREAD) : temp_storage.exclusive_digit_prefix[bin_idx - 1];
         }
         else
         {
           // Get inclusive digit prefix from exclusive prefix (lower bins come first)
           inclusive_digit_prefix[track] =
             (bin_idx == RADIX_DIGITS - 1)
-              ? (BLOCK_THREADS * ITEMS_PER_THREAD)
+              ? (block_threads * ITEMS_PER_THREAD)
               : temp_storage.exclusive_digit_prefix[bin_idx + 1];
         }
       }
@@ -505,7 +505,7 @@ struct AgentRadixSortDownsweep
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         bin_offset[track] -= exclusive_digit_prefix[track];
         temp_storage.keys_and_offsets.relative_bin_offsets[bin_idx] = bin_offset[track];
@@ -540,9 +540,9 @@ struct AgentRadixSortDownsweep
     {
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
+      LoadDirectStriped<block_threads>(threadIdx.x, d_in + block_offset, items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
+      StoreDirectStriped<block_threads>(threadIdx.x, d_out + block_offset, items);
 
       block_offset += TILE_ITEMS;
     }
@@ -554,9 +554,9 @@ struct AgentRadixSortDownsweep
 
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
+      LoadDirectStriped<block_threads>(threadIdx.x, d_in + block_offset, items, valid_items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
+      StoreDirectStriped<block_threads>(threadIdx.x, d_out + block_offset, items, valid_items);
     }
   }
 
@@ -602,7 +602,7 @@ struct AgentRadixSortDownsweep
       this->bin_offset[track] = bin_offset[track];
 
       const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         // Short circuit if the histogram has only bin counts of only zeros or problem-size
         short_circuit = short_circuit && ((bin_offset[track] == 0) || (bin_offset[track] == num_items));
@@ -642,7 +642,7 @@ struct AgentRadixSortDownsweep
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
       // Load digit bin offsets (each of the first RADIX_DIGITS threads will load an offset for that digit)
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         if (IS_DESCENDING)
         {

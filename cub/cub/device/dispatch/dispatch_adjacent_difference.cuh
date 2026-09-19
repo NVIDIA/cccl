@@ -104,7 +104,7 @@ struct policy_selector_from_hub
   {
     using p = typename PolicyHub::MaxPolicy::ActivePolicy::AdjacentDifferencePolicy;
     return AdjacentDifferencePolicy{
-      p::BLOCK_THREADS, p::ITEMS_PER_THREAD, p::LOAD_ALGORITHM, p::LOAD_MODIFIER, p::STORE_ALGORITHM};
+      p::block_threads, p::ITEMS_PER_THREAD, p::LOAD_ALGORITHM, p::LOAD_MODIFIER, p::STORE_ALGORITHM};
   }
 };
 } // namespace detail::adjacent_difference
@@ -203,7 +203,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
         using AgentDifferenceInitT =
           detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadOpt == ReadOption::Left>;
 
-        constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
+        constexpr int init_block_size = AgentDifferenceInitT::block_threads;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
 #ifdef CUB_DEBUG_LOG
@@ -245,20 +245,20 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
       _CubLog("Invoking DeviceAdjacentDifferenceDifferenceKernel"
               "<<<%d, %d, 0, %lld>>>()\n",
               num_tiles,
-              AdjacentDifferencePolicyT::BLOCK_THREADS,
+              AdjacentDifferencePolicyT::block_threads,
               reinterpret_cast<long long>(stream));
 #else // CUB_DEBUG_LOG
       detail::log("Invoking DeviceAdjacentDifferenceDifferenceKernel"
                   "<<<%d, %d, 0, %lld>>>()\n",
                   num_tiles,
-                  AdjacentDifferencePolicyT::BLOCK_THREADS,
+                  AdjacentDifferencePolicyT::block_threads,
                   reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
       using KernelPolicySelector = detail::adjacent_difference::policy_selector_from_hub<PolicyHub>;
       error                      = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-          num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
+          num_tiles, AdjacentDifferencePolicyT::block_threads, 0, stream)
           .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel<
                   KernelPolicySelector,
                   InputIteratorT,
@@ -415,7 +415,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   {
     using AgentDifferenceInitT = AgentDifferenceInit<InputIteratorT, input_t, offset_t, ReadOpt == ReadOption::Left>;
 
-    constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
+    constexpr int init_block_size = AgentDifferenceInitT::block_threads;
     const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
 #ifdef CUB_DEBUG_LOG

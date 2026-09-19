@@ -167,19 +167,19 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
  * @code
  * #include <cub/cub.cuh> // or equivalently <cub/block/block_merge_sort.cuh>
  *
- * constexpr int BLOCK_THREADS = 256;
+ * constexpr int block_threads = 256;
  * constexpr int ItemsPerThread = 9;
  *
  * class BlockMergeSort : public BlockMergeSortStrategy<int,
  *                                                      cub::NullType,
- *                                                      BLOCK_THREADS,
+ *                                                      block_threads,
  *                                                      ItemsPerThread,
  *                                                      BlockMergeSort>
  * {
  *   using BlockMergeSortStrategyT =
  *     BlockMergeSortStrategy<int,
  *                            cub::NullType,
- *                            BLOCK_THREADS,
+ *                            block_threads,
  *                            ItemsPerThread,
  *                            BlockMergeSort>;
  * public:
@@ -318,7 +318,7 @@ public:
    *   `valid_items` boundaries and that all threads provide the same
    *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
    *   amount of elements, which is equal to
-   *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
+   *   `ItemsPerThread * block_threads`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
    * @rst
@@ -402,7 +402,7 @@ public:
    *   `valid_items` boundaries and that all threads provide the same
    *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
    *   amount of elements, which is equal to
-   *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
+   *   `ItemsPerThread * block_threads`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
    * @rst
@@ -639,7 +639,7 @@ public:
    *   `valid_items` boundaries and that all threads provide the same
    *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
    *   amount of elements, which is equal to
-   *   `ItemsPerThread * BLOCK_THREADS`.
+   *   `ItemsPerThread * block_threads`.
    *   If there is a value that is ordered after `oob_default`, it won't be
    *   placed within `valid_items` boundaries.
    *
@@ -688,7 +688,7 @@ public:
    *   `valid_items` boundaries and that all threads provide the same
    *   `oob_default` and `valid_items`. The algorithm always sorts a fixed
    *   amount of elements, which is equal to
-   *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
+   *   `ItemsPerThread * block_threads`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
    * @rst
@@ -1112,11 +1112,11 @@ class BlockMergeSort
 {
 private:
   // The thread block size in threads
-  static constexpr int BLOCK_THREADS  = BlockDimX * BlockDimY * BlockDimZ;
-  static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;
+  static constexpr int block_threads  = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int ITEMS_PER_TILE = ItemsPerThread * block_threads;
 
   using BlockMergeSortStrategyT =
-    BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort, _Unroll>;
+    BlockMergeSortStrategy<KeyT, ValueT, block_threads, ItemsPerThread, BlockMergeSort, _Unroll>;
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()

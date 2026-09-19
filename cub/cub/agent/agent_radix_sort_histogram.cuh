@@ -41,7 +41,7 @@ namespace detail
 template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
 struct agent_radix_sort_histogram_policy
 {
-  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
+  static constexpr int block_threads    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   // need to discard sizeof(ComputeType) in case it's void
@@ -71,7 +71,7 @@ struct agent_radix_sort_histogram_policy
 template <int ThreadsPerBlock, int RadixBits>
 struct agent_radix_sort_exclusive_sum_policy
 {
-  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
+  static constexpr int block_threads = ThreadsPerBlock;
   static constexpr int RADIX_BITS    = RadixBits;
 };
 } // namespace detail
@@ -97,8 +97,8 @@ struct AgentRadixSortHistogram
 {
   // constants
   static constexpr int ITEMS_PER_THREAD = AgentRadixSortHistogramPolicy::ITEMS_PER_THREAD;
-  static constexpr int BLOCK_THREADS    = AgentRadixSortHistogramPolicy::BLOCK_THREADS;
-  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int block_threads    = AgentRadixSortHistogramPolicy::block_threads;
+  static constexpr int TILE_ITEMS       = block_threads * ITEMS_PER_THREAD;
   static constexpr int RADIX_BITS       = AgentRadixSortHistogramPolicy::RADIX_BITS;
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
   static constexpr int MAX_NUM_PASSES   = (sizeof(KeyT) * 8 + RADIX_BITS - 1) / RADIX_BITS;
@@ -166,7 +166,7 @@ struct AgentRadixSortHistogram
   {
     // Initialize bins to 0.
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += block_threads)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
@@ -187,11 +187,11 @@ struct AgentRadixSortHistogram
     const bool full_tile = num_items - tile_offset >= TILE_ITEMS;
     if (full_tile)
     {
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, keys);
+      LoadDirectStriped<block_threads>(threadIdx.x, d_keys_in + tile_offset, keys);
     }
     else
     {
-      LoadDirectStriped<BLOCK_THREADS>(
+      LoadDirectStriped<block_threads>(
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
@@ -226,7 +226,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += block_threads)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)

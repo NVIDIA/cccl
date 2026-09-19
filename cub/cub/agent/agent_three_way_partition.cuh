@@ -44,7 +44,7 @@ template <int ThreadsPerBlock,
           class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct agent_three_way_partition_policy
 {
-  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
+  static constexpr int block_threads                 = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
@@ -182,9 +182,9 @@ struct AgentThreeWayPartition
   using ScanTileStateT = cub::ScanTileState<AccumPackT>;
 
   // Constants
-  static constexpr int BLOCK_THREADS    = PolicyT::BLOCK_THREADS;
+  static constexpr int block_threads    = PolicyT::block_threads;
   static constexpr int ITEMS_PER_THREAD = PolicyT::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = block_threads * ITEMS_PER_THREAD;
 
   using WrappedInputIteratorT =
     ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
@@ -192,10 +192,10 @@ struct AgentThreeWayPartition
                      InputIteratorT>;
 
   // Parameterized BlockLoad type for input data
-  using BlockLoadT = cub::BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, PolicyT::LOAD_ALGORITHM>;
+  using BlockLoadT = cub::BlockLoad<InputT, block_threads, ITEMS_PER_THREAD, PolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockScan type
-  using BlockScanT = cub::BlockScan<AccumPackT, BLOCK_THREADS, PolicyT::SCAN_ALGORITHM>;
+  using BlockScanT = cub::BlockScan<AccumPackT, block_threads, PolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename PolicyT::detail::delay_constructor_t;
@@ -354,7 +354,7 @@ struct AgentThreeWayPartition
     // NOLINTEND(bugprone-misplaced-widening-cast)
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      const int item_idx = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      const int item_idx = (ITEM * block_threads) + threadIdx.x;
 
       if (!IS_LAST_TILE || (item_idx < num_tile_items))
       {

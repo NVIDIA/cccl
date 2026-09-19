@@ -1558,7 +1558,7 @@ struct generate_edge_case_offsets_dispatch
                    medium_segment_max_segment_size = MediumPolicyT::ITEMS_PER_TILE;
                    single_thread_segment_size      = items_per_small_segment;
                    large_cached_segment_max_segment_size =
-                     LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
+                     LargeSegmentPolicyT::block_threads * LargeSegmentPolicyT::ITEMS_PER_THREAD;
                  }));
 
     return cudaSuccess;

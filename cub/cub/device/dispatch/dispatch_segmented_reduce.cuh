@@ -78,9 +78,9 @@ private:
     using sp  = typename srp::SmallReducePolicy;
     using mp  = typename srp::MediumReducePolicy;
     return SegmentedReducePolicy{
-      {rp::BLOCK_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::BLOCK_ALGORITHM, rp::LOAD_MODIFIER},
-      {rp::BLOCK_THREADS, mp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER},
-      {rp::BLOCK_THREADS, sp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER}};
+      {rp::block_threads, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::BLOCK_ALGORITHM, rp::LOAD_MODIFIER},
+      {rp::block_threads, mp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER},
+      {rp::block_threads, sp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER}};
   }
 
   struct extract_policy_dispatch_t

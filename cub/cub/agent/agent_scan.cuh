@@ -183,26 +183,26 @@ struct AgentScan
   static constexpr bool IS_INCLUSIVE = ForceInclusive || !HAS_INIT; // We are relying on either initial value not being
                                                                     // `NullType` or the ForceInclusive tag to be true
                                                                     // for inclusive scan to get picked up.
-  static constexpr int BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS;
+  static constexpr int block_threads    = AgentScanPolicyT::block_threads;
   static constexpr int ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = block_threads * ITEMS_PER_THREAD;
 
   // Parameterized BlockLoad type
   using BlockLoadT =
     BlockLoad<AccumT,
-              AgentScanPolicyT::BLOCK_THREADS,
+              AgentScanPolicyT::block_threads,
               AgentScanPolicyT::ITEMS_PER_THREAD,
               AgentScanPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockStore type
   using BlockStoreT =
     BlockStore<AccumT,
-               AgentScanPolicyT::BLOCK_THREADS,
+               AgentScanPolicyT::block_threads,
                AgentScanPolicyT::ITEMS_PER_THREAD,
                AgentScanPolicyT::STORE_ALGORITHM>;
 
   // Parameterized BlockScan type
-  using BlockScanT = BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM>;
+  using BlockScanT = BlockScan<AccumT, AgentScanPolicyT::block_threads, AgentScanPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentScanPolicyT::detail::delay_constructor_t;

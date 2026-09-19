@@ -101,9 +101,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.large_buffer.thr
   using InputBufferT  = it_value_t<InputBufferIt>;
   using OutputBufferT = it_value_t<OutputBufferIt>;
 
-  constexpr uint32_t BLOCK_THREADS    = static_cast<uint32_t>(policy.threads_per_block);
+  constexpr uint32_t block_threads    = static_cast<uint32_t>(policy.threads_per_block);
   constexpr uint32_t ITEMS_PER_THREAD = static_cast<uint32_t>(policy.bytes_per_thread);
-  constexpr BufferSizeT TILE_SIZE     = BufferSizeT{BLOCK_THREADS} * ITEMS_PER_THREAD;
+  constexpr BufferSizeT TILE_SIZE     = BufferSizeT{block_threads} * ITEMS_PER_THREAD;
 
   BufferOffsetT num_blev_buffers = buffer_offset_tile.LoadValid(last_tile_offset);
 
@@ -158,12 +158,12 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.large_buffer.thr
           write_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, OutputBufferT>(
             output_buffer_it[buffer_id], thread_offset, value);
         }
-        thread_offset += BLOCK_THREADS;
+        thread_offset += block_threads;
       }
     }
     else
     {
-      copy_items<MemcpyOpt == CopyAlg::Memcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
+      copy_items<MemcpyOpt == CopyAlg::Memcpy, block_threads, InputBufferT, OutputBufferT, BufferSizeT>(
         input_buffer_it[buffer_id],
         output_buffer_it[buffer_id],
         (::cuda::std::min) (buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),

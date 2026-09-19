@@ -133,16 +133,16 @@ struct AgentRadixSortUpsweep
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
 
   static constexpr int RADIX_BITS      = AgentRadixSortUpsweepPolicy::RADIX_BITS;
-  static constexpr int BLOCK_THREADS   = AgentRadixSortUpsweepPolicy::BLOCK_THREADS;
+  static constexpr int block_threads   = AgentRadixSortUpsweepPolicy::block_threads;
   static constexpr int KEYS_PER_THREAD = AgentRadixSortUpsweepPolicy::ITEMS_PER_THREAD;
 
   static constexpr int RADIX_DIGITS = 1 << RADIX_BITS;
 
   static constexpr int LOG_WARP_THREADS = log2_warp_threads;
   static constexpr int WARP_THREADS     = 1 << LOG_WARP_THREADS;
-  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
+  static constexpr int WARPS            = (block_threads + WARP_THREADS - 1) / WARP_THREADS;
 
-  static constexpr int TILE_ITEMS = BLOCK_THREADS * KEYS_PER_THREAD;
+  static constexpr int TILE_ITEMS = block_threads * KEYS_PER_THREAD;
 
   static constexpr int BYTES_PER_COUNTER    = sizeof(DigitCounter);
   static constexpr int OG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE;
@@ -175,8 +175,8 @@ struct AgentRadixSortUpsweep
    */
   union __align__(16) _TempStorage
   {
-    DigitCounter thread_counters[COUNTER_LANES][BLOCK_THREADS][PACKING_RATIO];
-    PackedCounter packed_thread_counters[COUNTER_LANES][BLOCK_THREADS];
+    DigitCounter thread_counters[COUNTER_LANES][block_threads][PACKING_RATIO];
+    PackedCounter packed_thread_counters[COUNTER_LANES][block_threads];
     OffsetT block_counters[WARP_THREADS][RADIX_DIGITS];
   };
 
@@ -278,7 +278,7 @@ struct AgentRadixSortUpsweep
       if (counter_lane < COUNTER_LANES)
       {
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int PACKED_COUNTER = 0; PACKED_COUNTER < BLOCK_THREADS; PACKED_COUNTER += WARP_THREADS)
+        for (int PACKED_COUNTER = 0; PACKED_COUNTER < block_threads; PACKED_COUNTER += WARP_THREADS)
         {
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
@@ -299,7 +299,7 @@ struct AgentRadixSortUpsweep
     // Tile of keys
     bit_ordered_type keys[KEYS_PER_THREAD];
 
-    LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + block_offset, keys);
+    LoadDirectStriped<block_threads>(threadIdx.x, d_keys_in + block_offset, keys);
 
     // Prevent hoisting
     __syncthreads();
@@ -316,7 +316,7 @@ struct AgentRadixSortUpsweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessPartialTile(OffsetT block_offset, const OffsetT& block_end)
   {
     // Process partial tile if necessary using single loads
-    for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += BLOCK_THREADS)
+    for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += block_threads)
     {
       // Load and bucket key
       const bit_ordered_type key = d_keys_in[block_offset + offset];
@@ -419,8 +419,8 @@ struct AgentRadixSortUpsweep
 
     // Whole blocks
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int BIN_BASE = RADIX_DIGITS % BLOCK_THREADS; (BIN_BASE + BLOCK_THREADS) <= RADIX_DIGITS;
-         BIN_BASE += BLOCK_THREADS)
+    for (int BIN_BASE = RADIX_DIGITS % block_threads; (BIN_BASE + block_threads) <= RADIX_DIGITS;
+         BIN_BASE += block_threads)
     {
       int bin_idx       = static_cast<int>(BIN_BASE + threadIdx.x);
       OffsetT bin_count = 0;
@@ -440,7 +440,7 @@ struct AgentRadixSortUpsweep
     }
 
     // Remainder
-    if ((RADIX_DIGITS % BLOCK_THREADS != 0) && (threadIdx.x < RADIX_DIGITS))
+    if ((RADIX_DIGITS % block_threads != 0) && (threadIdx.x < RADIX_DIGITS))
     {
       int bin_idx       = static_cast<int>(threadIdx.x);
       OffsetT bin_count = 0;
@@ -501,7 +501,7 @@ struct AgentRadixSortUpsweep
     {
       const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         bin_count[track] = 0;
 

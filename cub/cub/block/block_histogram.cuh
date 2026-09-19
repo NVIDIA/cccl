@@ -167,7 +167,7 @@ class BlockHistogram
 {
 private:
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Internal specialization.
   using InternalBlockHistogram =
@@ -279,12 +279,12 @@ public:
     int histo_offset = 0;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + BLOCK_THREADS <= Bins; histo_offset += BLOCK_THREADS)
+    for (; histo_offset + block_threads <= Bins; histo_offset += block_threads)
     {
       histogram[histo_offset + linear_tid] = 0;
     }
     // Finish up with guarded initialization if necessary
-    if ((Bins % BLOCK_THREADS != 0) && (histo_offset + linear_tid < Bins))
+    if ((Bins % block_threads != 0) && (histo_offset + linear_tid < Bins))
     {
       histogram[histo_offset + linear_tid] = 0;
     }

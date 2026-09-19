@@ -1092,7 +1092,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanByKeyPolicy
 {
   using policy_t = typename ActivePolicyT::ScanByKeyPolicyT;
   return {ScanByKeyAlgorithm::lookback,
-          {policy_t::BLOCK_THREADS,
+          {policy_t::block_threads,
            policy_t::ITEMS_PER_THREAD,
            policy_t::LOAD_ALGORITHM,
            policy_t::LOAD_MODIFIER,

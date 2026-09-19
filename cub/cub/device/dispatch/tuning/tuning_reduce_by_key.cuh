@@ -1784,7 +1784,7 @@ struct policy_selector_from_hub
     return ReduceByKeyPolicy{
       ReduceByKeyAlgorithm::lookback,
       {
-        ReduceByKeyPolicyT::BLOCK_THREADS,
+        ReduceByKeyPolicyT::block_threads,
         ReduceByKeyPolicyT::ITEMS_PER_THREAD,
         ReduceByKeyPolicyT::LOAD_ALGORITHM,
         ReduceByKeyPolicyT::LOAD_MODIFIER,

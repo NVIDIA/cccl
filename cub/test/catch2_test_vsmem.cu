@@ -50,7 +50,7 @@ template <int ThreadsPerBlock, int ItemsPerThread>
 struct agent_dummy_algorithm_policy_t
 {
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
+  static constexpr int block_threads    = ThreadsPerBlock;
 };
 
 //----------------------------------------------------------------------------
@@ -59,7 +59,7 @@ struct agent_dummy_algorithm_policy_t
 template <typename ActivePolicyT, typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
 struct agent_dummy_algorithm_t
 {
-  static constexpr auto threads_per_block = ActivePolicyT::BLOCK_THREADS;
+  static constexpr auto threads_per_block = ActivePolicyT::block_threads;
   static constexpr auto items_per_thread  = ActivePolicyT::ITEMS_PER_THREAD;
   static constexpr auto tile_size         = threads_per_block * items_per_thread;
 
@@ -116,7 +116,7 @@ void __global__ __launch_bounds__(
     agent_dummy_algorithm_t,
     InputIteratorT,
     OutputIteratorT,
-    OffsetT>::agent_policy_t::BLOCK_THREADS)
+    OffsetT>::agent_policy_t::block_threads)
   dummy_algorithm_kernel(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -273,7 +273,7 @@ struct dispatch_dummy_algorithm_t
     }
 
     // Compute launch configurations
-    constexpr auto threads_per_block = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
+    constexpr auto threads_per_block = vsmem_helper_t::agent_policy_t::block_threads;
     constexpr auto items_per_thread  = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
     constexpr auto tile_size         = threads_per_block * items_per_thread;
     const auto num_tiles             = cuda::ceil_div(num_items, tile_size);
@@ -412,7 +412,7 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", CUB_S
   constexpr std::size_t expected_smem_per_block = expected_to_use_fallback ? fallback_smem_size : default_smem_size;
   constexpr bool expected_needs_vsmem           = expected_smem_per_block > cub::detail::max_smem_per_block;
   constexpr std::size_t expected_threads_per_block =
-    expected_to_use_fallback ? fallback_policy_t::BLOCK_THREADS : default_policy_t::BLOCK_THREADS;
+    expected_to_use_fallback ? fallback_policy_t::block_threads : default_policy_t::block_threads;
   constexpr std::size_t expected_items_per_thread =
     expected_to_use_fallback ? fallback_policy_t::ITEMS_PER_THREAD : default_policy_t::ITEMS_PER_THREAD;
   constexpr std::size_t expected_tile_size       = expected_threads_per_block * expected_items_per_thread;

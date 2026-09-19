@@ -51,9 +51,9 @@ template <typename T, int BlockDimX, int BlockDimY, int BlockDimZ>
 struct BlockReduceRakingCommutativeOnly
 {
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
-  // The fall-back implementation to use when BLOCK_THREADS is not a multiple of the warp size or not all threads have
+  // The fall-back implementation to use when block_threads is not a multiple of the warp size or not all threads have
   // valid values
   using FallBack = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
@@ -62,13 +62,13 @@ struct BlockReduceRakingCommutativeOnly
   static constexpr int WARP_THREADS = warp_threads;
 
   /// Whether or not to use fall-back
-  static constexpr bool USE_FALLBACK = ((BLOCK_THREADS % WARP_THREADS != 0) || (BLOCK_THREADS <= WARP_THREADS));
+  static constexpr bool USE_FALLBACK = ((block_threads % WARP_THREADS != 0) || (block_threads <= WARP_THREADS));
 
   /// Number of raking threads
   static constexpr int RAKING_THREADS = WARP_THREADS;
 
   /// Number of threads actually sharing items with the raking threads
-  static constexpr int SHARING_THREADS = ::cuda::std::max(1, BLOCK_THREADS - RAKING_THREADS);
+  static constexpr int SHARING_THREADS = ::cuda::std::max(1, block_threads - RAKING_THREADS);
 
   /// Number of raking elements per warp synchronous raking thread
   static constexpr int SEGMENT_LENGTH = SHARING_THREADS / WARP_THREADS;
@@ -118,7 +118,7 @@ struct BlockReduceRakingCommutativeOnly
    *   Calling thread's input partial reductions
    *
    * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
+   *   Number of valid elements (may be less than block_threads)
    */
   template <bool FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
@@ -163,7 +163,7 @@ struct BlockReduceRakingCommutativeOnly
    *   Calling thread's input partial reductions
    *
    * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
+   *   Number of valid elements (may be less than block_threads)
    *
    * @param[in] reduction_op
    *   Binary reduction operator

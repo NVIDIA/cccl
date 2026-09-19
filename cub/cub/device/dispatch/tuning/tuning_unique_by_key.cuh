@@ -1636,7 +1636,7 @@ template <typename ActivePolicyT>
 _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> UniqueByKeyPolicy
 {
   using policy_t = typename ActivePolicyT::UniqueByKeyPolicyT;
-  return {policy_t::BLOCK_THREADS,
+  return {policy_t::block_threads,
           policy_t::ITEMS_PER_THREAD,
           policy_t::LOAD_ALGORITHM,
           policy_t::LOAD_MODIFIER,
