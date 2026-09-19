@@ -369,6 +369,10 @@ class GroupPlanningContext:
         if resolved is None:
             return None
         result, bound = resolved
+        if result.dtype_keyword is not None:
+            dtype = self.constant(bound.arguments[result.dtype_keyword])
+            if dtype is not None:
+                return normalize_dtype_param(dtype)
         if result.fixed_dtype is not None:
             return result.fixed_dtype
         if result.dtype_parameter is None:
