@@ -17,6 +17,7 @@ from .merge_sort import merge_sort_pairs as merge_sort_pairs
 from .neighbors import adjacent_difference, discontinuity  # noqa: F401
 from .radix import radix_rank, radix_sort_keys, radix_sort_pairs  # noqa: F401
 from .reduce import reduce, sum  # noqa: F401
+from .reduce_batched import reduce_batched as reduce_batched
 from .run_length import run_length_decode as run_length_decode
 from .run_length import run_length_decode_into as run_length_decode_into
 from .scan import (  # noqa: F401
@@ -61,6 +62,7 @@ for _member_name in (
     globals()[_member_name].__cuda_coop_backend_member__ = _member_name
 del _member_name
 
+
 __all__ = [
     "adjacent_difference",
     "discontinuity",
@@ -89,6 +91,7 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "reduce_batched",
     "run_length_decode",
     "run_length_decode_into",
     "scan",
