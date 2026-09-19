@@ -41,16 +41,17 @@ choices and common questions. For compiler integration details, see the
 Installation
 ------------
 
-Install the common API without a compiler backend:
+Install ``cuda-coop`` without adding Python package dependencies:
 
 .. code-block:: console
 
    python -m pip install cuda-coop
 
-The base distribution has no Python package dependencies. It contains the
-common API, type declarations, and a matching bundle of CUB, Thrust, libcu++,
-and CUDAX headers. You can import ``cuda.coop`` without a compiler or GPU;
-executing its primitives inside a kernel requires a supported backend.
+The wheel includes the common API, every shipped DSL integration (including
+``cuda.coop.numba_mlir``), type declarations, and a matching bundle of CUB,
+Thrust, libcu++, and CUDAX headers. The base install declares no Python
+package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
+using an integration requires its backend dependencies to be installed.
 
 For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
 
@@ -59,8 +60,10 @@ For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
    python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
    # Use numba-cuda-mlir-cu12 with CUDA 12.
 
-The extra installs the compiler and its dependencies alongside ``cuda-coop``.
-The current integration supports ``numba-cuda-mlir>=0.5.0,<0.6``.
+Both commands install the same ``cuda-coop`` wheel with the same DSL
+integrations. The extra only adds the dependency requirements declared in
+``pyproject.toml`` so pip installs the supported Numba-CUDA-MLIR stack for
+CUDA 13. The current integration requires ``numba-cuda-mlir>=0.5.0,<0.6``.
 Installing an extra does not register a backend in a running Python process;
 see :ref:`installation versus registration <coop-faq-installed-extra>`.
 
