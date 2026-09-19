@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -36,7 +37,7 @@ _CCCL_DIAG_POP
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/zip_transform_iterator.h>
-#  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/lexicographical_compare.h>
@@ -45,10 +46,12 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -171,7 +174,7 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
 
     // Determine the find pass' temporary storage requirement up front.
     size_t __find_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceFind::FindIf,
       "__pstl_cuda_lexicographical_compare: determining temporary storage for cub::DeviceFind::FindIf failed",
       static_cast<void*>(nullptr),
@@ -179,12 +182,11 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
       __state_first,
       static_cast<_OffsetType*>(nullptr),
       __lex_non_equal{},
-      __count);
+      __count,
+      __policy);
 
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
-
-    // Make the stream's device current for the duration of the device work.
-    ::cuda::__ensure_current_context __guard{__stream};
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
     // Single allocation: slot<0> holds the find index and then the boolean answer,
     // plus the find pass' scratch region.
@@ -192,7 +194,7 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
     auto __result_ptr = __storage.template __get_raw_ptr<0>();
 
     // Pass 1 (early-terminating): index of the first non-equivalent pair.
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceFind::FindIf,
       "__pstl_cuda_lexicographical_compare: kernel launch of cub::DeviceFind::FindIf failed",
       __storage.__get_temp_storage(),
@@ -201,7 +203,7 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
       __storage.template __get_ptr<0>(),
       __lex_non_equal{},
       __count,
-      __stream.get());
+      __policy);
 
     // Pass 2: resolve the answer in place on device, so only one value is copied
     // back to the host (no second reduce launch, no offset round-trip).
@@ -213,7 +215,7 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
       static_cast<void*>(::cuda::std::addressof(__count)),
       static_cast<void*>(::cuda::std::addressof(__shorter_is_less)),
       static_cast<void*>(::cuda::std::addressof(__result_ptr))};
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaLaunchKernel,
       "__pstl_cuda_lexicographical_compare: kernel launch of result resolution failed",
       __kernel,
@@ -224,7 +226,7 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
       __stream.get());
 
     _OffsetType __result;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaMemcpyAsync,
       "__pstl_cuda_lexicographical_compare: copy of result from device to host failed",
       ::cuda::std::addressof(__result),
@@ -239,17 +241,17 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
 
   _CCCL_TEMPLATE(class _Policy, class _InputIter1, class _InputIter2, class _Compare)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIter1> _CCCL_AND __has_forward_traversal<_InputIter2>)
-  [[nodiscard]] _CCCL_HOST_API bool operator()(
+  [[nodiscard]] _CCCL_HOST_API bool _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIter1 __first1,
     _InputIter1 __last1,
     _InputIter2 __first2,
     _InputIter2 __last2,
-    _Compare __comp) const
+    _Compare __comp)
   {
     if constexpr (__has_random_access_traversal<_InputIter1> && __has_random_access_traversal<_InputIter2>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(
           __policy,
@@ -259,17 +261,18 @@ struct __pstl_dispatch<__pstl_algorithm::__lexicographical_compare, __execution_
           ::cuda::std::move(__last2),
           ::cuda::std::move(__comp));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
-        if (__err.status() == ::cudaErrorMemoryAllocation)
+        if (__err.status() == cudaErrorMemoryAllocation)
         {
           _CCCL_THROW(::std::bad_alloc);
         }
         else
         {
-          throw;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {
