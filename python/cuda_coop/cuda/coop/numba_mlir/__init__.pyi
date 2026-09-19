@@ -16,6 +16,8 @@ from ._group_radix import radix_rank as radix_rank
 from ._group_radix import radix_sort_keys as radix_sort_keys
 from ._group_radix import radix_sort_pairs as radix_sort_pairs
 from ._group_reduce import reduce, sum
+from ._group_run_length import run_length_decode as run_length_decode
+from ._group_run_length import run_length_decode_into as run_length_decode_into
 from ._group_scan import (
     exclusive_scan,
     exclusive_sum,
@@ -68,6 +70,8 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
+    "run_length_decode_into",
     "scan",
     "shuffle",
     "store",
