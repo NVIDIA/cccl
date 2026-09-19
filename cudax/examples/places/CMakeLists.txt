@@ -4,6 +4,7 @@ set(
   sharded_reduce.cu
   sharded_stream.cu
   sharded_relational.cu
+  sharded_hash_per_domain.cu
 )
 
 cccl_get_cudatoolkit()
