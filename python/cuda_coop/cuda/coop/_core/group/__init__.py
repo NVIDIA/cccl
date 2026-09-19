@@ -50,6 +50,7 @@ from .radix import (
 from .reduce import GroupReduceSemantics
 from .scan import GroupScanMode, GroupScanSemantics
 from .shuffle import GroupShuffleSemantics
+from .topk import GroupTopKSemantics
 
 __all__ = [
     "GroupMergeSortSemantics",
@@ -72,6 +73,7 @@ __all__ = [
     "GroupScanMode",
     "GroupScanSemantics",
     "GroupShuffleSemantics",
+    "GroupTopKSemantics",
     "GroupTopologyContract",
     "ImplementationProvenance",
     "LogicalResultContract",
