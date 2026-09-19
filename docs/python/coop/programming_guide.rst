@@ -1102,6 +1102,9 @@ such as an original array index. Both return new payloads and preserve their
 inputs. The payloads use :term:`blocked` order. Sorting each block's tile
 does not sort an array spanning several blocks.
 
+Follow keys and their associated values through the
+:doc:`Merge Sort visualization <visualizations/merge-sort>`.
+
 This example sorts 128 keys and moves each key’s original position
 with that key:
 
