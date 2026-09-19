@@ -37,6 +37,13 @@ endif()
 
 list(APPEND cxx_compile_definitions CCCL_ENABLE_ASSERTIONS)
 
+# Some groups related experimental code is located directly in libcu++ and is guarded by
+# _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX macro, otherwise it would lead to a lot of code duplication. We define this
+# macro for cudax code globally, to get access to get access to the code.
+#
+# Can be removed once groups are no longer experimental.
+list(APPEND cxx_compile_definitions _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
+
 cccl_build_compiler_interface(
   cudax.compiler_flags
   "${cuda_compile_options}"

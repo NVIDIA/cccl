@@ -70,7 +70,7 @@ struct __swap_ranges_iter_swap_fn
 struct __swap_ranges_transform_fn
 {
   template <class _Tp, class _Up>
-  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()(_Tp __lhs, _Up __rhs) const
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp __lhs, _Up __rhs)
   {
     using ::cuda::std::swap;
     swap(__lhs, __rhs);

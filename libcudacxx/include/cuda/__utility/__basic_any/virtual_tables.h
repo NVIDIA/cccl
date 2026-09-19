@@ -36,7 +36,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Interface>
-using __vtable_for _CCCL_NODEBUG_ALIAS = typename __overrides_for_t<_Interface>::__vtable;
+using __vtable_for _CCCL_NODEBUG = typename __overrides_for_t<_Interface>::__vtable;
 
 //!
 //! __basic_vtable
@@ -46,11 +46,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __basic_vtable
     : __rtti_base
     , __virtual_fn<_Mbrs>...
 {
-  using interface _CCCL_NODEBUG_ALIAS = _Interface;
-  static constexpr size_t __cbases    = ::cuda::std::__type_list_size<__unique_interfaces<interface>>::value;
+  using interface _CCCL_NODEBUG    = _Interface;
+  static constexpr size_t __cbases = ::cuda::std::__type_list_size<__unique_interfaces<interface>>::value;
 
   template <class _VPtr, class _Tp, class... _OtherMembers, class... _Interfaces>
-  _CCCL_API constexpr __basic_vtable(
+  _CCCL_HOST_DEVICE_API constexpr __basic_vtable(
     _VPtr __vptr, __overrides_list<_Tp, _OtherMembers...>, __tag<_Interfaces...>) noexcept
       : __rtti_base{__vtable_kind::__normal, __cbases, _CCCL_TYPEID(__basic_vtable)}
       , __virtual_fn<_Mbrs>{__override_tag<_Tp, _OtherMembers::value>{}}...
@@ -58,21 +58,22 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __basic_vtable
   {}
 
   template <class _Tp, class _VPtr>
-  _CCCL_API constexpr __basic_vtable(__tag<_Tp>, _VPtr __vptr) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __basic_vtable(__tag<_Tp>, _VPtr __vptr) noexcept
       : __basic_vtable{__vptr,
                        __overrides_for_t<interface, _Tp>(),
                        __unique_interfaces<interface, ::cuda::std::__type_quote<__tag>>()}
   {}
 
-  [[nodiscard]] _CCCL_API auto __query_interface(interface) const noexcept -> __vptr_for<interface>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __query_interface(interface) const noexcept -> __vptr_for<interface>
   {
     return this;
   }
 
   template <class... _Others>
-  [[nodiscard]] _CCCL_API auto __query_interface(__iset_<_Others...>) const noexcept -> __vptr_for<__iset_<_Others...>>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __query_interface(__iset_<_Others...>) const noexcept
+    -> __vptr_for<__iset_<_Others...>>
   {
-    using __remainder _CCCL_NODEBUG_ALIAS =
+    using __remainder _CCCL_NODEBUG =
       ::cuda::std::__type_list_size<::cuda::std::__type_find<__unique_interfaces<interface>, __iset_<_Others...>>>;
     constexpr size_t __index = __cbases - __remainder::value;
     if constexpr (__index < __cbases)
@@ -90,7 +91,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __basic_vtable
   }
 
   template <class _Other>
-  [[nodiscard]] _CCCL_API auto __query_interface(_Other) const noexcept -> __vptr_for<_Other>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __query_interface(_Other) const noexcept -> __vptr_for<_Other>
   {
     constexpr size_t __index = __index_of_base<_Other, interface>::value;
     static_assert(__index < __cbases);
@@ -112,7 +113,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __vtable_tuple
   static_assert((::cuda::std::is_class_v<_Interfaces> && ...), "expected class types");
 
   template <class _Tp, class _Super>
-  _CCCL_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
       : __rtti_ex<sizeof...(_Interfaces)>{__type, __tag<_Interfaces...>(), this}
 #if _CCCL_COMPILER(MSVC)
       // workaround for MSVC bug
@@ -126,7 +127,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __vtable_tuple
 
   _CCCL_TEMPLATE(class _Interface)
   _CCCL_REQUIRES(::cuda::std::__is_included_in_v<_Interface, _Interfaces...>)
-  [[nodiscard]] _CCCL_API constexpr auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __query_interface(_Interface) const noexcept
+    -> __vptr_for<_Interface>
   {
     return static_cast<__vptr_for<_Interface>>(this);
   }
@@ -135,7 +137,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __vtable_tuple
 // The vtable type for type `_Interface` is a `__vtable_tuple` of `_Interface`
 // and all of its base interfaces.
 template <class _Interface>
-using __vtable _CCCL_NODEBUG_ALIAS = __unique_interfaces<_Interface, ::cuda::std::__type_quote<__vtable_tuple>>;
+using __vtable _CCCL_NODEBUG = __unique_interfaces<_Interface, ::cuda::std::__type_quote<__vtable_tuple>>;
 
 // __vtable_for_v<_Interface, _Tp> is an instance of `__vtable<_Interface>` that
 // contains the overrides for `_Tp`.
@@ -143,7 +145,7 @@ template <class _Interface, class _Tp>
 _CCCL_GLOBAL_CONSTANT __vtable<_Interface> __vtable_for_v{__tag<_Tp, _Interface>()};
 
 template <class _Interface, class _Tp>
-_CCCL_API constexpr __vtable<_Interface> const* __get_vtable_ptr_for() noexcept
+_CCCL_HOST_DEVICE_API constexpr __vtable<_Interface> const* __get_vtable_ptr_for() noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return &__vtable_for_v<_Interface, _Tp>;), (::cuda::std::terminate();))
 }

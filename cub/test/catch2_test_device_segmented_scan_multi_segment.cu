@@ -4,7 +4,6 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
 
 #include <thrust/generate.h>
 #include <thrust/tabulate.h>
@@ -18,7 +17,10 @@
 #include <vector>
 
 #include "catch2_test_device_scan.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "catch2_test_launch_helper.h"
+#include "cub_test_macros.h"
+
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 namespace impl
 {
@@ -84,14 +86,14 @@ using itp_list =
                  cuda::std::integral_constant<int, 3>,
                  cuda::std::integral_constant<int, 8>>;
 
-template <int BlockThreads, int ItemsPerThread, int MaxSegmentsPerBlock>
+template <int ThreadsPerBlock, int ItemsPerThread, int MaxSegmentsPerBlock>
 struct policy_selector_t
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability) const
-    -> cub::detail::segmented_scan::segmented_scan_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::SegmentedScanPolicy
   {
-    return cub::detail::segmented_scan::segmented_scan_policy{cub::detail::segmented_scan::block_segmented_scan_policy{
-      BlockThreads,
+    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
+      ThreadsPerBlock,
       ItemsPerThread,
       cub::BLOCK_LOAD_WARP_TRANSPOSE,
       cub::LOAD_DEFAULT,
@@ -100,6 +102,34 @@ struct policy_selector_t
       MaxSegmentsPerBlock}};
   }
 };
+
+DECLARE_TMPL_LAUNCH_WRAPPER(
+  cub::detail::segmented_scan::dispatch,
+  dispatch_segmented_scan,
+  ESCAPE_LIST(
+    cub::ForceInclusive EnforceInclusive,
+    typename InputIteratorT,
+    typename OutputIteratorT,
+    typename BeginOffsetIteratorInputT,
+    typename EndOffsetIteratorInputT,
+    typename BeginOffsetIteratorOutputT,
+    typename ScanOpT,
+    typename InitValueT,
+    typename AccumT,
+    typename OffsetT,
+    typename PolicySelector),
+  ESCAPE_LIST(
+    EnforceInclusive,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorInputT,
+    EndOffsetIteratorInputT,
+    BeginOffsetIteratorOutputT,
+    ScanOpT,
+    InitValueT,
+    AccumT,
+    OffsetT,
+    PolicySelector));
 
 template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
 void run_dispatch_scan(
@@ -111,8 +141,7 @@ void run_dispatch_scan(
   c2h::device_vector<OutputT>& output,
   ScanOpT scan_op,
   InitValueT init_value,
-  int segments_per_worker,
-  cudaStream_t stream = nullptr)
+  int segments_per_worker)
 {
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
@@ -121,10 +150,7 @@ void run_dispatch_scan(
   const auto d_offsets     = thrust::raw_pointer_cast(offsets.data());
   const auto d_out_offsets = thrust::raw_pointer_cast(out_offsets.data());
 
-  size_t temp_storage_bytes = 0;
   dispatch_fn(
-    nullptr,
-    temp_storage_bytes,
     d_input,
     d_output,
     n_segments,
@@ -134,26 +160,12 @@ void run_dispatch_scan(
     scan_op,
     init_value,
     segments_per_worker,
-    worker_choice,
-    stream);
-
-  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  cudaError_t code = dispatch_fn(
-    temp_storage.data().get(),
-    temp_storage_bytes,
-    d_input,
-    d_output,
-    n_segments,
-    d_offsets,
-    d_offsets + 1,
-    d_out_offsets,
-    scan_op,
-    init_value,
-    segments_per_worker,
-    worker_choice,
-    stream);
-
-  REQUIRE(code == cudaSuccess);
+    worker_choice
+#if TEST_LAUNCH != 2
+    ,
+    nullptr
+#endif // TEST_LAUNCH != 2
+  );
 }
 
 template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
@@ -165,11 +177,10 @@ void run_dispatch_scan(
   c2h::device_vector<OutputT>& output,
   ScanOpT scan_op,
   InitValueT init_value,
-  int segments_per_worker,
-  cudaStream_t stream = nullptr)
+  int segments_per_worker)
 {
   run_dispatch_scan(
-    dispatch_fn, worker_choice, offsets, offsets, input, output, scan_op, init_value, segments_per_worker, stream);
+    dispatch_fn, worker_choice, offsets, offsets, input, output, scan_op, init_value, segments_per_worker);
 }
 
 template <typename ValueT>
@@ -194,8 +205,8 @@ struct numeric_op
   {
     using Up = typename cuda::std::make_unsigned<value_t>::type;
     const Up m{63};
-    Up r_a = static_cast<Up>(a) % m;
-    Up r_b = static_cast<Up>(b) % m;
+    const Up r_a = static_cast<Up>(a) % m;
+    const Up r_b = static_cast<Up>(b) % m;
     return (r_a + r_b) % m;
   }
 };
@@ -214,8 +225,9 @@ struct constant_value_op
 };
 } // namespace
 
-C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative op",
-         "[multi_segment][segmented][scan]")
+CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative op",
+         "[multi_segment][segmented][scan]",
+         CUB_SMALL)
 {
   using op_t     = impl::bicyclic_monoid_op<unsigned int>;
   using pair_t   = typename op_t::pair_t;
@@ -228,16 +240,16 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
 
-  unsigned num_items = block_size * items_per_thread * 101 + 1;
-  c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
-  size_t num_segments = offsets.size() - 1;
+  const unsigned num_items = block_size * items_per_thread * 101 + 1;
+  const c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
+  const size_t num_segments = offsets.size() - 1;
 
   c2h::device_vector<pair_t> input(num_items, thrust::default_init);
   thrust::tabulate(input.begin(), input.end(), impl::populate_bicyclic_monoid_input<unsigned int>{});
   c2h::device_vector<pair_t> output(input.size(), thrust::default_init);
 
-  auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
-    return cub::detail::segmented_scan::dispatch<
+  auto inclusive_scan_dispatch = [](auto&&... args) {
+    dispatch_segmented_scan<
       cub::ForceInclusive::No,
       const pair_t*,
       pair_t*,
@@ -255,14 +267,14 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   c2h::host_vector<pair_t> h_expected(input.size(), thrust::default_init);
   c2h::host_vector<offset_t> h_offsets(offsets);
 
-  op_t op{};
+  const op_t op{};
   pair_t h_init{0, 0};
 
   for (offset_t segment_id = 0; segment_id < num_segments; ++segment_id)
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
@@ -270,7 +282,7 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   const int one_segment_per_worker = 1;
 
-  cub::NullType d_no_init{};
+  const cub::NullType d_no_init{};
 
   SECTION("worker-block, one segment per worker")
   {
@@ -284,7 +296,7 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
       d_no_init,
       one_segment_per_worker);
 
-    c2h::host_vector<pair_t> h_output(output);
+    const c2h::host_vector<pair_t> h_output(output);
 
     REQUIRE(h_expected == h_output);
   }
@@ -303,13 +315,14 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
       d_no_init,
       two_segments_per_worker);
 
-    c2h::host_vector<pair_t> h_output(output);
+    const c2h::host_vector<pair_t> h_output(output);
 
     REQUIRE(h_expected == h_output);
   }
 }
 
-C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][segmented][scan]", integral_types)
+CUB_TEST(
+  "segmented exclusive scan works for integer types", "[multi_segment][segmented][scan]", CUB_SMALL, integral_types)
 {
   using value_t  = c2h::get<0, TestType>;
   using op_t     = numeric_op<value_t>;
@@ -330,7 +343,7 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
     h_offsets[i] = i * items_per_segment;
   }
 
-  c2h::device_vector<offset_t> offsets = h_offsets;
+  const c2h::device_vector<offset_t> offsets = h_offsets;
   c2h::device_vector<value_t> input(num_items);
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size(), thrust::no_init);
@@ -343,8 +356,8 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
 
   using d_init_t               = cub::detail::InputValue<value_t>;
-  auto exclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
-    return cub::detail::segmented_scan::dispatch<
+  auto exclusive_scan_dispatch = [](auto&&... args) {
+    dispatch_segmented_scan<
       cub::ForceInclusive::No,
       const value_t*,
       value_t*,
@@ -361,14 +374,14 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   c2h::host_vector<value_t> h_input(input);
   c2h::host_vector<value_t> h_expected(input.size(), thrust::default_init);
 
-  op_t op{};
-  value_t h_init{3};
+  const op_t op{};
+  const value_t h_init{3};
 
   for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
   {
     compute_exclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       h_init,
       op);
@@ -376,7 +389,7 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
 
   const int segments_per_worker = 2;
 
-  d_init_t d_init_v{h_init};
+  const d_init_t d_init_v{h_init};
 
   SECTION("worker block")
   {
@@ -390,13 +403,14 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
       d_init_v,
       segments_per_worker);
 
-    c2h::host_vector<value_t> h_output(output);
+    const c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
   }
 }
 
-C2H_TEST("Segmented inclusive scan works correctly for integer types",
+CUB_TEST("Segmented inclusive scan works correctly for integer types",
          "[multi_segment][segmented][scan]",
+         CUB_SMALL,
          integral_types)
 {
   using value_t  = c2h::get<0, TestType>;
@@ -411,15 +425,15 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
 
   const unsigned num_items = block_size * items_per_thread * 132;
-  c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
-  size_t num_segments = offsets.size() - 1;
+  const c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
+  const size_t num_segments = offsets.size() - 1;
 
   c2h::device_vector<value_t> input(num_items, thrust::default_init);
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size(), thrust::default_init);
 
-  auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
-    return cub::detail::segmented_scan::dispatch<
+  auto inclusive_scan_dispatch = [](auto&&... args) {
+    dispatch_segmented_scan<
       cub::ForceInclusive::No,
       const value_t*,
       value_t*,
@@ -437,14 +451,14 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   c2h::host_vector<value_t> h_expected(input.size(), thrust::default_init);
   c2h::host_vector<offset_t> h_offsets(offsets);
 
-  op_t op{};
-  value_t h_init{0};
+  const op_t op{};
+  const value_t h_init{0};
 
   for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
@@ -452,7 +466,7 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
 
   const int segments_per_worker = 4;
 
-  cub::NullType d_no_init{};
+  const cub::NullType d_no_init{};
 
   SECTION("worker-block")
   {
@@ -466,13 +480,14 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
       d_no_init,
       segments_per_worker);
 
-    c2h::host_vector<value_t> h_output(output);
+    const c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
   }
 }
 
-C2H_TEST("Segmented inclusive scan with init works for integer types",
+CUB_TEST("Segmented inclusive scan with init works for integer types",
          "[multi_segment][segmented][scan]",
+         CUB_SMALL,
          integral_types)
 {
   using value_t  = c2h::get<0, TestType>;
@@ -493,7 +508,7 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
 
   CAPTURE(num_segments, num_items, items_per_segment, cuda::std::is_signed_v<value_t>);
 
-  c2h::device_vector<offset_t> offsets = h_offsets;
+  const c2h::device_vector<offset_t> offsets = h_offsets;
   c2h::device_vector<value_t> input(num_items, thrust::default_init);
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size(), thrust::default_init);
@@ -506,8 +521,8 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
 
   using d_init_t                    = cub::detail::InputValue<value_t>;
-  auto inclusive_init_scan_dispatch = [](auto&&... args) -> cudaError_t {
-    return cub::detail::segmented_scan::dispatch<
+  auto inclusive_init_scan_dispatch = [](auto&&... args) {
+    dispatch_segmented_scan<
       cub::ForceInclusive::Yes,
       const value_t*,
       value_t*,
@@ -524,20 +539,20 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   c2h::host_vector<value_t> h_input(input);
   c2h::host_vector<value_t> h_expected(input.size(), thrust::default_init);
 
-  op_t op{};
-  value_t h_init{3};
+  const op_t op{};
+  const value_t h_init{3};
 
   for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
   }
 
-  d_init_t d_init_v{h_init};
+  const d_init_t d_init_v{h_init};
   const int segments_per_worker = 2;
 
   // pre-condition to ensure that incomplete tail tile case is tested
@@ -555,7 +570,7 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
       d_init_v,
       segments_per_worker);
 
-    c2h::host_vector<value_t> h_output(output);
+    const c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
   }
 }
@@ -570,14 +585,14 @@ make_in_out_offsets(const std::vector<OffsetT>& sizes, OffsetT gap)
 {
   std::vector<OffsetT> offsets;
 
-  std::size_t segment_count = sizes.size();
+  const std::size_t segment_count = sizes.size();
 
   static constexpr OffsetT zero{0};
 
   offsets.resize(segment_count + 1);
   offsets[0] = zero;
 
-  cuda::std::plus<> plus_t{};
+  const cuda::std::plus<> plus_t{};
 
   compute_inclusive_scan_reference(sizes.begin(), sizes.end(), offsets.begin() + 1, plus_t, zero);
 
@@ -598,7 +613,7 @@ make_in_out_offsets(const std::vector<OffsetT>& sizes, OffsetT gap)
   return {offsets, offsets_with_gaps};
 }
 
-C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segmented][scan]", itp_list)
+CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segmented][scan]", CUB_SMALL, itp_list)
 {
   using op_t     = cuda::std::plus<>;
   using value_t  = unsigned int;
@@ -617,8 +632,8 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   const auto [in_offsets_v, out_offsets_v] = make_in_out_offsets(segment_sizes, gap);
 
-  c2h::device_vector<offset_t> offsets{in_offsets_v.begin(), in_offsets_v.end()};
-  c2h::device_vector<offset_t> out_offsets{out_offsets_v.begin(), out_offsets_v.end()};
+  const c2h::device_vector<offset_t> offsets{in_offsets_v.begin(), in_offsets_v.end()};
+  const c2h::device_vector<offset_t> out_offsets{out_offsets_v.begin(), out_offsets_v.end()};
 
   const auto num_segments = static_cast<cuda::std::size_t>(segment_sizes.size());
   const auto num_items    = static_cast<cuda::std::size_t>(in_offsets_v.back());
@@ -632,9 +647,9 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   constexpr int segments_per_worker = 2;
 
-  op_t op{};
-  value_t h_init_v{0};
-  cub::NullType d_no_init{};
+  const op_t op{};
+  const value_t h_init_v{0};
+  const cub::NullType d_no_init{};
 
   c2h::host_vector<value_t> h_input(input);
   c2h::host_vector<offset_t> h_offsets(offsets);
@@ -656,8 +671,8 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
       h_init_v);
   }
 
-  auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
-    return cub::detail::segmented_scan::dispatch<
+  auto inclusive_scan_dispatch = [](auto&&... args) {
+    dispatch_segmented_scan<
       cub::ForceInclusive::No,
       const value_t*,
       value_t*,
@@ -690,7 +705,7 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   }
 }
 
-C2H_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_segment][segmented][scan]")
+CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_segment][segmented][scan]", CUB_SMALL)
 {
   using op_t     = cuda::std::plus<>;
   using value_t  = unsigned int;
@@ -723,8 +738,8 @@ C2H_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
     REQUIRE(offset >= offset_t{0});
   }
 
-  c2h::device_vector<offset_t> offsets{in_offsets_v.begin(), in_offsets_v.end()};
-  c2h::device_vector<offset_t> out_offsets{out_offsets_v.begin(), out_offsets_v.end()};
+  const c2h::device_vector<offset_t> offsets{in_offsets_v.begin(), in_offsets_v.end()};
+  const c2h::device_vector<offset_t> out_offsets{out_offsets_v.begin(), out_offsets_v.end()};
 
   const auto num_segments = segment_sizes.size();
   const auto num_items    = static_cast<cuda::std::size_t>(in_offsets_v.back());
@@ -738,9 +753,9 @@ C2H_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
 
   constexpr int segments_per_worker = 2;
 
-  op_t op{};
-  value_t h_init_v{0};
-  cub::NullType d_no_init{};
+  const op_t op{};
+  const value_t h_init_v{0};
+  const cub::NullType d_no_init{};
 
   c2h::host_vector<value_t> h_input(input);
   c2h::host_vector<offset_t> h_offsets(offsets);
@@ -762,8 +777,8 @@ C2H_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
       h_init_v);
   }
 
-  auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
-    return cub::detail::segmented_scan::dispatch<
+  auto inclusive_scan_dispatch = [](auto&&... args) {
+    dispatch_segmented_scan<
       cub::ForceInclusive::No,
       const value_t*,
       value_t*,
@@ -810,8 +825,7 @@ void run_dispatch_scan_iterator(
   OutputIterT output_it,
   ScanOpT scan_op,
   InitValueT init_value,
-  int segments_per_worker,
-  cudaStream_t stream = nullptr)
+  int segments_per_worker)
 {
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
@@ -819,10 +833,7 @@ void run_dispatch_scan_iterator(
   auto d_output        = output_it;
   const auto d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  size_t temp_storage_bytes = 0;
   dispatch_fn(
-    nullptr,
-    temp_storage_bytes,
     d_input,
     d_output,
     n_segments,
@@ -832,29 +843,15 @@ void run_dispatch_scan_iterator(
     scan_op,
     init_value,
     segments_per_worker,
-    worker_choice,
-    stream);
-
-  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  cudaError_t code = dispatch_fn(
-    temp_storage.data().get(),
-    temp_storage_bytes,
-    d_input,
-    d_output,
-    n_segments,
-    d_offsets,
-    d_offsets + 1,
-    d_offsets,
-    scan_op,
-    init_value,
-    segments_per_worker,
-    worker_choice,
-    stream);
-
-  REQUIRE(code == cudaSuccess);
+    worker_choice
+#if TEST_LAUNCH != 2
+    ,
+    nullptr
+#endif // TEST_LAUNCH != 2
+  );
 }
 
-C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[multi_segment][segmented][scan]")
+CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[multi_segment][segmented][scan]", CUB_SMALL)
 {
   using op_t     = cuda::std::plus<>;
   using value_t  = unsigned int;
@@ -880,7 +877,7 @@ C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
 
   CAPTURE(num_segments, num_items, items_per_segment, cuda::std::is_signed_v<value_t>);
 
-  c2h::device_vector<offset_t> offsets = h_offsets;
+  const c2h::device_vector<offset_t> offsets = h_offsets;
 
   const auto input_it = cuda::make_transform_iterator(cuda::counting_iterator<value_t>(0), init_op<value_t>{});
 
@@ -891,8 +888,8 @@ C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   using output_it_t = decltype(output_it);
 
   using d_init_t                    = cub::detail::InputValue<value_t>;
-  auto inclusive_init_scan_dispatch = [](auto&&... args) -> cudaError_t {
-    return cub::detail::segmented_scan::dispatch<
+  auto inclusive_init_scan_dispatch = [](auto&&... args) {
+    dispatch_segmented_scan<
       cub::ForceInclusive::Yes,
       input_it_t,
       output_it_t,
@@ -909,25 +906,27 @@ C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   c2h::host_vector<value_t> h_input(input_it, input_it + num_items);
   c2h::host_vector<value_t> h_expected(num_items, thrust::default_init);
 
-  op_t op{};
-  value_t h_init{3};
+  const op_t op{};
+  const value_t h_init{3};
 
   for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
   {
     compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
+      h_input.begin() + h_offsets[segment_id + 1], // NOLINT(bugprone-misplaced-widening-cast)
       h_expected.begin() + h_offsets[segment_id],
       op,
       h_init);
 
-    for (offset_t offset = h_offsets[segment_id]; offset < h_offsets[segment_id + 1]; ++offset)
+    for (offset_t offset = h_offsets[segment_id];
+         offset < h_offsets[segment_id + 1]; // NOLINT(bugprone-misplaced-widening-cast)
+         ++offset)
     {
       h_expected[offset] = init_op<value_t>{}(h_expected[offset]);
     }
   }
 
-  d_init_t d_init_v{h_init};
+  const d_init_t d_init_v{h_init};
   const int segments_per_worker = 2;
 
   SECTION("worker block")
@@ -942,7 +941,7 @@ C2H_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
       d_init_v,
       segments_per_worker);
 
-    c2h::host_vector<value_t> h_output(output);
+    const c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
   }
 }

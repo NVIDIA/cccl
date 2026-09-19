@@ -35,17 +35,18 @@
 #  include <cuda/std/__mdspan/extents.h>
 #  include <cuda/std/__type_traits/is_integer.h>
 
-#  if defined(_CUDAX_GROUP)
+#  if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
 #    include <cuda/experimental/__group/concepts.cuh>
 #    include <cuda/experimental/__group/fwd.cuh>
 #    include <cuda/experimental/__group/queries.cuh>
-#  endif // _CUDAX_GROUP
+#  endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 // Used to either pass-through the hierarchy argument or unpack it from launch configuration
+_CCCL_EXEC_CHECK_DISABLE
 _CCCL_TEMPLATE(class _Type)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Type>)
 [[nodiscard]] _CCCL_API constexpr auto& __unpack_hierarchy_if_needed(const _Type& __instance) noexcept
@@ -66,9 +67,9 @@ struct hierarchy_level_base
   using level_type = _Level;
 
   template <class _InLevel>
-  using __default_md_query_type = unsigned;
+  using __default_md_query_type = ::cuda::std::uint32_t;
   template <class _InLevel>
-  using __default_1d_query_type = ::cuda::std::size_t;
+  using __default_1d_query_type = typename _InLevel::__product_type;
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
@@ -102,8 +103,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
-  count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
     return _Level::template count_as<__default_1d_query_type<_InLevel>>(
       __level, ::cuda::__unpack_hierarchy_if_needed(__hier));
@@ -120,8 +120,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t
-  rank(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto rank(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
     return _Level::template rank_as<__default_1d_query_type<_InLevel>>(
       __level, ::cuda::__unpack_hierarchy_if_needed(__hier));
@@ -170,60 +169,60 @@ struct hierarchy_level_base
   }
 #  endif // _CCCL_CUDA_COMPILATION()
 
-#  if defined(_CUDAX_GROUP)
+#  if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
 #    if _CCCL_CUDA_COMPILATION()
 
   _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::is_group<_Group>)
+  _CCCL_REQUIRES(::cuda::experimental::group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t static_count(const _Group&) noexcept
   {
     return ::cuda::experimental::__static_count_query_group<_Level, _Group>();
   }
 
   _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::is_group<_Group>)
+  _CCCL_REQUIRES(::cuda::experimental::group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr auto count(const _Group& __group) noexcept
   {
     return count_as<__default_1d_query_type<typename _Group::unit_type>>(__group);
   }
 
   _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::is_group<_Group>)
+  _CCCL_REQUIRES(::cuda::experimental::group<_Group>)
   [[nodiscard]] _CCCL_API static auto rank(const _Group& __group) noexcept
   {
     return rank_as<__default_1d_query_type<typename _Group::unit_type>>(__group);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Group)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::is_group<_Group>)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr _Tp count_as(const _Group& __group) noexcept
   {
     return ::cuda::experimental::__count_query_group<_Tp, _Level>(__group);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Group)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::is_group<_Group>)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::group<_Group>)
   [[nodiscard]] _CCCL_API static _Tp rank_as(const _Group& __group) noexcept
   {
     return ::cuda::experimental::__rank_query_group<_Tp, _Level>(__group);
   }
 
   _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::is_group<_Group>)
+  _CCCL_REQUIRES(::cuda::experimental::group<_Group>)
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_root_rank(const _Group& __group) noexcept
   {
     return _Level::rank(__group) == 0;
   }
 
   _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::is_group<_Group>)
+  _CCCL_REQUIRES(::cuda::experimental::group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr bool is_part_of(const _Group& __group) noexcept
   {
     // todo: static_assert that the _Level <= _Group::unit_type
     return ::cuda::experimental::__is_part_of_group<_Level>(__group);
   }
 #    endif // _CCCL_CUDA_COMPILATION()
-#  endif // _CUDAX_GROUP
+#  endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
 private:
   template <class>

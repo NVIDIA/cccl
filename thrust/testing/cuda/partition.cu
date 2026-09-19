@@ -60,7 +60,7 @@ void TestPartitionDevice(ExecutionPolicy exec)
 
   partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), is_even<T>(), result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::device_vector<T> ref(5);
   ref[0] = 2;
@@ -69,8 +69,8 @@ void TestPartitionDevice(ExecutionPolicy exec)
   ref[3] = 1;
   ref[4] = 1;
 
-  ASSERT_EQUAL(2, (iterator) result[0] - data.begin());
-  ASSERT_EQUAL(ref, data);
+  REQUIRE(2 == (iterator) result[0] - data.begin());
+  REQUIRE(ref == data);
 }
 
 void TestPartitionDeviceSeq()
@@ -122,7 +122,7 @@ void TestPartitionStencilDevice(ExecutionPolicy exec)
 
   partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), is_even<T>(), result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::device_vector<T> ref(5);
   ref[0] = 1;
@@ -131,8 +131,8 @@ void TestPartitionStencilDevice(ExecutionPolicy exec)
   ref[3] = 0;
   ref[4] = 0;
 
-  ASSERT_EQUAL(2, (iterator) result[0] - data.begin());
-  ASSERT_EQUAL(ref, data);
+  REQUIRE(2 == (iterator) result[0] - data.begin());
+  REQUIRE(ref == data);
 }
 
 void TestPartitionStencilDeviceSeq()
@@ -193,7 +193,7 @@ void TestPartitionCopyDevice(ExecutionPolicy exec)
   partition_copy_kernel<<<1, 1>>>(
     exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>(), iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::device_vector<T> true_ref(2);
   true_ref[0] = 2;
@@ -206,10 +206,10 @@ void TestPartitionCopyDevice(ExecutionPolicy exec)
 
   pair_type ends = iterators[0];
 
-  ASSERT_EQUAL(2, ends.first - true_results.begin());
-  ASSERT_EQUAL(3, ends.second - false_results.begin());
-  ASSERT_EQUAL(true_ref, true_results);
-  ASSERT_EQUAL(false_ref, false_results);
+  REQUIRE(2 == ends.first - true_results.begin());
+  REQUIRE(3 == ends.second - false_results.begin());
+  REQUIRE(true_ref == true_results);
+  REQUIRE(false_ref == false_results);
 }
 
 void TestPartitionCopyDeviceSeq()
@@ -286,7 +286,7 @@ void TestPartitionCopyStencilDevice(ExecutionPolicy exec)
     is_even<T>(),
     iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   pair_type ends = iterators[0];
 
@@ -299,10 +299,10 @@ void TestPartitionCopyStencilDevice(ExecutionPolicy exec)
   false_ref[1] = 0;
   false_ref[2] = 0;
 
-  ASSERT_EQUAL(2, ends.first - true_results.begin());
-  ASSERT_EQUAL(3, ends.second - false_results.begin());
-  ASSERT_EQUAL(true_ref, true_results);
-  ASSERT_EQUAL(false_ref, false_results);
+  REQUIRE(2 == ends.first - true_results.begin());
+  REQUIRE(3 == ends.second - false_results.begin());
+  REQUIRE(true_ref == true_results);
+  REQUIRE(false_ref == false_results);
 }
 
 void TestPartitionCopyStencilDeviceSeq()
@@ -347,7 +347,7 @@ void TestStablePartitionDevice(ExecutionPolicy exec)
 
   stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), is_even<T>(), result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::device_vector<T> ref(5);
   ref[0] = 2;
@@ -356,8 +356,8 @@ void TestStablePartitionDevice(ExecutionPolicy exec)
   ref[3] = 1;
   ref[4] = 1;
 
-  ASSERT_EQUAL(2, (iterator) result[0] - data.begin());
-  ASSERT_EQUAL(ref, data);
+  REQUIRE(2 == (iterator) result[0] - data.begin());
+  REQUIRE(ref == data);
 }
 
 void TestStablePartitionDeviceSeq()
@@ -409,7 +409,7 @@ void TestStablePartitionStencilDevice(ExecutionPolicy exec)
 
   stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), is_even<T>(), result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::device_vector<T> ref(5);
   ref[0] = 1;
@@ -418,8 +418,8 @@ void TestStablePartitionStencilDevice(ExecutionPolicy exec)
   ref[3] = 0;
   ref[4] = 0;
 
-  ASSERT_EQUAL(2, (iterator) result[0] - data.begin());
-  ASSERT_EQUAL(ref, data);
+  REQUIRE(2 == (iterator) result[0] - data.begin());
+  REQUIRE(ref == data);
 }
 
 void TestStablePartitionStencilDeviceSeq()
@@ -480,7 +480,7 @@ void TestStablePartitionCopyDevice(ExecutionPolicy exec)
   stable_partition_copy_kernel<<<1, 1>>>(
     exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>(), iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::device_vector<T> true_ref(2);
   true_ref[0] = 2;
@@ -493,10 +493,10 @@ void TestStablePartitionCopyDevice(ExecutionPolicy exec)
 
   pair_type ends = iterators[0];
 
-  ASSERT_EQUAL(2, ends.first - true_results.begin());
-  ASSERT_EQUAL(3, ends.second - false_results.begin());
-  ASSERT_EQUAL(true_ref, true_results);
-  ASSERT_EQUAL(false_ref, false_results);
+  REQUIRE(2 == ends.first - true_results.begin());
+  REQUIRE(3 == ends.second - false_results.begin());
+  REQUIRE(true_ref == true_results);
+  REQUIRE(false_ref == false_results);
 }
 
 void TestStablePartitionCopyDeviceSeq()
@@ -573,7 +573,7 @@ void TestStablePartitionCopyStencilDevice(ExecutionPolicy exec)
     is_even<T>(),
     iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   pair_type ends = iterators[0];
 
@@ -586,10 +586,10 @@ void TestStablePartitionCopyStencilDevice(ExecutionPolicy exec)
   false_ref[1] = 0;
   false_ref[2] = 0;
 
-  ASSERT_EQUAL(2, ends.first - true_results.begin());
-  ASSERT_EQUAL(3, ends.second - false_results.begin());
-  ASSERT_EQUAL(true_ref, true_results);
-  ASSERT_EQUAL(false_ref, false_results);
+  REQUIRE(2 == ends.first - true_results.begin());
+  REQUIRE(3 == ends.second - false_results.begin());
+  REQUIRE(true_ref == true_results);
+  REQUIRE(false_ref == false_results);
 }
 
 void TestStablePartitionCopyStencilDeviceSeq()
@@ -619,7 +619,7 @@ void TestPartitionIfWithMagnitude(int magnitude)
   thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + num_items;
   thrust::counting_iterator<offset_t> stencil(offset_t{0});
-  ASSERT_EQUAL(static_cast<offset_t>(::cuda::std::distance(begin, end)), num_items);
+  REQUIRE(static_cast<offset_t>(::cuda::std::distance(begin, end)) == num_items);
 
   // Run algorithm on large number of items
   offset_t match_every_nth      = 1000000;
@@ -640,13 +640,13 @@ void TestPartitionIfWithMagnitude(int magnitude)
     // Ensure number of selected items are correct
     const offset_t num_selected_out =
       static_cast<offset_t>(::cuda::std::distance(partitioned_out.begin(), selected_out_end));
-    ASSERT_EQUAL(num_selected_out, expected_num_written);
+    REQUIRE(num_selected_out == expected_num_written);
     partitioned_out.resize(expected_num_written);
 
     // Ensure selected items are correct
     auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
     bool all_results_correct = thrust::equal(partitioned_out.begin(), partitioned_out.end(), expected_out_it);
-    ASSERT_EQUAL(all_results_correct, true);
+    REQUIRE(all_results_correct);
   }
 
   // Tests input is correctly dereferenced for large offsets and rejected items are correctly written
@@ -664,13 +664,13 @@ void TestPartitionIfWithMagnitude(int magnitude)
     // Ensure number of rejected items are correct
     const offset_t num_rejected_out =
       static_cast<offset_t>(::cuda::std::distance(partitioned_out.begin(), rejected_out_end));
-    ASSERT_EQUAL(num_rejected_out, expected_num_written);
+    REQUIRE(num_rejected_out == expected_num_written);
     partitioned_out.resize(expected_num_written);
 
     // Ensure rejected items are correct
     auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
     bool all_results_correct = thrust::equal(partitioned_out.begin(), partitioned_out.end(), expected_out_it);
-    ASSERT_EQUAL(all_results_correct, true);
+    REQUIRE(all_results_correct);
   }
 }
 
@@ -706,7 +706,7 @@ void TestPartitionCudaStreams(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(s);
 
-  Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), is_even<T>());
+  const Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), is_even<T>());
 
   Vector ref(5);
   ref[0] = 2;
@@ -715,8 +715,8 @@ void TestPartitionCudaStreams(ExecutionPolicy policy)
   ref[3] = 1;
   ref[4] = 1;
 
-  ASSERT_EQUAL(iter - data.begin(), 2);
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(iter - data.begin() == 2);
+  REQUIRE(data == ref);
 
   cudaStreamDestroy(s);
 }

@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // basic_vec<T, Abi> requires T to be a vectorizable type.
 // bool is explicitly excluded by the standard.
 

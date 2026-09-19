@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Usage: ./update_version.sh [--dry-run] <major> <minor> <patch>
 # Example: ./update_version.sh --dry-run 2 2 1

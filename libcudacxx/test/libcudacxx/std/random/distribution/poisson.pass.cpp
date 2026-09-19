@@ -7,10 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
@@ -29,7 +30,7 @@ struct poisson_cdf
 {
   using P = typename cuda::std::poisson_distribution<T>::param_type;
 
-  TEST_FUNC double operator()(cuda::std::uint64_t x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(cuda::std::uint64_t x, const P& p) const
   {
     double sum  = 0;
     double mean = p.mean();
@@ -47,7 +48,7 @@ struct poisson_cdf
 };
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::poisson_distribution<T>;

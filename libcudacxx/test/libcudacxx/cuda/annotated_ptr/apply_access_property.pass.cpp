@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 #include "utils.h"
@@ -16,7 +16,7 @@
 constexpr size_t array_size = 128;
 
 template <typename T, typename P>
-TEST_FUNC __noinline__ void test(P ap)
+TEST_HOST_DEVICE_FUNC __noinline__ void test(P ap)
 {
   T* arr = global_alloc<T, array_size>();
 
@@ -31,7 +31,7 @@ TEST_FUNC __noinline__ void test(P ap)
 }
 
 template <typename T, typename P>
-TEST_FUNC __noinline__ void test_aligned(P ap)
+TEST_HOST_DEVICE_FUNC __noinline__ void test_aligned(P ap)
 {
   T* arr = global_alloc<T, array_size>();
 
@@ -45,7 +45,7 @@ TEST_FUNC __noinline__ void test_aligned(P ap)
   dealloc<T>(arr);
 }
 
-TEST_FUNC __noinline__ void test_all()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_all()
 {
   test<int>(cuda::access_property::normal{});
   test<int>(cuda::access_property::persisting{});

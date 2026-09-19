@@ -30,23 +30,23 @@ d_histogram = cp.zeros(num_levels - 1, dtype="int32")
 
 # Create the histogram object.
 histogrammer = cuda.compute.make_histogram_even(
-    d_samples,
-    d_histogram,
-    h_num_output_levels,
-    h_lower_level,
-    h_upper_level,
-    len(h_samples),
+    d_samples=d_samples,
+    d_histogram=d_histogram,
+    h_num_output_levels=h_num_output_levels,
+    h_lower_level=h_lower_level,
+    h_upper_level=h_upper_level,
+    num_samples=len(h_samples),
 )
 
 # Get the temporary storage size.
 temp_storage_size = histogrammer(
-    None,
-    d_samples,
-    d_histogram,
-    h_num_output_levels,
-    h_lower_level,
-    h_upper_level,
-    len(h_samples),
+    temp_storage=None,
+    d_samples=d_samples,
+    d_histogram=d_histogram,
+    h_num_output_levels=h_num_output_levels,
+    h_lower_level=h_lower_level,
+    h_upper_level=h_upper_level,
+    num_samples=len(h_samples),
 )
 
 # Allocate the temporary storage.
@@ -54,13 +54,13 @@ d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
 # Perform the histogram.
 histogrammer(
-    d_temp_storage,
-    d_samples,
-    d_histogram,
-    h_num_output_levels,
-    h_lower_level,
-    h_upper_level,
-    len(h_samples),
+    temp_storage=d_temp_storage,
+    d_samples=d_samples,
+    d_histogram=d_histogram,
+    h_num_output_levels=h_num_output_levels,
+    h_lower_level=h_lower_level,
+    h_upper_level=h_upper_level,
+    num_samples=len(h_samples),
 )
 
 # Verify the result.

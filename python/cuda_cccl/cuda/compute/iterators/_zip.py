@@ -9,7 +9,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from .._bindings import Op, OpKind
-from .._cpp_compile import compile_cpp_to_ltoir
+from .._cpp_compile import compile_cpp_op_code
 from ..types import struct
 from ._base import IteratorBase, compose_iterator_states
 from ._common import CUDA_PREAMBLE, ensure_iterator
@@ -112,15 +112,13 @@ class ZipIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
-            extra_ltoirs=[
-                ltoir for op in child_ops for ltoir in [op.ltoir, *op.extra_ltoirs]
-            ],
+            ltoir=code,
+            extra_ltoirs=[c for op in child_ops for c in [op.code, *op.extra_code]],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -154,15 +152,13 @@ class ZipIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
-            extra_ltoirs=[
-                ltoir for op in child_ops for ltoir in [op.ltoir, *op.extra_ltoirs]
-            ],
+            ltoir=code,
+            extra_ltoirs=[c for op in child_ops for c in [op.code, *op.extra_code]],
         )
 
     def _make_output_deref_op(self) -> Op | None:
@@ -196,15 +192,13 @@ class ZipIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
-            extra_ltoirs=[
-                ltoir for op in child_ops for ltoir in [op.ltoir, *op.extra_ltoirs]
-            ],
+            ltoir=code,
+            extra_ltoirs=[c for op in child_ops for c in [op.code, *op.extra_code]],
         )
 
     @property

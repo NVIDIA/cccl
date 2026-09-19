@@ -8,9 +8,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
+CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]", CUB_SMALL)
 {
   // example-begin merge-keys
   c2h::device_vector<int> keys1{0, 2, 5};
@@ -41,12 +41,12 @@ C2H_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
     static_cast<int>(keys2.size()),
     result.begin());
 
-  c2h::host_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  const c2h::host_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   // example-end merge-keys
   CHECK(result == expected);
 }
 
-C2H_TEST("DeviceMerge::MergePairs API example", "[merge][device]")
+CUB_TEST("DeviceMerge::MergePairs API example", "[merge][device]", CUB_SMALL)
 {
   // example-begin merge-pairs
   c2h::device_vector<int> keys1{0, 2, 5};
@@ -86,8 +86,8 @@ C2H_TEST("DeviceMerge::MergePairs API example", "[merge][device]")
     result_keys.begin(),
     result_values.begin());
 
-  c2h::host_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
-  c2h::host_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  const c2h::host_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  const c2h::host_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   // example-end merge-pairs
   CHECK(result_keys == expected_keys);
   CHECK(result_values == expected_values);

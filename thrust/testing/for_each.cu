@@ -34,11 +34,11 @@ void TestForEachSimple()
   mark_present_for_each<T> f;
   f.ptr = thrust::raw_pointer_cast(output.data());
 
-  typename Vector::iterator result = thrust::for_each(input.begin(), input.end(), f);
+  const typename Vector::iterator result = thrust::for_each(input.begin(), input.end(), f);
 
   Vector ref{0, 0, 1, 1, 1, 0, 1};
-  ASSERT_EQUAL(output, ref);
-  ASSERT_EQUAL_QUIET(result, input.end());
+  REQUIRE(output == ref);
+  REQUIRE((result == input.end()));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachSimple);
 
@@ -53,10 +53,10 @@ void TestForEachDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::for_each(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestForEachDispatchExplicit);
 
@@ -73,7 +73,7 @@ void TestForEachDispatchImplicit()
 
   thrust::for_each(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestForEachDispatchImplicit);
 
@@ -88,11 +88,11 @@ void TestForEachNSimple()
   mark_present_for_each<T> f;
   f.ptr = thrust::raw_pointer_cast(output.data());
 
-  typename Vector::iterator result = thrust::for_each_n(input.begin(), input.size(), f);
+  const typename Vector::iterator result = thrust::for_each_n(input.begin(), input.size(), f);
 
   Vector ref{0, 0, 1, 1, 1, 0, 1};
-  ASSERT_EQUAL(output, ref);
-  ASSERT_EQUAL_QUIET(result, input.end());
+  REQUIRE(output == ref);
+  REQUIRE((result == input.end()));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachNSimple);
 
@@ -107,10 +107,10 @@ void TestForEachNDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::for_each_n(sys, vec.begin(), vec.size(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestForEachNDispatchExplicit);
 
@@ -127,7 +127,7 @@ void TestForEachNDispatchImplicit()
 
   thrust::for_each_n(thrust::retag<my_tag>(vec.begin()), vec.size(), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestForEachNDispatchImplicit);
 
@@ -138,12 +138,12 @@ void TestForEachSimpleAnySystem()
   mark_present_for_each<int> f;
   f.ptr = thrust::raw_pointer_cast(output.data());
 
-  thrust::counting_iterator<int> result =
+  const thrust::counting_iterator<int> result =
     thrust::for_each(thrust::make_counting_iterator(0), thrust::make_counting_iterator(5), f);
 
-  thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
-  ASSERT_EQUAL(output, ref);
-  ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
+  const thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
+  REQUIRE(output == ref);
+  REQUIRE((result == thrust::make_counting_iterator(5)));
 }
 DECLARE_UNITTEST(TestForEachSimpleAnySystem);
 
@@ -154,11 +154,11 @@ void TestForEachNSimpleAnySystem()
   mark_present_for_each<int> f;
   f.ptr = thrust::raw_pointer_cast(output.data());
 
-  thrust::counting_iterator<int> result = thrust::for_each_n(thrust::make_counting_iterator(0), 5, f);
+  const thrust::counting_iterator<int> result = thrust::for_each_n(thrust::make_counting_iterator(0), 5, f);
 
-  thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
-  ASSERT_EQUAL(output, ref);
-  ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
+  const thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
+  REQUIRE(output == ref);
+  REQUIRE((result == thrust::make_counting_iterator(5)));
 }
 DECLARE_UNITTEST(TestForEachNSimpleAnySystem);
 
@@ -184,13 +184,13 @@ void TestForEach(const size_t n)
   h_f.ptr = &h_output[0];
   d_f.ptr = (&d_output[0]).get();
 
-  typename thrust::host_vector<T>::iterator h_result = thrust::for_each(h_input.begin(), h_input.end(), h_f);
+  const typename thrust::host_vector<T>::iterator h_result = thrust::for_each(h_input.begin(), h_input.end(), h_f);
 
-  typename thrust::device_vector<T>::iterator d_result = thrust::for_each(d_input.begin(), d_input.end(), d_f);
+  const typename thrust::device_vector<T>::iterator d_result = thrust::for_each(d_input.begin(), d_input.end(), d_f);
 
-  ASSERT_EQUAL(h_output, d_output);
-  ASSERT_EQUAL_QUIET(h_result, h_input.end());
-  ASSERT_EQUAL_QUIET(d_result, d_input.end());
+  REQUIRE(h_output == d_output);
+  REQUIRE((h_result == h_input.end()));
+  REQUIRE((d_result == d_input.end()));
 }
 DECLARE_VARIABLE_UNITTEST(TestForEach);
 
@@ -216,13 +216,13 @@ void TestForEachN(const size_t n)
   h_f.ptr = &h_output[0];
   d_f.ptr = (&d_output[0]).get();
 
-  typename thrust::host_vector<T>::iterator h_result = thrust::for_each_n(h_input.begin(), h_input.size(), h_f);
+  const typename thrust::host_vector<T>::iterator h_result = thrust::for_each_n(h_input.begin(), h_input.size(), h_f);
 
-  typename thrust::device_vector<T>::iterator d_result = thrust::for_each_n(d_input.begin(), d_input.size(), d_f);
+  const typename thrust::device_vector<T>::iterator d_result = thrust::for_each_n(d_input.begin(), d_input.size(), d_f);
 
-  ASSERT_EQUAL(h_output, d_output);
-  ASSERT_EQUAL_QUIET(h_result, h_input.end());
-  ASSERT_EQUAL_QUIET(d_result, d_input.end());
+  REQUIRE(h_output == d_output);
+  REQUIRE((h_result == h_input.end()));
+  REQUIRE((d_result == d_input.end()));
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachN);
 
@@ -244,7 +244,7 @@ struct SetFixedVectorToConstant
 template <typename T, unsigned int N>
 void _TestForEachWithLargeTypes()
 {
-  size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
+  const size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
   thrust::host_vector<FixedVector<T, N>> h_data(n);
 
@@ -255,12 +255,12 @@ void _TestForEachWithLargeTypes()
 
   thrust::device_vector<FixedVector<T, N>> d_data = h_data;
 
-  SetFixedVectorToConstant<T, N> func(123);
+  const SetFixedVectorToConstant<T, N> func(123);
 
   thrust::for_each(h_data.begin(), h_data.end(), func);
   thrust::for_each(d_data.begin(), d_data.end(), func);
 
-  ASSERT_EQUAL_QUIET(h_data, d_data);
+  REQUIRE((h_data == d_data));
 }
 
 void TestForEachWithLargeTypes()
@@ -285,7 +285,7 @@ DECLARE_UNITTEST(TestForEachWithLargeTypes);
 template <typename T, unsigned int N>
 void _TestForEachNWithLargeTypes()
 {
-  size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
+  const size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
   thrust::host_vector<FixedVector<T, N>> h_data(n);
 
@@ -296,12 +296,12 @@ void _TestForEachNWithLargeTypes()
 
   thrust::device_vector<FixedVector<T, N>> d_data = h_data;
 
-  SetFixedVectorToConstant<T, N> func(123);
+  const SetFixedVectorToConstant<T, N> func(123);
 
   thrust::for_each_n(h_data.begin(), h_data.size(), func);
   thrust::for_each_n(d_data.begin(), d_data.size(), func);
 
-  ASSERT_EQUAL_QUIET(h_data, d_data);
+  REQUIRE((h_data == d_data));
 }
 
 void TestForEachNWithLargeTypes()
@@ -341,21 +341,21 @@ struct only_set_when_expected
 
 void TestForEachWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<unsigned long long> begin(0);
-  thrust::counting_iterator<unsigned long long> end = begin + (1ull << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  const thrust::counting_iterator<unsigned long long> begin(0);
+  const thrust::counting_iterator<unsigned long long> end = begin + static_cast<std::ptrdiff_t>(1ull << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
-  thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
-  *has_executed                         = false;
+  const thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
+  *has_executed                               = false;
 
-  only_set_when_expected fn = {(1ull << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
+  const only_set_when_expected fn = {(1ull << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
 
   thrust::for_each(thrust::device, begin, end, fn);
 
-  bool has_executed_h = *has_executed;
+  const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
-  ASSERT_EQUAL(has_executed_h, true);
+  REQUIRE(has_executed_h);
 }
 
 void TestForEachWithBigIndexes()

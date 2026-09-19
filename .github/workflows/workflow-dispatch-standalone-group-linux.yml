@@ -11,6 +11,16 @@ on:
         description: "The dispatch.json's linux_standalone.jobs.<name> array of dispatch jobs."
         type: string
         required: true
+      repo:
+        description: "Repository to checkout (e.g. 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private')."
+        type: string
+        required: false
+        default: ${{ github.repository }}
+      commit:
+        description: "Commit SHA or branch/ref to checkout."
+        type: string
+        required: false
+        default: ${{ github.sha }}
 
 jobs:
   run-jobs:
@@ -22,18 +32,22 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && matrix.runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && matrix.runner || 'ubuntu-latest' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.commit }}
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
-          id:      ${{ matrix.id }}
-          command: ${{ matrix.command }}
-          image:   ${{ matrix.image }}
-          runner:  ${{ matrix.runner }}
-          cuda:    ${{ matrix.cuda }}
-          host:    ${{ matrix.host }}
+          id:          ${{ matrix.id }}
+          environment: ${{ matrix.environment }}
+          command:     ${{ matrix.command }}
+          image:       ${{ matrix.image }}
+          runner:      ${{ matrix.runner }}
+          cuda:        ${{ matrix.cuda }}
+          host:        ${{ matrix.host }}
+          gpu_count:   ${{ matrix.gpu_count }}

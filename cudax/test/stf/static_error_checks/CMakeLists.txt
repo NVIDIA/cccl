@@ -4,6 +4,7 @@ set(
   task_prototype.cu
   stream_task_prototype.cu
   graph_task_prototype.cu
+  cuda_try_ambiguous.cu
 )
 
 ## cudax_add_stf_static_assert_test

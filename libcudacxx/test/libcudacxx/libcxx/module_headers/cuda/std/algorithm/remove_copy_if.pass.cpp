@@ -15,13 +15,13 @@
 
 struct remove_copy_if_is_odd
 {
-  __host__ __device__ constexpr bool operator()(int x) const
+  TEST_FUNC constexpr bool operator()(int x) const
   {
     return x % 2 == 1;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {1, 2, 3};
   int o[3]          = {};

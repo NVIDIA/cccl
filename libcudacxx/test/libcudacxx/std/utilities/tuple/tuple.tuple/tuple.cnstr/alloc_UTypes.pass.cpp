@@ -13,6 +13,7 @@
 // template <class Alloc, class... UTypes>
 //   tuple(allocator_arg_t, const Alloc& a, UTypes&&...);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -52,19 +53,16 @@ TEST_FUNC void test_uses_allocator_sfinae_evaluation()
     static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly>::value);
 
     static_assert(
-      cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault>::value,
-      "");
+      cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault>::value);
   }
   {
     using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, BadDefault, BadDefault>;
 
-    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly>::value,
-                  "");
+    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly>::value);
 
     static_assert(
       cuda::std::
-        is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault, BadDefault>::value,
-      "");
+        is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault, BadDefault>::value);
   }
 }
 
@@ -78,13 +76,10 @@ struct Explicit
 
 int main(int, char**)
 {
-  // cuda::std::allocator not supported
-  /*
   {
-      cuda::std::tuple<Explicit> t{cuda::std::allocator_arg, cuda::std::allocator<void>{}, 42};
-      assert(cuda::std::get<0>(t).value == 42);
+    cuda::std::tuple<Explicit> t{cuda::std::allocator_arg, cuda::std::allocator<void>{}, 42};
+    assert(cuda::std::get<0>(t).value == 42);
   }
-  */
   {
     cuda::std::tuple<MoveOnly> t(cuda::std::allocator_arg, A1<int>(), MoveOnly(0));
     assert(cuda::std::get<0>(t) == 0);

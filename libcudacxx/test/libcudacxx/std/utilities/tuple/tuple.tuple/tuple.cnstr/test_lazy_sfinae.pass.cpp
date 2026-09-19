@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: msvc
+
 // <cuda/std/tuple>
 
 // template <class... Types> class tuple;
-
-// UNSUPPORTED: msvc, gcc-4.8
 
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
@@ -112,10 +112,23 @@ TEST_FUNC void test_const_Types_lazy_sfinae()
   assert(cuda::std::get<0>(t).value == 42);
 }
 
+struct NonTupleLike
+{
+  int value;
+};
+
+TEST_FUNC void test_non_tuple_like_lazy_sfinae()
+{
+  NonTupleLike value{42};
+  cuda::std::tuple<NonTupleLike> tuple = cuda::std::make_tuple(value);
+  assert(cuda::std::get<0>(tuple).value == 42);
+}
+
 int main(int, char**)
 {
   test_tuple_like_lazy_sfinae();
   test_const_Types_lazy_sfinae();
+  test_non_tuple_like_lazy_sfinae();
 
   return 0;
 }

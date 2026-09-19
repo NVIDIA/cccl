@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile && !c++17
-// nvbug6076227: ICE when validating tile MLIR
-
 // <cuda/std/string_view>
 
 // constexpr size_type find(const charT* s, size_type pos, size_type n) const;
@@ -85,6 +82,7 @@ TEST_FUNC constexpr void test_find()
     test_find(sv, str4, 1, 19, SV::npos);
     test_find(sv, str4, 1, 20, SV::npos);
   }
+#if !_CCCL_TILE_COMPILATION() // blows up
   {
     SV sv{str2};
     test_find(sv, str1, 0, 0, 0);
@@ -382,6 +380,7 @@ TEST_FUNC constexpr void test_find()
     test_find(sv, str4, 21, 19, SV::npos);
     test_find(sv, str4, 21, 20, SV::npos);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 TEST_FUNC constexpr bool test()

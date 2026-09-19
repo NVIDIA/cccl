@@ -40,10 +40,10 @@ void TestGenerateDevice(ExecutionPolicy exec, const size_t n)
   generate_kernel<<<1, 1>>>(exec, d_result.begin(), d_result.end(), f);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
 template <typename T>
@@ -65,9 +65,9 @@ void TestGenerateCudaStreams()
 {
   thrust::device_vector<int> result(5);
 
-  int value = 13;
+  const int value = 13;
 
-  return_value<int> f(value);
+  const return_value<int> f(value);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -75,11 +75,11 @@ void TestGenerateCudaStreams()
   thrust::generate(thrust::cuda::par.on(s), result.begin(), result.end(), f);
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(result[0], value);
-  ASSERT_EQUAL(result[1], value);
-  ASSERT_EQUAL(result[2], value);
-  ASSERT_EQUAL(result[3], value);
-  ASSERT_EQUAL(result[4], value);
+  REQUIRE(result[0] == value);
+  REQUIRE(result[1] == value);
+  REQUIRE(result[2] == value);
+  REQUIRE(result[3] == value);
+  REQUIRE(result[4] == value);
 
   cudaStreamDestroy(s);
 }
@@ -106,10 +106,10 @@ void TestGenerateNDevice(ExecutionPolicy exec, const size_t n)
   generate_n_kernel<<<1, 1>>>(exec, d_result.begin(), d_result.size(), f);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
 template <typename T>
@@ -131,9 +131,9 @@ void TestGenerateNCudaStreams()
 {
   thrust::device_vector<int> result(5);
 
-  int value = 13;
+  const int value = 13;
 
-  return_value<int> f(value);
+  const return_value<int> f(value);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -141,11 +141,11 @@ void TestGenerateNCudaStreams()
   thrust::generate_n(thrust::cuda::par.on(s), result.begin(), result.size(), f);
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(result[0], value);
-  ASSERT_EQUAL(result[1], value);
-  ASSERT_EQUAL(result[2], value);
-  ASSERT_EQUAL(result[3], value);
-  ASSERT_EQUAL(result[4], value);
+  REQUIRE(result[0] == value);
+  REQUIRE(result[1] == value);
+  REQUIRE(result[2] == value);
+  REQUIRE(result[3] == value);
+  REQUIRE(result[4] == value);
 
   cudaStreamDestroy(s);
 }

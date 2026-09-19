@@ -7,8 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a non-__tile__ variable ("count") cannot be used in tile code
+// UNSUPPORTED: force-tile
+// error: indirect call is unsupported in tile code
+
+// UNSUPPORTED: enable-tile
+// BUGBUG: codegen error
 
 // <functional>
 
@@ -29,20 +32,20 @@
 
 TEST_GLOBAL_VARIABLE int count = 0;
 
-TEST_FUNC void f_void_0()
+TEST_HOST_DEVICE_FUNC void f_void_0()
 {
   ++count;
 }
 
 struct A_void_0
 {
-  TEST_FUNC void operator()()
+  TEST_HOST_DEVICE_FUNC void operator()()
   {
     ++count;
   }
 };
 
-TEST_FUNC void test_void_0()
+TEST_HOST_DEVICE_FUNC void test_void_0()
 {
   int save_count = count;
   // function

@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// error: a non-__tile__ variable cannot be used in tile code
 
 // transform_view::<iterator>::operator*
 

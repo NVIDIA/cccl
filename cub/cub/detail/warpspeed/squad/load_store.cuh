@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/resource/smem_ref.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
 
@@ -25,10 +26,17 @@
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadSmem);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(StoreSmem);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadBulk);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(StoreBulk);
+
 #if __cccl_ptx_isa >= 860
 
 template <typename Tp>
@@ -98,6 +106,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
 template <typename ResourceTp, typename Tp>
 _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> cpAsyncOobInfo)
 {
+  _CCCL_IKET_RANGE_PUSH(LoadBulk);
   ::cuda::std::byte* ptrSmem = refDestSmem.data().inout;
   _CCCL_ASSERT(::cuda::is_aligned(ptrSmem, 16), "");
   ::cuda::std::uint64_t* ptrBar = refDestSmem.ptrCurBarrierRelease();
@@ -147,6 +156,7 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
         reinterpret_cast<Tp*>(ptrSmem + cpAsyncOobInfo.smemStartSkipBytes)[squad.threadRank()] =
           reinterpret_cast<const Tp*>(cpAsyncOobInfo.ptrGmem)[squad.threadRank()];
       }
+      _CCCL_IKET_RANGE_POP();
       return; // no bulk copy has been performed so we don't need to update the tx count of any barrier
     }
 
@@ -201,6 +211,30 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
     }
 #  endif // __cccl_ptx_isa >= 920
   }
+  _CCCL_IKET_RANGE_POP();
+}
+
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void squadStoreMasked16B(
+  Squad squad,
+  ::cuda::std::byte* dstGmem,
+  const ::cuda::std::byte* srcSmem,
+  ::cuda::std::uint16_t byteMask,
+  int firstByte,
+  int lastByte)
+{
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_100,
+    (if (::cuda::ptx::elect_sync(~0)) {
+      ::cuda::ptx::cp_async_bulk_cp_mask(
+        ::cuda::ptx::space_global, ::cuda::ptx::space_shared, dstGmem, srcSmem, /*size*/ 16, byteMask);
+    }),
+    ({
+      const int rank = squad.threadRank();
+      if (firstByte <= rank && rank < lastByte)
+      {
+        dstGmem[rank] = srcSmem[rank];
+      }
+    }));
 }
 
 template <typename OutputT>
@@ -220,6 +254,8 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
   // - One copy that cleans up the last up to 15 bytes.
   if (squad.isLeaderWarp())
   {
+    _CCCL_IKET_RANGE_PUSH(StoreBulk);
+
     // Acquire shared memory in async proxy
     // Perform fence.proxy.async with full warp to avoid BSSY+BSYNC
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
@@ -274,17 +310,19 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       }
       if (doStartCopy)
       {
+        // need to work around yet another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8838
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+        asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemStartAlignDown));
+        asm volatile("" : "+l"(srcSmem));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         // Copy a subset of the first 16 bytes
-        if (::cuda::ptx::elect_sync(~0))
-        {
-          ::cuda::ptx::cp_async_bulk_cp_mask(
-            ::cuda::ptx::space_global,
-            ::cuda::ptx::space_shared,
-            cpAsyncOobInfo.ptrGmemStartAlignDown,
-            srcSmem,
-            /*size*/ 16,
-            byteMaskStart);
-        }
+        squadStoreMasked16B(
+          squad,
+          cpAsyncOobInfo.ptrGmemStartAlignDown,
+          srcSmem,
+          byteMaskStart,
+          static_cast<int>(cpAsyncOobInfo.smemStartSkipBytes),
+          16);
       }
       if (doEndCopy)
       {
@@ -295,35 +333,31 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
 #  endif // _CCCL_CUDA_COMPILER(NVHPC)
 
         // Copy a subset of the last 16 bytes
-        if (::cuda::ptx::elect_sync(~0))
-        {
-          ::cuda::ptx::cp_async_bulk_cp_mask(
-            ::cuda::ptx::space_global,
-            ::cuda::ptx::space_shared,
-            cpAsyncOobInfo.ptrGmemEndAlignDown,
-            ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
-            /*size*/ 16,
-            byteMaskEnd);
-        }
+        squadStoreMasked16B(
+          squad,
+          cpAsyncOobInfo.ptrGmemEndAlignDown,
+          ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
+          byteMaskEnd,
+          0,
+          static_cast<int>(cpAsyncOobInfo.smemEndBytesAfter16BBoundary));
       }
     }
     else
     {
       // Copy a subset of the first 16 bytes
-      if (::cuda::ptx::elect_sync(~0))
-      {
-        ::cuda::ptx::cp_async_bulk_cp_mask(
-          ::cuda::ptx::space_global,
-          ::cuda::ptx::space_shared,
-          cpAsyncOobInfo.ptrGmemStartAlignDown,
-          srcSmem,
-          /*size*/ 16,
-          byteMaskSmall);
-      }
+      squadStoreMasked16B(
+        squad,
+        cpAsyncOobInfo.ptrGmemStartAlignDown,
+        srcSmem,
+        byteMaskSmall,
+        static_cast<int>(cpAsyncOobInfo.smemStartSkipBytes),
+        static_cast<int>(cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown));
     }
     // Commit and wait for store to have completed reading from shared memory
     ::cuda::ptx::cp_async_bulk_commit_group();
     ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
+
+    _CCCL_IKET_RANGE_POP();
   }
 }
 
@@ -332,27 +366,32 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
 template <typename InputT, typename AccumT, int ElemPerThread>
 _CCCL_DEVICE_API void squadLoadSmem(Squad squad, AccumT (&outReg)[ElemPerThread], const InputT* smemBuf)
 {
+  _CCCL_IKET_RANGE_PUSH(LoadSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
     const int elem_idx = squad.threadRank() * ElemPerThread + i;
     outReg[i]          = smemBuf[elem_idx];
   }
+  _CCCL_IKET_RANGE_POP();
 }
 
 template <typename OutputT, typename AccumT, int ElemPerThread>
 _CCCL_DEVICE_API void squadStoreSmem(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[ElemPerThread])
 {
+  _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
     const int elem_idx = squad.threadRank() * ElemPerThread + i;
     smemBuf[elem_idx]  = inReg[i];
   }
+  _CCCL_IKET_RANGE_POP();
 }
 
 template <typename OutputT, typename AccumT, int ElemPerThread>
 _CCCL_DEVICE_API void
 squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[ElemPerThread], int beginIndex, int endIndex)
 {
+  _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
     const int elem_idx = squad.threadRank() * ElemPerThread + i;
@@ -361,6 +400,7 @@ squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[ElemP
       smemBuf[elem_idx - beginIndex] = inReg[i];
     }
   }
+  _CCCL_IKET_RANGE_POP();
 }
 } // namespace detail::warpspeed
 

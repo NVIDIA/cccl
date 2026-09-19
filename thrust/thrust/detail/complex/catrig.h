@@ -51,6 +51,7 @@
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -61,7 +62,7 @@ _CCCL_HOST_DEVICE inline void raise_inexact()
 {
   const volatile float tiny = 7.888609052210118054117286e-31; /* 0x1p-100; */
   // needs the volatile to prevent compiler from ignoring it
-  [[maybe_unused]] volatile float junk = 1 + tiny;
+  [[maybe_unused]] const volatile float junk = 1 + tiny;
 }
 
 _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z);
@@ -306,7 +307,6 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   int B_is_usable;
   complex<double> w;
   const double RECIP_EPSILON = 1.0 / DBL_EPSILON;
-  const double m_ln2         = 6.9314718055994531e-1; /*  0x162e42fefa39ef.0p-53 */
   x                          = z.real();
   y                          = z.imag();
   ax                         = ::cuda::std::fabs(x);
@@ -342,11 +342,11 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
     /* clog...() will raise inexact unless x or y is infinite. */
     if (::cuda::std::signbit(x) == 0)
     {
-      w = clog_for_large_values(z) + m_ln2;
+      w = clog_for_large_values(z) + ::cuda::std::__numbers<double>::__ln2();
     }
     else
     {
-      w = clog_for_large_values(-z) + m_ln2;
+      w = clog_for_large_values(-z) + ::cuda::std::__numbers<double>::__ln2();
     }
     return (complex<double>(::cuda::std::copysign(w.real(), x), ::cuda::std::copysign(w.imag(), y)));
   }
@@ -384,7 +384,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> casin(complex<double> z)
 {
-  complex<double> w = casinh(complex<double>(z.imag(), z.real()));
+  const complex<double> w = casinh(complex<double>(z.imag(), z.real()));
 
   return (complex<double>(w.imag(), w.real()));
 }
@@ -409,7 +409,6 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
   complex<double> w;
   const double pio2_hi          = 1.5707963267948966e0; /*  0x1921fb54442d18.0p-52 */
   const volatile double pio2_lo = 6.1232339957367659e-17; /*  0x11a62633145c07.0p-106 */
-  const double m_ln2            = 6.9314718055994531e-1; /*  0x162e42fefa39ef.0p-53 */
 
   x  = z.real();
   y  = z.imag();
@@ -449,7 +448,7 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
     /* clog...() will raise inexact unless x or y is infinite. */
     w  = clog_for_large_values(z);
     rx = ::cuda::std::fabs(w.imag());
-    ry = w.real() + m_ln2;
+    ry = w.real() + ::cuda::std::__numbers<double>::__ln2();
     if (sy == 0)
     {
       ry = -ry;
@@ -521,9 +520,9 @@ _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
   }
   /* cacosh(NaN + I*+-Inf) = +Inf + I*NaN */
   /* cacosh(+-Inf + I*NaN) = +Inf + I*NaN */
-  if (isnan(rx))
+  if (::cuda::std::isnan(rx))
   {
-    return (complex<double>(fabs(ry), rx));
+    return (complex<double>(::cuda::std::fabs(ry), rx));
   }
   /* cacosh(0 + I*NaN) = NaN + I*NaN */
   if (::cuda::std::isnan(ry))
@@ -540,7 +539,7 @@ _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z
 {
   double x, y;
   double ax, ay, t;
-  const double m_e = 2.7182818284590452e0; /*  0x15bf0a8b145769.0p-51 */
+  constexpr auto m_e = ::cuda::std::__numbers<double>::__e();
 
   x  = z.real();
   y  = z.imag();
@@ -624,9 +623,9 @@ _CCCL_HOST_DEVICE inline double real_part_reciprocal(double x, double y)
    * example 2.
    */
   get_high_word(hx, x);
-  ix = hx & 0x7ff00000;
+  ix = static_cast<int32_t>(hx & 0x7ff00000);
   get_high_word(hy, y);
-  iy = hy & 0x7ff00000;
+  iy = static_cast<int32_t>(hy & 0x7ff00000);
   // #define	BIAS	(DBL_MAX_EXP - 1)
   const int BIAS = DBL_MAX_EXP - 1;
   /* XXX more guard digits are useful iff there is extra precision. */
@@ -724,10 +723,9 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
     return (z);
   }
 
-  const double m_ln2 = 6.9314718055994531e-1; /*  0x162e42fefa39ef.0p-53 */
   if (ax == 1 && ay < DBL_EPSILON)
   {
-    rx = (m_ln2 - ::cuda::std::log(ay)) / 2;
+    rx = (::cuda::std::__numbers<double>::__ln2() - ::cuda::std::log(ay)) / 2;
   }
   else
   {
@@ -756,7 +754,7 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> catan(complex<double> z)
 {
-  complex<double> w = catanh(complex<double>(z.imag(), z.real()));
+  const complex<double> w = catanh(complex<double>(z.imag(), z.real()));
   return (complex<double>(w.imag(), w.real()));
 }
 } // namespace detail::complex
@@ -764,8 +762,8 @@ _CCCL_HOST_DEVICE inline complex<double> catan(complex<double> z)
 template <typename ValueType>
 _CCCL_HOST_DEVICE inline complex<ValueType> acos(const complex<ValueType>& z)
 {
+  constexpr auto pi            = ::cuda::std::__numbers<ValueType>::__pi();
   const complex<ValueType> ret = thrust::asin(z);
-  const ValueType pi           = ValueType(3.14159265358979323846);
   return complex<ValueType>(pi / 2 - ret.real(), -ret.imag());
 }
 

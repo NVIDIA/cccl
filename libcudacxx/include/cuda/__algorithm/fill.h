@@ -26,6 +26,7 @@
 #  include <cuda/__algorithm/common.h>
 #  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
@@ -41,7 +42,7 @@ _CCCL_HOST_API void
 __fill_bytes_impl(stream_ref __stream, ::cuda::std::span<_DstTy, _DstSize> __dst, ::cuda::std::uint8_t __value)
 {
   static_assert(!::cuda::std::is_const_v<_DstTy>, "Fill destination can't be const");
-  static_assert(::cuda::std::is_trivially_copyable_v<_DstTy>);
+  static_assert(::cuda::is_trivially_copyable_v<_DstTy>);
 
   // TODO do a host callback if not device accessible?
   ::cuda::__driver::__memsetAsync(__dst.data(), __value, __dst.size_bytes(), __stream.get());

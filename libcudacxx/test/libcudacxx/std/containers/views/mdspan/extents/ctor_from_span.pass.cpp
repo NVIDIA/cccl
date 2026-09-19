@@ -122,8 +122,8 @@ int main(int, char**)
   static_assert(cuda::std::is_convertible<IntType, unsigned char>::value);
   static_assert(cuda::std::is_convertible<const IntType&, unsigned char>::value);
   static_assert(!cuda::std::is_nothrow_constructible<unsigned char, const IntType&>::value);
-  static_assert(!cuda::std::is_constructible<cuda::std::dextents<unsigned char, 2>, cuda::std::span<IntType, 2>>::value,
-                "");
+  static_assert(
+    !cuda::std::is_constructible<cuda::std::dextents<unsigned char, 2>, cuda::std::span<IntType, 2>>::value);
 
   // convertible from non-const to index_type but not  from const
   static_assert(cuda::std::is_convertible<IntTypeNC, int>::value);

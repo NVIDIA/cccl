@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstring>
 
@@ -40,20 +41,20 @@ using __atomic_small_proxy_t = _If<is_signed_v<_Tp>, int32_t, uint32_t>;
 
 // Arithmetic conversions to/from proxy types
 template <class _Tp, enable_if_t<is_arithmetic_v<_Tp>, int> = 0>
-_CCCL_API constexpr __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
+_CCCL_HOST_DEVICE_API constexpr __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   return static_cast<__atomic_small_proxy_t<_Tp>>(__val);
 }
 
 template <class _Tp, enable_if_t<is_arithmetic_v<_Tp>, int> = 0>
-_CCCL_API constexpr _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
+_CCCL_HOST_DEVICE_API constexpr _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   return static_cast<_Tp>(__val);
 }
 
 // Non-arithmetic conversion to/from proxy types
 template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
-_CCCL_API __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
+_CCCL_HOST_DEVICE_API __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   __atomic_small_proxy_t<_Tp> __temp{};
   ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
@@ -66,7 +67,7 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 #endif
 
 template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
-_CCCL_API _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
+_CCCL_HOST_DEVICE_API _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   // GCC starting with GCC8 warns about our extended floating point types having protected data members
   _Tp __temp{};
@@ -83,60 +84,61 @@ struct __atomic_small_storage
   using __proxy_t                     = __atomic_small_proxy_t<_Tp>;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_small_tag;
 
-  _CCCL_API constexpr explicit __atomic_small_storage() noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit __atomic_small_storage() noexcept
       : __a_value{__proxy_t{}}
   {}
 
-  _CCCL_API constexpr explicit __atomic_small_storage(_Tp __value) noexcept
-      : __a_value{__atomic_small_to_32(__value)}
+  _CCCL_HOST_DEVICE_API constexpr explicit __atomic_small_storage(_Tp __value) noexcept
+      : __a_value{::cuda::std::__atomic_small_to_32(__value)}
   {}
 
   __atomic_storage<__proxy_t> __a_value;
 };
 
 template <typename _Sto, typename _Up, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API void __atomic_init_dispatch(_Sto* __a, _Up __val)
+_CCCL_HOST_DEVICE_API void __atomic_init_dispatch(_Sto* __a, _Up __val)
 {
-  __atomic_init_dispatch(&__a->__a_value, __atomic_small_to_32(__val));
+  ::cuda::std::__atomic_init_dispatch(&__a->__a_value, ::cuda::std::__atomic_small_to_32(__val));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
 {
-  __atomic_store_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{});
+  ::cuda::std::__atomic_store_dispatch(&__a->__a_value, ::cuda::std::__atomic_small_to_32(__val), __order, _Sco{});
 }
 
 template <typename _Sto, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto>
-{
-  using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(__atomic_load_dispatch(&__a->__a_value, __order, _Sco{}));
-}
-
-template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_exchange_dispatch(&__a->__a_value, __atomic_small_to_32(__value), __order, _Sco{}));
+  return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_load_dispatch(&__a->__a_value, __order, _Sco{}));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API bool __atomic_compare_exchange_weak_dispatch(
+_CCCL_HOST_DEVICE_API auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {})
+  -> __atomic_underlying_t<_Sto>
+{
+  using _Tp = __atomic_underlying_t<_Sto>;
+  return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_exchange_dispatch(
+    &__a->__a_value, ::cuda::std::__atomic_small_to_32(__value), __order, _Sco{}));
+}
+
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
+_CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_weak_dispatch(
   _Sto* __a, _Up* __expected, _Up __value, memory_order __success, memory_order __failure, _Sco = {})
 {
   using _Tp            = __atomic_underlying_t<_Sto>;
-  auto __temp_expected = __atomic_small_to_32(*__expected);
-  auto const __ret     = __atomic_compare_exchange_weak_dispatch(
-    &__a->__a_value, &__temp_expected, __atomic_small_to_32(__value), __success, __failure, _Sco{});
+  auto __temp_expected = ::cuda::std::__atomic_small_to_32(*__expected);
+  auto const __ret     = ::cuda::std::__atomic_compare_exchange_weak_dispatch(
+    &__a->__a_value, &__temp_expected, ::cuda::std::__atomic_small_to_32(__value), __success, __failure, _Sco{});
   auto const __actual   = __atomic_small_from_32<_Tp>(__temp_expected);
   constexpr auto __mask = static_cast<decltype(__temp_expected)>((1u << (8 * sizeof(_Tp))) - 1);
   if (!__ret)
   {
-    if (0 == __atomic_memcmp(&__actual, __expected, sizeof(_Tp)))
+    if (0 == ::cuda::std::__atomic_memcmp(&__actual, __expected, sizeof(_Tp)))
     {
-      __atomic_fetch_and_dispatch(&__a->__a_value, __mask, memory_order_relaxed, _Sco{});
+      ::cuda::std::__atomic_fetch_and_dispatch(&__a->__a_value, __mask, memory_order_relaxed, _Sco{});
     }
     else
     {
@@ -147,18 +149,18 @@ _CCCL_API bool __atomic_compare_exchange_weak_dispatch(
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API bool __atomic_compare_exchange_strong_dispatch(
+_CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_strong_dispatch(
   _Sto* __a, _Up* __expected, _Up __value, memory_order __success, memory_order __failure, _Sco = {})
 {
   using _Tp        = __atomic_underlying_t<_Sto>;
   auto const __old = *__expected;
   while (true)
   {
-    if (__atomic_compare_exchange_weak_dispatch(__a, __expected, __value, __success, __failure, _Sco{}))
+    if (::cuda::std::__atomic_compare_exchange_weak_dispatch(__a, __expected, __value, __success, __failure, _Sco{}))
     {
       return true;
     }
-    if (0 != __atomic_memcmp(&__old, __expected, sizeof(_Tp)))
+    if (0 != ::cuda::std::__atomic_memcmp(&__old, __expected, sizeof(_Tp)))
     {
       return false;
     }
@@ -166,68 +168,104 @@ _CCCL_API bool __atomic_compare_exchange_strong_dispatch(
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_fetch_add_dispatch(&__a->__a_value, __atomic_small_to_32(__delta), __order, _Sco{}));
+  return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_add_dispatch(
+    &__a->__a_value, ::cuda::std::__atomic_small_to_32(__delta), __order, _Sco{}));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_fetch_sub_dispatch(&__a->__a_value, __atomic_small_to_32(__delta), __order, _Sco{}));
+  return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_sub_dispatch(
+    &__a->__a_value, ::cuda::std::__atomic_small_to_32(__delta), __order, _Sco{}));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_fetch_and_dispatch(&__a->__a_value, __atomic_small_to_32(__pattern), __order, _Sco{}));
+  return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_and_dispatch(
+    &__a->__a_value, ::cuda::std::__atomic_small_to_32(__pattern), __order, _Sco{}));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_fetch_or_dispatch(&__a->__a_value, __atomic_small_to_32(__pattern), __order, _Sco{}));
+  return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_or_dispatch(
+    &__a->__a_value, ::cuda::std::__atomic_small_to_32(__pattern), __order, _Sco{}));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_fetch_xor_dispatch(&__a->__a_value, __atomic_small_to_32(__pattern), __order, _Sco{}));
+  return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_xor_dispatch(
+    &__a->__a_value, ::cuda::std::__atomic_small_to_32(__pattern), __order, _Sco{}));
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>);
-  using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_fetch_max_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
+  using _Tp                                             = __atomic_underlying_t<_Sto>;
+  constexpr bool __is_supported_extended_floating_point = __is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2;
+  static_assert(is_integral_v<_Tp> || __is_supported_extended_floating_point);
+  if constexpr (__is_supported_extended_floating_point)
+  {
+    auto __expected = ::cuda::std::__atomic_load_dispatch(&__a->__a_value, memory_order_relaxed, _Sco{});
+    while (true)
+    {
+      const auto __old     = __atomic_small_from_32<_Tp>(__expected);
+      const auto __desired = ::cuda::std::__cuda_atomic_less(__old, _Tp(__val)) ? _Tp(__val) : __old;
+      if (::cuda::std::__atomic_compare_exchange_strong_dispatch(
+            &__a->__a_value, &__expected, ::cuda::std::__atomic_small_to_32(__desired), __order, __order, _Sco{}))
+      {
+        return __old;
+      }
+    }
+  }
+  else
+  {
+    return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_max_dispatch(
+      &__a->__a_value, ::cuda::std::__atomic_small_to_32(__val), __order, _Sco{}));
+  }
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
-_CCCL_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
+_CCCL_HOST_DEVICE_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>);
-  using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(
-    __atomic_fetch_min_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
+  using _Tp                                             = __atomic_underlying_t<_Sto>;
+  constexpr bool __is_supported_extended_floating_point = __is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2;
+  static_assert(is_integral_v<_Tp> || __is_supported_extended_floating_point);
+  if constexpr (__is_supported_extended_floating_point)
+  {
+    auto __expected = ::cuda::std::__atomic_load_dispatch(&__a->__a_value, memory_order_relaxed, _Sco{});
+    while (true)
+    {
+      const auto __old     = __atomic_small_from_32<_Tp>(__expected);
+      const auto __desired = ::cuda::std::__cuda_atomic_less(_Tp(__val), __old) ? _Tp(__val) : __old;
+      if (::cuda::std::__atomic_compare_exchange_strong_dispatch(
+            &__a->__a_value, &__expected, ::cuda::std::__atomic_small_to_32(__desired), __order, __order, _Sco{}))
+      {
+        return __old;
+      }
+    }
+  }
+  else
+  {
+    return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_min_dispatch(
+      &__a->__a_value, ::cuda::std::__atomic_small_to_32(__val), __order, _Sco{}));
+  }
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

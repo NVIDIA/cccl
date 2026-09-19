@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // The way we currently compile nvrtc is not working with that test
 // UNSUPPORTED: nvrtc && !c++20
 
@@ -72,8 +69,7 @@ static_assert(cur.column() > 0);
 static_assert(cur.column() == 0);
 #endif // !_CCCL_BULTIN_COLUMN
 static_assert(cur.file_name()[0] == __FILE__[0] && cur.file_name()[1] == __FILE__[1]
-                && cur.file_name()[sizeof(__FILE__) - 1] == '\0',
-              "");
+              && cur.file_name()[sizeof(__FILE__) - 1] == '\0');
 
 // MSVC below 19.27 is broken with function name
 #if !TEST_COMPILER(MSVC, <, 19, 27)

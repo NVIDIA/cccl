@@ -78,7 +78,8 @@ struct flags
 
   // [simd.flags.oper], flags operators
   template <typename... _Other>
-  [[nodiscard]] _CCCL_API friend _CCCL_CONSTEVAL flags<_Flags..., _Other...> operator|(flags, flags<_Other...>) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend _CCCL_CONSTEVAL flags<_Flags..., _Other...>
+  operator|(flags, flags<_Other...>) noexcept
   {
     return {};
   }

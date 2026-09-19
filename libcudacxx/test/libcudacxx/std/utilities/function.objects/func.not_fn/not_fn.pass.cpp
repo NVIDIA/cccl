@@ -535,12 +535,12 @@ TEST_FUNC void call_operator_sfinae_test()
     static_assert(cuda::std::is_invocable<T>::value); // callable only with no args
     static_assert(!cuda::std::is_invocable<T, bool>::value);
   }
-#endif // !_CCCL_TILE_COMPILATION()
   { // violates const correctness (member function pointer)
     using T = decltype(cuda::std::not_fn(&MemFunCallable::return_value_nc));
     static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value);
     static_assert(!cuda::std::is_invocable<T, const MemFunCallable&>::value);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // violates const correctness (call object)
     using Obj = CopyCallable<bool>;
     using NCT = decltype(cuda::std::not_fn(Obj{true}));

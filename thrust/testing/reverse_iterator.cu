@@ -39,19 +39,19 @@ void TestReverseIteratorCopyConstructor()
 {
   thrust::host_vector<int> h_v(1, 13);
 
-  thrust::reverse_iterator<thrust::host_vector<int>::iterator> h_iter0(h_v.end());
-  thrust::reverse_iterator<thrust::host_vector<int>::iterator> h_iter1(h_iter0);
+  const thrust::reverse_iterator<thrust::host_vector<int>::iterator> h_iter0(h_v.end());
+  const thrust::reverse_iterator<thrust::host_vector<int>::iterator> h_iter1(h_iter0);
 
-  ASSERT_EQUAL_QUIET(h_iter0, h_iter1);
-  ASSERT_EQUAL(*h_iter0, *h_iter1);
+  REQUIRE(h_iter0 == h_iter1);
+  REQUIRE(*h_iter0 == *h_iter1);
 
   thrust::device_vector<int> d_v(1, 13);
 
-  thrust::reverse_iterator<thrust::device_vector<int>::iterator> d_iter2(d_v.end());
-  thrust::reverse_iterator<thrust::device_vector<int>::iterator> d_iter3(d_iter2);
+  const thrust::reverse_iterator<thrust::device_vector<int>::iterator> d_iter2(d_v.end());
+  const thrust::reverse_iterator<thrust::device_vector<int>::iterator> d_iter3(d_iter2);
 
-  ASSERT_EQUAL_QUIET(d_iter2, d_iter3);
-  ASSERT_EQUAL(*d_iter2, *d_iter3);
+  REQUIRE(d_iter2 == d_iter3);
+  REQUIRE(*d_iter2 == *d_iter3);
 }
 DECLARE_UNITTEST(TestReverseIteratorCopyConstructor);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::reverse_iterator<int*>>::value);
@@ -64,32 +64,32 @@ void TestReverseIteratorIncrement()
 
   thrust::reverse_iterator<thrust::host_vector<int>::iterator> h_iter(h_v.end());
 
-  ASSERT_EQUAL(*h_iter, 3);
+  REQUIRE(*h_iter == 3);
 
   h_iter++;
-  ASSERT_EQUAL(*h_iter, 2);
+  REQUIRE(*h_iter == 2);
 
   h_iter++;
-  ASSERT_EQUAL(*h_iter, 1);
+  REQUIRE(*h_iter == 1);
 
   h_iter++;
-  ASSERT_EQUAL(*h_iter, 0);
+  REQUIRE(*h_iter == 0);
 
   thrust::device_vector<int> d_v(4);
   thrust::sequence(d_v.begin(), d_v.end());
 
   thrust::reverse_iterator<thrust::device_vector<int>::iterator> d_iter(d_v.end());
 
-  ASSERT_EQUAL(*d_iter, 3);
+  REQUIRE(*d_iter == 3);
 
   d_iter++;
-  ASSERT_EQUAL(*d_iter, 2);
+  REQUIRE(*d_iter == 2);
 
   d_iter++;
-  ASSERT_EQUAL(*d_iter, 1);
+  REQUIRE(*d_iter == 1);
 
   d_iter++;
-  ASSERT_EQUAL(*d_iter, 0);
+  REQUIRE(*d_iter == 0);
 }
 DECLARE_UNITTEST(TestReverseIteratorIncrement);
 
@@ -105,7 +105,7 @@ void TestReverseIteratorCopy()
 
   destination.resize(4);
   Vector ref{40, 30, 20, 10};
-  ASSERT_EQUAL(destination, ref);
+  REQUIRE(destination == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestReverseIteratorCopy);
 
@@ -128,7 +128,7 @@ void TestReverseIteratorExclusiveScanSimple()
   thrust::exclusive_scan(
     thrust::make_reverse_iterator(d_data.end()), thrust::make_reverse_iterator(d_data.begin()), d_result.begin());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_UNITTEST(TestReverseIteratorExclusiveScanSimple);
 
@@ -150,7 +150,7 @@ struct TestReverseIteratorExclusiveScan
     thrust::exclusive_scan(
       thrust::make_reverse_iterator(d_data.end()), thrust::make_reverse_iterator(d_data.begin()), d_result.begin());
 
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
-VariableUnitTest<TestReverseIteratorExclusiveScan, IntegralTypes> TestReverseIteratorExclusiveScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseIteratorExclusiveScan, IntegralTypes);

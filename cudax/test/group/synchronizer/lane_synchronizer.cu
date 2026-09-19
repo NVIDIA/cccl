@@ -24,6 +24,8 @@ namespace
 template <class Level, class Config>
 __device__ void test_lane_synchronizer(const Level& level, Config config)
 {
+  const auto& hierarchy = config.hierarchy();
+
   using Synchronizer = cudax::lane_synchronizer;
   static_assert(cuda::std::is_empty_v<Synchronizer>);
 
@@ -33,29 +35,38 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
   // Test make_instance(...).
   {
     const auto parent_group = cudax::make_this_group(level, config);
+    const ThreadsInWarpMappingResult prev_mapping_result;
 
     const cudax::group_by mapping{2};
     const Synchronizer synchronizer{};
 
-    const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group);
-    const auto synchronizer_instance =
-      synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
-
-    const auto this_lane_mask = cuda::ptx::get_sreg_lanemask_eq();
-    const auto another_lane_mask =
-      cuda::std::rotl(this_lane_mask, (cuda::std::countr_zero(this_lane_mask) % 2 == 0) ? 1 : -1);
-    CUDAX_CHECK(synchronizer_instance.__lane_mask_ == (this_lane_mask | another_lane_mask));
+    const auto mapping_result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
+    auto synchronizer_instance = synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping_result);
 
     // Test do_sync(...).
-    static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, synchronizer))>);
-    static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, synchronizer)));
-    synchronizer_instance.do_sync(mapping_result, synchronizer);
+    static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, hierarchy))>);
+    static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, hierarchy)));
+    synchronizer_instance.do_sync(mapping_result, hierarchy);
 
     // Test do_sync_aligned(...).
     static_assert(
-      cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer))>);
-    static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, synchronizer)));
-    synchronizer_instance.do_sync_aligned(mapping_result, synchronizer);
+      cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(mapping_result, hierarchy))>);
+    static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, hierarchy)));
+    synchronizer_instance.do_sync_aligned(mapping_result, hierarchy);
+
+    // Test view().
+    static_assert(cuda::std::is_same_v<decltype(synchronizer_instance), decltype(synchronizer_instance.view())>);
+    static_assert(noexcept(synchronizer_instance.view()));
+    auto synchronizer_instance_view = synchronizer_instance.view();
+    synchronizer_instance_view.do_sync(mapping_result, hierarchy);
+    synchronizer_instance_view.do_sync_aligned(mapping_result, hierarchy);
+    (void) synchronizer_instance_view.view();
+    synchronizer_instance_view.deinit(mapping_result, hierarchy); // should be noop
+
+    // Test deinit(...);
+    static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);
+    static_assert(noexcept(synchronizer_instance.deinit(mapping_result, hierarchy)));
+    synchronizer_instance.deinit(mapping_result, hierarchy);
   }
 }
 

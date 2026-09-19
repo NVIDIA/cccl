@@ -189,7 +189,7 @@ TEST_FUNC void bullet_one_two_tests()
     test_b12<int volatile&(NonCopyable&&) volatile&, int volatile&>(cl);
     test_b12<int const volatile&(NonCopyable&&) const volatile&, int const volatile&>(cl);
 
-    test_b12<int && (NonCopyable&&) &&, int&&>(cuda::std::move(cl));
+    test_b12<int&&(NonCopyable&&) &&, int&&>(cuda::std::move(cl));
     test_b12<int const && (NonCopyable&&) const&&, int const&&>(cuda::std::move(cl));
     test_b12<int volatile && (NonCopyable&&) volatile&&, int volatile&&>(cuda::std::move(cl));
     test_b12<int const volatile && (NonCopyable&&) const volatile&&, int const volatile&&>(cuda::std::move(cl));
@@ -201,7 +201,7 @@ TEST_FUNC void bullet_one_two_tests()
     test_b12<int volatile&(NonCopyable&&) volatile&, int volatile&>(cl);
     test_b12<int const volatile&(NonCopyable&&) const volatile&, int const volatile&>(cl);
 
-    test_b12<int && (NonCopyable&&) &&, int&&>(cuda::std::move(cl));
+    test_b12<int&&(NonCopyable&&) &&, int&&>(cuda::std::move(cl));
     test_b12<int const && (NonCopyable&&) const&&, int const&&>(cuda::std::move(cl));
     test_b12<int volatile && (NonCopyable&&) volatile&&, int volatile&&>(cuda::std::move(cl));
     test_b12<int const volatile && (NonCopyable&&) const volatile&&, int const volatile&&>(cuda::std::move(cl));
@@ -394,6 +394,38 @@ TEST_FUNC void noexcept_test()
     static_assert(noexcept(cuda::std::invoke(&MemberObj::x, obj)));
   }
 }
+
+// ensure that we allow `__device__` functions too
+struct with_device_op
+{
+  TEST_DEVICE_FUNC constexpr bool operator()(const int) const
+  {
+    return {};
+  }
+};
+
+__global__ void test_kernel()
+{
+  with_device_op op{};
+  assert(cuda::std::invoke(op, 42));
+}
+
+#if _CCCL_TILE_COMPILATION()
+// ensure that we allow `__tile__` functions too
+struct with_tile_op
+{
+  TEST_TILE_FUNC constexpr bool operator()(const int) const
+  {
+    return {};
+  }
+};
+
+__tile_global__ void test_tile_kernel()
+{
+  with_tile_op op{};
+  assert(cuda::std::invoke(op, 42));
+}
+#endif // _CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {

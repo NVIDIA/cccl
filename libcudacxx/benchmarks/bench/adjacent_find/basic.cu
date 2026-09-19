@@ -22,7 +22,8 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
-  const auto mismatch_point = cuda::std::clamp<std::size_t>(elements * common_prefix, 0, elements - 2);
+  const auto mismatch_point = cuda::std::clamp<std::size_t>(
+    static_cast<std::size_t>(static_cast<double>(elements) * common_prefix), std::size_t{0}, elements - 2);
 
   thrust::device_vector<T> in(elements, thrust::no_init);
   thrust::sequence(in.begin(), in.end(), 0);
@@ -50,7 +51,8 @@ static void with_comp(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
-  const auto mismatch_point = cuda::std::clamp<std::size_t>(elements * common_prefix, 0, elements - 2);
+  const auto mismatch_point = cuda::std::clamp<std::size_t>(
+    static_cast<std::size_t>(static_cast<double>(elements) * common_prefix), std::size_t{0}, elements - 2);
 
   thrust::device_vector<T> in(elements, thrust::no_init);
   thrust::sequence(in.begin(), in.end(), 0);

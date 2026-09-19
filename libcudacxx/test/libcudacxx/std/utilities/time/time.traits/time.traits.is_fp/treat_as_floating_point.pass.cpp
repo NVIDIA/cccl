@@ -19,7 +19,7 @@ template <class T>
 TEST_FUNC void test()
 {
   static_assert(
-    (cuda::std::is_base_of<cuda::std::is_floating_point<T>, cuda::std::chrono::treat_as_floating_point<T>>::value), "");
+    (cuda::std::is_base_of<cuda::std::is_floating_point<T>, cuda::std::chrono::treat_as_floating_point<T>>::value));
   static_assert(cuda::std::is_floating_point<T>::value == cuda::std::chrono::treat_as_floating_point_v<T>);
 }
 

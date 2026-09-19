@@ -148,10 +148,10 @@ public:
 TEST_FUNC void test_after_tuple_size_specialization()
 {
   Test const t{99};
-  auto& [p] = t;
-#if !_CCCL_COMPILER(NVRTC) // nvbug4053842
+  [[maybe_unused]] auto& [p] = t;
+#if !TEST_COMPILER(NVRTC) && !TEST_COMPILER(MSVC) // nvbug4053842
   assert(p == -1);
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // !TEST_COMPILER(NVRTC) && !TEST_COMPILER(MSVC)
 }
 
 int main(int, char**)

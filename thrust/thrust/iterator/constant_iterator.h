@@ -103,8 +103,8 @@ struct make_constant_iterator_base
  *  \endverbatim
  */
 template <typename Value, typename Incrementable = use_default, typename System = use_default>
-class CCCL_DEPRECATED_BECAUSE("Use cuda::constant_iterator instead") constant_iterator
-    : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
+class CCCL_DEPRECATED_BECAUSE("Use cuda::constant_iterator instead")
+constant_iterator : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
 {
   //! \cond
   friend class iterator_core_access;
@@ -178,7 +178,7 @@ private: // Core iterator interface
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class ValueT>
-_CCCL_HOST_DEVICE constant_iterator(ValueT) -> constant_iterator<ValueT>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES constant_iterator(ValueT) -> constant_iterator<ValueT>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! This version of \p make_constant_iterator creates a \p constant_iterator from values given for both value and index.

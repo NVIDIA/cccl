@@ -21,9 +21,12 @@
 #include <utility>
 #include <vector>
 
+#include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/vector.h>
+
+CUB_TEST_MEMORY_CLASS(CUB_LARGE);
 
 /**
  * @brief Host-side random data generation
@@ -181,7 +184,7 @@ try
 {
   // Range segment data (their offsets and sizes)
   c2h::host_vector<RangeSizeT> h_range_sizes(num_ranges);
-  cuda::counting_iterator<RangeOffsetT> iota(0);
+  const cuda::counting_iterator<RangeOffsetT> iota(0);
   auto d_range_srcs = cuda::transform_iterator(iota, RepeatIndex<AtomicT>{});
   c2h::host_vector<ByteOffsetT> h_offsets(num_ranges + 1);
 
@@ -204,11 +207,11 @@ try
   // Device-side resources
   c2h::device_vector<AtomicT> d_out(num_total_items);
   c2h::device_vector<ByteOffsetT> d_offsets(h_offsets);
-  c2h::device_vector<RangeSizeT> d_range_sizes(h_range_sizes);
+  const c2h::device_vector<RangeSizeT> d_range_sizes(h_range_sizes);
 
   // Prepare d_range_dsts
   using AtomicIterT = typename c2h::device_vector<AtomicT>::iterator;
-  OffsetToIteratorOp<AtomicIterT> dst_transform_op{d_out.begin()};
+  const OffsetToIteratorOp<AtomicIterT> dst_transform_op{d_out.begin()};
   auto d_range_dsts = cuda::transform_iterator(d_offsets.begin(), dst_transform_op);
 
   // Get temporary storage requirements
@@ -243,8 +246,11 @@ try
 
   if (it_pair.first != h_gpu_results.cend())
   {
-    std::cout << "Mismatch at index " << std::distance(h_gpu_results.cbegin(), it_pair.first)
-              << ", CPU vs. GPU: " << *it_pair.second << ", " << *it_pair.first << "\n";
+    std::cout
+      << "Mismatch at index "
+      << std::distance(h_gpu_results.cbegin(), it_pair.first)
+      // NOLINTNEXTLINE(bugprone-unintended-char-ostream-output)
+      << ", CPU vs. GPU: " << *it_pair.second << ", " << *it_pair.first << "\n";
   }
   AssertEquals(it_pair.first, h_gpu_results.cend());
 }
@@ -258,6 +264,7 @@ catch ([[maybe_unused]] std::bad_alloc& e)
     << TestDataGenToString(output_gen) << ")" //
     << "' due to insufficient memory: " << e.what() << "\n";
 #endif // DEBUG_CHECKED_ALLOC_FAILURE
+  return;
 }
 
 struct object_with_non_trivial_ctor
@@ -315,10 +322,10 @@ void nontrivial_constructor_test()
 
   for (int i = 0; i < num_buffers; i++)
   {
-    object_with_non_trivial_ctor ha(a[i]);
-    object_with_non_trivial_ctor hb(b[i]);
-    int ia = ha.field;
-    int ib = hb.field;
+    const object_with_non_trivial_ctor ha(a[i]);
+    const object_with_non_trivial_ctor hb(b[i]);
+    const int ia = ha.field;
+    const int ib = hb.field;
 
     if (ia != ib)
     {
@@ -381,12 +388,12 @@ int main(int argc, char** argv)
   for (const auto& size_range : size_ranges)
   {
     // The most granular type being copied.
-    using AtomicCopyT         = int64_t;
-    RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
-    RangeSizeT max_range_size =
+    using AtomicCopyT               = int64_t;
+    const RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
+    const RangeSizeT max_range_size =
       static_cast<RangeSizeT>(cuda::round_up(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
-    double average_range_size      = (min_range_size + max_range_size) / 2.0;
-    RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
+    const double average_range_size      = (min_range_size + max_range_size) / 2.0;
+    const RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
     // Run tests with output ranges being consecutive
     RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(
@@ -400,12 +407,12 @@ int main(int argc, char** argv)
   for (const auto& size_range : size_ranges)
   {
     // The most granular type being copied.
-    using AtomicCopyT         = cuda::std::tuple<int64_t, int32_t, int16_t, char, char>;
-    RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
-    RangeSizeT max_range_size =
+    using AtomicCopyT               = cuda::std::tuple<int64_t, int32_t, int16_t, char, char>;
+    const RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
+    const RangeSizeT max_range_size =
       static_cast<RangeSizeT>(cuda::round_up(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
-    double average_range_size      = (min_range_size + max_range_size) / 2.0;
-    RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
+    const double average_range_size      = (min_range_size + max_range_size) / 2.0;
+    const RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
     // Run tests with output ranges being consecutive
     RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(
@@ -421,7 +428,7 @@ int main(int argc, char** argv)
   //---------------------------------------------------------------------
   using ByteOffset64T = uint64_t;
   using RangeSize64T  = uint64_t;
-  ByteOffset64T large_target_copy_size =
+  const ByteOffset64T large_target_copy_size =
     static_cast<ByteOffset64T>(::cuda::std::numeric_limits<uint32_t>::max()) + (128ULL * 1024ULL * 1024ULL);
   // Make sure min_range_size is in fact smaller than max range size
   constexpr RangeOffsetT single_range = 1;

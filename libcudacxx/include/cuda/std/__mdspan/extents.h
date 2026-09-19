@@ -257,7 +257,7 @@ public:
       : _DynamicValues{}
   {
     static_assert((sizeof...(_DynVals) == __size_), "Invalid number of values.");
-    _TDynamic __values[__size_] = {static_cast<_TDynamic>(__vals)...};
+    const _TDynamic __values[__size_] = {static_cast<_TDynamic>(__vals)...};
     for (size_t __i = 0; __i < __size_; __i++)
     {
       _TStatic __static_val = _StaticValues::__get(__i);
@@ -637,7 +637,8 @@ struct __to_dynamic_extent
 
 // Deduction guide for extents
 template <class... _IndexTypes>
-_CCCL_HOST_DEVICE extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent::template value<_IndexTypes>...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES extents(_IndexTypes...)
+  -> extents<size_t, __to_dynamic_extent::template value<_IndexTypes>...>;
 
 namespace __mdspan_detail
 {

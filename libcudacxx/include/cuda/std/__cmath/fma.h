@@ -40,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_FMAL(...) __builtin_fmal(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
 
-[[nodiscard]] _CCCL_API inline float fma(float __x, float __y, float __z) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float fma(float __x, float __y, float __z) noexcept
 {
 #if defined(_CCCL_BUILTIN_FMAF)
   return _CCCL_BUILTIN_FMAF(__x, __y, __z);
@@ -49,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // ^^^ !_CCCL_BUILTIN_FMAF ^^^
 }
 
-[[nodiscard]] _CCCL_API inline float fmaf(float __x, float __y, float __z) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float fmaf(float __x, float __y, float __z) noexcept
 {
 #if defined(_CCCL_BUILTIN_FMAF)
   return _CCCL_BUILTIN_FMAF(__x, __y, __z);
@@ -58,7 +58,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // ^^^ !_CCCL_BUILTIN_FMAF ^^^
 }
 
-[[nodiscard]] _CCCL_API inline double fma(double __x, double __y, double __z) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double fma(double __x, double __y, double __z) noexcept
 {
 #if defined(_CCCL_BUILTIN_FMA)
   return _CCCL_BUILTIN_FMA(__x, __y, __z);
@@ -68,7 +68,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double fma(long double __x, long double __y, long double __z) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double fma(long double __x, long double __y, long double __z) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FMAL)
   return _CCCL_BUILTIN_FMAL(__x, __y, __z);
@@ -77,7 +77,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  endif // ^^^ !_CCCL_BUILTIN_FMAL ^^^
 }
 
-[[nodiscard]] _CCCL_API inline long double fmal(long double __x, long double __y, long double __z) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double fmal(long double __x, long double __y, long double __z) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FMAL)
   return _CCCL_BUILTIN_FMAL(__x, __y, __z);
@@ -88,7 +88,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half fma(__half __x, __half __y, __half __z) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half fma(__half __x, __half __y, __half __z) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53,
@@ -98,7 +98,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 fma(__nv_bfloat16 __x, __nv_bfloat16 __y, __nv_bfloat16 __z) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16
+fma(__nv_bfloat16 __x, __nv_bfloat16 __y, __nv_bfloat16 __z) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
@@ -112,7 +113,7 @@ template <class _A1,
           class _A2,
           class _A3,
           enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2> && is_arithmetic_v<_A3>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2, _A3> fma(_A1 __x, _A2 __y, _A3 __z) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __promote_t<_A1, _A2, _A3> fma(_A1 __x, _A2 __y, _A3 __z) noexcept
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
   static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>) );

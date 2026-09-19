@@ -22,10 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/terminate.h>
-
-#if _CCCL_HOSTED()
-#  include <cstdio>
-#endif // _CCCL_HOSTED()
+#include <cuda/std/__host_stdlib/cstdio>
 
 #include <cuda/std/__cccl/prologue.h>
 

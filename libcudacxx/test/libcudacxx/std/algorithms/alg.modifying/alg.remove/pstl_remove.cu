@@ -65,6 +65,7 @@ void test_remove(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(cuda::std::distance(random_access_iterator{raw_pointer}, res) == size - 1);
   }
 
+#if !TEST_COMPILER(GCC, <, 8) // GCC7 complains bitterly about signed unsignned comparisons
   if constexpr (::cuda::std::__is_cpp17_equality_comparable_v<T, int>)
   {
     thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
@@ -84,6 +85,7 @@ void test_remove(const Policy& policy, c2h::device_vector<T>& input)
       CHECK(cuda::std::distance(random_access_iterator{raw_pointer}, res) == size - 1);
     }
   }
+#endif // ! TEST_COMPILER(GCC , <, 8)
 }
 
 C2H_TEST("cuda::std::remove", "[parallel algorithm]", all_types)
@@ -99,7 +101,7 @@ C2H_TEST("cuda::std::remove", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_remove(policy, input);
   }
@@ -113,7 +115,7 @@ C2H_TEST("cuda::std::remove", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);

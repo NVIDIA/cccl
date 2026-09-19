@@ -38,20 +38,20 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
   is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   thrust::partition(v.begin(), v.end(), is_even<int>());
 
   is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 }
 
 void TestIsPartitionedDeviceSeq()
@@ -79,24 +79,19 @@ void TestIsPartitionedCudaStreams()
   cudaStreamCreate(&s);
 
   // empty partition
-  ASSERT_EQUAL_QUIET(true,
-                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin(), ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin(), ::cuda::std::identity{}));
 
   // one element true partition
-  ASSERT_EQUAL_QUIET(
-    true, thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin() + 1, ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin() + 1, ::cuda::std::identity{}));
 
   // just true partition
-  ASSERT_EQUAL_QUIET(
-    true, thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin() + 2, ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin() + 2, ::cuda::std::identity{}));
 
   // both true & false partitions
-  ASSERT_EQUAL_QUIET(true,
-                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
   // one element false partition
-  ASSERT_EQUAL_QUIET(true,
-                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin() + 3, v.end(), ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(thrust::cuda::par.on(s), v.begin() + 3, v.end(), ::cuda::std::identity{}));
 
   v[0] = 1;
   v[1] = 0;
@@ -104,9 +99,29 @@ void TestIsPartitionedCudaStreams()
   v[3] = 1;
 
   // not partitioned
-  ASSERT_EQUAL_QUIET(false,
-                     thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestIsPartitionedCudaStreams);
+
+template <typename T>
+struct is_even_non_const
+{
+  _CCCL_HOST_DEVICE bool operator()(T x) // no const
+  {
+    return ((int) x % 2) == 0;
+  }
+};
+
+void TestIsPartitionedWithNonConstPredicate()
+{
+  thrust::device_vector<int> partitioned   = {0, 2, 4, 1, 3, 5};
+  thrust::device_vector<int> unpartitioned = {0, 1, 2, 3};
+
+  REQUIRE(thrust::is_partitioned(thrust::cuda::par, partitioned.begin(), partitioned.end(), is_even_non_const<int>{}));
+
+  REQUIRE_FALSE(
+    thrust::is_partitioned(thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), is_even_non_const<int>{}));
+}
+DECLARE_UNITTEST(TestIsPartitionedWithNonConstPredicate);

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -74,7 +74,8 @@ jq -cn \
           "cub_filters": $cub_filters,
           "python_filters": $python_filters,
           "nvbench_args": ($cfg.nvbench_args // ""),
-          "nvbench_compare_args": ($cfg.nvbench_compare_args // "")
+          "nvbench_compare_args": ($cfg.nvbench_compare_args // ""),
+          "nvbench_compare_legacy_args": ($cfg.nvbench_compare_legacy_args // "")
         }
     ]
   }'

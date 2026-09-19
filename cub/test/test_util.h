@@ -47,14 +47,14 @@
 /**
  * Assert equals
  */
-#define AssertEquals(a, b)                                                                           \
+#define AssertEquals(a, b) /* NOLINT(readability-identifier-naming) */                               \
   if ((a) != (b))                                                                                    \
   {                                                                                                  \
     std::cerr << "\n" << __FILE__ << ": " << __LINE__ << ": AssertEquals(" #a ", " #b ") failed.\n"; \
     exit(1);                                                                                         \
   }
 
-#define AssertTrue(a)                                                                      \
+#define AssertTrue(a) /* NOLINT(readability-identifier-naming) */                          \
   if (!(a))                                                                                \
   {                                                                                        \
     std::cerr << "\n" << __FILE__ << ": " << __LINE__ << ": AssertTrue(" #a ") failed.\n"; \
@@ -101,9 +101,9 @@ struct CommandLineArgs
         continue;
       }
 
-      string::size_type pos;
       string key, val;
-      if ((pos = arg.find('=')) == string::npos)
+      const string::size_type pos = arg.find('=');
+      if (pos == string::npos)
       {
         key = string(arg, 2, arg.length() - 2);
         val = "";
@@ -142,7 +142,7 @@ struct CommandLineArgs
   template <typename T>
   int NumNakedArgs()
   {
-    return args.size();
+    return static_cast<int>(args.size());
   }
 
   /**
@@ -195,7 +195,7 @@ struct CommandLineArgs
       {
         if (keys[i] == string(arg_name))
         {
-          string val_string(values[i]);
+          const string val_string(values[i]);
           istringstream str_stream(val_string);
           string::size_type old_pos = 0;
           string::size_type new_pos = 0;
@@ -206,7 +206,7 @@ struct CommandLineArgs
           {
             if (new_pos != old_pos)
             {
-              str_stream.width(new_pos - old_pos);
+              str_stream.width(static_cast<std::streamsize>(new_pos - old_pos));
               str_stream >> val;
               vals.push_back(val);
             }
@@ -303,7 +303,7 @@ struct CommandLineArgs
         break;
       }
 
-      device_giga_bandwidth = float(memoryBusWidth) * memoryClockRate * 2 / 8 / 1000 / 1000;
+      device_giga_bandwidth = float(memoryBusWidth) * static_cast<float>(memoryClockRate) * 2 / 8 / 1000 / 1000;
 
       if (!CheckCmdLineFlag("quiet"))
       {
@@ -391,7 +391,7 @@ void RandomBits(K& key, int entropy_reduction = 0, int begin_bit = 0, int end_bi
     // Generate random word_buff
     for (int j = 0; j < NUM_WORDS; j++)
     {
-      int current_bit = j * WORD_BYTES * 8;
+      const int current_bit = j * WORD_BYTES * 8;
 
       unsigned int word = 0xffffffff;
       word &= 0xffffffff << ::cuda::std::max(0, begin_bit - current_bit);
@@ -421,7 +421,7 @@ template <typename T>
 T RandomValue(T max)
 {
   unsigned int bits;
-  unsigned int max_int = (unsigned int) -1;
+  const unsigned int max_int = (unsigned int) -1;
   do
   {
     RandomBits(bits);
@@ -673,6 +673,30 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 
   return os;
 }
+
+// NVHPC incorrectly identifies 128-bit integers as stream-insertable in Catch2's detection trait, but then fails to
+// select the global stream insertion overloads above. Explicit string makers bypass the faulty detection.
+template <>
+struct Catch::StringMaker<__uint128_t>
+{
+  static std::string convert(__uint128_t val)
+  {
+    std::ostringstream os;
+    ::operator<<(os, val);
+    return os.str();
+  }
+};
+
+template <>
+struct Catch::StringMaker<__int128_t>
+{
+  static std::string convert(__int128_t val)
+  {
+    std::ostringstream os;
+    ::operator<<(os, val);
+    return os.str();
+  }
+};
 #endif
 
 /******************************************************************************
@@ -741,6 +765,7 @@ CUB_VEC_OVERLOAD_OLD(char)
 CUB_VEC_OVERLOAD_OLD(short)
 CUB_VEC_OVERLOAD_OLD(int)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_VEC_OVERLOAD_OLD(long)
 CUB_VEC_OVERLOAD_OLD(longlong)
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -754,6 +779,7 @@ CUB_VEC_OVERLOAD_OLD(uchar)
 CUB_VEC_OVERLOAD_OLD(ushort)
 CUB_VEC_OVERLOAD_OLD(uint)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_VEC_OVERLOAD_OLD(ulong)
 CUB_VEC_OVERLOAD_OLD(ulonglong)
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -765,6 +791,7 @@ CUB_VEC_OVERLOAD_4_OLD(ulonglong4_32a)
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 CUB_VEC_OVERLOAD_OLD(float)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 CUB_VEC_OVERLOAD_OLD(double)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #if _CCCL_CTK_AT_LEAST(13, 0)
@@ -811,7 +838,7 @@ struct TestFoo
   // Summation operator
   __host__ __device__ __forceinline__ TestFoo operator+(const TestFoo& b) const
   {
-    return MakeTestFoo(x + b.x, y + b.y, z + b.z, w + b.w);
+    return MakeTestFoo(x + b.x, y + b.y, static_cast<short>(z + b.z), static_cast<char>(w + b.w));
   }
 
   // Inequality operator
@@ -1086,8 +1113,8 @@ int CompareResults(float* computed, float* reference, OffsetT len, bool verbose 
   {
     if (computed[i] != reference[i])
     {
-      float difference = std::abs(computed[i] - reference[i]);
-      float fraction   = difference / std::abs(reference[i]);
+      const float difference = std::abs(computed[i] - reference[i]);
+      const float fraction   = difference / std::abs(reference[i]);
 
       if (fraction > 0.00015)
       {
@@ -1125,8 +1152,8 @@ int CompareResults(double* computed, double* reference, OffsetT len, bool verbos
   {
     if (computed[i] != reference[i])
     {
-      double difference = std::abs(computed[i] - reference[i]);
-      double fraction   = difference / std::abs(reference[i]);
+      const double difference = std::abs(computed[i] - reference[i]);
+      const double fraction   = difference / std::abs(reference[i]);
 
       if (fraction > 0.00015)
       {
@@ -1207,7 +1234,7 @@ int CompareDeviceResults(
   }
 
   // Check
-  int retval = CompareResults(h_data, h_reference, num_items, verbose);
+  const int retval = CompareResults(h_data, h_reference, num_items, verbose);
 
   // Cleanup
   if (h_data)
@@ -1391,8 +1418,8 @@ struct CpuTimer
 
   float ElapsedMillis()
   {
-    float sec  = stop.ru_utime.tv_sec - start.ru_utime.tv_sec;
-    float usec = stop.ru_utime.tv_usec - start.ru_utime.tv_usec;
+    const float sec  = static_cast<float>(stop.ru_utime.tv_sec - start.ru_utime.tv_sec);
+    const float usec = static_cast<float>(stop.ru_utime.tv_usec - start.ru_utime.tv_usec);
 
     return (sec * 1000) + (usec / 1000);
   }

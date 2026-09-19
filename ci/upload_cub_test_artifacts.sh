@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -60,13 +60,18 @@ for preset_variant in "${preset_variants[@]}"; do
       "$build_dir_regex/.*rules\.ninja$" \
       "$build_dir_regex/CMakeCache\.txt$" \
       "$build_dir_regex/.*VerifyGlobs\.cmake$" \
-      "$build_dir_regex/.*CTestTestfile\.cmake$" > /dev/null
+      "$build_dir_regex/.*CTestTestfile\.cmake$" \
+      "$build_dir_regex/cub/rapids-cmake/.*" > /dev/null
 
   # Add per-preset executables:
   if [[ "$preset_variant" == lid_* ]]; then
     ci/util/artifacts/stage.sh  \
         "$artifact_prefix-$preset_variant" \
         "$build_dir_regex/bin/.*\.$preset_variant.*" > /dev/null
+    # The CUDA runtime smoke binary is invoked explicitly from build_common.sh
+    ci/util/artifacts/stage.sh  \
+        "$artifact_prefix-$preset_variant" \
+        "$build_dir_regex/bin/cccl\.test\.cuda_runtime_smoke$" > /dev/null
     # Windows builds generate binaries for the header tests, remove these:
     ci/util/artifacts/unstage.sh  \
         "$artifact_prefix-$preset_variant" \

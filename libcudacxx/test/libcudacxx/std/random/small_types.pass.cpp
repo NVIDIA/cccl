@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 //
@@ -51,7 +51,7 @@ template struct smoke_int_distribution<cuda::std::poisson_distribution, unsigned
 // signed char / unsigned char.
 
 template <class IntType>
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_uniform_int_small_type()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_uniform_int_small_type()
 {
   using D = cuda::std::uniform_int_distribution<IntType>;
   using P = typename D::param_type;
@@ -85,7 +85,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_uniform_int_small_type()
   return true;
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_small_lce()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_small_lce()
 {
   // A trivially small linear_congruential_engine with an 8-bit result_type.
   // Parameters chosen so 0 <= c < m and 0 <= a < m, and _Min (=0) < _Max (=12).

@@ -9,8 +9,11 @@
 
 // UNSUPPORTED: nvrtc
 
+#include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
 
 #include <array>
 #include <complex>
@@ -20,7 +23,7 @@
 #include "test_macros.h"
 
 template <class STD_TYPE, size_t Size>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   static_assert(cuda::std::tuple_size<STD_TYPE>::value == Size);
   static_assert(cuda::std::tuple_size<const STD_TYPE>::value == Size);
@@ -28,7 +31,7 @@ __host__ __device__ constexpr void test()
   static_assert(cuda::std::tuple_size<const volatile STD_TYPE>::value == Size);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // complex has a size of 2
   test<::std::complex<float>, 2>();

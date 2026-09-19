@@ -18,8 +18,8 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
+#include "cub_test_macros.h"
 #include "cuda/__iterator/tabulate_output_iterator.h"
-#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 
 template <cub::detail::topk::select SelectDirection,
@@ -70,7 +70,7 @@ using key_types =
 
 using custom_key_types = c2h::type_list<topk_custom_key_t>;
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", key_types, directions)
+CUB_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", CUB_SMALL, key_types, directions)
 {
   using key_t              = c2h::get<0, TestType>;
   constexpr auto direction = c2h::get<1, TestType>::value;
@@ -111,7 +111,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", k
   REQUIRE(expected_keys == keys_out);
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]", key_types)
+CUB_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]", CUB_SMALL, key_types)
 {
   using key_t              = c2h::get<0, TestType>;
   using num_items_t        = cuda::std::uint32_t;
@@ -152,7 +152,8 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]"
   }
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys works with a large number of items", "[keys][topk][device]", num_items_types)
+CUB_TEST(
+  "DeviceTopK::{Min,Max}Keys works with a large number of items", "[keys][topk][device]", CUB_LARGE, num_items_types)
 try
 {
   using key_t              = cuda::std::uint32_t;
@@ -193,8 +194,9 @@ catch (std::bad_alloc& e)
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
+CUB_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
          "[keys][topk][device]",
+         CUB_SMALL,
          custom_key_types,
          directions)
 {
@@ -265,8 +267,9 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
   REQUIRE(expected_keys == keys_out);
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys works for different offset types for num_items and k",
+CUB_TEST("DeviceTopK::{Min,Max}Keys works for different offset types for num_items and k",
          "[keys][topk][device]",
+         CUB_LARGE,
          k_items_types)
 try
 {

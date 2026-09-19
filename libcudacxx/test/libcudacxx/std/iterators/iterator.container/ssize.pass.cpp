@@ -74,12 +74,16 @@ TEST_FUNC void test_const_array(const T (&array)[Sz])
   assert(cuda::std::ssize(array) == Sz);
 }
 
-TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
-
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION() // error: calling a host device function in tile mode
   cuda::std::inplace_vector<int, 3> v;
   v.push_back(1);
+  test_container(v);
+  test_const_container(v);
+  static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(v))>);
+#endif // !_CCCL_TILE_COMPILATION()
+
 #if defined(_LIBCUDACXX_HAS_LIST)
   cuda::std::list<int> l;
   l.push_back(2);
@@ -88,8 +92,6 @@ int main(int, char**)
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
 
-  test_container(v);
-  static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(v))>);
 #if defined(_LIBCUDACXX_HAS_LIST)
   test_container(l);
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(l))>);
@@ -99,7 +101,6 @@ int main(int, char**)
   test_container(il);
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(il))>);
 
-  test_const_container(v);
 #if defined(_LIBCUDACXX_HAS_LIST)
   test_const_container(l);
 #endif
@@ -111,11 +112,10 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(sv))>);
   test_const_container(sv);
 
-#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("arrA") cannot be used in tile code
+  constexpr int arrA[]{1, 2, 3};
   static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(arrA))>);
   static_assert(cuda::std::is_signed_v<decltype(cuda::std::ssize(arrA))>);
   test_const_array(arrA);
-#endif // !_CCCL_TILE_COMPILATION()
 
   //  From P1227R2:
   //     Note that the code does not just return the cuda::std::make_signed variant of

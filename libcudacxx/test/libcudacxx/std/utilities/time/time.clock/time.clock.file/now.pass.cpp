@@ -9,6 +9,9 @@
 // UNSUPPORTED: c++17
 // XFAIL: dylib-has-no-filesystem
 
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
+
 // File clock is unsupported in NVRTC
 // UNSUPPORTED: nvrtc
 

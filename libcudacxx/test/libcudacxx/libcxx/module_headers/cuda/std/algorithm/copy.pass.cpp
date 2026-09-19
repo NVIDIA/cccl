@@ -13,7 +13,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int a[] = {1, 2, 3};
   int o[3]          = {};

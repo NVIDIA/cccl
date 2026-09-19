@@ -207,6 +207,7 @@ def extract_doxygen_items(xml_dir):
         "typedefs": [],
         "enums": [],
         "variables": [],
+        "macros": [],
         "function_groups": {},  # Group functions by name for overloads
         "groups": [],  # Doxygen groups
     }
@@ -323,6 +324,47 @@ def extract_doxygen_items(xml_dir):
 
                 items["typedefs"].append((qualified_name, typedef_refid))
 
+        # Extract documented macros from file compounds. Doxygen records macros as
+        # file-level "define" members, not namespace members.
+        seen_macros = set()
+        for compound in root.findall('.//compound[@kind="file"]'):
+            refid = compound.get("refid")
+            if not refid:
+                continue
+
+            file_xml_file = xml_path / f"{refid}.xml"
+            if not file_xml_file.exists():
+                continue
+
+            try:
+                file_tree = ET.parse(file_xml_file)
+                file_root = file_tree.getroot()
+                for memberdef in file_root.findall('.//memberdef[@kind="define"]'):
+                    macro_refid = memberdef.get("id")
+                    name_elem = memberdef.find("name")
+                    if macro_refid is None or name_elem is None or not name_elem.text:
+                        continue
+
+                    has_description = any(
+                        "".join(description.itertext()).strip()
+                        for description in (
+                            memberdef.find("briefdescription"),
+                            memberdef.find("detaileddescription"),
+                        )
+                        if description is not None
+                    )
+                    if not has_description:
+                        continue
+
+                    macro_key = (name_elem.text, macro_refid)
+                    if macro_key in seen_macros:
+                        continue
+
+                    seen_macros.add(macro_key)
+                    items["macros"].append((name_elem.text, macro_refid))
+            except Exception as e:
+                logger.debug(f"Failed to parse macros from {file_xml_file}: {e}")
+
         # Extract functions, typedefs, enums, and variables from namespaces
         for namespace_compound in namespace_compounds:
             namespace_name = namespace_compound.find("name").text
@@ -377,6 +419,24 @@ def extract_doxygen_items(xml_dir):
         logger.warning(f"Failed to parse Doxygen XML: {e}")
 
     return items
+
+
+# Unlike other normal symbols, doxygen treats them as floating in the global namespace
+# (which, technically, is correct). As such, they aren't namespaced, and the name of the
+# generated files would just be <name of file containing macro>_<refid>, which is nearly
+# impossible to name in hand-written rst code.
+#
+# We therefore perform special mangling of the generated file name and prepend this prefix
+# to it.
+MACRO_FILE_NAME_PREFIX = "macro_"
+
+
+def format_macro_doc_filename(macro_name):
+    """Create a stable filename for a generated macro page. Macros are not namespace
+    members so their refid's (and generated pages) are just the name of the file and a
+    hash. This makes it impossible to refer to macros in hand-written rst code."""
+    macro_name = macro_name.casefold().replace(" ", "_")
+    return f"{MACRO_FILE_NAME_PREFIX}{macro_name}"
 
 
 def extract_doxygen_classes(xml_dir, project_name=None):
@@ -533,15 +593,20 @@ def generate_group_index_page(group_name, group_refid, project_name, xml_dir, ap
                         member_name = memberdef.find("name")
                         if member_name is None:
                             continue
+                        member_kind = memberdef.get("kind")
                         member_refid = memberdef.get("id")
-                        member_rst_file = Path(api_dir) / f"{member_refid}.rst"
+                        member_filename = (
+                            format_macro_doc_filename(member_name.text)
+                            if member_kind == "define"
+                            else member_refid
+                        )
+                        member_rst_file = Path(api_dir) / f"{member_filename}.rst"
                         # only add refids for exists pages.
                         # Refids corresponding to overloads
                         # do not have associated RST file
                         if not member_rst_file.exists():
                             continue
-                        member_kind = memberdef.get("kind")
-                        members.append((member_kind, member_name.text, member_refid))
+                        members.append((member_kind, member_name.text, member_filename))
         except Exception as e:
             logger.warning(f"Failed to parse group XML {group_xml_file}: {e}")
 
@@ -582,13 +647,20 @@ def generate_individual_api_page(class_name, refid, project_name):
     content.append(":orphan:")
     content.append("")
 
+    # Check if this is a struct by looking at the refid
+    class_kind = "struct" if refid.startswith("struct") else "class"
+
+    content.append(
+        f".. _{make_api_reference_label(project_name, class_kind, class_name)}:"
+    )
+    content.append("")
+
     # Add title
     content.append(class_name)
     content.append("=" * len(class_name))
     content.append("")
 
-    # Check if this is a struct by looking at the refid
-    directive = "doxygenstruct" if refid.startswith("struct") else "doxygenclass"
+    directive = f"doxygen{class_kind}"
 
     # Add the doxygen directive
     content.append(f".. {directive}:: {class_name}")
@@ -631,7 +703,7 @@ def generate_member_api_page(
     overload_refids=None,
     xml_dir=None,
 ):
-    """Generate RST content for a single function/typedef/enum/variable API page."""
+    """Generate RST content for a single function/typedef/enum/variable/macro API page."""
     content = []
 
     # Add marker comment for auto-generated files
@@ -646,13 +718,16 @@ def generate_member_api_page(
         "typedef": "doxygentypedef",
         "enum": "doxygenenum",
         "variable": "doxygenvariable",
+        "macro": "doxygendefine",
     }
 
     directive = directive_map.get(member_type, "doxygenfunction")
 
     # For thrust and cub, we need to use the namespace-qualified name
     # For cudax, the member_name already includes the namespace
-    if project_name in ["thrust", "cub"]:
+    if member_type == "macro":
+        qualified_name = member_name
+    elif project_name in ["thrust", "cub"]:
         # If the member_name doesn't already include the namespace, add it
         if "::" not in member_name:
             qualified_name = f"{project_name}::{member_name}"
@@ -660,6 +735,11 @@ def generate_member_api_page(
             qualified_name = member_name
     else:
         qualified_name = member_name
+
+    content.append(
+        f".. _{make_api_reference_label(project_name, member_type, qualified_name)}:"
+    )
+    content.append("")
 
     # Add title
     content.append(f"{qualified_name}")
@@ -971,6 +1051,84 @@ def clean_template_name(name):
     return cleaned
 
 
+def make_api_reference_label(project_name, member_type, name):
+    """Create a stable label for an auto-generated API page."""
+    clean_name = clean_template_name(name)
+
+    if (
+        project_name == "libcudacxx"
+        and "::" not in clean_name
+        and member_type != "macro"
+    ):
+        clean_name = f"cuda::{clean_name}"
+    elif (
+        project_name in ["cub", "thrust"]
+        and "::" not in clean_name
+        and member_type != "macro"
+    ):
+        clean_name = f"{project_name}::{clean_name}"
+
+    operator_tokens = {
+        "!": "bang",
+        "%": "percent",
+        "&": "amp",
+        "(": "lparen",
+        ")": "rparen",
+        "*": "star",
+        "+": "plus",
+        ",": "comma",
+        "-": "minus",
+        "/": "slash",
+        "<": "lt",
+        "=": "eq",
+        ">": "gt",
+        "[": "lbracket",
+        "]": "rbracket",
+        "^": "caret",
+        "|": "pipe",
+        "~": "tilde",
+    }
+
+    label_parts = []
+    current = []
+
+    def flush_current():
+        if current:
+            label_parts.append("".join(current))
+            current.clear()
+
+    index = 0
+    while index < len(clean_name):
+        if clean_name.startswith("::", index):
+            flush_current()
+            label_parts.append("ns")
+            index += 2
+            continue
+
+        char = clean_name[index].lower()
+        if char.isalnum():
+            current.append(char)
+        elif char == "_":
+            current.append(char)
+        elif char.isspace():
+            flush_current()
+        elif char == ":":
+            flush_current()
+            label_parts.append("colon")
+        elif char in operator_tokens:
+            flush_current()
+            label_parts.append(operator_tokens[char])
+        else:
+            flush_current()
+            label_parts.append(f"x{ord(char):x}")
+        index += 1
+
+    flush_current()
+
+    label = "-".join(label_parts)
+    return f"{project_name}-api-{member_type}-{label}"
+
+
 def format_doc_reference(name, refid, doc_prefix="", as_list_item=True):
     """Format a documentation reference, handling template specializations."""
     clean_name = clean_template_name(name)
@@ -1121,6 +1279,24 @@ def generate_namespace_api_page(project_name, items, title=None, doc_prefix=""):
             content.append(format_doc_reference(name, refid, doc_prefix))
         content.append("")
 
+    # Macros section
+    if items["macros"]:
+        content.append("Macros")
+        content.append("~~~~~~")
+        content.append("")
+
+        # Sort macros alphabetically
+        items["macros"].sort(key=lambda x: x[0].lower())
+        for name, refid in items["macros"]:
+            if name in _BREATHE_SKIP_SYMBOLS:
+                logger.info(
+                    f"Skipping macro reference {name} (in _BREATHE_SKIP_SYMBOLS)"
+                )
+                continue
+            filename = format_macro_doc_filename(name)
+            content.append(format_doc_reference(name, filename, doc_prefix))
+        content.append("")
+
     # Keep API reference pages as leaf nodes in sidebar navigation.
     # Symbol/group/category pages are still discoverable on-page and via search.
 
@@ -1129,6 +1305,10 @@ def generate_namespace_api_page(project_name, items, title=None, doc_prefix=""):
 
 def generate_api_docs(app, config):
     """Generate API documentation pages during Sphinx build."""
+
+    if os.environ.get("CCCL_DOCS_SKIP_AUTO_API_GENERATOR") == "1":
+        logger.info("Skipping automatic API page generation")
+        return
 
     # Only generate for projects with breathe configuration
     if not hasattr(config, "breathe_projects"):
@@ -1169,6 +1349,7 @@ def generate_api_docs(app, config):
                 "struct*.rst",
                 "group*.rst",
                 "namespace*.rst",
+                f"{MACRO_FILE_NAME_PREFIX}*.rst",
             ]:
                 for file in api_dir.glob(pattern):
                     file.unlink()
@@ -1288,6 +1469,17 @@ def generate_api_docs(app, config):
             with open(output_file, "w") as f:
                 f.write(content)
             logger.info(f"Generated variable API page: {output_file}")
+
+        # Generate individual pages for macros
+        for name, refid in items["macros"]:
+            if name in _BREATHE_SKIP_SYMBOLS:
+                logger.info(f"Skipping macro {name} (in _BREATHE_SKIP_SYMBOLS)")
+                continue
+            content = generate_member_api_page(name, "macro", project_name, refid)
+            output_file = api_dir / f"{format_macro_doc_filename(name)}.rst"
+            with open(output_file, "w") as f:
+                f.write(content)
+            logger.info(f"Generated macro API page: {output_file}")
 
         # Generate group index pages
         for group_name, group_refid in items["groups"]:

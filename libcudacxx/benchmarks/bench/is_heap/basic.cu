@@ -34,7 +34,8 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements        = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto violation_frac  = state.get_float64("ViolationAt");
-  const auto violation_point = cuda::std::clamp<std::size_t>(elements * violation_frac, 0ull, elements - 1);
+  const auto violation_point = cuda::std::clamp<std::size_t>(
+    static_cast<std::size_t>(static_cast<double>(elements) * violation_frac), std::size_t{0}, elements - 1);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
   prepare_input(dinput, violation_point);
@@ -60,7 +61,8 @@ static void with_predicate(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements        = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto violation_frac  = state.get_float64("ViolationAt");
-  const auto violation_point = cuda::std::clamp<std::size_t>(elements * violation_frac, 0ull, elements - 1);
+  const auto violation_point = cuda::std::clamp<std::size_t>(
+    static_cast<std::size_t>(static_cast<double>(elements) * violation_frac), std::size_t{0}, elements - 1);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
   prepare_input(dinput, violation_point);

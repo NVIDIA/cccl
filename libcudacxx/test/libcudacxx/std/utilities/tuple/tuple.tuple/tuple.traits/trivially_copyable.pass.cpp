@@ -33,7 +33,8 @@ static_assert(cuda::std::is_trivially_copyable<NonTrivialNonEmpty>::value);
 
 struct NonTriviallyCopyAble
 {
-  int val_ = 0;
+  int val_                                          = 0;
+  NonTriviallyCopyAble(const NonTriviallyCopyAble&) = default;
   TEST_FUNC NonTriviallyCopyAble& operator=(const NonTriviallyCopyAble)
   {
     return *this;

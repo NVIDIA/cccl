@@ -37,6 +37,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
 [[nodiscard]] _CCCL_API constexpr int __num_bits_impl() noexcept
 {
+  // Several CUDA floating-point wrappers intentionally share the same storage width.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_arithmetic_v<_RawTp> || is_pointer_v<_RawTp>)
   {
     return sizeof(_RawTp) * CHAR_BIT;
@@ -104,6 +106,7 @@ template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
     static_assert(__always_false_v<_Tp>, "unsupported type");
     return 0;
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 
 template <typename _Tp>

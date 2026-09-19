@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 // UNSUPPORTED: libcpp-has-no-threads
@@ -19,6 +19,7 @@
 #include <cuda/std/utility>
 
 #include "generated/mbarrier_arrive.h"
+#include "generated/mbarrier_arrive_drop.h"
 #include "generated/mbarrier_arrive_expect_tx.h"
 #include "generated/mbarrier_arrive_no_complete.h"
 

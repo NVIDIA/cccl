@@ -29,7 +29,7 @@ TEST_FUNC constexpr void test_access()
   for (int i = 0; i < 10; i++)
   {
     static_assert(
-      cuda::std::is_same<decltype(acc.access(ptr, i)), typename cuda::std::default_accessor<T>::reference>::value, "");
+      cuda::std::is_same<decltype(acc.access(ptr, i)), typename cuda::std::default_accessor<T>::reference>::value);
     static_assert(noexcept(acc.access(ptr, i)));
     assert(&acc.access(ptr, i) == ptr + i);
   }

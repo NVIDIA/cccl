@@ -15,7 +15,7 @@
 #include <test_util.h>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -57,19 +57,20 @@ void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = 
 
   // comparing std::vectors instead compiles in 1m19s, thrust::host_vector 1m23s, thrust::device_vector 1m38
   // let's pick the host_vector, so we don't stress device memory with another (potentially big) allocation
-  c2h::host_vector<Key> result_h(result_d); // perform copy outside CHECK() to propagate a potential bad_alloc
+  const c2h::host_vector<Key> result_h(result_d); // perform copy outside CHECK() to propagate a potential bad_alloc
   CHECK(reference_h == result_h);
 }
 
-C2H_TEST("DeviceMerge::MergeKeys key types", "[merge][device]", types)
+CUB_TEST("DeviceMerge::MergeKeys key types", "[merge][device]", CUB_SMALL, types)
 {
   using key_t    = c2h::get<0, TestType>;
   using offset_t = int;
   test_keys<key_t, offset_t>();
 }
 
-C2H_TEST("DeviceMerge::MergeKeys works for large number of items",
-         "[merge][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceMerge::MergeKeys works for large number of items",
+         "[merge][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE)
 try
 {
   using key_t    = char;
@@ -89,9 +90,10 @@ try
 catch (const std::bad_alloc&)
 {
   // allocation failure is not a test failure, so we can run tests on smaller GPUs
+  SUCCEED("allocation failure is not a test failure");
 }
 
-C2H_TEST("DeviceMerge::MergeKeys input sizes", "[merge][device]")
+CUB_TEST("DeviceMerge::MergeKeys input sizes", "[merge][device]", CUB_SMALL)
 {
   using key_t    = int;
   using offset_t = int;
@@ -101,7 +103,7 @@ C2H_TEST("DeviceMerge::MergeKeys input sizes", "[merge][device]")
   test_keys<key_t>(size1, size2);
 }
 
-C2H_TEST("DeviceMerge::MergeKeys almost tile-sized input sizes", "[merge][device]")
+CUB_TEST("DeviceMerge::MergeKeys almost tile-sized input sizes", "[merge][device]", CUB_SMALL)
 {
   using key_t    = int;
   using offset_t = int;
@@ -109,7 +111,8 @@ C2H_TEST("DeviceMerge::MergeKeys almost tile-sized input sizes", "[merge][device
   cuda::compute_capability cc{};
   REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
   const offset_t items_per_tile =
-    cub::detail::merge::policy_selector_from_types<key_t, cub::NullType, offset_t>{}(cc).items_per_thread;
+    cub::detail::merge::policy_selector_from_types<key_t*, cub::NullType*, key_t*, cub::NullType*, offset_t>{}(cc)
+      .items_per_thread;
 
   test_keys<key_t>(items_per_tile - 1, 1);
   test_keys<key_t>(items_per_tile, 1);
@@ -127,7 +130,7 @@ struct order
   }
 };
 
-C2H_TEST("DeviceMerge::MergeKeys no operator<", "[merge][device]")
+CUB_TEST("DeviceMerge::MergeKeys no operator<", "[merge][device]", CUB_SMALL)
 {
   using key_t    = unordered_t;
   using offset_t = int;
@@ -239,7 +242,7 @@ void test_pairs(
   CHECK((detail::to_vec(reference_values_h) == detail::to_vec(c2h::host_vector<Value>(result_values_d))));
 }
 
-C2H_TEST("DeviceMerge::MergePairs key types", "[merge][device]", types)
+CUB_TEST("DeviceMerge::MergePairs key types", "[merge][device]", CUB_SMALL, types)
 {
   using key_t    = c2h::get<0, TestType>;
   using value_t  = int;
@@ -248,7 +251,7 @@ C2H_TEST("DeviceMerge::MergePairs key types", "[merge][device]", types)
 }
 
 // TODO(bgruber): fine tune the type sizes again to hit the fallback and the vsmem policies
-// C2H_TEST("DeviceMerge::MergePairs large key types", "[merge][device]", large_types)
+// CUB_TEST("DeviceMerge::MergePairs large key types", "[merge][device]", CUB_LARGE, large_types)
 // {
 //   using key_t    = c2h::get<0, TestType>;
 //   using value_t  = int;
@@ -256,7 +259,7 @@ C2H_TEST("DeviceMerge::MergePairs key types", "[merge][device]", types)
 //   test_pairs<key_t, value_t, offset_t>();
 // }
 
-C2H_TEST("DeviceMerge::MergePairs value types", "[merge][device]", types)
+CUB_TEST("DeviceMerge::MergePairs value types", "[merge][device]", CUB_SMALL, types)
 {
   using key_t    = int;
   using value_t  = c2h::get<0, TestType>;
@@ -264,7 +267,7 @@ C2H_TEST("DeviceMerge::MergePairs value types", "[merge][device]", types)
   test_pairs<key_t, value_t, offset_t>();
 }
 
-C2H_TEST("DeviceMerge::MergePairs input sizes", "[merge][device]")
+CUB_TEST("DeviceMerge::MergePairs input sizes", "[merge][device]", CUB_SMALL)
 {
   using key_t      = int;
   using value_t    = int;
@@ -275,8 +278,9 @@ C2H_TEST("DeviceMerge::MergePairs input sizes", "[merge][device]")
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceMerge::MergePairs really large input",
-         "[merge][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceMerge::MergePairs really large input",
+         "[merge][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE)
 try
 {
   using key_t     = char;
@@ -287,9 +291,10 @@ try
 catch (const std::bad_alloc&)
 {
   // allocation failure is not a test failure, so we can run tests on smaller GPUs
+  SUCCEED("allocation failure is not a test failure");
 }
 
-C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
+CUB_TEST("DeviceMerge::MergePairs iterators", "[merge][device]", CUB_SMALL)
 {
   using key_t             = int;
   using value_t           = int;

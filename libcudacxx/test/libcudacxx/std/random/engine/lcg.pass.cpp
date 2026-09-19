@@ -8,21 +8,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 #include <cuda/std/random>
 
 #include "random_utilities/test_engine.h"
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_engine<cuda::std::minstd_rand0, 1043618065u>();
   test_engine<cuda::std::minstd_rand, 399268537ull>();
 }
 
 // P4037R1: linear_congruential_engine must accept the unsigned char UIntType
-TEST_FUNC void test_p4037r1_small_uinttype()
+TEST_HOST_DEVICE_FUNC void test_p4037r1_small_uinttype()
 {
   using E = cuda::std::linear_congruential_engine<unsigned char, 5u, 1u, 13u>;
   static_assert(cuda::std::is_same_v<E::result_type, unsigned char>);

@@ -16,6 +16,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/warp>
 
 #include <cuda/experimental/group.cuh>
 
@@ -42,10 +43,10 @@ __device__ void test_group_as(Config config)
       static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
       static_assert(cuda::std::is_empty_v<Mapping>);
 
-      Mapping mapping;
+      const Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
@@ -53,12 +54,13 @@ __device__ void test_group_as(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, NsSeq>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_as mapping{NsSeq{}};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
@@ -70,13 +72,13 @@ __device__ void test_group_as(Config config)
     static_assert(noexcept(Mapping::static_group_count()));
     static_assert(Mapping::static_group_count() == ngroups);
 
-    // Test static_count().
+    // Test static_unit_count().
     {
-      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_count(cuda::std::size_t{}))>);
-      static_assert(noexcept(Mapping::static_count(cuda::std::size_t{})));
+      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count(cuda::std::size_t{}))>);
+      static_assert(noexcept(Mapping::static_unit_count(cuda::std::size_t{})));
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(Mapping::static_count(i) == ns[i]);
+        CHECK(Mapping::static_unit_count(i) == ns[i]);
       }
     }
 
@@ -85,29 +87,31 @@ __device__ void test_group_as(Config config)
     static_assert(noexcept(Mapping::is_always_exhaustive()));
     static_assert(Mapping::is_always_exhaustive());
 
-    // Test count().
+    // Test unit_count().
     {
       static_assert(
-        cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().count(cuda::std::size_t{}))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().count(cuda::std::size_t{})));
+        cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{}))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{})));
 
       const Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
     // Test map(...).
     {
       const cudax::this_warp parent_group{config};
+      const ThreadsInWarpMappingResult prev_mapping_result;
 
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
       static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group)));
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping;
-      auto result  = mapping.map(cuda::gpu_thread, parent_group);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);
@@ -125,14 +129,18 @@ __device__ void test_group_as(Config config)
       }
 
       static_assert(Result::static_group_count() == ngroups);
-      CUDAX_CHECK(result.group_count() == static_cast<unsigned>(ngroups));
-      CUDAX_CHECK(result.group_rank() == group_rank_ref);
+      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
+      CHECK(result.group_rank() == group_rank_ref);
 
-      static_assert(Result::static_count() == cuda::std::dynamic_extent);
-      CUDAX_CHECK(result.count() == ns[group_rank_ref]);
-      CUDAX_CHECK(result.rank() == rank_ref);
+      static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
+      CHECK(result.unit_count() == ns[group_rank_ref]);
+      CHECK(result.unit_rank() == rank_ref);
 
-      CUDAX_CHECK(result.is_valid());
+      const auto lane_mask_ref =
+        (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
+
+      CHECK(result.is_valid());
       static_assert(Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
     }
@@ -149,12 +157,13 @@ __device__ void test_group_as(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, decltype(ns)>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_as mapping{ns};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
@@ -166,13 +175,13 @@ __device__ void test_group_as(Config config)
     static_assert(noexcept(Mapping::static_group_count()));
     static_assert(Mapping::static_group_count() == ngroups);
 
-    // Test static_count().
+    // Test static_unit_count().
     {
-      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_count(cuda::std::size_t{}))>);
-      static_assert(noexcept(Mapping::static_count(cuda::std::size_t{})));
+      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count(cuda::std::size_t{}))>);
+      static_assert(noexcept(Mapping::static_unit_count(cuda::std::size_t{})));
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(Mapping::static_count(i) == cuda::std::dynamic_extent);
+        CHECK(Mapping::static_unit_count(i) == cuda::std::dynamic_extent);
       }
     }
 
@@ -181,29 +190,31 @@ __device__ void test_group_as(Config config)
     static_assert(noexcept(Mapping::is_always_exhaustive()));
     static_assert(Mapping::is_always_exhaustive());
 
-    // Test count().
+    // Test unit_count().
     {
       static_assert(
-        cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().count(cuda::std::size_t{}))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().count(cuda::std::size_t{})));
+        cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{}))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{})));
 
       const Mapping mapping{ns};
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
     // Test map(...).
     {
       const cudax::this_warp parent_group{config};
+      const ThreadsInWarpMappingResult prev_mapping_result;
 
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
       static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group)));
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{ns};
-      auto result  = mapping.map(cuda::gpu_thread, parent_group);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank_as<unsigned>(parent_group);
@@ -221,14 +232,18 @@ __device__ void test_group_as(Config config)
       }
 
       static_assert(Result::static_group_count() == ngroups);
-      CUDAX_CHECK(result.group_count() == static_cast<unsigned>(ngroups));
-      CUDAX_CHECK(result.group_rank() == group_rank_ref);
+      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
+      CHECK(result.group_rank() == group_rank_ref);
 
-      static_assert(Result::static_count() == cuda::std::dynamic_extent);
-      CUDAX_CHECK(result.count() == ns[group_rank_ref]);
-      CUDAX_CHECK(result.rank() == rank_ref);
+      static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
+      CHECK(result.unit_count() == ns[group_rank_ref]);
+      CHECK(result.unit_rank() == rank_ref);
 
-      CUDAX_CHECK(result.is_valid());
+      const auto lane_mask_ref =
+        (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
+
+      CHECK(result.is_valid());
       static_assert(Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
     }
@@ -256,10 +271,10 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
       static_assert(cuda::std::is_empty_v<Mapping>);
 
-      Mapping mapping;
+      const Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
@@ -270,12 +285,13 @@ __device__ void test_group_as_non_exhaustive(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, NsSeq, cudax::non_exhaustive_t>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_as mapping{NsSeq{}, cudax::non_exhaustive};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
@@ -284,13 +300,13 @@ __device__ void test_group_as_non_exhaustive(Config config)
     static_assert(noexcept(Mapping::static_group_count()));
     static_assert(Mapping::static_group_count() == ngroups);
 
-    // Test static_count().
+    // Test static_unit_count().
     {
-      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_count(cuda::std::size_t{}))>);
-      static_assert(noexcept(Mapping::static_count(cuda::std::size_t{})));
+      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count(cuda::std::size_t{}))>);
+      static_assert(noexcept(Mapping::static_unit_count(cuda::std::size_t{})));
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(Mapping::static_count(i) == ns[i]);
+        CHECK(Mapping::static_unit_count(i) == ns[i]);
       }
     }
 
@@ -299,41 +315,42 @@ __device__ void test_group_as_non_exhaustive(Config config)
     static_assert(noexcept(Mapping::is_always_exhaustive()));
     static_assert(!Mapping::is_always_exhaustive());
 
-    // Test count().
+    // Test unit_count().
     {
       static_assert(
-        cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().count(cuda::std::size_t{}))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().count(cuda::std::size_t{})));
+        cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{}))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{})));
 
       const Mapping mapping;
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
     // Test map(...).
     {
       const cudax::this_warp parent_group{config};
+      const ThreadsInWarpMappingResult prev_mapping_result;
 
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
       static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group)));
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping;
-      auto result  = mapping.map(cuda::gpu_thread, parent_group);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);
       const auto is_valid_ref = (rank_in_warp < ns_sum);
 
       static_assert(Result::static_group_count() == ngroups);
-      static_assert(Result::static_count() == cuda::std::dynamic_extent);
+      static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      CUDAX_CHECK(result.group_count() == static_cast<unsigned>(ngroups));
-      CUDAX_CHECK(result.is_valid() == is_valid_ref);
+      CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
       {
@@ -349,10 +366,15 @@ __device__ void test_group_as_non_exhaustive(Config config)
           }
         }
 
-        CUDAX_CHECK(result.group_rank() == group_rank_ref);
+        CHECK(result.group_count() == static_cast<unsigned>(ngroups));
+        CHECK(result.group_rank() == group_rank_ref);
 
-        CUDAX_CHECK(result.count() == ns[group_rank_ref]);
-        CUDAX_CHECK(result.rank() == rank_ref);
+        CHECK(result.unit_count() == ns[group_rank_ref]);
+        CHECK(result.unit_rank() == rank_ref);
+
+        const auto lane_mask_ref =
+          (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+        CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
       }
     }
   }
@@ -371,12 +393,13 @@ __device__ void test_group_as_non_exhaustive(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, decltype(ns), cudax::non_exhaustive_t>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_as mapping{ns, cudax::non_exhaustive};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
 
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
@@ -385,13 +408,13 @@ __device__ void test_group_as_non_exhaustive(Config config)
     static_assert(noexcept(Mapping::static_group_count()));
     static_assert(Mapping::static_group_count() == ngroups);
 
-    // Test static_count().
+    // Test static_unit_count().
     {
-      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_count(cuda::std::size_t{}))>);
-      static_assert(noexcept(Mapping::static_count(cuda::std::size_t{})));
+      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count(cuda::std::size_t{}))>);
+      static_assert(noexcept(Mapping::static_unit_count(cuda::std::size_t{})));
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(Mapping::static_count(i) == cuda::std::dynamic_extent);
+        CHECK(Mapping::static_unit_count(i) == cuda::std::dynamic_extent);
       }
     }
 
@@ -400,41 +423,42 @@ __device__ void test_group_as_non_exhaustive(Config config)
     static_assert(noexcept(Mapping::is_always_exhaustive()));
     static_assert(!Mapping::is_always_exhaustive());
 
-    // Test count().
+    // Test unit_count().
     {
       static_assert(
-        cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().count(cuda::std::size_t{}))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().count(cuda::std::size_t{})));
+        cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{}))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count(cuda::std::size_t{})));
 
       const Mapping mapping{ns, cudax::non_exhaustive};
       for (cuda::std::size_t i = 0; i < ngroups; ++i)
       {
-        CUDAX_CHECK(mapping.count(i) == ns[i]);
+        CHECK(mapping.unit_count(i) == ns[i]);
       }
     }
 
     // Test map(...).
     {
       const cudax::this_warp parent_group{config};
+      const ThreadsInWarpMappingResult prev_mapping_result;
 
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
+                      cuda::gpu_thread, parent_group, prev_mapping_result))>);
       static_assert(
-        cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group)));
+        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const Mapping mapping{ns, cudax::non_exhaustive};
-      auto result  = mapping.map(cuda::gpu_thread, parent_group);
+      auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       const auto rank_in_warp = cuda::gpu_thread.rank(parent_group);
       const auto is_valid_ref = (rank_in_warp < ns_sum);
 
       static_assert(Result::static_group_count() == ngroups);
-      static_assert(Result::static_count() == cuda::std::dynamic_extent);
+      static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      CUDAX_CHECK(result.group_count() == static_cast<unsigned>(ngroups));
-      CUDAX_CHECK(result.is_valid() == is_valid_ref);
+      CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
       {
@@ -450,10 +474,15 @@ __device__ void test_group_as_non_exhaustive(Config config)
           }
         }
 
-        CUDAX_CHECK(result.group_rank() == group_rank_ref);
+        CHECK(result.group_count() == static_cast<unsigned>(ngroups));
+        CHECK(result.group_rank() == group_rank_ref);
 
-        CUDAX_CHECK(result.count() == ns[group_rank_ref]);
-        CUDAX_CHECK(result.rank() == rank_ref);
+        CHECK(result.unit_count() == ns[group_rank_ref]);
+        CHECK(result.unit_rank() == rank_ref);
+
+        const auto lane_mask_ref =
+          (ns[group_rank_ref] < 32) ? ((1u << ns[group_rank_ref]) - 1) << group_starts[group_rank_ref] : ~0;
+        CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
       }
     }
   }

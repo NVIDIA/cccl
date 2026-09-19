@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 

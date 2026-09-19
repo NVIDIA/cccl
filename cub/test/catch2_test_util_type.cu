@@ -6,10 +6,10 @@
 #include <cuda/iterator>
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/extended_types.h>
 
-C2H_TEST("Tests non_void_value_t", "[util][type]")
+CUB_TEST("Tests non_void_value_t", "[util][type]", CUB_SMALL)
 {
   using fallback_t        = float;
   using void_fancy_it     = cuda::discard_iterator;
@@ -49,7 +49,7 @@ struct HasDog
   using dog = int;
 };
 
-C2H_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]")
+CUB_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]", CUB_SMALL)
 {
   STATIC_REQUIRE(cat_detect<HasCat>::value);
   STATIC_REQUIRE(!cat_detect<HasDog>::value);
@@ -61,7 +61,7 @@ struct CustomHalf
   int16_t payload;
 };
 
-C2H_TEST("Test CustomHalf", "[util][type]")
+CUB_TEST("Test CustomHalf", "[util][type]", CUB_SMALL)
 {
   // type not registered with cub::Traits
   STATIC_REQUIRE(!cub::detail::is_primitive<CustomHalf>::value);
@@ -82,22 +82,22 @@ C2H_TEST("Test CustomHalf", "[util][type]")
   CHECK(cuda::std::numeric_limits<half_t>::lowest() == half_t::lowest());
 }
 
-C2H_TEST("Test FutureValue", "[util][type]")
+CUB_TEST("Test FutureValue", "[util][type]", CUB_SMALL)
 {
   // read
   int value;
-  cub::FutureValue<int> fv{&value};
+  cub::FutureValue<int> fv{&value}; // NOLINT(misc-const-correctness)
   value = 42;
   CHECK(fv == 42);
   value = 43;
   CHECK(fv == 43);
 
   // CTAD
-  cub::FutureValue fv2{&value};
+  cub::FutureValue fv2{&value}; // NOLINT(misc-const-correctness): decltype must not be const-qualified
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(fv2), cub::FutureValue<int, int*>>);
 
   c2h::device_vector<int> v(0);
-  cub::FutureValue fv3{v.begin()};
+  cub::FutureValue fv3{v.begin()}; // NOLINT(misc-const-correctness): decltype must not be const-qualified
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(fv3), cub::FutureValue<int, typename c2h::device_vector<int>::iterator>>);
 }

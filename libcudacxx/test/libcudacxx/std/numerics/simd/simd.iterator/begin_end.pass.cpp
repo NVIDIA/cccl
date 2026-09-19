@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.iterator], begin/end on basic_vec and basic_mask
@@ -31,7 +34,7 @@
 // begin() to end() count is N elements
 
 template <int N, typename Type>
-TEST_FUNC constexpr void test_begin_end(Type& obj, const Type& const_obj)
+TEST_HOST_DEVICE_FUNC constexpr void test_begin_end(Type& obj, const Type& const_obj)
 {
   using Iter      = typename Type::iterator;
   using ConstIter = typename Type::const_iterator;
@@ -77,7 +80,7 @@ TEST_FUNC constexpr void test_begin_end(Type& obj, const Type& const_obj)
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -93,7 +96,7 @@ TEST_FUNC constexpr void test_type()
 
 // The begin/end surface does not depend on T, so a couple of representative
 // (type, N) combinations are enough.
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_type<int32_t, 1>();
   test_type<float, 4>();

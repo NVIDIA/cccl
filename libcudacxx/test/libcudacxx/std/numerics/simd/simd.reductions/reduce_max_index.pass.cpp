@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.mask.reductions], reduce_max_index
@@ -25,7 +28,7 @@
 #include "test_macros.h"
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_reduce_max_index()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_index()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   assert(simd::reduce_max_index(Mask(true)) == N - 1);
@@ -46,19 +49,19 @@ TEST_FUNC constexpr void test_reduce_max_index()
   }
 }
 
-TEST_FUNC constexpr void test_reduce_max_index_scalar_bool()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_index_scalar_bool()
 {
   assert(simd::reduce_max_index(true) == 0);
 }
 
 template <int Bytes>
-TEST_FUNC constexpr void test_bytes()
+TEST_HOST_DEVICE_FUNC constexpr void test_bytes()
 {
   test_reduce_max_index<Bytes, 1>();
   test_reduce_max_index<Bytes, 4>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_bytes<1>();
   test_bytes<2>();

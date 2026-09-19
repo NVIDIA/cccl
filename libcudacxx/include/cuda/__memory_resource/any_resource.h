@@ -38,7 +38,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
 
 template <class _Property>
-using __property_result_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call1< //
+using __property_result_t _CCCL_NODEBUG = ::cuda::std::__type_call1< //
   ::cuda::std::conditional_t<cuda::property_with_value<_Property>,
                              ::cuda::std::__type_quote1<__property_value_t>,
                              ::cuda::std::__type_always<void>>,
@@ -80,7 +80,7 @@ struct __with_property
 
     _CCCL_TEMPLATE(class _Ty)
     _CCCL_REQUIRES((::cuda::has_property<_Ty, _Property>) )
-    using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__get_property<_Ty>>;
+    using overrides _CCCL_NODEBUG = __overrides_for<_Ty, &__get_property<_Ty>>;
   };
 };
 
@@ -152,7 +152,7 @@ struct __ibasic_resource : __basic_interface<__ibasic_resource>
   }
 
   template <class _Ty>
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__allocate_sync_fn<_Ty>, &__deallocate_sync_fn<_Ty>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Ty, &__allocate_sync_fn<_Ty>, &__deallocate_sync_fn<_Ty>>;
 };
 
 template <class...>
@@ -186,15 +186,15 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
   }
 
   template <class _Ty>
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__allocate_async<_Ty>, &__deallocate_async<_Ty>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Ty, &__allocate_async<_Ty>, &__deallocate_async<_Ty>>;
 };
 
 template <class... _Properties>
-using __iresource _CCCL_NODEBUG_ALIAS = ::cuda::
+using __iresource _CCCL_NODEBUG = ::cuda::
   __iset<__ibasic_resource<>, __iproperty_set<_Properties...>, ::cuda::__icopyable<>, ::cuda::__iequality_comparable<>>;
 
 template <class... _Properties>
-using __iasync_resource _CCCL_NODEBUG_ALIAS = __iset<__iresource<_Properties...>, __ibasic_async_resource<>>;
+using __iasync_resource _CCCL_NODEBUG = __iset<__iresource<_Properties...>, __ibasic_async_resource<>>;
 
 template <class _Property>
 using __try_property_result_t =
@@ -253,14 +253,14 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
   // any_resource is convertible to any_synchronous_resource
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
-  any_synchronous_resource(any_resource<_OtherProperties...> __other) noexcept
+  _CCCL_HOST_API any_synchronous_resource(any_resource<_OtherProperties...> __other) noexcept
       : __base(::cuda::std::move(__other.__get_base()))
   {}
 
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
   //! @cond
-  explicit any_synchronous_resource(__from_base_tag, __base&& __b) noexcept
+  _CCCL_HOST_API explicit any_synchronous_resource(__from_base_tag, __base&& __b) noexcept
       : __base(::cuda::std::move(__b))
   {}
   //! @endcond
@@ -580,8 +580,9 @@ public:
   //! @pre \c _OtherKind is equal to either \c _Kind or
   //! \c _ResourceKind::_Asynchronous.
   //! @pre The set `_Properties...` is equal to the set `_OtherProperties...`.
-  //! @return `true` if both resources hold objects of the same type and those
-  //! objects compare equal, and `false` otherwise.
+  //! @return `true` if neither resource has a value, or if both resources hold
+  //! objects of the same type and those objects compare equal. Otherwise,
+  //! returns `false`.
   template <_ResourceKind _OtherKind, class... _OtherProperties>
   [[nodiscard]] bool operator==(const basic_any_resource<_OtherKind, _OtherProperties...>& __rhs) const;
 
@@ -591,8 +592,9 @@ public:
   //! @pre \c _OtherKind is equal to either \c _Kind or
   //! \c _ResourceKind::_Asynchronous.
   //! @pre The set `_Properties...` is equal to the set `_OtherProperties...`.
-  //! @return `true` if \c __rhs refers to an object of the same type as that
-  //! wrapped by `*this` and those objects compare equal; `false` otherwise.
+  //! @return `true` if `*this` has a value, \c __rhs refers to an object of the
+  //! same type as that wrapped by `*this`, and those objects compare equal;
+  //! `false` otherwise.
   template <_ResourceKind _OtherKind, class... _OtherProperties>
   [[nodiscard]] bool operator==(const basic_resource_ref<_OtherKind, _OtherProperties...>& __rhs) const;
 

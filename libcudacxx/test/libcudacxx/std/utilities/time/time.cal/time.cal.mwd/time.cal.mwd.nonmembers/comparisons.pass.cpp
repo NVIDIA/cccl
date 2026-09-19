@@ -35,28 +35,23 @@ int main(int, char**)
 
   static_assert(testEquality(month_weekday{cuda::std::chrono::January, weekday_indexed{Sunday, 1}},
                              month_weekday{cuda::std::chrono::January, weekday_indexed{Sunday, 1}},
-                             true),
-                "");
+                             true));
 
   static_assert(testEquality(month_weekday{cuda::std::chrono::January, weekday_indexed{Sunday, 1}},
                              month_weekday{cuda::std::chrono::January, weekday_indexed{Sunday, 2}},
-                             false),
-                "");
+                             false));
 
   static_assert(testEquality(month_weekday{cuda::std::chrono::January, weekday_indexed{Sunday, 1}},
                              month_weekday{cuda::std::chrono::February, weekday_indexed{Sunday, 1}},
-                             false),
-                "");
+                             false));
 
   static_assert(testEquality(month_weekday{cuda::std::chrono::January, weekday_indexed{Monday, 1}},
                              month_weekday{cuda::std::chrono::January, weekday_indexed{Sunday, 2}},
-                             false),
-                "");
+                             false));
 
   static_assert(testEquality(month_weekday{cuda::std::chrono::January, weekday_indexed{Monday, 1}},
                              month_weekday{cuda::std::chrono::February, weekday_indexed{Sunday, 1}},
-                             false),
-                "");
+                             false));
 
   //  same day, different months
   for (unsigned i = 1; i < 12; ++i)

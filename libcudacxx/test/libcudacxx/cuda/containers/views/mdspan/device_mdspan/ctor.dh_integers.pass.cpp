@@ -69,8 +69,7 @@ TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const 
   test_move_counter<MDS, H>();
 
   // sanity check that concept works
-  static_assert(check_mdspan_ctor_implicit<MDS, H, cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>>,
-                "");
+  static_assert(check_mdspan_ctor_implicit<MDS, H, cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>>);
   // check that the constructor from integral is explicit
   static_assert(!check_mdspan_ctor_implicit<MDS, H, Idxs...>);
 
@@ -122,22 +121,18 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
   // Sanity check that this layouts mapping is constructible from extents (via its move constructor)
   static_assert(
     cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                cuda::std::extents<int>>::value,
-    "");
+                                cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<true, ac>(handle, layout_wrapping_integral<8>(), acc);
   // Sanity check that this layouts mapping is not constructible from extents
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 cuda::std::extents<int>>::value,
-    "");
+                                 cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 

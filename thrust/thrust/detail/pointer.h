@@ -215,11 +215,16 @@ public:
   // assignment
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
+  //
+  // pointer is a CRTP base, so derived_type& is the correct return type. Returning pointer&
+  // instead would slice off the derived type.
+  // NOLINTBEGIN(misc-unconventional-assign-operator): CRTP base, see above
   _CCCL_HOST_DEVICE derived_type& operator=(::cuda::std::nullptr_t)
   {
     super_t::base_reference() = nullptr;
     return static_cast<derived_type&>(*this);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! Assignment operator allows assigning from another pointer-like object whose element type
    *  is convertible to \c Element.
@@ -230,6 +235,7 @@ public:
    *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
    *                       and its element type shall be convertible to \p Element.
    */
+  // NOLINTBEGIN(misc-unconventional-assign-operator): CRTP base, see above
   template <typename OtherPointer>
   _CCCL_HOST_DEVICE detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer, derived_type&>
   operator=(const OtherPointer& other)
@@ -237,6 +243,7 @@ public:
     super_t::base_reference() = ::cuda::std::to_address(other);
     return static_cast<derived_type&>(*this);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   // observers
 
@@ -410,7 +417,8 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
 
   // Thrust historically provided a non-standard pointer_to for pointer<void>
   template <class T, enable_if_t<(is_void_v<element_type> || is_same_v<T, element_type>), int> = 0>
-  [[nodiscard]] _CCCL_API inline static pointer pointer_to(T& r) noexcept(noexcept(::cuda::std::addressof(r)))
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static pointer
+  pointer_to(T& r) noexcept(noexcept(::cuda::std::addressof(r)))
   {
     return static_cast<element_type*>(::cuda::std::addressof(r));
   }
@@ -418,7 +426,7 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
   //! @brief Retrieve the address of the element pointed at by an thrust pointer
   //! @param iter A thrust::pointer
   //! @return A pointer to the element pointed to by the thrust pointer
-  [[nodiscard]] _CCCL_API static constexpr raw_pointer to_address(const pointer iter) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr raw_pointer to_address(const pointer iter) noexcept
   {
     return iter.get();
   }

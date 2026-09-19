@@ -22,15 +22,17 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
-#include <stdexcept>
-#include <string>
+#if _CCCL_HOSTED()
+#  include <stdexcept>
+#  include <string>
+#endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 _CCCL_TEMPLATE(typename T)
 _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<T>)
-[[nodiscard]] _CCCL_API constexpr bool is_negative([[maybe_unused]] T x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool is_negative([[maybe_unused]] T x) noexcept
 {
   if constexpr (::cuda::std::is_unsigned_v<T>)
   {

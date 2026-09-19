@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.mask.binary], basic_mask binary operators
@@ -26,7 +29,7 @@
 #include "test_macros.h"
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_all_patterns()
+TEST_HOST_DEVICE_FUNC constexpr void test_all_patterns()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask all_true(true);
@@ -117,13 +120,13 @@ TEST_FUNC constexpr void test_all_patterns()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <int Bytes>
-TEST_FUNC constexpr void test_bytes()
+TEST_HOST_DEVICE_FUNC constexpr void test_bytes()
 {
   test_all_patterns<Bytes, 1>();
   test_all_patterns<Bytes, 4>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_bytes<1>();
   test_bytes<2>();

@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077498: ICE when validating tile MLIR
-
 // <cuda/std/bit>
 //
 // template<class To, class From>

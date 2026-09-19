@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.mask.ctor], basic_mask constructors
@@ -33,7 +36,7 @@
 // member types and size
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_member_types()
+TEST_HOST_DEVICE_FUNC constexpr void test_member_types()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
 
@@ -47,7 +50,7 @@ TEST_FUNC constexpr void test_member_types()
 // default construction: value-initializes all elements to false
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_default_ctor()
+TEST_HOST_DEVICE_FUNC constexpr void test_default_ctor()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask mask{};
@@ -61,7 +64,7 @@ TEST_FUNC constexpr void test_default_ctor()
 // copy construction and copy assignment
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_copy()
+TEST_HOST_DEVICE_FUNC constexpr void test_copy()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask original(is_even{});
@@ -84,7 +87,7 @@ TEST_FUNC constexpr void test_copy()
 // broadcast constructor
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_broadcast()
+TEST_HOST_DEVICE_FUNC constexpr void test_broadcast()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   static_assert(noexcept(Mask(true)));
@@ -102,7 +105,7 @@ TEST_FUNC constexpr void test_broadcast()
 // converting constructor
 
 template <int Bytes, int UBytes, int N>
-TEST_FUNC constexpr void test_converting()
+TEST_HOST_DEVICE_FUNC constexpr void test_converting()
 {
   using Src = simd::basic_mask<UBytes, simd::fixed_size<N>>;
   using Dst = simd::basic_mask<Bytes, simd::fixed_size<N>>;
@@ -120,10 +123,10 @@ TEST_FUNC constexpr void test_converting()
 // generator constructor
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_generator()
+TEST_HOST_DEVICE_FUNC constexpr void test_generator()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
-#if _CCCL_COMPILER(GCC, !=, 7)
+#if _CCCL_COMPILER(GCC, >=, 9)
   static_assert(!noexcept(Mask(is_even{})));
 #endif
 
@@ -138,7 +141,7 @@ TEST_FUNC constexpr void test_generator()
 // bitset constructor
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_bitset()
+TEST_HOST_DEVICE_FUNC constexpr void test_bitset()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   cuda::std::bitset<N> bitset;
@@ -159,7 +162,7 @@ TEST_FUNC constexpr void test_bitset()
 // unsigned integer constructor
 
 template <int Bytes, int N, typename U>
-TEST_FUNC constexpr void test_unsigned_int()
+TEST_HOST_DEVICE_FUNC constexpr void test_unsigned_int()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   static_assert(noexcept(Mask(U{0})));
@@ -191,7 +194,7 @@ TEST_FUNC constexpr void test_unsigned_int()
 // SFINAE and explicit constraints
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_sfinae()
+TEST_HOST_DEVICE_FUNC constexpr void test_sfinae()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
 
@@ -235,7 +238,7 @@ TEST_FUNC constexpr void test_sfinae()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_size()
+TEST_HOST_DEVICE_FUNC constexpr void test_size()
 {
   test_member_types<Bytes, N>();
   test_default_ctor<Bytes, N>();
@@ -251,13 +254,13 @@ TEST_FUNC constexpr void test_size()
 }
 
 template <int Bytes>
-TEST_FUNC constexpr void test_bytes()
+TEST_HOST_DEVICE_FUNC constexpr void test_bytes()
 {
   test_size<Bytes, 1>();
   test_size<Bytes, 4>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_bytes<1>();
   test_bytes<2>();
@@ -284,7 +287,7 @@ TEST_FUNC constexpr bool test()
 // [simd.mask.overview] enable/disable boundary: basic_mask<Bytes, fixed_size<N>> is enabled iff Bytes is a
 // vectorizable byte size and N in [1, 64]
 
-TEST_FUNC constexpr void test_enable_abi_boundary()
+TEST_HOST_DEVICE_FUNC constexpr void test_enable_abi_boundary()
 {
   // enabled at the range boundaries
   static_assert(cuda::std::is_default_constructible_v<simd::basic_mask<4, simd::fixed_size<1>>>);

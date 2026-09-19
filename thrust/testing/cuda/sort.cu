@@ -39,11 +39,11 @@ void TestComparisonSortDevice(ExecutionPolicy exec, const size_t n, Compare comp
 
   sort_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), comp);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::sort(h_data.begin(), h_data.end(), comp);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 };
 
 template <typename T>
@@ -54,8 +54,8 @@ struct TestComparisonSortDeviceSeq
     TestComparisonSortDevice<T>(thrust::seq, n, my_less<T>());
   }
 };
-VariableUnitTest<TestComparisonSortDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestComparisonSortDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComparisonSortDeviceSeq,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T>
 struct TestComparisonSortDeviceDevice
@@ -65,8 +65,8 @@ struct TestComparisonSortDeviceDevice
     TestComparisonSortDevice<T>(thrust::device, n, my_less<T>());
   }
 };
-VariableUnitTest<TestComparisonSortDeviceDevice, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestComparisonSortDeviceDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComparisonSortDeviceDevice,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T, typename ExecutionPolicy>
 void TestSortDevice(ExecutionPolicy exec, const size_t n)
@@ -82,7 +82,7 @@ struct TestSortDeviceSeq
     TestSortDevice<T>(thrust::seq, n);
   }
 };
-VariableUnitTest<TestSortDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>> TestSortDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T>
 struct TestSortDeviceDevice
@@ -92,8 +92,8 @@ struct TestSortDeviceDevice
     TestSortDevice<T>(thrust::device, n);
   }
 };
-VariableUnitTest<TestSortDeviceDevice, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestSortDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortDeviceDevice,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 #endif
 
 void TestSortCudaStreams()
@@ -106,7 +106,7 @@ void TestSortCudaStreams()
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
 
   cudaStreamDestroy(s);
 }
@@ -122,7 +122,7 @@ void TestComparisonSortCudaStreams()
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end(), my_less<int>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
 
   cudaStreamDestroy(s);
 }
@@ -131,35 +131,66 @@ DECLARE_UNITTEST(TestComparisonSortCudaStreams);
 template <typename T>
 struct TestRadixSortDispatch
 {
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<T>>);
 
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value);
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, ::cuda::std::greater<>>);
+
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<const T*, ::cuda::std::greater<>>);
+
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<T*, const ::cuda::std::greater<>>);
+
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<T>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<T>>);
+
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::less<>>);
+  static_assert(cub::__can_use_radix_sort<cuda::std::reverse_iterator<T*>, ::cuda::std::greater<>>);
 
   void operator()() const {}
 };
-SimpleUnitTest<TestRadixSortDispatch,
-               unittest::concat<IntegralTypes,
-                                FloatingPointTypes
-#if _CCCL_HAS_INT128()
-                                ,
-                                unittest::type_list<__int128_t, __uint128_t>
-#endif // _CCCL_HAS_INT128()
+using test_types_radix_sort = cuda::std::__type_concat<
+  IntegralTypes,
+  FloatingPointTypes
+// nvcc's tile codegen does not support 128-bit integer types
+#if _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
+  ,
+  unittest::type_list<__int128_t, __uint128_t>
+#endif // _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
 #if _CCCL_HAS_NVFP16()
-                                ,
-                                unittest::type_list<__half>
+  ,
+  unittest::type_list<__half>
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-                                ,
-                                unittest::type_list<__nv_bfloat16>
+  ,
+  unittest::type_list<__nv_bfloat16>
 #endif // _CCCL_HAS_NVBF16()
-                                >>
-  TestRadixSortDispatchInstance;
+  >;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestRadixSortDispatch, test_types_radix_sort);
 
 /**
  * Copy of CUB testing utility
@@ -214,7 +245,7 @@ public:
   {
     // The first (num_remainder_items * remainder_item_count) are items that appear once more often than the items that
     // follow remainder_items_offset
-    std::size_t remainder_items_offset = num_remainder_items * remainder_item_count;
+    const std::size_t remainder_items_offset = num_remainder_items * remainder_item_count;
 
     UnsignedIntegralKeyT target_item_index =
       (index <= remainder_items_offset)
@@ -237,16 +268,19 @@ void TestSortWithMagnitude(int magnitude)
     thrust::device_vector<std::uint8_t> vec(num_items);
     auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
     auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<std::uint8_t>{});
-    auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + num_items);
-    thrust::copy(rev_sorted_it, rev_sorted_it + num_items, vec.begin());
+    auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + static_cast<std::ptrdiff_t>(num_items));
+    thrust::copy(rev_sorted_it, rev_sorted_it + static_cast<std::ptrdiff_t>(num_items), vec.begin());
     thrust::sort(vec.begin(), vec.end());
     auto expected_result_it = thrust::make_transform_iterator(
       thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<std::uint8_t>(num_items));
-    const bool ok = thrust::equal(expected_result_it, expected_result_it + num_items, vec.cbegin());
-    ASSERT_EQUAL(ok, true);
+    const bool ok =
+      thrust::equal(expected_result_it, expected_result_it + static_cast<std::ptrdiff_t>(num_items), vec.cbegin());
+    REQUIRE(ok);
   }
   catch (std::bad_alloc&)
-  {}
+  {
+    return;
+  }
 }
 
 void TestSortWithLargeNumberOfItems()
@@ -275,26 +309,27 @@ struct TestSortAscendingKey
     std::sort(h_data.begin(), h_data.end(), ::cuda::std::less<T>{});
     thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::less<T>{});
 
-    ASSERT_EQUAL_QUIET(h_data, d_data);
+    REQUIRE((h_data == d_data));
   }
 };
 
-SimpleUnitTest<TestSortAscendingKey,
-               unittest::concat<unittest::type_list<>
-#if _CCCL_HAS_INT128()
-                                ,
-                                unittest::type_list<__int128_t, __uint128_t>
-#endif // _CCCL_HAS_INT128()
+using test_types_ascending_key = cuda::std::__type_concat<
+  unittest::type_list<>
+// nvcc's tile codegen does not support 128-bit integer types
+#if _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
+  ,
+  unittest::type_list<__int128_t, __uint128_t>
+#endif // _CCCL_HAS_INT128() && !defined(__CUDACC_TILE__)
 // CTK 12.2 offers __host__ __device__ operators for __half and __nv_bfloat16, so we can use std::sort
 #if _CCCL_CTK_AT_LEAST(12, 2)
 #  if _CCCL_HAS_NVFP16() || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-                                ,
-                                unittest::type_list<__half>
+  ,
+  unittest::type_list<__half>
 #  endif
 #  if _CCCL_HAS_NVBF16() || !defined(__CUDA_NO_BFLOAT16_OPERATORS__) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__)
-                                ,
-                                unittest::type_list<__nv_bfloat16>
+  ,
+  unittest::type_list<__nv_bfloat16>
 #  endif
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
-                                >>
-  TestSortAscendingKeyMoreTypes;
+  >;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestSortAscendingKey, test_types_ascending_key);

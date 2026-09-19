@@ -186,9 +186,9 @@ C2H_TEST("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
 
   constexpr auto this_test_params = T();
   // We want a mix of small and large sizes because different implementations will be called
-  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  bool is_descending  = this_test_params.is_descending();
-  const auto order    = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  const int num_items      = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+  const bool is_descending = this_test_params.is_descending();
+  const auto order         = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
 
   const int begin_bit          = 0;
   const int end_bit            = sizeof(KeyT) * 8;
@@ -199,8 +199,8 @@ C2H_TEST("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
   static constexpr const char* unused_decomposer_retty = "";
 
   // problem descriptor: (order, TestType, item_t, is_overwrite_ok, items_present = false)
-  std::vector<KeyT> input_keys    = make_shuffled_sequence<KeyT>(num_items);
-  std::vector<KeyT> expected_keys = input_keys;
+  const std::vector<KeyT> input_keys = make_shuffled_sequence<KeyT>(num_items);
+  std::vector<KeyT> expected_keys    = input_keys;
 
   pointer_t<KeyT> input_keys_it(input_keys);
   pointer_t<KeyT> output_keys_it(num_items);
@@ -327,3 +327,145 @@ C2H_TEST("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
   REQUIRE(expected_keys == std::vector<KeyT>(output_keys));
   REQUIRE(expected_items == std::vector<ItemT>(output_items));
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("RadixSort build result has serialization metadata populated", "[radix_sort][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  pointer_t<T> keys_in(1);
+  pointer_t<T> values_in(1);
+  static constexpr cccl_op_t decomposer_no_op{};
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_radix_sort_build(
+      &build,
+      CCCL_ASCENDING,
+      keys_in,
+      values_in,
+      decomposer_no_op,
+      "",
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.single_tile_kernel_lowered_name != nullptr);
+  CHECK(build.single_tile_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.upsweep_kernel_lowered_name != nullptr);
+  CHECK(build.upsweep_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.downsweep_kernel_lowered_name != nullptr);
+  CHECK(build.downsweep_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
+}
+
+C2H_TEST("RadixSort compile/load round-trip", "[radix_sort][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  pointer_t<T> dummy_keys_in(1);
+  pointer_t<T> dummy_values_in(1);
+  static constexpr cccl_op_t decomposer_no_op{};
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_radix_sort_compile(
+      &build,
+      CCCL_ASCENDING,
+      dummy_keys_in,
+      dummy_values_in,
+      decomposer_no_op,
+      "",
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.single_tile_kernel_lowered_name != nullptr);
+  REQUIRE(build.upsweep_kernel_lowered_name != nullptr);
+  REQUIRE(build.downsweep_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.single_tile_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.single_tile_kernel != nullptr);
+  CHECK(build.upsweep_kernel != nullptr);
+  CHECK(build.downsweep_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> keys_in(input);
+  pointer_t<T> keys_out(n);
+  pointer_t<T> values_in(n);
+  pointer_t<T> values_out(n);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+  int selector              = -1;
+
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_radix_sort(
+      build,
+      nullptr,
+      &temp_storage_bytes,
+      keys_in,
+      keys_out,
+      values_in,
+      values_out,
+      decomposer_no_op,
+      n,
+      /*begin_bit=*/0,
+      /*end_bit=*/sizeof(T) * 8,
+      /*is_overwrite_okay=*/false,
+      &selector,
+      null_stream));
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_radix_sort(
+      build,
+      temp_storage.ptr,
+      &temp_storage_bytes,
+      keys_in,
+      keys_out,
+      values_in,
+      values_out,
+      decomposer_no_op,
+      n,
+      /*begin_bit=*/0,
+      /*end_bit=*/sizeof(T) * 8,
+      /*is_overwrite_okay=*/false,
+      &selector,
+      null_stream));
+
+  std::vector<T> expected(input);
+  std::sort(expected.begin(), expected.end());
+  // is_overwrite_okay=false → result is always in keys_out (selector not used for routing)
+  REQUIRE(expected == std::vector<T>(keys_out));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
+}
+#endif // CCCL_C_PARALLEL_V2

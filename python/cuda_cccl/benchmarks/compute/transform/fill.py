@@ -16,11 +16,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 from utils import INTEGRAL_TYPES as TYPE_MAP
 from utils import as_cupy_stream
 
-import cuda.bench as bench
 import cuda.compute
 from cuda.compute import ConstantIterator, OpKind
 
@@ -42,14 +42,22 @@ def bench_fill(state: bench.State):
     # Python equivalent of C++ return_constant<T>{42}
     constant_it = ConstantIterator(dtype(42))
 
-    transform = cuda.compute.make_unary_transform(constant_it, d_out, OpKind.IDENTITY)
+    transform = cuda.compute.make_unary_transform(
+        d_in=constant_it, d_out=d_out, op=OpKind.IDENTITY
+    )
 
     state.add_element_count(num_items)
     state.add_global_memory_reads(0)
     state.add_global_memory_writes(num_items * d_out.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
-        transform(constant_it, d_out, OpKind.IDENTITY, num_items, launch.get_stream())
+        transform(
+            d_in=constant_it,
+            d_out=d_out,
+            op=OpKind.IDENTITY,
+            num_items=num_items,
+            stream=launch.get_stream(),
+        )
 
     state.exec(launcher, batched=False)
 

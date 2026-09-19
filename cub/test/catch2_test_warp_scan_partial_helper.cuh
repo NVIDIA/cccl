@@ -19,10 +19,11 @@ warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT acti
 
   __shared__ storage_t storage[TotalWarps];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
-  int warp_id = tid / LogicalWarpThreads;
+  const int warp_id = tid / LogicalWarpThreads;
 
   T inc_out     = filler;
   T exc_out     = filler;
@@ -65,10 +66,11 @@ __global__ void warp_scan_kernel(T* in, T* out, ActionT action, int valid_items)
 
   __shared__ storage_t storage[TotalWarps];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
-  int warp_id = tid / LogicalWarpThreads;
+  const int warp_id = tid / LogicalWarpThreads;
 
   T thread_data = in[tid];
 
@@ -108,11 +110,11 @@ c2h::host_vector<T> compute_host_reference(
   {
     return c2h::host_vector<T>{};
   }
-  assert(result.size() % logical_warp_threads == 0ul);
+  REQUIRE(result.size() % logical_warp_threads == 0ul);
 
   // The accumulator variable is used to calculate warp_aggregate without
   // taking initial_value into consideration in both exclusive and inclusive scan.
-  int num_warps = static_cast<int>(result.size()) / logical_warp_threads;
+  const int num_warps = static_cast<int>(result.size()) / logical_warp_threads;
   c2h::host_vector<T> warp_accumulator(num_warps);
   if (mode == scan_mode::exclusive)
   {

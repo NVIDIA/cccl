@@ -75,26 +75,28 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_empty<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t) const noexcept(noexcept(bool(__t.empty())))
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(bool(__t.empty())))
   {
     return bool(__t.empty());
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_invoke_size<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t) const noexcept(noexcept(::cuda::std::ranges::size(__t)))
+  [[nodiscard]] _CCCL_API constexpr bool
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::size(__t)))
   {
     return ::cuda::std::ranges::size(__t) == 0;
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_compare_begin_end<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t) const
-    noexcept(noexcept(bool(::cuda::std::ranges::begin(__t) == ::cuda::std::ranges::end(__t))))
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(bool(::cuda::std::ranges::begin(__t) == ::cuda::std::ranges::end(__t))))
   {
     return ::cuda::std::ranges::begin(__t) == ::cuda::std::ranges::end(__t);
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

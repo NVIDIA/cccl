@@ -34,9 +34,11 @@ double gettime()
 void writeplotfile(int m, int n, int scale)
 {
   FILE* gnuplot = EXPECT(fopen("cfd.plt", "w"));
-  SCOPE(exit)
+  // One guard, both outcomes: a failed close is a real error on the normal path, and best
+  // effort while an exception is unwinding (a throwing guard body would abort the program).
+  SCOPE(exit, failing)
   {
-    EXPECT(fclose(gnuplot) == 0);
+    failing ? (void) fclose(gnuplot) : (void) EXPECT(fclose(gnuplot) == 0);
   };
 
   fprintf(gnuplot,

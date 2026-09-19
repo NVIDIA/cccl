@@ -171,7 +171,7 @@ struct BlockHistogramSort
     int flags[ItemsPerThread]; // unused
 
     // Compute head flags to demarcate contiguous runs of the same bin in the sorted tile
-    DiscontinuityOp flag_op(temp_storage);
+    const DiscontinuityOp flag_op(temp_storage);
     BlockDiscontinuityT(temp_storage.discontinuities.flag).FlagHeads(flags, items, flag_op);
 
     // Update begin for first item
@@ -188,7 +188,7 @@ struct BlockHistogramSort
     _CCCL_PRAGMA_UNROLL_FULL()
     for (; histo_offset + BLOCK_THREADS <= Bins; histo_offset += BLOCK_THREADS)
     {
-      int thread_offset = histo_offset + linear_tid;
+      const int thread_offset = histo_offset + linear_tid;
       CounterT count =
         temp_storage.discontinuities.run_end[thread_offset] - temp_storage.discontinuities.run_begin[thread_offset];
       histogram[thread_offset] += count;
@@ -197,7 +197,7 @@ struct BlockHistogramSort
     // Finish up with guarded composition if necessary
     if ((Bins % BLOCK_THREADS != 0) && (histo_offset + linear_tid < Bins))
     {
-      int thread_offset = histo_offset + linear_tid;
+      const int thread_offset = histo_offset + linear_tid;
       CounterT count =
         temp_storage.discontinuities.run_end[thread_offset] - temp_storage.discontinuities.run_begin[thread_offset];
       histogram[thread_offset] += count;

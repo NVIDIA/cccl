@@ -37,9 +37,9 @@ TEST_FUNC constexpr bool test()
   { // <iterator> - <iterator>
     cuda::tabulate_output_iterator iter1{func, 5};
     cuda::tabulate_output_iterator iter2{func, 10};
-    assert(iter1 - iter2 == 5);
+    assert(iter1 - iter2 == -5);
     assert(iter1 - iter1 == 0);
-    assert(iter2 - iter1 == -5);
+    assert(iter2 - iter1 == 5);
 
     static_assert(noexcept(iter1 - iter2));
     static_assert(cuda::std::same_as<decltype(iter1 - iter2), int>);

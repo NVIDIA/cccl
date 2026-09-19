@@ -10,7 +10,7 @@
 #include <limits>
 #include <type_traits>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <typename KeyT>
 struct fundamental_extractor_t
@@ -71,7 +71,7 @@ using a_few_fundamental_types = c2h::type_list<std::uint8_t, std::uint64_t>;
  *    dst: 0 0 0 0 0 0 1 0 0 1
  *
  */
-C2H_TEST("Radix operations extract digits from fundamental types", "[radix][operations]", fundamental_types)
+CUB_TEST("Radix operations extract digits from fundamental types", "[radix][operations]", CUB_SMALL, fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
@@ -101,8 +101,8 @@ C2H_TEST("Radix operations extract digits from fundamental types", "[radix][oper
       std::uint32_t digit = extractor.Digit(val);
       std::memcpy(output_buffer, &digit, sizeof(std::uint32_t));
 
-      digit_bits_t result    = buffer_to_digit_bits(output_buffer, 0, num_bits);
-      digit_bits_t reference = buffer_to_digit_bits(input_buffer, current_bit, num_bits);
+      const digit_bits_t result    = buffer_to_digit_bits(output_buffer, 0, num_bits);
+      const digit_bits_t reference = buffer_to_digit_bits(input_buffer, current_bit, num_bits);
 
       REQUIRE(reference == result);
     }
@@ -272,8 +272,8 @@ void test_tuple()
       std::uint32_t digit = extractor.Digit(tpl);
       std::memcpy(output_buffer, &digit, sizeof(std::uint32_t));
 
-      digit_bits_t result    = buffer_to_digit_bits(output_buffer, 0, num_bits);
-      digit_bits_t reference = buffer_to_digit_bits(input_buffer, current_bit, num_bits);
+      const digit_bits_t result    = buffer_to_digit_bits(output_buffer, 0, num_bits);
+      const digit_bits_t reference = buffer_to_digit_bits(input_buffer, current_bit, num_bits);
 
       // Provides readable error messages:
       //  00000000000000000000000000000000
@@ -284,14 +284,16 @@ void test_tuple()
   }
 }
 
-C2H_TEST("Radix operations extract digits from pairs", "[radix][operations]", fundamental_types, fundamental_types)
+CUB_TEST(
+  "Radix operations extract digits from pairs", "[radix][operations]", CUB_SMALL, fundamental_types, fundamental_types)
 {
   test_tuple<typename c2h::get<0, TestType>, //
              typename c2h::get<1, TestType>>();
 }
 
-C2H_TEST("Radix operations extract digits from triples",
+CUB_TEST("Radix operations extract digits from triples",
          "[radix][operations]",
+         CUB_SMALL,
          fundamental_types,
          fundamental_types,
          fundamental_types)
@@ -301,8 +303,9 @@ C2H_TEST("Radix operations extract digits from triples",
              typename c2h::get<2, TestType>>();
 }
 
-C2H_TEST("Radix operations extract digits from tetrads",
+CUB_TEST("Radix operations extract digits from tetrads",
          "[radix][operations]",
+         CUB_SMALL,
          a_few_fundamental_types,
          a_few_fundamental_types,
          a_few_fundamental_types,
@@ -321,7 +324,7 @@ C2H_TEST("Radix operations extract digits from tetrads",
  *    dst: 0 0 1 1 0 0 1 1 0 0
  *
  */
-C2H_TEST("Radix operations inverse fundamental types", "[radix][operations]", fundamental_types)
+CUB_TEST("Radix operations inverse fundamental types", "[radix][operations]", CUB_SMALL, fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
@@ -340,7 +343,7 @@ C2H_TEST("Radix operations inverse fundamental types", "[radix][operations]", fu
 
   for (std::size_t i = 0; i < input_buffer_mem.size(); i++)
   {
-    input_buffer[i] = ~input_buffer[i];
+    input_buffer[i] = static_cast<char>(~input_buffer[i]);
   }
 
   key_t inv = traits::bit_ordered_inversion_policy::inverse(decomposer, val);
@@ -361,7 +364,7 @@ C2H_TEST("Radix operations inverse fundamental types", "[radix][operations]", fu
  *      <           <----  higher bits  /  lower bits  ---->           >
  *
  */
-C2H_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_types, fundamental_types)
+CUB_TEST("Radix operations inverse pairs", "[radix][operations]", CUB_SMALL, fundamental_types, fundamental_types)
 {
   using tpl_t = cuda::std::tuple<typename c2h::get<0, TestType>, //
                                  typename c2h::get<1, TestType>>;
@@ -380,7 +383,7 @@ C2H_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_ty
 
   for (std::size_t i = 0; i < input_buffer_mem.size(); i++)
   {
-    input_buffer[i] = ~input_buffer[i];
+    input_buffer[i] = static_cast<char>(~input_buffer[i]);
   }
 
   c2h::host_vector<char> output_buffer_mem = input_buffer_mem;
@@ -396,23 +399,27 @@ C2H_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_ty
  * This tests checks that radix operations can get a value that when converted
  * to binary-comparable representation, yields smallest possible value.
  */
-C2H_TEST("Radix operations infere minimal value for fundamental types", "[radix][operations]", fundamental_types)
+CUB_TEST(
+  "Radix operations infere minimal value for fundamental types", "[radix][operations]", CUB_SMALL, fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
   using decomposer_t = cub::detail::identity_decomposer_t;
 
-  c2h::host_vector<char> output_buffer_mem(sizeof(key_t));
-  c2h::host_vector<char> input_buffer_mem(sizeof(key_t));
+  const c2h::host_vector<char> output_buffer_mem(sizeof(key_t));
+  const c2h::host_vector<char> input_buffer_mem(sizeof(key_t));
 
-  key_t ref = cuda::std::numeric_limits<key_t>::lowest();
-  key_t val = traits::min_raw_binary_key(decomposer_t{});
+  const key_t ref = cuda::std::numeric_limits<key_t>::lowest();
+  const key_t val = traits::min_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
 
-C2H_TEST(
-  "Radix operations infere minimal value for pair types", "[radix][operations]", fundamental_types, fundamental_types)
+CUB_TEST("Radix operations infere minimal value for pair types",
+         "[radix][operations]",
+         CUB_SMALL,
+         fundamental_types,
+         fundamental_types)
 {
   using tpl_t = cuda::std::tuple<typename c2h::get<0, TestType>, //
                                  typename c2h::get<1, TestType>>;
@@ -423,7 +430,7 @@ C2H_TEST(
   tpl_t ref;
   tpl_to_min(ref);
 
-  tpl_t val = traits::min_raw_binary_key(decomposer_t{});
+  const tpl_t val = traits::min_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
@@ -432,20 +439,24 @@ C2H_TEST(
  * This tests checks that radix operations can get a value that when converted
  * to binary-comparable representation, yields largest possible value.
  */
-C2H_TEST("Radix operations infere maximal value for fundamental types", "[radix][operations]", fundamental_types)
+CUB_TEST(
+  "Radix operations infere maximal value for fundamental types", "[radix][operations]", CUB_SMALL, fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
   using decomposer_t = cub::detail::identity_decomposer_t;
 
-  key_t ref = cuda::std::numeric_limits<key_t>::max();
-  key_t val = traits::max_raw_binary_key(decomposer_t{});
+  const key_t ref = cuda::std::numeric_limits<key_t>::max();
+  const key_t val = traits::max_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
 
-C2H_TEST(
-  "Radix operations infere maximal value for pair types", "[radix][operations]", fundamental_types, fundamental_types)
+CUB_TEST("Radix operations infere maximal value for pair types",
+         "[radix][operations]",
+         CUB_SMALL,
+         fundamental_types,
+         fundamental_types)
 {
   using tpl_t = cuda::std::tuple<typename c2h::get<0, TestType>, //
                                  typename c2h::get<1, TestType>>;
@@ -456,7 +467,7 @@ C2H_TEST(
   tpl_t ref;
   tpl_to_max(ref);
 
-  tpl_t val = traits::max_raw_binary_key(decomposer_t{});
+  const tpl_t val = traits::max_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
@@ -473,8 +484,9 @@ using fundamental_signed_types = c2h::type_list<std::int8_t, std::int16_t, std::
  * -42.0f: 11000010001010000000000000000000
  *
  */
-C2H_TEST("Radix operations reorder values for pair types",
+CUB_TEST("Radix operations reorder values for pair types",
          "[radix][operations]",
+         CUB_SMALL,
          fundamental_signed_types,
          fundamental_signed_types)
 {
@@ -505,7 +517,7 @@ C2H_TEST("Radix operations reorder values for pair types",
   REQUIRE(l_2 == cuda::std::numeric_limits<T2>::lowest());
 
   {
-    tpl_t ref{T1{0}, T2{0}};
+    const tpl_t ref{T1{0}, T2{0}};
     const tpl_t unordered_val = tpl_t{l_1, l_2};
     const tpl_t ordered_val   = conversion_policy::to_bit_ordered(decomposer_t{}, unordered_val);
 
@@ -567,15 +579,15 @@ struct flipped_fp_aggregate_decomposer_t
 /**
  * This tests checks radix sort guarantees to treat +0/-0 as the same value.
  */
-TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]")
+CUB_TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]", CUB_SMALL)
 {
   using traits            = cub::detail::radix::traits_t<fp_aggregate_t>;
   using conversion_policy = typename traits::bit_ordered_conversion_policy;
   using decomposer_t      = fp_aggregate_decomposer_t;
   using extractor_t       = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
 
-  fp_aggregate_t negative{-0.0, -0.0f};
-  fp_aggregate_t positive{+0.0, +0.0f};
+  const fp_aggregate_t negative{-0.0, -0.0f};
+  const fp_aggregate_t positive{+0.0, +0.0f};
   fp_aggregate_t ordered_negative = conversion_policy::to_bit_ordered(decomposer_t{}, negative);
   fp_aggregate_t ordered_positibe = conversion_policy::to_bit_ordered(decomposer_t{}, positive);
 
@@ -596,7 +608,7 @@ TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]")
  * This tests checks that radix operations respect the order of fields in the
  * tuple instead of looking at the binary key representation.
  */
-TEST_CASE("Radix operations allow fields permutation", "[radix][operations]")
+CUB_TEST_CASE("Radix operations allow fields permutation", "[radix][operations]", CUB_SMALL)
 {
   using traits            = cub::detail::radix::traits_t<fp_aggregate_t>;
   using conversion_policy = typename traits::bit_ordered_conversion_policy;

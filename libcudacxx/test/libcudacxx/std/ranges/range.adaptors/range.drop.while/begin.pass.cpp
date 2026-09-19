@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+// error: function-to-pointer decay is unsupported in tile code
+
 // constexpr auto begin();
 
 #include <cuda/std/array>
@@ -180,7 +184,7 @@ TEST_FUNC constexpr void testOne()
     unused(it);
   }
 
-#if !TEST_COMPILER(MSVC)
+#if !TEST_COMPILER(MSVC) && !_CCCL_TILE_COMPILATION() // lambda-to-pointer is invalid
   // Test with a non-const predicate
   {
     auto mutable_pred = [](int& i) mutable {
@@ -194,7 +198,7 @@ TEST_FUNC constexpr void testOne()
     static_assert(cuda::std::same_as<decltype(it), Iter>);
     assert(base(it) == buffer + 2);
   }
-#endif // !TEST_COMPILER(MSVC)
+#endif // !TEST_COMPILER(MSVC) && !_CCCL_TILE_COMPILATION()
 
   // Test with a predicate that takes by non-const reference
   {

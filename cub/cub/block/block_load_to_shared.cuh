@@ -21,8 +21,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/type_traits/is_trivially_relocatable.h>
-
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/address_space.h>
@@ -36,6 +34,7 @@
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_inval.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/data.h>
@@ -79,7 +78,7 @@ struct BlockLoadToShared
 {
 private:
   /// Constants
-  static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int threads_per_block = BlockDimX * BlockDimY * BlockDimZ;
 
   // Helper for fallback to gmem->reg->smem
   struct alignas(detail::bulk_copy_min_align) vec_load_t
@@ -122,11 +121,12 @@ private:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __elect_thread() const
   {
     // Otherwise elect.sync in the last warp with a full mask is UB.
-    static_assert(block_threads % cub::detail::warp_threads == 0, "The block size must be a multiple of the warp size");
+    static_assert(threads_per_block % cub::detail::warp_threads == 0,
+                  "The block size must be a multiple of the warp size");
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_90,
       ( // Use last warp to try to avoid having the elected thread also working on the peeling in the first warp.
-        return (linear_tid >= block_threads - cub::detail::warp_threads) && ::cuda::ptx::elect_sync(~0u);),
+        return (linear_tid >= threads_per_block - cub::detail::warp_threads) && ::cuda::ptx::elect_sync(~0u);),
       (return linear_tid == 0;));
   }
 
@@ -177,7 +177,7 @@ private:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __copy_aligned_async(char* smem_dst, const char* gmem_src, int num_bytes)
   {
     for (int offset = linear_tid * detail::bulk_copy_min_align; offset < num_bytes;
-         offset += block_threads * detail::bulk_copy_min_align)
+         offset += threads_per_block * detail::bulk_copy_min_align)
     {
       [[maybe_unused]] const auto thread_src = gmem_src + offset;
       [[maybe_unused]] const auto thread_dst = smem_dst + offset;
@@ -196,7 +196,7 @@ private:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __copy_aligned_fallback(char* smem_dst, const char* gmem_src, int num_bytes)
   {
     for (int offset = linear_tid * detail::bulk_copy_min_align; offset < num_bytes;
-         offset += block_threads * detail::bulk_copy_min_align)
+         offset += threads_per_block * detail::bulk_copy_min_align)
     {
       const auto thread_src                       = gmem_src + offset;
       const auto thread_dst                       = smem_dst + offset;
@@ -237,10 +237,14 @@ private:
     _CCCL_DEVICE_API _CCCL_FORCEINLINE token_impl() {} // NOLINT(modernize-use-equals-default) ctor must have a body to
                                                        // avoid token_impl{} to compile
 
+  public:
     // NOLINTBEGIN(modernize-use-equals-delete)
     token_impl(const token_impl&)            = delete;
     token_impl& operator=(const token_impl&) = delete;
     // NOLINTEND(modernize-use-equals-delete)
+
+    token_impl(token_impl&&)            = default;
+    token_impl& operator=(token_impl&&) = default;
   };
 
 public:
@@ -301,7 +305,7 @@ public:
   //!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
   //! @param[in] smem_dst
   //!   Destination buffer in shared memory that is aligned to `SharedBufferAlignBytes<T>()` and at least
-  //!   `SharedBufferSizeBytes<T, GmemAlign>(size(gmem_src))` big.
+  //!   `SharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))` big.
   //! @param[in] gmem_src
   //!   Source range in global memory, determines the size of the transaction
   //! @return
@@ -314,13 +318,13 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::span<T>
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<const T> gmem_src)
   {
-    static_assert(THRUST_NS_QUALIFIER::is_trivially_relocatable_v<T>);
+    static_assert(::cuda::is_trivially_copyable_v<T>);
     static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
     constexpr bool bulk_aligned = GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align);
     // Avoid 64b multiplication in span::size_bytes()
-    const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(size(gmem_src));
-    const auto dst_ptr  = data(smem_dst);
-    const auto src_ptr  = ::cuda::ptr_rebind<char>(data(gmem_src));
+    const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(::cuda::std::size(gmem_src));
+    const auto dst_ptr  = ::cuda::std::data(smem_dst);
+    const auto src_ptr  = ::cuda::ptr_rebind<char>(::cuda::std::data(gmem_src));
     _CCCL_ASSERT(dst_ptr == nullptr || ::cuda::device::is_address_from(dst_ptr, ::cuda::device::address_space::shared),
                  "Destination address needs to point to shared memory");
     _CCCL_ASSERT(src_ptr == nullptr || ::cuda::device::is_address_from(src_ptr, ::cuda::device::address_space::global),
@@ -333,9 +337,9 @@ public:
                  "End of global memory range needs to be aligned according to GmemAlign.");
     _CCCL_ASSERT(::cuda::is_aligned(dst_ptr, cub::detail::LoadToSharedBufferAlignBytes<T>()),
                  "Shared memory needs to be 16 byte aligned.");
-    _CCCL_ASSERT(
-      (static_cast<int>(size(smem_dst)) >= cub::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(size(gmem_src))),
-      "Shared memory destination buffer must have enough space");
+    _CCCL_ASSERT((static_cast<int>(::cuda::std::size(smem_dst))
+                  >= cub::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))),
+                 "Shared memory destination buffer must have enough space");
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy || state == State::ready_to_copy_or_commit,
                  "Wait() must be called before another CopyAsync()");
@@ -358,7 +362,7 @@ public:
 
       // Peel head and tail
       // Make sure we have enough threads for the worst case of bulk_min_align bytes on each side.
-      static_assert(block_threads >= 2 * (detail::bulk_copy_min_align - 1));
+      static_assert(threads_per_block >= 2 * (detail::bulk_copy_min_align - 1));
       // |-------------head--------------|--------------------------tail--------------------------|
       // 0, 1, ... head_peeling_bytes - 1, head_peeling_bytes + num_bytes_bulk, ..., num_bytes - 1
       const int begin_offset = linear_tid < head_peeling_bytes ? 0 : num_bytes_bulk;
@@ -417,7 +421,8 @@ public:
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
     while (!__try_wait())
-      ;
+    {
+    }
     phase_parity ^= 1u;
   }
 

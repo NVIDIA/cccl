@@ -24,6 +24,7 @@ template <typename Output, typename Input>
 {
   Output output;
   static_assert(sizeof(input) == sizeof(output), "wrong size");
+  // NOLINTNEXTLINE(bugprone-undefined-memory-manipulation)
   ::memcpy(&output, &input, sizeof(input));
   return output;
 }

@@ -43,19 +43,19 @@ struct write_attrs_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr) &&
+    [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr) &&
     {
       return __sndr_t<_Sndr, _Attrs>{{}, static_cast<_Attrs&&>(__attrs_), static_cast<_Sndr&&>(__sndr)};
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr) const&
+    [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr) const&
     {
       return __sndr_t<_Sndr, _Attrs>{{}, __attrs_, static_cast<_Sndr&&>(__sndr)};
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API friend auto operator|(_Sndr __sndr, __closure_t __clsr)
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto operator|(_Sndr __sndr, __closure_t __clsr)
     {
       return __sndr_t<_Sndr, _Attrs>{{}, static_cast<_Attrs&&>(__clsr.__attrs_), static_cast<_Sndr&&>(__sndr)};
     }
@@ -85,7 +85,7 @@ struct write_attrs_t
   //!
   //! @endrst
   template <class _Sndr, class _Attrs>
-  [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr, _Attrs __attrs) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr, _Attrs __attrs) const
   {
     return __sndr_t<_Sndr, _Attrs>{{}, static_cast<_Attrs&&>(__attrs), static_cast<_Sndr&&>(__sndr)};
   }
@@ -108,7 +108,7 @@ struct write_attrs_t
   //!
   //! @endrst
   template <class _Attrs>
-  [[nodiscard]] _CCCL_API auto operator()(_Attrs __attrs) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto operator()(_Attrs __attrs) const
   {
     return __closure_t<_Attrs>{static_cast<_Attrs&&>(__attrs)};
   }
@@ -120,24 +120,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_attrs_t::__sndr_t
   using sender_concept = sender_t;
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     return execution::get_child_completion_signatures<_Self, _Sndr, _Env...>();
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr _rcvr) && -> connect_result_t<_Sndr, _Rcvr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr _rcvr) && -> connect_result_t<_Sndr, _Rcvr>
   {
     return execution::connect(static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(_rcvr));
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr _rcvr) const& -> connect_result_t<_Sndr, _Rcvr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr _rcvr) const& -> connect_result_t<_Sndr, _Rcvr>
   {
     return execution::connect(__sndr_, static_cast<_Rcvr&&>(_rcvr));
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Attrs, env_of_t<_Sndr>>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __attrs_t<_Attrs, env_of_t<_Sndr>>
   {
     return {{__env_ref(__attrs_), __fwd_env(execution::get_env(__sndr_))}};
   }

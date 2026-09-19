@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// error: a non-__tile__ variable cannot be used in tile code
 
 // friend constexpr bool operator==(iterator const&, sentinel const&);
 

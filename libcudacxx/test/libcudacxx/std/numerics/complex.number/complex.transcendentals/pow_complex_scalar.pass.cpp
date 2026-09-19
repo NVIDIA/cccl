@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cuda/std/complex>
 
@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class T, class U = T>
-TEST_FUNC void test(const cuda::std::complex<T>& a, const U& b, cuda::std::complex<T> x)
+TEST_HOST_DEVICE_FUNC void test(const cuda::std::complex<T>& a, const U& b, cuda::std::complex<T> x)
 {
   static_assert(cuda::std::is_same<decltype(pow(a, b)), cuda::std::complex<T>>::value);
   cuda::std::complex<T> c = pow(a, b);
@@ -32,13 +32,13 @@ TEST_FUNC void test(const cuda::std::complex<T>& a, const U& b, cuda::std::compl
 }
 
 template <class T, class U = T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test(cuda::std::complex<T>(2, 3), U(2), cuda::std::complex<T>(-5, 12));
 }
 
 template <class T>
-TEST_FUNC void test_edges()
+TEST_HOST_DEVICE_FUNC void test_edges()
 {
   auto testcases   = get_testcases<T>();
   const unsigned N = sizeof(testcases) / sizeof(testcases[0]);

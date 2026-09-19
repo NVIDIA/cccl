@@ -8,6 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
+// UNSUPPORTED: enable-tile
+// error: invalid host device tile execution space deduction
+
 // <memory>
 
 // unique_ptr
@@ -22,22 +28,22 @@
 
 struct Deleter
 {
-  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter() {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 Deleter() {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int test()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int test()
   {
     return 5;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int test() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int test() const
   {
     return 6;
   }
 };
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT = typename cuda::std::conditional<IsArray, int[], int>::type;
   {
@@ -70,7 +76,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

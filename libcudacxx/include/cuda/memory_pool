@@ -23,5 +23,8 @@
 #include <cuda/__memory_pool/device_memory_pool.h>
 #include <cuda/__memory_pool/managed_memory_pool.h>
 #include <cuda/__memory_pool/pinned_memory_pool.h>
+#include <cuda/__memory_pool/shared_device_memory_pool.h>
+#include <cuda/__memory_pool/shared_managed_memory_pool.h>
+#include <cuda/__memory_pool/shared_pinned_memory_pool.h>
 
 #endif //_CUDA_MEMORY_POOL

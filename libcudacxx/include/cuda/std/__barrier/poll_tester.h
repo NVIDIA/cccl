@@ -34,12 +34,13 @@ class __barrier_poll_tester_phase
   typename _Barrier::arrival_token __phase;
 
 public:
-  _CCCL_API inline __barrier_poll_tester_phase(_Barrier const* __this_, typename _Barrier::arrival_token&& __phase_)
+  _CCCL_HOST_DEVICE_API inline __barrier_poll_tester_phase(
+    _Barrier const* __this_, typename _Barrier::arrival_token&& __phase_)
       : __this(__this_)
       , __phase(::cuda::std::move(__phase_))
   {}
 
-  [[nodiscard]] _CCCL_API inline bool operator()() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool operator()() const
   {
     return __this->__try_wait(__phase);
   }
@@ -52,25 +53,26 @@ class __barrier_poll_tester_parity
   bool __parity;
 
 public:
-  _CCCL_API inline __barrier_poll_tester_parity(_Barrier const* __this_, bool __parity_)
+  _CCCL_HOST_DEVICE_API inline __barrier_poll_tester_parity(_Barrier const* __this_, bool __parity_)
       : __this(__this_)
       , __parity(__parity_)
   {}
 
-  [[nodiscard]] _CCCL_API inline bool operator()() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool operator()() const
   {
     return __this->__try_wait_parity(__parity);
   }
 };
 
 template <class _Barrier>
-[[nodiscard]] _CCCL_API inline bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline bool
+__call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase)
 {
   return __b.__try_wait(::cuda::std::move(__phase));
 }
 
 template <class _Barrier>
-[[nodiscard]] _CCCL_API inline bool __call_try_wait_parity(const _Barrier& __b, bool __parity)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline bool __call_try_wait_parity(const _Barrier& __b, bool __parity)
 {
   return __b.__try_wait_parity(__parity);
 }

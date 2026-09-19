@@ -7,6 +7,7 @@ Math
    :hidden:
    :maxdepth: 1
 
+   math/abs_diff
    math/ceil_div
    math/round_up
    math/round_down
@@ -29,6 +30,11 @@ Math
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
 
+   * - :ref:`abs_diff <libcudacxx-extended-api-math-abs-diff>`
+     - Absolute difference
+     - CCCL 3.6.0
+     - CUDA 13.6
+
    * - :ref:`ceil_div <libcudacxx-extended-api-math-ceil-div>`
      - Ceiling division
      - CCCL 2.7.0
@@ -49,10 +55,20 @@ Math
      - CCCL 3.0.0
      - CUDA 13.0
 
+   * - :ref:`ceil_ilog2 <libcudacxx-extended-api-math-ilog>`
+     - Integer logarithm to the base 2, rounded up
+     - CCCL 3.1.0
+     - CUDA 13.1
+
    * - :ref:`ilog10 <libcudacxx-extended-api-math-ilog>`
      - Integer logarithm to the base 10
      - CCCL 3.0.0
      - CUDA 13.0
+
+   * - :ref:`ceil_ilog10 <libcudacxx-extended-api-math-ilog>`
+     - Integer logarithm to the base 10, rounded up
+     - CCCL 3.5.0
+     - CUDA 13.5
 
    * - :ref:`ipow <libcudacxx-extended-api-math-ipow>`
      - Integer power

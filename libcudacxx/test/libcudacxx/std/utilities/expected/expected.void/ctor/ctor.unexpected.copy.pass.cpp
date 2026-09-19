@@ -36,7 +36,7 @@ struct foo
 {};
 static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, int>, const cuda::std::unexpected<foo>&>);
 static_assert(
-  !cuda::std::is_constructible_v<cuda::std::expected<void, MoveOnly>, const cuda::std::unexpected<MoveOnly>&>, "");
+  !cuda::std::is_constructible_v<cuda::std::expected<void, MoveOnly>, const cuda::std::unexpected<MoveOnly>&>);
 
 // explicit(!is_convertible_v<const G&, E>)
 struct NotConvertible
@@ -45,7 +45,7 @@ struct NotConvertible
 };
 static_assert(cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cuda::std::expected<void, int>>);
 static_assert(
-  !cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cuda::std::expected<void, NotConvertible>>, "");
+  !cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cuda::std::expected<void, NotConvertible>>);
 
 struct MyInt
 {

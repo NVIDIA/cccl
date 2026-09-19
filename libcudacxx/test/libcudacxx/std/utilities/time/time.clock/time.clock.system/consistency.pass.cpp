@@ -10,6 +10,9 @@
 // violation because Clock::is_steady is defined in both the dylib and this TU.
 // UNSUPPORTED: asan
 
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
+
 // <cuda/std/chrono>
 
 // system_clock
@@ -21,7 +24,7 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_FUNC void test(const T&)
+TEST_HOST_DEVICE_FUNC void test(const T&)
 {}
 
 int main(int, char**)

@@ -91,7 +91,7 @@ __is_valid_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::si
 
 //! @brief Throws std::invalid_argument if \p __alignment is not a valid allocation alignment
 //! (power of two and at least \p __min_alignment).
-_CCCL_HOST inline void
+_CCCL_HOST_API inline void
 __validate_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment)
 {
   if (!__is_valid_allocation_alignment(__alignment, __min_alignment))

@@ -65,10 +65,10 @@ template <auto _Mbr, auto _BoundMbr>
 struct __virtuals_map_element
 {
   // map ifoo<>::meow to itself
-  _CCCL_API auto operator()(__ctag<_Mbr>) const -> __virtual_fn<_Mbr>;
+  _CCCL_HOST_DEVICE_API auto operator()(__ctag<_Mbr>) const -> __virtual_fn<_Mbr>;
 
   // map ifoo<_Super>::meow to ifoo<>::meow
-  _CCCL_API auto operator()(__ctag<_BoundMbr>) const -> __virtual_fn<_Mbr>;
+  _CCCL_HOST_DEVICE_API auto operator()(__ctag<_BoundMbr>) const -> __virtual_fn<_Mbr>;
 };
 
 template <class, class>
@@ -82,7 +82,7 @@ struct __virtuals_map<__overrides_list<_Interface, _Mbrs...>, __overrides_for<_B
 };
 
 template <class _Interface, class _Super>
-using __virtuals_map_for _CCCL_NODEBUG_ALIAS =
+using __virtuals_map_for _CCCL_NODEBUG =
   __virtuals_map<__overrides_for_t<_Interface>, __overrides_for_t<__rebind_interface<_Interface, _Super>>>;
 
 template <auto _Mbr, class _Interface, class _Super>
@@ -91,7 +91,7 @@ extern ::cuda::std::__call_result_t<__virtuals_map_for<_Interface, _Super>, __ct
 // This alias indirects through the above variable template to cache the result
 // of the virtuals map lookup.
 template <auto _Mbr, class _Interface, class _Super>
-using __virtual_fn_for _CCCL_NODEBUG_ALIAS = decltype(__virtual_fn_for_v<_Mbr, _Interface, _Super>);
+using __virtual_fn_for _CCCL_NODEBUG = decltype(__virtual_fn_for_v<_Mbr, _Interface, _Super>);
 
 //!
 //! __virtcall
@@ -106,7 +106,7 @@ template <auto _Mbr, class _Interface>
 inline constexpr bool __valid_virtcall<_Mbr, __ireference<_Interface const>> = __virtual_fn<_Mbr>::__const_fn;
 
 template <auto _Mbr, class _Interface, class _Super, class _Self, class... _Args>
-_CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
+_CCCL_HOST_DEVICE_API auto __virtcall(_Self* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -119,7 +119,7 @@ _CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CCCL_NODEBUG_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args) //
+_CCCL_NODEBUG_HOST_DEVICE_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -129,7 +129,7 @@ _CCCL_NODEBUG_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args)
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CCCL_NODEBUG_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
+_CCCL_NODEBUG_HOST_DEVICE_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -139,7 +139,7 @@ _CCCL_NODEBUG_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... _
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class... _Super, class... _Args)
 _CCCL_REQUIRES((!__valid_virtcall<_Mbr, _Super...>) )
-_CCCL_NODEBUG_API auto __virtcall(_Interface<_Super...> const*, _Args&&...) //
+_CCCL_NODEBUG_HOST_DEVICE_API auto __virtcall(_Interface<_Super...> const*, _Args&&...) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {

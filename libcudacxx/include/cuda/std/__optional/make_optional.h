@@ -44,14 +44,14 @@ _CCCL_TEMPLATE(class _Tp, class... _Args)
 _CCCL_REQUIRES((!is_reference_v<_Tp>) )
 _CCCL_API constexpr optional<_Tp> make_optional(_Args&&... __args)
 {
-  return optional<_Tp>(in_place, ::cuda::std::forward<_Args>(__args)...);
+  return optional<_Tp>(in_place_t{}, ::cuda::std::forward<_Args>(__args)...);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up, class... _Args)
 _CCCL_REQUIRES((!is_reference_v<_Tp>) )
 _CCCL_API constexpr optional<_Tp> make_optional(initializer_list<_Up> __il, _Args&&... __args)
 {
-  return optional<_Tp>(in_place, __il, ::cuda::std::forward<_Args>(__args)...);
+  return optional<_Tp>(in_place_t{}, __il, ::cuda::std::forward<_Args>(__args)...);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

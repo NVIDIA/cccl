@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6076227: ICE when validating tile MLIR
-
 // <cuda/std/optional>
 
 // template <class U> optional<T>& operator=(U&& v);

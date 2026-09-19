@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2016-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
@@ -35,6 +35,7 @@
 #  include <cuda/__cmath/round_up.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_arithmetic.h>
@@ -105,7 +106,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
     return cudaSuccess;
   }
 
-  thrust::detail::integral_constant<bool, SORT_ITEMS::value> sort_items{};
+  const thrust::detail::integral_constant<bool, SORT_ITEMS::value> sort_items{};
 
   return doit_step(d_temp_storage, temp_storage_bytes, keys, items, keys_count, compare_op, stream, sort_items);
 }
@@ -117,7 +118,7 @@ THRUST_RUNTIME_FUNCTION void merge_sort(
 {
   using size_type = thrust::detail::it_difference_t<KeysIt>;
 
-  size_type count = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
+  const size_type count = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
 
   size_t storage_size = 0;
   cudaStream_t stream = cuda_cub::stream(policy);
@@ -233,10 +234,10 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
     dispatch<SORT_ITEMS, CompareOp>::doit(nullptr, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
   cuda_cub::throw_on_error(status, "radix_sort: failed on 1st step");
 
-  size_t keys_temp_storage  = ::cuda::round_up(sizeof(Key) * keys_count, 128);
-  size_t items_temp_storage = ::cuda::round_up(sizeof(Item) * items_count, 128);
+  const size_t keys_temp_storage  = ::cuda::round_up(sizeof(Key) * keys_count, 128);
+  const size_t items_temp_storage = ::cuda::round_up(sizeof(Item) * items_count, 128);
 
-  size_t storage_size = keys_temp_storage + items_temp_storage + temp_storage_bytes;
+  const size_t storage_size = keys_temp_storage + items_temp_storage + temp_storage_bytes;
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
@@ -271,45 +272,26 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
 
 namespace __smart_sort
 {
-template <class Key, class CompareOp>
-using can_use_primitive_sort = ::cuda::std::integral_constant<
-  bool,
-  (::cuda::std::is_arithmetic_v<Key>
-#  if _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-   || ::cuda::std::is_same_v<Key, __half>
-#  endif // _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-#  if _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
-   || ::cuda::std::is_same_v<Key, __nv_bfloat16>
-#  endif // _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) &&
-         // !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
-   )
-    && (::cuda::std::is_same_v<CompareOp, ::cuda::std::less<Key>>
-        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::less<void>>
-        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::greater<Key>>
-        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::greater<void>>)>;
-
-template <
-  class SORT_ITEMS,
-  class STABLE,
-  class Policy,
-  class KeysIt,
-  class ItemsIt,
-  class CompareOp,
-  ::cuda::std::enable_if_t<!can_use_primitive_sort<thrust::detail::it_value_t<KeysIt>, CompareOp>::value, int> = 0>
+template <class SORT_ITEMS,
+          class STABLE,
+          class Policy,
+          class KeysIt,
+          class ItemsIt,
+          class CompareOp,
+          ::cuda::std::enable_if_t<!CUB_NS_QUALIFIER::__can_use_radix_sort<KeysIt, CompareOp>, int> = 0>
 THRUST_RUNTIME_FUNCTION void
 smart_sort(Policy& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 {
   __merge_sort::merge_sort<SORT_ITEMS, STABLE>(policy, keys_first, keys_last, items_first, compare_op);
 }
 
-template <
-  class SORT_ITEMS,
-  class /*STABLE*/,
-  class Policy,
-  class KeysIt,
-  class ItemsIt,
-  class CompareOp,
-  ::cuda::std::enable_if_t<can_use_primitive_sort<thrust::detail::it_value_t<KeysIt>, CompareOp>::value, int> = 0>
+template <class SORT_ITEMS,
+          class /*STABLE*/,
+          class Policy,
+          class KeysIt,
+          class ItemsIt,
+          class CompareOp,
+          ::cuda::std::enable_if_t<CUB_NS_QUALIFIER::__can_use_radix_sort<KeysIt, CompareOp>, int> = 0>
 THRUST_RUNTIME_FUNCTION void smart_sort(
   execution_policy<Policy>& policy,
   KeysIt keys_first,
@@ -327,8 +309,8 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
 
     __radix_sort::radix_sort<SORT_ITEMS>(
       policy,
-      thrust::raw_pointer_cast(&*keys.begin()),
-      thrust::raw_pointer_cast(&*values.begin()),
+      ::cuda::std::to_address(keys.begin()),
+      ::cuda::std::to_address(values.begin()),
       keys_last - keys_first,
       compare_op);
 
@@ -341,8 +323,8 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
   {
     __radix_sort::radix_sort<SORT_ITEMS>(
       policy,
-      thrust::raw_pointer_cast(&*keys.begin()),
-      thrust::raw_pointer_cast(&*keys.begin()),
+      ::cuda::std::to_address(keys.begin()),
+      ::cuda::std::to_address(keys.begin()),
       keys_last - keys_first,
       compare_op);
   }

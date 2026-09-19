@@ -14,10 +14,10 @@ void TestSortDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::sort(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestSortDispatchExplicit);
 
@@ -33,7 +33,7 @@ void TestSortDispatchImplicit()
 
   thrust::sort(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestSortDispatchImplicit);
 
@@ -57,7 +57,7 @@ void TestSortSimple()
 
   thrust::sort(unsorted_keys.begin(), unsorted_keys.end());
 
-  ASSERT_EQUAL(unsorted_keys, sorted_keys);
+  REQUIRE(unsorted_keys == sorted_keys);
 }
 DECLARE_VECTOR_UNITTEST(TestSortSimple);
 
@@ -70,7 +70,7 @@ void TestSortAscendingKey(const size_t n)
   thrust::sort(h_data.begin(), h_data.end(), ::cuda::std::less<T>());
   thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::less<T>());
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 DECLARE_VARIABLE_UNITTEST(TestSortAscendingKey);
 
@@ -84,7 +84,7 @@ void TestSortDescendingKey()
   thrust::sort(h_data.begin(), h_data.end(), ::cuda::std::greater<int>());
   thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::greater<int>());
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 DECLARE_UNITTEST(TestSortDescendingKey);
 
@@ -98,7 +98,7 @@ void TestSortBool()
   thrust::sort(h_data.begin(), h_data.end());
   thrust::sort(d_data.begin(), d_data.end());
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 DECLARE_UNITTEST(TestSortBool);
 
@@ -112,17 +112,17 @@ void TestSortBoolDescending()
   thrust::sort(h_data.begin(), h_data.end(), ::cuda::std::greater<bool>());
   thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::greater<bool>());
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 DECLARE_UNITTEST(TestSortBoolDescending);
 
 // See also: https://github.com/NVIDIA/cccl/issues/4919
 void TestSortTrivial()
 {
-  thrust::host_vector<int> h_data = {1, 0, -1, -2, -3};
-  thrust::host_vector<int> ref    = {-3, -2, -1, 0, 1};
+  thrust::host_vector<int> h_data    = {1, 0, -1, -2, -3};
+  const thrust::host_vector<int> ref = {-3, -2, -1, 0, 1};
 
   thrust::sort(h_data.begin(), h_data.end());
-  ASSERT_EQUAL(h_data, ref);
+  REQUIRE(h_data == ref);
 }
 DECLARE_UNITTEST(TestSortTrivial);

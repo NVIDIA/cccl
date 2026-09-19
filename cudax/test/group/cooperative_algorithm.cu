@@ -30,13 +30,13 @@
 namespace
 {
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ cuda::std::optional<T> sum(cudax::this_thread<Hierarchy> group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(const cudax::this_thread<Hierarchy>& group, T (&array)[N])
 {
   return {cub::ThreadReduce(array, cuda::std::plus<T>{})};
 }
 
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ cuda::std::optional<T> sum(cudax::this_warp<Hierarchy> group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(const cudax::this_warp<Hierarchy>& group, T (&array)[N])
 {
   using WarpReduce = cub::WarpReduce<T>;
 
@@ -48,7 +48,7 @@ __device__ cuda::std::optional<T> sum(cudax::this_warp<Hierarchy> group, T (&arr
 }
 
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ cuda::std::optional<T> sum(cudax::this_block<Hierarchy> group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(const cudax::this_block<Hierarchy>& group, T (&array)[N])
 {
   using BlockExts = decltype(cuda::gpu_thread.extents(cuda::block, group.hierarchy()));
   static_assert(BlockExts::rank_dynamic() == 0, "This algorithm requires all static extents.");
@@ -66,7 +66,7 @@ __device__ cuda::std::optional<T> sum(cudax::this_block<Hierarchy> group, T (&ar
 }
 
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ cuda::std::optional<T> sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(const cudax::this_cluster<Hierarchy>& group, T (&array)[N])
 {
   using BlockExts = decltype(cuda::gpu_thread.extents(cuda::block, group.hierarchy()));
   static_assert(BlockExts::rank_dynamic() == 0, "This algorithm requires all static extents.");
@@ -118,7 +118,7 @@ __device__ cuda::std::optional<T> sum(cudax::this_cluster<Hierarchy> group, T (&
 
 // todo(dabayer): Add support for warp and cluster levels.
 template <class Group, class T, cuda::std::size_t N>
-__device__ cuda::std::optional<T> sum(Group group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(const Group& group, T (&array)[N])
 {
   using Unit          = typename Group::unit_type;
   using MappingResult = typename Group::__mapping_result_type;
@@ -171,12 +171,12 @@ __device__ void test_cooperative_algorithm(Group group)
   // Only the root rank should have the correct result.
   if (cuda::gpu_thread.is_root_rank(group))
   {
-    CUDAX_REQUIRE(result.has_value());
-    CUDAX_REQUIRE(result == ref_sum);
+    REQUIRE(result.has_value());
+    REQUIRE(result == ref_sum);
   }
   else
   {
-    CUDAX_REQUIRE(!result.has_value());
+    REQUIRE(!result.has_value());
   }
 }
 
@@ -190,10 +190,10 @@ struct TestKernel
     test_cooperative_algorithm(cudax::this_block{config});
     test_cooperative_algorithm(cudax::this_cluster{config});
 
-    test_cooperative_algorithm(
-      cudax::group{cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<2>{}, cudax::lane_synchronizer{}});
-    test_cooperative_algorithm(
-      cudax::group{cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<16>{}, cudax::lane_synchronizer{}});
+    test_cooperative_algorithm(cudax::generic_group{
+      cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<2>{}, cudax::lane_synchronizer{}});
+    test_cooperative_algorithm(cudax::generic_group{
+      cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<16>{}, cudax::lane_synchronizer{}});
   }
 };
 } // namespace

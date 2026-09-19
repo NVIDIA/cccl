@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
 
 // <mdspan>
 

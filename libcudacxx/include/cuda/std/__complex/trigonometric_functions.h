@@ -31,7 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // sin
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> sin(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> sin(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = ::cuda::std::sinh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
@@ -40,7 +40,7 @@ template <class _Tp>
 // cos
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> cos(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> cos(const complex<_Tp>& __x)
 {
   return ::cuda::std::cosh(complex<_Tp>(-__x.imag(), __x.real()));
 }
@@ -48,7 +48,7 @@ template <class _Tp>
 // tan
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> tan(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> tan(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = ::cuda::std::tanh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());

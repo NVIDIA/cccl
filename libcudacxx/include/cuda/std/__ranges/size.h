@@ -111,14 +111,14 @@ struct __fn
 {
   // `[range.prim.size]`: the array case (for rvalues).
   template <class _Tp, size_t _Sz>
-  [[nodiscard]] _CCCL_API constexpr size_t operator()(_Tp (&&)[_Sz]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_t _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[_Sz]) noexcept
   {
     return _Sz;
   }
 
   // `[range.prim.size]`: the array case (for lvalues).
   template <class _Tp, size_t _Sz>
-  [[nodiscard]] _CCCL_API constexpr size_t operator()(_Tp (&)[_Sz]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_t _CCCL_STATIC_CALL_OPERATOR(_Tp (&)[_Sz]) noexcept
   {
     return _Sz;
   }
@@ -127,8 +127,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_size<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.size())))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.size())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.size());
   }
@@ -137,8 +137,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_size<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(size(__t));
   }
@@ -147,9 +147,9 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__difference<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t))))
-      -> decltype(::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t))))
+    -> decltype(::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t)))
   {
     return ::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t));
   }
@@ -180,7 +180,8 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_ssize<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(::cuda::std::ranges::size(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::size(__t)))
   {
     using _Signed = make_signed_t<decltype(::cuda::std::ranges::size(__t))>;
     using _Result = conditional_t<(sizeof(ptrdiff_t) > sizeof(_Signed)), ptrdiff_t, _Signed>;

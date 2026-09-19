@@ -27,7 +27,11 @@ def filter_by_problem_size(df):
 
 def filter_by_offset_type(df):
     if "OffsetT{ct}" in df.columns:
-        df = df[(df["OffsetT{ct}"] == "I32") | (df["OffsetT{ct}"] == "U32")]
+        filtered = df[
+            (df["OffsetT{ct}"] == "I32") | (df["OffsetT{ct}"] == "U32")
+        ]  # only use 32-bit offset types
+        if not filtered.empty:  # some benchmarks only use a 64-bit offset type
+            df = filtered
     return df
 
 
@@ -43,7 +47,7 @@ def filter_by_type(df):
 
 def alg_dfs(files, alg_regex):
     pattern = re.compile(alg_regex)
-    result = {}
+    result: dict[str, pd.DataFrame] = {}
     for file in files:
         storage = cccl.bench.SQLiteStorage(file)
         for algname in storage.algnames():
@@ -56,9 +60,20 @@ def alg_dfs(files, alg_regex):
                         filter_by_offset_type(filter_by_problem_size(df))
                     )
                     df = df.filter(items=["ctk", "cccl", "gpu", "variant", "bw"])
+                    fused_algname = algname.replace("bench.", "") + "." + subbench
+                    if df.empty:
+                        print(
+                            f"WARNING: Skipped {fused_algname} because no data is present"
+                        )
+                        print(df)
+                        continue
+                    if df["bw"].dropna().empty:
+                        print(
+                            f"WARNING: Skipped {fused_algname} because it does not report bandwidth"
+                        )
+                        continue
                     df["variant"] = df["variant"].astype(str)
                     df["bw"] = df["bw"] * 100
-                    fused_algname = algname.replace("bench.", "") + "." + subbench
                     if fused_algname in result:
                         result[fused_algname] = pd.concat([result[fused_algname], df])
                     else:
@@ -68,14 +83,14 @@ def alg_dfs(files, alg_regex):
 
 
 def alg_bws(dfs, verbose):
-    medians = None
+    # Concat once at the end: the old per-iteration concat relied on
+    # pd.concat silently dropping a None accumulator (see #11096).
+    frames = []
     for algname in dfs:
         df = dfs[algname]
         df["alg"] = algname
-        if df is None:
-            medians = df
-        else:
-            medians = pd.concat([medians, df])
+        frames.append(df)
+    medians = pd.concat(frames)
     # print more information if it's not unique across all runs or when requested (verbose)
     medians["hue"] = ""
     if verbose or medians["cccl"].unique().size > 1:
@@ -88,9 +103,7 @@ def alg_bws(dfs, verbose):
     medians["hue"] = medians["hue"] + gpuname + " "
     if medians["variant"].unique().size > 1:
         variant = (
-            medians["variant"]
-            .astype(str)
-            .map(lambda x: (" " + x if x != "base" else ""))
+            medians["variant"].astype(str).map(lambda x: " " + x if x != "base" else "")
         )
         medians["hue"] = medians["hue"] + variant + " "
     if verbose or medians["ctk"].unique().size > 1:
@@ -156,7 +169,11 @@ def parse_args():
 
 def sol():
     args = parse_args()
-    medians = alg_bws(alg_dfs(args.files, args.R), args.v)
+    dfs = alg_dfs(args.files, args.R)
+    if not dfs:
+        print("ERROR: No benchmark data to process (all benchmarks were skipped).")
+        return
+    medians = alg_bws(dfs, args.v)
     print_speedup(medians)
     plot_sol(medians, args.box)
 

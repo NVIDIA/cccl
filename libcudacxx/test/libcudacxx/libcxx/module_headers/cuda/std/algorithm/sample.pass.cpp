@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device math function
+
 #include <cuda/std/algorithm.sample.h>
 #include <cuda/std/cassert>
 
@@ -18,22 +21,22 @@ struct urbg
   using result_type = unsigned;
   unsigned s        = 1;
 
-  __host__ __device__ static constexpr result_type min()
+  TEST_HOST_DEVICE_FUNC static constexpr result_type min()
   {
     return 0;
   }
-  __host__ __device__ static constexpr result_type max()
+  TEST_HOST_DEVICE_FUNC static constexpr result_type max()
   {
     return 0xFFFFFFFFu;
   }
-  __host__ __device__ result_type operator()()
+  TEST_HOST_DEVICE_FUNC result_type operator()()
   {
     s = s * 48271u % 2147483647u;
     return s;
   }
 };
 
-__host__ __device__ bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   constexpr int pop[] = {1, 2, 3, 4, 5};
   int out[3]          = {};

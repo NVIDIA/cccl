@@ -239,7 +239,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
   const EncodedType BitMask = static_cast<EncodedType>((1 << RadixBits) - 1);
 
-  Encoder encode;
+  const Encoder encode;
 
   // storage for histograms
   size_t histograms[NumHistograms][HistogramSize] = {{0}};
@@ -257,7 +257,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
     for (unsigned int j = 0; j < NumHistograms; j++)
     {
-      const auto BitShift = static_cast<EncodedType>(RadixBits * j);
+      const auto BitShift = static_cast<EncodedType>(RadixBits * j); // NOLINT(bugprone-misplaced-widening-cast)
       histograms[j][(x >> BitShift) & BitMask]++;
     }
   }
@@ -269,7 +269,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
     for (unsigned int j = 0; j < HistogramSize; j++)
     {
-      size_t bin = histograms[i][j];
+      const size_t bin = histograms[i][j];
 
       if (bin == N)
       {
@@ -285,7 +285,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   // shuffle keys and (optionally) values
   for (unsigned int i = 0; i < NumHistograms; i++)
   {
-    const EncodedType BitShift = static_cast<EncodedType>(RadixBits * i);
+    const EncodedType BitShift = static_cast<EncodedType>(RadixBits * i); // NOLINT(bugprone-misplaced-widening-cast)
 
     if (!skip_shuffle[i])
     {
@@ -550,7 +550,7 @@ _CCCL_HOST_DEVICE void stable_radix_sort(
 {
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator>;
 
-  size_t N = last - first;
+  const size_t N = last - first;
 
   thrust::detail::temporary_array<KeyType, DerivedPolicy> temp(exec, N);
 
@@ -567,7 +567,7 @@ _CCCL_HOST_DEVICE void stable_radix_sort_by_key(
   using KeyType   = thrust::detail::it_value_t<RandomAccessIterator1>;
   using ValueType = thrust::detail::it_value_t<RandomAccessIterator2>;
 
-  size_t N = last1 - first1;
+  const size_t N = last1 - first1;
 
   thrust::detail::temporary_array<KeyType, DerivedPolicy> temp1(exec, N);
   thrust::detail::temporary_array<ValueType, DerivedPolicy> temp2(exec, N);

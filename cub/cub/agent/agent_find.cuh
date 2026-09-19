@@ -10,18 +10,20 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__memory/is_aligned.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #  include <cuda/atomic>
 #endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
-#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::find
 {
-template <int BlockThreads,
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           int VecSize,
           CacheLoadModifier LoadModifier,
@@ -36,12 +38,12 @@ struct agent_t
   // Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, VecSize>::Type;
 
-  static constexpr int tile_size = BlockThreads * ItemsPerThread;
+  static constexpr int tile_size = ThreadsPerBlock * ItemsPerThread;
 
   // Can vectorize according to the policy if the input iterator is a native pointer to a primitive type
   static constexpr bool attempt_vectorization =
-    (VecSize > 1) && (ItemsPerThread % VecSize == 0) && (::cuda::std::contiguous_iterator<InputIteratorT>)
-    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>;
+    (VecSize > 1) && (ItemsPerThread % VecSize == 0) && (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>)
+    && ::cuda::is_trivially_copyable_v<InputT>;
 
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
 
@@ -91,23 +93,23 @@ struct agent_t
 
     // vectorized loads begin
     auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * VecSize));
-    CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
+    const CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
 
-    alignas(InputT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
+    alignas(VectorT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
     auto* vec_items = reinterpret_cast<VectorT*>(input_bytes);
 
     constexpr int number_of_vectors = ItemsPerThread / VecSize;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < number_of_vectors; ++i)
     {
-      vec_items[i] = d_vec_in[BlockThreads * i];
+      vec_items[i] = d_vec_in[ThreadsPerBlock * i];
     }
 
     for (int i = 0; i < ItemsPerThread; ++i)
     {
       OffsetT nth_vector_of_thread = i / VecSize;
       OffsetT element_in_vector    = i % VecSize;
-      OffsetT vector_of_tile       = nth_vector_of_thread * BlockThreads + threadIdx.x;
+      OffsetT vector_of_tile       = nth_vector_of_thread * ThreadsPerBlock + threadIdx.x;
 
       OffsetT index = tile_offset + vector_of_tile * VecSize + element_in_vector;
 

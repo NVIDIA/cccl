@@ -13,7 +13,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[3] = {};
   cuda::std::fill(a, a + 3, 7);

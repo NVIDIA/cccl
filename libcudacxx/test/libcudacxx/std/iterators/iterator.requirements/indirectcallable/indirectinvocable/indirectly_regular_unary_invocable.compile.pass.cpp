@@ -36,7 +36,7 @@ static_assert(cuda::std::indirectly_regular_unary_invocable<GoodInvocable<It>, I
 struct NotIndirectlyReadable
 {};
 static_assert(
-  !cuda::std::indirectly_regular_unary_invocable<GoodInvocable<NotIndirectlyReadable>, NotIndirectlyReadable>, "");
+  !cuda::std::indirectly_regular_unary_invocable<GoodInvocable<NotIndirectlyReadable>, NotIndirectlyReadable>);
 #endif
 
 // Should fail when the invocable is not copy constructible

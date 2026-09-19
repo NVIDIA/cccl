@@ -119,6 +119,7 @@ private:
   using TextureWord = typename UnitWord<T>::TextureWord;
 
   // Number of texture words per T
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   static constexpr int TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord);
 
 private:
@@ -149,7 +150,7 @@ public:
     this->ptr        = const_cast<::cuda::std::remove_cv_t<QualifiedT>*>(ptr);
     this->tex_offset = static_cast<difference_type>(tex_offset);
 
-    cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
+    const cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
     cudaResourceDesc res_desc;
     cudaTextureDesc tex_desc;
     memset(&res_desc, 0, sizeof(cudaResourceDesc));
@@ -238,7 +239,7 @@ public:
   template <typename Distance>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
-    self_type offset = (*this) + n;
+    const self_type offset = (*this) + n;
     return *offset;
   }
 

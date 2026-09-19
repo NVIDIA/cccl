@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: bit field read/write is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
 
 // <cuda/std/format>
 
@@ -34,7 +34,7 @@ static_assert(can_make_wformat_args<int&>);
 static_assert(!can_make_wformat_args<int>);
 static_assert(!can_make_wformat_args<int&&>);
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   auto i = 1;
   auto c = 'c';

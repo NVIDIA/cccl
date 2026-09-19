@@ -86,8 +86,7 @@ static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<NonMovable
 static_assert(cuda::std::is_trivially_move_constructible_v<cuda::std::expected<int, int>>);
 static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<MovableNonTrivial, int>>);
 static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<int, MovableNonTrivial>>);
-static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<MovableNonTrivial, MovableNonTrivial>>,
-              "");
+static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<MovableNonTrivial, MovableNonTrivial>>);
 
 // Test: The exception specification is equivalent to
 // is_nothrow_move_constructible_v<T> && is_nothrow_move_constructible_v<E>.

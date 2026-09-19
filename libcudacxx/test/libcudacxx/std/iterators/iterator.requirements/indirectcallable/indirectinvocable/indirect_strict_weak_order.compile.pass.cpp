@@ -60,10 +60,8 @@ static_assert(cuda::std::indirect_strict_weak_order<decltype(lambda), int*, long
 #if TEST_STD_VER > 2017
 struct NotIndirectlyReadable
 {};
-static_assert(!cuda::std::indirect_strict_weak_order<GoodOrder<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>,
-              "");
-static_assert(!cuda::std::indirect_strict_weak_order<GoodOrder<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>,
-              "");
+static_assert(!cuda::std::indirect_strict_weak_order<GoodOrder<It1, NotIndirectlyReadable>, It1, NotIndirectlyReadable>);
+static_assert(!cuda::std::indirect_strict_weak_order<GoodOrder<NotIndirectlyReadable, It2>, NotIndirectlyReadable, It2>);
 #endif
 
 // Should fail when the function is not copy constructible

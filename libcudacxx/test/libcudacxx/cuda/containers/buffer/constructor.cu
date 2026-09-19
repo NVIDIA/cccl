@@ -52,7 +52,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
     return;
   }
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("Construction with explicit size")
@@ -202,6 +202,22 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
       CCCLRT_CHECK(buf.size() == 6);
       CCCLRT_CHECK(equal_range(buf));
     }
+    {
+      const auto buf = cuda::make_buffer<T>(stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)});
+      CCCLRT_CHECK(check_offseted_pointer(buf.data()));
+      CCCLRT_CHECK(buf.size() == 6);
+      CCCLRT_CHECK(equal_range(buf));
+    }
+    {
+      const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
+      const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+      const auto buf = cuda::make_buffer<T>(stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}, env);
+      CCCLRT_CHECK(check_offseted_pointer_with_alignment(buf.data(), alignment));
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
+      CCCLRT_CHECK(buf.size() == 6);
+      CCCLRT_CHECK(equal_range(buf));
+    }
   }
 
   SECTION("copy construction")
@@ -209,7 +225,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
     static_assert(!cuda::std::is_nothrow_copy_constructible<Buffer>::value);
     { // can be copy constructed from empty input
       const Buffer input{stream, resource, 0, cuda::no_init};
-      Buffer buf(input); // NOLINT(performance-unnecessary-copy-initialization)
+      const Buffer buf(input); // NOLINT(performance-unnecessary-copy-initialization)
       CCCLRT_CHECK(buf.empty());
       CCCLRT_CHECK(buf.alignment() == input.alignment());
     }
@@ -245,7 +261,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
     { // can be move constructed with empty input
       Buffer input{stream, resource, 0, cuda::no_init};
       const auto expected_alignment = input.alignment();
-      Buffer buf(cuda::std::move(input));
+      const Buffer buf(cuda::std::move(input));
       CCCLRT_CHECK(buf.empty());
       CCCLRT_CHECK(input.empty());
       CCCLRT_CHECK(buf.alignment() == expected_alignment);
@@ -450,15 +466,15 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 
 C2H_CCCLRT_TEST("cuda::buffer constructors with legacy resource", "[container][buffer]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::mr::legacy_pinned_memory_resource resource;
+  const cuda::stream stream{cuda::device_ref{0}};
+  const cuda::mr::legacy_pinned_memory_resource resource;
   auto input = compare_data_initializer_list;
-  cuda::buffer<int, cuda::mr::device_accessible> buffer{stream, resource, input};
+  const cuda::buffer<int, cuda::mr::device_accessible> buffer{stream, resource, input};
   CCCLRT_CHECK(equal_range(buffer));
   STATIC_CHECK(!decltype(buffer)::properties_list::has_property(cuda::mr::host_accessible{}));
   STATIC_CHECK(decltype(buffer)::properties_list::has_property(cuda::mr::device_accessible{}));
 
-  cuda::buffer<int, cuda::mr::host_accessible> buffer2{stream, resource, input};
+  const cuda::buffer<int, cuda::mr::host_accessible> buffer2{stream, resource, input};
   auto buf2 = cuda::make_buffer(stream, resource, buffer2);
   CCCLRT_CHECK(equal_range(buffer2));
   STATIC_CHECK(decltype(buffer2)::properties_list::has_property(cuda::mr::host_accessible{}));
@@ -473,7 +489,7 @@ C2H_CCCLRT_TEST("cuda::make_buffer narrowing properties", "[container][buffer]")
     return;
   }
   auto resource = cuda::pinned_default_memory_pool();
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
 
   auto buf = cuda::make_buffer<int>(stream, resource, 0, cuda::no_init);
 
@@ -496,7 +512,7 @@ C2H_CCCLRT_TEST("cuda::make_buffer narrowing properties", "[container][buffer]")
 
 C2H_CCCLRT_TEST("cuda::make_buffer with memory_pool_ref", "[container][buffer]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   cuda::device_memory_pool pool{cuda::device_ref{0}};
   auto buf = cuda::make_buffer(stream, pool.as_ref(), 10, 42);
   CCCLRT_CHECK(buf.size() == 10);
@@ -506,7 +522,7 @@ C2H_CCCLRT_TEST("cuda::make_buffer with memory_pool_ref", "[container][buffer]")
 
 C2H_CCCLRT_TEST("cuda::make_buffer with shared_resource", "[container][buffer]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto shared_res = cuda::mr::make_shared_resource<cuda::device_memory_pool>(cuda::device_ref{0});
   auto buf        = cuda::make_buffer(stream, shared_res, 10, 42);
   CCCLRT_CHECK(buf.size() == 10);
@@ -518,8 +534,8 @@ C2H_CCCLRT_TEST("cuda::make_buffer with shared_resource", "[container][buffer]")
 
 C2H_CCCLRT_TEST("cuda::make_device_buffer", "[container][buffer]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_ref dev{0};
+  const cuda::stream stream{cuda::device_ref{0}};
+  const cuda::device_ref dev{0};
 
   SECTION("empty")
   {
@@ -560,7 +576,54 @@ C2H_CCCLRT_TEST("cuda::make_device_buffer", "[container][buffer]")
     CCCLRT_CHECK(equal_range(buf));
   }
 
+  SECTION("initializer_list")
+  {
+    auto buf = cuda::make_device_buffer<int>(stream, dev, {1, 42, 1337, 0, 12, -1});
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("initializer_list with env")
+  {
+    const auto alignment = cuda::mr::default_cuda_malloc_alignment / 2;
+    const auto env       = cuda::std::execution::prop{cuda::allocation_alignment, alignment};
+    auto buf             = cuda::make_device_buffer<int>(stream, dev, {1, 42, 1337, 0, 12, -1}, env);
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(buf.alignment() == alignment);
+    CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
   stream.sync();
+}
+
+C2H_CCCLRT_TEST("cuda::make_device_buffer uses the explicit device", "[container][buffer][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  const cuda::device_ref current_device{0};
+  const cuda::device_ref explicit_device{1};
+  const cuda::stream explicit_device_stream{explicit_device};
+  cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+
+  {
+    const cuda::__ensure_current_context guard{current_device};
+    auto buf = cuda::make_device_buffer<int>(explicit_device_stream, explicit_device, input);
+
+    CCCLRT_CHECK(buf.size() == input.size());
+    check_allocation_device(buf, explicit_device);
+    CCCLRT_CHECK(equal_range(buf));
+
+    auto filled = cuda::make_device_buffer<int>(explicit_device_stream, explicit_device, 5, 42);
+    CCCLRT_CHECK(filled.size() == 5);
+    check_allocation_device(filled, explicit_device);
+    CCCLRT_CHECK(equal_size_value(filled, 5, 42));
+  }
+
+  explicit_device_stream.sync();
 }
 
 // ── make_pinned_buffer ──────────────────────────────────────────────────────
@@ -573,7 +636,7 @@ C2H_CCCLRT_TEST("cuda::make_pinned_buffer", "[container][buffer]")
     return;
   }
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
 
   SECTION("empty")
   {
@@ -611,6 +674,24 @@ C2H_CCCLRT_TEST("cuda::make_pinned_buffer", "[container][buffer]")
     cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
     auto buf = cuda::make_pinned_buffer<int>(stream, input);
     CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("initializer_list")
+  {
+    auto buf = cuda::make_pinned_buffer<int>(stream, {1, 42, 1337, 0, 12, -1});
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("initializer_list with env")
+  {
+    const auto alignment = cuda::mr::default_cuda_malloc_alignment / 2;
+    const auto env       = cuda::std::execution::prop{cuda::allocation_alignment, alignment};
+    auto buf             = cuda::make_pinned_buffer<int>(stream, {1, 42, 1337, 0, 12, -1}, env);
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(buf.alignment() == alignment);
+    CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
     CCCLRT_CHECK(equal_range(buf));
   }
 
@@ -666,6 +747,24 @@ C2H_CCCLRT_TEST("cuda::make_managed_buffer", "[container][buffer]")
     cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
     auto buf = cuda::make_managed_buffer<int>(stream, input);
     CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("initializer_list")
+  {
+    auto buf = cuda::make_managed_buffer<int>(stream, {1, 42, 1337, 0, 12, -1});
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("initializer_list with env")
+  {
+    const auto alignment = cuda::mr::default_cuda_malloc_alignment / 2;
+    const auto env       = cuda::std::execution::prop{cuda::allocation_alignment, alignment};
+    auto buf             = cuda::make_managed_buffer<int>(stream, {1, 42, 1337, 0, 12, -1}, env);
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(buf.alignment() == alignment);
+    CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
     CCCLRT_CHECK(equal_range(buf));
   }
 

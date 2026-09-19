@@ -53,6 +53,14 @@ inline constexpr bool __is_cuda_std_array_v = false;
 template <class _Tp, size_t _Sz>
 inline constexpr bool __is_cuda_std_array_v<array<_Tp, _Sz>> = true;
 
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp>
+inline constexpr bool __is_std_array_v = false;
+
+template <class _Tp, size_t _Sz>
+inline constexpr bool __is_std_array_v<::std::array<_Tp, _Sz>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

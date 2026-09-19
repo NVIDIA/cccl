@@ -15,7 +15,7 @@
 
 #  include <cuda_runtime_api.h>
 
-void cuda_safe_call(cudaError_t error, const std::string& message = "")
+inline void cuda_safe_call(cudaError_t error, const std::string& message = "")
 {
   if (error)
   {
@@ -37,8 +37,8 @@ struct timer
 
   ~timer()
   {
-    cuda_safe_call(cudaEventDestroy(start));
-    cuda_safe_call(cudaEventDestroy(end));
+    static_cast<void>(cudaEventDestroy(start));
+    static_cast<void>(cudaEventDestroy(end));
   }
 
   void restart()

@@ -39,9 +39,9 @@ int main(int, char**)
   {
   using T = cuda::std::tuple<cuda::std::string, int>;
   const T t("high", 5);
-  static_assert(cuda::std::is_same<const cuda::std::string&&, decltype(cuda::std::get<0>(cuda::std::move(t)))>::value,
-  ""); static_assert(noexcept(cuda::std::get<0>(cuda::std::move(t)))); static_assert(cuda::std::is_same<const int&&,
-  decltype(cuda::std::get<1>(cuda::std::move(t)))>::value, "");
+  static_assert(cuda::std::is_same<const cuda::std::string&&, decltype(cuda::std::get<0>(cuda::std::move(t)))>::value);
+  static_assert(noexcept(cuda::std::get<0>(cuda::std::move(t)))); static_assert(cuda::std::is_same<const int&&,
+  decltype(cuda::std::get<1>(cuda::std::move(t)))>::value);
   static_assert(noexcept(cuda::std::get<1>(cuda::std::move(t))));
   const cuda::std::string&& s = cuda::std::get<0>(cuda::std::move(t));
   const int&& i = cuda::std::get<1>(cuda::std::move(t));

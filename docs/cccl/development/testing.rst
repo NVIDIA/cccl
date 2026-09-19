@@ -72,6 +72,28 @@ will generate six variants with unique preprocessor definitions:
 | ``<name_base>.foo_2.lid_1`` | ``-DTEST_FOO=2 -DTEST_LAUNCH=1 VAR_ID=5`` |
 +-----------------------------+-------------------------------------------+
 
+Tuple Parameters
+****************
+
+Correlated definitions can be grouped into tuple parameters. The definition
+names are comma-separated, and each alternative has a short name followed by
+the corresponding comma-separated values::
+
+  // %PARAM% TEST_TYPE,TYPE_SUFFIX type i32=int32_t,I32:u64=uint64_t,U64
+
+This generates two variants:
+
++--------------------------+----------------------------------------------------------+
+| Executable Name          | Preprocessor Definitions                                 |
++==========================+==========================================================+
+| ``<name_base>.type_i32`` | ``-DTEST_TYPE=int32_t -DTYPE_SUFFIX=I32 VAR_IDX=0``      |
++--------------------------+----------------------------------------------------------+
+| ``<name_base>.type_u64`` | ``-DTEST_TYPE=uint64_t -DTYPE_SUFFIX=U64 VAR_IDX=1``     |
++--------------------------+----------------------------------------------------------+
+
+The values within a tuple remain paired. As with scalar parameters, separate
+``%PARAM%`` lines form a Cartesian product.
+
 Changing ``%PARAM%`` Hints
 **************************
 

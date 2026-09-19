@@ -29,40 +29,43 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::unique_by_key
+//! The tuning policy for all algorithms in @ref DeviceSelect that operate UniqueByKey.
+struct UniqueByKeyPolicy
 {
-struct unique_by_key_policy
-{
-  int block_threads;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockScanAlgorithm scan_algorithm;
-  delay_constructor_policy delay_constructor;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning
+  LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  _CCCL_API constexpr friend bool operator==(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const UniqueByKeyPolicy& lhs, const UniqueByKeyPolicy& rhs) noexcept
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const UniqueByKeyPolicy& lhs, const UniqueByKeyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const unique_by_key_policy& p)
+  friend ::std::ostream& operator<<(::std::ostream& os, const UniqueByKeyPolicy& p)
   {
     return os
-        << "unique_by_key_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
+        << "UniqueByKeyPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
         << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
   }
 #endif // _CCCL_HOSTED()
 };
 
+namespace detail::unique_by_key
+{
 enum class primitive_key
 {
   no,
@@ -788,12 +791,12 @@ struct policy_hub
   {
     static constexpr int items_per_thread = Nominal4BItemsToItems<KeyT>(Nominal4bItemsPerThread);
     using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<Threads,
-                             items_per_thread,
-                             BLOCK_LOAD_WARP_TRANSPOSE,
-                             LOAD_LDG,
-                             BLOCK_SCAN_WARP_SCANS,
-                             detail::default_delay_constructor_t<int>>;
+      agent_unique_by_key_policy<Threads,
+                                 items_per_thread,
+                                 BLOCK_LOAD_WARP_TRANSPOSE,
+                                 LOAD_LDG,
+                                 BLOCK_SCAN_WARP_SCANS,
+                                 detail::default_delay_constructor_t<int>>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
@@ -801,18 +804,18 @@ struct policy_hub
 
   struct Policy500
       : DefaultPolicy500
-      , ChainedPolicy<500, Policy500, Policy500>
+      , detail::chained_policy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
   template <typename Tuning>
   static _CCCL_HOST_DEVICE auto select_agent_policy(int)
-    -> AgentUniqueByKeyPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              Tuning::load_modifier,
-                              BLOCK_SCAN_WARP_SCANS,
-                              typename Tuning::delay_constructor>;
+    -> agent_unique_by_key_policy<Tuning::threads,
+                                  Tuning::items,
+                                  Tuning::load_algorithm,
+                                  Tuning::load_modifier,
+                                  BLOCK_SCAN_WARP_SCANS,
+                                  typename Tuning::delay_constructor>;
   template <typename Tuning>
   static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename DefaultPolicy<11, 64>::UniqueByKeyPolicyT;
 
@@ -821,10 +824,10 @@ struct policy_hub
 
   struct Policy520
       : DefaultPolicy520
-      , ChainedPolicy<520, Policy520, Policy500>
+      , detail::chained_policy<520, Policy520, Policy500>
   {};
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy520>
   {
     using UniqueByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<KeyT, ValueT>>(0));
   };
@@ -834,25 +837,25 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using UniqueByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<KeyT, ValueT>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
     static _CCCL_HOST_DEVICE auto select_agent_policy100(int)
-      -> AgentUniqueByKeyPolicy<Tuning::threads,
-                                Tuning::items,
-                                Tuning::load_algorithm,
-                                Tuning::load_modifier,
-                                BLOCK_SCAN_WARP_SCANS,
-                                typename Tuning::delay_constructor>;
+      -> agent_unique_by_key_policy<Tuning::threads,
+                                    Tuning::items,
+                                    Tuning::load_algorithm,
+                                    Tuning::load_modifier,
+                                    BLOCK_SCAN_WARP_SCANS,
+                                    typename Tuning::delay_constructor>;
     template <typename Tuning>
     static _CCCL_HOST_DEVICE auto select_agent_policy100(long) -> typename Policy900::UniqueByKeyPolicyT;
 
@@ -868,24 +871,27 @@ struct policy_selector
   int value_size;
   bool primitive_key;
   bool primitive_value;
+  type_t key_type   = type_t::other;
+  type_t value_type = type_t::other;
 
 private:
-  [[nodiscard]] _CCCL_API constexpr auto default_items_per_thread() const -> int
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_items_per_thread() const -> int
   {
     return cub::detail::nominal_4B_items_to_items(11, key_size);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_default_policy() const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_default_policy() const -> UniqueByKeyPolicy
   {
     return {64,
             default_items_per_thread(),
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_LDG,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 350, 450}};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm100_tuning() const -> ::cuda::std::optional<unique_by_key_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm100_tuning() const
+    -> ::cuda::std::optional<UniqueByKeyPolicy>
   {
     if (!primitive_key)
     {
@@ -901,40 +907,40 @@ private:
           {
             case 1:
               // ipt_12.tpb_512.trp_0.ld_0.ns_948.dcid_5.l2w_955 1.121279  1.000000  1.114566  1.43765
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 948, 955}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 948, 955}};
             case 2:
               // ipt_14.tpb_512.trp_0.ld_0.ns_1228.dcid_7.l2w_320 1.151229  1.007229  1.151131  1.443520
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1228, 320}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1228, 320}};
             case 4:
               // ipt_14.tpb_512.trp_0.ld_0.ns_2016.dcid_7.l2w_620 1.165300  1.095238  1.164478  1.266667
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 2016, 620}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 2016, 620}};
             case 8:
               // ipt_10.tpb_384.trp_0.ld_0.ns_1728.dcid_5.l2w_980 1.118716  0.997167  1.116537  1.400000
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1728, 980}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1728, 980}};
             default:
               return {};
           }
@@ -943,40 +949,40 @@ private:
           {
             case 1:
               // ipt_14.tpb_512.trp_0.ld_0.ns_508.dcid_7.l2w_1020 1.171886  0.906530  1.157128  1.457933
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 508, 1020}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 508, 1020}};
             case 2:
               // ipt_12.tpb_384.trp_0.ld_0.ns_928.dcid_7.l2w_605 1.166564  0.997579  1.154805  1.406709
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 928, 605}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 928, 605}};
             case 4:
               // ipt_11.tpb_384.trp_0.ld_1.ns_1620.dcid_7.l2w_810 1.144483  1.011085  1.152798  1.393750
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 11,
                 BLOCK_LOAD_DIRECT,
                 LOAD_CA,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1620, 810}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1620, 810}};
             case 8:
               // ipt_10.tpb_384.trp_0.ld_0.ns_1984.dcid_5.l2w_935 1.605554  1.177083  1.564488  1.946224
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1984, 935}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1984, 935}};
             default:
               return {};
           }
@@ -985,31 +991,31 @@ private:
           {
             case 1:
               // ipt_14.tpb_512.trp_0.ld_0.ns_1136.dcid_7.l2w_605 1.148057  0.848558  1.133064  1.451074
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1136, 605}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1136, 605}};
             case 2:
               // ipt_11.tpb_384.trp_0.ld_0.ns_656.dcid_7.l2w_825 1.216312  1.090485  1.211800  1.535714
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 11,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 656, 825}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 656, 825}};
             case 8:
               // ipt_10.tpb_384.trp_0.ld_0.ns_1012.dcid_5.l2w_800 1.164713  1.014819  1.174307  1.526042
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1012, 800}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 1012, 800}};
             default:
               return {};
           }
@@ -1018,22 +1024,22 @@ private:
           {
             case 2:
               // ipt_10.tpb_384.trp_0.ld_0.ns_864.dcid_5.l2w_1130 1.124095  0.985748  1.120262  1.391304
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 864, 1130}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 864, 1130}};
             case 4:
               // ipt_10.tpb_384.trp_0.ld_0.ns_772.dcid_5.l2w_665 1.152243  1.019816  1.166636  1.517526
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 10,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 772, 665}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 772, 665}};
             default:
               return {};
           }
@@ -1045,7 +1051,7 @@ private:
     return {};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm90_tuning() const -> ::cuda::std::optional<unique_by_key_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm90_tuning() const -> ::cuda::std::optional<UniqueByKeyPolicy>
   {
     if (!primitive_key)
     {
@@ -1060,37 +1066,37 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 550}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 550}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 448,
                 14,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 725}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 725}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1130}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1130}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 10,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1100}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1100}};
             default:
               return {};
           }
@@ -1098,37 +1104,37 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 640}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 640}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 288,
                 14,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 404, 710}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 404, 710}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 525}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 525}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 23,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1200}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1200}};
             default:
               return {};
           }
@@ -1136,37 +1142,37 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 448,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 348, 580}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 348, 580}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 9,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1060}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1060}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1045}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1045}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 512,
                 11,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1120}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1120}};
             default:
               return {};
           }
@@ -1174,37 +1180,37 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 9,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1060}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1060}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 384,
                 9,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 964, 1125}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 964, 1125}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 640,
                 7,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1070}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1070}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 448,
                 11,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1190}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1190}};
             default:
               return {};
           }
@@ -1218,37 +1224,37 @@ private:
       switch (key_size)
       {
         case 1:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             288,
             7,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 344, 1165}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 344, 1165}};
         case 2:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             224,
             9,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 424, 1055}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 424, 1055}};
         case 4:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             384,
             7,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1025}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1025}};
         case 8:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             256,
             9,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1155}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1155}};
         default:
           return {};
       }
@@ -1257,7 +1263,7 @@ private:
     return {};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_sm80_tuning() const -> ::cuda::std::optional<unique_by_key_policy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm80_tuning() const -> ::cuda::std::optional<UniqueByKeyPolicy>
   {
     if (!primitive_key)
     {
@@ -1272,37 +1278,37 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 835}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 835}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 765}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 765}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1155}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1155}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 224,
                 10,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1065}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1065}};
             default:
               return {};
           }
@@ -1310,37 +1316,37 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 320,
                 20,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1020}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1020}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 192,
                 22,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 328, 1080}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 328, 1080}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 535}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 535}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 10,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1055}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1055}};
             default:
               return {};
           }
@@ -1348,37 +1354,37 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 12,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1120}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1120}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1185}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1185}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 11,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1115}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 0, 1115}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 7,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 320, 1115}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 320, 1115}};
             default:
               return {};
           }
@@ -1386,37 +1392,37 @@ private:
           switch (value_size)
           {
             case 1:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 7,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 24, 555}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 24, 555}};
             case 2:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 7,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 324, 1105}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 324, 1105}};
             case 4:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 256,
                 7,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 740, 1105}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 740, 1105}};
             case 8:
-              return unique_by_key_policy{
+              return UniqueByKeyPolicy{
                 192,
                 7,
                 BLOCK_LOAD_DIRECT,
                 LOAD_DEFAULT,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 764, 1155}};
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 764, 1155}};
             default:
               return {};
           }
@@ -1430,32 +1436,152 @@ private:
       switch (key_size)
       {
         case 1:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             128,
             15,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 248, 1200}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 248, 1200}};
         case 8:
-          return unique_by_key_policy{
+          return UniqueByKeyPolicy{
             128,
             7,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_DEFAULT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 992, 1135}};
+            LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 992, 1135}};
         default:
           return {};
       }
+    }
+
+    return {};
+  }
+
+  // tunings from cub/benchmarks/bench/select/unique_by_key.cu, which benchmarks with 4-byte offsets. These are raw
+  // measured values.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm107_tuning() const
+    -> ::cuda::std::optional<UniqueByKeyPolicy>
+  {
+    if (!primitive_key && key_type != type_t::int128 && key_type != type_t::uint128)
+    {
+      return {};
+    }
+    if (!primitive_value && value_type != type_t::int128 && value_type != type_t::uint128)
+    {
+      return {};
+    }
+
+    if (key_size == 1 && value_size == 1)
+    {
+      // ipt_14.tpb_320.trp_0.ld_0.ns_384.dcid_3.l2w_615  1.130  1.011  1.031  1.068
+      return UniqueByKeyPolicy{
+        320,
+        14,
+        BLOCK_LOAD_DIRECT,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff_jitter, 384, 615}};
+    }
+    if (key_size == 2 && value_size == 2)
+    {
+      // ipt_15.tpb_512.trp_0.ld_0.ns_1768.dcid_0.l2w_355  1.024  1.014  1.197  1.238
+      return UniqueByKeyPolicy{
+        512,
+        15,
+        BLOCK_LOAD_DIRECT,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1768, 355}};
+    }
+    if (key_size == 4 && value_size == 4)
+    {
+      if (value_type == type_t::float32)
+      {
+        // float32 values: the search winner regressed during verification, left untuned
+        return {};
+      }
+      // ipt_17.tpb_224.trp_1.ld_0.ns_1044.dcid_0.l2w_910  1.002  1.030  1.176  1.152
+      return UniqueByKeyPolicy{
+        224,
+        17,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1044, 910}};
+    }
+    if (key_size == 4 && value_size == 8)
+    {
+      // ipt_10.tpb_480.trp_0.ld_0.ns_808.dcid_0.l2w_820  1.037  1.014  1.085  1.119
+      return UniqueByKeyPolicy{
+        480,
+        10,
+        BLOCK_LOAD_DIRECT,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 808, 820}};
+    }
+    if (key_size == 8 && value_size == 4)
+    {
+      // ipt_12.tpb_256.trp_1.ld_1.ns_216.dcid_1.l2w_750  1.012  0.990  1.115  1.159
+      return UniqueByKeyPolicy{
+        256,
+        12,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 216, 750}};
+    }
+    if (key_size == 8 && value_size == 8)
+    {
+      if (value_type == type_t::float64)
+      {
+        // ipt_10.tpb_512.trp_0.ld_0.ns_308.dcid_1.l2w_585  1.096  1.066  1.147  1.159
+        return UniqueByKeyPolicy{
+          512,
+          10,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 308, 585}};
+      }
+      // ipt_10.tpb_512.trp_0.ld_1.ns_44.dcid_1.l2w_540  1.060  1.063  1.144  1.155
+      return UniqueByKeyPolicy{
+        512,
+        10,
+        BLOCK_LOAD_DIRECT,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 44, 540}};
+    }
+    if (key_size == 16 && value_size == 16)
+    {
+      // ipt_15.tpb_128.trp_1.ld_1.ns_0.dcid_1.l2w_525  0.980  1.575  2.314  2.515
+      return UniqueByKeyPolicy{
+        128,
+        15,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 0, 525}};
     }
 
     return {};
   }
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> UniqueByKeyPolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (auto tuning = get_sm107_tuning())
+      {
+        return *tuning;
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (auto tuning = get_sm100_tuning())
@@ -1493,18 +1619,21 @@ public:
 template <typename KeyT, typename ValueT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::compute_capability cc) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> UniqueByKeyPolicy
   {
     return policy_selector{
       static_cast<int>(sizeof(KeyT)),
       static_cast<int>(sizeof(ValueT)),
       is_primitive<KeyT>::value && sizeof(KeyT) <= 8,
-      is_primitive<ValueT>::value && sizeof(ValueT) <= 8}(cc);
+      is_primitive<ValueT>::value && sizeof(ValueT) <= 8,
+      classify_type<KeyT>,
+      classify_type<ValueT>}(cc);
   }
 };
 
 template <typename ActivePolicyT>
-_CCCL_API constexpr auto convert_policy() -> unique_by_key_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> UniqueByKeyPolicy
 {
   using policy_t = typename ActivePolicyT::UniqueByKeyPolicyT;
   return {policy_t::BLOCK_THREADS,
@@ -1512,28 +1641,21 @@ _CCCL_API constexpr auto convert_policy() -> unique_by_key_policy
           policy_t::LOAD_ALGORITHM,
           policy_t::LOAD_MODIFIER,
           policy_t::SCAN_ALGORITHM,
-          delay_constructor_policy_from_type<typename policy_t::detail::delay_constructor_t>};
+          lookback_delay_policy_from_type<typename policy_t::detail::delay_constructor_t>};
 }
 
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> unique_by_key_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> UniqueByKeyPolicy
   {
-    using UniqueByKeyPolicyT = typename PolicyHub::MaxPolicy::UniqueByKeyPolicyT;
-    return unique_by_key_policy{
-      UniqueByKeyPolicyT::BLOCK_THREADS,
-      UniqueByKeyPolicyT::ITEMS_PER_THREAD,
-      UniqueByKeyPolicyT::LOAD_ALGORITHM,
-      UniqueByKeyPolicyT::LOAD_MODIFIER,
-      UniqueByKeyPolicyT::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename UniqueByKeyPolicyT::detail::delay_constructor_t>};
+    return convert_policy<typename PolicyHub::MaxPolicy>();
   }
 };
 
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept unique_by_key_policy_selector = cub::detail::policy_selector<T, unique_by_key_policy>;
+concept unique_by_key_policy_selector = cub::detail::policy_selector<T, UniqueByKeyPolicy>;
 #endif
 } // namespace detail::unique_by_key
 

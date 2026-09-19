@@ -34,6 +34,7 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__memory/uninitialized_array.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__functional/operations.h>
@@ -94,15 +95,16 @@ struct Tuning;
 template <class Key, class Value>
 struct Tuning<core::detail::sm52, Key, Value>
 {
-  static constexpr int MAX_INPUT_BYTES             = ::cuda::std::max(int{sizeof(Key)}, int{sizeof(Value)});
+  static constexpr int MAX_INPUT_BYTES             = (::cuda::std::max) (int{sizeof(Key)}, int{sizeof(Value)});
   static constexpr int COMBINED_INPUT_BYTES        = int{sizeof(Key)} + int{sizeof(Value)};
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 9;
   static constexpr int ITEMS_PER_THREAD =
     (MAX_INPUT_BYTES <= 8)
       ? 9
-      : ::cuda::std::min(
-          NOMINAL_4B_ITEMS_PER_THREAD,
-          ::cuda::std::max(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
+      : (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+                            (::cuda::std::max) (1,
+                                                ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1)
+                                                  / COMBINED_INPUT_BYTES));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -160,7 +162,7 @@ struct ReduceByKeyAgent
       typename BlockLoadKeys::TempStorage load_keys;
       typename BlockLoadValues::TempStorage load_values;
 
-      core::detail::uninitialized_array<key_value_pair_t, PtxPlan::ITEMS_PER_TILE + 1> raw_exchange;
+      ::cuda::__uninitialized_array<key_value_pair_t, PtxPlan::ITEMS_PER_TILE + 1> raw_exchange;
     }; // union TempStorage
   }; // struct PtxPlan
 
@@ -319,19 +321,19 @@ struct ReduceByKeyAgent
       {
         if (segment_flags[ITEM])
         {
-          int idx                   = static_cast<int>(segment_indices[ITEM] - num_tile_segments_prefix);
+          const int idx             = static_cast<int>(segment_indices[ITEM] - num_tile_segments_prefix);
           storage.raw_exchange[idx] = scatter_items[ITEM];
         }
       }
 
       __syncthreads();
 
-      for (int item = threadIdx.x; item < num_tile_segments; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
       {
-        size_type idx         = num_tile_segments_prefix + item;
-        key_value_pair_t pair = storage.raw_exchange[item];
-        keys_output_it[idx]   = pair.key;
-        values_output_it[idx] = pair.value;
+        const size_type idx         = num_tile_segments_prefix + item;
+        const key_value_pair_t pair = storage.raw_exchange[item];
+        keys_output_it[idx]         = pair.key;
+        values_output_it[idx]       = pair.value;
       }
     }
 
@@ -507,7 +509,7 @@ struct ReduceByKeyAgent
         BlockLoadKeys(storage.load_keys).Load(keys_load_it + tile_offset, keys);
       }
 
-      key_type tile_pred_key = (threadIdx.x == 0) ? key_type(keys_load_it[tile_offset - 1]) : key_type();
+      const key_type tile_pred_key = (threadIdx.x == 0) ? key_type(keys_load_it[tile_offset - 1]) : key_type();
 
       __syncthreads();
 
@@ -535,7 +537,7 @@ struct ReduceByKeyAgent
       size_value_pair_t tile_aggregate;
       TilePrefixCallback prefix_op(tile_state, storage.scan_storage.prefix, scan_op, tile_idx);
       scan_tile(scan_items, tile_aggregate, prefix_op);
-      size_value_pair_t tile_inclusive_prefix = prefix_op.GetInclusivePrefix();
+      const size_value_pair_t tile_inclusive_prefix = prefix_op.GetInclusivePrefix();
 
       // Unzip values and segment indices
       zip_keys_and_values(pred_keys, segment_indices, scan_items, scatter_items);
@@ -592,7 +594,7 @@ struct ReduceByKeyAgent
       // Blocks are launched in increasing order,
       // so just assign one tile per block
       //
-      int tile_idx       = blockIdx.x;
+      const int tile_idx = static_cast<int>(blockIdx.x);
       Size tile_offset   = static_cast<Size>(tile_idx) * ITEMS_PER_TILE;
       Size num_remaining = num_items - tile_offset;
 
@@ -705,10 +707,10 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   AgentPlan init_plan          = init_agent::get_plan();
 
   // Number of input tiles
-  int tile_size  = reduce_by_key_plan.items_per_tile;
-  Size num_tiles = ::cuda::ceil_div(num_items, tile_size);
+  const int tile_size = reduce_by_key_plan.items_per_tile;
+  Size num_tiles      = ::cuda::ceil_div(num_items, tile_size);
 
-  size_t vshmem_size = core::detail::vshmem_size(reduce_by_key_plan.shared_memory_size, num_tiles);
+  const size_t vshmem_size = core::detail::vshmem_size(reduce_by_key_plan.shared_memory_size, num_tiles);
 
   size_t allocation_sizes[2] = {9, vshmem_size};
   status                     = ScanTileState::AllocationSize(static_cast<int>(num_tiles), allocation_sizes[0]);
@@ -727,13 +729,14 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   status = tile_state.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
   _CUDA_CUB_RET_IF_FAIL(status);
 
-  init_agent ia(init_plan, num_tiles, stream, "reduce_by_key::init_agent");
+  const init_agent ia(init_plan, num_tiles, stream, "reduce_by_key::init_agent");
   ia.launch(tile_state, num_tiles, num_runs_output_it);
   _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : nullptr;
 
-  reduce_by_key_agent rbka(reduce_by_key_plan, num_items, stream, vshmem_ptr, "reduce_by_keys::reduce_by_key_agent");
+  const reduce_by_key_agent rbka(
+    reduce_by_key_plan, num_items, stream, vshmem_ptr, "reduce_by_keys::reduce_by_key_agent");
   rbka.launch(
     keys_input_it,
     values_input_it,
@@ -847,7 +850,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
 {
   using size_type = thrust::detail::it_difference_t<KeysInputIt>;
 
-  size_type num_items = ::cuda::std::distance(keys_first, keys_last);
+  const size_type num_items = ::cuda::std::distance(keys_first, keys_last);
 
   ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> result = ::cuda::std::make_pair(keys_output, values_output);
 

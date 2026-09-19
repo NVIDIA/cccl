@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the segmented reduce dispatcher
+
+// disable deprecation warnings for DispatchSegmentedReduce and AgentReducePolicy
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
@@ -10,18 +15,15 @@
 #include <cuda/std/functional>
 
 #include "catch2_test_device_reduce.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
-
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the segmented reduce dispatcher after publishing the
-// tuning API
 
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB segmented reduce tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ReducePolicy          = AgentReducePolicy<256, 20, AccumT, 4, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG>;
     using SingleTilePolicy      = ReducePolicy;
@@ -29,7 +31,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchSegmentedReduce::Dispatch: custom policy hub", "[segmented][reduce][device]")
+CUB_TEST("DispatchSegmentedReduce::Dispatch: custom policy hub", "[segmented][reduce][device]", CUB_SMALL)
 {
   using input_t     = int;
   using output_t    = int;
@@ -50,15 +52,15 @@ C2H_TEST("DispatchSegmentedReduce::Dispatch: custom policy hub", "[segmented][re
 
   using policy_hub_t = my_policy_hub<accum_t, offset_t, reduction_t>;
   using dispatch_t   = DispatchSegmentedReduce<
-      input_t*,
-      output_t*,
-      const offset_t*,
-      const offset_t*,
-      offset_t,
-      reduction_t,
-      output_t,
-      accum_t,
-      policy_hub_t>;
+    input_t*,
+    output_t*,
+    const offset_t*,
+    const offset_t*,
+    offset_t,
+    reduction_t,
+    output_t,
+    accum_t,
+    policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(

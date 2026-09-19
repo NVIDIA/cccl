@@ -28,13 +28,29 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#if defined(_CCCL_BUILTIN_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_move_assignable
+    : public bool_constant<_CCCL_BUILTIN_IS_ASSIGNABLE(add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>)>
+{};
+
+template <class _Tp>
+inline constexpr bool is_move_assignable_v =
+  _CCCL_BUILTIN_IS_ASSIGNABLE(add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>);
+
+#else // ^^^ Use builtin ^^^ / vvv No builtin
+
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
 is_move_assignable : public is_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
 {};
 
 template <class _Tp>
-inline constexpr bool is_move_assignable_v = is_move_assignable<_Tp>::value;
+inline constexpr bool is_move_assignable_v =
+  is_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>::value;
+
+#endif // No builtin
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

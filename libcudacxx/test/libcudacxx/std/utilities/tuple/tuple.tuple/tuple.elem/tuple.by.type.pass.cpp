@@ -86,8 +86,7 @@ int main(int, char**)
     cuda::std::tuple<int&&, int const&&> const t(cuda::std::move(x), cuda::std::move(y));
     static_assert(cuda::std::is_same<int&&, decltype(cuda::std::get<int&&>(cuda::std::move(t)))>::value);
     static_assert(noexcept(cuda::std::get<int&&>(cuda::std::move(t))));
-    static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(cuda::std::move(t)))>::value,
-                  "");
+    static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(cuda::std::move(t)))>::value);
     static_assert(noexcept(cuda::std::get<int const&&>(cuda::std::move(t))));
   }
   {

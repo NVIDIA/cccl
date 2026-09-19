@@ -11,16 +11,16 @@ void TestAllOf()
 
   Vector v(3, T{1});
 
-  ASSERT_EQUAL(thrust::all_of(v.begin(), v.end(), ::cuda::std::identity{}), true);
+  REQUIRE(thrust::all_of(v.begin(), v.end(), ::cuda::std::identity{}));
 
   v[1] = T{0};
 
-  ASSERT_EQUAL(thrust::all_of(v.begin(), v.end(), ::cuda::std::identity{}), false);
+  REQUIRE_FALSE(thrust::all_of(v.begin(), v.end(), ::cuda::std::identity{}));
 
-  ASSERT_EQUAL(thrust::all_of(v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::all_of(v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::all_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}), false);
-  ASSERT_EQUAL(thrust::all_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}), false);
+  REQUIRE(thrust::all_of(v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}));
+  REQUIRE(thrust::all_of(v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::all_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::all_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 }
 DECLARE_VECTOR_UNITTEST(TestAllOf);
 
@@ -35,10 +35,10 @@ void TestAllOfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::all_of(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestAllOfDispatchExplicit);
 
@@ -55,7 +55,7 @@ void TestAllOfDispatchImplicit()
 
   thrust::all_of(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestAllOfDispatchImplicit);
 
@@ -66,16 +66,16 @@ void TestAnyOf()
 
   Vector v(3, T{1});
 
-  ASSERT_EQUAL(thrust::any_of(v.begin(), v.end(), ::cuda::std::identity{}), true);
+  REQUIRE(thrust::any_of(v.begin(), v.end(), ::cuda::std::identity{}));
 
   v[1] = 0;
 
-  ASSERT_EQUAL(thrust::any_of(v.begin(), v.end(), ::cuda::std::identity{}), true);
+  REQUIRE(thrust::any_of(v.begin(), v.end(), ::cuda::std::identity{}));
 
-  ASSERT_EQUAL(thrust::any_of(v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}), false);
-  ASSERT_EQUAL(thrust::any_of(v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::any_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::any_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}), false);
+  REQUIRE_FALSE(thrust::any_of(v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}));
+  REQUIRE(thrust::any_of(v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}));
+  REQUIRE(thrust::any_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::any_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 }
 DECLARE_VECTOR_UNITTEST(TestAnyOf);
 
@@ -90,10 +90,10 @@ void TestAnyOfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::any_of(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestAnyOfDispatchExplicit);
 
@@ -110,7 +110,7 @@ void TestAnyOfDispatchImplicit()
 
   thrust::any_of(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestAnyOfDispatchImplicit);
 
@@ -121,16 +121,16 @@ void TestNoneOf()
 
   Vector v(3, T{1});
 
-  ASSERT_EQUAL(thrust::none_of(v.begin(), v.end(), ::cuda::std::identity{}), false);
+  REQUIRE_FALSE(thrust::none_of(v.begin(), v.end(), ::cuda::std::identity{}));
 
   v[1] = 0;
 
-  ASSERT_EQUAL(thrust::none_of(v.begin(), v.end(), ::cuda::std::identity{}), false);
+  REQUIRE_FALSE(thrust::none_of(v.begin(), v.end(), ::cuda::std::identity{}));
 
-  ASSERT_EQUAL(thrust::none_of(v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::none_of(v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}), false);
-  ASSERT_EQUAL(thrust::none_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}), false);
-  ASSERT_EQUAL(thrust::none_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}), true);
+  REQUIRE(thrust::none_of(v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::none_of(v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::none_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
+  REQUIRE(thrust::none_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 }
 DECLARE_VECTOR_UNITTEST(TestNoneOf);
 
@@ -145,10 +145,10 @@ void TestNoneOfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::none_of(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestNoneOfDispatchExplicit);
 
@@ -165,6 +165,6 @@ void TestNoneOfDispatchImplicit()
 
   thrust::none_of(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestNoneOfDispatchImplicit);

@@ -53,6 +53,8 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
     THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
       cub::detail::scan::dispatch_with_accum<AccumT>,
@@ -68,6 +70,8 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
     THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
       cub::detail::scan::dispatch_with_accum<AccumT>,
@@ -106,6 +110,8 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScanInit directly in CCCL 4.0, which is a breaking
+    // change. See https://github.com/NVIDIA/cccl/issues/3993 for details.
     THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
       (cub::detail::scan::dispatch_with_accum<AccumT, cub::ForceInclusive::Yes>),
@@ -121,6 +127,8 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScanInit directly in CCCL 4.0, which is a breaking
+    // change. See https://github.com/NVIDIA/cccl/issues/3993 for details.
     THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
       (cub::detail::scan::dispatch_with_accum<AccumT, cub::ForceInclusive::Yes>),
@@ -157,6 +165,8 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
+    // TODO(bgruber): we should call cub::DeviceScan::ExclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
     THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
       cub::detail::scan::dispatch_with_accum<InitValueT>,
@@ -172,6 +182,8 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
+    // TODO(bgruber): we should call cub::DeviceScan::ExclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
     THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
       cub::detail::scan::dispatch_with_accum<InitValueT>,

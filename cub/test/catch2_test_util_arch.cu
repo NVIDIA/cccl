@@ -3,19 +3,19 @@
 
 #include <cub/util_arch.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <auto V>
 struct show;
 
-template <int Nominal4ByteBlockThreads,
+template <int Nominal4ByteThreadsPerBlock,
           int Nominal4ByteItemsPerThread,
           typename ComputeT,
-          int ExpectedBlockThreads,
+          int ExpectedThreadsPerBlock,
           int ExpectedItemsPerThread>
 void check_mem_bound_scaling()
 {
-  using mbs = cub::detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, ComputeT>;
+  using mbs = cub::detail::MemBoundScaling<Nominal4ByteThreadsPerBlock, Nominal4ByteItemsPerThread, ComputeT>;
 
   if constexpr (mbs::ITEMS_PER_THREAD != ExpectedItemsPerThread)
   {
@@ -23,14 +23,14 @@ void check_mem_bound_scaling()
   }
   STATIC_REQUIRE(mbs::ITEMS_PER_THREAD == ExpectedItemsPerThread);
 
-  if constexpr (mbs::BLOCK_THREADS != ExpectedBlockThreads)
+  if constexpr (mbs::BLOCK_THREADS != ExpectedThreadsPerBlock)
   {
     show<mbs::BLOCK_THREADS>::asdf();
   }
-  STATIC_REQUIRE(mbs::BLOCK_THREADS == ExpectedBlockThreads);
+  STATIC_REQUIRE(mbs::BLOCK_THREADS == ExpectedThreadsPerBlock);
 }
 
-C2H_TEST("MemBoundScaling", "[util][arch]")
+CUB_TEST("MemBoundScaling", "[util][arch]", CUB_SMALL)
 {
   check_mem_bound_scaling<256, 1, char, 256, 2>();
   check_mem_bound_scaling<256, 16, char, 256, 32>();
@@ -62,14 +62,14 @@ C2H_TEST("MemBoundScaling", "[util][arch]")
   check_mem_bound_scaling<256, 10000, large_t, 32, 39>();
 }
 
-template <int Nominal4ByteBlockThreads,
+template <int Nominal4ByteThreadsPerBlock,
           int Nominal4ByteItemsPerThread,
           typename ComputeT,
-          int ExpectedBlockThreads,
+          int ExpectedThreadsPerBlock,
           int ExpectedItemsPerThread>
 void check_reg_bound_scaling()
 {
-  using mbs = cub::detail::RegBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, ComputeT>;
+  using mbs = cub::detail::RegBoundScaling<Nominal4ByteThreadsPerBlock, Nominal4ByteItemsPerThread, ComputeT>;
 
   if constexpr (mbs::ITEMS_PER_THREAD != ExpectedItemsPerThread)
   {
@@ -77,14 +77,14 @@ void check_reg_bound_scaling()
   }
   STATIC_REQUIRE(mbs::ITEMS_PER_THREAD == ExpectedItemsPerThread);
 
-  if constexpr (mbs::BLOCK_THREADS != ExpectedBlockThreads)
+  if constexpr (mbs::BLOCK_THREADS != ExpectedThreadsPerBlock)
   {
     show<mbs::BLOCK_THREADS>::asdf();
   }
-  STATIC_REQUIRE(mbs::BLOCK_THREADS == ExpectedBlockThreads);
+  STATIC_REQUIRE(mbs::BLOCK_THREADS == ExpectedThreadsPerBlock);
 }
 
-C2H_TEST("RegBoundScaling", "[util][arch]")
+CUB_TEST("RegBoundScaling", "[util][arch]", CUB_SMALL)
 {
   check_reg_bound_scaling<256, 1, char, 256, 1>();
   check_reg_bound_scaling<256, 16, char, 256, 16>();

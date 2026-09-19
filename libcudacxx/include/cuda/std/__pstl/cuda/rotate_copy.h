@@ -26,6 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
@@ -46,6 +47,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -78,6 +80,9 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
     _InputIterator __last,
     _OutputIterator __result)
   {
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
+
     using _OffsetType = size_t;
 
     const auto __count  = static_cast<_OffsetType>(::cuda::std::distance(__first, __last));
@@ -91,7 +96,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
 
     // Determine temporary device storage requirements for cub::DevicePartition::Flagged
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DevicePartition::Flagged,
       "__pstl_cuda_rotate_copy: determination of device storage for cub::DevicePartition::Flagged failed",
       static_cast<void*>(nullptr),
@@ -101,16 +106,14 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
       __output_wrapper,
       static_cast<_OffsetType*>(nullptr),
       __count,
-      nullptr);
-
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+      __policy);
 
     {
       // Allocate memory for result
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel, we use the flagged kernel because we know the exact ordering we want
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DevicePartition::Flagged,
         "__pstl_cuda_rotate_copy: kernel launch of cub::DevicePartition::Flagged failed",
         __storage.__get_temp_storage(),
@@ -120,7 +123,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
         ::cuda::std::move(__output_wrapper),
         __storage.template __get_ptr<0>(),
         __count,
-        __stream.get());
+        __policy);
     }
 
     __stream.sync();
@@ -129,17 +132,17 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __middle,
     _InputIterator __last,
-    _OutputIterator __result) const
+    _OutputIterator __result)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
-      try
+      _CCCL_TRY
       {
         return __par_impl(
           __policy,
@@ -148,7 +151,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
           ::cuda::std::move(__last),
           ::cuda::std::move(__result));
       }
-      catch (const ::cuda::cuda_error& __err)
+      _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
@@ -156,9 +159,10 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
         }
         else
         {
-          throw __err;
+          _CCCL_RETHROW;
         }
       }
+      _CCCL_CATCH_FALLTHROUGH
     }
     else
     {

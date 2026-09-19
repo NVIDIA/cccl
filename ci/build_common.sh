@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -eo pipefail
 
@@ -20,6 +20,7 @@ GLOBAL_CMAKE_OPTIONS=()
 DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
 PEDANTIC=${PEDANTIC:-} # Enable strict warnings. Default: on in CI, off locally.
 CONFIGURE_ONLY=false
+CTEST_PARALLEL_LEVEL=1
 
 # Check if the correct number of arguments has been provided
 function usage {
@@ -34,6 +35,8 @@ function usage {
     echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
+    echo "  -enable-tile: Enable tile support"
+    echo "  --test-par: CTest parallel level (Defaults to 1)"
     echo "  -pedantic/--pedantic: Enable strict warnings-as-errors and expose CCCL header warnings (default in CI)"
     echo "  -cmake-options: Additional options to pass to CMake"
     echo
@@ -52,7 +55,7 @@ function check_required_dependencies() {
     local missing_deps=()
 
     # Check for essential tools
-    local required_tools=("cmake" "git" "ninja" "nproc")
+    local required_tools=("cmake" "git" "jq" "ninja" "nproc")
     for tool in "${required_tools[@]}"; do
         command -v "$tool" &>/dev/null || missing_deps+=("$tool")
     done
@@ -78,6 +81,8 @@ while [[ "${#args[@]}" -ne 0 ]]; do
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
+    -enable-tile) GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_TILE=ON"); args=("${args[@]:1}");;
+    --test-par) CTEST_PARALLEL_LEVEL="${args[1]}"; args=("${args[@]:2}");;
     -pedantic | --pedantic) PEDANTIC=1; args=("${args[@]:1}");;
     -disable-benchmarks) export DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
@@ -154,11 +159,14 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all --ignore=1)}
+N_CPUS="$(nproc --all --ignore=1)"
+readonly N_CPUS
+readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
 fi
+export CCCL_BUILD_INFIX
 
 mkdir -p ../build
 # Absolute path to cccl/build
@@ -185,8 +193,9 @@ function symlink_latest_preset {
 BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
 # Prepare environment for CMake:
-export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
-export CTEST_PARALLEL_LEVEL="1"
+export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS ? N_CPUS : PARALLEL_LEVEL))"
+
+export CTEST_PARALLEL_LEVEL
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
@@ -282,6 +291,53 @@ fail_if_no_gpu() {
     fi
 }
 
+function cccl_configure_preset_for_test() {
+    local test_preset=$1
+    local presets_file="${BUILD_ROOT}/../CMakePresets.json"
+    local configure_preset
+
+    if [[ ! -f "${presets_file}" ]]; then
+        echo "Error: CMakePresets.json not found: ${presets_file}" >&2
+        return 1
+    fi
+
+    configure_preset=$(
+        jq -r --arg t "${test_preset}" '
+            .testPresets[] | select(.name == $t) | .configurePreset // empty
+        ' "${presets_file}"
+    )
+
+    if [[ -z "${configure_preset}" ]]; then
+        configure_preset="${test_preset}"
+    fi
+
+    echo "${configure_preset}"
+}
+
+function cccl_smoke_tests_enabled() {
+    local configure_preset=$1
+    local cache_file="${BUILD_DIR}/${configure_preset}/CMakeCache.txt"
+
+    [[ -f "${cache_file}" ]] \
+        && grep -q '^CCCL_ENABLE_CUDA_SMOKE_TESTS:BOOL=ON' "${cache_file}"
+}
+
+function run_cuda_smoke_test() {
+    local BUILD_NAME=$1
+    local test_preset=$2
+
+    local configure_preset
+    configure_preset="$(cccl_configure_preset_for_test "${test_preset}")"
+    local smoke_bin="${BUILD_DIR}/${configure_preset}/bin/cccl.test.cuda_runtime_smoke"
+
+    if [[ -x "${smoke_bin}" ]]; then
+        run_ci_timed_command "CUDA smoke ${BUILD_NAME}" "${smoke_bin}" || return $?
+    elif cccl_smoke_tests_enabled "${configure_preset}"; then
+        echo "Error: CCCL_ENABLE_CUDA_SMOKE_TESTS=ON but smoke binary not found: ${smoke_bin}" >&2
+        return 1
+    fi
+}
+
 function print_test_time_summary()
 {
     ctest_log=${1}
@@ -317,7 +373,7 @@ function configure_preset()
       export RUN_COMMAND_RETRY_PARAMS=(5 30)
     fi
     status=0
-    run_command "$GROUP_NAME" cmake --preset="$PRESET" --log-level=VERBOSE "${CMAKE_OPTIONS[@]}" "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
+    SCCACHE_NO_DIST_COMPILE=1 run_command "$GROUP_NAME" cmake --preset="$PRESET" --log-level=VERBOSE "${CMAKE_OPTIONS[@]}" "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         unset RUN_COMMAND_RETRY_PARAMS
     fi
@@ -370,7 +426,7 @@ function build_preset() {
 
     pushd .. > /dev/null
     status=0
-    run_ci_timed_command "$GROUP_NAME" cmake --build --preset="$PRESET" -v "${BUILD_COMMANDS[@]}" || status=$?
+    run_ci_timed_command "$GROUP_NAME" cmake --build --parallel "$PARALLEL_LEVEL" --preset="$PRESET" ${VERBOSE:+-v} "${BUILD_COMMANDS[@]}" || status=$?
     popd > /dev/null
 
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
@@ -413,6 +469,9 @@ function test_preset()
 
     if $GPU_REQUIRED; then
         fail_if_no_gpu
+        if [[ -z "${CCCL_SKIP_CI_SMOKE:-}" ]]; then
+            run_cuda_smoke_test "${BUILD_NAME}" "${PRESET}" || return $?
+        fi
     fi
 
     local GROUP_NAME="🚀  Test ${BUILD_NAME}"
@@ -422,7 +481,7 @@ function test_preset()
 
     pushd .. > /dev/null
     status=0
-    run_ci_timed_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset="$PRESET" || status=$?
+    run_ci_timed_command "$GROUP_NAME" ctest --output-on-failure --output-log "${ctest_log}" --preset="$PRESET" || status=$?
     popd > /dev/null
 
     print_test_time_summary "${ctest_log}"

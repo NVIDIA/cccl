@@ -12,7 +12,7 @@
 struct policy_selector_t
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::adjacent_difference::adjacent_difference_policy
+    -> cub::AdjacentDifferencePolicy
   {
     return {TUNE_THREADS_PER_BLOCK,
             TUNE_ITEMS_PER_THREAD,
@@ -52,7 +52,7 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(policy_selector_t{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceAdjacentDifference::SubtractLeftCopy,
       "SubtractLeftCopy failed",
       d_in,

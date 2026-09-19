@@ -11,7 +11,7 @@ static const size_t NUM_REGISTERS = 64;
 template <size_t N>
 _CCCL_HOST_DEVICE void f(int* x)
 {
-  int temp = *x;
+  const int temp = *x;
   f<N - 1>(x + 1);
   *x = temp;
 };
@@ -100,9 +100,9 @@ void TestForEachDeviceSeq(const size_t n)
 
   for_each_kernel<<<1, 1>>>(thrust::seq, d_input.begin(), d_input.end(), d_f);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachDeviceSeq);
 
@@ -133,14 +133,14 @@ void TestForEachDeviceDevice(const size_t n)
   for_each_kernel<<<1, 1>>>(thrust::device, d_input.begin(), d_input.end(), d_f);
   {
     cudaError_t const err = cudaGetLastError();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachDeviceDevice);
 
@@ -176,9 +176,9 @@ void TestForEachNDeviceSeq(const size_t n)
 
   for_each_n_kernel<<<1, 1>>>(thrust::seq, d_input.begin(), d_input.size(), d_f);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachNDeviceSeq);
 
@@ -208,9 +208,9 @@ void TestForEachNDeviceDevice(const size_t n)
 
   for_each_n_kernel<<<1, 1>>>(thrust::device, d_input.begin(), d_input.size(), d_f);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachNDeviceDevice);
 #endif
@@ -230,8 +230,8 @@ void TestForEachCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  thrust::device_vector<int> ref{0, 0, 1, 1, 1, 0, 1};
-  ASSERT_EQUAL(output, ref);
+  const thrust::device_vector<int> ref{0, 0, 1, 1, 1, 0, 1};
+  REQUIRE(output == ref);
 
   cudaStreamDestroy(s);
 }

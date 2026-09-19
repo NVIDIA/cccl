@@ -85,10 +85,8 @@ static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int>
 static_assert(cuda::std::is_convertible_v<cuda::std::expected<void, int>&&, cuda::std::expected<void, long>>);
 
 // !is_convertible_v<GF, E>.
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, CtorFrom<int>>, cuda::std::expected<void, int>&&>,
-              "");
-static_assert(!cuda::std::is_convertible_v<cuda::std::expected<void, int>&&, cuda::std::expected<void, CtorFrom<int>>>,
-              "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, CtorFrom<int>>, cuda::std::expected<void, int>&&>);
+static_assert(!cuda::std::is_convertible_v<cuda::std::expected<void, int>&&, cuda::std::expected<void, CtorFrom<int>>>);
 
 struct Data
 {

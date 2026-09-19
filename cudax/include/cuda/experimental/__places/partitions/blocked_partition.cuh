@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -66,8 +67,8 @@ public:
     // If first = second, this means it's an empty shape. This may happen
     // when there are more entries in grid_dims than in the shape for
     // example
-    bounds[target_dim].first  = ::std::min(dim_beg + part_size * place_position.x, dim_end);
-    bounds[target_dim].second = ::std::min(dim_beg + part_size * (place_position.x + 1), dim_end);
+    bounds[target_dim].first  = ::cuda::std::min(dim_beg + part_size * place_position.x, dim_end);
+    bounds[target_dim].second = ::cuda::std::min(dim_beg + part_size * (place_position.x + 1), dim_end);
 
     return box(bounds);
   }
@@ -96,13 +97,13 @@ public:
     // The last dimension is split across the different places
     size_t nplaces            = grid_dims.x;
     size_t part_size          = (in.extent(target_dim) + nplaces - 1) / nplaces;
-    bounds[target_dim].first  = ::std::min((::std::ptrdiff_t) part_size * place_position.x, dim_end);
-    bounds[target_dim].second = ::std::min((::std::ptrdiff_t) part_size * (place_position.x + 1), dim_end);
+    bounds[target_dim].first  = ::cuda::std::min((::std::ptrdiff_t) part_size * place_position.x, dim_end);
+    bounds[target_dim].second = ::cuda::std::min((::std::ptrdiff_t) part_size * (place_position.x + 1), dim_end);
 
     return box<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE static pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims)
+  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims)
   {
     // Find the largest dimension
     size_t rank       = data_dims.get_rank();
@@ -114,13 +115,19 @@ public:
 
     size_t extent = data_dims.get(target_dim);
 
-    size_t nplaces   = grid_dims.x;
+    size_t nplaces = grid_dims.x;
+    _CCCL_ASSERT(nplaces > 0, "blocked partition requires a non-empty grid");
+
     size_t part_size = (extent + nplaces - 1) / nplaces;
+    // A zero part_size (empty extent, or extent + nplaces - 1 wrapping) would
+    // make the division below SIGFPE; allocate_nd() rejects such geometries
+    // before the mapper runs
+    _CCCL_ASSERT(part_size > 0, "blocked partition applied to an empty or wrapping extent");
 
     // Get the coordinate in the selected dimension
     size_t c = data_coords.get(target_dim);
 
-    return pos4(c / part_size);
+    *result = pos4(c / part_size);
   }
 };
 
@@ -130,6 +137,12 @@ public:
 //! across execution places. By default, partitioning occurs along the last dimension, but a
 //! specific dimension can be selected using the template parameter. This approach ensures
 //! good spatial locality and is particularly effective for regular data access patterns.
+//!
+//! When mapping element coordinates (get_executor), the selected dimension is
+//! clamped to the highest axis whose extent is greater than one: -1 always
+//! selects that axis, and a larger explicit dimension is clamped down to it
+//! (e.g. blocked_partition_custom<2> on extents {n, 1, 1, 1} partitions along
+//! axis 0).
 using blocked_partition = blocked_partition_custom<>;
 
 #ifdef UNITTESTED_FILE
@@ -150,9 +163,10 @@ UNITTEST("blocked partition with very large data arrays")
   pos4 middle_coord(200, 150, 100, 500);
   pos4 last_coord(399, 299, 199, 999);
 
-  pos4 first_pos  = blocked_partition::get_executor(first_coord, massive_4d_dims, grid_dims);
-  pos4 middle_pos = blocked_partition::get_executor(middle_coord, massive_4d_dims, grid_dims);
-  pos4 last_pos   = blocked_partition::get_executor(last_coord, massive_4d_dims, grid_dims);
+  pos4 first_pos, middle_pos, last_pos;
+  blocked_partition::get_executor(&first_pos, first_coord, massive_4d_dims, grid_dims);
+  blocked_partition::get_executor(&middle_pos, middle_coord, massive_4d_dims, grid_dims);
+  blocked_partition::get_executor(&last_pos, last_coord, massive_4d_dims, grid_dims);
 
   // part_size = ceil(1000/4) = 250
   // t=0   -> block 0, t=500 -> block 2, t=999 -> block 3
