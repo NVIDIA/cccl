@@ -1229,6 +1229,9 @@ full tile. The remaining slots are unspecified: do not read or store them.
 When several keys tie at the selection boundary, the operation chooses
 enough to fill the requested result without a tie-order guarantee.
 
+The :doc:`TopK visualization <visualizations/topk>` shows which candidates
+remain and how ``k`` and ``valid_items`` determine the defined output prefix.
+
 Here one block selects the eight largest keys from a partial tile and
 returns their original indices:
 
