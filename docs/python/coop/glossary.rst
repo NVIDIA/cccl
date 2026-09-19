@@ -48,6 +48,59 @@ Terms
       accept scalars or backend-specific arrays. See
       :ref:`thread data <coop-thread-data>`.
 
+   batch
+      One independent reduction in :func:`cuda.coop.reduce_batched`.
+      Each lane contributes the value in the same local payload slot:
+      slot ``j`` contributes to batch ``j``. A batch spans the selected
+      warp, and its result belongs to the lane and slot selected by the
+      output layout. See :doc:`batched reduction <visualizations/reduce-batched>`.
+
+   bin
+      A counter indexed by an input sample in :func:`cuda.coop.histogram`.
+      A sample with value ``b`` increments bin ``b``. Every sample must
+      satisfy ``0 <= b < bins``. Returned bins use :term:`striped`
+      ownership. See :doc:`Histogram <visualizations/histogram>`.
+
+   tile boundary
+      The edge between one group's tile and the neighboring data.
+      Adjacent Difference and Discontinuity can consume an explicit
+      predecessor or successor value to compare across this edge.
+      Without one, their endpoint rules apply to the local tile. See
+      :doc:`neighbor operations <neighbor-operations>`.
+
+   run
+      A consecutive sequence represented by one value and its repetition
+      count, such as value ``7`` and length ``3`` representing ``7, 7, 7``.
+      Run Length Decode expands these pairs. Its run-length payload uses
+      positive lengths followed by optional zero-length padding. See
+      :doc:`Run Length Decode <visualizations/run-length-decode>`.
+
+   head flag
+      An integer flag marking the start of a sequence according to
+      Discontinuity's comparison predicate. With the default inequality
+      predicate, it is one where an item differs from its predecessor.
+      Without an explicit tile predecessor, the first item is a head.
+      See :doc:`Discontinuity <visualizations/discontinuity>`.
+
+   tail flag
+      An integer flag marking the end of a sequence according to
+      Discontinuity's comparison predicate. With the default inequality
+      predicate, it is one where an item differs from its successor.
+      Without an explicit tile successor, the last item is a tail.
+
+   decoded window
+      The output interval returned by one :func:`cuda.coop.run_length_decode`
+      call. Its start is an offset in the expanded sequence, and its
+      capacity is ``block_threads * decoded_items_per_thread``. Positions
+      beyond the sequence contain zero. See
+      :ref:`decoding windows and scratch <coop-glossary-decoding>`.
+
+   relative run offset
+      A decoded element's position within its own :term:`run`. For runs
+      ``[7, 9]`` with lengths ``[3, 2]``, the full sequence has relative
+      offsets ``[0, 1, 2, 0, 1]``. This differs from its absolute decoded
+      position or its position within a requested window.
+
    key-value pair
       A key used for ordering or selection and an associated value, such as
       its original array index. Pair operations move the two together.
@@ -171,3 +224,44 @@ Follow the values in the :doc:`Load <visualizations/load>` and
 :doc:`Store <visualizations/store>` visualizations. :doc:`Exchange
 <visualizations/exchange>` converts between layouts; the
 :ref:`programming guide <coop-data-layouts>` shows how layout affects Scan.
+
+.. _coop-glossary-decoding:
+
+Run positions, windows, and scratch
+----------------------------------
+
+Run Length Decode first prepares a table of run values and starting
+positions in shared scratch. A window offset then selects where to read
+from the expanded sequence. For values ``[7, 9]`` and lengths ``[3, 2]``:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Absolute decoded position
+     - Value
+     - Relative run offset
+   * - 0
+     - 7
+     - 0
+   * - 1
+     - 7
+     - 1
+   * - 2
+     - 7
+     - 2
+   * - 3
+     - 9
+     - 0
+   * - 4
+     - 9
+     - 1
+
+A window starting at position two begins with values ``[7, 9, 9]`` and
+relative offsets ``[2, 0, 1]``. The total decoded size remains five.
+Each independent window call prepares its table again; passing the same
+``TempStorage`` descriptor reuses memory, not a prepared decoder.
+
+:func:`cuda.coop.run_length_decode_into` keeps that table alive while it
+loops over windows within one call. The table's lifetime ends when the
+call returns. Neither form exposes a parent decoder object or a mutable
+decode cursor. See :ref:`the RLD lifecycle FAQ <coop-faq-rld-lifecycle>`.

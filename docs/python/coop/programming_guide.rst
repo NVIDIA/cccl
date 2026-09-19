@@ -163,6 +163,19 @@ several operations:
      - Integer-key sorting and digit ranks
      - Also supports floating-point sorting, striped sort output,
        digit-prefix output, scalars, and fixed local arrays
+   * - Neighbor comparisons
+     - Adjacent differences and head/tail flags with tile boundary controls
+     - Also accepts stateless ``difference_op`` and ``flag_op`` callbacks
+   * - Histograms
+     - Fresh striped counters from fixed integer sample payloads
+     - Also accepts one scalar sample per thread
+   * - Run Length Decode
+     - A decoded window, or bulk decoding into an array
+     - Also supports relative run offsets, window total output, and a
+       selected unsigned decoded-offset dtype
+   * - Batched warp reductions
+     - One built-in reduction per payload slot, with distributed results
+     - Also accepts a stateless device reduction callback
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -695,9 +708,11 @@ allocation. Its contents are opaque; keep application values in
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
    * - Block transpose-family Load/Store; Block Scan; Block Merge Sort;
-       Block Radix Sort; TopK
+       Block Radix Sort; TopK; Adjacent Difference; Discontinuity;
+       Histogram; Run Length Decode (windowed or bulk)
      - Automatic scratch, or an explicit ``TempStorage``
-   * - Warp transpose Load/Store; Warp Scan; Warp Merge Sort
+   * - Warp transpose Load/Store; Warp Scan; Warp Merge Sort;
+       Batched Warp Reduction
      - Automatic scratch per group; explicit descriptors are rejected
    * - Exchange and Shuffle
      - Compiler-owned scratch and reuse synchronization
@@ -1214,6 +1229,100 @@ Use a sorting primitive when the result must be ordered. TopK can avoid
 ordering elements that the kernel will discard; it does not promise that
 its selected prefix is already sorted. See :ref:`the TopK FAQ
 <coop-faq-topk-order>`.
+
+.. _coop-neighbor-comparisons:
+
+Comparing neighboring values
+----------------------------
+
+:func:`cuda.coop.adjacent_difference` computes an arithmetic result for each
+item and its left or right neighbor. It returns a fresh payload and
+preserves its input. A tile predecessor or successor lets comparisons
+continue across tile boundaries. With ``valid_items``, the invalid suffix
+is copied from the input. The current CUB interface does not support a
+right partial difference with an explicit successor; that combination
+is rejected.
+
+:func:`cuda.coop.discontinuity` returns ``int32`` head flags, tail flags,
+or both. Its default predicate marks unequal neighbors. Both operations
+interpret inputs in blocked order, but Discontinuity always processes a
+full tile. Arbitrary padding can change the last valid item's tail flag.
+See :doc:`neighbor operations <neighbor-operations>` for tested delta and
+run-boundary examples, or explore
+:doc:`Adjacent Difference <visualizations/adjacent-difference>` and
+:doc:`Discontinuity <visualizations/discontinuity>` interactively.
+
+.. _coop-histogram:
+
+Counting samples by bin
+-----------------------
+
+:func:`cuda.coop.histogram` counts a block's integer samples into ``bins``
+counters. Each sample must be in ``[0, bins)``. ``bins_per_thread`` fixes
+the result extent, so ``block_threads * bins_per_thread`` must cover all
+bins. The default counter dtype is ``int32``; 32- and 64-bit signed or
+unsigned counters are supported.
+
+The result uses striped bin ownership: thread ``t``, slot ``i`` owns bin
+``t + i * block_threads``. Slots beyond ``bins`` contain zero. Use a
+striped Store with ``valid_items=bins`` to write the counters in bin order.
+Both ``algorithm="atomic"`` and ``algorithm="sort"`` preserve the input
+samples and return fresh counts. The :doc:`Histogram visualization
+<visualizations/histogram>` includes a tested example that accumulates
+several tiles by adding their returned counters.
+
+Histogram has no partial-input count. Padding a short tile with zeros
+adds samples to bin zero; see :ref:`the padding FAQ
+<coop-faq-histogram-padding>`.
+
+.. _coop-run-length-decode:
+
+Expanding runs into values
+-------------------------
+
+:func:`cuda.coop.run_length_decode` expands matching per-thread run-value
+and run-length payloads into a fresh blocked output window. Run lengths
+must form a positive prefix followed by optional zeros. The window starts
+at ``decoded_window_offset`` in the expanded sequence and contains
+``block_threads * decoded_items_per_thread`` positions. Positions past the
+end contain zero, including when all run lengths are zero.
+
+:func:`cuda.coop.run_length_decode_into` expands the entire sequence into
+a destination array. It prepares the run table once and loops over output
+windows inside one call. It checks capacity before writing and returns the
+total decoded size to every block member. Keep source and destination
+storage separate; a nonzero ``destination_offset`` reserves an output
+prefix for other data.
+
+Use the qualified API when a windowed call needs total-size or relative
+run-offset outputs, or when decoded positions require ``uint64``.
+:term:`Relative run offsets <relative run offset>` count positions within
+each run, while ``decoded_window_offset`` counts positions in the complete
+expanded sequence. All threads must use the same window or destination
+offset. The :doc:`RLD visualization <visualizations/run-length-decode>`
+shows both interfaces with tested kernels and a window crossing a run
+boundary.
+
+.. _coop-batched-reductions:
+
+Reducing independent batches within a warp
+-----------------------------------------
+
+:func:`cuda.coop.reduce_batched` treats each local input slot as a separate
+batch. With three items per lane, it reduces three batches across the
+warp and distributes their three results among lanes. It preserves the
+input and returns ``ceil(batches / warp_width)`` slots per thread.
+
+The default ``output_layout="striped"`` assigns batch
+``lane + slot * warp_width`` to a result slot. ``"blocked"`` assigns batch
+``lane * result_extent + slot``. Guard reads and stores when that batch
+index is outside the input batch count: extra allocated slots are
+unspecified. Every member of the selected warp participates, including
+lanes that own no result.
+
+See the :doc:`feature-sum kernel <visualizations/reduce-batched>` for a
+complete example. The :ref:`batched reduction FAQ <coop-faq-batched-reduce>`
+compares this operation with ordinary Reduce.
 
 Checking and tuning a kernel
 ---------------------------

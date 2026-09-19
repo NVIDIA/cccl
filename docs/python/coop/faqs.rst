@@ -97,9 +97,10 @@ kernel provides the required barriers itself, including across loop
 iterations. Separate slices do not remove the need to protect reuse.
 
 The current backend accepts explicit descriptors for block transpose-family
-Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, and TopK.
-Warp Load/Store, Warp Scan, and Warp Merge Sort use compiler-owned storage
-and reject explicit descriptors. See
+Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent
+Difference, Discontinuity, Histogram, and both Run Length Decode forms.
+Warp Load/Store, Warp Scan, Warp Merge Sort, and Batched Warp Reduction use
+compiler-owned storage. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.
 
@@ -148,3 +149,107 @@ Each call sorts only the selected group's tile. Several blocks therefore
 produce independently sorted tiles. A globally sorted array requires an
 algorithm that combines those tiles. Warp and logical-warp Merge Sort
 likewise sort each participating group's tile independently.
+
+.. _coop-faq-neighbor-operations:
+
+When should I use Adjacent Difference or Discontinuity?
+-----------------------------------------------------
+
+Use :func:`cuda.coop.adjacent_difference` to compute a value from each item
+and its neighbor, such as the delta between successive samples. Use
+:func:`cuda.coop.discontinuity` to produce flags that mark boundaries, such
+as the first and last item of each equal-value run. It returns ``int32``
+flags; ``mode="heads_and_tails"`` returns both payloads.
+
+Tile boundaries matter for both operations. Supply a predecessor or
+successor when comparisons must continue across tiles. A multiblock
+kernel that reads global neighbors must preserve those source values
+until all readers finish. The :doc:`neighbor examples <neighbor-operations>`
+use separate input and output arrays.
+
+.. _coop-faq-histogram-padding:
+
+Can I zero-pad a partial Histogram tile?
+--------------------------------------
+
+Every input sample contributes to a bin, including a padded zero. A
+zero-padded load therefore adds extra counts to bin zero. Histogram has
+no ``valid_items`` parameter. Process complete tiles or handle the tail
+separately with a kernel that counts only valid samples.
+
+Output padding is different: returned counter slots whose bin index is
+at least ``bins`` contain zero. Store the first ``bins`` counters using
+the striped layout. See the :doc:`Histogram explorer <visualizations/histogram>`.
+
+.. _coop-faq-histogram-accumulation:
+
+Does Histogram retain counters between calls?
+--------------------------------------------
+
+Each call returns fresh counts and preserves its samples. For repeated
+tiles within a kernel, keep an accumulator payload and add the returned
+counts to it. Each thread retains the same striped bin ownership when
+the configuration stays fixed. The :doc:`tested accumulation example
+<visualizations/histogram>` shows this pattern.
+
+CUB's ``BlockHistogram::Composite`` accumulates into a caller's counter
+buffer. That persistent state belongs to the buffer; it does not require
+a persistent C++ Histogram object. The Python API exposes the fresh-count
+operation, so neither a parent object nor retained counters in
+``TempStorage`` are needed.
+
+.. _coop-faq-rld-lifecycle:
+
+Why do windowed and bulk Run Length Decode use different calls?
+-------------------------------------------------------------
+
+:func:`cuda.coop.run_length_decode` returns a fixed-size payload for the
+window beginning at ``decoded_window_offset``. Use it when the kernel
+needs to work with that window's values. It prepares the run table on
+each call, even when calls share a ``TempStorage`` descriptor.
+
+:func:`cuda.coop.run_length_decode_into` writes the entire expanded
+sequence into a destination array. It prepares the table once, loops
+over decoding windows internally, and returns the total decoded size to
+every thread. The destination must have enough remaining capacity;
+use separate source and destination storage.
+
+The prepared run table persists only within the call. A window offset
+selects a position in the expanded sequence; the decoder does not advance
+a hidden cursor. A shared scratch descriptor controls allocation reuse,
+not decoder state. See :ref:`run positions and windows
+<coop-glossary-decoding>` and the
+:doc:`RLD explorer <visualizations/run-length-decode>`.
+
+.. _coop-faq-rld-padding:
+
+How do I pad run inputs and recognize the end of decoded output?
+--------------------------------------------------------------
+
+Use a positive prefix of run lengths followed by zeros. An all-zero tile
+represents an empty sequence; an interior zero followed by a positive
+length is invalid. The values associated with padding runs are ignored.
+
+A windowed decode fills positions beyond the expanded sequence with
+zero. Zero may also be a real run value, so use the total decoded size
+to determine which positions are valid. The qualified API can write
+that total and relative run offsets to auxiliary payloads; invalid
+relative offsets contain the maximum value of the selected unsigned
+offset dtype. Bulk decoding writes only valid items, leaving the rest
+of the destination unchanged.
+
+.. _coop-faq-batched-reduce:
+
+How does Batched Warp Reduction differ from ordinary Reduce?
+-----------------------------------------------------------
+
+Ordinary ``reduce(group, values)`` combines the group's payload items
+into one aggregate. ``reduce_batched(warp, values)`` reduces each local
+slot independently across the warp. Three slots per lane mean three
+independent results, one for each slot.
+
+The results are distributed among lanes in blocked or striped order;
+they are not broadcast to every lane. Each returned payload has
+``ceil(batches / warp_width)`` slots, and slots without a corresponding
+batch are unspecified. The :doc:`feature-sum example
+<visualizations/reduce-batched>` guards its stores by batch index.
