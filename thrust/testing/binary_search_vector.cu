@@ -39,10 +39,10 @@ void TestVectorLowerBoundSimple()
   const typename IntVector::iterator output_end =
     thrust::lower_bound(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
-  ASSERT_EQUAL((output_end - integral_output.begin()), 10);
+  REQUIRE((output_end - integral_output.begin()) == 10);
 
   const IntVector ref{0, 1, 1, 2, 2, 2, 3, 3, 4, 5};
-  ASSERT_EQUAL(integral_output, ref);
+  REQUIRE(integral_output == ref);
 
   //    // test with iterator output type
   //    using IteratorVector = typename vector_like<Vector, typename Vector::iterator>::type;
@@ -77,7 +77,7 @@ void TestVectorLowerBoundDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::lower_bound(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestVectorLowerBoundDispatchExplicit);
 
@@ -99,7 +99,7 @@ void TestVectorLowerBoundDispatchImplicit()
     thrust::retag<my_tag>(vec.end()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestVectorLowerBoundDispatchImplicit);
 
@@ -119,10 +119,10 @@ void TestVectorUpperBoundSimple()
   const typename IntVector::iterator output_end =
     thrust::upper_bound(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
-  ASSERT_EQUAL((output_end - integral_output.begin()), 10);
+  REQUIRE((output_end - integral_output.begin()) == 10);
 
   const IntVector ref{1, 1, 2, 2, 2, 3, 3, 4, 5, 5};
-  ASSERT_EQUAL(integral_output, ref);
+  REQUIRE(integral_output == ref);
 
   //    // test with iterator output type
   //    using IteratorVector = typename vector_like<Vector, typename Vector::iterator>::type;
@@ -157,7 +157,7 @@ void TestVectorUpperBoundDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::upper_bound(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestVectorUpperBoundDispatchExplicit);
 
@@ -179,7 +179,7 @@ void TestVectorUpperBoundDispatchImplicit()
     thrust::retag<my_tag>(vec.end()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestVectorUpperBoundDispatchImplicit);
 
@@ -200,20 +200,20 @@ void TestVectorBinarySearchSimple()
   const typename BoolVector::iterator bool_output_end =
     thrust::binary_search(vec.begin(), vec.end(), input.begin(), input.end(), bool_output.begin());
 
-  ASSERT_EQUAL((bool_output_end - bool_output.begin()), 10);
+  REQUIRE((bool_output_end - bool_output.begin()) == 10);
 
   const BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
-  ASSERT_EQUAL(bool_output, bool_ref);
+  REQUIRE(bool_output == bool_ref);
 
   // test with integral output type
   IntVector integral_output(10, 2);
   const typename IntVector::iterator int_output_end =
     thrust::binary_search(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
-  ASSERT_EQUAL((int_output_end - integral_output.begin()), 10);
+  REQUIRE((int_output_end - integral_output.begin()) == 10);
 
   const IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
-  ASSERT_EQUAL(integral_output, int_ref);
+  REQUIRE(integral_output == int_ref);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchSimple);
 
@@ -232,7 +232,7 @@ void TestVectorBinarySearchDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::binary_search(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestVectorBinarySearchDispatchExplicit);
 
@@ -255,7 +255,7 @@ void TestVectorBinarySearchDispatchImplicit()
     thrust::retag<my_tag>(vec.end()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestVectorBinarySearchDispatchImplicit);
 
@@ -278,7 +278,7 @@ struct TestVectorLowerBound
     thrust::lower_bound(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), h_output.begin());
     thrust::lower_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBound, SignedIntegralTypes);
@@ -302,7 +302,7 @@ struct TestVectorUpperBound
     thrust::upper_bound(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), h_output.begin());
     thrust::upper_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBound, SignedIntegralTypes);
@@ -326,7 +326,7 @@ struct TestVectorBinarySearch
     thrust::binary_search(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), h_output.begin());
     thrust::binary_search(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearch, SignedIntegralTypes);
@@ -350,8 +350,8 @@ struct TestVectorLowerBoundDiscardIterator
 
     const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBoundDiscardIterator, SignedIntegralTypes);
@@ -375,8 +375,8 @@ struct TestVectorUpperBoundDiscardIterator
 
     const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBoundDiscardIterator, SignedIntegralTypes);
@@ -400,8 +400,8 @@ struct TestVectorBinarySearchDiscardIterator
 
     const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearchDiscardIterator, SignedIntegralTypes);

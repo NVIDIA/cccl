@@ -47,8 +47,8 @@ namespace cuda::experimental
 template <::cuda::std::size_t... _UnitCounts>
 struct __group_as_static_tag;
 
-template <::cuda::std::size_t... _UnitCounts, bool _IsExhaustive>
-class group_as<__group_as_static_tag<_UnitCounts...>, _IsExhaustive>
+template <::cuda::std::size_t... _UnitCounts, bool _IsAlwaysExhaustive>
+class group_as<__group_as_static_tag<_UnitCounts...>, _IsAlwaysExhaustive>
 {
   static_assert(((_UnitCounts != 0) && ...), "all _UnitCounts must not be zero");
   static_assert((::cuda::std::in_range<::cuda::std::uint32_t>(_UnitCounts) && ...),
@@ -59,14 +59,14 @@ class group_as<__group_as_static_tag<_UnitCounts...>, _IsExhaustive>
 public:
   _CCCL_HIDE_FROM_ABI explicit group_as() = default;
 
-  _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
-  _CCCL_REQUIRES(_IsExhaustive2)
+  _CCCL_TEMPLATE(bool _IsAlwaysExhaustive2 = _IsAlwaysExhaustive)
+  _CCCL_REQUIRES(_IsAlwaysExhaustive2)
   _CCCL_DEVICE_API explicit constexpr group_as(
     const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&) noexcept
   {}
 
-  _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
-  _CCCL_REQUIRES((!_IsExhaustive2))
+  _CCCL_TEMPLATE(bool _IsAlwaysExhaustive2 = _IsAlwaysExhaustive)
+  _CCCL_REQUIRES((!_IsAlwaysExhaustive2))
   _CCCL_DEVICE_API explicit constexpr group_as(
     const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&, const non_exhaustive_t&) noexcept
   {}
@@ -88,7 +88,7 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
   {
-    return _IsExhaustive;
+    return _IsAlwaysExhaustive;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count(::cuda::std::size_t __i) const noexcept
@@ -111,7 +111,7 @@ public:
     using _MappingResult =
       __mapping_result<__static_ngroups,
                        ::cuda::std::dynamic_extent,
-                       _PrevMappingResult::is_always_exhaustive() && _IsExhaustive,
+                       _PrevMappingResult::is_always_exhaustive() && _IsAlwaysExhaustive,
                        _PrevMappingResult::is_always_contiguous()>;
 
     if (!__prev_mapping_result.is_valid())
@@ -124,16 +124,17 @@ public:
     constexpr auto __curr_ngroups = static_cast<::cuda::std::uint32_t>(sizeof...(_UnitCounts));
     const auto __ngroups          = __prev_mapping_result.group_count() * __curr_ngroups;
 
-    if constexpr (_IsExhaustive)
+    if constexpr (_IsAlwaysExhaustive)
     {
       if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
       {
-        static_assert(__static_prev_nunits == __counts_sum, "group_as mapping _IsExhaustive precondition violation");
+        static_assert(__static_prev_nunits == __counts_sum,
+                      "group_as mapping _IsAlwaysExhaustive precondition violation");
       }
       else
       {
         _CCCL_ASSERT(__prev_nunits == static_cast<::cuda::std::uint32_t>(__counts_sum),
-                     "group_as mapping _IsExhaustive precondition violation");
+                     "group_as mapping _IsAlwaysExhaustive precondition violation");
       }
     }
     else
@@ -180,16 +181,16 @@ public:
 template <::cuda::std::size_t _GroupCount>
 struct __group_as_dynamic_tag;
 
-template <::cuda::std::size_t _GroupCount, bool _IsExhaustive>
-class group_as<__group_as_dynamic_tag<_GroupCount>, _IsExhaustive>
+template <::cuda::std::size_t _GroupCount, bool _IsAlwaysExhaustive>
+class group_as<__group_as_dynamic_tag<_GroupCount>, _IsAlwaysExhaustive>
 {
   static_assert(_GroupCount != ::cuda::std::dynamic_extent, "group_as requires static number of groups");
 
   ::cuda::std::uint32_t __counts_[_GroupCount];
 
 public:
-  _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
-  _CCCL_REQUIRES(_IsExhaustive2)
+  _CCCL_TEMPLATE(bool _IsAlwaysExhaustive2 = _IsAlwaysExhaustive)
+  _CCCL_REQUIRES(_IsAlwaysExhaustive2)
   _CCCL_DEVICE_API explicit constexpr group_as(
     ::cuda::std::span<const ::cuda::std::uint32_t, _GroupCount> __counts) noexcept
   {
@@ -201,8 +202,8 @@ public:
     }
   }
 
-  _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
-  _CCCL_REQUIRES((!_IsExhaustive2))
+  _CCCL_TEMPLATE(bool _IsAlwaysExhaustive2 = _IsAlwaysExhaustive)
+  _CCCL_REQUIRES((!_IsAlwaysExhaustive2))
   _CCCL_DEVICE_API explicit constexpr group_as(::cuda::std::span<const ::cuda::std::uint32_t, _GroupCount> __counts,
                                                const non_exhaustive_t&) noexcept
   {
@@ -230,7 +231,7 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
   {
-    return _IsExhaustive;
+    return _IsAlwaysExhaustive;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count(::cuda::std::size_t __i) const noexcept
@@ -257,7 +258,7 @@ public:
     using _MappingResult =
       __mapping_result<__static_ngroups,
                        ::cuda::std::dynamic_extent,
-                       _PrevMappingResult::is_always_exhaustive() && _IsExhaustive,
+                       _PrevMappingResult::is_always_exhaustive() && _IsAlwaysExhaustive,
                        _PrevMappingResult::is_always_contiguous()>;
 
     if (!__prev_mapping_result.is_valid())
@@ -271,10 +272,10 @@ public:
     const auto __ngroups          = __prev_mapping_result.group_count() * __curr_ngroups;
 
     // If the mapping is exhaustive, check the preconditions, otherwise remove the last partial group.
-    if constexpr (_IsExhaustive)
+    if constexpr (_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(::cuda::std::accumulate(__counts_, __counts_ + __curr_ngroups, 0u) == __prev_nunits,
-                   "group_as mapping _IsExhaustive precondition violation");
+                   "group_as mapping _IsAlwaysExhaustive precondition violation");
     }
     else if (__prev_unit_rank >= ::cuda::std::accumulate(__counts_, __counts_ + __curr_ngroups, 0u))
     {

@@ -55,7 +55,7 @@ __shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset) 
   const auto [__src_rank, __underflow] = ::cuda::sub_overflow(__mapping_result.unit_rank(), __offset);
   const auto __offset_is_valid         = !__underflow;
 
-  if constexpr (_MappingResult::is_always_contiguous())
+  if constexpr (_Group::is_always_contiguous())
   {
     const auto __real_offset = (__offset_is_valid) ? __offset : 0u;
     const auto __result =
@@ -81,6 +81,8 @@ template <class _Group, class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
 shuffle_up(const _Group& __group, const _Tp& __value, unsigned __offset) noexcept
 {
+  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
+               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__shuffle_up_impl(__group, __value, __offset);
 }
 } // namespace cuda::experimental::coop

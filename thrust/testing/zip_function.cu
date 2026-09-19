@@ -11,8 +11,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 struct SumThree
 {
   template <typename T1, typename T2, typename T3>
@@ -31,12 +29,12 @@ struct TestZipFunctionCtor
 {
   void operator()()
   {
-    ASSERT_EQUAL(thrust::zip_function<SumThree>()(cuda::std::tuple(1, 2, 3)), SumThree{}(1, 2, 3));
-    ASSERT_EQUAL(thrust::zip_function<SumThree>(SumThree{})(cuda::std::tuple(1, 2, 3)), SumThree{}(1, 2, 3));
-    ASSERT_EQUAL(thrust::zip_function(SumThree{})(cuda::std::tuple(1, 2, 3)), SumThree{}(1, 2, 3));
+    REQUIRE(thrust::zip_function<SumThree>()(cuda::std::tuple(1, 2, 3)) == SumThree{}(1, 2, 3));
+    REQUIRE(thrust::zip_function<SumThree>(SumThree{})(cuda::std::tuple(1, 2, 3)) == SumThree{}(1, 2, 3));
+    REQUIRE(thrust::zip_function(SumThree{})(cuda::std::tuple(1, 2, 3)) == SumThree{}(1, 2, 3));
   }
 };
-DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionCtor, type_list<int>);
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionCtor, unittest::type_list<int>);
 
 template <typename T>
 struct TestZipFunctionTransform
@@ -71,15 +69,15 @@ struct TestZipFunctionTransform
                       d_result_zip.begin(),
                       thrust::make_zip_function(SumThree{}));
 
-    ASSERT_EQUAL(h_result_tuple, h_result_zip);
-    ASSERT_EQUAL(h_result_tuple, d_result_zip);
+    REQUIRE(h_result_tuple == h_result_zip);
+    REQUIRE(h_result_tuple == d_result_zip);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipFunctionTransform, ThirtyTwoBitTypes);
 
 struct RemovePred
 {
-  _CCCL_HOST_DEVICE bool operator()(const cuda::std::tuple<uint32_t, uint32_t>& ele1, const float&)
+  _CCCL_HOST_DEVICE bool operator()(const cuda::std::tuple<unittest::uint32_t, unittest::uint32_t>& ele1, const float&)
   {
     return cuda::std::get<0>(ele1) == cuda::std::get<1>(ele1);
   }
@@ -89,8 +87,8 @@ struct TestZipFunctionMixed
 {
   void operator()()
   {
-    thrust::device_vector<uint32_t> vecA{0, 0, 2, 0};
-    thrust::device_vector<uint32_t> vecB{0, 2, 2, 2};
+    thrust::device_vector<unittest::uint32_t> vecA{0, 0, 2, 0};
+    thrust::device_vector<unittest::uint32_t> vecB{0, 2, 2, 2};
     thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
     const thrust::device_vector<float> expected{88.0f, 89.0f};
 
@@ -105,16 +103,17 @@ struct TestZipFunctionMixed
     vecB.resize(numEle);
     vecC.resize(numEle);
 
-    ASSERT_EQUAL(numEle, 2);
-    ASSERT_EQUAL(vecC, expected);
+    REQUIRE(numEle == 2);
+    REQUIRE(vecC == expected);
   }
 };
-DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionMixed, type_list<int, float>);
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionMixed, unittest::type_list<int, float>);
 
 struct NestedFunctionCall
 {
-  _CCCL_HOST_DEVICE bool operator()(
-    const cuda::std::tuple<uint32_t, cuda::std::tuple<cuda::std::tuple<int, int>, cuda::std::tuple<int, int>>>& idAndPt)
+  _CCCL_HOST_DEVICE bool
+  operator()(const cuda::std::tuple<unittest::uint32_t,
+                                    cuda::std::tuple<cuda::std::tuple<int, int>, cuda::std::tuple<int, int>>>& idAndPt)
   {
     cuda::std::tuple<cuda::std::tuple<int, int>, cuda::std::tuple<int, int>> ele1 = cuda::std::get<1>(idAndPt);
     cuda::std::tuple<int, int> p1                                                 = cuda::std::get<0>(ele1);
@@ -130,8 +129,8 @@ struct TestNestedZipFunction
   {
     thrust::device_vector<int> PX{0, 1, 2, 3};
     thrust::device_vector<int> PY{0, 1, 2, 2};
-    thrust::device_vector<uint32_t> SS{0, 1, 2};
-    thrust::device_vector<uint32_t> ST{1, 2, 3};
+    thrust::device_vector<unittest::uint32_t> SS{0, 1, 2};
+    thrust::device_vector<unittest::uint32_t> ST{1, 2, 3};
     const thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
 
     auto segIt = thrust::make_zip_iterator(
@@ -145,10 +144,10 @@ struct TestNestedZipFunction
     const thrust::device_vector<bool> expected{false, false, true};
     thrust::transform(
       idAndSegIt, idAndSegIt + static_cast<std::ptrdiff_t>(SS.size()), isMH.begin(), NestedFunctionCall{});
-    ASSERT_EQUAL(isMH, expected);
+    REQUIRE(isMH == expected);
   }
 };
-DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction, type_list<int, float>);
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction, unittest::type_list<int, float>);
 
 struct SortPred
 {
@@ -173,4 +172,4 @@ struct TestNestedZipFunction2
     thrust::sort(nestedTupleIt, nestedTupleIt + static_cast<std::ptrdiff_t>(n), SortPred{});
   }
 };
-DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction2, type_list<int, float>);
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction2, unittest::type_list<int, float>);

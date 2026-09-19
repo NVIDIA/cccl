@@ -38,7 +38,10 @@
 
 namespace cuda::experimental
 {
-template <::cuda::std::size_t _StaticGroupCount, ::cuda::std::size_t _StaticCount, bool _IsExhaustive, bool _IsContiguous>
+template <::cuda::std::size_t _StaticGroupCount,
+          ::cuda::std::size_t _StaticCount,
+          bool _IsAlwaysExhaustive,
+          bool _IsAlwaysContiguous>
 struct __mapping_result
 {
   ::cuda::std::uint32_t __group_count_;
@@ -63,7 +66,7 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const noexcept
   {
-    if constexpr (!_IsExhaustive)
+    if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting group count of thread that is not part of the group is UB");
     }
@@ -80,7 +83,7 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const noexcept
   {
-    if constexpr (!_IsExhaustive)
+    if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
     }
@@ -94,7 +97,7 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const noexcept
   {
-    if constexpr (!_IsExhaustive)
+    if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting unit count of thread that is not part of the group is UB");
     }
@@ -111,7 +114,7 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const noexcept
   {
-    if constexpr (!_IsExhaustive)
+    if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting unit rank of thread that is not part of the group is UB");
     }
@@ -120,7 +123,7 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const noexcept
   {
-    if constexpr (!_IsExhaustive)
+    if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting lane mask of thread that is not part of the group is UB");
     }
@@ -129,7 +132,7 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
   {
-    if constexpr (_IsExhaustive)
+    if constexpr (_IsAlwaysExhaustive)
     {
       return true;
     }
@@ -141,20 +144,20 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
   {
-    return _IsExhaustive;
+    return _IsAlwaysExhaustive;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
   {
-    return _IsContiguous;
+    return _IsAlwaysContiguous;
   }
 };
 
-template <bool _IsContiguous>
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::device::lane_mask __make_lane_mask_for_n(
+template <bool _IsAlwaysContiguous>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask __make_lane_mask_for_n(
   ::cuda::device::lane_mask __prev_lane_mask, ::cuda::std::uint32_t __n, ::cuda::std::uint32_t __rank) noexcept
 {
-  if constexpr (_IsContiguous)
+  if constexpr (_IsAlwaysContiguous)
   {
     auto __lane_mask  = __prev_lane_mask;
     const auto __lane = ::cuda::ptx::get_sreg_laneid();

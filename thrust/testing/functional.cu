@@ -9,14 +9,6 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
-// There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 11)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
 const size_t NUM_SAMPLES = 10000;
 
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
@@ -34,7 +26,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestUnaryFunctional()
   thrust::transform(input.begin(), input.end(), output.begin(), Operator());
   thrust::transform(std_input.begin(), std_input.end(), std_output.begin(), ReferenceOperator());
 
-  ASSERT_EQUAL(output, std_output);
+  REQUIRE(output == std_output);
 }
 
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
@@ -193,7 +185,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctionalVector()
   Vector input{0, 1, 2, 3};
   Vector output(4);
   thrust::transform(input.begin(), input.end(), output.begin(), ::cuda::std::identity{});
-  ASSERT_EQUAL(input, output);
+  REQUIRE(input == output);
 }
 DECLARE_VECTOR_UNITTEST(TestIdentityFunctionalVector);
 
@@ -209,7 +201,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject1stFunctional()
 
   thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), output.begin(), thrust::project1st<T, T>());
 
-  ASSERT_EQUAL(output, lhs);
+  REQUIRE(output == lhs);
 }
 DECLARE_VECTOR_UNITTEST(TestProject1stFunctional);
 
@@ -225,7 +217,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject2ndFunctional()
 
   thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), output.begin(), thrust::project2nd<T, T>());
 
-  ASSERT_EQUAL(output, rhs);
+  REQUIRE(output == rhs);
 }
 DECLARE_VECTOR_UNITTEST(TestProject2ndFunctional);
 
@@ -242,7 +234,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMaximumFunctional()
   thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::maximum<T>());
 
   Vector ref{8, 6, 9, 7};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestMaximumFunctional);
 
@@ -259,7 +251,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMinimumFunctional()
   thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::minimum<T>());
 
   Vector ref{5, 3, 7, 3};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestMinimumFunctional);
 
@@ -273,7 +265,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
   thrust::transform(input.begin(), input.end(), output.begin(), ::cuda::std::not_fn(::cuda::std::identity{}));
 
   Vector ref{0, 1, 0, 0, 1};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestNot1);
 
@@ -291,7 +283,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
     input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::not_fn(::cuda::std::equal_to<T>()));
 
   Vector ref{0, 1, 1, 0, 1};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestNot2);
 
