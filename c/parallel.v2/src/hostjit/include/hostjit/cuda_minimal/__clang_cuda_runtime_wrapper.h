@@ -301,6 +301,14 @@ __host__ __device__ void __nv_tex_surf_handler(const char* name, T* ptr, cudaTex
 // Phase 8: Device-side system calls & std wrappers
 // ============================================================================
 extern "C" {
+#  if defined(_WIN32)
+// The freestanding Windows host has no libc __assert_fail. Keep CCCL's
+// unconditional verification checks fatal without depending on a CRT symbol.
+__host__ __attribute__((noreturn)) inline void __assert_fail(const char*, const char*, unsigned, const char*) noexcept
+{
+  __builtin_trap();
+}
+#  endif
 __device__ int vprintf(const char*, const char*);
 __device__ void free(void*) __attribute((nothrow));
 __device__ void* malloc(size_t) __attribute((nothrow)) __attribute__((malloc));
