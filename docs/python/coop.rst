@@ -21,7 +21,7 @@ Threads work together to :doc:`load <coop/visualizations/load>` and
 :doc:`Shuffle <coop/visualizations/shuffle>`, or compute
 :doc:`reductions <coop/visualizations/reduce>` and
 :doc:`scans <coop/visualizations/scan>` inside a kernel. They can also
-:ref:`sort keys and associated values <coop-merge-sort>` within a group or
+:doc:`sort keys and associated values <coop/visualizations/merge-sort>` within a group or
 compute :ref:`radix sorts and digit ranks <coop-radix>` within a block.
 :ref:`TopK <coop-topk>` selects a block's smallest or largest keys without
 sorting the full tile.
