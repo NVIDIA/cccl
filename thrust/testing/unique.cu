@@ -21,7 +21,7 @@ void TestUniqueDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::unique(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUniqueDispatchExplicit);
 
@@ -38,7 +38,7 @@ void TestUniqueDispatchImplicit()
 
   thrust::unique(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestUniqueDispatchImplicit);
 
@@ -56,7 +56,7 @@ void TestUniqueCopyDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::unique_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUniqueCopyDispatchExplicit);
 
@@ -74,7 +74,7 @@ void TestUniqueCopyDispatchImplicit()
   thrust::unique_copy(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestUniqueCopyDispatchImplicit);
 
@@ -93,7 +93,7 @@ void TestUniqueCountDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::unique_count(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUniqueCountDispatchExplicit);
 
@@ -110,7 +110,7 @@ void TestUniqueCountDispatchImplicit()
 
   auto result = thrust::unique_count(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, result);
+  REQUIRE(13 == result);
 }
 DECLARE_UNITTEST(TestUniqueCountDispatchImplicit);
 
@@ -134,18 +134,18 @@ void TestUniqueSimple()
 
   new_last = thrust::unique(data.begin(), data.end());
 
-  ASSERT_EQUAL(new_last - data.begin(), 7);
+  REQUIRE(new_last - data.begin() == 7);
   data.resize(7);
   Vector ref{11, 12, 20, 29, 21, 31, 37};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   new_last = thrust::unique(data.begin(), new_last, is_equal_div_10_unique<T>());
 
-  ASSERT_EQUAL(new_last - data.begin(), 3);
+  REQUIRE(new_last - data.begin() == 3);
   ref.resize(3);
   data.resize(3);
   ref = {11, 20, 31};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueSimple);
 
@@ -163,12 +163,12 @@ struct TestUnique
     h_new_last = thrust::unique(h_data.begin(), h_data.end());
     d_new_last = thrust::unique(d_data.begin(), d_data.end());
 
-    ASSERT_EQUAL(h_new_last - h_data.begin(), d_new_last - d_data.begin());
+    REQUIRE(h_new_last - h_data.begin() == d_new_last - d_data.begin());
 
     h_data.resize(h_new_last - h_data.begin());
     d_data.resize(d_new_last - d_data.begin());
 
-    ASSERT_EQUAL(h_data, d_data);
+    REQUIRE(h_data == d_data);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUnique, IntegralTypes);
@@ -185,18 +185,18 @@ void TestUniqueCopySimple()
 
   new_last = thrust::unique_copy(data.begin(), data.end(), output.begin());
 
-  ASSERT_EQUAL(new_last - output.begin(), 7);
+  REQUIRE(new_last - output.begin() == 7);
   output.resize(7);
   Vector ref{11, 12, 20, 29, 21, 31, 37};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   new_last = thrust::unique_copy(output.begin(), new_last, data.begin(), is_equal_div_10_unique<T>());
 
-  ASSERT_EQUAL(new_last - data.begin(), 3);
+  REQUIRE(new_last - data.begin() == 3);
   ref.resize(3);
   data.resize(3);
   ref = {11, 20, 31};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueCopySimple);
 
@@ -217,12 +217,12 @@ struct TestUniqueCopy
     h_new_last = thrust::unique_copy(h_data.begin(), h_data.end(), h_output.begin());
     d_new_last = thrust::unique_copy(d_data.begin(), d_data.end(), d_output.begin());
 
-    ASSERT_EQUAL(h_new_last - h_output.begin(), d_new_last - d_output.begin());
+    REQUIRE(h_new_last - h_output.begin() == d_new_last - d_output.begin());
 
     h_data.resize(h_new_last - h_output.begin());
     d_data.resize(d_new_last - d_output.begin());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopy, IntegralTypes);
@@ -246,8 +246,8 @@ struct TestUniqueCopyToDiscardIterator
     const thrust::discard_iterator<> d_result =
       thrust::unique_copy(d_data.begin(), d_data.end(), thrust::make_discard_iterator());
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyToDiscardIterator, IntegralTypes);
@@ -261,11 +261,11 @@ void TestUniqueCountSimple()
 
   const int count = thrust::unique_count(data.begin(), data.end());
 
-  ASSERT_EQUAL(count, 7);
+  REQUIRE(count == 7);
 
   const int div_10_count = thrust::unique_count(data.begin(), data.end(), is_equal_div_10_unique<T>());
 
-  ASSERT_EQUAL(div_10_count, 3);
+  REQUIRE(div_10_count == 3);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueCountSimple);
 
@@ -283,7 +283,7 @@ struct TestUniqueCount
     h_count = thrust::unique_count(h_data.begin(), h_data.end());
     d_count = thrust::unique_count(d_data.begin(), d_data.end());
 
-    ASSERT_EQUAL(h_count, d_count);
+    REQUIRE(h_count == d_count);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCount, IntegralTypes);

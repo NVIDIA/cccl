@@ -4,8 +4,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 template <typename T>
 struct TestTupleConstructor
 {
@@ -13,83 +11,83 @@ struct TestTupleConstructor
   {
     using namespace thrust;
 
-    host_vector<T> data = random_integers<T>(10);
+    host_vector<T> data = unittest::random_integers<T>(10);
 
     tuple<T> t1(data[0]);
-    ASSERT_EQUAL(data[0], get<0>(t1));
+    REQUIRE(data[0] == get<0>(t1));
 
     tuple<T, T> t2(data[0], data[1]);
-    ASSERT_EQUAL(data[0], get<0>(t2));
-    ASSERT_EQUAL(data[1], get<1>(t2));
+    REQUIRE(data[0] == get<0>(t2));
+    REQUIRE(data[1] == get<1>(t2));
 
     tuple<T, T, T> t3(data[0], data[1], data[2]);
-    ASSERT_EQUAL(data[0], get<0>(t3));
-    ASSERT_EQUAL(data[1], get<1>(t3));
-    ASSERT_EQUAL(data[2], get<2>(t3));
+    REQUIRE(data[0] == get<0>(t3));
+    REQUIRE(data[1] == get<1>(t3));
+    REQUIRE(data[2] == get<2>(t3));
 
     tuple<T, T, T, T> t4(data[0], data[1], data[2], data[3]);
-    ASSERT_EQUAL(data[0], get<0>(t4));
-    ASSERT_EQUAL(data[1], get<1>(t4));
-    ASSERT_EQUAL(data[2], get<2>(t4));
-    ASSERT_EQUAL(data[3], get<3>(t4));
+    REQUIRE(data[0] == get<0>(t4));
+    REQUIRE(data[1] == get<1>(t4));
+    REQUIRE(data[2] == get<2>(t4));
+    REQUIRE(data[3] == get<3>(t4));
 
     tuple<T, T, T, T, T> t5(data[0], data[1], data[2], data[3], data[4]);
-    ASSERT_EQUAL(data[0], get<0>(t5));
-    ASSERT_EQUAL(data[1], get<1>(t5));
-    ASSERT_EQUAL(data[2], get<2>(t5));
-    ASSERT_EQUAL(data[3], get<3>(t5));
-    ASSERT_EQUAL(data[4], get<4>(t5));
+    REQUIRE(data[0] == get<0>(t5));
+    REQUIRE(data[1] == get<1>(t5));
+    REQUIRE(data[2] == get<2>(t5));
+    REQUIRE(data[3] == get<3>(t5));
+    REQUIRE(data[4] == get<4>(t5));
 
     tuple<T, T, T, T, T, T> t6(data[0], data[1], data[2], data[3], data[4], data[5]);
-    ASSERT_EQUAL(data[0], get<0>(t6));
-    ASSERT_EQUAL(data[1], get<1>(t6));
-    ASSERT_EQUAL(data[2], get<2>(t6));
-    ASSERT_EQUAL(data[3], get<3>(t6));
-    ASSERT_EQUAL(data[4], get<4>(t6));
-    ASSERT_EQUAL(data[5], get<5>(t6));
+    REQUIRE(data[0] == get<0>(t6));
+    REQUIRE(data[1] == get<1>(t6));
+    REQUIRE(data[2] == get<2>(t6));
+    REQUIRE(data[3] == get<3>(t6));
+    REQUIRE(data[4] == get<4>(t6));
+    REQUIRE(data[5] == get<5>(t6));
 
     tuple<T, T, T, T, T, T, T> t7(data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
-    ASSERT_EQUAL(data[0], get<0>(t7));
-    ASSERT_EQUAL(data[1], get<1>(t7));
-    ASSERT_EQUAL(data[2], get<2>(t7));
-    ASSERT_EQUAL(data[3], get<3>(t7));
-    ASSERT_EQUAL(data[4], get<4>(t7));
-    ASSERT_EQUAL(data[5], get<5>(t7));
-    ASSERT_EQUAL(data[6], get<6>(t7));
+    REQUIRE(data[0] == get<0>(t7));
+    REQUIRE(data[1] == get<1>(t7));
+    REQUIRE(data[2] == get<2>(t7));
+    REQUIRE(data[3] == get<3>(t7));
+    REQUIRE(data[4] == get<4>(t7));
+    REQUIRE(data[5] == get<5>(t7));
+    REQUIRE(data[6] == get<6>(t7));
 
     tuple<T, T, T, T, T, T, T, T> t8(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-    ASSERT_EQUAL(data[0], get<0>(t8));
-    ASSERT_EQUAL(data[1], get<1>(t8));
-    ASSERT_EQUAL(data[2], get<2>(t8));
-    ASSERT_EQUAL(data[3], get<3>(t8));
-    ASSERT_EQUAL(data[4], get<4>(t8));
-    ASSERT_EQUAL(data[5], get<5>(t8));
-    ASSERT_EQUAL(data[6], get<6>(t8));
-    ASSERT_EQUAL(data[7], get<7>(t8));
+    REQUIRE(data[0] == get<0>(t8));
+    REQUIRE(data[1] == get<1>(t8));
+    REQUIRE(data[2] == get<2>(t8));
+    REQUIRE(data[3] == get<3>(t8));
+    REQUIRE(data[4] == get<4>(t8));
+    REQUIRE(data[5] == get<5>(t8));
+    REQUIRE(data[6] == get<6>(t8));
+    REQUIRE(data[7] == get<7>(t8));
 
     tuple<T, T, T, T, T, T, T, T, T> t9(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
-    ASSERT_EQUAL(data[0], get<0>(t9));
-    ASSERT_EQUAL(data[1], get<1>(t9));
-    ASSERT_EQUAL(data[2], get<2>(t9));
-    ASSERT_EQUAL(data[3], get<3>(t9));
-    ASSERT_EQUAL(data[4], get<4>(t9));
-    ASSERT_EQUAL(data[5], get<5>(t9));
-    ASSERT_EQUAL(data[6], get<6>(t9));
-    ASSERT_EQUAL(data[7], get<7>(t9));
-    ASSERT_EQUAL(data[8], get<8>(t9));
+    REQUIRE(data[0] == get<0>(t9));
+    REQUIRE(data[1] == get<1>(t9));
+    REQUIRE(data[2] == get<2>(t9));
+    REQUIRE(data[3] == get<3>(t9));
+    REQUIRE(data[4] == get<4>(t9));
+    REQUIRE(data[5] == get<5>(t9));
+    REQUIRE(data[6] == get<6>(t9));
+    REQUIRE(data[7] == get<7>(t9));
+    REQUIRE(data[8] == get<8>(t9));
 
     tuple<T, T, T, T, T, T, T, T, T, T> t10(
       data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]);
-    ASSERT_EQUAL(data[0], get<0>(t10));
-    ASSERT_EQUAL(data[1], get<1>(t10));
-    ASSERT_EQUAL(data[2], get<2>(t10));
-    ASSERT_EQUAL(data[3], get<3>(t10));
-    ASSERT_EQUAL(data[4], get<4>(t10));
-    ASSERT_EQUAL(data[5], get<5>(t10));
-    ASSERT_EQUAL(data[6], get<6>(t10));
-    ASSERT_EQUAL(data[7], get<7>(t10));
-    ASSERT_EQUAL(data[8], get<8>(t10));
-    ASSERT_EQUAL(data[9], get<9>(t10));
+    REQUIRE(data[0] == get<0>(t10));
+    REQUIRE(data[1] == get<1>(t10));
+    REQUIRE(data[2] == get<2>(t10));
+    REQUIRE(data[3] == get<3>(t10));
+    REQUIRE(data[4] == get<4>(t10));
+    REQUIRE(data[5] == get<5>(t10));
+    REQUIRE(data[6] == get<6>(t10));
+    REQUIRE(data[7] == get<7>(t10));
+    REQUIRE(data[8] == get<8>(t10));
+    REQUIRE(data[9] == get<9>(t10));
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleConstructor, BuiltinNumericTypes);
@@ -101,85 +99,85 @@ struct TestMakeTuple
   {
     using namespace thrust;
 
-    host_vector<T> data = random_integers<T>(10);
+    host_vector<T> data = unittest::random_integers<T>(10);
 
     tuple<T> t1 = make_tuple(data[0]);
-    ASSERT_EQUAL(data[0], get<0>(t1));
+    REQUIRE(data[0] == get<0>(t1));
 
     tuple<T, T> t2 = make_tuple(data[0], data[1]);
-    ASSERT_EQUAL(data[0], get<0>(t2));
-    ASSERT_EQUAL(data[1], get<1>(t2));
+    REQUIRE(data[0] == get<0>(t2));
+    REQUIRE(data[1] == get<1>(t2));
 
     tuple<T, T, T> t3 = make_tuple(data[0], data[1], data[2]);
-    ASSERT_EQUAL(data[0], get<0>(t3));
-    ASSERT_EQUAL(data[1], get<1>(t3));
-    ASSERT_EQUAL(data[2], get<2>(t3));
+    REQUIRE(data[0] == get<0>(t3));
+    REQUIRE(data[1] == get<1>(t3));
+    REQUIRE(data[2] == get<2>(t3));
 
     tuple<T, T, T, T> t4 = make_tuple(data[0], data[1], data[2], data[3]);
-    ASSERT_EQUAL(data[0], get<0>(t4));
-    ASSERT_EQUAL(data[1], get<1>(t4));
-    ASSERT_EQUAL(data[2], get<2>(t4));
-    ASSERT_EQUAL(data[3], get<3>(t4));
+    REQUIRE(data[0] == get<0>(t4));
+    REQUIRE(data[1] == get<1>(t4));
+    REQUIRE(data[2] == get<2>(t4));
+    REQUIRE(data[3] == get<3>(t4));
 
     tuple<T, T, T, T, T> t5 = make_tuple(data[0], data[1], data[2], data[3], data[4]);
-    ASSERT_EQUAL(data[0], get<0>(t5));
-    ASSERT_EQUAL(data[1], get<1>(t5));
-    ASSERT_EQUAL(data[2], get<2>(t5));
-    ASSERT_EQUAL(data[3], get<3>(t5));
-    ASSERT_EQUAL(data[4], get<4>(t5));
+    REQUIRE(data[0] == get<0>(t5));
+    REQUIRE(data[1] == get<1>(t5));
+    REQUIRE(data[2] == get<2>(t5));
+    REQUIRE(data[3] == get<3>(t5));
+    REQUIRE(data[4] == get<4>(t5));
 
     tuple<T, T, T, T, T, T> t6 = make_tuple(data[0], data[1], data[2], data[3], data[4], data[5]);
-    ASSERT_EQUAL(data[0], get<0>(t6));
-    ASSERT_EQUAL(data[1], get<1>(t6));
-    ASSERT_EQUAL(data[2], get<2>(t6));
-    ASSERT_EQUAL(data[3], get<3>(t6));
-    ASSERT_EQUAL(data[4], get<4>(t6));
-    ASSERT_EQUAL(data[5], get<5>(t6));
+    REQUIRE(data[0] == get<0>(t6));
+    REQUIRE(data[1] == get<1>(t6));
+    REQUIRE(data[2] == get<2>(t6));
+    REQUIRE(data[3] == get<3>(t6));
+    REQUIRE(data[4] == get<4>(t6));
+    REQUIRE(data[5] == get<5>(t6));
 
     tuple<T, T, T, T, T, T, T> t7 = make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
-    ASSERT_EQUAL(data[0], get<0>(t7));
-    ASSERT_EQUAL(data[1], get<1>(t7));
-    ASSERT_EQUAL(data[2], get<2>(t7));
-    ASSERT_EQUAL(data[3], get<3>(t7));
-    ASSERT_EQUAL(data[4], get<4>(t7));
-    ASSERT_EQUAL(data[5], get<5>(t7));
-    ASSERT_EQUAL(data[6], get<6>(t7));
+    REQUIRE(data[0] == get<0>(t7));
+    REQUIRE(data[1] == get<1>(t7));
+    REQUIRE(data[2] == get<2>(t7));
+    REQUIRE(data[3] == get<3>(t7));
+    REQUIRE(data[4] == get<4>(t7));
+    REQUIRE(data[5] == get<5>(t7));
+    REQUIRE(data[6] == get<6>(t7));
 
     tuple<T, T, T, T, T, T, T, T> t8 =
       make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-    ASSERT_EQUAL(data[0], get<0>(t8));
-    ASSERT_EQUAL(data[1], get<1>(t8));
-    ASSERT_EQUAL(data[2], get<2>(t8));
-    ASSERT_EQUAL(data[3], get<3>(t8));
-    ASSERT_EQUAL(data[4], get<4>(t8));
-    ASSERT_EQUAL(data[5], get<5>(t8));
-    ASSERT_EQUAL(data[6], get<6>(t8));
-    ASSERT_EQUAL(data[7], get<7>(t8));
+    REQUIRE(data[0] == get<0>(t8));
+    REQUIRE(data[1] == get<1>(t8));
+    REQUIRE(data[2] == get<2>(t8));
+    REQUIRE(data[3] == get<3>(t8));
+    REQUIRE(data[4] == get<4>(t8));
+    REQUIRE(data[5] == get<5>(t8));
+    REQUIRE(data[6] == get<6>(t8));
+    REQUIRE(data[7] == get<7>(t8));
 
     tuple<T, T, T, T, T, T, T, T, T> t9 =
       make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
-    ASSERT_EQUAL(data[0], get<0>(t9));
-    ASSERT_EQUAL(data[1], get<1>(t9));
-    ASSERT_EQUAL(data[2], get<2>(t9));
-    ASSERT_EQUAL(data[3], get<3>(t9));
-    ASSERT_EQUAL(data[4], get<4>(t9));
-    ASSERT_EQUAL(data[5], get<5>(t9));
-    ASSERT_EQUAL(data[6], get<6>(t9));
-    ASSERT_EQUAL(data[7], get<7>(t9));
-    ASSERT_EQUAL(data[8], get<8>(t9));
+    REQUIRE(data[0] == get<0>(t9));
+    REQUIRE(data[1] == get<1>(t9));
+    REQUIRE(data[2] == get<2>(t9));
+    REQUIRE(data[3] == get<3>(t9));
+    REQUIRE(data[4] == get<4>(t9));
+    REQUIRE(data[5] == get<5>(t9));
+    REQUIRE(data[6] == get<6>(t9));
+    REQUIRE(data[7] == get<7>(t9));
+    REQUIRE(data[8] == get<8>(t9));
 
     tuple<T, T, T, T, T, T, T, T, T, T> t10 =
       make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]);
-    ASSERT_EQUAL(data[0], get<0>(t10));
-    ASSERT_EQUAL(data[1], get<1>(t10));
-    ASSERT_EQUAL(data[2], get<2>(t10));
-    ASSERT_EQUAL(data[3], get<3>(t10));
-    ASSERT_EQUAL(data[4], get<4>(t10));
-    ASSERT_EQUAL(data[5], get<5>(t10));
-    ASSERT_EQUAL(data[6], get<6>(t10));
-    ASSERT_EQUAL(data[7], get<7>(t10));
-    ASSERT_EQUAL(data[8], get<8>(t10));
-    ASSERT_EQUAL(data[9], get<9>(t10));
+    REQUIRE(data[0] == get<0>(t10));
+    REQUIRE(data[1] == get<1>(t10));
+    REQUIRE(data[2] == get<2>(t10));
+    REQUIRE(data[3] == get<3>(t10));
+    REQUIRE(data[4] == get<4>(t10));
+    REQUIRE(data[5] == get<5>(t10));
+    REQUIRE(data[6] == get<6>(t10));
+    REQUIRE(data[7] == get<7>(t10));
+    REQUIRE(data[8] == get<8>(t10));
+    REQUIRE(data[9] == get<9>(t10));
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestMakeTuple, BuiltinNumericTypes);
@@ -190,85 +188,85 @@ struct TestTupleGet
   void operator()()
   {
     using namespace thrust;
-    host_vector<T> data = random_integers<T>(10);
+    host_vector<T> data = unittest::random_integers<T>(10);
 
     tuple<T> t1(data[0]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t1));
+    REQUIRE(data[0] == thrust::get<0>(t1));
 
     tuple<T, T> t2(data[0], data[1]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t2));
-    ASSERT_EQUAL(data[1], thrust::get<1>(t2));
+    REQUIRE(data[0] == thrust::get<0>(t2));
+    REQUIRE(data[1] == thrust::get<1>(t2));
 
     tuple<T, T, T> t3 = make_tuple(data[0], data[1], data[2]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t3));
-    ASSERT_EQUAL(data[1], thrust::get<1>(t3));
-    ASSERT_EQUAL(data[2], thrust::get<2>(t3));
+    REQUIRE(data[0] == thrust::get<0>(t3));
+    REQUIRE(data[1] == thrust::get<1>(t3));
+    REQUIRE(data[2] == thrust::get<2>(t3));
 
     tuple<T, T, T, T> t4 = make_tuple(data[0], data[1], data[2], data[3]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t4));
-    ASSERT_EQUAL(data[1], thrust::get<1>(t4));
-    ASSERT_EQUAL(data[2], thrust::get<2>(t4));
-    ASSERT_EQUAL(data[3], thrust::get<3>(t4));
+    REQUIRE(data[0] == thrust::get<0>(t4));
+    REQUIRE(data[1] == thrust::get<1>(t4));
+    REQUIRE(data[2] == thrust::get<2>(t4));
+    REQUIRE(data[3] == thrust::get<3>(t4));
 
     tuple<T, T, T, T, T> t5 = make_tuple(data[0], data[1], data[2], data[3], data[4]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t5));
-    ASSERT_EQUAL(data[1], thrust::get<1>(t5));
-    ASSERT_EQUAL(data[2], thrust::get<2>(t5));
-    ASSERT_EQUAL(data[3], thrust::get<3>(t5));
-    ASSERT_EQUAL(data[4], thrust::get<4>(t5));
+    REQUIRE(data[0] == thrust::get<0>(t5));
+    REQUIRE(data[1] == thrust::get<1>(t5));
+    REQUIRE(data[2] == thrust::get<2>(t5));
+    REQUIRE(data[3] == thrust::get<3>(t5));
+    REQUIRE(data[4] == thrust::get<4>(t5));
 
     tuple<T, T, T, T, T, T> t6 = make_tuple(data[0], data[1], data[2], data[3], data[4], data[5]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t6));
-    ASSERT_EQUAL(data[1], thrust::get<1>(t6));
-    ASSERT_EQUAL(data[2], thrust::get<2>(t6));
-    ASSERT_EQUAL(data[3], thrust::get<3>(t6));
-    ASSERT_EQUAL(data[4], thrust::get<4>(t6));
-    ASSERT_EQUAL(data[5], thrust::get<5>(t6));
+    REQUIRE(data[0] == thrust::get<0>(t6));
+    REQUIRE(data[1] == thrust::get<1>(t6));
+    REQUIRE(data[2] == thrust::get<2>(t6));
+    REQUIRE(data[3] == thrust::get<3>(t6));
+    REQUIRE(data[4] == thrust::get<4>(t6));
+    REQUIRE(data[5] == thrust::get<5>(t6));
 
     tuple<T, T, T, T, T, T, T> t7 = make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t7));
-    ASSERT_EQUAL(data[1], thrust::get<1>(t7));
-    ASSERT_EQUAL(data[2], thrust::get<2>(t7));
-    ASSERT_EQUAL(data[3], thrust::get<3>(t7));
-    ASSERT_EQUAL(data[4], thrust::get<4>(t7));
-    ASSERT_EQUAL(data[5], thrust::get<5>(t7));
-    ASSERT_EQUAL(data[6], thrust::get<6>(t7));
+    REQUIRE(data[0] == thrust::get<0>(t7));
+    REQUIRE(data[1] == thrust::get<1>(t7));
+    REQUIRE(data[2] == thrust::get<2>(t7));
+    REQUIRE(data[3] == thrust::get<3>(t7));
+    REQUIRE(data[4] == thrust::get<4>(t7));
+    REQUIRE(data[5] == thrust::get<5>(t7));
+    REQUIRE(data[6] == thrust::get<6>(t7));
 
     tuple<T, T, T, T, T, T, T, T> t8 =
       make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t8));
-    ASSERT_EQUAL(data[1], thrust::get<1>(t8));
-    ASSERT_EQUAL(data[2], thrust::get<2>(t8));
-    ASSERT_EQUAL(data[3], thrust::get<3>(t8));
-    ASSERT_EQUAL(data[4], thrust::get<4>(t8));
-    ASSERT_EQUAL(data[5], thrust::get<5>(t8));
-    ASSERT_EQUAL(data[6], thrust::get<6>(t8));
-    ASSERT_EQUAL(data[7], thrust::get<7>(t8));
+    REQUIRE(data[0] == thrust::get<0>(t8));
+    REQUIRE(data[1] == thrust::get<1>(t8));
+    REQUIRE(data[2] == thrust::get<2>(t8));
+    REQUIRE(data[3] == thrust::get<3>(t8));
+    REQUIRE(data[4] == thrust::get<4>(t8));
+    REQUIRE(data[5] == thrust::get<5>(t8));
+    REQUIRE(data[6] == thrust::get<6>(t8));
+    REQUIRE(data[7] == thrust::get<7>(t8));
 
     tuple<T, T, T, T, T, T, T, T, T> t9 =
       make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t9));
-    ASSERT_EQUAL(data[1], thrust::get<1>(t9));
-    ASSERT_EQUAL(data[2], thrust::get<2>(t9));
-    ASSERT_EQUAL(data[3], thrust::get<3>(t9));
-    ASSERT_EQUAL(data[4], thrust::get<4>(t9));
-    ASSERT_EQUAL(data[5], thrust::get<5>(t9));
-    ASSERT_EQUAL(data[6], thrust::get<6>(t9));
-    ASSERT_EQUAL(data[7], thrust::get<7>(t9));
-    ASSERT_EQUAL(data[8], thrust::get<8>(t9));
+    REQUIRE(data[0] == thrust::get<0>(t9));
+    REQUIRE(data[1] == thrust::get<1>(t9));
+    REQUIRE(data[2] == thrust::get<2>(t9));
+    REQUIRE(data[3] == thrust::get<3>(t9));
+    REQUIRE(data[4] == thrust::get<4>(t9));
+    REQUIRE(data[5] == thrust::get<5>(t9));
+    REQUIRE(data[6] == thrust::get<6>(t9));
+    REQUIRE(data[7] == thrust::get<7>(t9));
+    REQUIRE(data[8] == thrust::get<8>(t9));
 
     tuple<T, T, T, T, T, T, T, T, T, T> t10 =
       make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]);
-    ASSERT_EQUAL(data[0], thrust::get<0>(t10));
-    ASSERT_EQUAL(data[1], thrust::get<1>(t10));
-    ASSERT_EQUAL(data[2], thrust::get<2>(t10));
-    ASSERT_EQUAL(data[3], thrust::get<3>(t10));
-    ASSERT_EQUAL(data[4], thrust::get<4>(t10));
-    ASSERT_EQUAL(data[5], thrust::get<5>(t10));
-    ASSERT_EQUAL(data[6], thrust::get<6>(t10));
-    ASSERT_EQUAL(data[7], thrust::get<7>(t10));
-    ASSERT_EQUAL(data[8], thrust::get<8>(t10));
-    ASSERT_EQUAL(data[9], thrust::get<9>(t10));
+    REQUIRE(data[0] == thrust::get<0>(t10));
+    REQUIRE(data[1] == thrust::get<1>(t10));
+    REQUIRE(data[2] == thrust::get<2>(t10));
+    REQUIRE(data[3] == thrust::get<3>(t10));
+    REQUIRE(data[4] == thrust::get<4>(t10));
+    REQUIRE(data[5] == thrust::get<5>(t10));
+    REQUIRE(data[6] == thrust::get<6>(t10));
+    REQUIRE(data[7] == thrust::get<7>(t10));
+    REQUIRE(data[8] == thrust::get<8>(t10));
+    REQUIRE(data[9] == thrust::get<9>(t10));
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleGet, BuiltinNumericTypes);
@@ -283,46 +281,46 @@ struct TestTupleComparison
     tuple<T, T, T, T, T> lhs(0, 0, 0, 0, 0), rhs(0, 0, 0, 0, 0);
 
     // equality
-    ASSERT_EQUAL(true, lhs == rhs);
+    REQUIRE(lhs == rhs);
     get<0>(rhs) = 1;
-    ASSERT_EQUAL(false, lhs == rhs);
+    REQUIRE_FALSE(lhs == rhs);
 
     // inequality
-    ASSERT_EQUAL(true, lhs != rhs);
+    REQUIRE(lhs != rhs);
     lhs = rhs;
-    ASSERT_EQUAL(false, lhs != rhs);
+    REQUIRE_FALSE(lhs != rhs);
 
     // less than
     lhs = make_tuple(0, 0, 0, 0, 0);
     rhs = make_tuple(0, 0, 1, 0, 0);
-    ASSERT_EQUAL(true, lhs < rhs);
+    REQUIRE(lhs < rhs);
     get<0>(lhs) = 2;
-    ASSERT_EQUAL(false, lhs < rhs);
+    REQUIRE_FALSE(lhs < rhs);
 
     // less than equal
     lhs = make_tuple(0, 0, 0, 0, 0);
     rhs = lhs;
-    ASSERT_EQUAL(true, lhs <= rhs); // equal
+    REQUIRE(lhs <= rhs); // equal
     get<2>(rhs) = 1;
-    ASSERT_EQUAL(true, lhs <= rhs); // less than
+    REQUIRE(lhs <= rhs); // less than
     get<2>(lhs) = 2;
-    ASSERT_EQUAL(false, lhs <= rhs);
+    REQUIRE_FALSE(lhs <= rhs);
 
     // greater than
     lhs = make_tuple(1, 0, 0, 0, 0);
     rhs = make_tuple(0, 1, 1, 1, 1);
-    ASSERT_EQUAL(true, lhs > rhs);
+    REQUIRE(lhs > rhs);
     get<0>(rhs) = 2;
-    ASSERT_EQUAL(false, lhs > rhs);
+    REQUIRE_FALSE(lhs > rhs);
 
     // greater than equal
     lhs = make_tuple(0, 0, 0, 0, 0);
     rhs = lhs;
-    ASSERT_EQUAL(true, lhs >= rhs); // equal
+    REQUIRE(lhs >= rhs); // equal
     get<4>(lhs) = 1;
-    ASSERT_EQUAL(true, lhs >= rhs); // greater than
+    REQUIRE(lhs >= rhs); // greater than
     get<3>(rhs) = 1;
-    ASSERT_EQUAL(false, lhs >= rhs);
+    REQUIRE_FALSE(lhs >= rhs);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleComparison, NumericTypes);
@@ -452,8 +450,8 @@ struct TestTupleTie
     thrust::device_vector<bool> d_result(1);
     thrust::generate(d_result.begin(), d_result.end(), TestTupleTieFunctor<T>());
 
-    ASSERT_EQUAL(true, h_result[0]);
-    ASSERT_EQUAL(true, d_result[0]);
+    REQUIRE(h_result[0]);
+    REQUIRE(d_result[0]);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleTie, NumericTypes);
@@ -474,12 +472,12 @@ void TestTupleSwap()
   using ::cuda::std::swap;
   swap(t1, t2);
 
-  ASSERT_EQUAL(x, thrust::get<0>(t1));
-  ASSERT_EQUAL(y, thrust::get<1>(t1));
-  ASSERT_EQUAL(z, thrust::get<2>(t1));
-  ASSERT_EQUAL(a, thrust::get<0>(t2));
-  ASSERT_EQUAL(b, thrust::get<1>(t2));
-  ASSERT_EQUAL(c, thrust::get<2>(t2));
+  REQUIRE(x == thrust::get<0>(t1));
+  REQUIRE(y == thrust::get<1>(t1));
+  REQUIRE(z == thrust::get<2>(t1));
+  REQUIRE(a == thrust::get<0>(t2));
+  REQUIRE(b == thrust::get<1>(t2));
+  REQUIRE(c == thrust::get<2>(t2));
 
   using swappable_tuple = thrust::tuple<user_swappable, user_swappable, user_swappable, user_swappable>;
 
@@ -490,11 +488,13 @@ void TestTupleSwap()
   thrust::swap_ranges(d_v1.begin(), d_v1.end(), d_v2.begin());
 
   const swappable_tuple ref(user_swappable(true), user_swappable(true), user_swappable(true), user_swappable(true));
+  const swappable_tuple not_swapped(
+    user_swappable(false), user_swappable(false), user_swappable(false), user_swappable(false));
 
-  ASSERT_EQUAL_QUIET(ref, h_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, h_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, (swappable_tuple) d_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, (swappable_tuple) d_v1[0]);
+  REQUIRE(ref == h_v1[0]);
+  REQUIRE(not_swapped == h_v2[0]);
+  REQUIRE(ref == (swappable_tuple) d_v1[0]);
+  REQUIRE(not_swapped == (swappable_tuple) d_v2[0]);
 }
 DECLARE_UNITTEST(TestTupleSwap);
 
@@ -506,9 +506,9 @@ void TestTupleStructuredBindings()
   thrust::tuple<int, int, int> t(a, b, c);
 
   auto [a2, b2, c2] = t;
-  ASSERT_EQUAL(a, a2);
-  ASSERT_EQUAL(b, b2);
-  ASSERT_EQUAL(c, c2);
+  REQUIRE(a == a2);
+  REQUIRE(b == b2);
+  REQUIRE(c == c2);
 }
 DECLARE_UNITTEST(TestTupleStructuredBindings);
 
@@ -520,9 +520,9 @@ void TestTupleCTAD()
   thrust::tuple t(a, b, c);
 
   auto [a2, b2, c2] = t;
-  ASSERT_EQUAL(a, a2);
-  ASSERT_EQUAL(b, b2);
-  ASSERT_EQUAL(c, c2);
+  REQUIRE(a == a2);
+  REQUIRE(b == b2);
+  REQUIRE(c == c2);
 }
 DECLARE_UNITTEST(TestTupleCTAD);
 
