@@ -15,10 +15,12 @@ _EXPLORERS = {
     "reduce": "coop-collectives.js",
     "scan": "coop-collectives.js",
     "merge-sort": "coop-merge-sort.js",
+    "radix": "coop-radix.js",
 }
 
 _VISUALIZATION_TITLES = {
     "merge-sort": "Merge Sort",
+    "radix": "Radix Rank/Sort",
 }
 
 _API_VISUALIZATIONS = (
@@ -29,6 +31,7 @@ _API_VISUALIZATIONS = (
     | {name: name for name in _EXPLORERS}
     | {"sum": "reduce"}
     | dict.fromkeys(("merge_sort_keys", "merge_sort_pairs"), "merge-sort")
+    | dict.fromkeys(("radix_sort_keys", "radix_sort_pairs", "radix_rank"), "radix")
 )
 
 
@@ -95,8 +98,8 @@ def setup(app):
     app.connect("autodoc-process-docstring", add_api_visualization_link)
     app.connect("html-page-context", add_visualization_assets)
     return {
-        "version": "4",
-        "env_version": 3,
+        "version": "5",
+        "env_version": 4,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }
