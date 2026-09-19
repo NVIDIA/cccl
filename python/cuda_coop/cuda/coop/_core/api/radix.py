@@ -159,8 +159,10 @@ def radix_sort_keys(
     -----
     Wraps CUB ``BlockRadixSort::Sort`` or ``SortDescending``. For signed
     integers, the sign bit is inverted before selecting the bit interval,
-    then restored in the returned keys. Use ``cuda.coop.numba_mlir`` for
-    floating-point keys, scalar or local-array payloads, and striped output.
+    then restored in the returned keys. Qualified ``cuda.coop.numba_mlir``
+    and ``cuda.coop.cutlass`` calls also support floating-point keys, scalar
+    payloads, and striped output. Numba-CUDA-MLIR additionally accepts local
+    arrays; CUTLASS accepts CuTe register tensors.
     """
     _validate(
         "radix_sort_keys",
@@ -231,8 +233,9 @@ def radix_sort_pairs(
     Notes
     -----
     Wraps the key/value overload of CUB ``BlockRadixSort::Sort`` or
-    ``SortDescending``. Qualified Numba-CUDA-MLIR calls additionally support
-    floating-point keys, scalar or local-array payloads, and striped output.
+    ``SortDescending``. Both qualified backends also support floating-point
+    keys, scalar payloads, and striped output. Numba-CUDA-MLIR additionally
+    accepts local arrays; CUTLASS accepts CuTe register tensors.
     """
     _validate(
         "radix_sort_pairs",
@@ -300,8 +303,10 @@ def radix_rank(
     Uses CUB ``BlockRadixRank::RankKeys`` with a digit extractor. Signed keys
     invert their sign bit before digit extraction, matching radix sort's
     ordered representation. Scratch allocation and its reuse barrier are
-    automatic. The qualified API also accepts scalars and local arrays and
-    can write exclusive digit prefixes into a caller-provided output array.
+    automatic. Both qualified backends also accept scalars and can write
+    exclusive digit prefixes into a caller-provided output payload.
+    Numba-CUDA-MLIR additionally accepts local arrays; CUTLASS accepts CuTe
+    register tensors.
     """
     _validate(
         "radix_rank",
