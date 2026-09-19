@@ -22,6 +22,8 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 _COMMON_EXPORTS = [
     "__version__",
     "register",
+    "adjacent_difference",
+    "discontinuity",
     "Hierarchy",
     "TempStorage",
     "TempStorageLike",
@@ -301,6 +303,8 @@ def test_python_operator_compilation_supports_explicit_state():
 @pytest.mark.parametrize(
     "operation",
     (
+        "adjacent_difference",
+        "discontinuity",
         "exchange",
         "exclusive_scan",
         "exclusive_sum",

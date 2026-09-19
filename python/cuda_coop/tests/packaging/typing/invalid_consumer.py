@@ -661,6 +661,37 @@ coop.topk_max_keys(
     valid_items=1.5,  # expected-error: [arg-type]
 )
 
+
+common.adjacent_difference(
+    common.this_warp(),  # expected-error: [arg-type]
+    common_values,
+)
+common.adjacent_difference(
+    common_block,
+    common_values,
+    valid_items=1.5,  # expected-error: [arg-type]
+)
+common.adjacent_difference(  # expected-error: [call-arg]
+    common_block,
+    common_values,
+    difference_op=lambda a, b: a - b,
+)
+common.discontinuity(  # expected-error: [call-overload]
+    common_block,
+    common_values,
+    valid_items=4,
+)
+coop.discontinuity(  # expected-error: [call-overload]
+    qualified_block,
+    values,
+    mode="unknown",
+)
+coop.adjacent_difference(
+    qualified_block,
+    values,
+    difference_op="minus",  # expected-error: [arg-type]
+)
+
 common.sum(
     common.this_cluster(),  # expected-error: [arg-type]
     np.int32(1),
