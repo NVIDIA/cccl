@@ -65,6 +65,7 @@ from .reduce import (
     make_block_reduce_spec,
     normalize_block_reduce_algorithm,
 )
+from .run_length import BlockRunLengthDecodeSpec, make_block_run_length_decode_spec
 from .scan import (
     BlockScanAlgorithm,
     BlockScanSpec,
@@ -82,6 +83,12 @@ from .shuffle import (
 from .topk import BlockTopKSpec, make_block_topk_spec
 
 __all__ = [
+    "BlockMergeSortPayload",
+    "BlockMergeSortTilePolicy",
+    "BlockMergeSortSemantics",
+    "BlockMergeSortSpec",
+    "make_block_merge_sort_semantics",
+    "make_block_merge_sort_spec",
     "ArgumentBinding",
     "BindingKind",
     "BlockExchangeMode",
@@ -93,10 +100,6 @@ __all__ = [
     "BlockLoadStoreKind",
     "BlockLoadStoreSemantics",
     "BlockLoadStoreSpec",
-    "BlockMergeSortPayload",
-    "BlockMergeSortSemantics",
-    "BlockMergeSortSpec",
-    "BlockMergeSortTilePolicy",
     "BlockRadixRankSemantics",
     "BlockRadixRankSpec",
     "BlockRadixSortBitPolicy",
@@ -114,9 +117,11 @@ __all__ = [
     "BlockShuffleMode",
     "BlockShuffleSemantics",
     "BlockShuffleSpec",
+    "BlockTopKSpec",
+    "BlockRunLengthDecodeSpec",
+    "make_block_run_length_decode_spec",
     "BlockShuffleValueKind",
     "BlockStoreAlgorithm",
-    "BlockTopKSpec",
     "RadixBitRange",
     "RadixOrder",
     "binding",
@@ -126,8 +131,6 @@ __all__ = [
     "make_block_load_spec",
     "make_block_load_store_semantics",
     "make_block_load_store_spec",
-    "make_block_merge_sort_semantics",
-    "make_block_merge_sort_spec",
     "make_block_radix_rank_semantics",
     "make_block_radix_rank_spec",
     "make_block_radix_sort_semantics",
@@ -137,8 +140,8 @@ __all__ = [
     "make_block_scan_spec",
     "make_block_shuffle_semantics",
     "make_block_shuffle_spec",
-    "make_block_store_spec",
     "make_block_topk_spec",
+    "make_block_store_spec",
     "make_radix_bit_range",
     "normalize_block_dim",
     "normalize_block_reduce_algorithm",
