@@ -7,19 +7,19 @@ from typing import Literal
 from typing_extensions import TypeVar
 
 from cuda.coop._typing import (
-    PortableNumericScalar,
-    PortableThreadDataLike,
+    CommonNumericScalar,
+    CommonThreadDataLike,
     ReduceOperator,
     ThreadDataLike,
 )
 
 from .thread_group import WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 def reduce_batched(
     group: WarpGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     binary_op: ReduceOperator | None = None,

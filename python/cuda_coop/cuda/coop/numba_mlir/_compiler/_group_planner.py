@@ -38,8 +38,8 @@ from numba_cuda_mlir.cuda.local import array as _cuda_local_array
 from numba_cuda_mlir.extending import require_launch_config
 from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
 
-import cuda.coop._core.api as _portable_api
-import cuda.coop._core.api._dispatch as _portable_dispatch
+import cuda.coop._core.api as _common_api
+import cuda.coop._core.api._dispatch as _common_dispatch
 from cuda.coop._core import (
     LaunchFactOrigin,
     LaunchFacts,
@@ -68,7 +68,7 @@ from ._group_planner_support import (
     _GROUP_METHODS,
     _NAME_COUNTER,
     _PAYLOAD_DTYPE_LIKE,
-    _PORTABLE_GROUP_CONSTRUCTORS,
+    _COMMON_GROUP_CONSTRUCTORS,
     GroupRewriteError,
     _group_operation_name,
     _is_common_root_operation,
@@ -367,7 +367,7 @@ class _GroupCallPlanner:
         if depends_on_unroll(value, set()):
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir does not support literal_unroll values "
-                f"that determine {parameter}. Write separate "
+                f"that determine {parameter} in the MVP. Write separate "
                 "cooperative calls with explicit constant shapes/selectors, "
                 "or use an ordinary loop with a fixed cooperative shape."
             )
@@ -386,9 +386,9 @@ class _GroupCallPlanner:
             *_GROUP_CONSTRUCTORS,
             ThreadHierarchy,
             ThreadData,
-            _portable_api.ThreadData,
+            _common_api.ThreadData,
             TempStorage,
-            _portable_api.TempStorage,
+            _common_api.TempStorage,
         }
         for block in self.func_ir.blocks.values():
             for inst in block.body:
@@ -756,7 +756,7 @@ class _GroupCallPlanner:
                 elif parameter.kind is inspect.Parameter.KEYWORD_ONLY:
                     kwargs[name] = argument
             group = _GROUP_CONSTRUCTORS[function](*args, **kwargs)
-            if function in _PORTABLE_GROUP_CONSTRUCTORS:
+            if function in _COMMON_GROUP_CONSTRUCTORS:
                 assert group.hierarchy is not None
                 group = group.with_hierarchy(
                     group.hierarchy, source="common_root"
@@ -1265,7 +1265,7 @@ class _GroupCallPlanner:
         if definition.op != "call":
             return False
         function = self._callable(definition.func)
-        if function in {ThreadData, _portable_api.ThreadData}:
+        if function in {ThreadData, _common_api.ThreadData}:
             return True
         if function is _typed_group_payload_like:
             return self._is_array_value(
@@ -1546,8 +1546,7 @@ class _GroupCallPlanner:
         state = self._is_array_value(value, thread_data_only=True)
         if state is None:
             raise GroupRewriteError(
-                f"cuda.coop.{operation} could not "
-                f"resolve {parameter} payload provenance"
+                f"cuda.coop.{operation} could not resolve {parameter} payload provenance"
             )
         return state
 
@@ -1861,7 +1860,7 @@ class _GroupCallPlanner:
             if is_array is False:
                 return 1
             return self._array_extent(definition.args[0], seen=seen)
-        if function in {ThreadData, _portable_api.ThreadData}:
+        if function in {ThreadData, _common_api.ThreadData}:
             bound = self._bind(function, definition)
             extent_argument = bound.arguments["items_per_thread"]
             self._reject_literal_unroll_value(extent_argument, "payload extent")
@@ -2228,17 +2227,14 @@ class _GroupCallPlanner:
         if bound.arguments.get("kwargs"):
             names = ", ".join(sorted(bound.arguments["kwargs"]))
             raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} "
-                f"got unexpected keyword(s): {names}"
+                f"cuda.coop.numba_mlir.{operation} got unexpected keyword(s): {names}"
             )
         group = self._group(bound.arguments["group"])
         if group is None:
             raise NonConstantThreadGroupError(operation)
         is_common_root = _is_common_root_operation(function, operation)
         if is_common_root:
-            _portable_dispatch._validate_portable_operation_group(
-                operation, group
-            )
+            _common_dispatch._validate_common_operation_group(operation, group)
         group = self._resolve_group(group, feature=operation)
         registration = group_primitive(operation)
         if registration is None:
@@ -2402,8 +2398,7 @@ class _GroupCallPlanner:
                 if level_order[level] > level_order[group.mapping.parent]:
                     raise NotImplementedError(
                         "cuda.coop.numba_mlir mapped ThreadGroup queries above "
-                        "the immediate parent require "
-                        "recursive group composition"
+                        "the immediate parent require recursive group composition"
                     )
             group = self._resolve_group(
                 group, feature=f"ThreadGroup.{operation}", through_level=level
@@ -2423,8 +2418,7 @@ class _GroupCallPlanner:
         if group.kind == "grid" and operation in {"sync", "sync_aligned"}:
             raise NotImplementedError(
                 "cuda.coop.numba_mlir grid synchronization requires a verified "
-                "cooperative launch, which the "
-                "current launch descriptor cannot "
+                "cooperative launch, which the current launch descriptor cannot "
                 "request"
             )
 
@@ -2859,7 +2853,7 @@ class _GroupPlanning:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir cooperative calls in device function "
                 f"{function_name!r} must be inlined into a kernel. "
-                "Standalone collective helpers and collectives inside "
+                "Standalone primitive helpers and primitives inside "
                 "standalone callbacks are unsupported; use inline='always' "
                 "for a kernel helper or move the cooperative calls "
                 "into the kernel."

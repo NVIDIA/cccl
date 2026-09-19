@@ -1701,7 +1701,7 @@ class _StorageRewrite:
                         f"TempStorage descriptor {names!r} is passed to a "
                         "device function that was not inlined into this "
                         f"kernel ({helper_name!r}); let Numba-CUDA-MLIR "
-                        "inline the collective helper (inline='always') or "
+                        "inline the primitive helper (inline='always') or "
                         "move its cooperative calls into the kernel."
                     )
                 raise CoopSinglePhaseRewriteError(

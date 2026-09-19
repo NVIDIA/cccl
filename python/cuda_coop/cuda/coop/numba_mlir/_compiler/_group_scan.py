@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import replace
-from enum import Enum
 from typing import Any
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
@@ -59,8 +58,8 @@ from ._parameters import (
 )
 from ._rewrite_scan import infer_scan_payload, validate_scan_runtime_controls
 
-_PORTABLE_ALGORITHMS = frozenset({"raking", "raking_memoize", "warp_scans"})
-_PORTABLE_MODES = frozenset({"exclusive", "inclusive"})
+_COMMON_ALGORITHMS = frozenset({"raking", "raking_memoize", "warp_scans"})
+_COMMON_MODES = frozenset({"exclusive", "inclusive"})
 _BUILTIN_OPERATOR_CPP = {
     "multiplies": "::cuda::std::multiplies<T>",
     "min": "::cuda::minimum<T>",
@@ -104,7 +103,7 @@ class _ScanPlanning:
                 operation,
                 "mode",
                 bound.arguments["mode"],
-                _PORTABLE_MODES,
+                _COMMON_MODES,
             )
         if "algorithm" in bound.arguments:
             bound.arguments["algorithm"] = (
@@ -112,7 +111,7 @@ class _ScanPlanning:
                     operation,
                     "algorithm",
                     bound.arguments["algorithm"],
-                    _PORTABLE_ALGORITHMS,
+                    _COMMON_ALGORITHMS,
                     allow_none=True,
                 )
             )
@@ -140,7 +139,6 @@ class _ScanPlanning:
 
     @staticmethod
     def _operator(
-        operation: str,
         scan_op: Any,
         *,
         dtype: Any,
@@ -159,24 +157,23 @@ class _ScanPlanning:
             validate_scan_operator_dtype,
         )
 
-        if (
-            is_common_root
-            and scan_op is not None
-            and (not isinstance(scan_op, str) or isinstance(scan_op, Enum))
-        ):
-            raise TypeError(f"cuda.coop.{operation} scan_op must be a string")
-        canonical = normalize_scan_operation(scan_op)
+        operation = normalize_scan_operation(scan_op)
         validate_scan_operator_dtype(scan_op, dtype)
-        if canonical == "sum":
+        if operation == "sum":
             return "sum", None
-        if canonical is not None:
+        if operation is not None:
             return (
-                canonical,
+                operation,
                 CxxOperator(
-                    cpp=_BUILTIN_OPERATOR_CPP[canonical],
+                    cpp=_BUILTIN_OPERATOR_CPP[operation],
                     dtype=Dependency("T"),
                     name="scan_op",
                 ),
+            )
+        if is_common_root:
+            raise NotImplementedError(
+                "common cuda.coop Scan supports built-in operators only; "
+                "use cuda.coop.numba_mlir for a stateless device callback"
             )
         return (
             "callback",
@@ -314,14 +311,12 @@ class _ScanPlanning:
         if not has_prefix:
             if has_state:
                 raise ValueError(
-                    "cuda.coop.numba_mlir scan "
-                    "prefix_state requires a prefix callback"
+                    "cuda.coop.numba_mlir scan prefix_state requires a prefix callback"
                 )
             return None, None, None
         if group.kind != "block":
             raise NotImplementedError(
-                "cuda.coop.numba_mlir scan prefix "
-                "callbacks apply only to block groups"
+                "cuda.coop.numba_mlir scan prefix callbacks apply only to block groups"
             )
 
         callback = self._context.constant(prefix_ref)
@@ -330,8 +325,7 @@ class _ScanPlanning:
         if isinstance(callback, StatefulFunction):
             if not has_state:
                 raise ValueError(
-                    "cuda.coop.numba_mlir scan "
-                    "StatefulFunction prefix callbacks "
+                    "cuda.coop.numba_mlir scan StatefulFunction prefix callbacks "
                     "require a third positional prefix_state argument"
                 )
             if not self._context.is_array(operation, state):
@@ -573,7 +567,6 @@ class _ScanPlanning:
             parameter="value",
         )
         operator_kind, scan_operator = self._operator(
-            operation,
             scan_op,
             dtype=dtype,
             is_common_root=is_common_root,
@@ -612,8 +605,7 @@ class _ScanPlanning:
             )
         if prefix_operator is not None and aggregate:
             raise ValueError(
-                "cuda.coop.numba_mlir scan "
-                "aggregate_output and prefix callbacks "
+                "cuda.coop.numba_mlir scan aggregate_output and prefix callbacks "
                 "are mutually exclusive"
             )
 

@@ -41,7 +41,7 @@ def scan(
     """Scan with device operators, aggregate outputs, or prefix callbacks.
 
     Extends :func:`cuda.coop.scan` with the options below. Group requirements,
-    modes, algorithms, and temporary storage follow the portable function.
+    modes, algorithms, and temporary storage follow the common function.
 
     Parameters
     ----------
@@ -148,7 +148,7 @@ def exclusive_scan(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ collective types providing ``ExclusiveScan``.
+        C++ primitive types providing ``ExclusiveScan``.
 
     Examples
     --------
@@ -203,7 +203,7 @@ def inclusive_scan(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ collective types providing ``InclusiveScan``.
+        C++ primitive types providing ``InclusiveScan``.
 
     Examples
     --------
@@ -256,7 +256,7 @@ def exclusive_sum(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ collective types providing ``ExclusiveSum``.
+        C++ primitive types providing ``ExclusiveSum``.
 
     Examples
     --------
@@ -312,7 +312,7 @@ def inclusive_sum(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ collective types providing ``InclusiveSum``.
+        C++ primitive types providing ``InclusiveSum``.
     """
 
     return group_primitive_marker(

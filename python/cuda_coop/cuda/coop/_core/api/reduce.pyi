@@ -5,8 +5,8 @@
 from typing import TypeVar, overload
 
 from cuda.coop._typing import (
-    PortableNumericScalar,
-    PortableThreadDataLike,
+    CommonNumericScalar,
+    CommonThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
     TempStorageLike,
@@ -15,12 +15,12 @@ from cuda.coop._typing import (
 
 from .thread_group import BlockGroup, WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 @overload
 def reduce(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     binary_op: ReduceOperator | None = None,
@@ -46,7 +46,7 @@ def reduce(
 @overload
 def reduce(
     group: WarpGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     binary_op: ReduceOperator | None = None,
@@ -72,7 +72,7 @@ def reduce(
 @overload
 def sum(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     valid_items: None = None,
@@ -96,7 +96,7 @@ def sum(
 @overload
 def sum(
     group: WarpGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     valid_items: None = None,

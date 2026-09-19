@@ -2,48 +2,48 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable cooperative Shuffle entry point."""
+"""Common cooperative Shuffle entry point."""
 
 from __future__ import annotations
 
-from typing import Literal, TypeVar
+from enum import Enum
+from numbers import Integral
+from typing import Any
 
-from cuda.coop._typing import (
-    PortableNumericScalar,
-    PortableShuffleMode,
-    PortableThreadDataLike,
-)
-
-from ..thread_group import CoopCompilerContextRequiredError
+from ..thread_group import ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _backend_module_name,
+    _common_group_operation,
+    _common_selector,
+    _group_primitive_marker,
 )
 from ._payload import (
     ThreadDataLike,
+    _ReadableThreadDataLike,
+    _validate_common_numeric_value,
 )
-from .thread_group import BlockGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_COMMON_SHUFFLE_MODES = frozenset({"down", "up"})
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "shuffle",
     group_kinds=("block",),
 )
 def shuffle(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    group: ThreadGroup,
+    value: _ReadableThreadDataLike[Any],
     /,
     *,
-    mode: PortableShuffleMode = "down",
-    distance: Literal[1] = 1,
-) -> ThreadDataLike[_ItemT]:
+    mode: Any = "down",
+    distance: Any = 1,
+) -> ThreadDataLike[Any]:
     """Shift a block's flattened payload by one element.
 
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Complete block whose members all call the collective; see
+        Complete block whose members all call the primitive; see
         :ref:`thread groups <coop-thread-groups>`. Warp, mapped-warp, cluster,
         and grid groups are unsupported.
     value : cuda.coop.ThreadDataLike
@@ -95,8 +95,36 @@ def shuffle(
         :dedent: 4
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.shuffle must be called from a supported GPU kernel."
+    mode = _common_selector(
+        "shuffle",
+        "mode",
+        mode,
+        _COMMON_SHUFFLE_MODES,
+    )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "shuffle",
+            "value",
+            value,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        if (
+            isinstance(distance, (bool, Enum))
+            or not isinstance(distance, Integral)
+            or int(distance) != 1
+        ):
+            raise ValueError(
+                "cuda.coop.shuffle distance must be exactly 1 in the common "
+                "API; use cuda.coop.numba_mlir for scalar Shuffle"
+            )
+        distance = 1
+    return _group_primitive_marker(
+        "shuffle",
+        group,
+        value,
+        mode=mode,
+        distance=distance,
     )
 
 

@@ -11,7 +11,7 @@ Names keep this policy independent of each compiler's type objects.
 
 from __future__ import annotations
 
-_PORTABLE_NUMERIC_DTYPE_NAMES = (
+_COMMON_NUMERIC_DTYPE_NAMES = (
     "int8",
     "uint8",
     "int16",
@@ -24,8 +24,19 @@ _PORTABLE_NUMERIC_DTYPE_NAMES = (
     "float64",
 )
 
+_COMMON_INTEGER_VALUE_DTYPE_NAMES = (
+    "int8",
+    "uint8",
+    "int16",
+    "uint16",
+    "int32",
+    "uint32",
+    "int64",
+    "uint64",
+)
 
-def _validate_portable_dtype_name(
+
+def _validate_common_dtype_name(
     dtype_name: str,
     *,
     operation: str,
@@ -43,13 +54,13 @@ def _validate_portable_dtype_name(
         subject = "dtypes" if parameter is None else f"{parameter} dtypes"
         raise TypeError(
             f"cuda.coop.{operation} supports {subject} {supported} through the "
-            "portable API; "
+            "common API; "
             f"use a backend-qualified import for backend-specific {subject}"
         )
     return dtype_name
 
 
-def validate_portable_numeric_dtype_name(
+def validate_common_numeric_dtype_name(
     dtype_name: str,
     *,
     operation: str,
@@ -61,9 +72,27 @@ def validate_portable_numeric_dtype_name(
     qualified API may support additional types outside this common set.
     """
 
-    return _validate_portable_dtype_name(
+    return _validate_common_dtype_name(
         dtype_name,
         operation=operation,
         parameter=parameter,
-        supported_dtype_names=_PORTABLE_NUMERIC_DTYPE_NAMES,
+        supported_dtype_names=_COMMON_NUMERIC_DTYPE_NAMES,
+    )
+
+
+def validate_common_integer_value_dtype_name(
+    dtype_name: str,
+    *,
+    operation: str,
+    parameter: str = "value",
+) -> str:
+    """Validate one normalized dtype name for an integer value in the common
+    API.
+    """
+
+    return _validate_common_dtype_name(
+        dtype_name,
+        operation=operation,
+        parameter=parameter,
+        supported_dtype_names=_COMMON_INTEGER_VALUE_DTYPE_NAMES,
     )

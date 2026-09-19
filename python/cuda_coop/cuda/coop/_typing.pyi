@@ -13,7 +13,7 @@ from typing import Any, Literal, Protocol, TypeAlias, TypeVar
 
 import numpy
 
-_ItemT = TypeVar("_ItemT")
+ItemT = TypeVar("ItemT")
 
 ThreadLevel: TypeAlias = Literal[
     "thread",
@@ -115,9 +115,9 @@ BlockExchangeMode: TypeAlias = (
     ]
 )
 WarpExchangeMode: TypeAlias = ExchangeMode
-PortableShuffleMode: TypeAlias = Literal["down", "up"]
+CommonShuffleMode: TypeAlias = Literal["down", "up"]
 ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
-ShuffleMode: TypeAlias = PortableShuffleMode | ScalarShuffleMode
+ShuffleMode: TypeAlias = CommonShuffleMode | ScalarShuffleMode
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
@@ -136,7 +136,7 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
 
     signed: bool
 
-PortableNumericScalar: TypeAlias = (
+CommonNumericScalar: TypeAlias = (
     int
     | float
     | numpy.int8
@@ -152,9 +152,7 @@ PortableNumericScalar: TypeAlias = (
     | CompilerScalarLike
 )
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
-
-class _ExactScalar(Protocol[_ItemT]):
+class _ExactScalar(Protocol[ItemT]):
     """Match a seed's exact scalar type without widening the input type.
 
     The writable ``__class__`` member makes the type parameter invariant.
@@ -163,14 +161,12 @@ class _ExactScalar(Protocol[_ItemT]):
     float arm. The compiler still checks literal values and runtime dtypes.
     """
 
-    __class__: type[_ItemT]  # type: ignore[assignment]
+    __class__: type[ItemT]  # type: ignore[assignment]
 
 ContextualInitialValue: TypeAlias = (
-    _ExactScalar[_ItemT] | _ExactScalar[int] | _ExactScalar[float]
+    _ExactScalar[ItemT] | _ExactScalar[int] | _ExactScalar[float]
 )
-_ReadableItemT_co = TypeVar(
-    "_ReadableItemT_co", bound=PortableNumericScalar, covariant=True
-)
+_ReadableItemT = TypeVar("_ReadableItemT", bound=CommonNumericScalar, covariant=True)
 ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
 )
@@ -193,7 +189,7 @@ ThreadGroupQueryScalar: TypeAlias = (
 TraceInteger: TypeAlias = int | numpy.integer[Any]
 ValidItems: TypeAlias = IntegerValue
 
-class ThreadDataLike(Protocol[_ItemT]):
+class ThreadDataLike(Protocol[ItemT]):
     """Common mutable, indexable per-thread payload contract.
 
     Concrete compiler backends may attach additional helpers and metadata, but
@@ -209,13 +205,13 @@ class ThreadDataLike(Protocol[_ItemT]):
     def __len__(self) -> int:
         """Return the number of logical items owned by this thread."""
 
-    def __getitem__(self, index: int, /) -> _ItemT:
+    def __getitem__(self, index: int, /) -> ItemT:
         """Return one thread-local item."""
 
-    def __setitem__(self, index: int, value: _ItemT, /) -> None:
+    def __setitem__(self, index: int, value: ItemT, /) -> None:
         """Replace one thread-local item."""
 
-class PortableThreadDataLike(Protocol[_ReadableItemT_co]):
+class CommonThreadDataLike(Protocol[_ReadableItemT]):
     """Describe readable per-thread items with common numeric types.
 
     Operations that only read a payload use this protocol. Mutable operations
@@ -228,7 +224,7 @@ class PortableThreadDataLike(Protocol[_ReadableItemT_co]):
     def __len__(self) -> int:
         """Return the number of items owned by this thread."""
 
-    def __getitem__(self, index: int, /) -> _ReadableItemT_co:
+    def __getitem__(self, index: int, /) -> _ReadableItemT:
         """Return one numeric register value supported by the common API."""
 
 class TempStorageLike(Protocol):
@@ -249,23 +245,22 @@ __all__ = [
     "ContextualInitialValue",
     "ExchangeMode",
     "LoadStoreAlgorithm",
-    "NonSumScanOperator",
-    "PortableShuffleMode",
+    "CommonShuffleMode",
     "ReduceAlgorithm",
     "ReduceOperator",
-    "ScalarShuffleMode",
     "ScanAlgorithm",
     "ScanMode",
     "ScanOperator",
-    "ShuffleMode",
     "SumScanOperator",
+    "NonSumScanOperator",
+    "ScalarShuffleMode",
+    "ShuffleMode",
     "SynchronizableGroupKind",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
-    "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
-    "_PortableNumericT",
+    "WarpExchangeMode",
 ]

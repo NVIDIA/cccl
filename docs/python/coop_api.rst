@@ -7,13 +7,15 @@
    ``cuda.coop`` is an experimental API and is subject to change.
 
 .. _coop-portable-api:
+.. _portable-api:
+.. _coop-common-api:
 
-Portable API
-------------
+Common API
+----------
 
-The collective functions below are compiler markers; ``register`` is a
-host-side configuration function. The installed ``.pyi``
-files are authoritative for overload and result typing.
+The primitive functions below are compiler markers; ``register`` is a
+host-side configuration function. The installed ``.pyi`` files are
+authoritative for overload and result typing.
 
 .. currentmodule:: cuda.coop
 
@@ -31,7 +33,7 @@ See :ref:`thread groups <coop-thread-groups>` and
 :ref:`participation and synchronization <coop-participation>` for the shared
 execution model. ``ThreadGroup`` and ``ThreadHierarchy`` describe which
 threads cooperate. A descriptor's availability does not imply that every
-collective supports that group.
+primitive supports that group.
 
 .. autofunction:: this_thread
 .. autofunction:: this_warp
@@ -146,7 +148,7 @@ Numba-CUDA-MLIR-qualified API
 .. py:module:: cuda.coop.numba_mlir
 
 Use this module for the extensions below. Shared parameters and behavior
-follow the :ref:`Portable API <coop-portable-api>`.
+follow the :ref:`Common API <coop-common-api>`.
 
 .. code-block:: python
 

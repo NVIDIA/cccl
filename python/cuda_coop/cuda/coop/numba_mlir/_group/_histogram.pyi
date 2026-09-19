@@ -16,8 +16,8 @@ import numpy
 from typing_extensions import TypeVar
 
 from cuda.coop._typing import (
+    CommonThreadDataLike,
     CompilerIntegerLike,
-    PortableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
@@ -40,7 +40,7 @@ _Counter = TypeVar(
 @overload
 def histogram(
     group: BlockGroup,
-    samples: PortableThreadDataLike[_Sample] | _Sample,
+    samples: CommonThreadDataLike[_Sample] | _Sample,
     /,
     *,
     bins: int,
@@ -52,7 +52,7 @@ def histogram(
 @overload
 def histogram(
     group: BlockGroup,
-    samples: PortableThreadDataLike[_Sample] | _Sample,
+    samples: CommonThreadDataLike[_Sample] | _Sample,
     /,
     *,
     bins: int,
@@ -64,7 +64,7 @@ def histogram(
 @overload
 def histogram(
     group: BlockGroup,
-    samples: PortableThreadDataLike[_Sample] | _Sample,
+    samples: CommonThreadDataLike[_Sample] | _Sample,
     /,
     *,
     bins: int,

@@ -162,10 +162,8 @@ class EscapingGroupDescriptorError(GroupRewriteError):
         super().__init__(
             _wrap_diagnostic(
                 f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are "
-                f"compile-time descriptors and may "
-                f"only feed this_*(), group_by(), "
-                f"group methods, or group-first primitives; descriptor use "
-                f"involving {names!r} "
+                f"compile-time descriptors and may only feed this_*(), group_by(), "
+                f"group methods, or group-first primitives; descriptor use involving {names!r} "
                 f"would escape to runtime",
             )
         )
@@ -178,8 +176,7 @@ class InvalidLoadStoreAlgorithmError(ValueError):
         group = "" if group_kind is None else f" for {group_kind} groups"
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation} "
-                f"algorithm{group} must be one of: {choices}",
+                f"cuda.coop.numba_mlir.{operation} algorithm{group} must be one of: {choices}",
             )
         )
 
@@ -291,7 +288,7 @@ class UnknownLoadStoreProviderError(GroupRewriteError):
         )
 
 
-class PortableLoadPayloadError(TypeError):
+class CommonLoadPayloadError(TypeError):
     """The common load API received an output without a ThreadData origin.
 
     Qualified Numba calls also support local-array destinations.
@@ -301,14 +298,14 @@ class PortableLoadPayloadError(TypeError):
         super().__init__(
             _wrap_diagnostic(
                 "cuda.coop.load requires output to be a fixed-size "
-                "ThreadData payload in the portable API; "
+                "ThreadData payload in the common API; "
                 "use cuda.coop.numba_mlir for backend-qualified "
                 "local-array payload support",
             )
         )
 
 
-class PortableStorePayloadError(TypeError):
+class CommonStorePayloadError(TypeError):
     """The common store API received an unsupported payload form.
 
     Its payload must be a scalar or ThreadData. Qualified Numba calls also
@@ -319,7 +316,7 @@ class PortableStorePayloadError(TypeError):
         super().__init__(
             _wrap_diagnostic(
                 "cuda.coop.store accepts only a scalar or fixed-size "
-                "ThreadData value payload in the portable API; use "
+                "ThreadData value payload in the common API; use "
                 "cuda.coop.numba_mlir for backend-qualified local-array "
                 "payload support",
             )

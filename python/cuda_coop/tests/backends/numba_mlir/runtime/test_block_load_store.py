@@ -46,8 +46,6 @@ pytestmark = [
 
 _THREADS = 32
 _ITEMS_PER_THREAD = 2
-
-
 _TILE_ITEMS = _THREADS * _ITEMS_PER_THREAD
 _WIDE_THREADS = 64
 _WIDE_ITEMS_PER_THREAD = 4
@@ -106,44 +104,34 @@ def _sentinel(dtype: np.dtype) -> object:
     return dtype.type(211 if dtype.kind == "u" else -101)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("portable", "qualified")
+    "module", (root_coop, qualified_coop), ids=("common", "qualified")
 )
-def test_runtime_payload_index_reuses_one_specialization(
-    module, *, items_per_thread
-):
+def test_runtime_payload_index_reuses_one_specialization(module):
     @cuda.jit
-    def kernel(source, destination, index, items_per_thread):
-        payload = module.ThreadData(items_per_thread)
+    def kernel(source, destination, index):
+        payload = module.ThreadData(_ITEMS_PER_THREAD)
         group = module.this_block()
         module.load(group, source, payload)
         module.store(group, destination, payload[index])
 
-    source = np.arange((_THREADS * items_per_thread), dtype=np.int32)
+    source = np.arange(_TILE_ITEMS, dtype=np.int32)
     destination = np.full(_THREADS, -1, dtype=np.int32)
-    for index in range(items_per_thread):
-        kernel[1, _THREADS](source, destination, index, items_per_thread)
+    for index in range(_ITEMS_PER_THREAD):
+        kernel[1, _THREADS](source, destination, index)
         cuda.synchronize()
-        np.testing.assert_array_equal(
-            destination, source[index::items_per_thread]
-        )
+        np.testing.assert_array_equal(destination, source[index::_ITEMS_PER_THREAD])
         assert len(kernel._launch_config_overloads) == 1
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "module", (root_coop, qualified_coop), ids=("portable", "qualified")
 )
-@pytest.mark.parametrize(
-    "dtype", (None, types.int32), ids=("inferred", "explicit")
-)
+@pytest.mark.parametrize("dtype", (None, types.int32), ids=("inferred", "explicit"))
 @pytest.mark.parametrize("scope", ("block", "warp", "logical-warp"))
-def test_load_mutates_original_payload_and_returns_none(
-    module, dtype, scope, *, items_per_thread
-):
+def test_load_mutates_original_payload_and_returns_none(module, dtype, scope):
     @cuda.jit
-    def kernel(source, destination, returned_none, items_per_thread):
+    def kernel(source, destination, returned_none):
         thread = cuda.threadIdx.x
         if scope == "block":
             group = module.this_block()
@@ -151,17 +139,15 @@ def test_load_mutates_original_payload_and_returns_none(
             group = module.this_warp()
         else:
             group = module.this_warp().group_by(8)
-        payload = module.ThreadData(items_per_thread, dtype)
+        payload = module.ThreadData(_ITEMS_PER_THREAD, dtype)
         result = module.load(group, source, payload)
         returned_none[thread] = result is None
         module.store(group, destination, payload)
 
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=19
-    )
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=19)
     destination = np.full_like(source, -1)
     returned_none = np.zeros(_THREADS, dtype=np.int32)
-    kernel[1, _THREADS](source, destination, returned_none, items_per_thread)
+    kernel[1, _THREADS](source, destination, returned_none)
 
     np.testing.assert_array_equal(destination, source)
     np.testing.assert_array_equal(returned_none, np.ones_like(returned_none))
@@ -176,12 +162,12 @@ def _full_load_kernel(numba_dtype, algorithm="direct"):
     """
 
     @cuda.jit
-    def kernel(source, observed, items_per_thread):
+    def kernel(source, observed):
         thread = cuda.threadIdx.x + cuda.blockDim.x * (
             cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
         )
         payload = root_coop.ThreadData(
-            items_per_thread,
+            _ITEMS_PER_THREAD,
             dtype=numba_dtype,
         )
         root_coop.load(
@@ -190,8 +176,8 @@ def _full_load_kernel(numba_dtype, algorithm="direct"):
             payload,
             algorithm=algorithm,
         )
-        for item in range(items_per_thread):
-            observed[thread * items_per_thread + item] = payload[item]
+        for item in range(_ITEMS_PER_THREAD):
+            observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     return kernel
 
@@ -205,16 +191,16 @@ def _full_store_kernel(numba_dtype, algorithm="direct"):
     """
 
     @cuda.jit
-    def kernel(source, destination, items_per_thread):
+    def kernel(source, destination):
         thread = cuda.threadIdx.x + cuda.blockDim.x * (
             cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
         )
         payload = qualified_coop.ThreadData(
-            items_per_thread,
+            _ITEMS_PER_THREAD,
             dtype=numba_dtype,
         )
-        for item in range(items_per_thread):
-            payload[item] = source[thread * items_per_thread + item]
+        for item in range(_ITEMS_PER_THREAD):
+            payload[item] = source[thread * _ITEMS_PER_THREAD + item]
         qualified_coop.store(
             qualified_coop.this_block(),
             destination,
@@ -225,91 +211,70 @@ def _full_store_kernel(numba_dtype, algorithm="direct"):
     return kernel
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 def test_direct_load_matches_an_independent_oracle_for_every_dtype(
-    numpy_dtype, numba_dtype, *, items_per_thread
+    numpy_dtype,
+    numba_dtype,
 ):
-    source = _values(numpy_dtype, (_THREADS * items_per_thread))
-    observed = np.full(
-        (_THREADS * items_per_thread), _sentinel(numpy_dtype), dtype=numpy_dtype
-    )
+    source = _values(numpy_dtype, _TILE_ITEMS)
+    observed = np.full(_TILE_ITEMS, _sentinel(numpy_dtype), dtype=numpy_dtype)
 
-    _full_load_kernel(numba_dtype)[1, _THREADS](
-        source, observed, items_per_thread
-    )
+    _full_load_kernel(numba_dtype)[1, _THREADS](source, observed)
 
     np.testing.assert_array_equal(observed, source)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 def test_direct_multi_item_store_matches_an_independent_oracle_for_every_dtype(
-    numpy_dtype, numba_dtype, *, items_per_thread
+    numpy_dtype,
+    numba_dtype,
 ):
-    source = _values(numpy_dtype, (_THREADS * items_per_thread), shift=11)
+    source = _values(numpy_dtype, _TILE_ITEMS, shift=11)
     destination = np.full(
-        (_THREADS * items_per_thread),
+        _TILE_ITEMS,
         _sentinel(numpy_dtype),
         dtype=numpy_dtype,
     )
 
-    _full_store_kernel(numba_dtype)[1, _THREADS](
-        source, destination, items_per_thread
-    )
+    _full_store_kernel(numba_dtype)[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination, source)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("block_shape", _BLOCK_SHAPES, ids=("1d", "2d", "3d"))
-def test_direct_load_uses_x_major_thread_order_for_exact_block_shape(
-    block_shape, *, items_per_thread
-):
-    source = _values(np.dtype(np.int32), (_THREADS * items_per_thread))
-    observed = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
+def test_direct_load_uses_x_major_thread_order_for_exact_block_shape(block_shape):
+    source = _values(np.dtype(np.int32), _TILE_ITEMS)
+    observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
-    _full_load_kernel(types.int32)[1, block_shape](
-        source, observed, items_per_thread
-    )
+    _full_load_kernel(types.int32)[1, block_shape](source, observed)
 
     np.testing.assert_array_equal(observed, source)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("block_shape", _BLOCK_SHAPES, ids=("1d", "2d", "3d"))
-def test_direct_store_uses_x_major_thread_order_for_exact_block_shape(
-    block_shape, *, items_per_thread
-):
-    source = _values(np.dtype(np.int32), (_THREADS * items_per_thread), shift=7)
-    destination = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
+def test_direct_store_uses_x_major_thread_order_for_exact_block_shape(block_shape):
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=7)
+    destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
-    _full_store_kernel(types.int32)[1, block_shape](
-        source, destination, items_per_thread
-    )
+    _full_store_kernel(types.int32)[1, block_shape](source, destination)
 
     np.testing.assert_array_equal(destination, source)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_transpose_load_store_use_x_major_order_for_multidimensional_block(
-    *, items_per_thread
-):
+def test_transpose_load_store_use_x_major_order_for_multidimensional_block():
     block_shape = (8, 4)
-    load_source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=5
-    )
-    store_source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=13
-    )
-    observed = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
-    destination = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
+    load_source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=5)
+    store_source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=13)
+    observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
+    destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
     _full_load_kernel(types.int32, "transpose")[1, block_shape](
-        load_source, observed, items_per_thread
+        load_source,
+        observed,
     )
     _full_store_kernel(types.int32, "transpose")[1, block_shape](
-        store_source, destination, items_per_thread
+        store_source,
+        destination,
     )
 
     np.testing.assert_array_equal(observed, load_source)
@@ -317,9 +282,7 @@ def test_transpose_load_store_use_x_major_order_for_multidimensional_block(
 
 
 @cuda.jit
-def _load_valid_prefix(
-    source, observed, valid_items, source_offset, items_per_thread
-):
+def _load_valid_prefix(source, observed, valid_items, source_offset):
     """Observe only valid slots when Load has no out-of-bounds default.
 
     Unobserved destination entries retain their host sentinel. They do not
@@ -327,7 +290,7 @@ def _load_valid_prefix(
     """
 
     thread = cuda.threadIdx.x
-    payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
+    payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
     root_coop.load(
         root_coop.this_block(),
         source,
@@ -336,27 +299,21 @@ def _load_valid_prefix(
         valid_items=valid_items,
         offset=source_offset,
     )
-    for item in range(items_per_thread):
-        index = thread * items_per_thread + item
+    for item in range(_ITEMS_PER_THREAD):
+        index = thread * _ITEMS_PER_THREAD + item
         if index < valid_items:
             observed[index] = payload[item]
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "valid_items",
     (0, _TILE_ITEMS - 9, _TILE_ITEMS),
     ids=("zero", "partial", "full"),
 )
-def test_load_reads_valid_prefix_at_an_independent_offset(
-    valid_items, *, items_per_thread
-):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
-    source = _values(
-        np.dtype(np.int32), _LOAD_OFFSET + (_THREADS * items_per_thread)
-    )
-    observed = np.full((_THREADS * items_per_thread), 37, dtype=np.int32)
-    expected = np.full((_THREADS * items_per_thread), 37, dtype=np.int32)
+def test_load_reads_valid_prefix_at_an_independent_offset(valid_items):
+    source = _values(np.dtype(np.int32), _LOAD_OFFSET + _TILE_ITEMS)
+    observed = np.full(_TILE_ITEMS, 37, dtype=np.int32)
+    expected = np.full(_TILE_ITEMS, 37, dtype=np.int32)
     expected[:valid_items] = source[_LOAD_OFFSET : _LOAD_OFFSET + valid_items]
 
     _load_valid_prefix[1, _THREADS](
@@ -364,7 +321,6 @@ def test_load_reads_valid_prefix_at_an_independent_offset(
         observed,
         np.int32(valid_items),
         np.int64(_LOAD_OFFSET),
-        items_per_thread,
     )
 
     np.testing.assert_array_equal(observed, expected)
@@ -377,11 +333,10 @@ def _load_defaulting_invalid(
     valid_items,
     oob_default,
     source_offset,
-    items_per_thread,
 ):
     thread = cuda.threadIdx.x
     payload = qualified_coop.ThreadData(
-        items_per_thread,
+        _ITEMS_PER_THREAD,
         dtype=types.int32,
     )
     payload[0] = 19
@@ -395,21 +350,19 @@ def _load_defaulting_invalid(
         oob_default=oob_default,
         offset=source_offset,
     )
-    for item in range(items_per_thread):
-        observed[thread * items_per_thread + item] = payload[item]
+    for item in range(_ITEMS_PER_THREAD):
+        observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "valid_items", (0, _TILE_ITEMS - 9), ids=("zero", "partial")
+    "valid_items",
+    (0, _TILE_ITEMS - 9),
+    ids=("zero", "partial"),
 )
-def test_load_defaults_invalid_slots(valid_items, *, items_per_thread):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
-    source = _values(
-        np.dtype(np.int32), _LOAD_OFFSET + (_THREADS * items_per_thread)
-    )
-    observed = np.full((_THREADS * items_per_thread), 37, dtype=np.int32)
-    expected = np.full((_THREADS * items_per_thread), -29, dtype=np.int32)
+def test_load_defaults_invalid_slots(valid_items):
+    source = _values(np.dtype(np.int32), _LOAD_OFFSET + _TILE_ITEMS)
+    observed = np.full(_TILE_ITEMS, 37, dtype=np.int32)
+    expected = np.full(_TILE_ITEMS, -29, dtype=np.int32)
     expected[:valid_items] = source[_LOAD_OFFSET : _LOAD_OFFSET + valid_items]
 
     _load_defaulting_invalid[1, _THREADS](
@@ -418,23 +371,20 @@ def test_load_defaults_invalid_slots(valid_items, *, items_per_thread):
         np.int32(valid_items),
         np.int32(-29),
         np.int64(_LOAD_OFFSET),
-        items_per_thread,
     )
 
     np.testing.assert_array_equal(observed, expected)
 
 
 @cuda.jit
-def _store_valid_prefix(
-    source, destination, valid_items, destination_offset, items_per_thread
-):
+def _store_valid_prefix(source, destination, valid_items, destination_offset):
     thread = cuda.threadIdx.x
     payload = qualified_coop.ThreadData(
-        items_per_thread,
+        _ITEMS_PER_THREAD,
         dtype=types.int32,
     )
-    for item in range(items_per_thread):
-        payload[item] = source[thread * items_per_thread + item]
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
     qualified_coop.store(
         qualified_coop.this_block(),
         destination,
@@ -445,21 +395,15 @@ def _store_valid_prefix(
     )
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "valid_items",
     (0, _TILE_ITEMS - 9, _TILE_ITEMS),
     ids=("zero", "partial", "full"),
 )
-def test_store_writes_only_the_valid_prefix_at_an_independent_offset(
-    valid_items, *, items_per_thread
-):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=17
-    )
+def test_store_writes_only_the_valid_prefix_at_an_independent_offset(valid_items):
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=17)
     destination = np.full(
-        _STORE_OFFSET + (_THREADS * items_per_thread) + 3,
+        _STORE_OFFSET + _TILE_ITEMS + 3,
         -41,
         dtype=np.int32,
     )
@@ -471,7 +415,6 @@ def test_store_writes_only_the_valid_prefix_at_an_independent_offset(
         destination,
         np.int32(valid_items),
         np.int64(_STORE_OFFSET),
-        items_per_thread,
     )
 
     np.testing.assert_array_equal(destination, expected)
@@ -484,17 +427,10 @@ def _algorithm_load_kernel(
     if qualified:
 
         @cuda.jit
-        def kernel(
-            source,
-            observed,
-            valid_items,
-            source_offset,
-            oob_default,
-            items_per_thread,
-        ):
+        def kernel(source, observed, valid_items, source_offset, oob_default):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=numba_dtype,
             )
             qualified_coop.load(
@@ -506,23 +442,16 @@ def _algorithm_load_kernel(
                 oob_default=oob_default,
                 offset=source_offset,
             )
-            for item in range(items_per_thread):
-                observed[thread * items_per_thread + item] = payload[item]
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(
-            source,
-            observed,
-            valid_items,
-            source_offset,
-            oob_default,
-            items_per_thread,
-        ):
+        def kernel(source, observed, valid_items, source_offset, oob_default):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=numba_dtype,
             )
             root_coop.load(
@@ -534,8 +463,8 @@ def _algorithm_load_kernel(
                 oob_default=oob_default,
                 offset=source_offset,
             )
-            for item in range(items_per_thread):
-                observed[thread * items_per_thread + item] = payload[item]
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     return kernel
 
@@ -547,20 +476,14 @@ def _algorithm_store_kernel(
     if qualified:
 
         @cuda.jit
-        def kernel(
-            source,
-            destination,
-            valid_items,
-            destination_offset,
-            items_per_thread,
-        ):
+        def kernel(source, destination, valid_items, destination_offset):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=numba_dtype,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             qualified_coop.store(
                 qualified_coop.this_block(),
                 destination,
@@ -573,20 +496,14 @@ def _algorithm_store_kernel(
     else:
 
         @cuda.jit
-        def kernel(
-            source,
-            destination,
-            valid_items,
-            destination_offset,
-            items_per_thread,
-        ):
+        def kernel(source, destination, valid_items, destination_offset):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=numba_dtype,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             root_coop.store(
                 root_coop.this_block(),
                 destination,
@@ -606,7 +523,6 @@ def _expected_loaded_payload(
     valid_items: int,
     offset: int,
     oob_default: int,
-    items_per_thread,
 ) -> np.ndarray:
     """Compute a block's expected Load payload in thread-major slot order.
 
@@ -615,16 +531,12 @@ def _expected_loaded_payload(
     positions at ``offset`` and fill the remaining slots with ``oob_default``.
     """
 
-    expected = np.full(
-        (_THREADS * items_per_thread), oob_default, dtype=source.dtype
-    )
+    expected = np.full(_TILE_ITEMS, oob_default, dtype=source.dtype)
     for thread in range(_THREADS):
-        for item in range(items_per_thread):
-            payload_index = thread * items_per_thread + item
+        for item in range(_ITEMS_PER_THREAD):
+            payload_index = thread * _ITEMS_PER_THREAD + item
             tile_index = (
-                thread + item * _THREADS
-                if algorithm == "striped"
-                else payload_index
+                thread + item * _THREADS if algorithm == "striped" else payload_index
             )
             if tile_index < valid_items:
                 expected[payload_index] = source[offset + tile_index]
@@ -638,7 +550,6 @@ def _expected_stored_tile(
     algorithm: str,
     valid_items: int,
     offset: int,
-    items_per_thread,
 ) -> np.ndarray:
     """Apply the Store layout to a copy of the initial destination.
 
@@ -649,22 +560,17 @@ def _expected_stored_tile(
 
     expected = destination.copy()
     for thread in range(_THREADS):
-        for item in range(items_per_thread):
-            payload_index = thread * items_per_thread + item
+        for item in range(_ITEMS_PER_THREAD):
+            payload_index = thread * _ITEMS_PER_THREAD + item
             tile_index = (
-                thread + item * _THREADS
-                if algorithm == "striped"
-                else payload_index
+                thread + item * _THREADS if algorithm == "striped" else payload_index
             )
             if tile_index < valid_items:
                 expected[offset + tile_index] = source[payload_index]
     return expected
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
-)
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid_items",
@@ -672,22 +578,16 @@ def _expected_stored_tile(
     ids=("zero", "partial", "full"),
 )
 def test_each_block_load_algorithm_matches_its_layout_oracle(
-    qualified, algorithm, valid_items, *, items_per_thread
+    qualified, algorithm, valid_items
 ):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
-    source = _values(
-        np.dtype(np.int32),
-        _LOAD_OFFSET + (_THREADS * items_per_thread),
-        shift=31,
-    )
-    observed = np.full((_THREADS * items_per_thread), 71, dtype=np.int32)
+    source = _values(np.dtype(np.int32), _LOAD_OFFSET + _TILE_ITEMS, shift=31)
+    observed = np.full(_TILE_ITEMS, 71, dtype=np.int32)
     expected = _expected_loaded_payload(
         source,
         algorithm=algorithm,
         valid_items=valid_items,
         offset=_LOAD_OFFSET,
         oob_default=-29,
-        items_per_thread=items_per_thread,
     )
 
     _algorithm_load_kernel(algorithm, qualified)[1, _THREADS](
@@ -696,16 +596,12 @@ def test_each_block_load_algorithm_matches_its_layout_oracle(
         np.int32(valid_items),
         np.int64(_LOAD_OFFSET),
         np.int32(-29),
-        items_per_thread,
     )
 
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
-)
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid_items",
@@ -713,22 +609,16 @@ def test_each_block_load_algorithm_matches_its_layout_oracle(
     ids=("zero", "partial", "full"),
 )
 def test_each_block_store_algorithm_matches_its_layout_oracle(
-    qualified, algorithm, valid_items, *, items_per_thread
+    qualified, algorithm, valid_items
 ):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=37
-    )
-    destination = np.full(
-        _STORE_OFFSET + (_THREADS * items_per_thread) + 3, -41, dtype=np.int32
-    )
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=37)
+    destination = np.full(_STORE_OFFSET + _TILE_ITEMS + 3, -41, dtype=np.int32)
     expected = _expected_stored_tile(
         source,
         destination,
         algorithm=algorithm,
         valid_items=valid_items,
         offset=_STORE_OFFSET,
-        items_per_thread=items_per_thread,
     )
 
     _algorithm_store_kernel(algorithm, qualified)[1, _THREADS](
@@ -736,32 +626,24 @@ def test_each_block_store_algorithm_matches_its_layout_oracle(
         destination,
         np.int32(valid_items),
         np.int64(_STORE_OFFSET),
-        items_per_thread,
     )
 
     np.testing.assert_array_equal(destination, expected)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 @pytest.mark.parametrize("algorithm", ("striped", "transpose"))
 def test_non_direct_partial_load_store_matches_dtype_oracles(
-    numpy_dtype, numba_dtype, algorithm, *, items_per_thread
+    numpy_dtype, numba_dtype, algorithm
 ):
-    valid_items = (_THREADS * items_per_thread) - 9
-    load_source = _values(
-        numpy_dtype, _LOAD_OFFSET + (_THREADS * items_per_thread), shift=31
-    )
-    store_source = _values(numpy_dtype, (_THREADS * items_per_thread), shift=37)
+    valid_items = _TILE_ITEMS - 9
+    load_source = _values(numpy_dtype, _LOAD_OFFSET + _TILE_ITEMS, shift=31)
+    store_source = _values(numpy_dtype, _TILE_ITEMS, shift=37)
     sentinel = _sentinel(numpy_dtype)
     default = numpy_dtype.type(3.25 if numpy_dtype.kind == "f" else 103)
-    observed = np.full(
-        (_THREADS * items_per_thread), sentinel, dtype=numpy_dtype
-    )
+    observed = np.full(_TILE_ITEMS, sentinel, dtype=numpy_dtype)
     destination = np.full(
-        _STORE_OFFSET + (_THREADS * items_per_thread) + 3,
-        sentinel,
-        dtype=numpy_dtype,
+        _STORE_OFFSET + _TILE_ITEMS + 3, sentinel, dtype=numpy_dtype
     )
     expected_load = _expected_loaded_payload(
         load_source,
@@ -769,7 +651,6 @@ def test_non_direct_partial_load_store_matches_dtype_oracles(
         valid_items=valid_items,
         offset=_LOAD_OFFSET,
         oob_default=default,
-        items_per_thread=items_per_thread,
     )
     expected_store = _expected_stored_tile(
         store_source,
@@ -777,7 +658,6 @@ def test_non_direct_partial_load_store_matches_dtype_oracles(
         algorithm=algorithm,
         valid_items=valid_items,
         offset=_STORE_OFFSET,
-        items_per_thread=items_per_thread,
     )
 
     _algorithm_load_kernel(algorithm, False, numba_dtype)[1, _THREADS](
@@ -786,14 +666,12 @@ def test_non_direct_partial_load_store_matches_dtype_oracles(
         np.int32(valid_items),
         np.int64(_LOAD_OFFSET),
         default,
-        items_per_thread,
     )
     _algorithm_store_kernel(algorithm, True, numba_dtype)[1, _THREADS](
         store_source,
         destination,
         np.int32(valid_items),
         np.int64(_STORE_OFFSET),
-        items_per_thread,
     )
 
     np.testing.assert_array_equal(observed, expected_load)
@@ -811,10 +689,10 @@ def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, observed, valid_items, items_per_thread):
+        def kernel(source, observed, valid_items):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             qualified_coop.load(
@@ -824,18 +702,18 @@ def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
                 algorithm=algorithm,
                 valid_items=valid_items,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 if index < valid_items:
                     observed[index] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed, valid_items, items_per_thread):
+        def kernel(source, observed, valid_items):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -845,35 +723,30 @@ def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
                 algorithm=algorithm,
                 valid_items=valid_items,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 if index < valid_items:
                     observed[index] = payload[item]
 
     return kernel
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
-)
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize(
     "algorithm",
     ("transpose", "warp_transpose", "warp_transpose_timesliced"),
 )
-def test_partial_transpose_load_reads_the_valid_prefix(
-    qualified, algorithm, *, items_per_thread
-):
-    valid_items = (_WIDE_THREADS * items_per_thread) - 19
-    source = _values(
-        np.dtype(np.int32), (_WIDE_THREADS * items_per_thread), shift=53
-    )
-    observed = np.full((_WIDE_THREADS * items_per_thread), 71, dtype=np.int32)
+def test_partial_transpose_load_reads_the_valid_prefix(qualified, algorithm):
+    valid_items = _WIDE_PARTIAL_TILE_ITEMS - 19
+    source = _values(np.dtype(np.int32), _WIDE_PARTIAL_TILE_ITEMS, shift=53)
+    observed = np.full(_WIDE_PARTIAL_TILE_ITEMS, 71, dtype=np.int32)
     expected = observed.copy()
     expected[:valid_items] = source[:valid_items]
 
     _partial_transpose_load_kernel(algorithm, qualified)[1, _WIDE_THREADS](
-        source, observed, np.int32(valid_items), items_per_thread
+        source,
+        observed,
+        np.int32(valid_items),
     )
 
     np.testing.assert_array_equal(observed, expected)
@@ -884,12 +757,10 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(
-            load_source, store_source, observed, destination, items_per_thread
-        ):
+        def kernel(load_source, store_source, observed, destination):
             thread = cuda.threadIdx.x
             load_payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _WIDE_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             qualified_coop.load(
@@ -899,11 +770,11 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
                 algorithm=algorithm,
             )
             store_payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _WIDE_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_WIDE_ITEMS_PER_THREAD):
+                index = thread * _WIDE_ITEMS_PER_THREAD + item
                 observed[index] = load_payload[item]
                 store_payload[item] = store_source[index]
             qualified_coop.store(
@@ -916,12 +787,10 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
     else:
 
         @cuda.jit
-        def kernel(
-            load_source, store_source, observed, destination, items_per_thread
-        ):
+        def kernel(load_source, store_source, observed, destination):
             thread = cuda.threadIdx.x
             load_payload = root_coop.ThreadData(
-                items_per_thread,
+                _WIDE_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -931,11 +800,11 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
                 algorithm=algorithm,
             )
             store_payload = root_coop.ThreadData(
-                items_per_thread,
+                _WIDE_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_WIDE_ITEMS_PER_THREAD):
+                index = thread * _WIDE_ITEMS_PER_THREAD + item
                 observed[index] = load_payload[item]
                 store_payload[item] = store_source[index]
             root_coop.store(
@@ -948,22 +817,19 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
-)
-@pytest.mark.parametrize(
-    "algorithm", ("vectorize", "warp_transpose_timesliced")
-)
-def test_unguarded_wide_load_store_executes_full_tile_path(
-    qualified, algorithm
-):
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize("algorithm", ("vectorize", "warp_transpose_timesliced"))
+def test_unguarded_wide_load_store_executes_full_tile_path(qualified, algorithm):
     load_source = _values(np.dtype(np.int32), _WIDE_TILE_ITEMS, shift=59)
     store_source = _values(np.dtype(np.int32), _WIDE_TILE_ITEMS, shift=67)
     observed = np.full(_WIDE_TILE_ITEMS, -1, dtype=np.int32)
     destination = np.full(_WIDE_TILE_ITEMS, -1, dtype=np.int32)
 
     _unguarded_wide_load_store_kernel(algorithm, qualified)[1, _WIDE_THREADS](
-        load_source, store_source, observed, destination, _WIDE_ITEMS_PER_THREAD
+        load_source,
+        store_source,
+        observed,
+        destination,
     )
 
     np.testing.assert_array_equal(observed, load_source)
@@ -982,13 +848,13 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
     if dynamic:
 
         @cuda.jit
-        def kernel(source, destination, observed, items_per_thread):
+        def kernel(source, destination, observed):
             thread = cuda.threadIdx.x
             storage = qualified_coop.TempStorage(
                 64 * 1024, alignment=16, auto_sync=True
             )
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             qualified_coop.load(
@@ -998,8 +864,8 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
                 algorithm=algorithm,
                 temp_storage=storage,
             )
-            for item in range(items_per_thread):
-                observed[thread * items_per_thread + item] = payload[item]
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
             qualified_coop.store(
                 qualified_coop.this_block(),
                 destination,
@@ -1011,13 +877,11 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
     else:
 
         @cuda.jit
-        def kernel(source, destination, observed, items_per_thread):
+        def kernel(source, destination, observed):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(
-                sharing="shared", auto_sync=True
-            )
+            storage = qualified_coop.TempStorage(sharing="shared", auto_sync=True)
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             qualified_coop.load(
@@ -1027,8 +891,8 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
                 algorithm=algorithm,
                 temp_storage=storage,
             )
-            for item in range(items_per_thread):
-                observed[thread * items_per_thread + item] = payload[item]
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
             qualified_coop.store(
                 qualified_coop.this_block(),
                 destination,
@@ -1040,7 +904,6 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
     return kernel
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     ("algorithm", "dynamic"),
     (
@@ -1051,20 +914,16 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
     ),
     ids=("transpose", "warp-transpose", "timesliced", "dynamic"),
 )
-def test_transpose_algorithms_reuse_caller_storage(
-    algorithm, dynamic, *, items_per_thread
-):
-    source = _values(
-        np.dtype(np.int32), (_WIDE_THREADS * items_per_thread), shift=43
-    )
-    destination = np.full(
-        (_WIDE_THREADS * items_per_thread), -1, dtype=np.int32
-    )
-    observed = np.full((_WIDE_THREADS * items_per_thread), -1, dtype=np.int32)
+def test_transpose_algorithms_reuse_caller_storage(algorithm, dynamic):
+    source = _values(np.dtype(np.int32), _WIDE_PARTIAL_TILE_ITEMS, shift=43)
+    destination = np.full(_WIDE_PARTIAL_TILE_ITEMS, -1, dtype=np.int32)
+    observed = np.full(_WIDE_PARTIAL_TILE_ITEMS, -1, dtype=np.int32)
 
     dispatcher = _transpose_reuse_kernel(algorithm, dynamic)
     dispatcher[1, _WIDE_THREADS](
-        source, destination, observed, items_per_thread
+        source,
+        destination,
+        observed,
     )
 
     np.testing.assert_array_equal(destination, source)
@@ -1074,21 +933,18 @@ def test_transpose_algorithms_reuse_caller_storage(
         assert compiled.metadata["required_dynamic_shared_memory"] == 64 * 1024
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("portable", "qualified")
+    "module", (root_coop, qualified_coop), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("alignment", (1, np.int64(32)))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
-def test_transpose_storage_honors_minimum_alignment(
-    module, alignment, sharing, *, items_per_thread
-):
+def test_transpose_storage_honors_minimum_alignment(module, alignment, sharing):
     @cuda.jit
-    def kernel(source, destination, items_per_thread):
+    def kernel(source, destination):
         storage = module.TempStorage(
             alignment=alignment, sharing=sharing, auto_sync=True
         )
-        payload = module.ThreadData(items_per_thread, dtype=types.int32)
+        payload = module.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
         module.load(
             module.this_block(),
             source,
@@ -1104,24 +960,22 @@ def test_transpose_storage_honors_minimum_alignment(
             temp_storage=storage,
         )
 
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=47
-    )
-    destination = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
-    kernel[1, _THREADS](source, destination, items_per_thread)
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=47)
+    destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
+    kernel[1, _THREADS](source, destination)
     np.testing.assert_array_equal(destination, source)
 
 
 @cuda.jit
-def _portable_grid_stride_load_store(source, destination, items_per_thread):
-    tile_offset = cuda.blockIdx.x * (_THREADS * items_per_thread)
-    grid_stride = cuda.gridDim.x * (_THREADS * items_per_thread)
+def _common_grid_stride_load_store(source, destination):
+    tile_offset = cuda.blockIdx.x * _TILE_ITEMS
+    grid_stride = cuda.gridDim.x * _TILE_ITEMS
     while tile_offset < source.size:
         valid_items = source.size - tile_offset
         # Runtime counts trap rather than saturate. Clamp each grid-stride
         # remainder to the exact tile accepted by this block.
-        valid_items = min(valid_items, (_THREADS * items_per_thread))
-        payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
+        valid_items = min(valid_items, _TILE_ITEMS)
+        payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
         root_coop.load(
             root_coop.this_block(),
             source,
@@ -1140,16 +994,16 @@ def _portable_grid_stride_load_store(source, destination, items_per_thread):
 
 
 @cuda.jit
-def _qualified_grid_stride_load_store(source, destination, items_per_thread):
-    tile_offset = cuda.blockIdx.x * (_THREADS * items_per_thread)
-    grid_stride = cuda.gridDim.x * (_THREADS * items_per_thread)
+def _qualified_grid_stride_load_store(source, destination):
+    tile_offset = cuda.blockIdx.x * _TILE_ITEMS
+    grid_stride = cuda.gridDim.x * _TILE_ITEMS
     while tile_offset < source.size:
         valid_items = source.size - tile_offset
         # Runtime counts trap rather than saturate. Clamp each grid-stride
         # remainder to the exact tile accepted by this block.
-        valid_items = min(valid_items, (_THREADS * items_per_thread))
+        valid_items = min(valid_items, _TILE_ITEMS)
         payload = qualified_coop.ThreadData(
-            items_per_thread,
+            _ITEMS_PER_THREAD,
             dtype=types.int32,
         )
         qualified_coop.load(
@@ -1169,31 +1023,25 @@ def _qualified_grid_stride_load_store(source, destination, items_per_thread):
         tile_offset += grid_stride
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "kernel",
     (
-        pytest.param(_portable_grid_stride_load_store, id="portable"),
+        pytest.param(_common_grid_stride_load_store, id="common"),
         pytest.param(_qualified_grid_stride_load_store, id="qualified"),
     ),
 )
-def test_multi_block_grid_stride_load_store_handles_a_partial_tail(
-    kernel, *, items_per_thread
-):
-    source = _values(
-        np.dtype(np.int32), (7 * (_THREADS * items_per_thread) + 11), shift=19
-    )
-    destination = np.full(
-        (7 * (_THREADS * items_per_thread) + 11), -1, dtype=np.int32
-    )
+def test_multi_block_grid_stride_load_store_handles_a_partial_tail(kernel):
+    source = _values(np.dtype(np.int32), _GRID_STRIDE_ITEMS, shift=19)
+    destination = np.full(_GRID_STRIDE_ITEMS, -1, dtype=np.int32)
 
-    kernel[_GRID_STRIDE_BLOCKS, _THREADS](source, destination, items_per_thread)
+    kernel[_GRID_STRIDE_BLOCKS, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination, source)
 
 
 def _run_invalid_runtime_valid_items_probe(
-    operation: str, valid_items: int, *, items_per_thread
+    operation: str,
+    valid_items: int,
 ) -> subprocess.CompletedProcess[str]:
     """Launch an invalid count in a disposable process.
 
@@ -1208,9 +1056,7 @@ def _run_invalid_runtime_valid_items_probe(
         textwrap.dedent(
             {
                 "load": """
-            payload = root_coop.ThreadData(
-                items_per_thread=_ITEMS_PER_THREAD, dtype=types.int32
-            )
+            payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
             root_coop.load(
                 root_coop.this_block(),
                 source,
@@ -1219,9 +1065,7 @@ def _run_invalid_runtime_valid_items_probe(
             )
         """,
                 "store": """
-            payload = root_coop.ThreadData(
-                items_per_thread=_ITEMS_PER_THREAD, dtype=types.int32
-            )
+            payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             root_coop.store(
@@ -1253,7 +1097,7 @@ if actual_origin != expected_origin:
     )
 
 _THREADS = {_THREADS}
-_ITEMS_PER_THREAD = {items_per_thread}
+_ITEMS_PER_THREAD = {_ITEMS_PER_THREAD}
 
 @cuda.jit
 def kernel(source, destination, valid_items):
@@ -1278,7 +1122,6 @@ raise AssertionError("invalid valid_items did not trap")
     )
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
     "valid_items",
@@ -1288,14 +1131,10 @@ raise AssertionError("invalid valid_items did not trap")
     ),
 )
 def test_runtime_valid_items_out_of_range_traps_in_an_isolated_context(
-    operation, valid_items, *, items_per_thread
+    operation,
+    valid_items,
 ):
-    valid_items = (
-        valid_items if valid_items < 0 else _THREADS * items_per_thread + 1
-    )
-    result = _run_invalid_runtime_valid_items_probe(
-        operation, valid_items, items_per_thread=items_per_thread
-    )
+    result = _run_invalid_runtime_valid_items_probe(operation, valid_items)
     output = result.stdout + result.stderr
 
     assert result.returncode != 0, output
@@ -1309,18 +1148,14 @@ def test_runtime_valid_items_out_of_range_traps_in_an_isolated_context(
         )
     ), output
 
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=23
-    )
-    observed = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
-    _full_load_kernel(types.int32)[1, _THREADS](
-        source, observed, items_per_thread
-    )
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=23)
+    observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
+    _full_load_kernel(types.int32)[1, _THREADS](source, observed)
     np.testing.assert_array_equal(observed, source)
 
 
 @cuda.jit
-def _portable_scalar_transpose_store(source, destination):
+def _common_scalar_transpose_store(source, destination):
     thread = cuda.threadIdx.x
     root_coop.store(
         root_coop.this_block(),
@@ -1330,11 +1165,11 @@ def _portable_scalar_transpose_store(source, destination):
     )
 
 
-def test_portable_scalar_transpose_store_matches_an_independent_oracle():
+def test_common_scalar_transpose_store_matches_an_independent_oracle():
     source = _values(np.dtype(np.int32), _THREADS, shift=23)
     destination = np.full(_THREADS, -1, dtype=np.int32)
 
-    _portable_scalar_transpose_store[1, _THREADS](source, destination)
+    _common_scalar_transpose_store[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination, source)
 
@@ -1351,9 +1186,7 @@ def test_thread_data_constructor_alias_across_branch(module, monkeypatch):
     def bounded_apply(rewrite):
         nonlocal applications
         applications += 1
-        assert applications < 10, (
-            "constructor alias repeatedly matched the rewrite"
-        )
+        assert applications < 10, "constructor alias repeatedly matched the rewrite"
         return original_apply(rewrite)
 
     monkeypatch.setattr(CoopSinglePhaseRewrite, "apply", bounded_apply)
@@ -1372,19 +1205,15 @@ def test_thread_data_constructor_alias_across_branch(module, monkeypatch):
     kernel[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination[:16], source[:16])
-    np.testing.assert_array_equal(
-        destination[16:], np.full_like(source[16:], -1)
-    )
+    np.testing.assert_array_equal(destination[16:], np.full_like(source[16:], -1))
 
 
 @cuda.jit
-def _qualified_local_array_transpose_store(
-    source, destination, items_per_thread
-):
+def _qualified_local_array_transpose_store(source, destination):
     thread = cuda.threadIdx.x
-    payload = cuda.local.array(shape=items_per_thread, dtype=types.int32)
-    for item in range(items_per_thread):
-        payload[item] = source[thread * items_per_thread + item]
+    payload = cuda.local.array(shape=_ITEMS_PER_THREAD, dtype=types.int32)
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
     qualified_coop.store(
         qualified_coop.this_block(),
         destination,
@@ -1393,117 +1222,102 @@ def _qualified_local_array_transpose_store(
     )
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_qualified_transpose_store_accepts_local_array_payload(
-    *, items_per_thread
-):
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=29
-    )
-    destination = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
+def test_qualified_transpose_store_accepts_local_array_payload():
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=29)
+    destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
     _qualified_local_array_transpose_store[1, _THREADS](
-        source, destination, items_per_thread
+        source,
+        destination,
     )
 
     np.testing.assert_array_equal(destination, source)
 
 
 @cuda.jit
-def _qualified_untyped_load(source, observed, items_per_thread):
+def _qualified_untyped_load(source, observed):
     thread = cuda.threadIdx.x
-    payload = qualified_coop.ThreadData(items_per_thread)
+    payload = qualified_coop.ThreadData(_ITEMS_PER_THREAD)
     qualified_coop.load(
         qualified_coop.this_block(),
         source,
         payload,
         algorithm="direct",
     )
-    for item in range(items_per_thread):
-        observed[thread * items_per_thread + item] = payload[item]
+    for item in range(_ITEMS_PER_THREAD):
+        observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "module", (root_coop, qualified_coop), ids=("root", "qualified")
 )
 @pytest.mark.parametrize("projection", (0, -1), ids=("first", "last"))
 @pytest.mark.parametrize("operation", ("load", "store"))
 def test_untyped_thread_data_infers_dtype_through_tuple_aliases(
-    module, projection, operation, *, items_per_thread
+    module, projection, operation
 ):
     @cuda.jit
-    def kernel(source, destination, items_per_thread):
-        payload = module.ThreadData(items_per_thread)
+    def kernel(source, destination):
+        payload = module.ThreadData(_ITEMS_PER_THREAD)
         packed = (payload,)
         alias = packed
         projected = alias[projection]
         thread = cuda.threadIdx.x
         if operation == "load":
             module.load(module.this_block(), source, projected)
-            for item in range(items_per_thread):
-                destination[thread * items_per_thread + item] = projected[item]
+            for item in range(_ITEMS_PER_THREAD):
+                destination[thread * _ITEMS_PER_THREAD + item] = projected[item]
         else:
-            for item in range(items_per_thread):
-                projected[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                projected[item] = source[thread * _ITEMS_PER_THREAD + item]
             module.store(module.this_block(), destination, projected)
 
-    source = _values(np.dtype(np.int32), (_THREADS * items_per_thread))
+    source = _values(np.dtype(np.int32), _TILE_ITEMS)
     destination = np.full_like(source, -1)
-    kernel[1, _THREADS](source, destination, items_per_thread)
+    kernel[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination, source)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "module", (root_coop, qualified_coop), ids=("root", "qualified")
 )
-@pytest.mark.parametrize(
-    "dtype", (None, types.int32), ids=("inferred", "explicit")
-)
-def test_thread_data_item_extent_drives_a_kernel_loop(
-    module, dtype, *, items_per_thread
-):
+@pytest.mark.parametrize("dtype", (None, types.int32), ids=("inferred", "explicit"))
+def test_thread_data_item_extent_drives_a_kernel_loop(module, dtype):
     @cuda.jit
-    def kernel(source, destination, extents, items_per_thread):
-        payload = module.ThreadData(items_per_thread, dtype)
+    def kernel(source, destination, extents):
+        payload = module.ThreadData(_ITEMS_PER_THREAD, dtype)
         module.load(module.this_block(), source, payload)
         alias = payload
         thread = cuda.threadIdx.x
         extents[thread] = alias.items_per_thread
         for item in range(alias.items_per_thread):
-            destination[thread * items_per_thread + item] = alias[item]
+            destination[thread * _ITEMS_PER_THREAD + item] = alias[item]
 
-    source = _values(np.dtype(np.int32), (_THREADS * items_per_thread))
+    source = _values(np.dtype(np.int32), _TILE_ITEMS)
     destination = np.full_like(source, -1)
     extents = np.zeros(_THREADS, dtype=np.int32)
-    kernel[1, _THREADS](source, destination, extents, items_per_thread)
+    kernel[1, _THREADS](source, destination, extents)
 
     np.testing.assert_array_equal(destination, source)
-    np.testing.assert_array_equal(
-        extents, np.full_like(extents, items_per_thread)
-    )
+    np.testing.assert_array_equal(extents, np.full_like(extents, _ITEMS_PER_THREAD))
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_qualified_load_infers_an_untyped_payload(*, items_per_thread):
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=29
-    )
-    observed = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
+def test_qualified_load_infers_an_untyped_payload():
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=29)
+    observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
-    _qualified_untyped_load[1, _THREADS](source, observed, items_per_thread)
+    _qualified_untyped_load[1, _THREADS](source, observed)
 
     np.testing.assert_array_equal(observed, source)
 
 
 @cuda.jit
-def _qualified_untyped_store(source, destination, items_per_thread):
+def _qualified_untyped_store(source, destination):
     thread = cuda.threadIdx.x
-    payload = qualified_coop.ThreadData(items_per_thread)
-    for item in range(items_per_thread):
-        payload[item] = source[thread * items_per_thread + item]
+    payload = qualified_coop.ThreadData(_ITEMS_PER_THREAD)
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
     qualified_coop.store(
         qualified_coop.this_block(),
         destination,
@@ -1512,41 +1326,33 @@ def _qualified_untyped_store(source, destination, items_per_thread):
     )
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_qualified_store_infers_an_untyped_payload(*, items_per_thread):
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=31
-    )
-    destination = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
+def test_qualified_store_infers_an_untyped_payload():
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=31)
+    destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
-    _qualified_untyped_store[1, _THREADS](source, destination, items_per_thread)
+    _qualified_untyped_store[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination, source)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "module", (root_coop, qualified_coop), ids=("root", "qualified")
 )
-def test_direct_load_store_ignores_unused_temp_storage(
-    module, *, items_per_thread
-):
+def test_direct_load_store_ignores_unused_temp_storage(module):
     @cuda.jit
-    def kernel(source, destination, items_per_thread):
+    def kernel(source, destination):
         storage = module.TempStorage(
             128 * 1024, alignment=16, sharing="exclusive", auto_sync=True
         )
-        payload = module.ThreadData(items_per_thread, dtype=types.int32)
+        payload = module.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
         module.load(module.this_block(), source, payload, temp_storage=storage)
         module.store(
             module.this_block(), destination, payload, temp_storage=storage
         )
 
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=31
-    )
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=31)
     destination = np.full_like(source, -1)
-    kernel[1, _THREADS](source, destination, items_per_thread)
+    kernel[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination, source)
 
@@ -1554,10 +1360,10 @@ def test_direct_load_store_ignores_unused_temp_storage(
 @cache
 def _divergent_storage_free_load_store(algorithm: str):
     @cuda.jit
-    def kernel(source, destination, observed, items_per_thread):
+    def kernel(source, destination, observed):
         thread = cuda.threadIdx.x
         if thread & 1:
-            payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
+            payload = root_coop.ThreadData(1, dtype=types.int32)
             root_coop.load(
                 root_coop.this_block(),
                 source,
@@ -1570,57 +1376,41 @@ def _divergent_storage_free_load_store(algorithm: str):
                 payload,
                 algorithm=algorithm,
             )
-            for item in range(items_per_thread):
-                observed[thread * items_per_thread + item] = payload[item]
+            observed[thread] = payload[0]
 
     return kernel
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("algorithm", ("direct", "striped", "vectorize"))
-def test_storage_free_load_store_are_safe_in_divergent_control_flow(
-    algorithm, items_per_thread
-):
-    source = _values(np.dtype(np.int32), _THREADS * items_per_thread, shift=43)
-    destination = np.full(_THREADS * items_per_thread, -1, dtype=np.int32)
-    observed = np.full(_THREADS * items_per_thread, -1, dtype=np.int32)
-    expected = np.full(_THREADS * items_per_thread, -1, dtype=np.int32)
-    if algorithm == "striped":
-        expected.reshape(items_per_thread, _THREADS)[:, 1::2] = source.reshape(
-            items_per_thread, _THREADS
-        )[:, 1::2]
-    else:
-        expected.reshape(_THREADS, items_per_thread)[1::2] = source.reshape(
-            _THREADS, items_per_thread
-        )[1::2]
+def test_storage_free_load_store_are_safe_in_divergent_control_flow(algorithm):
+    source = _values(np.dtype(np.int32), _THREADS, shift=43)
+    destination = np.full(_THREADS, -1, dtype=np.int32)
+    observed = np.full(_THREADS, -1, dtype=np.int32)
+    expected = np.full(_THREADS, -1, dtype=np.int32)
+    expected[1::2] = source[1::2]
 
     _divergent_storage_free_load_store(algorithm)[1, _THREADS](
         source,
         destination,
         observed,
-        items_per_thread,
     )
 
     np.testing.assert_array_equal(destination, expected)
-    if algorithm == "striped":
-        expected = expected.reshape(items_per_thread, _THREADS).T.ravel()
     np.testing.assert_array_equal(observed, expected)
 
 
 @cuda.jit
-def _looped_shared_store(source, destination, observed, items_per_thread):
+def _looped_shared_store(source, destination, observed):
     thread = cuda.threadIdx.x
     storage = qualified_coop.TempStorage(sharing="shared")
     for iteration in range(2):
         payload = qualified_coop.ThreadData(
-            items_per_thread,
+            _ITEMS_PER_THREAD,
             dtype=types.int32,
         )
-        tile_offset = iteration * (_THREADS * items_per_thread)
-        for item in range(items_per_thread):
-            payload[item] = source[
-                tile_offset + thread * items_per_thread + item
-            ]
+        tile_offset = iteration * _TILE_ITEMS
+        for item in range(_ITEMS_PER_THREAD):
+            payload[item] = source[tile_offset + thread * _ITEMS_PER_THREAD + item]
         qualified_coop.store(
             qualified_coop.this_block(),
             destination,
@@ -1628,85 +1418,66 @@ def _looped_shared_store(source, destination, observed, items_per_thread):
             algorithm="direct",
             temp_storage=storage,
         )
-        for item in range(items_per_thread):
-            index = thread * items_per_thread + item
+        for item in range(_ITEMS_PER_THREAD):
+            index = thread * _ITEMS_PER_THREAD + item
             observed[tile_offset + index] = destination[index]
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_direct_store_accepts_one_shared_descriptor_in_a_loop(
-    *, items_per_thread
-):
-    source = _values(
-        np.dtype(np.int32), 2 * (_THREADS * items_per_thread), shift=59
-    )
-    destination = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
-    observed = np.full(2 * (_THREADS * items_per_thread), -1, dtype=np.int32)
+def test_direct_store_accepts_one_shared_descriptor_in_a_loop():
+    source = _values(np.dtype(np.int32), 2 * _TILE_ITEMS, shift=59)
+    destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
+    observed = np.full(2 * _TILE_ITEMS, -1, dtype=np.int32)
 
-    _looped_shared_store[1, _THREADS](
-        source, destination, observed, items_per_thread
-    )
+    _looped_shared_store[1, _THREADS](source, destination, observed)
 
     np.testing.assert_array_equal(observed, source)
-    np.testing.assert_array_equal(
-        destination, source[(_THREADS * items_per_thread) :]
-    )
+    np.testing.assert_array_equal(destination, source[_TILE_ITEMS:])
 
 
 @cuda.jit(device=True, inline=True)
-def _inlined_portable_load(source, observed, items_per_thread):
+def _inlined_common_load(source, observed):
     thread = cuda.threadIdx.x
-    payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
+    payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
     root_coop.load(
         root_coop.this_block(),
         source,
         payload,
         algorithm="direct",
     )
-    for item in range(items_per_thread):
-        observed[thread * items_per_thread + item] = payload[item]
+    for item in range(_ITEMS_PER_THREAD):
+        observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
 @cuda.jit
-def _load_through_inlined_device_helper(source, observed, items_per_thread):
-    _inlined_portable_load(source, observed, items_per_thread)
+def _load_through_inlined_device_helper(source, observed):
+    _inlined_common_load(source, observed)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_portable_load_is_planned_after_device_helper_inlining(
-    *, items_per_thread
-):
-    source = _values(
-        np.dtype(np.int32), (_THREADS * items_per_thread), shift=67
-    )
-    observed = np.full((_THREADS * items_per_thread), -1, dtype=np.int32)
+def test_common_load_is_planned_after_device_helper_inlining():
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=67)
+    observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
-    _load_through_inlined_device_helper[1, _THREADS](
-        source, observed, items_per_thread
-    )
+    _load_through_inlined_device_helper[1, _THREADS](source, observed)
 
     np.testing.assert_array_equal(observed, source)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "module", (root_coop, qualified_coop), ids=("root", "qualified")
 )
 @pytest.mark.parametrize("alignment", [None, 1, 16, 32])
-def test_thread_data_alignment_with_inferred_load_store(
-    module, alignment, *, items_per_thread
-):
+def test_thread_data_alignment_with_inferred_load_store(module, alignment):
     @cuda.jit
-    def kernel(source, output, items_per_thread):
-        data = module.ThreadData(items_per_thread, alignment=alignment)
+    def kernel(source, output):
+        data = module.ThreadData(2, alignment=alignment)
         block = module.this_block()
         module.load(block, source, data)
         module.store(block, output, data)
 
-    source = np.arange((_THREADS * items_per_thread), dtype=np.int32)
+    source = np.arange(_TILE_ITEMS, dtype=np.int32)
     device_source = cuda.to_device(source)
     output = cuda.device_array_like(device_source)
-    kernel[1, _THREADS](device_source, output, items_per_thread)
+    kernel[1, _THREADS](device_source, output)
     np.testing.assert_array_equal(output.copy_to_host(), source)
 
 
@@ -1723,21 +1494,21 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
     if manual_sync:
 
         @cuda.jit
-        def kernel(destination, items_per_thread):
+        def kernel(destination):
             thread = cuda.threadIdx.x
             storage = qualified_coop.TempStorage(
                 sharing="exclusive",
                 auto_sync=False,
             )
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _LOOPED_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             for tile in range(_LOOPED_TILES):
                 tile_offset = tile * _LOOPED_TILE_ITEMS
-                for item in range(items_per_thread):
+                for item in range(_LOOPED_ITEMS_PER_THREAD):
                     payload[item] = (
-                        tile_offset + thread * items_per_thread + item
+                        tile_offset + thread * _LOOPED_ITEMS_PER_THREAD + item
                     )
                 qualified_coop.store(
                     qualified_coop.this_block(),
@@ -1752,20 +1523,18 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
     else:
 
         @cuda.jit
-        def kernel(destination, items_per_thread):
+        def kernel(destination):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(
-                sharing="exclusive", auto_sync=True
-            )
+            storage = qualified_coop.TempStorage(sharing="exclusive", auto_sync=True)
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _LOOPED_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             for tile in range(_LOOPED_TILES):
                 tile_offset = tile * _LOOPED_TILE_ITEMS
-                for item in range(items_per_thread):
+                for item in range(_LOOPED_ITEMS_PER_THREAD):
                     payload[item] = (
-                        tile_offset + thread * items_per_thread + item
+                        tile_offset + thread * _LOOPED_ITEMS_PER_THREAD + item
                     )
                 qualified_coop.store(
                     qualified_coop.this_block(),
@@ -1784,15 +1553,11 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
     (False, True),
     ids=("exclusive-auto-sync", "exclusive-manual-sync"),
 )
-def test_exclusive_storage_reused_by_a_looped_call_site_stays_ordered(
-    manual_sync,
-):
-    destination = np.full(
-        _LOOPED_TILES * _LOOPED_TILE_ITEMS, -1, dtype=np.int32
-    )
+def test_exclusive_storage_reused_by_a_looped_call_site_stays_ordered(manual_sync):
+    destination = np.full(_LOOPED_TILES * _LOOPED_TILE_ITEMS, -1, dtype=np.int32)
 
     dispatcher = _looped_exclusive_store_kernel(manual_sync)
-    dispatcher[1, _LOOPED_THREADS](destination, _LOOPED_ITEMS_PER_THREAD)
+    dispatcher[1, _LOOPED_THREADS](destination)
 
     np.testing.assert_array_equal(
         destination,
@@ -1802,41 +1567,3 @@ def test_exclusive_storage_reused_by_a_looped_call_site_stays_ordered(
     # Exactly one block barrier per iteration: the compiler's trailing reuse
     # barrier with auto_sync=True, or the caller's explicit one otherwise.
     assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 1
-
-
-@pytest.mark.parametrize("dtype", [np.int32, np.float64])
-@pytest.mark.parametrize("module", [root_coop, qualified_coop])
-def test_kernel_items_per_thread_specializes_repeated_launches(dtype, module):
-    @cuda.jit
-    def kernel(source, destination, items_per_thread):
-        payload = module.ThreadData(items_per_thread)
-        block = module.this_block()
-        module.load(block, source, payload)
-        for item in range(items_per_thread):
-            payload[item] += 7
-        module.store(block, destination, payload)
-
-    for items_per_thread in (1, 4, 1):
-        source = np.arange(_THREADS * items_per_thread, dtype=dtype)
-        destination = np.full_like(source, -1)
-        kernel[1, _THREADS](source, destination, items_per_thread)
-        np.testing.assert_array_equal(destination, source + 7)
-
-
-@pytest.mark.parametrize("module", [root_coop, qualified_coop])
-def test_kernel_items_per_thread_without_cooperative_producer(module):
-    @cuda.jit
-    def kernel(destination, items_per_thread):
-        payload = module.ThreadData(items_per_thread)
-        offset = cuda.threadIdx.x * items_per_thread
-        for item in range(items_per_thread):
-            payload[item] = np.int32(offset + item)
-        for item in range(items_per_thread):
-            destination[offset + item] = payload[item]
-
-    for items_per_thread in (1, 4, 1):
-        destination = np.full(_THREADS * items_per_thread, -1, dtype=np.int32)
-        kernel[1, _THREADS](destination, items_per_thread)
-        np.testing.assert_array_equal(
-            destination, np.arange(destination.size, dtype=np.int32)
-        )

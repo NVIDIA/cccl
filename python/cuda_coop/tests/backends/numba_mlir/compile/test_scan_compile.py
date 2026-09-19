@@ -715,7 +715,7 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
     )
 
 
-def test_collective_inside_standalone_scan_callback_has_clear_diagnostic():
+def test_primitive_inside_standalone_scan_callback_has_clear_diagnostic():
     """Preserve the planning error from a callback that calls a collective.
 
     Prefix callbacks compile as standalone device functions. Their nested
@@ -732,14 +732,14 @@ def test_collective_inside_standalone_scan_callback_has_clear_diagnostic():
     )
 
     @cuda.jit(device=True)
-    def collective_prefix(aggregate):
+    def primitive_prefix(aggregate):
         return coop.inclusive_sum(coop.this_block(), aggregate)
 
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         thread = cuda.threadIdx.x
         destination[thread] = coop.exclusive_sum(
-            coop.this_block(), source[thread], prefix_op=collective_prefix
+            coop.this_block(), source[thread], prefix_op=primitive_prefix
         )
 
     key = (
@@ -750,7 +750,7 @@ def test_collective_inside_standalone_scan_callback_has_clear_diagnostic():
     )
     with pytest.raises(
         (GroupRewriteError, TypingError),
-        match="collective_prefix.*must be inlined.*standalone callbacks",
+        match="primitive_prefix.*must be inlined.*standalone callbacks",
     ):
         kernel._compile_launch_config_signature(
             types.void(types.int32[::1], types.int32[::1]), key

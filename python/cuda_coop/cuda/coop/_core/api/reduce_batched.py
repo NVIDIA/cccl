@@ -10,37 +10,31 @@ The Python body rejects host calls; the backend supplies the device operation.
 
 from __future__ import annotations
 
-from typing import Literal, TypeVar
+from typing import Any
 
-from cuda.coop._typing import (
-    PortableNumericScalar,
-    PortableThreadDataLike,
-    ReduceOperator,
-)
-
-from ..thread_group import CoopCompilerContextRequiredError
+from ..thread_group import ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _backend_module_name,
+    _common_group_operation,
+    _common_selector,
+    _group_primitive_marker,
 )
 from ._payload import (
     ThreadDataLike,
+    _ReadableThreadDataLike,
 )
-from .thread_group import WarpGroup
-
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+from .reduce import _common_reduce_operator, _validate_common_reduce_value
 
 
-@_portable_group_operation(
-    "reduce_batched", group_kinds=("warp", "threads_within_warp")
-)
+@_common_group_operation("reduce_batched", group_kinds=("warp", "threads_within_warp"))
 def reduce_batched(
-    group: WarpGroup,
-    value: PortableThreadDataLike[_ItemT],
+    group: ThreadGroup,
+    value: _ReadableThreadDataLike[Any],
     /,
     *,
-    binary_op: ReduceOperator | None = None,
-    output_layout: Literal["striped", "blocked"] = "striped",
-) -> ThreadDataLike[_ItemT]:
+    binary_op: Any = None,
+    output_layout: str = "striped",
+) -> ThreadDataLike[Any]:
     """Reduce each payload slot independently across the selected warp.
 
     Parameters
@@ -81,22 +75,22 @@ def reduce_batched(
 
     Use :func:`cuda.coop.numba_mlir.reduce_batched` for a custom stateless
     device operator. The CUB counterpart is ``cub::WarpReduceBatched``.
-
-    Examples
-    --------
-    Sum each feature independently across a warp with Numba-CUDA-MLIR. Each
-    warp reads its own 32 rows, and the first lanes store the feature sums.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_batched.py
-        :language: python
-        :start-after: # example-begin reduce-batched-features
-        :end-before: # example-end reduce-batched-features
-        :dedent: 4
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.reduce_batched must be called from a supported GPU kernel."
+    output_layout = _common_selector(
+        "reduce_batched", "output_layout", output_layout, {"striped", "blocked"}
+    )
+    binary_op = _common_reduce_operator(binary_op)
+    if _backend_module_name() is not None:
+        if not isinstance(value, _ReadableThreadDataLike):
+            raise TypeError("cuda.coop.reduce_batched requires a ThreadData payload")
+        _validate_common_reduce_value("reduce_batched", value, binary_op)
+    return _group_primitive_marker(
+        "reduce_batched",
+        group,
+        value,
+        binary_op=binary_op,
+        output_layout=output_layout,
     )
 
 

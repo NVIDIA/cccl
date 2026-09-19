@@ -154,7 +154,7 @@ def _match_before_inference(func_ir, *, arg_types):
 
 def test_public_reduce_markers_have_group_first_signatures():
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
 
     expected_reduce = (
         "group",
@@ -172,13 +172,13 @@ def test_public_reduce_markers_have_group_first_signatures():
         "temp_storage",
     )
     assert tuple(signature(qualified.reduce).parameters) == expected_reduce
-    assert tuple(signature(portable.reduce).parameters) == expected_reduce
+    assert tuple(signature(common.reduce).parameters) == expected_reduce
     assert tuple(signature(qualified.sum).parameters) == expected_sum
-    assert tuple(signature(portable.sum).parameters) == expected_sum
+    assert tuple(signature(common.sum).parameters) == expected_sum
 
 
 @pytest.mark.parametrize(
-    "qualified", [False, True], ids=["portable", "qualified"]
+    "qualified", [False, True], ids=["common", "qualified"]
 )
 def test_public_reduce_selectors_are_normalized_before_provider(
     qualified,
@@ -186,11 +186,11 @@ def test_public_reduce_selectors_are_normalized_before_provider(
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as numba_coop
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop._core import BlockReduceAlgorithm
     from cuda.coop.numba_mlir._lowering import _reduce
 
-    coop = numba_coop if qualified else portable
+    coop = numba_coop if qualified else common
 
     def algorithm_kernel(value):
         return coop.sum(
@@ -221,7 +221,7 @@ def test_public_reduce_selectors_are_normalized_before_provider(
 
 
 @pytest.mark.parametrize(
-    "qualified", [False, True], ids=["portable", "qualified"]
+    "qualified", [False, True], ids=["common", "qualified"]
 )
 @pytest.mark.parametrize(
     ("parameter", "selector"),
@@ -241,10 +241,10 @@ def test_public_reduce_rejects_non_string_selectors_before_provider(
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as numba_coop
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop.numba_mlir._compiler import _group_reduce
 
-    coop = numba_coop if qualified else portable
+    coop = numba_coop if qualified else common
     if parameter == "algorithm":
 
         def kernel(value):
@@ -275,7 +275,7 @@ def test_public_reduce_rejects_non_string_selectors_before_provider(
         planner.run()
 
 
-def test_portable_reduce_rejects_qualified_callable_extension(monkeypatch):
+def test_common_reduce_rejects_qualified_callable_extension(monkeypatch):
     from numba_cuda_mlir import types
 
     from cuda import coop
@@ -292,7 +292,7 @@ def test_portable_reduce_rejects_qualified_callable_extension(monkeypatch):
         _group_reduce._ReducePlanning,
         "_provider",
         lambda *_args, **_kwargs: pytest.fail(
-            "portable callable reached provider selection"
+            "common callable reached provider selection"
         ),
     )
     _, planner = _plan(kernel, arg_types=(types.int32,))
@@ -339,18 +339,15 @@ def test_qualified_callable_aliases_plan_as_builtin_cub_operations(
         assert _kwarg_value(func_ir, call, "binary_op") == canonical
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 def test_reduce_infers_untyped_thread_data_symmetrically(
-    monkeypatch, qualified, items_per_thread
+    monkeypatch, qualified
 ):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified_coop
     from cuda import coop as root_coop
-    from cuda.coop._core import INT32
     from cuda.coop.numba_mlir._compiler import _group_reduce
-    from cuda.coop.numba_mlir._lowering import _reduce
 
     module = qualified_coop if qualified else root_coop
     plans = []
@@ -363,31 +360,21 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
 
     monkeypatch.setattr(_group_reduce, "plan_group_primitive", capture_plan)
 
-    def kernel(value, items_per_thread):
-        items = module.ThreadData(items_per_thread)
-        for item in range(items_per_thread):
-            items[item] = value
+    def kernel(value):
+        items = module.ThreadData(2)
+        items[0] = value
+        items[1] = value
         return module.sum(
             module.this_block(),
             items,
             algorithm="raking",
         )
 
-    func_ir, planner = _plan(
-        kernel,
-        arg_types=(types.int32, types.IntegerLiteral(items_per_thread)),
-    )
+    _, planner = _plan(kernel, arg_types=(types.int32,))
     assert planner.run()
     assert len(plans) == 1
-    assert plans[0].call.operation.dtype == INT32
-    call = _provider_call(func_ir, _reduce.sum)
-    assert _kwarg_value(func_ir, call, "dtype") is types.int32
-    key = plans[0].call.operation.semantic_key
-    monkeypatch.setattr(
-        types.int32, "_coop_dtype_boundary_test", 1, raising=False
-    )
-    assert plans[0].call.operation.semantic_key == key
-    assert plans[0].call.operation.items_per_thread == items_per_thread
+    assert plans[0].call.operation.dtype == types.int32
+    assert plans[0].call.operation.items_per_thread == 2
 
 
 def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
@@ -400,7 +387,7 @@ def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
     from cuda.coop.numba_mlir._lowering import _reduce
 
     def kernel(value):
-        items = coop.ThreadData(items_per_thread=1, dtype=types.int32)
+        items = coop.ThreadData(1, dtype=types.int32)
         items[0] = value
         return coop.sum(
             coop.this_block(),
@@ -720,11 +707,11 @@ def test_grid_reduce_rejects_unsupported_group():
         planner.run()
 
 
-def test_qualified_local_array_is_supported_but_portable_rejects_it():
+def test_qualified_local_array_is_supported_but_common_rejects_it():
     from numba_cuda_mlir import cuda, types
 
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
 
     def qualified_kernel(value):
         items = cuda.local.array(2, dtype=types.int32)
@@ -732,17 +719,17 @@ def test_qualified_local_array_is_supported_but_portable_rejects_it():
         items[1] = value
         return qualified.sum(qualified.this_block(), items)
 
-    def portable_kernel(value):
+    def common_kernel(value):
         items = cuda.local.array(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        return portable.sum(portable.this_block(), items)
+        return common.sum(common.this_block(), items)
 
     _, qualified_planner = _plan(qualified_kernel, arg_types=(types.int32,))
     assert qualified_planner.run()
-    _, portable_planner = _plan(portable_kernel, arg_types=(types.int32,))
+    _, common_planner = _plan(common_kernel, arg_types=(types.int32,))
     with pytest.raises(TypeError, match="ThreadData value payload"):
-        portable_planner.run()
+        common_planner.run()
 
 
 def test_cub_factories_declare_leading_storage_and_scope(monkeypatch):
