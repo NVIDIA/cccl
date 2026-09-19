@@ -103,8 +103,28 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   using ScanTileStateT                                      = ReduceByKeyScanTileState<AccumT, local_offset_t>;
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
-  const int threads_per_block = policy.lookback.threads_per_block;
-  const int items_per_thread  = policy.lookback.items_per_thread;
+  // The agent can fall back to a smaller block size and to global memory, so ask the helper.
+  int threads_per_block{};
+  int items_per_thread{};
+  size_t vsmem_per_block{};
+  if (const auto error = CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+        ::cuda::std::tie(threads_per_block, items_per_thread, vsmem_per_block) = determine_threads_items_vsmem<
+          decltype(policy_getter),
+          KeysInputIteratorT,
+          UniqueOutputIteratorT,
+          ValuesInputIteratorT,
+          AggregatesOutputIteratorT,
+          NumRunsOutputIteratorT,
+          EqualityOpT,
+          ReductionOpT,
+          local_offset_t,
+          AccumT,
+          streaming_context_t>(policy_getter);
+        return cudaSuccess;
+      })))
+  {
+    return error;
+  }
   const auto tile_size =
     static_cast<global_offset_t>(threads_per_block) * static_cast<global_offset_t>(items_per_thread);
 
@@ -122,15 +142,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   const auto max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
 
-  size_t allocation_sizes[3];
+  size_t allocation_sizes[4];
   if (const auto error = CubDebug(ScanTileStateT::AllocationSize(max_num_tiles, allocation_sizes[0])))
   {
     return error;
   }
   allocation_sizes[1] = num_partitions > 1 ? sizeof(global_offset_t) * 2 : size_t{0};
   allocation_sizes[2] = num_partitions > 1 ? sizeof(AccumT) * 2 : size_t{0};
+  // Partitions run in order on one stream, so one partition's blocks are the most at a time.
+  allocation_sizes[3] = max_num_tiles * vsmem_per_block;
 
-  void* allocations[3] = {};
+  void* allocations[4] = {};
   if (const auto error =
         CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
@@ -237,7 +259,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
                     reduction_op,
                     static_cast<local_offset_t>(current_num_items),
                     streaming_context,
-                    detail::vsmem_t{nullptr})))
+                    detail::vsmem_t{allocations[3]})))
       {
         return error;
       }
@@ -258,7 +280,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
                     reduction_op,
                     static_cast<local_offset_t>(current_num_items),
                     NullType{},
-                    detail::vsmem_t{nullptr})))
+                    detail::vsmem_t{allocations[3]})))
       {
         return error;
       }
