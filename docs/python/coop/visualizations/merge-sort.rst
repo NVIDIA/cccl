@@ -100,7 +100,6 @@ and a stateless ``compare_op`` implementing a strict weak ordering. A custom
 comparator supplies its own direction and cannot be combined with
 ``descending=True``.
 
-Only block calls accept explicit ``temp_storage``. Descriptors default to
-``auto_sync=False``: provide barriers before reusing scratch or request
-``auto_sync=True``; see
+Only block calls accept explicit ``temp_storage``. Keep its default
+synchronization when reusing scratch between calls; see
 :ref:`coop-faq-temp-storage`.
