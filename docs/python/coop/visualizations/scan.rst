@@ -108,7 +108,7 @@ size matches the input:
 .. code-block:: python
 
    from numba_cuda_mlir import cuda
-   import cuda.coop.numba_mlir as qualified_coop
+   import cuda.coop.numba_mlir as coop
 
    @cuda.jit(device=True)
    def maximum(left, right):
@@ -117,8 +117,8 @@ size matches the input:
    @cuda.jit
    def running_maximum(source, output):
        thread = cuda.threadIdx.x
-       output[thread] = qualified_coop.inclusive_scan(
-           qualified_coop.this_block(), source[thread], scan_op=maximum
+       output[thread] = coop.inclusive_scan(
+           coop.this_block(), source[thread], scan_op=maximum
        )
 
 A stateless prefix callback uses the qualified ``prefix_op`` argument. Define
@@ -131,8 +131,8 @@ this function at module scope, then pass it inside the kernel:
        return aggregate + 7
 
    # Inside a kernel, with an int32 scalar value in each thread:
-   prefix = qualified_coop.exclusive_sum(
-       qualified_coop.this_block(), value, prefix_op=prefix_after_aggregate
+   prefix = coop.exclusive_sum(
+       coop.this_block(), value, prefix_op=prefix_after_aggregate
    )
 
 For consecutive tiles, a ``StatefulFunction`` carries a running prefix. This
@@ -150,19 +150,19 @@ state is authoritative.
        state[0] = previous + aggregate
        return previous
 
-   prefix_callback = qualified_coop.StatefulFunction(
+   prefix_callback = coop.StatefulFunction(
        running_prefix, types.int64, name="running_prefix"
    )
 
    @cuda.jit
    def scan_two_tiles(source, output, final_state):
        thread = cuda.threadIdx.x
-       state = qualified_coop.ThreadData(1, dtype=types.int64)
+       state = coop.ThreadData(1, dtype=types.int64)
        state[0] = 10
        for tile in range(2):
            index = tile * 128 + thread
-           output[index] = qualified_coop.exclusive_sum(
-               qualified_coop.this_block(), source[index], state,
+           output[index] = coop.exclusive_sum(
+               coop.this_block(), source[index], state,
                prefix_op=prefix_callback,
            )
        if thread == 0:

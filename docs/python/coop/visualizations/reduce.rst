@@ -104,7 +104,7 @@ qualified API. Launch this kernel with one block whose size matches the input:
 .. code-block:: python
 
    from numba_cuda_mlir import cuda
-   import cuda.coop.numba_mlir as qualified_coop
+   import cuda.coop.numba_mlir as coop
 
    @cuda.jit(device=True)
    def maximum(left, right):
@@ -113,8 +113,8 @@ qualified API. Launch this kernel with one block whose size matches the input:
    @cuda.jit
    def block_maximum(source, output):
        thread = cuda.threadIdx.x
-       result = qualified_coop.reduce(
-           qualified_coop.this_block(),
+       result = coop.reduce(
+           coop.this_block(),
            source[thread],
            binary_op=maximum,
            broadcast=False,
