@@ -112,7 +112,7 @@ and qualified controls have the limits described in each programming guide.
      - Available
    * - TopK, minimum and maximum keys or pairs
      - Available
-     - Planned; unavailable
+     - Available
 
 .. _block-prefix-callbacks:
 

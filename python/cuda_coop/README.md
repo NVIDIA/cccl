@@ -1,9 +1,8 @@
 # `cuda.coop`
 
 `cuda.coop` provides cooperative primitives for CUDA thread groups in Python
-kernel DSLs. They cover data movement, reductions, scans, sorting, selection,
-neighbor comparisons, counting, and run-length decoding. The first backend
-targets Numba-CUDA-MLIR and uses CUB and CUDAX implementations.
+kernel DSLs. Its optional Numba-CUDA-MLIR and CUTLASS integrations support
+Numba and CuTe kernels using CUB and CUDAX.
 
 The distribution is a universal Python wheel containing a coherent bundle of
 CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
@@ -20,12 +19,11 @@ Install `cuda-coop` without adding Python package dependencies:
 python -m pip install cuda-coop
 ```
 
-The wheel includes the common API, every shipped DSL integration (including
-`cuda.coop.numba_mlir`), type declarations, and bundled CCCL headers. The base
+The wheel includes the common API, `cuda.coop.numba_mlir`,
+`cuda.coop.cutlass`, type declarations, and bundled CCCL headers. The base
 install declares no Python package dependencies. You can import `cuda.coop`
 without a compiler or GPU; using an integration requires its backend
-dependencies to be installed. Numba-CUDA-MLIR is the first supported backend;
-CUTLASS support is planned.
+dependencies to be installed.
 
 For Numba-CUDA-MLIR, choose the extra matching the CUDA Toolkit major version:
 
@@ -39,7 +37,7 @@ integrations. The extra only adds the dependency requirements declared in
 `pyproject.toml` so pip installs the supported Numba-CUDA-MLIR stack for the
 selected CUDA major version.
 
-Python 3.10 through 3.14 is supported. The current backend integration requires
+Python 3.10 through 3.14 is supported. The Numba-CUDA-MLIR integration requires
 `numba-cuda-mlir>=0.5.0,<0.6`.
 
 Backend compiler and runtime CI is configured for Linux x86-64 with Python 3.14:
@@ -58,6 +56,17 @@ another device or after context teardown is not qualified because cached
 architecture or launch state can belong to the original context. The upstream
 [context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
 must be released and qualified before relying on that reuse.
+
+The CUTLASS integration is implemented with Linux and CUDA 13 as its initial
+development target. A supported public CUTLASS package has not yet been
+qualified, so there is no CUTLASS installation extra or supported minimum
+version. A compatible CuTe compiler must provide the external LTO-IR linking
+and compilation hooks described in its developer guide.
+
+- Numba-CUDA-MLIR: [Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop/programming_guide.html)
+  and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/developer_overview.html).
+- CUTLASS: [Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop_cutlass.html)
+  and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/cutlass_developer_guide.html).
 
 ## Backend registration and imports
 
@@ -113,6 +122,12 @@ The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
 namespace choices and temporary storage. The
 [Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
 explains terms and concepts, including blocked and striped layouts.
+
+For CuTe kernels, `coop.register("cutlass")` explicitly activates the CUTLASS
+integration. Importing `cuda.coop.cutlass` also registers it. Common calls
+select the backend from the active compiler context; use the qualified
+namespace for CuTe register conversions and the additional controls listed
+in the CUTLASS Programming Guide.
 
 ## Primitive families
 

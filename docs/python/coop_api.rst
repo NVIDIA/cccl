@@ -135,7 +135,8 @@ See the :ref:`Numba <coop-radix>` and
 Top-k selection
 ^^^^^^^^^^^^^^^
 
-See :ref:`the Numba TopK examples <coop-topk>`.
+See the :ref:`Numba <coop-topk>` and :ref:`CUTLASS <coop-cutlass-topk>`
+TopK examples.
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys
@@ -298,6 +299,10 @@ ownership, providers, linking, and storage allocation.
      - Scalar and CuTe register inputs; floating-point Sort keys and
        ``blocked_to_striped`` results; writable Rank ``exclusive_digit_prefix``.
        See :ref:`Radix Sort and Rank <coop-cutlass-radix>`.
+   * - TopK
+     - CuTe register-tensor inputs return fresh ``ThreadData`` payloads;
+       selection controls follow the common API. See
+       :ref:`TopK <coop-cutlass-topk>`.
 
 Custom operators and Scan prefix callbacks are not supported. See
 :ref:`CUTLASS-specific behavior and limits <coop-cutlass-differences>` and

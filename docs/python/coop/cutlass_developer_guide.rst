@@ -242,7 +242,8 @@ provider emission belong under ``cutlass``.
    * - Family validation and lowering
      - ``cutlass/_group_load_store.py`` and
        ``cutlass/_lowering/_load_store.py``; the Reduce, Scan, Exchange,
-       Shuffle, Merge Sort, and Radix Sort/Rank files follow the same organization
+       Shuffle, Merge Sort, Radix Sort/Rank, and TopK files follow the same
+       organization
    * - Launch facts and provider sessions
      - ``cutlass/_compiler/_launch.py``, ``cutlass/_compiler/_state.py``,
        ``cutlass/_compiler/_finalize.py``
