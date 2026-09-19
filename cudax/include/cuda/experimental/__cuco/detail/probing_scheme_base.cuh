@@ -65,7 +65,11 @@ public:
 
   _CCCL_DEVICE_API constexpr auto operator++() noexcept
   {
-    __curr_index = (__curr_index + __step_.extent(0)) % __capacity_.extent(0);
+    // Probe construction guarantees index < capacity and step <= capacity, so advancing wraps at
+    // most once. Subtract before adding to avoid overflowing either signed or unsigned index types.
+    const auto __remaining = __capacity_.extent(0) - __curr_index;
+    __curr_index =
+      __step_.extent(0) >= __remaining ? __step_.extent(0) - __remaining : __curr_index + __step_.extent(0);
     return *this;
   }
 
