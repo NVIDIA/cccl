@@ -153,6 +153,12 @@ namespace choices and temporary storage. The
 [Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
 explains terms and concepts, including blocked and striped layouts.
 
+For CuTe kernels, `coop.register("cutlass")` explicitly activates the CUTLASS
+integration. Importing `cuda.coop.cutlass` also registers it. Common calls
+select the backend from the active compiler context; use the qualified
+namespace for CuTe register conversions and the additional controls listed
+in the CUTLASS Programming Guide.
+
 ## Primitive families
 
 | Family | Entry points |

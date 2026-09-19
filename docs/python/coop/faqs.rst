@@ -14,30 +14,21 @@ FAQs
 Why are there common and backend-qualified namespaces?
 ------------------------------------------------------
 
-``cuda.coop`` provides the contract shared by Numba-CUDA-MLIR and CUTLASS.
-See backend coverage for the implemented operations. Use this namespace for code
-that shares group, ``ThreadData``, and built-in operator contracts across
-compilers. Register the compiler your kernel uses on the host:
+``cuda.coop`` provides the common API for cooperative operations. A kernel
+compiler's backend implements those calls. Start with this namespace when
+its groups, ``ThreadData`` payloads, and built-in operators cover your needs.
+Register the compiler your kernel uses on the host:
 
 .. code-block:: python
 
    from cuda import coop
 
-   coop.register("numba-cuda-mlir")
-
-For CuTe kernels, register ``"cutlass"`` instead:
-
-.. code-block:: python
-
-   from cuda import coop
-
-   coop.register("cutlass")
+   coop.register("numba-cuda-mlir")  # Or "cutlass" for CuTe kernels.
 
 The qualified namespaces, ``cuda.coop.numba_mlir`` and
-``cuda.coop.cutlass``, include their supported common operations and add
-features specific to their compiler. Numba's extensions include local-array
-payloads and device callbacks. CUTLASS adds CuTe register-tensor conversions.
-Both add operation-specific controls;
+``cuda.coop.cutlass``, add features specific to their compiler. Numba's
+extensions include local-array payloads and device callbacks. CUTLASS adds
+CuTe register-tensor conversions. Both add operation-specific controls;
 see the :ref:`Numba comparison <coop-programming-api-choice>` and
 :ref:`CUTLASS comparison <coop-cutlass-api-choice>`.
 
@@ -45,17 +36,15 @@ Importing a qualified namespace also registers its backend. Common and
 qualified calls for the same compiler can appear in one kernel and follow
 the shared contracts. Kernel launch syntax and other DSL code still need
 adaptation when moving between compilers; compiler-owned payloads cannot
-cross that boundary. The :ref:`coverage table <coop-backends>` lists the
-families implemented by each backend.
+cross that boundary. The :ref:`coverage table <coop-backends>` lists which
+families each backend currently implements.
 
-.. _i-only-use-numba-cuda-mlir-can-i-import-its-namespace-as-coop:
 .. _coop-faq-numba-only:
-.. _coop-faq-qualified-only:
 
-Can I use only a qualified namespace?
--------------------------------------
+I only use Numba-CUDA-MLIR. Can I import its namespace as ``coop``?
+-------------------------------------------------------------------
 
-Yes. Import the qualified namespace for your kernel compiler:
+Yes. This is supported and registers the backend:
 
 .. code-block:: python
 
@@ -63,23 +52,9 @@ Yes. Import the qualified namespace for your kernel compiler:
 
    import cuda.coop.numba_mlir as coop
 
-For CuTe kernels:
-
-.. code-block:: python
-
-   from cutlass import cute
-
-   import cuda.coop.cutlass as coop
-
-Each import registers its backend, so these examples need no separate
-``register`` call. The host ``cuda.coop.register`` helper belongs to the
-common namespace; qualified imports perform that registration directly.
-
-Use ``numba_coop`` and ``cutlass_coop`` when a module contains both DSLs,
-and call each API from its own compiler's kernels. Examples and shared
-helpers may also use the common ``coop`` API alongside a qualified import.
-The documentation uses the longer aliases to make those comparisons clear;
-a single-backend application can use ``coop`` throughout.
+You can use common operations and backend extensions through that one name.
+The documentation uses ``numba_coop`` when showing backend calls alongside
+common calls, so readers can see which API an example needs.
 
 Keep the alias on a dotted import. Bare ``import cuda.coop.numba_mlir``
 assigns the top-level package to ``cuda`` in that scope, replacing the name
@@ -189,14 +164,16 @@ barriers automatically. See :ref:`exclusive scratch slices
 <coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
 synchronization.
 
-Numba accepts explicit descriptors for its supported block primitives;
-see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
-CUTLASS currently accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort.
-See the :ref:`shared storage model <coop-common-storage>` and the
-:doc:`CUTLASS Programming Guide <../coop_cutlass>` for reuse rules.
+Both backends accept explicit descriptors for block transpose-family
+Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, and TopK.
+Warp operations use compiler-owned storage and reject explicit descriptors.
+See the :ref:`shared storage model <coop-common-storage>`,
+:ref:`Numba storage rules <coop-temp-storage>`, and the
+:doc:`CUTLASS Programming Guide <../coop_cutlass>` for each family's limits.
 Numba's restrictions on combining cooperative backing with user static or
-dynamic shared arrays are specific to that backend. Warp operations that
-need scratch manage it automatically and reject explicit descriptors.
+dynamic shared arrays are specific to that backend.
+Numba also accepts explicit block scratch for Adjacent Difference,
+Discontinuity, Histogram, and both Run Length Decode forms.
 
 .. _coop-faq-installed-extra:
 
@@ -210,7 +187,7 @@ have been installed separately or by another package.
 
 ``pip install cuda-coop`` and
 ``pip install "cuda-coop[numba-cuda-mlir-cu13]"`` install the same wheel,
-including ``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``.
+including ``cuda.coop.numba_mlir`` and every other shipped DSL integration.
 The base install declares no Python package dependencies. The extra only
 adds the requirements in ``pyproject.toml`` that install the supported
 Numba-CUDA-MLIR stack for CUDA 13. If those dependencies are already present
@@ -234,7 +211,7 @@ output prefix without promising their order. Only the first
 ``min(k, valid_items)`` positions are defined, and ties at the boundary
 have no ordering guarantee. Pair variants keep each selected key attached
 to its value. Use a sorting primitive when you need ordered output.
-See the :ref:`Numba TopK example <coop-topk>` and current
+See :ref:`the Numba TopK example <coop-topk>` and current
 :ref:`backend coverage <coop-backends>`.
 
 .. _coop-faq-global-sort:
@@ -330,7 +307,7 @@ length is invalid. The values associated with padding runs are ignored.
 
 A windowed decode fills positions beyond the expanded sequence with
 zero. Zero may also be a real run value, so use the total decoded size
-to determine which positions are valid. The Numba-qualified API can write
+to determine which positions are valid. The qualified API can write
 that total and relative run offsets to auxiliary payloads; invalid
 relative offsets contain the maximum value of the selected unsigned
 offset dtype. Bulk decoding writes only valid items, leaving the rest
@@ -351,29 +328,3 @@ they are not broadcast to every lane. Each returned payload has
 ``ceil(batches / warp_width)`` slots, and slots without a corresponding
 batch are unspecified. The :doc:`feature-sum example
 <visualizations/reduce-batched>` guards its stores by batch index.
-
-.. _coop-faq-compiler-setup:
-
-Why does import work but kernel compilation fail?
--------------------------------------------------
-
-The common namespace can be imported without a compiler or GPU. Compilation
-also needs a compatible backend runtime, its compiler hooks, and the CUDA
-toolkit selected by that runtime. Call ``coop.register("numba-cuda-mlir")``
-or ``coop.register("cutlass")`` explicitly before compiling to report a
-missing or incompatible backend at setup time. The switch
-``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` disables only automatic probing;
-explicit registration and qualified imports still work.
-
-Check the operation's launch shape, dtype, and participation requirements.
-Check backend coverage for the common operation; qualified extensions follow
-their compiler's guide. In a process using both DSLs, keep Numba values
-inside Numba kernels and CuTe values inside CuTe kernels.
-
-For provider compilation errors, verify the toolkit and matching CCCL
-headers, then use ``CUDA_COOP_SOURCE_DUMP_DIR`` to inspect generated source.
-The :doc:`Numba-CUDA-MLIR Developer Guide <developer_overview>` and
-:doc:`CUTLASS Developer Guide <cutlass_developer_guide>` explain their
-compiler and linker diagnostics. CUTLASS's
-:ref:`runtime requirements <coop-cutlass-requirements>` remain a separate
-prerequisite; a successful host import does not qualify a public runtime.
