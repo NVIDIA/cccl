@@ -245,6 +245,21 @@ def test_isolated_cutlass_backend_uses_installed_modules(tmp_path: Path) -> None
                     else inspect.Parameter.KEYWORD_ONLY
                 )
                 assert parameter.kind is expected
+        merge_sort_names = {"merge_sort_keys", "merge_sort_pairs"}
+        assert merge_sort_names <= set(cutlass_coop.__all__)
+        for name in merge_sort_names:
+            parameters = inspect.signature(getattr(cutlass_coop, name)).parameters
+            assert tuple(parameters) == tuple(
+                inspect.signature(getattr(coop, name)).parameters
+            )
+            input_count = 3 if name.endswith("pairs") else 2
+            for index, parameter in enumerate(parameters.values()):
+                expected = (
+                    inspect.Parameter.POSITIONAL_ONLY
+                    if index < input_count
+                    else inspect.Parameter.KEYWORD_ONLY
+                )
+                assert parameter.kind is expected
         assert "cuda.coop.cutlass" in _dispatch._COMPILER_CONTEXT_PROBES
         assert _dispatch._backend_module_name() is None
         """
