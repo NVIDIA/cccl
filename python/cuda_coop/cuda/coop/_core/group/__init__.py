@@ -32,6 +32,7 @@ from ._model import (
 )
 from ._resolution import resolve_thread_group
 from .exchange import GroupExchangeMode, GroupExchangeSemantics
+from .histogram import GroupHistogramSemantics
 from .load_store import (
     GroupLoadStoreAlgorithm,
     GroupLoadStoreKind,
@@ -54,6 +55,7 @@ __all__ = [
     "GroupExchangeMode",
     "GroupExchangeSemantics",
     "GroupExecutionRequirements",
+    "GroupHistogramSemantics",
     "GroupLoadStoreAlgorithm",
     "GroupLoadStoreKind",
     "GroupLoadStoreSemantics",
