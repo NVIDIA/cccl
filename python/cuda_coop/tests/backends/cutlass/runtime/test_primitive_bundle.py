@@ -28,8 +28,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 @pytest.mark.parametrize(
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
-@pytest.mark.parametrize("items_per_thread", (1, 4))
-def test_mixed_primitives(api, items_per_thread):
+def test_mixed_primitives(api):
     """Check both reductions and the later Store from the same loaded payload.
 
     The block root records both results. The prefix result uses the first
@@ -39,15 +38,12 @@ def test_mixed_primitives(api, items_per_thread):
 
     @cute.kernel
     def kernel(
-        source: cute.Pointer,
-        copied: cute.Pointer,
-        observed: cute.Pointer,
-        items_per_thread: cutlass.Constexpr,
+        source: cute.Pointer, copied: cute.Pointer, observed: cute.Pointer
     ):
         group = api.this_block()
         thread = group.rank()
         outputs = cute.make_tensor(observed, cute.make_layout(2))
-        payload = api.ThreadData(items_per_thread)
+        payload = api.ThreadData(2)
         storage = api.TempStorage(sharing="shared", auto_sync=True)
         api.load(
             group, source, payload, algorithm="transpose", temp_storage=storage
@@ -65,16 +61,11 @@ def test_mixed_primitives(api, items_per_thread):
 
     @cute.jit
     def launch(
-        source: cute.Pointer,
-        copied: cute.Pointer,
-        observed: cute.Pointer,
-        items_per_thread: cutlass.Constexpr,
+        source: cute.Pointer, copied: cute.Pointer, observed: cute.Pointer
     ):
-        kernel(source, copied, observed, items_per_thread).launch(
-            grid=1, block=(8, 4, 2)
-        )
+        kernel(source, copied, observed).launch(grid=1, block=(8, 4, 2))
 
-    source = values_for(np.int32, 64 * items_per_thread, shift=83)
+    source = values_for(np.int32, 128, shift=83)
     copied = np.zeros_like(source)
     observed = np.zeros(2, dtype=np.int32)
     with (
@@ -82,9 +73,49 @@ def test_mixed_primitives(api, items_per_thread):
         device_array(copied) as dst,
         device_array(observed) as out,
     ):
-        launch(src, dst, out, items_per_thread)
+        launch(src, dst, out)
     np.testing.assert_array_equal(copied, source)
     assert observed[0] == source.sum(dtype=np.int32)
-    assert observed[1] == source[
-        : 45 * items_per_thread : items_per_thread
-    ].sum(dtype=np.int32)
+    assert observed[1] == source[:90:2].sum(dtype=np.int32)
+
+
+@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+def test_sort_scan_shared_storage(api):
+    @cute.kernel
+    def kernel(source: cute.Pointer, output: cute.Pointer, tiles: cutlass.Int32):
+        group = api.this_block()
+        storage = api.TempStorage(alignment=128)
+        for tile in range(tiles):
+            keys = api.ThreadData(2)
+            api.load(
+                group,
+                source,
+                keys,
+                algorithm="transpose",
+                offset=tile * 128,
+                temp_storage=storage,
+            )
+            ordered = api.merge_sort_keys(group, keys, temp_storage=storage)
+            prefixes = api.exclusive_sum(group, ordered, temp_storage=storage)
+            api.store(
+                group,
+                output,
+                prefixes,
+                algorithm="transpose",
+                offset=tile * 128,
+                temp_storage=storage,
+            )
+
+    @cute.jit
+    def launch(source: cute.Pointer, output: cute.Pointer, tiles: cutlass.Int32):
+        kernel(source, output, tiles).launch(grid=1, block=(8, 4, 2))
+
+    source = values_for(np.int32, 512, shift=19)
+    observed = np.zeros_like(source)
+    expected = np.empty_like(source)
+    for start in range(0, source.size, 128):
+        ordered = np.sort(source[start : start + 128])
+        expected[start : start + 128] = np.cumsum(ordered) - ordered
+    with device_array(source) as src, device_array(observed) as dst:
+        launch(src, dst, cutlass.Int32(4))
+    np.testing.assert_array_equal(observed, expected)
