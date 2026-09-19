@@ -19,16 +19,13 @@ Starting from scratch:
 
     git clone https://github.com/NVIDIA/cccl.git
     cd cccl
-    mkdir build
-    cd build
-    cmake .. --preset=benchmark
+    cmake -S . -B build/benchmark --preset=benchmark
+    cd build/benchmark
 
-You clone the repository, create a build directory and configure the build with CMake.
-The preset `benchmark` takes care of everything.
+You clone the repository, and configure the build with CMake. The preset `benchmark` takes
+care of everything.
 
 .. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
-
-We use Ninja as CMake generator in this guide, but you can use any other generator you prefer.
 
 You can then proceed to build the benchmarks.
 
@@ -36,7 +33,7 @@ You can list the available cmake build targets with, if you intend to only build
 
 .. code-block:: bash
 
-    ninja -t targets | grep '\.bench\.'
+    cmake --build . --target help | grep '\.bench\.'
     cub.bench.adjacent_difference.subtract_left.base: phony
     cub.bench.copy.memcpy.base: phony
     ...
@@ -47,7 +44,7 @@ We also provide a target to build all benchmarks:
 
 .. code-block:: bash
 
-    ninja cub.all.benches
+    cmake --build . --target cub.all.benches
 
 
 .. _cub-benchmarking-running:
@@ -186,7 +183,7 @@ For example, inside a build directory you can run:
 
 .. code-block:: bash
 
-    ninja cub.all.benches
+    cmake --build . --target cub.all.benches
     benchmarks=$(ls bin | grep cub.bench); n=$(echo $benchmarks | wc -w); i=1; \
     for b in $benchmarks; do \
       echo "=== Running $b ($i/$n) ==="; \
@@ -209,11 +206,11 @@ Furthermore, the tuning scripts require some additional python dependencies, whi
 
 .. code-block:: bash
 
-    ninja clean
+    cmake --build . --target clean
     pip install --user fpzip pandas scipy
 
 To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
-desired GPU using `export CUDA_VISIBLE_DEVICES=x <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-environment-variables>`_,
+desired GPU using `export CUDA_VISIBLE_DEVICES=x <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/environment-variables.html#cuda-visible-devices>`_,
 where `x` is the ID of the GPU you want to use (e.g., `1`).
 This ensures your application uses only the specified GPU.
 We can then run the full benchmark suite from the build directory with:
@@ -221,7 +218,7 @@ We can then run the full benchmark suite from the build directory with:
 .. code-block:: bash
 
     export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
-    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py
+    PYTHONPATH=../../benchmarks/scripts ../../benchmarks/scripts/run.py
 
 You can expect the output to look like this:
 
@@ -244,7 +241,7 @@ It's also possible to benchmark a subset of algorithms and workloads, by running
 .. code-block:: bash
 
     export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
-    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
+    PYTHONPATH=../../benchmarks/scripts ../../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
     &&&& RUNNING bench
      ctk:  12.6.77
     cccl:  v2.7.0-rc0-265-g32aa6aa5a
@@ -265,6 +262,28 @@ The tuning infrastructure stores results in an SQLite database called :code:`ccc
 This database persists across tuning runs.
 If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
 
+Running the CUB Smoke Performance Benchmarks
+--------------------------------------------
+
+The CUB performance smoke profile runs representative large workloads for a set of important algorithms and workloads. The goal is to provide performance evaluation in under 20 minutes on an RTX PRO 6000 (Blackwell).
+
+From the repository root, configure and run the profile with:
+
+.. code-block:: bash
+
+    benchmarks/scripts/run_smoke.sh
+
+The list of smoke benchmarks and workloads is available with:
+
+.. code-block:: bash
+
+    benchmarks/scripts/run_smoke.sh --list-benches
+
+The script execution generates the following files:
+
+- :code:`cccl_meta_bench_timing.json`: JSON file containing benchmark execution times for each workload (excluding compilation and setup)
+- :code:`cccl_meta_bench.db`: SQLite database containing the benchmark results
+- :code:`cccl_meta_bench.csv`: CSV file containing the benchmark metadata/configuration
 
 Comparing results of multiple tuning databases
 --------------------------------------------------------------------------------
@@ -363,7 +382,7 @@ before viewing the report using `ncu-ui`:
 
 .. code-block:: bash
 
-    scp <remote hostname>:<cccl repo directory>/build/base.ncu-rep .
+    scp <remote hostname>:<cccl repo directory>/build/benchmark/base.ncu-rep .
     ncu-ui base.ncu-rep
 
 The version of `ncu-ui` needs to be at least as high as the version of `ncu` used to create the report.

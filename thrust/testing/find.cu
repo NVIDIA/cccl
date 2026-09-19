@@ -12,12 +12,12 @@ void TestFindSimple()
 {
   Vector vec{1, 2, 3, 3, 5};
 
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 0) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 1) - vec.begin(), 0);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 2) - vec.begin(), 1);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 3) - vec.begin(), 2);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 4) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 5) - vec.begin(), 4);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 0) - vec.begin() == 5);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 1) - vec.begin() == 0);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 2) - vec.begin() == 1);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 3) - vec.begin() == 2);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 4) - vec.begin() == 5);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 5) - vec.begin() == 4);
 }
 DECLARE_VECTOR_UNITTEST(TestFindSimple);
 
@@ -32,10 +32,10 @@ void TestFindDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestFindDispatchExplicit);
 
@@ -52,7 +52,7 @@ void TestFindDispatchImplicit()
 
   thrust::find(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestFindDispatchImplicit);
 
@@ -64,12 +64,12 @@ void TestFindIfSimple()
   Vector vec{1, 2, 3, 3, 5};
 
   using thrust::placeholders::_1;
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{0}) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{1}) - vec.begin(), 0);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{2}) - vec.begin(), 1);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{3}) - vec.begin(), 2);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{4}) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{5}) - vec.begin(), 4);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{0}) - vec.begin() == 5);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{1}) - vec.begin() == 0);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{2}) - vec.begin() == 1);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{3}) - vec.begin() == 2);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{4}) - vec.begin() == 5);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{5}) - vec.begin() == 4);
 }
 DECLARE_VECTOR_UNITTEST(TestFindIfSimple);
 
@@ -84,10 +84,10 @@ void TestFindIfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find_if(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestFindIfDispatchExplicit);
 
@@ -104,7 +104,7 @@ void TestFindIfDispatchImplicit()
 
   thrust::find_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestFindIfDispatchImplicit);
 
@@ -116,12 +116,12 @@ void TestFindIfNotSimple()
   Vector vec{0, 1, 2, 3, 4};
 
   using thrust::placeholders::_1;
-  ASSERT_EQUAL(0, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{0}) - vec.begin());
-  ASSERT_EQUAL(1, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{1}) - vec.begin());
-  ASSERT_EQUAL(2, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{2}) - vec.begin());
-  ASSERT_EQUAL(3, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{3}) - vec.begin());
-  ASSERT_EQUAL(4, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{4}) - vec.begin());
-  ASSERT_EQUAL(5, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{5}) - vec.begin());
+  REQUIRE(0 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{0}) - vec.begin());
+  REQUIRE(1 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{1}) - vec.begin());
+  REQUIRE(2 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{2}) - vec.begin());
+  REQUIRE(3 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{3}) - vec.begin());
+  REQUIRE(4 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{4}) - vec.begin());
+  REQUIRE(5 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{5}) - vec.begin());
 }
 DECLARE_VECTOR_UNITTEST(TestFindIfNotSimple);
 
@@ -136,10 +136,10 @@ void TestFindIfNotDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find_if_not(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestFindIfNotDispatchExplicit);
 
@@ -156,7 +156,7 @@ void TestFindIfNotDispatchImplicit()
 
   thrust::find_if_not(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestFindIfNotDispatchImplicit);
 
@@ -173,18 +173,18 @@ struct TestFind
 
     h_iter = thrust::find(h_data.begin(), h_data.end(), T(0));
     d_iter = thrust::find(d_data.begin(), d_data.end(), T(0));
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
 
     for (size_t i = 1; i < n; i *= 2)
     {
       T sample = h_data[i];
       h_iter   = thrust::find(h_data.begin(), h_data.end(), sample);
       d_iter   = thrust::find(d_data.begin(), d_data.end(), sample);
-      ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+      REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
     }
   }
 };
-VariableUnitTest<TestFind, SignedIntegralTypes> TestFindInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestFind, SignedIntegralTypes);
 
 template <typename T>
 struct TestFindIf
@@ -200,18 +200,18 @@ struct TestFindIf
     using thrust::placeholders::_1;
     h_iter = thrust::find_if(h_data.begin(), h_data.end(), _1 == T{0});
     d_iter = thrust::find_if(d_data.begin(), d_data.end(), _1 == T{0});
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
 
     for (size_t i = 1; i < n; i *= 2)
     {
       T sample = h_data[i];
       h_iter   = thrust::find_if(h_data.begin(), h_data.end(), _1 == T{sample});
       d_iter   = thrust::find_if(d_data.begin(), d_data.end(), _1 == T{sample});
-      ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+      REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
     }
   }
 };
-VariableUnitTest<TestFindIf, SignedIntegralTypes> TestFindIfInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestFindIf, SignedIntegralTypes);
 
 template <typename T>
 struct TestFindIfNot
@@ -227,32 +227,32 @@ struct TestFindIfNot
     using thrust::placeholders::_1;
     h_iter = thrust::find_if_not(h_data.begin(), h_data.end(), _1 != T{0});
     d_iter = thrust::find_if_not(d_data.begin(), d_data.end(), _1 != T{0});
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
 
     for (size_t i = 1; i < n; i *= 2)
     {
       T sample = h_data[i];
       h_iter   = thrust::find_if_not(h_data.begin(), h_data.end(), _1 != T{sample});
       d_iter   = thrust::find_if_not(d_data.begin(), d_data.end(), _1 != T{sample});
-      ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+      REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
     }
   }
 };
-VariableUnitTest<TestFindIfNot, SignedIntegralTypes> TestFindIfNotInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestFindIfNot, SignedIntegralTypes);
 
 void TestFindWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   cuda::std::intmax_t distance_low_value = ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, 17));
 
   cuda::std::intmax_t distance_high_value =
     ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, (1ll << magnitude) - 17));
 
-  ASSERT_EQUAL(distance_low_value, 16);
-  ASSERT_EQUAL(distance_high_value, (1ll << magnitude) - 18);
+  REQUIRE(distance_low_value == 16);
+  REQUIRE(distance_high_value == (1ll << magnitude) - 18);
 }
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -290,7 +290,7 @@ void TestFindAsymmetricEquality()
   thrust::sequence(v.begin(), v.end());
   thrust::device_vector<int> dv(v);
   auto result = thrust::find(dv.begin(), dv.end(), Weird(333, 0));
-  ASSERT_EQUAL(*result, 333);
-  ASSERT_EQUAL(result - dv.begin(), 333);
+  REQUIRE(*result == 333);
+  REQUIRE(result - dv.begin() == 333);
 }
 DECLARE_UNITTEST(TestFindAsymmetricEquality);

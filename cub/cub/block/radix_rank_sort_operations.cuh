@@ -23,8 +23,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/type_traits/integer_sequence.h>
-
 #include <cuda/__bit/bitfield.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/__utility/static_for.h>
@@ -76,9 +74,9 @@ struct BaseDigitExtractor<KeyT, true>
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
   {
-    UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
+    const UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
       TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
-    UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
+    const UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
     return key == TWIDDLED_MINUS_ZERO_BITS ? TWIDDLED_ZERO_BITS : key;
   }
 };
@@ -408,7 +406,7 @@ struct digit_f
 
       if (bits_to_copy)
       {
-        bit_ordered_type ordered_src =
+        const bit_ordered_type ordered_src =
           BaseDigitExtractor<T>::ProcessFloatMinusZero(reinterpret_cast<bit_ordered_type&>(src));
 
         const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;

@@ -121,7 +121,7 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    test_group(cudax::this_thread{});
+    test_group(cudax::this_thread{cudax::implicit_hierarchy()});
     test_group(cudax::this_thread{config});
   }
 };

@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/bit_fns.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 
@@ -36,28 +38,21 @@
 
 namespace cuda::experimental
 {
-template <::cuda::std::size_t _StaticGroupCount, ::cuda::std::size_t _StaticCount, bool _IsExhaustive, bool _IsContiguous>
+template <::cuda::std::size_t _StaticGroupCount,
+          ::cuda::std::size_t _StaticCount,
+          bool _IsAlwaysExhaustive,
+          bool _IsAlwaysContiguous>
 struct __mapping_result
 {
-  unsigned __group_count_;
-  unsigned __group_rank_;
-  unsigned __unit_count_;
-  unsigned __unit_rank_;
+  ::cuda::std::uint32_t __group_count_;
+  ::cuda::std::uint32_t __group_rank_;
+  ::cuda::std::uint32_t __unit_count_;
+  ::cuda::std::uint32_t __unit_rank_;
   ::cuda::device::lane_mask __lane_mask_;
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result invalid() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid() noexcept
   {
     return {__invalid_count_or_rank,
-            __invalid_count_or_rank,
-            __invalid_count_or_rank,
-            __invalid_count_or_rank,
-            ::cuda::device::lane_mask::none()};
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result
-  invalid_with_group_count(unsigned __group_count) noexcept
-  {
-    return {__group_count,
             __invalid_count_or_rank,
             __invalid_count_or_rank,
             __invalid_count_or_rank,
@@ -69,26 +64,26 @@ struct __mapping_result
     return _StaticGroupCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const noexcept
   {
+    if constexpr (!_IsAlwaysExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting group count of thread that is not part of the group is UB");
+    }
+
     if constexpr (_StaticGroupCount != ::cuda::std::dynamic_extent)
     {
-      return static_cast<unsigned>(_StaticGroupCount);
+      return static_cast<::cuda::std::uint32_t>(_StaticGroupCount);
     }
     else
     {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(__group_count_ != __invalid_count_or_rank,
-                     "getting group count by a unit that was not part of the parent group is not allowed");
-      }
       return __group_count_;
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned group_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const noexcept
   {
-    if constexpr (!_IsExhaustive)
+    if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
     }
@@ -100,25 +95,26 @@ struct __mapping_result
     return _StaticCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const noexcept
   {
+    if constexpr (!_IsAlwaysExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting unit count of thread that is not part of the group is UB");
+    }
+
     if constexpr (_StaticCount != ::cuda::std::dynamic_extent)
     {
-      return static_cast<unsigned>(_StaticCount);
+      return static_cast<::cuda::std::uint32_t>(_StaticCount);
     }
     else
     {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
-      }
       return __unit_count_;
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const noexcept
   {
-    if constexpr (!_IsExhaustive)
+    if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting unit rank of thread that is not part of the group is UB");
     }
@@ -127,7 +123,7 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const noexcept
   {
-    if constexpr (!_IsExhaustive)
+    if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting lane mask of thread that is not part of the group is UB");
     }
@@ -136,7 +132,7 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
   {
-    if constexpr (_IsExhaustive)
+    if constexpr (_IsAlwaysExhaustive)
     {
       return true;
     }
@@ -148,20 +144,20 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
   {
-    return _IsExhaustive;
+    return _IsAlwaysExhaustive;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
   {
-    return _IsContiguous;
+    return _IsAlwaysContiguous;
   }
 };
 
-template <bool _IsContiguous>
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::device::lane_mask
-__make_lane_mask_for_n(::cuda::device::lane_mask __prev_lane_mask, unsigned __n, unsigned __rank) noexcept
+template <bool _IsAlwaysContiguous>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask __make_lane_mask_for_n(
+  ::cuda::device::lane_mask __prev_lane_mask, ::cuda::std::uint32_t __n, ::cuda::std::uint32_t __rank) noexcept
 {
-  if constexpr (_IsContiguous)
+  if constexpr (_IsAlwaysContiguous)
   {
     auto __lane_mask  = __prev_lane_mask;
     const auto __lane = ::cuda::ptx::get_sreg_laneid();
@@ -182,10 +178,9 @@ __make_lane_mask_for_n(::cuda::device::lane_mask __prev_lane_mask, unsigned __n,
 
     const auto __less_mask = __prev_lane_mask & ::cuda::device::lane_mask::all_less();
     const auto __nless     = ::cuda::std::popcount(__less_mask.value());
-    if (__nless > __rank)
+    if (__nless >= __rank)
     {
-      const auto __nless_to_remove = __nless - __rank;
-      const auto __last_to_remove  = ::__fns(__less_mask.value(), 0, __nless_to_remove);
+      const auto __last_to_remove = ::cuda::bit_fns(__less_mask.value(), __nless - __rank);
       __lane_mask |= ::cuda::device::lane_mask{__less_mask.value() & (~0u << (__last_to_remove + 1))};
     }
     else
@@ -197,8 +192,7 @@ __make_lane_mask_for_n(::cuda::device::lane_mask __prev_lane_mask, unsigned __n,
     const auto __ngreater     = ::cuda::std::popcount(__greater_mask.value());
     if (__rank + __ngreater >= __n)
     {
-      const auto __ngreater_to_keep = __n - __rank;
-      const auto __first_to_remove  = ::__fns(__greater_mask.value(), 0, __ngreater_to_keep);
+      const auto __first_to_remove = ::cuda::bit_fns(__greater_mask.value(), __n - __rank - 1);
       __lane_mask |= ::cuda::device::lane_mask{__greater_mask.value() & ((1u << __first_to_remove) - 1u)};
     }
     else

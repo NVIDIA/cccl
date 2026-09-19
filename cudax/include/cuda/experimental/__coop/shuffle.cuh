@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/bit_fns.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -40,7 +41,7 @@ template <bool _Dummy = false>
 }
 
 _CCCL_TEMPLATE(class _Group, class _Tp)
-_CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
+_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
                  _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API _Tp __shuffle_impl(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
 {
@@ -54,14 +55,14 @@ _CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group
   const auto __lane_offset = static_cast<int>(__src_unit_rank) - static_cast<int>(__mapping_result.unit_rank());
 
   unsigned __src_lane{};
-  if constexpr (_MappingResult::is_always_contiguous())
+  if constexpr (_Group::is_always_contiguous())
   {
     const auto __lane = ::cuda::ptx::get_sreg_laneid();
     __src_lane        = static_cast<unsigned>(__lane + __lane_offset);
   }
   else
   {
-    __src_lane = ::__fns(__lane_mask.value(), 0, static_cast<int>(__src_unit_rank) + 1);
+    __src_lane = ::cuda::bit_fns(__lane_mask.value(), static_cast<int>(__src_unit_rank));
   }
   return ::cuda::device::warp_shuffle_idx(__value, static_cast<int>(__src_lane), __lane_mask.value());
 }
@@ -74,6 +75,8 @@ _CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group
 template <class _Group, class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp shuffle(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
 {
+  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
+               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__shuffle_impl(__group, __value, __src_unit_rank);
 }
 } // namespace cuda::experimental::coop

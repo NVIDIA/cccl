@@ -22,10 +22,10 @@ void TestSwapRangesDevice(ExecutionPolicy exec)
 
   swap_ranges_kernel<<<1, 1>>>(exec, v1.begin(), v1.end(), v2.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(v1, v1_ref);
-  ASSERT_EQUAL(v2, v2_ref);
+  REQUIRE(v1 == v1_ref);
+  REQUIRE(v2 == v2_ref);
 }
 
 void TestSwapRangesDeviceSeq()
@@ -47,8 +47,8 @@ void TestSwapRangesCudaStreams()
 
   Vector v1{0, 1, 2, 3, 4};
   Vector v2{5, 6, 7, 8, 9};
-  Vector v1_ref(v2);
-  Vector v2_ref(v1);
+  const Vector v1_ref(v2);
+  const Vector v2_ref(v1);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -56,8 +56,8 @@ void TestSwapRangesCudaStreams()
   thrust::swap_ranges(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(v1, v1_ref);
-  ASSERT_EQUAL(v2, v2_ref);
+  REQUIRE(v1 == v1_ref);
+  REQUIRE(v2 == v2_ref);
 
   cudaStreamDestroy(s);
 }

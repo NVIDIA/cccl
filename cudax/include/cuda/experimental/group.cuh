@@ -21,9 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__group/cg_interop.cuh>
+#include <cuda/experimental/__group/coalesced_group.cuh>
 #include <cuda/experimental/__group/concepts.cuh>
 #include <cuda/experimental/__group/fwd.cuh>
-#include <cuda/experimental/__group/group.cuh>
+#include <cuda/experimental/__group/generic_group.cuh>
+#include <cuda/experimental/__group/group_view.cuh>
 #include <cuda/experimental/__group/implicit_hierarchy.cuh>
 #include <cuda/experimental/__group/invoke_one.cuh>
 #include <cuda/experimental/__group/mapping/binary_partition.cuh>
@@ -34,9 +37,11 @@
 #include <cuda/experimental/__group/mapping/take.cuh>
 #include <cuda/experimental/__group/queries.cuh>
 #include <cuda/experimental/__group/synchronizer/barrier_synchronizer.cuh>
+#include <cuda/experimental/__group/synchronizer/interwarp_synchronizer.cuh>
 #include <cuda/experimental/__group/synchronizer/lane_synchronizer.cuh>
 #include <cuda/experimental/__group/synchronizer/level_synchronizer.cuh>
 #include <cuda/experimental/__group/this_group.cuh>
 #include <cuda/experimental/__group/traits.cuh>
+#include <cuda/experimental/__group/virtual_group.cuh>
 
 #endif // _CUDA_EXPERIMENTAL_GROUP

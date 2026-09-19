@@ -27,6 +27,7 @@
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/align.h>
 #  include <cuda/std/__new/launder.h>
@@ -207,16 +208,32 @@ public:
     const size_t __alignment = alignof(_Tp))
       : __mr_(::cuda::std::move(__mr))
       , __stream_(__stream)
-      , __count_(__count)
+      , __count_(__validate_element_count(__count, __alignment))
       , __alignment_(__validate_alignment_param(__alignment))
       , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_), __alignment_))
   {}
 
 private:
-  static size_t __validate_alignment_param(size_t __a)
+  _CCCL_HOST_API static size_t __validate_alignment_param(size_t __a)
   {
     ::cuda::__validate_allocation_alignment(__a, alignof(_Tp));
     return __a;
+  }
+
+  _CCCL_HOST_API static size_t __validate_element_count(const size_t __count, const size_t __alignment)
+  {
+    constexpr size_t __max_element_count = static_cast<size_t>(-1) / sizeof(_Tp);
+    if (__count > __max_element_count)
+    {
+      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
+    }
+
+    const size_t __count_elements = __count * sizeof(_Tp);
+    if (__count_elements > __max_element_count - (__alignment - 1))
+    {
+      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
+    }
+    return __count;
   }
 
 public:
@@ -303,9 +320,9 @@ public:
   }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED
-  _CCCL_HOST_API constexpr void __set_size(const size_t __count) noexcept
+  _CCCL_HOST_API constexpr void __set_size(const size_t __count)
   {
-    __count_ = __count;
+    __count_ = __validate_element_count(__count, __alignment_);
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
@@ -449,6 +466,8 @@ public:
   _CCCL_HOST_API void
   __replace_allocation_discard(::cuda::stream_ref __stream, const size_t __count, const size_t __old_capacity)
   {
+    __validate_element_count(__count, __alignment_);
+
     if (__buf_)
     {
       __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__old_capacity), __alignment_);

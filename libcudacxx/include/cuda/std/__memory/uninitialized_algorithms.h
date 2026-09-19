@@ -518,7 +518,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __allocator_destroy(_Alloc& __alloc,
 {
   for (; __first != __last; ++__first)
   {
-    allocator_traits<_Alloc>::destroy(__alloc, ::cuda::std::__to_address(__first));
+    allocator_traits<_Alloc>::destroy(__alloc, ::cuda::std::to_address(__first));
   }
 }
 
@@ -557,7 +557,7 @@ __uninitialized_allocator_copy_impl(_Alloc& __alloc, _Iter1 __first1, _Sent1 __l
     _AllocatorDestroyRangeReverse<_Alloc, _Iter2>(__alloc, __destruct_first, __first2));
   while (__first1 != __last1)
   {
-    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::__to_address(__first2), *__first1);
+    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::to_address(__first2), *__first1);
     ++__first1;
     ++__first2;
   }
@@ -587,7 +587,7 @@ __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* 
   {
     while (__first1 != __last1)
     {
-      ::cuda::std::__construct_at(::cuda::std::__to_address(__first2), *__first1);
+      ::cuda::std::__construct_at(::cuda::std::to_address(__first2), *__first1);
       ++__first1;
       ++__first2;
     }
@@ -627,9 +627,9 @@ __uninitialized_allocator_move_if_noexcept(_Alloc& __alloc, _Iter1 __first1, _Se
   {
 #if _CCCL_HAS_EXCEPTIONS()
     allocator_traits<_Alloc>::construct(
-      __alloc, ::cuda::std::__to_address(__first2), ::cuda::std::move_if_noexcept(*__first1));
+      __alloc, ::cuda::std::to_address(__first2), ::cuda::std::move_if_noexcept(*__first1));
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::__to_address(__first2), ::cuda::std::move(*__first1));
+    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::to_address(__first2), ::cuda::std::move(*__first1));
 #endif // !_CCCL_HAS_EXCEPTIONS()
     ++__first1;
     ++__first2;
@@ -658,7 +658,7 @@ _Iter2 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Ite
   {
     while (__first1 != __last1)
     {
-      ::cuda::std::__construct_at(::cuda::std::__to_address(__first2), ::cuda::std::move(*__first1));
+      ::cuda::std::__construct_at(::cuda::std::to_address(__first2), ::cuda::std::move(*__first1));
       ++__first1;
       ++__first2;
     }

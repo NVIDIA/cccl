@@ -58,7 +58,7 @@ template <typename ExecutionPolicy>
 void TestSetIntersectionCudaStreams(ExecutionPolicy policy)
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto a      = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
   auto b      = cuda::make_device_buffer<int>(stream, device, {0, 3, 3, 4});
@@ -69,7 +69,7 @@ void TestSetIntersectionCudaStreams(ExecutionPolicy policy)
   const auto end = thrust::set_intersection(streampolicy, a.begin(), a.end(), b.begin(), b.end(), result.begin());
   stream.sync();
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {0, 4});
 }
 

@@ -18,8 +18,6 @@
 #include <cuda/experimental/__multi_gpu/algorithm/sort/sort.h>
 
 #include <algorithm>
-#include <exception>
-#include <future>
 #include <string>
 #include <vector>
 
@@ -32,18 +30,15 @@
 
 namespace
 {
-using sort_test_util::abs_less;
-using sort_test_util::make_value;
-using sort_test_util::sort_types;
-
 // Drive the sort through the single-communicator overload, one thread per local rank. That
 // overload opens its own NCCL group on a single communicator, so issuing the per-rank calls
 // serially on one thread would deadlock at `ncclGroupEnd`. Only the `sort` call happens on the
 // worker threads; every Catch2 assertion runs on the main thread after the join, since the
 // assertion macros are not safe to fire concurrently.
 template <class T, class Compare>
-void check_sort_case(
-  cuda::std::span<cudax::nccl_communicator_ref> comms, const std::vector<std::vector<T>>& host_inputs, Compare cmp)
+void check_sort_case(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
+                     const std::vector<std::vector<T>>& host_inputs,
+                     Compare cmp)
 {
   REQUIRE(host_inputs.size() == comms.size());
 
@@ -53,7 +48,7 @@ void check_sort_case(
   auto device_vec     = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i].begin(), device_vec[i].size(), cmp);
+    cudax::mgmn::sort(cudax::distributed, comms[i], environments[i], device_vec[i].begin(), device_vec[i].size(), cmp);
   });
 
   sort_test_util::check_rank_sizes(comms, device_vec, host_inputs);
@@ -65,7 +60,7 @@ void check_sort_case(
 }
 
 template <class T>
-void check_sort_case_sections(cuda::std::span<cudax::nccl_communicator_ref> comms,
+void check_sort_case_sections(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
                               const std::vector<std::vector<T>>& host_inputs)
 {
   SECTION("ascending comparator")
@@ -113,7 +108,7 @@ MULTI_GPU_TEST("sort single-comm documentation example", c2h::type_list<int>)
 
     auto input = cuda::make_device_buffer<int>(environment, device, {high, high - 1});
 
-    cudax::sort(cudax::distributed, communicator, environment, input.begin(), input.size());
+    cudax::mgmn::sort(cudax::distributed, communicator, environment, input.begin(), input.size());
 
     // The sort is in place and each rank keeps its original element count, so rank r ends up with
     // its two-element slice of the globally sorted sequence.
@@ -141,12 +136,12 @@ MULTI_GPU_TEST("sort single-comm documentation example", c2h::type_list<int>)
   }
 }
 
-MULTI_GPU_TEST("sort single-comm, random inputs", sort_types)
+MULTI_GPU_TEST("sort single-comm, random inputs", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (auto& local : input)
@@ -157,12 +152,12 @@ MULTI_GPU_TEST("sort single-comm, random inputs", sort_types)
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, uneven rank sizes", sort_types)
+MULTI_GPU_TEST("sort single-comm, uneven rank sizes", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
@@ -173,12 +168,12 @@ MULTI_GPU_TEST("sort single-comm, uneven rank sizes", sort_types)
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, inputs with some empty ranks", sort_types)
+MULTI_GPU_TEST("sort single-comm, inputs with some empty ranks", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 1; rank < input.size(); rank += 2)
@@ -189,17 +184,17 @@ MULTI_GPU_TEST("sort single-comm, inputs with some empty ranks", sort_types)
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, all ranks empty", sort_types)
+MULTI_GPU_TEST("sort single-comm, all ranks empty", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<std::vector<T>> input(comms.size());
+  const std::vector<std::vector<T>> input(comms.size());
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, a single global item", sort_types)
+MULTI_GPU_TEST("sort single-comm, a single global item", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -208,13 +203,13 @@ MULTI_GPU_TEST("sort single-comm, a single global item", sort_types)
 
   if (!input.empty())
   {
-    input[0].push_back(make_value<T>(1, 1));
+    input[0].push_back(sort_test_util::make_value<T>(1, 1));
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, one item per rank", sort_types)
+MULTI_GPU_TEST("sort single-comm, one item per rank", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -224,13 +219,13 @@ MULTI_GPU_TEST("sort single-comm, one item per rank", sort_types)
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
   {
     const auto key = static_cast<cuda::std::int64_t>(input.size() - rank);
-    input[rank].push_back(make_value<T>(key, key));
+    input[rank].push_back(sort_test_util::make_value<T>(key, key));
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, all equal inputs", sort_types)
+MULTI_GPU_TEST("sort single-comm, all equal inputs", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -239,13 +234,13 @@ MULTI_GPU_TEST("sort single-comm, all equal inputs", sort_types)
 
   for (auto& local : input)
   {
-    local.assign(100, make_value<T>(1, 1));
+    local.assign(100, sort_test_util::make_value<T>(1, 1));
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, inputs with many equal keys", sort_types)
+MULTI_GPU_TEST("sort single-comm, inputs with many equal keys", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -260,14 +255,14 @@ MULTI_GPU_TEST("sort single-comm, inputs with many equal keys", sort_types)
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
       const auto key = static_cast<cuda::std::int64_t>(item % 2);
-      local[item]    = make_value<T>(key, static_cast<cuda::std::int64_t>(rank * local.size() + item));
+      local[item]    = sort_test_util::make_value<T>(key, static_cast<cuda::std::int64_t>(rank * local.size() + item));
     }
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, presorted inputs", sort_types)
+MULTI_GPU_TEST("sort single-comm, presorted inputs", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -282,14 +277,14 @@ MULTI_GPU_TEST("sort single-comm, presorted inputs", sort_types)
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
       const auto key = static_cast<cuda::std::int64_t>(rank * local.size() + item);
-      local[item]    = make_value<T>(key, key);
+      local[item]    = sort_test_util::make_value<T>(key, key);
     }
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, reverse-sorted inputs", sort_types)
+MULTI_GPU_TEST("sort single-comm, reverse-sorted inputs", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
@@ -304,19 +299,19 @@ MULTI_GPU_TEST("sort single-comm, reverse-sorted inputs", sort_types)
     for (cuda::std::size_t item = 0; item < local.size(); ++item)
     {
       const auto key = static_cast<cuda::std::int64_t>(input.size() * local.size() - (rank * local.size() + item));
-      local[item]    = make_value<T>(key, key);
+      local[item]    = sort_test_util::make_value<T>(key, key);
     }
   }
 
   check_sort_case_sections(comms, input);
 }
 
-MULTI_GPU_TEST("sort single-comm, skewed rank sizes", sort_types)
+MULTI_GPU_TEST("sort single-comm, skewed rank sizes", sort_test_util::sort_types)
 {
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   std::vector<std::vector<T>> input(comms.size());
   for (cuda::std::size_t rank = 0; rank < input.size(); ++rank)
@@ -344,5 +339,5 @@ MULTI_GPU_TEST("sort single-comm, nonstandard comparator", )
     }
   }
 
-  check_sort_case(comms, input, abs_less<int>{});
+  check_sort_case(comms, input, sort_test_util::abs_less<int>{});
 }

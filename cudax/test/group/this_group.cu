@@ -18,8 +18,6 @@
 
 #include <cuda/experimental/group.cuh>
 
-#include <cooperative_groups.h>
-
 #include "group_testing.cuh"
 
 namespace
@@ -30,18 +28,21 @@ template <class Level, class Hierarchy, class Group>
 __device__ void test_common_properties(const Hierarchy&, Group& group)
 {
   // Assert that Group satisfies the group concept.
-  static_assert(cudax::is_group<Group>);
+  static_assert(cudax::group<Group>);
 
   // Test types
   static_assert(cuda::std::is_same_v<Level, typename Group::unit_type>);
   static_assert(cuda::std::is_same_v<Level, typename Group::level_type>);
-  static_assert(cuda::std::is_same_v<cudax::level_synchronizer, typename Group::synchronizer_type>);
 
   // Test that the group can be queried for it's hierarchy.
   {
     decltype(auto) hierarchy = cuda::std::as_const(group).hierarchy();
     static_assert(cuda::std::is_same_v<decltype(hierarchy), const Hierarchy&>);
   }
+
+  // Test that the group exposes properties.
+  static_assert(Group::is_always_exhaustive());
+  static_assert(Group::is_always_contiguous());
 
   // Test that the group can be synchronized using .sync() method.
   {
@@ -50,7 +51,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
     // .sync() method must support calls from different branches. Add some dummy work to make sure the branches are not
     // collided.
-    cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
+    const cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
     if ((threadIdx.x + threadIdx.y + threadIdx.z) % 2 == 0)
     {
       atomic++;
@@ -235,70 +236,18 @@ __device__ void test_this_queries(const cudax::this_grid<Hierarchy>& group)
   REQUIRE(cuda::grid.is_part_of(group));
 }
 
-template <class Level, class Hierarchy>
-__device__ void test_cg_interop(const Hierarchy& hierarchy)
-{
-  if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
-  {
-    cudax::this_thread group{cooperative_groups::this_thread()};
-    test_common_properties<Level>(hierarchy, group);
-  }
-  else if constexpr (cuda::std::is_same_v<Level, cuda::warp_level>)
-  {
-    cudax::this_warp group{cooperative_groups::tiled_partition<32>(cooperative_groups::this_thread_block())};
-    test_common_properties<Level>(hierarchy, group);
-  }
-  else if constexpr (cuda::std::is_same_v<Level, cuda::block_level>)
-  {
-    cudax::this_block group{cooperative_groups::this_thread_block()};
-    test_common_properties<Level>(hierarchy, group);
-  }
-  else if constexpr (cuda::std::is_same_v<Level, cuda::cluster_level>)
-  {
-#if defined(_CG_HAS_CLUSTER_GROUP)
-    NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-                   cudax::this_cluster group{cooperative_groups::this_cluster()};
-                   test_common_properties<Level>(hierarchy, group);
-                 }))
-#endif // _CG_HAS_CLUSTER_GROUP
-  }
-  else if constexpr (cuda::std::is_same_v<Level, cuda::grid_level>)
-  {
-    cudax::this_grid group{cooperative_groups::this_grid()};
-    test_common_properties<Level>(hierarchy, group);
-  }
-}
-
 template <template <class> class GroupTempl, class Level, class Config>
 __device__ void test_this_group(const Level& level, const Config& config)
 {
-  const auto implicit_hierarchy = cudax::__implicit_hierarchy();
-
-  // Test implicit construction.
-  {
-    GroupTempl group;
-    static_assert(cuda::std::is_same_v<GroupTempl<cudax::__implicit_hierarchy_t>, decltype(group)>);
-    static_assert(cuda::std::is_nothrow_default_constructible_v<decltype(group)>);
-
-    test_common_properties<Level>(implicit_hierarchy, group);
-    test_this_queries(group);
-  }
-
-  // Test construction from kernel_config.
-  {
-    GroupTempl group{config};
-    // nvcc 12.0 doesn't evaluate these static asserts correctly
+  GroupTempl group{config};
+  // nvcc 12.0 doesn't evaluate these static asserts correctly
 #if !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
-    static_assert(cuda::std::is_same_v<GroupTempl<typename Config::hierarchy_type>, decltype(group)>);
-    static_assert(cuda::std::is_nothrow_constructible_v<decltype(group), const typename Config::hierarchy_type&>);
+  static_assert(cuda::std::is_same_v<GroupTempl<typename Config::hierarchy_type>, decltype(group)>);
+  static_assert(cuda::std::is_nothrow_constructible_v<decltype(group), const typename Config::hierarchy_type&>);
 #endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
 
-    test_common_properties<Level>(config.hierarchy(), group);
-    test_this_queries(group);
-  }
-
-  // Test construction from CG equivalents.
-  test_cg_interop<Level>(implicit_hierarchy);
+  test_common_properties<Level>(config.hierarchy(), group);
+  test_this_queries(group);
 }
 
 struct TestKernel

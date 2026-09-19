@@ -842,6 +842,8 @@ class Configuration(object):
         if not std:
             # Choose the newest possible language dialect if none is given.
             possible_stds = [
+                "c++23",
+                "c++2b",
                 "c++20",
                 "c++2a",
                 "c++17",
@@ -894,7 +896,10 @@ class Configuration(object):
             # We found a dialect flag.
             stdflag = "-std={0}".format(std)
             if self.cxx.type == "msvc":
-                stdflag = "/std:{0}".format(std)
+                if std in ("23", "c++23", "c++2b"):
+                    stdflag = "/std:c++23preview"
+                else:
+                    stdflag = "/std:{0}".format(std)
 
             extraflags = []
             if self.cxx.type == "clang":
@@ -919,6 +924,7 @@ class Configuration(object):
         std_feature = std.replace("gnu++", "c++")
         std_feature = std.replace("1z", "17")
         std_feature = std.replace("2a", "20")
+        std_feature = std.replace("2b", "23")
         self.config.available_features.add(std_feature)
         # Configure include paths
         self.configure_compile_flags_header_includes()
@@ -1231,14 +1237,11 @@ class Configuration(object):
         enable_warnings = self.get_lit_bool("enable_warnings", default_enable_warnings)
         enable_pedantic = self.get_lit_bool("enable_pedantic_warnings", default=True)
         self.cxx.useWarnings(enable_warnings)
+        self.cxx.treatWarningsAsErrors(enable_pedantic)
         if "nvcc" in self.config.available_features:
             self.cxx.warning_flags += ["-Xcudafe", "--display_error_number"]
-            if enable_pedantic:
-                self.cxx.warning_flags += ["-Werror=all-warnings"]
             if "msvc" in self.config.available_features:
                 self.cxx.warning_flags += ["-Xcompiler", "/W4"]
-                if enable_pedantic:
-                    self.cxx.warning_flags += ["-Xcompiler", "/WX"]
                 # warning C4100: 'quack': unreferenced formal parameter
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4100"]
                 # warning C4127: conditional expression is constant
@@ -1262,8 +1265,6 @@ class Configuration(object):
 
                 addIfHostSupports("-Wall")
                 addIfHostSupports("-Wextra")
-                if enable_pedantic:
-                    addIfHostSupports("-Werror")
                 if "gcc" in self.config.available_features:
                     addIfHostSupports(
                         "-Wno-literal-suffix"
@@ -1298,7 +1299,6 @@ class Configuration(object):
             if enable_pedantic:
                 self.cxx.warning_flags += [
                     "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER",
-                    "-Werror",
                 ]
             if self.cxx.hasWarningFlag("-Wuser-defined-warnings"):
                 self.cxx.warning_flags += ["-Wuser-defined-warnings"]

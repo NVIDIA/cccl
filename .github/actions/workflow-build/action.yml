@@ -53,6 +53,7 @@ runs:
 
     - name: Send Slack log notification
       if: ${{inputs.slack_token != '' && inputs.slack_log != '' }}
+      continue-on-error: true
       uses: slackapi/slack-github-action@v1.26.0
       env:
         SLACK_BOT_TOKEN: ${{ inputs.slack_token }}

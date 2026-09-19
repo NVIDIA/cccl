@@ -29,6 +29,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class>
+struct hash; // IWYU pragma: export
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___FWD_HASH_H

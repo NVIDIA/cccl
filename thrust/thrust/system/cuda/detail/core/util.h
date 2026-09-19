@@ -283,7 +283,6 @@ struct get_agent_plan_impl<Agent, typelist<lowest_supported_sm_arch>>
   using Plan = typename get_plan<Agent>::type;
   Plan THRUST_RUNTIME_FUNCTION static get(int /* ptx_version */)
   {
-    using Plan = typename get_plan<Agent>::type;
     return Plan(specialize_plan<Agent::template PtxPlan, lowest_supported_sm_arch>());
   }
 };
@@ -332,7 +331,7 @@ THRUST_RUNTIME_FUNCTION inline size_t get_max_shared_memory_per_block()
 
 THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t num_blocks)
 {
-  size_t max_shmem_per_block = get_max_shared_memory_per_block();
+  const size_t max_shmem_per_block = get_max_shared_memory_per_block();
   if (shmem_per_block > max_shmem_per_block)
   {
     return shmem_per_block * num_blocks;

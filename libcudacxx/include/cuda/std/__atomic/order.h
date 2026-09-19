@@ -96,7 +96,7 @@ using memory_order = enum memory_order {
 
 #endif // _CCCL_STD_VER >= 2020
 
-_CCCL_HOST_DEVICE_API inline int __stronger_order_cuda(int __a, int __b)
+_CCCL_HOST_DEVICE_API inline int __cuda_atomic_stronger_order(int __a, int __b)
 {
   int const __max = __a > __b ? __a : __b;
   if (__max != __ATOMIC_RELEASE)

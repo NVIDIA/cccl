@@ -22,7 +22,6 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/std/__algorithm/min.h>
@@ -193,7 +192,7 @@ struct agent_t
 
     // Now find the merge path for each of the threads.
     // We can use int type here, because the number of items in shared memory is limited.
-    int diag0_thread = ItemsPerThread * static_cast<int>(threadIdx.x);
+    int diag0_thread = ItemsPerThread * static_cast<int>(threadIdx.x); // NOLINT(misc-const-correctness)
     if constexpr (IsFullTile)
     {
       _CCCL_ASSERT(num_remaining == items_per_tile, "");

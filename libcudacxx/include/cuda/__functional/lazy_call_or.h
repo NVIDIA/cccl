@@ -65,7 +65,7 @@ _CCCL_GLOBAL_CONSTANT auto __lazy_call_or = __lazy_call_or_ns::__fn{};
 } // namespace __cpo
 
 template <class _Fn, class _FallbackCallable, class... _Args>
-using __lazy_call_result_or_t _CCCL_NODEBUG_ALIAS =
+using __lazy_call_result_or_t _CCCL_NODEBUG =
   ::cuda::std::__call_result_t<__lazy_call_or_ns::__fn, _Fn, _FallbackCallable, _Args...>;
 
 _CCCL_END_NAMESPACE_CUDA

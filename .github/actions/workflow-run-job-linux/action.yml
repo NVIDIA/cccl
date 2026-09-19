@@ -23,6 +23,10 @@ inputs:
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
+  gpu_count:
+    description: "Number of GPUs on the runner (0 for CPU-only jobs)."
+    required: false
+    default: '0'
 
 runs:
   using: "composite"
@@ -182,14 +186,9 @@ runs:
 
         declare -a gpu_request=()
 
-        # Explicitly pass which GPU to use if on a GPU runner.
-        if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
-          # Multi-GPU runner labels end with "-<gpu-count>"; expose the full set.
-          if [[ "${JOB_RUNNER}" =~ -gpu-.+-([0-9]+)(-testing)?$ ]] && (( BASH_REMATCH[1] > 1 )); then
-            gpu_request+=(--gpus all)
-          else
-            gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES:-}")
-          fi
+        # Pass all GPUs to the container if this job requires any GPUs.
+        if [[ "${{inputs.gpu_count}}" -gt 0 ]]; then
+          gpu_request+=(--gpus all)
         fi
 
         # If the image contains "cudaXX.Yext"...

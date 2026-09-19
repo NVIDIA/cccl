@@ -1,5 +1,6 @@
 #include <thrust/execution_policy.h>
 #include <thrust/transform.h>
+#include <thrust/zip_function.h>
 
 #include <cuda/iterator>
 
@@ -30,12 +31,12 @@ void TestTransformUnaryDevice(ExecutionPolicy exec)
   transform_kernel<<<1, 1>>>(
     exec, input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>(), iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   iter = iter_vec[0];
 
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(output == result);
 }
 
 void TestTransformUnaryDeviceSeq()
@@ -91,12 +92,12 @@ void TestTransformIfUnaryNoStencilDevice(ExecutionPolicy exec)
     ::cuda::std::identity{},
     iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   iter = iter_vec[0];
 
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(output == result);
 }
 
 void TestTransformIfUnaryNoStencilDeviceSeq()
@@ -156,12 +157,12 @@ void TestTransformIfUnaryDevice(ExecutionPolicy exec)
     ::cuda::std::identity{},
     iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   iter = iter_vec[0];
 
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(output == result);
 }
 
 void TestTransformIfUnaryDeviceSeq()
@@ -212,12 +213,12 @@ void TestTransformBinaryDevice(ExecutionPolicy exec)
   transform_kernel<<<1, 1>>>(
     exec, input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::minus<T>(), iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   iter = iter_vec[0];
 
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input1.size());
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input1.size());
+  REQUIRE(output == result);
 }
 
 void TestTransformBinaryDeviceSeq()
@@ -283,12 +284,12 @@ void TestTransformIfBinaryDevice(ExecutionPolicy exec)
     ::cuda::std::not_fn(identity),
     iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   iter = iter_vec[0];
 
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input1.size());
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input1.size());
+  REQUIRE(output == result);
 }
 
 void TestTransformIfBinaryDeviceSeq()
@@ -313,7 +314,7 @@ void TestTransformUnaryCudaStreams()
 
   Vector input{1, -2, 3};
   Vector output(3);
-  Vector result{-1, 2, -3};
+  const Vector result{-1, 2, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -322,8 +323,8 @@ void TestTransformUnaryCudaStreams()
     thrust::transform(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(output == result);
 
   cudaStreamDestroy(s);
 }
@@ -339,7 +340,7 @@ void TestTransformBinaryCudaStreams()
   Vector input1{1, -2, 3};
   Vector input2{-4, 5, 6};
   Vector output(3);
-  Vector result{5, -7, -3};
+  const Vector result{5, -7, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -348,8 +349,8 @@ void TestTransformBinaryCudaStreams()
     thrust::cuda::par.on(s), input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::minus<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input1.size());
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input1.size());
+  REQUIRE(output == result);
 
   cudaStreamDestroy(s);
 }
@@ -410,8 +411,8 @@ void TestTransformThrustZipIteratorUnwrapping()
     thrust::transform(z, z + num_items, result.begin(), thrust::make_zip_function(sum_five{}));
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
-    ASSERT_EQUAL(reference, result);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    REQUIRE(reference == result);
   }
   // SECTION("trice")
   {
@@ -423,8 +424,8 @@ void TestTransformThrustZipIteratorUnwrapping()
                       thrust::make_zip_function(thrust::make_zip_function(thrust::make_zip_function(sum_five{}))));
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
-    ASSERT_EQUAL(reference, result);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    REQUIRE(reference == result);
   }
 }
 DECLARE_UNITTEST(TestTransformThrustZipIteratorUnwrapping);
@@ -481,8 +482,8 @@ void TestTransformCudaZipIteratorUnwrapping()
     thrust::transform(z, z + num_items, result.begin(), cuda::zip_function(sum_five{}));
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
-    ASSERT_EQUAL(reference, result);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    REQUIRE(reference == result);
   }
   // SECTION("trice")
   {
@@ -492,8 +493,8 @@ void TestTransformCudaZipIteratorUnwrapping()
       z, z + num_items, result.begin(), cuda::zip_function<cuda::zip_function<cuda::zip_function<sum_five>>>{});
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
-    ASSERT_EQUAL(reference, result);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    REQUIRE(reference == result);
   }
 }
 DECLARE_UNITTEST(TestTransformCudaZipIteratorUnwrapping);

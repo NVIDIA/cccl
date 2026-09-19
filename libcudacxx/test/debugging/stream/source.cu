@@ -91,6 +91,9 @@ using stream_ref_alias = cuda::stream_ref;
 
 int main()
 {
+  cudaSetDevice(0);
+  cudaFree(nullptr);
+
   constexpr cuda::device_ref device{0};
   const cuda::stream owning_stream{device};
   const cuda::stream_ref stream_reference{owning_stream};
