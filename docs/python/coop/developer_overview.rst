@@ -233,7 +233,7 @@ Capturing the source yourself
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 From the CCCL repository root, in an environment with the Numba-CUDA-MLIR
-extra installed:
+dependencies installed:
 
 .. code-block:: bash
 
@@ -824,8 +824,10 @@ Register explicitly to make initialization independent of import order:
 
 This host-side call imports the selected backend and activates its hooks.
 It is safe to repeat. Importing ``cuda.coop.numba_mlir as numba_coop`` also
-activates the hooks and exposes the backend namespace. Installing an extra
-only supplies dependencies; it does not register hooks in a running process.
+activates the hooks and exposes the backend namespace. Every install includes
+the same DSL integration modules. An extra only adds dependency requirements
+from ``pyproject.toml``; it does not change the wheel or register hooks in a
+running process.
 
 ``_compiler/_activation.py`` checks the runtime and compiler compatibility,
 imports the planner, and registers ``CoopWholeFunctionPlanner`` as its
