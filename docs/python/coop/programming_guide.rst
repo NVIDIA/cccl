@@ -1114,6 +1114,9 @@ The common API accepts signed or unsigned 32-bit and 64-bit keys in
 ``ThreadData``; the qualified API also accepts floating-point sorting keys,
 scalar payloads, and fixed local arrays.
 
+The :doc:`Radix Rank/Sort visualization <visualizations/radix>` compares
+one digit's ranks with the successive passes of a full sort.
+
 This example retains the original positions of equal keys:
 
 .. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
