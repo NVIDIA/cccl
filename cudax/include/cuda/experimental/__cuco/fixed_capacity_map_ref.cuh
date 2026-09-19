@@ -61,7 +61,8 @@ namespace cuda::experimental::cuco
 //! `fixed_capacity_map::capacity_v` for the same parameters.
 //!
 //! @tparam _Key Type used for keys
-//! @tparam _Tp Type used for mapped values
+//! @tparam _Tp Type used for mapped values. `insert_and_find` requires `cuda::is_bitwise_comparable_v<_Tp>`;
+//! use `CUDAX_CUCO_DECLARE_BITWISE_COMPARABLE` to explicitly opt in when safe.
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _KeyEqual Binary callable type used to compare two keys for equality
 //! @tparam _ProbingScheme Probing scheme type

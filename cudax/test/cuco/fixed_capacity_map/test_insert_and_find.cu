@@ -35,11 +35,14 @@
 
 namespace cudax = cuda::experimental;
 
+// These tests use finite integral payloads and -1 as the empty sentinel.
+CUDAX_CUCO_DECLARE_BITWISE_COMPARABLE(float);
+
 template <int N>
 using int_c = ::cuda::std::integral_constant<int, N>;
 
 using key_types     = c2h::type_list<::cuda::std::int32_t, ::cuda::std::int64_t>;
-using mapped_types  = c2h::type_list<::cuda::std::int32_t, ::cuda::std::int64_t>;
+using mapped_types  = c2h::type_list<::cuda::std::int32_t, ::cuda::std::int64_t, float>;
 using cg_sizes      = c2h::type_list<int_c<1>, int_c<2>>;
 using bucket_sizes  = c2h::type_list<int_c<1>, int_c<2>>;
 using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing, 1 = double hashing
@@ -64,7 +67,7 @@ template <class Mapped>
 struct matches_payloads
 {
   const Mapped* found;
-  ::cuda::std::int32_t payload_offset;
+  Mapped payload_offset;
 
   [[nodiscard]] _CCCL_DEVICE_API bool operator()(::cuda::std::int32_t index) const noexcept
   {

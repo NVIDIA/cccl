@@ -60,7 +60,8 @@ namespace cuda::experimental::cuco
 //! value with `cuco::make_valid_capacity`.
 //!
 //! @tparam _Key Key type. Requires `cuda::is_bitwise_comparable_v<_Key>`
-//! @tparam _Tp Mapped value type
+//! @tparam _Tp Mapped value type. `insert_and_find` requires `cuda::is_bitwise_comparable_v<_Tp>`;
+//! use `CUDAX_CUCO_DECLARE_BITWISE_COMPARABLE` to explicitly opt in when safe.
 //! @tparam _Capacity Requested slot count, or `cuda::std::dynamic_extent` for runtime sizing
 //! @tparam _Scope Thread scope for atomic operations
 //! @tparam _KeyEqual Key equality comparator
