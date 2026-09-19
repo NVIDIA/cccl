@@ -1178,14 +1178,15 @@ def _coerce_thread_payload(
         ) from exc
 
 
-def _snapshot_readable_payload(value, *, name, primitive):
-    """Copy a readable payload into a new ThreadData for lowering.
+def _snapshot_readable_payload(value, *, name, primitive, allow_scalar=False):
+    """Copy readable input items so sorting can preserve the caller's payload.
 
     Common calls, and any input with the readable ThreadData interface,
     pass the shared payload checks. Copy their items, dtype, extent, and
-    optional alignment. Qualified calls can also pass CuTe register
-    containers, which the usual adapter converts. Read-only inputs
-    therefore work, and the sort never writes to the caller's object.
+    optional alignment. Qualified register containers use the usual adapter.
+    With ``allow_scalar=True``, other qualified inputs pass through for the
+    operation to validate as scalars. Common calls still require a fixed-size
+    payload. Read-only inputs work because sorting writes fresh results.
     """
 
     from cuda.coop._core.api._dispatch import _common_root_operation_name
@@ -1212,7 +1213,7 @@ def _snapshot_readable_payload(value, *, name, primitive):
     value = _coerce_thread_payload(
         value, scope=_ROOT_SCOPE, primitive_name=primitive, arg_name=name
     )
-    if not isinstance(value, ThreadData):
+    if not isinstance(value, ThreadData) and not allow_scalar:
         raise TypeError(
             f"{_ROOT_SCOPE}.{primitive} {name} must be a fixed-size ThreadData"
         )
