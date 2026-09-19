@@ -7,37 +7,37 @@ FAQs
 ====
 
 .. _coop-faq-namespaces:
+.. _why-are-there-both-cuda-coop-and-cuda-coop-numba-mlir:
 
-Why are there both ``cuda.coop`` and ``cuda.coop.numba_mlir``?
---------------------------------------------------------------
+.. _why-are-there-portable-and-backend-qualified-namespaces:
+
+Why are there common and backend-qualified namespaces?
+------------------------------------------------------
 
 ``cuda.coop`` provides the common API for cooperative operations. A kernel
 compiler's backend implements those calls. Start with this namespace when
-its groups, ``ThreadData`` payloads, and built-in operators cover your needs:
+its groups, ``ThreadData`` payloads, and built-in operators cover your needs.
+Register the compiler your kernel uses on the host:
 
 .. code-block:: python
 
    from cuda import coop
 
-   coop.register("numba-cuda-mlir")
+   coop.register("numba-cuda-mlir")  # Or "cutlass" for CuTe kernels.
 
-``cuda.coop.numba_mlir`` exposes that backend's API, including extensions
-specific to Numba-CUDA-MLIR. Use it for features such as fixed-size Numba
-local-array payloads, device callbacks, or Scan prefix callbacks:
+The qualified namespaces, ``cuda.coop.numba_mlir`` and
+``cuda.coop.cutlass``, add features specific to their compiler. Numba's
+extensions include local-array payloads and device callbacks. CUTLASS adds
+CuTe register-tensor conversions. Both add operation-specific controls;
+see the :ref:`Numba comparison <coop-programming-api-choice>` and
+:ref:`CUTLASS comparison <coop-cutlass-api-choice>`.
 
-.. code-block:: python
-
-   import cuda.coop.numba_mlir as numba_coop
-
-Importing this namespace also registers the backend. Both namespaces can
-appear in one kernel, and shared operations follow the same contracts.
-See the :ref:`API comparison <coop-programming-api-choice>` for the
-operation-specific differences.
-
-Numba-CUDA-MLIR is the first backend; CUTLASS support is planned. The common
-API gives libraries a compiler-independent way to express cooperative
-operations. Kernel launch syntax and other DSL-specific code still need
-adaptation when moving to another compiler.
+Importing a qualified namespace also registers its backend. Common and
+qualified calls for the same compiler can appear in one kernel and follow
+the shared contracts. Kernel launch syntax and other DSL code still need
+adaptation when moving between compilers; compiler-owned payloads cannot
+cross that boundary. The :ref:`coverage table <coop-backends>` lists which
+families each backend currently implements.
 
 .. _coop-faq-numba-only:
 
@@ -96,13 +96,17 @@ with ``auto_sync=False``. Keep automatic synchronization enabled unless your
 kernel provides the required barriers itself, including across loop
 iterations. Separate slices do not remove the need to protect reuse.
 
-The current backend accepts explicit descriptors for block transpose-family
-Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent
-Difference, Discontinuity, Histogram, and both Run Length Decode forms.
-Warp Load/Store, Warp Scan, Warp Merge Sort, and Batched Warp Reduction use
-compiler-owned storage. See
-:ref:`temporary storage <coop-temp-storage>` for the complete contract and
-shared-memory restrictions.
+Both backends accept explicit descriptors for block transpose-family
+Load/Store and Block Scan. Numba also accepts them for Block Merge Sort,
+Block Radix Sort, and TopK; those families are not yet available in CUTLASS.
+Warp operations use compiler-owned storage and reject explicit descriptors.
+See the :ref:`shared storage model <coop-common-storage>`,
+:ref:`Numba storage rules <coop-temp-storage>`, and the
+:doc:`CUTLASS Programming Guide <../coop_cutlass>` for each family's limits.
+Numba's restrictions on combining cooperative backing with user static or
+dynamic shared arrays are specific to that backend.
+Numba also accepts explicit block scratch for Adjacent Difference,
+Discontinuity, Histogram, and both Run Length Decode forms.
 
 .. _coop-faq-installed-extra:
 
@@ -126,7 +130,9 @@ Registration selects which compiler hooks to activate in the running process.
 Use ``coop.register("numba-cuda-mlir")`` to state that intent explicitly.
 It works regardless of import order, is safe to repeat, and also accepts
 ``"numba_cuda_mlir"``. The backend dependencies must already be installed.
-See :ref:`backend registration <coop-backend-registration>`.
+For CUTLASS, use ``coop.register("cutlass")`` with a runtime meeting the
+:doc:`CUTLASS requirements <../coop_cutlass>`; an installation extra is not
+yet available. See :ref:`backend registration <coop-backend-registration>`.
 
 .. _coop-faq-topk-order:
 
@@ -138,7 +144,8 @@ output prefix without promising their order. Only the first
 ``min(k, valid_items)`` positions are defined, and ties at the boundary
 have no ordering guarantee. Pair variants keep each selected key attached
 to its value. Use a sorting primitive when you need ordered output.
-See :ref:`the TopK example <coop-topk>`.
+See :ref:`the Numba TopK example <coop-topk>` and current
+:ref:`backend coverage <coop-backends>`.
 
 .. _coop-faq-global-sort:
 
@@ -148,7 +155,8 @@ Does sorting each block sort the whole array?
 Each call sorts only the selected group's tile. Several blocks therefore
 produce independently sorted tiles. A globally sorted array requires an
 algorithm that combines those tiles. Warp and logical-warp Merge Sort
-likewise sort each participating group's tile independently.
+likewise sort each participating group's tile independently. See current
+:ref:`backend coverage <coop-backends>` before choosing a sorting family.
 
 .. _coop-faq-neighbor-operations:
 

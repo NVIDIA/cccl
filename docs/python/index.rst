@@ -1,5 +1,5 @@
 CCCL Python Libraries
-======================
+=====================
 
 Overview
 --------
@@ -11,8 +11,9 @@ abstractions for CUDA Python developers.
 * :doc:`cuda.compute <compute/index>` — Composable device-level primitives for building
   custom parallel algorithms, without writing CUDA kernels directly.
 
-* :doc:`cuda.coop <coop>` — Cooperative data movement, reduction, and scan
-  primitives for Numba-CUDA-MLIR kernels.
+* :doc:`cuda.coop <coop>` — Cooperative primitives inside Numba-CUDA-MLIR
+  and CUTLASS / CuTe DSL kernels, with programming and developer guides for
+  each backend.
 
 * :doc:`cuda.stf._experimental <stf>` — Sequential Task Flow for CUDA: define
   logical data and tasks with read/write annotations; STF orchestrates execution
@@ -25,7 +26,7 @@ which have been tuned to provide optimal performance across GPU architectures.
 Who is this for?
 ----------------
 
-- **Library authors** building parallel algorithms that need portable performance
+- **Library authors** building parallel algorithms that need common performance
   across GPU architectures—without dropping to CUDA C++.
 
 - **Application developers** using PyTorch, CuPy, or other GPU-accelerated frameworks
