@@ -15,6 +15,7 @@ from ._core.api.neighbors import adjacent_difference as adjacent_difference
 from ._core.api.neighbors import discontinuity as discontinuity
 from ._core.api.radix import radix_rank, radix_sort_keys, radix_sort_pairs
 from ._core.api.reduce import reduce, sum
+from ._core.api.reduce_batched import reduce_batched
 from ._core.api.run_length import run_length_decode as run_length_decode
 from ._core.api.run_length import run_length_decode_into as run_length_decode_into
 from ._core.api.scan import (
@@ -44,6 +45,10 @@ __version__: str
 def register(backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"]) -> None: ...
 
 __all__ = [
+    "topk_min_keys",
+    "topk_min_pairs",
+    "topk_max_keys",
+    "topk_max_pairs",
     "Hierarchy",
     "TempStorage",
     "TempStorageLike",
@@ -57,9 +62,9 @@ __all__ = [
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
-    "histogram",
     "inclusive_scan",
     "inclusive_sum",
+    "histogram",
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
@@ -67,9 +72,10 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
-    "register",
+    "reduce_batched",
     "run_length_decode",
     "run_length_decode_into",
+    "register",
     "scan",
     "shuffle",
     "store",
@@ -79,8 +85,4 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
-    "topk_max_keys",
-    "topk_max_pairs",
-    "topk_min_keys",
-    "topk_min_pairs",
 ]

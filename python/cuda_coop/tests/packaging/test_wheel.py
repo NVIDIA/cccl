@@ -81,6 +81,7 @@ _REQUIRED_PACKAGE_MEMBERS = {
     "cuda/coop/_core/warp/load_store.py",
     "cuda/coop/_core/warp/merge_sort.py",
     "cuda/coop/_core/warp/reduce.py",
+    "cuda/coop/_core/warp/reduce_batched.py",
     "cuda/coop/_core/warp/scan.py",
     "cuda/coop/numba_mlir/__init__.py",
     "cuda/coop/numba_mlir/__init__.pyi",
@@ -168,6 +169,7 @@ _ALLOWED_WARP_PACKAGE_MEMBERS = {
     "cuda/coop/_core/warp/load_store.py",
     "cuda/coop/_core/warp/merge_sort.py",
     "cuda/coop/_core/warp/reduce.py",
+    "cuda/coop/_core/warp/reduce_batched.py",
     "cuda/coop/_core/warp/scan.py",
 }
 
