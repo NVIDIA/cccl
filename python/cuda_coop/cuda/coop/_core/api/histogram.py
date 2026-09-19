@@ -37,29 +37,49 @@ def histogram(
 ) -> Any:
     """Return fresh striped bin counts, preserving the input samples.
 
-    All members of a complete one-dimensional block participate. Samples
-    must be integral bin indices in ``[0, bins)``. ``bins`` and
-    ``bins_per_thread`` are positive compile-time integers, with enough
-    per-member output slots for every bin. Member ``t`` receives bin
-    ``t + i * block_size`` in slot ``i``; slots beyond ``bins`` are zero.
-    Samples must be a fixed-size readable ThreadData payload.
-    Samples support uint8, int32, uint32, int64 and uint64. Counters default
-    to int32; int32, uint32, int64 and uint64 are supported, independently
-    of the sample dtype. The Python ``int`` dtype spelling means int32.
-    The returned payload has ``bins_per_thread`` counters per member,
-    including when each member provides only one sample. Use the striped
-    Store algorithm to write counters in bin order.
+    Parameters
+    ----------
+    group : ThreadGroup
+        A complete one-dimensional ``this_block()`` group. Every member
+        participates in the same call.
+    samples : ThreadDataLike
+        Readable fixed-size payload of bin indices in ``[0, bins)``. Dtypes
+        uint8, int32, uint32, int64, and uint64 are supported. Every input
+        slot contributes one sample.
+    bins : int
+        Positive compile-time number of bins.
+    bins_per_thread : int, optional
+        Positive compile-time result extent, default one. The product
+        ``block_size * bins_per_thread`` must cover every bin.
+    counter_dtype : object, optional
+        int32 by default, or uint32, int64, or uint64, independently of the
+        sample dtype. The Python ``int`` spelling means int32.
+    algorithm : {"atomic", "sort"}, optional
+        Compile-time counting algorithm, default ``"atomic"``. Both preserve
+        the input samples; the sort path operates on a private copy.
+    temp_storage : TempStorageLike, optional
+        Explicit shared scratch for CUB storage and intermediate counters.
+        Omit it for automatic storage. With ``auto_sync=False``, synchronize
+        the block before reusing the descriptor in another collective.
 
-    ``algorithm`` selects ``"atomic"`` or ``"sort"``. Each call starts at zero.
-    Accumulate multiple tiles by adding their returned counters per member;
-    choose a counter dtype wide enough for that accumulated total. Every
-    input slot contributes a sample: zero-padding an incomplete input tile
-    adds counts to bin zero. This operation has no ``valid_items`` control.
+    Returns
+    -------
+    ThreadDataLike
+        A fresh payload with ``bins_per_thread`` counters per member. Member
+        ``t`` receives bin ``t + i * block_size`` in local slot ``i``. Slots
+        beyond ``bins`` contain zero. Use striped Store to write bin order.
 
-    ``temp_storage`` optionally supplies a shared scratch descriptor. It
-    holds CUB scratch and intermediate counters for this call. The normal
-    storage-reuse synchronization rules apply; it does not retain a running
-    histogram between calls. The CUB counterpart is ``cub::BlockHistogram``.
+    Notes
+    -----
+    Each call initializes its counters to zero, including when scratch is
+    reused. Accumulate tiles by adding corresponding returned counters and
+    choose a dtype wide enough for the accumulated total. No running
+    histogram is retained in ``TempStorage``.
+
+    There is no ``valid_items`` control. Zero-padding an incomplete input
+    tile adds counts to bin zero. The input tile size and projected output
+    size must fit signed 32-bit integers. The CUB counterpart is
+    ``cub::BlockHistogram``.
     """
     normalize_positive_int("bins", bins)
     normalize_positive_int("bins_per_thread", bins_per_thread)
