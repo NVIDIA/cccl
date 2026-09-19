@@ -97,6 +97,8 @@ class CoopVisualization(SphinxDirective):
 
 
 def add_visualization_assets(app, pagename, templatename, context, doctree):
+    if pagename == "python/coop_api":
+        app.add_css_file("coop-api.css")
     if doctree is None:
         return
     explorers = {
@@ -119,8 +121,8 @@ def setup(app):
     app.connect("autodoc-process-docstring", add_api_visualization_link)
     app.connect("html-page-context", add_visualization_assets)
     return {
-        "version": "7",
-        "env_version": 6,
+        "version": "8",
+        "env_version": 7,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }
