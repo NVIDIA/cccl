@@ -49,6 +49,7 @@ _COMMON_EXPORTS = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "reduce_batched",
     "run_length_decode",
     "run_length_decode_into",
     "scan",
@@ -134,6 +135,8 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         assert call_shape(getattr(coop, operation)) == call_shape(
             getattr(common_coop, operation)
         )
+
+    assert call_shape(coop.reduce_batched) == call_shape(common_coop.reduce_batched)
 
     common_exchange = inspect.signature(common_coop.exchange)
     qualified_exchange = inspect.signature(coop.exchange)
@@ -321,6 +324,7 @@ def test_python_operator_compilation_supports_explicit_state():
         "radix_sort_keys",
         "radix_sort_pairs",
         "reduce",
+        "reduce_batched",
         "scan",
         "shuffle",
         "store",
