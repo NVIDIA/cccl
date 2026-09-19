@@ -483,7 +483,12 @@ class _GroupCallPlanner:
         registration = None if operation is None else group_primitive(operation)
         if registration is None:
             return None
-        results = registration.results
+        bound = self._bind(self._callable(definition.func), definition)
+        results = (
+            registration.results
+            if registration.result_resolver is None
+            else registration.result_resolver(self.context, bound)
+        )
         if index is None:
             if len(results) != 1:
                 return None
@@ -497,7 +502,7 @@ class _GroupCallPlanner:
             if not -len(results) <= index < len(results):
                 return None
             result = results[index]
-        return result, self._bind(self._callable(definition.func), definition)
+        return result, bound
 
     def _is_array_tuple_item(
         self,
@@ -572,6 +577,8 @@ class _GroupCallPlanner:
         if resolved is None:
             return False
         result, bound = resolved
+        if result.extent_resolver is not None:
+            return True
         if result.array_parameter is None:
             return False
         return self._is_array_value(
@@ -659,6 +666,8 @@ class _GroupCallPlanner:
         if resolved is None:
             return False
         result, bound = resolved
+        if result.extent_resolver is not None:
+            return True
         if result.array_parameter is None:
             return False
         return self._is_array_value(
@@ -852,6 +861,8 @@ class _GroupCallPlanner:
         if resolved is None:
             return None
         result, bound = resolved
+        if result.extent_resolver is not None:
+            return result.extent_resolver(self.context, bound)
         if result.array_parameter is None:
             return 1
         return self._array_extent(
@@ -941,6 +952,8 @@ class _GroupCallPlanner:
         if resolved is None:
             return None
         result, bound = resolved
+        if result.extent_resolver is not None:
+            return result.extent_resolver(self.context, bound)
         if result.array_parameter is None:
             return 1
         return self._array_extent(
