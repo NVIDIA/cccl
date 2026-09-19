@@ -113,11 +113,14 @@ the dependencies associated with them. It does not provide a portable record
 of which extra was requested when installing. The same dependencies may also
 have been installed separately or by another package.
 
-``pip install cuda-coop`` installs the common API with no Python package
-dependencies. ``pip install "cuda-coop[numba-cuda-mlir-cu13]"`` also installs
-the Numba-CUDA-MLIR backend's dependencies for CUDA 13. These commands select
-what is available in the environment; registration selects which compiler
-hooks to activate in the running process.
+``pip install cuda-coop`` and
+``pip install "cuda-coop[numba-cuda-mlir-cu13]"`` install the same wheel,
+including ``cuda.coop.numba_mlir`` and every other shipped DSL integration.
+The base install declares no Python package dependencies. The extra only
+adds the requirements in ``pyproject.toml`` that install the supported
+Numba-CUDA-MLIR stack for CUDA 13. If those dependencies are already present
+at supported versions, either command gives you the same usable API.
+Registration selects which compiler hooks to activate in the running process.
 
 Use ``coop.register("numba-cuda-mlir")`` to state that intent explicitly.
 It works regardless of import order, is safe to repeat, and also accepts

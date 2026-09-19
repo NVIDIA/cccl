@@ -233,7 +233,7 @@ Capturing the source yourself
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 From the CCCL repository root, in an environment with the Numba-CUDA-MLIR
-extra installed:
+dependencies installed:
 
 .. code-block:: bash
 
@@ -823,8 +823,10 @@ Register explicitly to make initialization independent of import order:
 
 This host-side call imports the selected backend and activates its hooks.
 It is safe to repeat. Importing ``cuda.coop.numba_mlir as numba_coop`` also
-activates the hooks and exposes the backend namespace. Installing an extra
-only supplies dependencies; it does not register hooks in a running process.
+activates the hooks and exposes the backend namespace. Every install includes
+the same DSL integration modules. An extra only adds dependency requirements
+from ``pyproject.toml``; it does not change the wheel or register hooks in a
+running process.
 
 ``_compiler/_activation.py`` registers the planners and rewrite.
 ``_compiler/_numba_mlir_compat.py`` isolates access to Numba-CUDA-MLIR's
@@ -899,8 +901,8 @@ Configure VS Code
 
 Use a checkout containing the Numba-CUDA-MLIR stack described above. Open
 that CCCL checkout as the VS Code folder, and use **Python: Select
-Interpreter** to choose an environment with the Numba backend installed
-as described in the :doc:`installation instructions <../coop>`.
+Interpreter** to choose an environment with the Numba-CUDA-MLIR dependencies
+installed as described in the :doc:`installation instructions <../coop>`.
 The Python and Python Debugger extensions must be installed in the
 environment where VS Code runs the program, including the remote side
 when using Remote SSH.
