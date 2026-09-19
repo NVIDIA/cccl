@@ -132,6 +132,6 @@ before offset 3 and after the decoded interval keep their initial values.
 The qualified bulk operation can also write global relative offsets and
 select uint64 totals. Both forms allocate scratch automatically unless
 you supply ``temp_storage``. Scratch remains occupied through the internal
-loop. Explicit descriptors default to ``auto_sync=False``: synchronize the
-block after the call and before its next use, or request ``auto_sync=True``; see
+loop. When reusing a descriptor with ``auto_sync=False``, synchronize the
+block after the call and before its next use; see
 :ref:`coop-faq-temp-storage`.
