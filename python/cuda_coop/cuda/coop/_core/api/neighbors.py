@@ -51,17 +51,45 @@ def adjacent_difference(
 ) -> ThreadDataLike[Any]:
     """Return blocked neighbor differences without modifying the input.
 
-    A complete block processes fixed-size numeric ThreadData. Left subtracts
-    the previous element from the current element; right subtracts the next
-    element. A missing neighbor leaves the boundary input unchanged unless
-    the matching tile boundary scalar is supplied. Boundary scalars must be
-    uniform across the block and match the input dtype.
+    Parameters
+    ----------
+    group : ThreadGroup
+        A complete ``this_block()`` group. Every member participates in the
+        same call; multidimensional blocks use linear thread-rank order.
+    values : ThreadDataLike
+        Readable fixed-size payload in blocked order. Signed and unsigned
+        8-, 16-, 32-, and 64-bit integers, float32, and float64 are supported.
+        Initialize every input slot, including any invalid suffix.
+    direction : {"left", "right"}, optional
+        Compile-time choice, default ``"left"``. Subtract the previous item
+        from the current item for left differences, or the next item from
+        the current item for right differences.
+    valid_items : integer, optional
+        Block-uniform count in ``[0, block_size * items_per_thread]``.
+        Omit it to process the full tile. The suffix beyond this count is
+        copied unchanged. For right differences, this argument cannot be
+        combined with ``tile_successor_item``.
+    tile_predecessor_item, tile_successor_item : scalar, optional
+        Block-uniform neighbor outside the tile, matching the input dtype.
+        Left differences accept only a predecessor; right differences accept
+        only a successor. Without that neighbor, the boundary input is
+        copied unchanged.
+    temp_storage : TempStorageLike, optional
+        Explicit block scratch descriptor. Omit it for automatic storage.
+        With ``auto_sync=False``, synchronize the block before reusing the
+        descriptor in another collective.
 
-    valid_items is a uniform count in [0, block size * items per thread].
-    The invalid suffix is copied unchanged. Right partial tiles cannot use
-    tile_successor_item. All input slots must be initialized, including the
-    suffix. Temporary storage is automatic unless temp_storage is supplied.
-    Use the qualified API for a custom binary difference operator.
+    Returns
+    -------
+    ThreadDataLike
+        A fresh blocked payload with the input dtype and extent. The input
+        and the returned invalid suffix retain their original values.
+
+    Notes
+    -----
+    Subtraction uses the input dtype. Use
+    :func:`cuda.coop.numba_mlir.adjacent_difference` for a custom binary
+    operator. The CUB counterpart is ``cub::BlockAdjacentDifference``.
     """
     validate_neighbor_options(
         "adjacent_difference",
@@ -96,17 +124,42 @@ def discontinuity(
 ) -> ThreadDataLike[Any] | tuple[ThreadDataLike[Any], ThreadDataLike[Any]]:
     """Flag unequal adjacent items in a full, blocked block tile.
 
-    Return int32 ThreadData for heads or tails, or (heads, tails) for
-    heads_and_tails. Results have the input extent; the input is preserved.
-    An absent tile predecessor forces the first head to one; an absent
-    successor forces the last tail to one. Supplied boundary scalars must
-    match the input dtype and be uniform across the block. Only the boundary
-    arguments relevant to the selected mode are accepted.
+    Parameters
+    ----------
+    group : ThreadGroup
+        A complete ``this_block()`` group. Every member participates in the
+        same call; multidimensional blocks use linear thread-rank order.
+    values : ThreadDataLike
+        Readable fixed-size payload in blocked order. Signed and unsigned
+        8-, 16-, 32-, and 64-bit integers, float32, and float64 are supported.
+    mode : {"heads", "tails", "heads_and_tails"}, optional
+        Compile-time result selection, default ``"heads"``. Heads compare
+        the previous item with the current item; tails compare the current
+        item with the next item. Unequal neighbors produce one, otherwise
+        zero.
+    tile_predecessor_item, tile_successor_item : scalar, optional
+        Block-uniform neighbor outside the tile, matching the input dtype.
+        Heads accept a predecessor, tails accept a successor, and
+        ``"heads_and_tails"`` accepts both. Without a predecessor the first
+        head is one; without a successor the last tail is one.
+    temp_storage : TempStorageLike, optional
+        Explicit block scratch descriptor. Omit it for automatic storage.
+        With ``auto_sync=False``, synchronize the block before reusing the
+        descriptor in another collective.
 
-    Partial tiles are unsupported: padding becomes part of the tile and can
-    change its flags, including the last valid tail. Storage is automatic
-    unless temp_storage is supplied. Use the qualified API for a custom
-    binary predicate.
+    Returns
+    -------
+    ThreadDataLike or tuple of ThreadDataLike
+        A fresh int32 payload for heads or tails, or ``(heads, tails)`` for
+        ``"heads_and_tails"``. Each payload has the input extent and blocked
+        layout. The input is preserved.
+
+    Notes
+    -----
+    Partial tiles are unsupported. Padding participates in comparisons and
+    can change the last valid tail. Use
+    :func:`cuda.coop.numba_mlir.discontinuity` for a custom binary predicate.
+    The CUB counterpart is ``cub::BlockDiscontinuity``.
     """
     validate_neighbor_options(
         "discontinuity",

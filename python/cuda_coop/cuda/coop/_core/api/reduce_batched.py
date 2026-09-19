@@ -33,23 +33,44 @@ def reduce_batched(
 ) -> ThreadDataLike[Any]:
     """Reduce each payload slot independently across the selected warp.
 
-    If each lane supplies ``B`` items and the warp contains ``W`` lanes, the
-    fresh result contains ``ceil(B / W)`` items per lane. Striped output slot
-    ``i`` in lane ``r`` holds batch ``r + i * W``; blocked output holds batch
-    ``r * ceil(B / W) + i``. Slots beyond ``B`` are unspecified. Inputs are
-    preserved. Every member of the selected warp must participate.
+    Parameters
+    ----------
+    group : ThreadGroup
+        A physical warp or a logical warp from ``threads_within_warp``.
+        Every member of the selected warp participates in the same call.
+    value : ThreadDataLike
+        Readable payload with a positive compile-time extent ``B``. Local
+        slot ``b`` contributes to batch ``b`` across all lanes. Dtypes are
+        signed and unsigned 8-, 16-, 32-, and 64-bit integers, float32, and
+        float64.
+    binary_op : str, optional
+        Built-in reduction operator, default addition. Operator strings
+        follow :func:`cuda.coop.reduce`, including sum, multiplication,
+        minimum, maximum, and integer bitwise operations. The operator must
+        be associative and commutative.
+    output_layout : {"striped", "blocked"}, optional
+        Compile-time ownership layout, default ``"striped"``. For ``W``
+        lanes, local result slot ``i`` in lane ``r`` holds batch
+        ``r + i * W`` in striped layout, or
+        ``r * ceil(B / W) + i`` in blocked layout.
 
-    ``B`` must be a positive compile-time extent. ``binary_op`` defaults to
-    addition and accepts the same built-in string operators as :func:`reduce`.
-    The operation must be associative and commutative. Input and output share
-    the same numeric dtype; there is no accumulator promotion. Supported dtypes
-    are signed and unsigned 8-, 16-, 32-, and 64-bit integers, ``float32``, and
-    ``float64``.
+    Returns
+    -------
+    ThreadDataLike
+        A fresh payload of ``ceil(B / W)`` aggregates per lane, using the
+        input dtype without accumulator promotion. Slots without a batch
+        are unspecified. Guard reads and stores using the batch index.
+        The input is preserved.
 
-    The Numba-CUDA-MLIR backend supports complete physical warps and logical
-    warps of 1, 2, 4, 8, or 16 threads. Temporary storage is managed per warp
-    by the compiler. Guard stores using the batch index, since the allocated
-    result extent may include slots without a corresponding batch.
+    Notes
+    -----
+    Each batch reduces independently; input slots are not combined with
+    one another. The Numba-CUDA-MLIR backend supports complete physical
+    warps and logical warps of 1, 2, 4, 8, or 16 threads. The compiler manages
+    scratch per warp; this operation has no ``temp_storage`` argument.
+
+    Use :func:`cuda.coop.numba_mlir.reduce_batched` for a custom stateless
+    device operator. The CUB counterpart is ``cub::WarpReduceBatched``.
     """
 
     output_layout = _common_selector(
