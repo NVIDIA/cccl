@@ -79,6 +79,10 @@ from .block.merge_sort import (
     make_block_merge_sort_semantics,
     make_block_merge_sort_specialization,
 )
+from .block.neighbors import (
+    BlockNeighborSemantics,
+    make_block_neighbor_specialization,
+)
 from .group import (
     ArgumentPrecondition,
     GroupExchangeMode,
@@ -119,6 +123,7 @@ from .group import (
 from .group.merge_sort import (
     GroupMergeSortSemantics,
 )
+from .group.neighbors import GroupNeighborSemantics
 from .launch import (
     Dim3,
     LaunchFactConflict,
@@ -208,6 +213,7 @@ __all__ = [
     "BlockMergeSortSemantics",
     "BlockMergeSortSpecialization",
     "BlockMergeSortTilePolicy",
+    "BlockNeighborSemantics",
     "BlockReduceAlgorithm",
     "BlockReduceOperation",
     "BlockReduceSemantics",
@@ -238,6 +244,7 @@ __all__ = [
     "GroupLoweringPlan",
     "GroupLoweringTarget",
     "GroupMergeSortSemantics",
+    "GroupNeighborSemantics",
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
@@ -305,6 +312,7 @@ __all__ = [
     "make_block_exchange_specialization",
     "make_block_merge_sort_semantics",
     "make_block_merge_sort_specialization",
+    "make_block_neighbor_specialization",
     "make_block_reduce_semantics",
     "make_block_reduce_specialization",
     "make_block_scan_specialization",
