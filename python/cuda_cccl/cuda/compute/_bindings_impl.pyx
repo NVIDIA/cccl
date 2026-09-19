@@ -2549,9 +2549,9 @@ cdef class DeviceHistogramBuildResult:
         Value h_num_output_levels,
         Value h_lower_level,
         Value h_upper_level,
-        int num_row_pixels,
-        int num_rows,
-        int row_stride_samples,
+        int64_t num_row_pixels,
+        int64_t num_rows,
+        int64_t row_stride_samples,
         stream
     ):
         cdef CUresult status = -1
