@@ -8,9 +8,9 @@ from typing import Any, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import PortableNumericScalar, ThreadDataLike
+from .._typing import CommonNumericScalar, ThreadDataLike
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 _ArrayShape: TypeAlias = int | tuple[int, ...]
 

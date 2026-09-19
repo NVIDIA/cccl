@@ -15,14 +15,14 @@ _LAZY_FAKE_FAMILY_MODULE = f"{__package__}._lazy_fake_family"
 
 @pytest.fixture(autouse=True)
 def _restore_private_registries():
-    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop._core.api import _dispatch as common_dispatch
     from cuda.coop._core.group import _dispatch as core_dispatch
     from cuda.coop.numba_mlir._compiler import _operations
 
     registries = (
         core_dispatch._GROUP_OPERATION_FAMILIES,
-        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_NAME,
-        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_FUNCTION,
+        common_dispatch._COMMON_GROUP_OPERATIONS_BY_NAME,
+        common_dispatch._COMMON_GROUP_OPERATIONS_BY_FUNCTION,
         _operations._GROUP_OPERATIONS,
         _operations._GROUP_FAMILY_MODULES,
         _operations._FACTORY_OPERATIONS,
@@ -508,7 +508,7 @@ def _invocable_storage_slices(func_ir, invocable, *, thread, block):
 
 
 def _register_lazy_fake_frontends():
-    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop._core.api import _dispatch as common_dispatch
     from cuda.coop.numba_mlir._compiler import _operations
 
     operations = {
@@ -518,11 +518,11 @@ def _register_lazy_fake_frontends():
         "pair": "_test_lazy_family_pair",
     }
 
-    @portable_dispatch._portable_group_operation(
+    @common_dispatch._common_group_operation(
         operations["scalar"],
         group_kinds=("thread",),
     )
-    def portable_scalar(group, value):
+    def common_scalar(group, value):
         del group, value
 
     @_operations.group_operation(
@@ -532,11 +532,11 @@ def _register_lazy_fake_frontends():
     def qualified_scalar(group, value):
         del group, value
 
-    @portable_dispatch._portable_group_operation(
+    @common_dispatch._common_group_operation(
         operations["thread_storage"],
         group_kinds=("thread",),
     )
-    def portable_thread_storage(group, value):
+    def common_thread_storage(group, value):
         del group, value
 
     @_operations.group_operation(
@@ -546,11 +546,11 @@ def _register_lazy_fake_frontends():
     def qualified_thread_storage(group, value):
         del group, value
 
-    @portable_dispatch._portable_group_operation(
+    @common_dispatch._common_group_operation(
         operations["array"],
         group_kinds=("block",),
     )
-    def portable_array(group, values):
+    def common_array(group, values):
         del group, values
 
     @_operations.group_operation(
@@ -560,11 +560,11 @@ def _register_lazy_fake_frontends():
     def qualified_array(group, values):
         del group, values
 
-    @portable_dispatch._portable_group_operation(
+    @common_dispatch._common_group_operation(
         operations["pair"],
         group_kinds=("warp", "threads_within_warp"),
     )
-    def portable_pair(group, key, values, temp_storage=None):
+    def common_pair(group, key, values, temp_storage=None):
         del group, key, values, temp_storage
 
     @_operations.group_operation(
@@ -575,11 +575,11 @@ def _register_lazy_fake_frontends():
         del group, key, values, temp_storage
 
     return operations, {
-        "portable": {
-            "scalar": portable_scalar,
-            "thread_storage": portable_thread_storage,
-            "array": portable_array,
-            "pair": portable_pair,
+        "common": {
+            "scalar": common_scalar,
+            "thread_storage": common_thread_storage,
+            "array": common_array,
+            "pair": common_pair,
         },
         "qualified": {
             "scalar": qualified_scalar,
@@ -700,7 +700,7 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numbair_transforms import ir
 
-    import cuda.coop as portable_coop
+    import cuda.coop as common_coop
     import cuda.coop.numba_mlir as qualified_coop
     from cuda.coop._core import (
         GroupLoweringPlan,
@@ -713,7 +713,7 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
         this_thread,
         this_warp,
     )
-    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop._core.api import _dispatch as common_dispatch
     from cuda.coop._core.group import _dispatch as core_dispatch
     from cuda.coop.numba_mlir._compiler import _operations
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
@@ -724,8 +724,8 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
 
     registries = (
         core_dispatch._GROUP_OPERATION_FAMILIES,
-        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_NAME,
-        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_FUNCTION,
+        common_dispatch._COMMON_GROUP_OPERATIONS_BY_NAME,
+        common_dispatch._COMMON_GROUP_OPERATIONS_BY_FUNCTION,
         _operations._GROUP_OPERATIONS,
         _operations._GROUP_FAMILY_MODULES,
         _operations._FACTORY_OPERATIONS,
@@ -754,15 +754,14 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
         )
 
         for shape, operation in operations.items():
-            portable_marker = markers["portable"][shape]
+            common_marker = markers["common"][shape]
             qualified_marker = markers["qualified"][shape]
-            assert portable_marker is not qualified_marker
+            assert common_marker is not qualified_marker
             assert (
-                portable_dispatch._portable_group_operation_name(portable_marker)
-                == operation
+                common_dispatch._common_group_operation_name(common_marker) == operation
             )
             assert _operations.group_operation_name(qualified_marker) == operation
-            assert _group_operation_name(portable_marker) == operation
+            assert _group_operation_name(common_marker) == operation
             assert _group_operation_name(qualified_marker) == operation
 
             def impostor(group, value):
@@ -775,8 +774,8 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
             assert _LAZY_FAKE_FAMILY_MODULE not in sys.modules
 
         first_ir, first_args = _lazy_fake_family_frontend(
-            portable_coop,
-            markers["portable"]["scalar"],
+            common_coop,
+            markers["common"]["scalar"],
             "scalar",
         )
         first_planner, first_rewrite, _ = _run_lazy_fake_family_pipeline(
@@ -890,7 +889,7 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
             ("pair", 1, types.float32, True, 3),
         )
         for frontend_name, module in (
-            ("portable", portable_coop),
+            ("common", common_coop),
             ("qualified", qualified_coop),
         ):
             for (
@@ -921,12 +920,12 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
 
         pipeline_cases = [
             (frontend_name, shape)
-            for frontend_name in ("portable", "qualified")
+            for frontend_name in ("common", "qualified")
             for shape in ("scalar", "thread_storage", "array", "pair")
         ]
-        pipeline_results = {("portable", "scalar"): (first_ir, first_rewrite)}
+        pipeline_results = {("common", "scalar"): (first_ir, first_rewrite)}
         for frontend_name, shape in pipeline_cases[1:]:
-            module = portable_coop if frontend_name == "portable" else qualified_coop
+            module = common_coop if frontend_name == "common" else qualified_coop
             func_ir, args = _lazy_fake_family_frontend(
                 module,
                 markers[frontend_name][shape],
@@ -1047,12 +1046,12 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
         operation not in _operations._GROUP_PRIMITIVES
         and operation not in _operations._REWRITE_OPERATIONS
         and operation not in _operations._GROUP_FAMILY_MODULES
-        and operation not in portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_NAME
+        and operation not in common_dispatch._COMMON_GROUP_OPERATIONS_BY_NAME
         for operation in operations.values()
     )
     assert all(
         marker not in _operations._GROUP_OPERATIONS
-        and marker not in portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_FUNCTION
+        and marker not in common_dispatch._COMMON_GROUP_OPERATIONS_BY_FUNCTION
         for frontend_markers in markers.values()
         for marker in frontend_markers.values()
     )
@@ -1064,16 +1063,16 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
     )
 
 
-@pytest.mark.parametrize("frontend_name", ["portable", "qualified"])
+@pytest.mark.parametrize("frontend_name", ["common", "qualified"])
 def test_lazy_fake_logical_warp_uses_one_aligned_slice_per_group(frontend_name):
     from numba_cuda_mlir import cuda
 
-    import cuda.coop as portable_coop
+    import cuda.coop as common_coop
     import cuda.coop.numba_mlir as qualified_coop
 
     sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
     operations, markers = _register_lazy_fake_frontends()
-    module = portable_coop if frontend_name == "portable" else qualified_coop
+    module = common_coop if frontend_name == "common" else qualified_coop
     func_ir, args = _lazy_fake_family_frontend(
         module,
         markers[frontend_name]["pair"],
@@ -1137,7 +1136,7 @@ def test_lazy_fake_single_lane_groups_emit_the_high_lane_mask():
     operations, markers = _register_lazy_fake_frontends()
     func_ir, args = _lazy_fake_family_frontend(
         coop,
-        markers["portable"]["pair"],
+        markers["common"]["pair"],
         "pair",
         logical_width=1,
     )
@@ -1177,16 +1176,16 @@ def test_lazy_fake_single_lane_groups_emit_the_high_lane_mask():
     )
 
 
-@pytest.mark.parametrize("frontend_name", ["portable", "qualified"])
+@pytest.mark.parametrize("frontend_name", ["common", "qualified"])
 def test_lazy_fake_thread_scope_uses_one_aligned_slice_per_thread(frontend_name):
     from numba_cuda_mlir import cuda
 
-    import cuda.coop as portable_coop
+    import cuda.coop as common_coop
     import cuda.coop.numba_mlir as qualified_coop
 
     sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
     operations, markers = _register_lazy_fake_frontends()
-    module = portable_coop if frontend_name == "portable" else qualified_coop
+    module = common_coop if frontend_name == "common" else qualified_coop
     func_ir, args = _lazy_fake_family_frontend(
         module,
         markers[frontend_name]["thread_storage"],
@@ -1238,7 +1237,7 @@ def test_lazy_fake_storage_reuses_only_identical_execution_domains():
 
     sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
     operations, markers = _register_lazy_fake_frontends()
-    pair = markers["portable"]["pair"]
+    pair = markers["common"]["pair"]
 
     def kernel(key):
         values = coop.ThreadData(3, dtype=types.float32)
@@ -1295,7 +1294,7 @@ def test_lazy_fake_storage_reuses_only_identical_execution_domains():
     )
 
 
-@pytest.mark.parametrize("frontend_name", ["portable", "qualified"])
+@pytest.mark.parametrize("frontend_name", ["common", "qualified"])
 @pytest.mark.parametrize("logical_width", [None, 8], ids=["physical", "logical"])
 def test_lazy_fake_warp_rejects_caller_owned_storage_before_provider(
     frontend_name,
@@ -1304,7 +1303,7 @@ def test_lazy_fake_warp_rejects_caller_owned_storage_before_provider(
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
-    import cuda.coop as portable_coop
+    import cuda.coop as common_coop
     import cuda.coop.numba_mlir as qualified_coop
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
     from cuda.coop.numba_mlir._compiler._group_planner_support import (
@@ -1313,7 +1312,7 @@ def test_lazy_fake_warp_rejects_caller_owned_storage_before_provider(
 
     sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
     operations, markers = _register_lazy_fake_frontends()
-    module = portable_coop if frontend_name == "portable" else qualified_coop
+    module = common_coop if frontend_name == "common" else qualified_coop
     pair = markers[frontend_name]["pair"]
     if logical_width is None:
 

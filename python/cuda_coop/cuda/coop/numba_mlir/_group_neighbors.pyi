@@ -9,21 +9,21 @@ import numpy as np
 from typing_extensions import TypeVar
 
 from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     ContextualInitialValue,
     IntegerValue,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
 
 from ._thread_group import BlockGroup
 
-_T = TypeVar("_T", bound=PortableNumericScalar)
+_T = TypeVar("_T", bound=CommonNumericScalar)
 
 def adjacent_difference(
     group: BlockGroup,
-    values: PortableThreadDataLike[_T],
+    values: CommonThreadDataLike[_T],
     /,
     *,
     direction: Literal["left", "right"] = "left",
@@ -36,7 +36,7 @@ def adjacent_difference(
 @overload
 def discontinuity(
     group: BlockGroup,
-    values: PortableThreadDataLike[_T],
+    values: CommonThreadDataLike[_T],
     /,
     *,
     mode: Literal["heads", "tails"] = "heads",
@@ -48,7 +48,7 @@ def discontinuity(
 @overload
 def discontinuity(
     group: BlockGroup,
-    values: PortableThreadDataLike[_T],
+    values: CommonThreadDataLike[_T],
     /,
     *,
     mode: Literal["heads_and_tails"],

@@ -9,8 +9,8 @@ from typing import Literal, overload
 from typing_extensions import TypeVar
 
 from cuda.coop._typing import (
-    PortableNumericScalar,
-    PortableThreadDataLike,
+    CommonNumericScalar,
+    CommonThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
     ValidItems,
@@ -18,13 +18,13 @@ from cuda.coop._typing import (
 
 from .thread_group import BlockGroup, ReductionGroup, WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
-_ScalarValueT = TypeVar("_ScalarValueT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ScalarValueT = TypeVar("_ScalarValueT", bound=CommonNumericScalar)
 
 @overload
 def reduce(
     group: ReductionGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     binary_op: ReduceOperator | None = None,
@@ -63,7 +63,7 @@ def reduce(
 @overload
 def reduce(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     binary_op: ReduceOperator | None = None,
@@ -102,7 +102,7 @@ def reduce(
 @overload
 def sum(
     group: ReductionGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     broadcast: bool = True,
@@ -138,7 +138,7 @@ def sum(
 @overload
 def sum(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     broadcast: Literal[False],

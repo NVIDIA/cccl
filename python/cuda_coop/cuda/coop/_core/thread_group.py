@@ -345,11 +345,11 @@ class ThreadGroup:
     :func:`cuda.coop.this_warp`, :func:`cuda.coop.this_block`,
     :func:`cuda.coop.this_cluster`, or :func:`cuda.coop.this_grid`. Their
     dimensions come from the kernel launch. A descriptor does not itself
-    execute a collective or synchronize threads.
+    execute a primitive or synchronize threads.
 
     ``rank()`` and ``count()`` query the calling thread's rank and the group's
     size. ``group_by()`` describes smaller groups within a physical warp or
-    block. The supported collective scopes are documented by each primitive;
+    block. The supported primitive scopes are documented by each primitive;
     see :ref:`thread groups <coop-thread-groups>` and
     :ref:`participation requirements <coop-participation>`.
 
@@ -421,7 +421,7 @@ class ThreadGroup:
         """Return the number of threads in this group.
 
         The physical warp extent is always 32. Whether all 32 lanes are valid
-        participants for a particular collective is a lowering-legality
+        participants for a particular primitive is a lowering-legality
         question and is deliberately not encoded by this descriptor.
         """
 
@@ -609,10 +609,10 @@ class ThreadGroup:
         Notes
         -----
         The enclosing block must contain complete physical warps. Logical
-        Warp collectives support widths of 1, 2, 4, 8, 16, or 32. Mapped
+        Warp primitives support widths of 1, 2, 4, 8, 16, or 32. Mapped
         groups may query their constituents and immediate physical parent,
         but not a higher hierarchy level. Groups of physical warps have
-        limited collective support and no explicit synchronization methods.
+        limited primitive support and no explicit synchronization methods.
         See :ref:`thread groups <coop-thread-groups>` and
         :ref:`participation requirements <coop-participation>`.
 
@@ -841,9 +841,9 @@ class ThreadGroup:
         Notes
         -----
         Use this query to guard rank-dependent work for excluded threads.
-        Before guarding a collective, check that primitive's
+        Before guarding a primitive, check that primitive's
         :ref:`participation requirements <coop-participation>`; a membership
-        check alone does not make a divergent collective valid.
+        check alone does not make a divergent primitive valid.
 
         See Also
         --------

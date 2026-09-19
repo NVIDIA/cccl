@@ -2,23 +2,34 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable cooperative exchange entry point."""
+"""Common cooperative exchange entry point."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..thread_group import ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _backend_module_name,
+    _common_group_operation,
+    _common_selector,
+    _group_primitive_marker,
 )
 from ._payload import (
     ThreadDataLike,
     _ReadableThreadDataLike,
+    _validate_common_numeric_value,
+)
+
+_COMMON_EXCHANGE_MODES = frozenset(
+    {
+        "striped_to_blocked",
+        "blocked_to_striped",
+    }
 )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "exchange",
     group_kinds=("block", "warp", "threads_within_warp"),
 )
@@ -36,7 +47,7 @@ def exchange(
     group : cuda.coop.ThreadGroup
         Participating :ref:`thread group <coop-thread-groups>`: a complete
         block, physical warp, or logical warp. Logical warp widths must be
-        powers of two between 1 and 32. Every member must call the collective;
+        powers of two between 1 and 32. Every member must call the primitive;
         warp operations require an enclosing block size divisible by 32.
     value : cuda.coop.ThreadDataLike
         Readable :ref:`per-thread payload <coop-thread-data>` with a fixed
@@ -84,8 +95,25 @@ def exchange(
         :dedent: 4
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.exchange must be called from a supported GPU kernel."
+    mode = _common_selector(
+        "exchange",
+        "mode",
+        mode,
+        _COMMON_EXCHANGE_MODES,
+    )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "exchange",
+            "value",
+            value,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "exchange",
+        group,
+        value,
+        mode=mode,
     )
 
 

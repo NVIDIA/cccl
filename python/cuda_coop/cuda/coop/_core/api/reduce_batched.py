@@ -8,19 +8,21 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..thread_group import ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _backend_module_name,
+    _common_group_operation,
+    _common_selector,
+    _group_primitive_marker,
 )
 from ._payload import (
     ThreadDataLike,
     _ReadableThreadDataLike,
 )
+from .reduce import _common_reduce_operator, _validate_common_reduce_value
 
 
-@_portable_group_operation(
-    "reduce_batched", group_kinds=("warp", "threads_within_warp")
-)
+@_common_group_operation("reduce_batched", group_kinds=("warp", "threads_within_warp"))
 def reduce_batched(
     group: ThreadGroup,
     value: _ReadableThreadDataLike[Any],
@@ -71,8 +73,20 @@ def reduce_batched(
     device operator. The CUB counterpart is ``cub::WarpReduceBatched``.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.reduce_batched must be called from a supported GPU kernel."
+    output_layout = _common_selector(
+        "reduce_batched", "output_layout", output_layout, {"striped", "blocked"}
+    )
+    binary_op = _common_reduce_operator(binary_op)
+    if _backend_module_name() is not None:
+        if not isinstance(value, _ReadableThreadDataLike):
+            raise TypeError("cuda.coop.reduce_batched requires a ThreadData payload")
+        _validate_common_reduce_value("reduce_batched", value, binary_op)
+    return _group_primitive_marker(
+        "reduce_batched",
+        group,
+        value,
+        binary_op=binary_op,
+        output_layout=output_layout,
     )
 
 

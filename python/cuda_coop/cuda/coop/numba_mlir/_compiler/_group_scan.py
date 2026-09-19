@@ -54,8 +54,8 @@ from ._parameters import (
 )
 from ._rewrite_scan import infer_scan_payload, validate_scan_runtime_controls
 
-_PORTABLE_ALGORITHMS = frozenset({"raking", "raking_memoize", "warp_scans"})
-_PORTABLE_MODES = frozenset({"exclusive", "inclusive"})
+_COMMON_ALGORITHMS = frozenset({"raking", "raking_memoize", "warp_scans"})
+_COMMON_MODES = frozenset({"exclusive", "inclusive"})
 _BUILTIN_OPERATOR_CPP = {
     "multiplies": "::cuda::std::multiplies<T>",
     "min": "::cuda::minimum<T>",
@@ -86,14 +86,14 @@ class _ScanPlanning:
                 operation,
                 "mode",
                 bound.arguments["mode"],
-                _PORTABLE_MODES,
+                _COMMON_MODES,
             )
         if "algorithm" in bound.arguments:
             bound.arguments["algorithm"] = self._context.validate_common_selector(
                 operation,
                 "algorithm",
                 bound.arguments["algorithm"],
-                _PORTABLE_ALGORITHMS,
+                _COMMON_ALGORITHMS,
                 allow_none=True,
             )
 
@@ -143,7 +143,7 @@ class _ScanPlanning:
             )
         if is_common_root:
             raise NotImplementedError(
-                "portable cuda.coop Scan supports built-in operators only; "
+                "common cuda.coop Scan supports built-in operators only; "
                 "use cuda.coop.numba_mlir for a stateless device callback"
             )
         return (

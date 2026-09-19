@@ -50,9 +50,7 @@ from ._rewrite_reduce import (
     validate_warp_reduce_runtime_controls,
 )
 
-_PORTABLE_ALGORITHMS = frozenset(
-    {"raking", "raking_commutative_only", "warp_reductions"}
-)
+_COMMON_ALGORITHMS = frozenset({"raking", "raking_commutative_only", "warp_reductions"})
 _BUILTIN_OPERATOR_CPP = {
     "multiplies": "::cuda::std::multiplies<T>",
     "min": "::cuda::minimum<T>",
@@ -75,8 +73,8 @@ def _normalize_public_algorithm(
     if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(f"{namespace}.{operation} algorithm must be a string")
     token = value.strip().lower().replace("-", "_")
-    if token not in _PORTABLE_ALGORITHMS:
-        choices = ", ".join(sorted(_PORTABLE_ALGORITHMS))
+    if token not in _COMMON_ALGORITHMS:
+        choices = ", ".join(sorted(_COMMON_ALGORITHMS))
         raise ValueError(f"{namespace}.{operation} algorithm must be one of: {choices}")
     return token
 

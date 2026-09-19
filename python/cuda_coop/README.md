@@ -1,9 +1,9 @@
 # `cuda.coop`
 
-`cuda.coop` provides cooperative primitives for CUDA thread groups in Python
-kernel DSLs. They cover data movement, reductions, scans, sorting, selection,
-neighbor comparisons, counting, and run-length decoding. The first backend
-targets Numba-CUDA-MLIR and uses CUB and CUDAX implementations.
+`cuda.coop` provides cooperative data-movement and reduction
+primitives for CUDA thread groups in Python kernel DSLs. The first backend
+targets Numba-CUDA-MLIR and lowers data movement to CUB and hierarchy-aware
+reductions to CUDAX or CUB.
 
 The distribution is a universal Python wheel containing a coherent bundle of
 CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
@@ -41,23 +41,6 @@ selected CUDA major version.
 
 Python 3.10 through 3.14 is supported. The current backend integration requires
 `numba-cuda-mlir>=0.5.0,<0.6`.
-
-Backend compiler and runtime CI is configured for Linux x86-64 with Python 3.14:
-CUDA 13 in pull requests and CUDA 12 in the nightly matrix. The nightly
-matrix also configures H100 runtime tests with serial synchronization race
-checking under CUDA 13. Linux host contracts cover Python 3.10 and 3.14.
-Windows checks build and import the universal wheel and verify its headers;
-they do not execute the compiler
-backend. Other combinations need separate runtime qualification. See the
-[validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
-for coverage and hardware requirements.
-
-With Numba-CUDA-MLIR 0.5.0 through 0.5.3, keep a compiled kernel's dispatcher
-and configured launch callables in their original CUDA context. Reuse on
-another device or after context teardown is not qualified because cached
-architecture or launch state can belong to the original context. The upstream
-[context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
-must be released and qualified before relying on that reuse.
 
 ## Backend registration and imports
 
@@ -109,33 +92,8 @@ positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
 or Store arrays.
 
-The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
-namespace choices and temporary storage. The
-[Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
-explains terms and concepts, including blocked and striped layouts.
-
-## Primitive families
-
-| Family | Entry points |
-| --- | --- |
-| Memory operations | `load`, `store` |
-| Reduction | `reduce`, `sum`, `reduce_batched` |
-| Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
-| Data rearrangement | `exchange`, `shuffle` |
-| Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
-| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank` |
-| Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
-| Neighbor comparisons | `adjacent_difference`, `discontinuity` |
-| Counting | `histogram` |
-| Run Length Decode | `run_length_decode`, `run_length_decode_into` |
-
-Each operation documents its supported groups and result ownership in the
-[API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
-The [visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html)
-explain these contracts with interactive diagrams and tested kernel examples.
-Histogram returns fresh counters that callers can accumulate in ordinary
-payloads. Bulk Run Length Decode prepares and consumes its run table within
-one call; neither API requires a persistent parent object.
+The [overview](https://nvidia.github.io/cccl/unstable/python/coop.html) explains
+groups, data layouts, and temporary storage.
 
 ## Configuration
 

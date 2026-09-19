@@ -206,10 +206,10 @@ small examples use Numba's host-array transfer support at the launch boundary.
 
 ``aggregate_output`` holds the reduction of the input tile. An exclusive
 initial value is excluded from that aggregate. You could obtain a total
-with a separate common-API reduction, but the qualified call is useful when
+with a separate common API reduction, but the qualified call is useful when
 you already need a scan and want its aggregate as well.
 
-Using a common spelling expresses a portable API contract. You must still
+The common API defines backend-independent contracts. You must still
 check that the selected backend implements the requested group, dtype, and
 operation. The kernels here also contain Numba launch and indexing code;
 porting the complete kernel to another DSL involves those parts too.
@@ -234,7 +234,7 @@ importing ``cuda.coop.numba_mlir as numba_coop`` does so explicitly and gives
 you the backend namespace. See :ref:`backend registration
 <coop-backend-registration>` for details.
 
-These collective calls belong inside kernels compiled by a compatible
+These primitive calls belong inside kernels compiled by a compatible
 backend. Registration itself is a host-side operation.
 
 .. _coop-thread-groups:
@@ -248,7 +248,7 @@ threads. The compiler obtains the launch dimensions from the kernel launch.
 The group factories take no size arguments.
 
 The hierarchy vocabulary includes the following groups. Availability of a
-descriptor and availability of a collective on that descriptor are separate
+descriptor and availability of a primitive on that descriptor are separate
 parts of the API.
 
 .. list-table::
@@ -278,12 +278,12 @@ parts of the API.
      - Full built-in Reduce with supported hardware and cluster launch facts
    * - ``coop.this_grid()``
      - The kernel grid
-     - Hierarchy queries; grid collectives and grid synchronization are unavailable
+     - Hierarchy queries; grid primitives and grid synchronization are unavailable
 
 ``group_by`` counts units in the next inner hierarchy level: threads for a
 warp parent, physical warps for a block parent. Thus
 ``this_block().group_by(2)`` describes 64 threads. For logical Warp
-collectives, choose a width of 1, 2, 4, 8, 16, or 32. Use a block size
+primitives, choose a width of 1, 2, 4, 8, 16, or 32. Use a block size
 divisible by 32 for these Warp operations; the last physical warp must be
 complete. Nested ``group_by`` calls are unsupported.
 
@@ -292,7 +292,7 @@ the partition must cover the parent exactly. A non-exhaustive partition
 can leave a remainder. For instance, partitioning a 96-thread block into
 pairs of warps leaves the last warp outside a complete group.
 ``is_member()`` identifies participating threads. Guard queries that require
-membership for excluded threads, and check the collective's participation
+membership for excluded threads, and check the primitive's participation
 requirements before using that guard around an operation.
 
 *Mapped groups of physical warps have narrower support than blocks and
@@ -374,17 +374,17 @@ a more general kernel must handle its final rows explicitly.
 Participation and synchronization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Every required participant must reach the same collective invocation.
+Every required participant must reach the same primitive invocation.
 For a block operation, a branch around the call must be uniform across the
 block. For a logical-warp operation, it must be uniform within that logical
 warp. Complete sibling logical groups can follow different paths.
 
-In particular, putting a block collective inside ``if index < count``
-breaks participation on a partial tile. Keep the collective outside the
+In particular, putting a block primitive inside ``if index < count``
+breaks participation on a partial tile. Keep the primitive outside the
 per-element condition. Use guarded loads or initialized values to handle
 missing input, as in the first kernel. An early return by some block threads
 has the same problem if the remaining threads later execute a block
-collective.
+primitive.
 
 ``group.sync()`` provides a barrier for supported groups. Every member must
 reach it. ``sync_aligned()`` has the additional requirement that the group
@@ -395,7 +395,7 @@ stronger precondition. For explicit block synchronization in Numba kernels,
 An operation's scratch-reuse barrier protects its temporary storage.
 Automatic synchronization inserts a trailing barrier after each call that
 consumes scratch. It does not prove that arbitrary user control flow is safe;
-every member must still reach the collective and its barrier.
+every member must still reach the primitive and its barrier.
 Arrange synchronization for your own shared-memory communication as well.
 Constructing a group or a ``ThreadData`` object does not synchronize threads.
 
@@ -405,11 +405,11 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 ----------------------------------------------------
 
 ``coop.ThreadData(2, dtype=np.int32)`` gives each thread two integer slots.
-With 128 threads, the group collectively owns 256 values. Each thread
+With 128 threads, the group owns 256 values. Each thread
 indexes its own slots with ``items[0]`` and ``items[1]``. To move values
 between threads, use an operation such as Exchange, Shuffle, or Scan.
 
-:class:`~cuda.coop.ThreadDataLike` names the portable payload interface used
+:class:`~cuda.coop.ThreadDataLike` names the common payload interface used
 in API signatures. It describes the item count, dtype, and indexed reads and
 writes. Use :func:`~cuda.coop.ThreadData` to construct a payload for the active
 compiler backend. Other payload representations require support from that
@@ -436,7 +436,7 @@ Blocked and striped order
 The glossary defines :term:`blocked` and :term:`striped` ownership and
 compares their :ref:`layouts <coop-glossary-layouts>`.
 
-A collective needs to know how the per-thread slots correspond to the
+A primitive needs to know how the per-thread slots correspond to the
 group's tile. Here is a small layout illustration with four threads and
 two items each. The numbers are positions in the tile; this illustration
 does not prescribe a supported CUDA launch size.
@@ -667,14 +667,16 @@ in a kernel uses exactly the index you write.
 
 .. _coop-temp-storage:
 
-``TempStorage``: scratch used during a collective
------------------------------------------------
+.. _tempstorage-scratch-used-during-a-collective:
+
+``TempStorage``: scratch used during a primitive
+------------------------------------------------
 
 Some algorithms exchange intermediate values through shared memory.
 By default, ``cuda.coop`` allocates the scratch they need and inserts
 the required reuse barrier. Start with that behavior.
 
-:class:`~cuda.coop.TempStorageLike` names the portable interface for explicit
+:class:`~cuda.coop.TempStorageLike` names the common interface for explicit
 scratch descriptors in API signatures. Construct one inside the kernel with
 :func:`~cuda.coop.TempStorage`. Its ``size_in_bytes``, ``alignment``,
 ``auto_sync``, and ``sharing`` properties control capacity, alignment,
@@ -842,11 +844,11 @@ reserve that amount of shared memory.
 Helpers and compile-time values
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Device helpers containing collectives must be inlined into the kernel so the
+Device helpers containing primitives must be inlined into the kernel so the
 planner can resolve their groups, descriptors, and launch dimensions. Default
-helper inlining is supported. A surviving non-inlined collective helper, a
-descriptor escaping through a runtime object, or a collective inside a
-standalone callback receives a compilation error. Move the collective into the
+helper inlining is supported. A surviving non-inlined primitive helper, a
+descriptor escaping through a runtime object, or a primitive inside a
+standalone callback receives a compilation error. Move the primitive into the
 kernel or an inlined helper; callbacks may perform ordinary device computation.
 
 The MVP does not support ``literal_unroll`` values that determine cooperative
@@ -904,7 +906,7 @@ This kernel writes one sum per block, including a partial final tile:
    np.testing.assert_array_equal(totals, expected)
 
 The group-rank test surrounds only the result write. Moving the reduction
-into that branch would leave the other threads out of a collective.
+into that branch would leave the other threads out of a primitive.
 
 For another built-in operator, use ``coop.reduce`` with ``binary_op`` set
 to ``"min"``, ``"max"``, ``"multiplies"``, ``"bit_and"``,
@@ -1231,7 +1233,7 @@ at compile time.
 Warm up the kernel before timing it, use device-resident arrays, and account
 for asynchronous execution with CUDA events or explicit synchronization.
 Then vary one choice at a time: threads per block, items per thread, or a
-Load/Store or Scan algorithm. More items per thread can amortize collective
+Load/Store or Scan algorithm. More items per thread can amortize primitive
 work while increasing register pressure. Scratch-heavy choices consume
 shared memory and can reduce occupancy. Measure the complete kernel,
 including conversions and synchronization.

@@ -19,7 +19,7 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 _PACKAGE_ROOT = Path(__file__).parents[4].resolve()
 _IMPORT_ORDERS = (
-    pytest.param("numba-first-portable", id="numba-first-portable"),
+    pytest.param("numba-first-common", id="numba-first-common"),
     pytest.param(
         "numba-first-explicit-qualified-alias",
         id="numba-first-explicit-qualified-alias",
@@ -44,7 +44,7 @@ _COMPILE_PROBE = textwrap.dedent(
     assert os.environ["CUDA_VISIBLE_DEVICES"] == ""
     import_order = os.environ["CUDA_COOP_IMPORT_ORDER"]
 
-    if import_order == "numba-first-portable":
+    if import_order == "numba-first-common":
         import numba_cuda_mlir
         from numba_cuda_mlir import cuda, types
         from cuda import coop
@@ -155,7 +155,7 @@ _COMPILE_PROBE = textwrap.dedent(
     assert public_scan_module_file.is_relative_to(distribution_root)
     assert not public_scan_module_file.is_relative_to(source_root)
 
-    portable_scan_parameters = {
+    common_scan_parameters = {
         "scan": (
             "group",
             "value",
@@ -183,16 +183,16 @@ _COMPILE_PROBE = textwrap.dedent(
         "exclusive_sum": ("group", "value", "algorithm", "temp_storage"),
         "inclusive_sum": ("group", "value", "algorithm", "temp_storage"),
     }
-    for name, portable_parameters in portable_scan_parameters.items():
+    for name, common_parameters in common_scan_parameters.items():
         qualified_scan = getattr(qualified_coop, name)
         assert qualified_scan.__module__ == public_scan_module
         qualified_parameters = inspect.signature(
             qualified_scan
         ).parameters
         assert tuple(qualified_parameters) == (
-            *portable_parameters[:2],
+            *common_parameters[:2],
             "prefix_state",
-            *portable_parameters[2:],
+            *common_parameters[2:],
             "valid_items",
             "aggregate_output",
             "prefix_op",

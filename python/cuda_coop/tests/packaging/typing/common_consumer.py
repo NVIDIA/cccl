@@ -36,7 +36,7 @@ class _ReadOnlyThreadData(Generic[_ItemT]):
         return self._value
 
 
-def check_portable_surface(
+def check_common_surface(
     source: object,
     destination: object,
     compiler_integer_dtype: Any,

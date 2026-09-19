@@ -64,7 +64,7 @@ def shuffle(
     -----
     The implementation manages :ref:`temporary storage <coop-temp-storage>`
     automatically. Every member of the :ref:`block <coop-thread-groups>` must
-    call the collective, including threads with out-of-range offset sources.
+    call the primitive, including threads with out-of-range offset sources.
 
     See Also
     --------

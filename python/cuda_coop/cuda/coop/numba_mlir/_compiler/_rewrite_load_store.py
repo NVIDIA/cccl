@@ -392,7 +392,7 @@ def analyze_load_store_match(
             if operand_dtype is None:
                 raise CoopSinglePhaseRewriteError(
                     f"Failed to infer cuda.coop.{common_root_operation} "
-                    f"{operand_name} dtype for portable API validation."
+                    f"{operand_name} dtype for common API validation."
                 )
             try:
                 _validate_common_numeric_dtype(

@@ -9,16 +9,16 @@ from typing import Literal, TypeAlias, overload
 from typing_extensions import TypeVar
 
 from .._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     ExchangeMode,
     IntegralScalar,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     SignedIntegerScalar,
     ThreadDataLike,
 )
 from ._thread_group import BlockGroup, WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 _RankT = TypeVar("_RankT", bound=SignedIntegerScalar)
 _FlagT = TypeVar("_FlagT", bound=IntegralScalar)
 _BlockLayoutExtension: TypeAlias = Literal[
@@ -34,7 +34,7 @@ _BlockScatterMode: TypeAlias = Literal[
 @overload
 def exchange(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: _BlockLayoutMode = "striped_to_blocked",
@@ -45,40 +45,40 @@ def exchange(
 @overload
 def exchange(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: _BlockScatterMode,
-    ranks: PortableThreadDataLike[_RankT],
+    ranks: CommonThreadDataLike[_RankT],
     valid_flags: None = None,
     warp_time_slicing: bool = False,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exchange(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["scatter_to_striped_guarded"],
-    ranks: PortableThreadDataLike[_RankT],
+    ranks: CommonThreadDataLike[_RankT],
     valid_flags: None = None,
     warp_time_slicing: Literal[False] = False,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exchange(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["scatter_to_striped_flagged"],
-    ranks: PortableThreadDataLike[_RankT],
-    valid_flags: PortableThreadDataLike[_FlagT],
+    ranks: CommonThreadDataLike[_RankT],
+    valid_flags: CommonThreadDataLike[_FlagT],
     warp_time_slicing: Literal[False] = False,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exchange(
     group: WarpGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: ExchangeMode = "striped_to_blocked",

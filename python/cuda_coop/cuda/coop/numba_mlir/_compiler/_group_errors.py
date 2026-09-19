@@ -214,23 +214,23 @@ class UnknownLoadStoreProviderError(GroupRewriteError):
         )
 
 
-class PortableLoadPayloadError(TypeError):
+class CommonLoadPayloadError(TypeError):
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
                 "cuda.coop.load requires output to be a fixed-size ThreadData "
-                "payload in the portable API; use cuda.coop.numba_mlir for "
+                "payload in the common API; use cuda.coop.numba_mlir for "
                 "backend-qualified local-array payload support",
             )
         )
 
 
-class PortableStorePayloadError(TypeError):
+class CommonStorePayloadError(TypeError):
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
                 "cuda.coop.store accepts only a scalar or fixed-size ThreadData "
-                "value payload in the portable API; use cuda.coop.numba_mlir for "
+                "value payload in the common API; use cuda.coop.numba_mlir for "
                 "backend-qualified local-array payload support",
             )
         )

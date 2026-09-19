@@ -9,24 +9,24 @@ from typing import Literal, overload
 from typing_extensions import TypeVar
 
 from .._typing import (
+    CommonNumericScalar,
+    CommonShuffleMode,
+    CommonThreadDataLike,
     IntegerValue,
-    PortableNumericScalar,
-    PortableShuffleMode,
-    PortableThreadDataLike,
     ScalarShuffleMode,
     ThreadDataLike,
 )
 from ._thread_group import BlockGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 @overload
 def shuffle(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
-    mode: PortableShuffleMode = "down",
+    mode: CommonShuffleMode = "down",
     distance: Literal[1] = 1,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
