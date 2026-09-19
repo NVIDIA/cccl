@@ -193,3 +193,96 @@ def test_thread_parent_warp_queries_compile_with_a_subwarp_block(
     assert result.metadata["ltoir"]
     assert result.metadata["cubin"]
     assert result.metadata["linked_external_link_items"]
+
+
+@pytest.mark.parametrize("block", ((64, 1, 1), (8, 8, 1), (4, 4, 4)))
+@pytest.mark.parametrize(
+    "options,maximum",
+    (
+        ({}, 64),
+        ({"launch_bounds": 128}, 128),
+        ({"launch_bounds": (128, 1)}, 128),
+        ({"launch_bounds": (128, 1, 2)}, 128),
+        ({"max_registers": 64}, None),
+        ({"launch_bounds": None}, 64),
+    ),
+)
+def test_exact_launch_infers_bounds_without_overriding_user_options(
+    monkeypatch, block, options, maximum
+):
+    cuda = _production_compile_environment(monkeypatch)
+    import cuda.coop.numba_mlir as coop
+
+    @cuda.jit(device=True)
+    def rank():
+        return coop.this_block().rank()
+
+    @cuda.jit(chip="sm_90", **options)
+    def kernel(output):
+        index = rank()
+        output[index] = cuda.threadIdx.y + cuda.threadIdx.z * cuda.blockDim.y
+
+    original = dict(kernel.targetoptions)
+    key = (("grid", (1, 1, 1)), ("block", block), ("sharedmem", 0), ("cluster", None))
+    result = kernel._compile_launch_config_signature(types.void(types.int32[::1]), key)
+    assert result.metadata["cubin"]
+    ptx = next(iter(kernel.inspect_lto_ptx().values()))
+    if maximum is None:
+        assert ".maxntid" not in ptx
+        assert result.metadata["targetoptions"]["max_registers"] == 64
+    else:
+        assert f".maxntid {maximum}, 1, 1" in ptx
+    if isinstance(options.get("launch_bounds"), tuple):
+        assert ".minnctapersm 1" in ptx
+        assert (
+            result.metadata["targetoptions"]["launch_bounds"]
+            == options["launch_bounds"]
+        )
+    assert kernel.targetoptions == original
+
+
+def test_launch_bounds_follow_each_exact_specialization(monkeypatch):
+    cuda = _production_compile_environment(monkeypatch)
+    import cuda.coop.numba_mlir as coop
+
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        output[coop.this_block().rank()] = cuda.blockDim.x
+
+    results = []
+    for block in ((32, 1, 1), (8, 8, 1), (4, 4, 4)):
+        key = (
+            ("grid", (1, 1, 1)),
+            ("block", block),
+            ("sharedmem", 0),
+            ("cluster", None),
+        )
+        results.append(
+            kernel._compile_launch_config_signature(types.void(types.int32[::1]), key)
+        )
+    assert len({id(result) for result in results}) == 3
+    assert [
+        result.metadata["targetoptions"]["launch_bounds"] for result in results
+    ] == [32, 64, 64]
+    assert kernel.targetoptions.get("launch_bounds") is None
+
+
+def test_exact_launch_exceeding_explicit_bounds_is_attributable(monkeypatch):
+    cuda = _production_compile_environment(monkeypatch)
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler._group_planner import GroupRewriteError
+
+    @cuda.jit(chip="sm_90", launch_bounds=32)
+    def kernel(output):
+        output[coop.this_block().rank()] = 1
+
+    key = (
+        ("grid", (1, 1, 1)),
+        ("block", (8, 8, 1)),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    with pytest.raises(
+        GroupRewriteError, match="64 threads, exceeding explicit launch_bounds=32"
+    ):
+        kernel._compile_launch_config_signature(types.void(types.int32[::1]), key)

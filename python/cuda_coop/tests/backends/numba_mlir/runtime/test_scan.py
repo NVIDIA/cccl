@@ -640,3 +640,21 @@ def test_invalid_runtime_valid_items_traps_in_an_isolated_process(valid_items: i
     observed = np.full_like(source, -1)
     _storage_scan_kernel("implicit")[1, _BLOCK_THREADS](source, observed)
     assert observed[-1] == source.sum(dtype=np.int32)
+
+
+@pytest.mark.parametrize("block", (1024, (32, 32), (16, 8, 8)))
+def test_large_int64_raking_scan_uses_exact_launch_bound(block):
+    @cuda.jit
+    def kernel(source, output):
+        thread = cuda.threadIdx.x + cuda.blockDim.x * (
+            cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
+        )
+        output[thread] = qualified_coop.inclusive_sum(
+            qualified_coop.this_block(), source[thread], algorithm="raking"
+        )
+
+    source = np.arange(1024, dtype=np.int64) % 17
+    output = np.full_like(source, -1)
+    kernel[1, block](source, output)
+    np.testing.assert_array_equal(output, np.cumsum(source))
+    assert kernel.targetoptions.get("launch_bounds") is None

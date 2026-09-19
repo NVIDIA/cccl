@@ -1409,7 +1409,25 @@ class CoopGroupHierarchyPlanner(WholeFunctionPlanner):
                 "move the cooperative calls into the kernel."
             )
         launch_config = require_launch_config(self.state)
-        return _GroupCallPlanner(self.state, launch_config).run()
+        planner = _GroupCallPlanner(self.state, launch_config)
+        changed = planner.run()
+        x, y, z = planner.launch.exact_block_dim
+        threads = x * y * z
+        # Configured compiles own these options; never write inferred bounds
+        # into the dispatcher's persistent user options. An explicit register
+        # limit keeps its original compiler/resource tradeoff.
+        options = self.state.metadata["targetoptions"]
+        bounds = options.get("launch_bounds")
+        if bounds is not None:
+            maximum = bounds[0] if isinstance(bounds, tuple) else bounds
+            if threads > maximum:
+                raise GroupRewriteError(
+                    f"cuda.coop exact launch block {(x, y, z)!r} has {threads} "
+                    f"threads, exceeding explicit launch_bounds={bounds!r}."
+                )
+        elif options.get("max_registers") is None:
+            options["launch_bounds"] = threads
+        return changed
 
 
 __all__ = [

@@ -1353,3 +1353,19 @@ static parameters, and import order first. The :doc:`API reference
 collects operation restrictions and configuration. For generated-source
 diagnostics and the compiler integration, see the
 :doc:`Developer Overview <developer_overview>`.
+
+
+Launch resource bounds
+----------------------
+
+A kernel specialized for an exact cooperative launch block receives an inferred
+``launch_bounds`` equal to that block's thread count, unless the kernel supplies
+``launch_bounds`` with a value other than ``None`` or sets ``max_registers``.
+This lets the compiler account for the launch size when allocating registers.
+It can prevent a large block from failing to launch because the generated code
+uses too many registers per thread.
+
+Explicit bounds retain their meaning and must admit the exact launch. The
+inferred bound does not change the block dimensions or the kernel's launch
+specialization. Lower register use can require spilling, so this behavior does
+not imply a performance improvement.
