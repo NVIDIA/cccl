@@ -1,9 +1,9 @@
 # `cuda.coop`
 
-`cuda.coop` provides cooperative data-movement and reduction
-primitives for CUDA thread groups in Python kernel DSLs. The first backend
-targets Numba-CUDA-MLIR and lowers data movement to CUB and hierarchy-aware
-reductions to CUDAX or CUB.
+`cuda.coop` provides cooperative primitives for CUDA thread groups in Python
+kernel DSLs. They cover data movement, reductions, scans, sorting, selection,
+neighbor comparisons, counting, and run-length decoding. The first backend
+targets Numba-CUDA-MLIR and uses CUB and CUDAX implementations.
 
 The distribution is a universal Python wheel containing a coherent bundle of
 CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
@@ -96,6 +96,29 @@ The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
 namespace choices and temporary storage. The
 [Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
 explains terms and concepts, including blocked and striped layouts.
+
+## Primitive families
+
+| Family | Entry points |
+| --- | --- |
+| Memory operations | `load`, `store` |
+| Reduction | `reduce`, `sum`, `reduce_batched` |
+| Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
+| Data rearrangement | `exchange`, `shuffle` |
+| Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
+| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank` |
+| Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
+| Neighbor comparisons | `adjacent_difference`, `discontinuity` |
+| Counting | `histogram` |
+| Run Length Decode | `run_length_decode`, `run_length_decode_into` |
+
+Each operation documents its supported groups and result ownership in the
+[API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
+The [visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html)
+explain these contracts with interactive diagrams and tested kernel examples.
+Histogram returns fresh counters that callers can accumulate in ordinary
+payloads. Bulk Run Length Decode prepares and consumes its run table within
+one call; neither API requires a persistent parent object.
 
 ## Configuration
 
