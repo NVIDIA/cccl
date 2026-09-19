@@ -116,7 +116,9 @@ TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 class CompilerScalarLike(Protocol):
     """Backend-optional structural view of one compiler numeric scalar."""
 
-    width: int
+    @property
+    def width(self) -> int:
+        """Return this scalar's bit width."""
 
     @property
     def dtype(self) -> object:
@@ -127,7 +129,9 @@ class CompilerScalarLike(Protocol):
 class CompilerIntegerLike(CompilerScalarLike, Protocol):
     """Compiler scalar carrying the signedness metadata of an integer."""
 
-    signed: bool
+    @property
+    def signed(self) -> bool:
+        """Return whether this integer type is signed."""
 
 CommonNumericScalar: TypeAlias = (
     int
@@ -160,9 +164,7 @@ ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
 )
 IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
-SignedIntegerScalar: TypeAlias = (
-    int | numpy.signedinteger[Any] | CompilerIntegerLike
-)
+SignedIntegerScalar: TypeAlias = int | numpy.signedinteger[Any] | CompilerIntegerLike
 IntegralScalar: TypeAlias = SignedIntegerScalar | numpy.unsignedinteger[Any]
 ThreadGroupQueryScalar: TypeAlias = (
     numpy.int8
