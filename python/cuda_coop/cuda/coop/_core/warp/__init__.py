@@ -30,6 +30,11 @@ from .reduce import (
     WarpReduceSpecialization,
     make_warp_reduce_specialization,
 )
+from .reduce_batched import (
+    WarpReduceBatchedSemantics,
+    WarpReduceBatchedSpecialization,
+    make_warp_reduce_batched_specialization,
+)
 from .scan import (
     WarpScanMode,
     WarpScanSpecialization,
@@ -47,6 +52,8 @@ __all__ = [
     "WarpMergeSortPayload",
     "WarpMergeSortSpecialization",
     "WarpMergeSortTilePolicy",
+    "WarpReduceBatchedSemantics",
+    "WarpReduceBatchedSpecialization",
     "WarpReduceOperation",
     "WarpReduceSpecialization",
     "WarpScanMode",
@@ -57,6 +64,7 @@ __all__ = [
     "make_warp_load_store_semantics",
     "make_warp_load_store_specialization",
     "make_warp_merge_sort_specialization",
+    "make_warp_reduce_batched_specialization",
     "make_warp_reduce_specialization",
     "make_warp_scan_specialization",
     "make_warp_store_specialization",

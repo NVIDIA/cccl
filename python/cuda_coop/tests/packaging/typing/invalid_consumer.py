@@ -722,6 +722,17 @@ common.histogram(  # expected-error: [call-overload]
     bins=32,
 )
 
+
+common.reduce_batched(
+    common.this_block(),  # expected-error: [arg-type]
+    common_values,
+)
+common.reduce_batched(
+    common.this_warp(),
+    common_values,
+    output_layout="broadcast",  # expected-error: [arg-type]
+)
+
 common.sum(
     common.this_cluster(),  # expected-error: [arg-type]
     np.int32(1),
