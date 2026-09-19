@@ -117,7 +117,7 @@ preserve their input order; NaNs follow CUB's transformed-bit ordering.
 The unsigned explorer does not model these floating-point cases.
 
 Common calls accept ``ThreadData`` keys with ``int32``, ``uint32``,
-``int64``, or ``uint64`` dtype. Associated values may use the common
+``int64``, or ``uint64`` dtype. Associated values may use the portable
 numeric dtypes and must have the same extent as the keys. Qualified calls
 also accept scalar and local-array payloads; floating-point keys are
 supported for Sort, while Rank requires integral keys.
@@ -133,10 +133,9 @@ controls to the low eight bits of its small example keys.
 All threads in the complete physical block must participate with matching
 controls and payload extents. These operations do not accept warp groups
 or a ``valid_items`` argument. Sort can use explicit ``temp_storage``;
-its size and alignment must cover the specialization. Explicit descriptors
-default to ``auto_sync=False``, so the caller must synchronize before reuse or
-request ``auto_sync=True``. Rank allocates and synchronizes its scratch
-automatically.
+its size and alignment must cover the specialization, and the caller must
+synchronize before reuse when ``auto_sync=False``. Rank allocates and
+synchronizes its scratch automatically.
 
 The qualified Rank call can additionally write ``exclusive_digit_prefix``.
 That side output describes digit bins and has its own per-thread extent,
