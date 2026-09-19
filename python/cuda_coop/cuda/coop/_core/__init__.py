@@ -127,6 +127,7 @@ from .group.merge_sort import (
     GroupMergeSortSemantics,
 )
 from .group.neighbors import GroupNeighborSemantics
+from .group.reduce_batched import GroupReduceBatchedSemantics
 from .launch import (
     Dim3,
     LaunchFactConflict,
@@ -186,8 +187,17 @@ from .warp.merge_sort import (
     WarpMergeSortTilePolicy,
     make_warp_merge_sort_spec,
 )
+from .warp.reduce_batched import (
+    WarpReduceBatchedSemantics,
+    WarpReduceBatchedSpec,
+    make_warp_reduce_batched_spec,
+)
 
 __all__ = [
+    "GroupReduceBatchedSemantics",
+    "WarpReduceBatchedSemantics",
+    "WarpReduceBatchedSpec",
+    "make_warp_reduce_batched_spec",
     "BlockNeighborSemantics",
     "make_block_neighbor_spec",
     "GroupNeighborSemantics",

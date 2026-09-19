@@ -49,12 +49,14 @@ from .radix import (
     GroupRadixSortSemantics,
 )
 from .reduce import GroupReduceSemantics
+from .reduce_batched import GroupReduceBatchedSemantics
 from .run_length import GroupRunLengthDecodeSemantics
 from .scan import GroupScanMode, GroupScanSemantics
 from .shuffle import GroupShuffleSemantics
 from .topk import GroupTopKSemantics
 
 __all__ = [
+    "GroupReduceBatchedSemantics",
     "GroupMergeSortSemantics",
     "ArgumentPrecondition",
     "CudaxCallDescription",

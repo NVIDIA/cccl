@@ -29,9 +29,17 @@ from .merge_sort import (
     make_warp_merge_sort_spec,
 )
 from .reduce import WarpReduceOperation, WarpReduceSpec, make_warp_reduce_spec
+from .reduce_batched import (
+    WarpReduceBatchedSemantics,
+    WarpReduceBatchedSpec,
+    make_warp_reduce_batched_spec,
+)
 from .scan import WarpScanMode, WarpScanSpec, make_warp_scan_spec
 
 __all__ = [
+    "WarpReduceBatchedSemantics",
+    "WarpReduceBatchedSpec",
+    "make_warp_reduce_batched_spec",
     "WarpMergeSortPayload",
     "WarpMergeSortTilePolicy",
     "WarpMergeSortSpec",
