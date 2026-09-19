@@ -724,6 +724,17 @@ portable.histogram(  # expected-error: [call-overload]
     bins=32,
 )
 
+
+portable.reduce_batched(
+    portable.this_block(),  # expected-error: [arg-type]
+    portable_values,
+)
+portable.reduce_batched(
+    portable.this_warp(),
+    portable_values,
+    output_layout="broadcast",  # expected-error: [arg-type]
+)
+
 portable.sum(
     portable.this_cluster(),  # expected-error: [arg-type]
     np.int32(1),

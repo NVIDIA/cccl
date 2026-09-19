@@ -46,6 +46,7 @@ from .radix_sort import (
     GroupRadixSortSemantics,
 )
 from .reduce import GroupReduceSemantics
+from .reduce_batched import GroupReduceBatchedSemantics
 from .run_length import GroupRunLengthDecodeSemantics
 from .scan import GroupScanMode, GroupScanSemantics
 from .shuffle import GroupShuffleSemantics
@@ -68,6 +69,7 @@ __all__ = [
     "GroupPrimitiveCall",
     "GroupRadixRankSemantics",
     "GroupRadixSortSemantics",
+    "GroupReduceBatchedSemantics",
     "GroupReduceSemantics",
     "GroupRunLengthDecodeSemantics",
     "GroupScanMode",
