@@ -38,6 +38,7 @@ __all__ = [
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
+    "histogram",
     "load",
     "local",
     "merge_sort_keys",
@@ -67,6 +68,7 @@ def __getattr__(name):
     if name in {
         "adjacent_difference",
         "discontinuity",
+        "histogram",
         "merge_sort_keys",
         "merge_sort_pairs",
         "radix_rank",
@@ -89,6 +91,7 @@ def __getattr__(name):
         module_name = {
             "adjacent_difference": "_group_neighbors",
             "discontinuity": "_group_neighbors",
+            "histogram": "_group_histogram",
             "merge_sort_keys": "_group_merge_sort",
             "merge_sort_pairs": "_group_merge_sort",
             "radix_rank": "_group_radix",

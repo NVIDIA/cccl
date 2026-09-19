@@ -6,6 +6,7 @@
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._group_exchange import exchange
+from ._group_histogram import histogram as histogram
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys as merge_sort_keys
 from ._group_merge_sort import merge_sort_pairs as merge_sort_pairs

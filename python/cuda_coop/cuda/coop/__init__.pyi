@@ -7,6 +7,7 @@
 from typing import Literal
 
 from ._core.api.exchange import exchange
+from ._core.api.histogram import histogram as histogram
 from ._core.api.load_store import load, store
 from ._core.api.merge_sort import merge_sort_keys as merge_sort_keys
 from ._core.api.merge_sort import merge_sort_pairs as merge_sort_pairs
