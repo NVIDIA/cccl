@@ -211,6 +211,24 @@ def _maximum(left, right):
 _device_maximum = cuda.jit(device=True)(_maximum)
 
 
+def test_qualified_scan_accepts_a_callback_with_a_nested_device_helper():
+    @cuda.jit(device=True)
+    def maximum(left, right):
+        return _device_maximum(left, right)
+
+    @cuda.jit
+    def kernel(source, observed):
+        thread = cuda.threadIdx.x
+        observed[thread] = qualified_coop.inclusive_scan(
+            qualified_coop.this_block(), source[thread], scan_op=maximum
+        )
+
+    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
+    observed = np.full_like(source, -1)
+    kernel[1, _BLOCK_THREADS](source, observed)
+    np.testing.assert_array_equal(observed, np.maximum.accumulate(source))
+
+
 @cuda.jit(device=True)
 def _prefix_after_block_aggregate(block_aggregate):
     return block_aggregate + 7

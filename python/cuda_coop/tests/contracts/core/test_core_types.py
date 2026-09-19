@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import partial
 
 import pytest
@@ -354,6 +354,128 @@ def test_semantic_token_tracks_only_referenced_globals(monkeypatch):
         2,
     )
     assert semantic_token(_global_dependent_operator) != original
+
+
+@pytest.mark.parametrize(
+    "operator_type, options",
+    [(PythonOperator, {}), (StatefulOperator, {"state_dtype": INT32})],
+)
+def test_operator_token_uses_backend_callback_identity(operator_type, options):
+    class DeviceCallback:
+        def __init__(self, py_func):
+            self.py_func = py_func
+            self.compiler_cache = {}
+
+        def __call__(self, left, right):
+            raise AssertionError("device callback must not run on the host")
+
+    def add(left, right):
+        return left + right
+
+    calls = []
+
+    def tokenize_callback(callback):
+        calls.append(callback)
+        return semantic_token(callback.py_func)
+
+    callback = DeviceCallback(add)
+    operator = operator_type(
+        ret_dtype=INT32,
+        arg_dtypes=(INT32, INT32),
+        op=callback,
+        op_tokenizer=tokenize_callback,
+        **options,
+    )
+    first = semantic_token(operator)
+    callback.compiler_cache["compiled"] = object()
+
+    assert semantic_token(operator) == first
+    assert semantic_token(replace(operator, op=DeviceCallback(add))) == first
+    assert len(calls) == 3
+    assert calls[:2] == [callback, callback]
+
+
+@pytest.mark.parametrize(
+    "operator_type, options",
+    [(PythonOperator, {}), (StatefulOperator, {"state_dtype": INT32})],
+)
+def test_operator_token_omits_tokenizer_implementation(operator_type, options):
+    def add(left, right):
+        return left + right
+
+    def first_tokenizer(callback):
+        return "test-backend", semantic_token(callback)
+
+    def second_tokenizer(callback):
+        result = semantic_token(callback)
+        return "test-backend", result
+
+    first = operator_type(
+        ret_dtype=INT32,
+        arg_dtypes=(INT32, INT32),
+        op=add,
+        op_tokenizer=first_tokenizer,
+        **options,
+    )
+    second = replace(first, op_tokenizer=second_tokenizer)
+
+    assert first == second
+    assert semantic_token(first) == semantic_token(second)
+    assert "first_tokenizer" not in repr(first)
+
+
+@pytest.mark.parametrize(
+    "operator_type, options",
+    [(PythonOperator, {}), (StatefulOperator, {"state_dtype": INT32})],
+)
+def test_operator_token_rechecks_callback_dependencies(
+    operator_type, options, monkeypatch
+):
+    operator = operator_type(
+        ret_dtype=INT32,
+        arg_dtypes=(INT32, INT32),
+        op=_global_dependent_operator,
+        op_tokenizer=semantic_token,
+        **options,
+    )
+    original = semantic_token(operator)
+    monkeypatch.setitem(
+        _global_dependent_operator.__globals__,
+        "_UNRELATED_SEMANTIC_GLOBAL",
+        2,
+    )
+    assert semantic_token(operator) == original
+
+    monkeypatch.setitem(
+        _global_dependent_operator.__globals__,
+        "_REFERENCED_SEMANTIC_GLOBAL",
+        2,
+    )
+    assert semantic_token(operator) != original
+
+
+@pytest.mark.parametrize(
+    "operator_type, options",
+    [(PythonOperator, {}), (StatefulOperator, {"state_dtype": INT32})],
+)
+@pytest.mark.parametrize("use_tokenizer", [False, True])
+def test_operator_token_preserves_dtype_identity(operator_type, options, use_tokenizer):
+    def add(left, right):
+        return left + right
+
+    operator = operator_type(
+        ret_dtype=INT32,
+        arg_dtypes=(INT32, INT32),
+        op=add,
+        op_tokenizer=semantic_token if use_tokenizer else None,
+        **options,
+    )
+    original = semantic_token(operator)
+
+    assert semantic_token(replace(operator, ret_dtype=INT64)) != original
+    assert semantic_token(replace(operator, arg_dtypes=(INT64, INT32))) != original
+    if isinstance(operator, StatefulOperator):
+        assert semantic_token(replace(operator, state_dtype=INT64)) != original
 
 
 def test_semantic_token_handles_recursive_callables():

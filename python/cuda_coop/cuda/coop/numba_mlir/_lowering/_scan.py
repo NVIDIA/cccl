@@ -40,7 +40,7 @@ from .._compiler._parameters import (
     normalize_dim_param,
     normalize_dtype_param,
 )
-from .._semantic import _normalize_numba_callable
+from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from .._types import (
     BoundedInteger,
     make_invocable_from_specialization,
@@ -164,6 +164,7 @@ def _scan_operator(scan_op: Any, *, force_sum_operator: bool) -> Any:
         return None
     if operation is None:
         return PythonOperator(
+            op_tokenizer=_numba_semantic_token,
             ret_dtype=Dependency("T"),
             arg_dtypes=(Dependency("T"), Dependency("T")),
             op=_normalize_numba_callable(scan_op),
@@ -190,6 +191,7 @@ def _prefix_operator(prefix_op: Any) -> PythonOperator | StatefulOperator | None
             parameter="prefix_state",
         )
         return StatefulOperator(
+            op_tokenizer=_numba_semantic_token,
             op=prefix_op.op,
             state_dtype=NumbaMlirCoreAdapter().core_dtype(state_dtype),
             ret_dtype=Dependency("T"),
@@ -203,6 +205,7 @@ def _prefix_operator(prefix_op: Any) -> PythonOperator | StatefulOperator | None
             "prefix_op must be a stateless device callable or StatefulFunction"
         )
     return PythonOperator(
+        op_tokenizer=_numba_semantic_token,
         ret_dtype=Dependency("T"),
         arg_dtypes=(Dependency("T"),),
         op=normalized,
