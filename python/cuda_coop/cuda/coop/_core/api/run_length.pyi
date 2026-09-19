@@ -8,21 +8,21 @@ import numpy
 from typing_extensions import TypeVar
 
 from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     IntegralScalar,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
 from .thread_group import BlockGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 _LengthT = TypeVar("_LengthT", bound=IntegralScalar)
 
 def run_length_decode(
     group: BlockGroup,
-    run_values: PortableThreadDataLike[_ItemT],
-    run_lengths: PortableThreadDataLike[_LengthT],
+    run_values: CommonThreadDataLike[_ItemT],
+    run_lengths: CommonThreadDataLike[_LengthT],
     /,
     *,
     decoded_items_per_thread: int,
@@ -31,8 +31,8 @@ def run_length_decode(
 ) -> ThreadDataLike[_ItemT]: ...
 def run_length_decode_into(
     group: BlockGroup,
-    run_values: PortableThreadDataLike[_ItemT],
-    run_lengths: PortableThreadDataLike[_LengthT],
+    run_values: CommonThreadDataLike[_ItemT],
+    run_lengths: CommonThreadDataLike[_LengthT],
     destination: object,
     /,
     *,

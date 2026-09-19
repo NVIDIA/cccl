@@ -2,22 +2,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable cooperative scan entry points."""
+"""Common cooperative scan entry points."""
 
 from __future__ import annotations
 
 from enum import Enum
 from typing import Any
 
-from ..dtype_policy import validate_portable_integer_value_dtype_name
+from ..dtype_policy import validate_common_integer_value_dtype_name
 from ..scan import normalize_scan_operator_alias
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
+    _common_selector,
     _group_primitive_marker,
-    _portable_group_operation,
-    _portable_selector,
-    _validate_portable_operation_group,
+    _validate_common_operation_group,
 )
 from ._payload import (
     _ReadableThreadDataLike,
@@ -26,14 +26,14 @@ from ._payload import (
     _validate_common_temp_storage,
 )
 
-_PORTABLE_SCAN_GROUP_KINDS = ("block", "warp", "threads_within_warp")
-_PORTABLE_SCAN_MODES = frozenset({"exclusive", "inclusive"})
-_PORTABLE_SCAN_ALGORITHMS = frozenset({"raking", "raking_memoize", "warp_scans"})
+_COMMON_SCAN_GROUP_KINDS = ("block", "warp", "threads_within_warp")
+_COMMON_SCAN_MODES = frozenset({"exclusive", "inclusive"})
+_COMMON_SCAN_ALGORITHMS = frozenset({"raking", "raking_memoize", "warp_scans"})
 _BITWISE_OPERATORS = frozenset({"bit_and", "bit_or", "bit_xor"})
 _WARP_GROUP_KINDS = frozenset({"warp", "threads_within_warp"})
 
 
-def _portable_scan_operator(operation: str, value: Any) -> Any:
+def _common_scan_operator(operation: str, value: Any) -> Any:
     if _backend_module_name() is None or value is None:
         return value
     if not isinstance(value, str) or isinstance(value, Enum):
@@ -51,7 +51,7 @@ def _portable_scan_operator(operation: str, value: Any) -> Any:
     return operator
 
 
-def _validate_portable_scan_value(
+def _validate_common_scan_value(
     operation: str,
     value: Any,
     scan_op: Any,
@@ -64,7 +64,7 @@ def _validate_portable_scan_value(
     )
     assert dtype_name is not None
     if scan_op in _BITWISE_OPERATORS:
-        validate_portable_integer_value_dtype_name(
+        validate_common_integer_value_dtype_name(
             dtype_name,
             operation=operation,
             parameter="value",
@@ -72,7 +72,7 @@ def _validate_portable_scan_value(
     return dtype_name
 
 
-def _validate_portable_scan_options(
+def _validate_common_scan_options(
     operation: str,
     group: ThreadGroup,
     value: Any,
@@ -85,7 +85,7 @@ def _validate_portable_scan_options(
 ) -> None:
     if _backend_module_name() is None:
         return
-    _validate_portable_operation_group(operation, group)
+    _validate_common_operation_group(operation, group)
     if mode == "inclusive" and initial_value is not None:
         raise ValueError(
             f"cuda.coop.{operation} initial_value is not supported for inclusive scans"
@@ -100,8 +100,8 @@ def _validate_portable_scan_options(
     if group.kind in _WARP_GROUP_KINDS:
         if isinstance(value, _ReadableThreadDataLike):
             raise TypeError(
-                f"cuda.coop.{operation} value must be a portable numeric scalar "
-                "for warp scans"
+                f"cuda.coop.{operation} value must be a numeric scalar "
+                "for warp scans in the common API"
             )
         if algorithm is not None:
             raise ValueError(
@@ -127,10 +127,10 @@ def _scan_call(
     algorithm: Any,
     temp_storage: Any,
 ) -> Any:
-    scan_op = _portable_scan_operator(operation, scan_op)
+    scan_op = _common_scan_operator(operation, scan_op)
     if _backend_module_name() is not None:
-        _validate_portable_scan_value(operation, value, scan_op)
-    _validate_portable_scan_options(
+        _validate_common_scan_value(operation, value, scan_op)
+    _validate_common_scan_options(
         operation,
         group,
         value,
@@ -153,7 +153,7 @@ def _scan_call(
     return _group_primitive_marker(operation, group, value, **kwargs)
 
 
-@_portable_group_operation("scan", group_kinds=_PORTABLE_SCAN_GROUP_KINDS)
+@_common_group_operation("scan", group_kinds=_COMMON_SCAN_GROUP_KINDS)
 def scan(
     group: ThreadGroup,
     value: Any,
@@ -173,7 +173,7 @@ def scan(
         Participating threads; see :ref:`thread groups <coop-thread-groups>`.
         Supports blocks and physical or logical warps. Warp scans require
         an enclosing block size divisible by 32. All group members must
-        execute the collective together.
+        execute the primitive together.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
         :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
@@ -226,14 +226,14 @@ def scan(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ collective types providing ``ExclusiveScan``, ``InclusiveScan``,
+        C++ primitive types providing ``ExclusiveScan``, ``InclusiveScan``,
         and their sum overloads.
 
     Examples
     --------
     Compute inclusive bitwise XOR prefixes across a block with
     Numba-CUDA-MLIR. The qualified import activates the backend, and the
-    calls use the portable ``cuda.coop`` API.
+    calls use the common ``cuda.coop`` API.
 
     .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
         :language: python
@@ -242,17 +242,17 @@ def scan(
         :dedent: 4
     """
 
-    mode = _portable_selector(
+    mode = _common_selector(
         "scan",
         "mode",
         mode,
-        _PORTABLE_SCAN_MODES,
+        _COMMON_SCAN_MODES,
     )
-    algorithm = _portable_selector(
+    algorithm = _common_selector(
         "scan",
         "algorithm",
         algorithm,
-        _PORTABLE_SCAN_ALGORITHMS,
+        _COMMON_SCAN_ALGORITHMS,
         allow_none=True,
     )
     return _scan_call(
@@ -267,9 +267,9 @@ def scan(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "exclusive_sum",
-    group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
+    group_kinds=_COMMON_SCAN_GROUP_KINDS,
 )
 def exclusive_sum(
     group: ThreadGroup,
@@ -284,7 +284,7 @@ def exclusive_sum(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Block or physical/logical warp whose members execute the collective
+        Block or physical/logical warp whose members execute the primitive
         together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
@@ -321,7 +321,7 @@ def exclusive_sum(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ collective types providing ``ExclusiveSum``.
+        C++ primitive types providing ``ExclusiveSum``.
 
     Examples
     --------
@@ -335,11 +335,11 @@ def exclusive_sum(
         :dedent: 4
     """
 
-    algorithm = _portable_selector(
+    algorithm = _common_selector(
         "exclusive_sum",
         "algorithm",
         algorithm,
-        _PORTABLE_SCAN_ALGORITHMS,
+        _COMMON_SCAN_ALGORITHMS,
         allow_none=True,
     )
     return _scan_call(
@@ -354,9 +354,9 @@ def exclusive_sum(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "inclusive_sum",
-    group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
+    group_kinds=_COMMON_SCAN_GROUP_KINDS,
 )
 def inclusive_sum(
     group: ThreadGroup,
@@ -371,7 +371,7 @@ def inclusive_sum(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Block or physical/logical warp whose members execute the collective
+        Block or physical/logical warp whose members execute the primitive
         together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
@@ -408,7 +408,7 @@ def inclusive_sum(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ collective types providing ``InclusiveSum``.
+        C++ primitive types providing ``InclusiveSum``.
 
     Examples
     --------
@@ -423,11 +423,11 @@ def inclusive_sum(
         :dedent: 4
     """
 
-    algorithm = _portable_selector(
+    algorithm = _common_selector(
         "inclusive_sum",
         "algorithm",
         algorithm,
-        _PORTABLE_SCAN_ALGORITHMS,
+        _COMMON_SCAN_ALGORITHMS,
         allow_none=True,
     )
     return _scan_call(
@@ -442,9 +442,9 @@ def inclusive_sum(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "exclusive_scan",
-    group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
+    group_kinds=_COMMON_SCAN_GROUP_KINDS,
 )
 def exclusive_scan(
     group: ThreadGroup,
@@ -461,7 +461,7 @@ def exclusive_scan(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Block or physical/logical warp whose members execute the collective
+        Block or physical/logical warp whose members execute the primitive
         together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
@@ -509,7 +509,7 @@ def exclusive_scan(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ collective types providing ``ExclusiveScan``.
+        C++ primitive types providing ``ExclusiveScan``.
 
     Examples
     --------
@@ -525,11 +525,11 @@ def exclusive_scan(
         :dedent: 4
     """
 
-    algorithm = _portable_selector(
+    algorithm = _common_selector(
         "exclusive_scan",
         "algorithm",
         algorithm,
-        _PORTABLE_SCAN_ALGORITHMS,
+        _COMMON_SCAN_ALGORITHMS,
         allow_none=True,
     )
     return _scan_call(
@@ -544,9 +544,9 @@ def exclusive_scan(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "inclusive_scan",
-    group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
+    group_kinds=_COMMON_SCAN_GROUP_KINDS,
 )
 def inclusive_scan(
     group: ThreadGroup,
@@ -562,7 +562,7 @@ def inclusive_scan(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Block or physical/logical warp whose members execute the collective
+        Block or physical/logical warp whose members execute the primitive
         together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
@@ -604,7 +604,7 @@ def inclusive_scan(
     See Also
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ collective types providing ``InclusiveScan``.
+        C++ primitive types providing ``InclusiveScan``.
 
     Examples
     --------
@@ -618,11 +618,11 @@ def inclusive_scan(
         :dedent: 4
     """
 
-    algorithm = _portable_selector(
+    algorithm = _common_selector(
         "inclusive_scan",
         "algorithm",
         algorithm,
-        _PORTABLE_SCAN_ALGORITHMS,
+        _COMMON_SCAN_ALGORITHMS,
         allow_none=True,
     )
     return _scan_call(

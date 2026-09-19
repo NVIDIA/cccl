@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable block radix ordering operations."""
+"""Common block radix ordering operations."""
 
 from __future__ import annotations
 
@@ -14,9 +14,9 @@ from ..block.radix import make_radix_bit_range
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
     _group_primitive_marker,
-    _portable_group_operation,
-    _validate_portable_operation_group,
+    _validate_common_operation_group,
 )
 from ._payload import (
     _common_thread_data_extent,
@@ -67,7 +67,7 @@ def _validate(
 ):
     if _backend_module_name() is None:
         return
-    _validate_portable_operation_group(operation, group)
+    _validate_common_operation_group(operation, group)
     name = _validate_common_numeric_value(
         operation,
         "keys",
@@ -112,7 +112,7 @@ def _validate(
         _validate_common_temp_storage(operation, temp_storage)
 
 
-@_portable_group_operation("radix_sort_keys", group_kinds=("block",))
+@_common_group_operation("radix_sort_keys", group_kinds=("block",))
 def radix_sort_keys(
     group: ThreadGroup,
     keys: Any,
@@ -183,7 +183,7 @@ def radix_sort_keys(
     )
 
 
-@_portable_group_operation("radix_sort_pairs", group_kinds=("block",))
+@_common_group_operation("radix_sort_pairs", group_kinds=("block",))
 def radix_sort_pairs(
     group: ThreadGroup,
     keys: Any,
@@ -203,7 +203,7 @@ def radix_sort_pairs(
         A complete physical block; every thread participates.
     keys, values : ThreadDataLike
         Fixed-size per-thread payloads with matching extents. Keys use int32,
-        uint32, int64, or uint64. Values use the portable numeric dtypes:
+        uint32, int64, or uint64. Values use the common API's numeric dtypes:
         signed or unsigned 8-, 16-, 32-, or 64-bit integers, float32, or
         float64.
     begin_bit, end_bit : int or compiler integer
@@ -256,7 +256,7 @@ def radix_sort_pairs(
     )
 
 
-@_portable_group_operation("radix_rank", group_kinds=("block",))
+@_common_group_operation("radix_rank", group_kinds=("block",))
 def radix_rank(
     group: ThreadGroup,
     keys: Any,

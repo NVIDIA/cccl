@@ -495,7 +495,7 @@ class _ThreadData:
         return self._items[index]
 
 
-def test_portable_reduce_matrix_and_family_owned_selectors(monkeypatch):
+def test_common_reduce_matrix_and_family_owned_selectors(monkeypatch):
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.reduce")
     delegated = object()
@@ -547,7 +547,7 @@ def test_portable_reduce_matrix_and_family_owned_selectors(monkeypatch):
 
 
 @pytest.mark.parametrize("selector", [0, _StringSelector.RAKING])
-def test_portable_reduce_algorithm_rejects_non_string_selectors(
+def test_common_reduce_algorithm_rejects_non_string_selectors(
     monkeypatch,
     selector,
 ):
@@ -573,7 +573,7 @@ def test_portable_reduce_algorithm_rejects_non_string_selectors(
 
 
 @pytest.mark.parametrize("selector", [0, _StringSelector.MAXIMUM, lambda x, y: x])
-def test_portable_reduce_operator_rejects_non_string_selectors(
+def test_common_reduce_operator_rejects_non_string_selectors(
     monkeypatch,
     selector,
 ):
@@ -594,7 +594,7 @@ def test_portable_reduce_operator_rejects_non_string_selectors(
 
 
 @pytest.mark.parametrize("operation", ["reduce", "sum"])
-def test_portable_cub_controls_fail_closed_before_delegation(monkeypatch, operation):
+def test_common_cub_controls_fail_closed_before_delegation(monkeypatch, operation):
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.reduce")
     function = getattr(api, operation)
@@ -633,7 +633,7 @@ def test_portable_cub_controls_fail_closed_before_delegation(monkeypatch, operat
     assert calls == []
 
 
-def test_portable_root_exports_reduce_and_sum():
+def test_common_root_exports_reduce_and_sum():
     import cuda.coop as coop
 
     api = import_module("cuda.coop._core.api.reduce")

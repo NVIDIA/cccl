@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable cooperative load and store entry points.
+"""Common cooperative load and store entry points.
 
 These frontends validate the shared algorithm subset and delegate one call to
 the active compiler backend. ThreadData allocation and backend-specific CUB
@@ -16,10 +16,10 @@ from typing import Any
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
+    _common_selector,
     _group_primitive_marker,
-    _portable_group_operation,
-    _portable_selector,
-    _validate_portable_operation_group,
+    _validate_common_operation_group,
 )
 from ._payload import (
     ThreadDataLike,
@@ -33,7 +33,7 @@ from ._payload import (
 
 _I32_MAX = (1 << 31) - 1
 _I64_MAX = (1 << 63) - 1
-_PORTABLE_LOAD_STORE_ALGORITHMS = frozenset(
+_COMMON_LOAD_STORE_ALGORITHMS = frozenset(
     {
         "direct",
         "striped",
@@ -53,7 +53,7 @@ _WARP_LOAD_STORE_ALGORITHMS = frozenset(
 )
 
 
-def _validate_portable_load_store_options(
+def _validate_common_load_store_options(
     operation: str,
     group: ThreadGroup,
     *,
@@ -64,11 +64,11 @@ def _validate_portable_load_store_options(
     offset: Any,
     temp_storage: Any,
 ) -> None:
-    """Enforce the group-dependent portable overload matrix."""
+    """Enforce the group-dependent common overload matrix."""
 
     if _backend_module_name() is None:
         return
-    _validate_portable_operation_group(operation, group)
+    _validate_common_operation_group(operation, group)
     if operation == "load" and oob_default is not None and valid_items is None:
         raise ValueError("cuda.coop.load oob_default requires valid_items")
     if valid_items is not None:
@@ -129,7 +129,7 @@ def _validate_portable_load_store_options(
         _validate_common_temp_storage(operation, temp_storage)
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "load",
     group_kinds=("block", "warp", "threads_within_warp"),
 )
@@ -202,7 +202,7 @@ def load(
     See Also
     --------
     :cpp:class:`cub::BlockLoad`, :cpp:class:`cub::WarpLoad`
-        C++ block and warp Load collectives.
+        C++ block and warp Load primitives.
 
     Examples
     --------
@@ -221,8 +221,8 @@ def load(
     ``cuda.coop.<backend>`` API for backend-specific behavior.
     """
 
-    algorithm = _portable_selector(
-        "load", "algorithm", algorithm, _PORTABLE_LOAD_STORE_ALGORITHMS
+    algorithm = _common_selector(
+        "load", "algorithm", algorithm, _COMMON_LOAD_STORE_ALGORITHMS
     )
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -232,7 +232,7 @@ def load(
             allow_untyped_thread_data=True,
             require_thread_data=True,
         )
-    _validate_portable_load_store_options(
+    _validate_common_load_store_options(
         "load",
         group,
         algorithm=algorithm,
@@ -256,7 +256,7 @@ def load(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "store",
     group_kinds=("block", "warp", "threads_within_warp"),
 )
@@ -322,7 +322,7 @@ def store(
     See Also
     --------
     :cpp:class:`cub::BlockStore`, :cpp:class:`cub::WarpStore`
-        C++ block and warp Store collectives.
+        C++ block and warp Store primitives.
 
     Examples
     --------
@@ -337,11 +337,11 @@ def store(
         :dedent: 4
 
     See :ref:`participation and synchronization <coop-participation>` for
-    control-flow requirements at collective calls.
+    control-flow requirements at primitive calls.
     """
 
-    algorithm = _portable_selector(
-        "store", "algorithm", algorithm, _PORTABLE_LOAD_STORE_ALGORITHMS
+    algorithm = _common_selector(
+        "store", "algorithm", algorithm, _COMMON_LOAD_STORE_ALGORITHMS
     )
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -350,7 +350,7 @@ def store(
             value,
             allow_readonly_thread_data=True,
         )
-    _validate_portable_load_store_options(
+    _validate_common_load_store_options(
         "store",
         group,
         algorithm=algorithm,

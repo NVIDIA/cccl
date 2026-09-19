@@ -48,7 +48,7 @@ def topk_min_keys(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -126,7 +126,7 @@ def topk_min_pairs(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -201,7 +201,7 @@ def topk_max_keys(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -279,7 +279,7 @@ def topk_max_pairs(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------

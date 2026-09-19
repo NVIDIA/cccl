@@ -24,12 +24,12 @@ from ._rewrite_support import (
     _UNRESOLVED,
     CoopSinglePhaseRewriteError,
     _align_up,
+    _common_api,
     _cuda_module,
     _default_temp_storage_alignment,
     _dtype_values_match,
     _normalize_temp_storage_alignment,
     _phi_incoming_values,
-    _portable_api,
     _ResolvedCallTarget,
     _RewriteMatch,
     _TempStorageCtorSpec,
@@ -243,7 +243,7 @@ class _ProvenanceRewrite:
         return obj
 
     def _is_common_root_member(self, value, name: str) -> bool:
-        member = getattr(_portable_api, name)
+        member = getattr(_common_api, name)
         return (
             self._resolve_python_value(value) is member
             and getattr(member, "__cuda_coop_backend_member__", None) == name

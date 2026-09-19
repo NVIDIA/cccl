@@ -13,8 +13,8 @@ from ..block.histogram import normalize_histogram_algorithm, validate_histogram_
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
     _group_primitive_marker,
-    _portable_group_operation,
 )
 from ._payload import (
     _common_payload_dtype,
@@ -23,7 +23,7 @@ from ._payload import (
 )
 
 
-@_portable_group_operation("histogram", group_kinds=("block",))
+@_common_group_operation("histogram", group_kinds=("block",))
 def histogram(
     group: ThreadGroup,
     samples: Any,

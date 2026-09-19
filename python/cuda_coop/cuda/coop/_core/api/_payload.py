@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared payload validation for portable root calls.
+"""Shared payload validation for common root calls.
 
 Family frontends use these import-light helpers before delegating to a compiler
-backend. The validators define the conservative portable contract and do not
+backend. The validators define the conservative common contract and do not
 infer backend-specific types or construct lowering plans.
 """
 
@@ -16,8 +16,8 @@ from numbers import Integral
 from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from ..dtype_policy import (
-    validate_portable_integer_value_dtype_name,
-    validate_portable_numeric_dtype_name,
+    validate_common_integer_value_dtype_name,
+    validate_common_numeric_dtype_name,
 )
 
 _ItemT = TypeVar("_ItemT")
@@ -77,7 +77,7 @@ def _normalize_alignment(alignment: Any) -> int | None:
 
 
 def _validate_common_temp_storage(operation: str, value: Any) -> None:
-    """Require the portable explicit temporary-storage representation."""
+    """Require the common explicit temporary-storage representation."""
 
     if isinstance(value, TempStorageLike):
         return
@@ -94,7 +94,7 @@ def _validate_common_thread_data_payload(
     *,
     allow_readonly: bool = False,
 ) -> None:
-    """Require the portable fixed-size payload representation."""
+    """Require the common fixed-size payload representation."""
 
     protocol = _ReadableThreadDataLike if allow_readonly else ThreadDataLike
     if isinstance(value, protocol):
@@ -111,7 +111,7 @@ def _common_thread_data_extent(
     parameter: str,
     value: _ReadableThreadDataLike[Any],
 ) -> int:
-    """Return one positive trace-static portable payload extent."""
+    """Return one positive trace-static common payload extent."""
 
     extent = value.items_per_thread
     if isinstance(extent, bool) or not isinstance(extent, Integral):
@@ -138,7 +138,7 @@ def _common_payload_dtype(
     parameter: str,
     value: _ReadableThreadDataLike[Any],
 ) -> Any:
-    """Return the declared or item-inferred dtype for a portable payload."""
+    """Return the declared or item-inferred dtype for a common payload."""
 
     dtype = value.dtype
     if dtype is None and len(value) > 0:
@@ -194,7 +194,7 @@ def _common_numeric_dtype_name(dtype: Any) -> str:
 
 
 def _is_common_numeric_scalar(value: Any) -> bool:
-    """Return whether ``value`` has the portable scalar representation."""
+    """Return whether ``value`` has the common scalar representation."""
 
     if type(value) in {int, float}:
         return True
@@ -227,17 +227,17 @@ def _validate_common_numeric_scalar(
     parameter: str,
     value: Any,
 ) -> str:
-    """Require one portable numeric scalar rather than a thread payload."""
+    """Require a numeric scalar supported by the common API."""
 
     if not _is_common_numeric_scalar(value):
         raise TypeError(
-            f"cuda.coop.{operation} {parameter} must be a portable numeric "
-            "scalar; use a backend-qualified import for backend-specific values"
+            f"cuda.coop.{operation} {parameter} must be a numeric scalar "
+            "supported by the common API; use a backend-qualified import for backend-specific values"
         )
     dtype = getattr(value, "dtype", None)
     if dtype is None:
         dtype = type(value)
-    return validate_portable_numeric_dtype_name(
+    return validate_common_numeric_dtype_name(
         _common_numeric_dtype_name(dtype),
         operation=operation,
         parameter=parameter,
@@ -249,7 +249,7 @@ def _validate_common_integer_value(
     parameter: str,
     value: Any,
 ) -> int | None:
-    """Validate a static or compiler-owned portable integer value."""
+    """Validate a static or compiler-owned integer in the common API."""
 
     if isinstance(value, Integral) and not isinstance(value, bool):
         return int(value)
@@ -258,11 +258,12 @@ def _validate_common_integer_value(
         and isinstance(getattr(value, "signed", None), bool)
     ):
         raise TypeError(
-            f"cuda.coop.{operation} {parameter} must be a portable integer value"
+            f"cuda.coop.{operation} {parameter} must be an integer value "
+            "supported by the common API"
         )
     dtype = getattr(value, "dtype", None)
     assert dtype is not None
-    validate_portable_integer_value_dtype_name(
+    validate_common_integer_value_dtype_name(
         _common_numeric_dtype_name(dtype),
         operation=operation,
         parameter=parameter,
@@ -279,7 +280,7 @@ def _validate_common_numeric_value(
     allow_readonly_thread_data: bool = False,
     require_thread_data: bool = False,
 ) -> str | None:
-    """Require one portable scalar or fixed-size per-thread payload."""
+    """Require one common scalar or fixed-size per-thread payload."""
 
     protocol = _ReadableThreadDataLike if allow_readonly_thread_data else ThreadDataLike
     if isinstance(value, protocol):
@@ -298,14 +299,14 @@ def _validate_common_numeric_value(
             raise AssertionError("unreachable")
         if not _is_common_numeric_scalar(value):
             raise TypeError(
-                f"cuda.coop.{operation} requires the portable API's numeric "
+                f"cuda.coop.{operation} requires the common API's numeric "
                 f"scalar or fixed-size ThreadData {parameter} payload; use a "
                 "backend-qualified import for backend-specific payloads"
             )
         dtype = getattr(value, "dtype", None)
         if dtype is None:
             dtype = type(value)
-    return validate_portable_numeric_dtype_name(
+    return validate_common_numeric_dtype_name(
         _common_numeric_dtype_name(dtype),
         operation=operation,
         parameter=parameter,

@@ -10,7 +10,7 @@ import numpy as np
 from typing_extensions import TypeVar
 
 from .. import ThreadHierarchy
-from .._core.api.thread_group import ThreadGroup as PortableThreadGroup
+from .._core.api.thread_group import ThreadGroup as CommonThreadGroup
 from .._typing import (
     SynchronizableGroupKind,
     ThreadGroupKind,
@@ -34,7 +34,7 @@ _GroupKindT_co = TypeVar(
 Hierarchy: TypeAlias = ThreadHierarchy
 
 class ThreadGroup(
-    PortableThreadGroup[_GroupKindT_co],
+    CommonThreadGroup[_GroupKindT_co],
     Generic[_GroupKindT_co],
 ):
     """Compile-time CUDA group descriptor for Numba-CUDA-MLIR."""

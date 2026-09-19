@@ -30,7 +30,7 @@ from numba_cuda_mlir.extending import (
 )
 
 from cuda.coop._core import GroupLoweringPlan
-from cuda.coop._core import api as _portable_api
+from cuda.coop._core import api as _common_api
 
 from .. import _lowering  # noqa: F401 - registers factories
 from .._types import (

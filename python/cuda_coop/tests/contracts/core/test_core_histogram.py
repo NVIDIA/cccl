@@ -96,7 +96,7 @@ class _ReadonlySamples:
         return (1, 2, 1)[index]
 
 
-def test_portable_readonly_inputs_and_typed_controls(monkeypatch):
+def test_common_readonly_inputs_and_typed_controls(monkeypatch):
     api = import_module("cuda.coop._core.api.histogram")
     dispatch = import_module("cuda.coop._core.api._dispatch")
     samples = _ReadonlySamples()

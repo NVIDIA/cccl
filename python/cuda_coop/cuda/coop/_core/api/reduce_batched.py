@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable independent-batch reduction entry point."""
+"""Common independent-batch reduction entry point."""
 
 from __future__ import annotations
 
@@ -11,20 +11,18 @@ from typing import Any
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
+    _common_group_operation,
+    _common_selector,
     _group_primitive_marker,
-    _portable_group_operation,
-    _portable_selector,
 )
 from ._payload import (
     ThreadDataLike,
     _ReadableThreadDataLike,
 )
-from .reduce import _portable_reduce_operator, _validate_portable_reduce_value
+from .reduce import _common_reduce_operator, _validate_common_reduce_value
 
 
-@_portable_group_operation(
-    "reduce_batched", group_kinds=("warp", "threads_within_warp")
-)
+@_common_group_operation("reduce_batched", group_kinds=("warp", "threads_within_warp"))
 def reduce_batched(
     group: ThreadGroup,
     value: _ReadableThreadDataLike[Any],
@@ -54,14 +52,14 @@ def reduce_batched(
     result extent may include slots without a corresponding batch.
     """
 
-    output_layout = _portable_selector(
+    output_layout = _common_selector(
         "reduce_batched", "output_layout", output_layout, {"striped", "blocked"}
     )
-    binary_op = _portable_reduce_operator(binary_op)
+    binary_op = _common_reduce_operator(binary_op)
     if _backend_module_name() is not None:
         if not isinstance(value, _ReadableThreadDataLike):
             raise TypeError("cuda.coop.reduce_batched requires a ThreadData payload")
-        _validate_portable_reduce_value("reduce_batched", value, binary_op)
+        _validate_common_reduce_value("reduce_batched", value, binary_op)
     return _group_primitive_marker(
         "reduce_batched",
         group,

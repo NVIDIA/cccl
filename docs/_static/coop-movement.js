@@ -169,7 +169,7 @@
         {label: "Result registers", description: suppressed.length ? `${count - suppressed.length} destinations are defined. The ${suppressed.length} question-mark slots were not written and have unspecified values.` : `The result uses ${option.output} ownership. Exchange itself performs no global-memory load or store.`, tokens: tokens_for("output")},
       ],
       notes: [
-        common ? "Available through cuda.coop.exchange for block and warp groups." : "Use cuda.coop.numba_mlir.exchange with a block group for this mode; it is not a common-API mode.",
+        common ? "Available through cuda.coop.exchange for block and warp groups." : "Use cuda.coop.numba_mlir.exchange with a block group for this mode; it is not available through the common API.",
         option.scatter ? "Ranks must be signed integer payloads with the same item count. Active destinations must be in range and unique; guarded mode only tests whether a rank is negative." : "Shared scratch and synchronization connect the layouts. The diagram omits padding and uses the default non-timesliced exchange.",
         suppressed.length ? "Suppressed writes do not initialize their output slots. A zero shown as an input is a real value; '?' marks an unspecified result." : "Input and output payloads have the same shape. The mode changes ownership rather than the payload extent.",
       ],
