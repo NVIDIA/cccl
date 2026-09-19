@@ -32,7 +32,7 @@ namespace cuda::experimental::cuco::detail
 {
 //! @brief Maps the unsigned magnitude of a hash to an index in `[0, __modulus)`.
 //!
-//! The remainder is computed at the hash's original width before conversion to the index type. The
+//! The unsigned magnitude is converted to the index width before computing the remainder. The
 //! magnitude of a negative hash is computed in unsigned arithmetic, including the signed minimum.
 //!
 //! @param[in] __hash Hash value
@@ -42,7 +42,8 @@ template <class _SizeType, class _HashType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType __hash_to_index(_HashType __hash, _SizeType __modulus) noexcept
 {
   using __unsigned_size = ::cuda::std::make_unsigned_t<_SizeType>;
-  return static_cast<_SizeType>(::cuda::uabs(__hash) % static_cast<__unsigned_size>(__modulus));
+  return static_cast<_SizeType>(
+    static_cast<__unsigned_size>(::cuda::uabs(__hash)) % static_cast<__unsigned_size>(__modulus));
 }
 
 //! @brief Maps the low 64-bit word of a 128-bit array hash to a valid index.
