@@ -31,8 +31,7 @@ def _normalize_index_int(value: Any) -> int | None:
         return None
     try:
         normalized = _operator.index(value)
-    except Exception:  # noqa: BLE001
-        # Dynamic DSL values may reject integer conversion.
+    except Exception:  # noqa: BLE001 - Dynamic DSL values may reject integer conversion.
         return None
     if isinstance(normalized, bool):
         return None
@@ -42,8 +41,7 @@ def _normalize_index_int(value: Any) -> int | None:
 def _normalize_group_width(value: Any) -> int | None:
     try:
         normalized = _normalize_index_int(value)
-    except Exception:  # noqa: BLE001
-        # An uninspectable width is not a static extent.
+    except Exception:  # noqa: BLE001 - An uninspectable width is not a static extent.
         return None
     if normalized is not None and normalized > 0:
         return normalized
@@ -53,14 +51,11 @@ def _normalize_group_width(value: Any) -> int | None:
 def _get_optional_metadata_attr(value: Any, attr_name: str) -> Any:
     try:
         return getattr(value, attr_name, None)
-    except Exception:  # noqa: BLE001
-        # Optional foreign metadata may reject access.
+    except Exception:  # noqa: BLE001 - Optional foreign metadata may reject access.
         return None
 
 
-def _first_optional_metadata_attr(
-    value: Any, attr_names: tuple[str, ...]
-) -> Any:
+def _first_optional_metadata_attr(value: Any, attr_names: tuple[str, ...]) -> Any:
     for attr_name in attr_names:
         candidate = _get_optional_metadata_attr(value, attr_name)
         if candidate is not None:
@@ -98,9 +93,7 @@ def _infer_fragment_items_per_thread(
     *,
     allow_nested: bool = True,
 ) -> int | None:
-    infer_extent = (
-        _infer_static_extent if allow_nested else _infer_1d_static_extent
-    )
+    infer_extent = _infer_static_extent if allow_nested else _infer_1d_static_extent
 
     # Prefer explicit tensor-like shape metadata when available.
     for attr_name in ("shape",):
@@ -118,9 +111,7 @@ def _infer_fragment_items_per_thread(
 
     fragment_type = _get_optional_metadata_attr(fragment, "type")
     if fragment_type is not None:
-        inferred = infer_extent(
-            _get_optional_metadata_attr(fragment_type, "shape")
-        )
+        inferred = infer_extent(_get_optional_metadata_attr(fragment_type, "shape"))
         if inferred is not None:
             return inferred
 
@@ -132,8 +123,7 @@ def _infer_vector_items_per_thread(vector: Any) -> int | None:
     if callable(numel):
         try:
             inferred = _normalize_group_width(numel())
-        except Exception:  # noqa: BLE001
-            # A failing optional numel method cannot prove an extent.
+        except Exception:  # noqa: BLE001 - A failing optional numel method cannot prove an extent.
             inferred = None
         if inferred is not None:
             return inferred
@@ -149,8 +139,7 @@ def _infer_vector_items_per_thread(vector: Any) -> int | None:
 def _is_register_fragment(value: Any) -> bool:
     try:
         memspace = getattr(value, "memspace", None)
-    except Exception:  # noqa: BLE001
-        # Uninspectable memory space cannot prove register storage.
+    except Exception:  # noqa: BLE001 - Uninspectable memory space cannot prove register storage.
         return False
     return _is_register_memory_space(memspace)
 
@@ -161,23 +150,20 @@ def _is_register_memory_space(memspace: Any) -> bool:
         from cutlass import AddressSpace as CutlassAddressSpace
 
         register_spaces.append(CutlassAddressSpace.rmem)
-    except Exception:  # noqa: BLE001, S110
-        # Optional CUTLASS address-space discovery may be unavailable.
+    except Exception:  # noqa: BLE001, S110 - Optional CUTLASS address-space discovery may be unavailable.
         pass
     try:
         from cutlass._mlir.dialects.cute import AddressSpace as CuteAddressSpace
 
         register_spaces.append(CuteAddressSpace.rmem)
-    except Exception:  # noqa: BLE001, S110
-        # Optional CuTe address-space discovery may be unavailable.
+    except Exception:  # noqa: BLE001, S110 - Optional CuTe address-space discovery may be unavailable.
         pass
 
     for register_space in register_spaces:
         try:
             if memspace == register_space:
                 return True
-        except Exception:  # noqa: BLE001, S112
-            # Foreign address-space wrappers may reject equality.
+        except Exception:  # noqa: BLE001, S112 - Foreign address-space wrappers may reject equality.
             continue
     return False
 
@@ -186,8 +172,7 @@ def _has_memory_space(value: Any) -> bool:
     for attr_name in ("memspace", "space"):
         try:
             attr = getattr(value, attr_name, None)
-        except Exception:  # noqa: BLE001
-            # Reject payloads with a declared but unreadable memory space.
+        except Exception:  # noqa: BLE001 - Reject payloads with a declared but unreadable memory space.
             try:
                 _inspect.getattr_static(value, attr_name)
             except AttributeError:
@@ -209,8 +194,7 @@ def _has_memory_protocol(value: Any) -> bool:
 
         try:
             attr = getattr(value, attr_name, None)
-        except Exception:  # noqa: BLE001
-            # A failing memory protocol still identifies memory-backed data.
+        except Exception:  # noqa: BLE001 - A failing memory protocol still identifies memory-backed data.
             return True
         if attr is not None:
             return True
@@ -222,19 +206,13 @@ def _is_memory_backed_payload(value: Any) -> bool:
 
 
 def _is_cutlass_dsl_dtype(dtype: Any) -> bool:
-    return (
-        isinstance(dtype, type)
-        and dtype.__module__ == "cutlass.base_dsl.typing"
-    )
+    return isinstance(dtype, type) and dtype.__module__ == "cutlass.base_dsl.typing"
 
 
 def _is_ordinary_scalar_dtype(dtype: Any) -> bool:
     if any(dtype is candidate for candidate in (bool, int, float, complex)):
         return True
-    if (
-        not isinstance(dtype, type)
-        or dtype.__module__.split(".", 1)[0] != "numpy"
-    ):
+    if not isinstance(dtype, type) or dtype.__module__.split(".", 1)[0] != "numpy":
         return False
 
     try:
@@ -286,9 +264,7 @@ def _resolve_items_per_thread(
     source: str,
     missing_message: str,
 ) -> int:
-    explicit = (
-        None if explicit is None else _validate_items_per_thread(explicit)
-    )
+    explicit = None if explicit is None else _validate_items_per_thread(explicit)
     inferred = infer()
     if explicit is None:
         if inferred is not None:
@@ -324,9 +300,7 @@ def _resolve_export_shape(
 def _resolve_export_dtype(dtype: Any, *, fallback: Any, source: str) -> Any:
     dtype = fallback if dtype is None else dtype
     if dtype is None:
-        raise TypeError(
-            f"{source} requires dtype when ThreadData.dtype is not set"
-        )
+        raise TypeError(f"{source} requires dtype when ThreadData.dtype is not set")
     from ._compiler._types import ALL_PROVIDER_TYPES, canonical_dsl_type
 
     resolved = canonical_dsl_type(dtype)
@@ -372,8 +346,7 @@ class ThreadData:
     both immutable and mutable register results. The original tensor retains
     its values:
 
-    .. literalinclude::
-       ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_payload_examples.py
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_payload_examples.py
        :language: python
        :start-after: # example-begin
        :end-before: # example-end
@@ -434,9 +407,7 @@ class ThreadData:
             A new payload containing ``len(values)`` initialized items.
         """
         if len(values) == 0:
-            raise ValueError(
-                "ThreadData.from_values requires at least one value"
-            )
+            raise ValueError("ThreadData.from_values requires at least one value")
         return cls(len(values), dtype=dtype, values=list(values))
 
     @classmethod
@@ -532,8 +503,7 @@ class ThreadData:
             infer=lambda: _infer_fragment_items_per_thread(fragment),
             source="ThreadData.from_register_tensor",
             missing_message=(
-                "ThreadData.from_register_tensor could not infer "
-                "items_per_thread "
+                "ThreadData.from_register_tensor could not infer items_per_thread "
                 "from fragment shape; pass items_per_thread explicitly"
             ),
         )
@@ -582,8 +552,7 @@ class ThreadData:
             raise TypeError(
                 "ThreadData.from_vector requires a CUTLASS vector-like "
                 "per-thread payload; use ThreadData.from_register_tensor for "
-                "CuTe register fragments, or a group-first load "
-                "for memory tensors"
+                "CuTe register fragments, or a group-first load for memory tensors"
             )
 
         items_per_thread = _resolve_items_per_thread(
@@ -651,20 +620,15 @@ class ThreadData:
                 items_per_thread = _validate_items_per_thread(items_per_thread)
                 if payload.items_per_thread != items_per_thread:
                     raise ValueError(
-                        "ThreadData.from_payload items_per_thread "
-                        "does not match "
+                        "ThreadData.from_payload items_per_thread does not match "
                         "payload.items_per_thread"
                     )
             if dtype is None or payload.dtype == dtype:
                 return payload
             if payload.dtype is not None:
-                raise TypeError(
-                    "ThreadData.from_payload dtype does not match payload"
-                )
+                raise TypeError("ThreadData.from_payload dtype does not match payload")
             if payload._common_root:
-                from ._compiler._types import (
-                    _validate_common_root_numeric_dtype,
-                )
+                from ._compiler._types import _validate_common_root_numeric_dtype
 
                 _validate_common_root_numeric_dtype(
                     dtype,
@@ -687,9 +651,8 @@ class ThreadData:
             )
         if _is_memory_backed_payload(payload):
             raise TypeError(
-                "ThreadData.from_payload requires a per-thread "
-                "register payload; use ThreadData.from_register_tensor "
-                "for CuTe register fragments, "
+                "ThreadData.from_payload requires a per-thread register payload; "
+                "use ThreadData.from_register_tensor for CuTe register fragments, "
                 "or a group-first load for memory tensors"
             )
         return cls.from_vector(
@@ -818,9 +781,7 @@ class ThreadData:
                 allow_nonfinite=True,
             )
             converted.append(
-                value_type(value)
-                if plain is _types._NOT_PLAIN_SCALAR
-                else plain
+                value_type(value) if plain is _types._NOT_PLAIN_SCALAR else plain
             )
         return value_type, tuple(converted)
 
@@ -832,9 +793,7 @@ class ThreadData:
     def __new_from_mlir_values__(self, values: list[Any]) -> ThreadData:
         """Rebuild lanes while preserving static payload and root metadata."""
         if len(values) != self.items_per_thread:
-            raise ValueError(
-                "ThreadData control flow requires one value per item"
-            )
+            raise ValueError("ThreadData control flow requires one value per item")
         from ._compiler._types import thread_data_output_dtype
 
         value_type, _ = self._dynamic_values()
@@ -874,9 +833,7 @@ class ThreadData:
         return result
 
     def _require_values(self, primitive_name: str | None) -> list[Any]:
-        missing = [
-            idx for idx, value in enumerate(self._values) if value is _UNSET
-        ]
+        missing = [idx for idx, value in enumerate(self._values) if value is _UNSET]
         if missing:
             context = (
                 "ThreadData iteration"
@@ -884,8 +841,7 @@ class ThreadData:
                 else f"{_ROOT_SCOPE}.{primitive_name}"
             )
             raise ValueError(
-                f"{context} requires ThreadData values to be initialized "
-                "before use; "
+                f"{context} requires ThreadData values to be initialized before use; "
                 "missing index(es): " + ", ".join(str(i) for i in missing)
             )
         return self._values
@@ -898,9 +854,7 @@ class ThreadData:
 
 
 def _is_thread_payload_candidate(value: Any) -> bool:
-    if _is_ordinary_scalar_dtype(type(value)) or _is_cutlass_dsl_dtype(
-        type(value)
-    ):
+    if _is_ordinary_scalar_dtype(type(value)) or _is_cutlass_dsl_dtype(type(value)):
         return False
     if _is_register_fragment(value) or _is_memory_backed_payload(value):
         return True
@@ -947,18 +901,16 @@ def _coerce_thread_payload(
                         "register payload support"
                     )
             elif common_root_payload_kind == "scalar_or_thread_data":
-                if not isinstance(
-                    value, ThreadData
-                ) and _is_thread_payload_candidate(value):
+                if not isinstance(value, ThreadData) and _is_thread_payload_candidate(
+                    value
+                ):
                     raise TypeError(
-                        f"cuda.coop.{common_operation} accepts only "
-                        "a scalar or fixed-size ThreadData "
-                        f"{arg_name} payload in the common API; "
+                        f"cuda.coop.{common_operation} accepts only a scalar or "
+                        f"fixed-size ThreadData {arg_name} payload in the common API; "
                         "use cuda.coop.cutlass for backend-qualified register "
                         "payload support"
                     )
-            # The annotation defines the private contract.
-            else:  # pragma: no cover
+            else:  # pragma: no cover - the annotation defines the private contract.
                 raise ValueError(
                     "common_root_payload_kind must be 'thread_data' or "
                     "'scalar_or_thread_data'"
@@ -975,9 +927,41 @@ def _coerce_thread_payload(
         ) from exc
 
 
-def _make_rmem_tensor(
-    shape: Any, dtype: Any, alignment: int | None = None
-) -> Any:
+def _snapshot_readable_payload(value, *, name, primitive):
+    """Read the common payload interface without requiring writable inputs."""
+
+    from cuda.coop._core.api._dispatch import _common_root_operation_name
+    from cuda.coop._core.api._payload import (
+        _ReadableThreadDataLike,
+        _validate_common_numeric_value,
+    )
+
+    common = _common_root_operation_name() == primitive
+    if common or isinstance(value, _ReadableThreadDataLike):
+        _validate_common_numeric_value(
+            primitive,
+            name,
+            value,
+            require_thread_data=True,
+            allow_readonly_thread_data=True,
+        )
+        return ThreadData(
+            value.items_per_thread,
+            dtype=value.dtype,
+            values=[value[index] for index in range(value.items_per_thread)],
+            alignment=getattr(value, "alignment", None),
+        )
+    value = _coerce_thread_payload(
+        value, scope=_ROOT_SCOPE, primitive_name=primitive, arg_name=name
+    )
+    if not isinstance(value, ThreadData):
+        raise TypeError(
+            f"{_ROOT_SCOPE}.{primitive} {name} must be a fixed-size ThreadData"
+        )
+    return value
+
+
+def _make_rmem_tensor(shape: Any, dtype: Any, alignment: int | None = None) -> Any:
     """Allocate CuTe register storage honoring a minimum byte alignment."""
 
     from cutlass import cute
