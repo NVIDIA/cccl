@@ -8,9 +8,9 @@ from typing_extensions import TypeVar
 
 from ..._typing import (
     BlockLoadStoreAlgorithm,
+    CommonNumericScalar,
+    CommonThreadDataLike,
     IntegerValue,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
     ValidItems,
@@ -18,13 +18,13 @@ from ..._typing import (
 )
 from .._thread_group import BlockGroup, WarpGroup
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
+_CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
 
 @overload
 def load(
     group: BlockGroup,
     source: object,
-    output: ThreadDataLike[_PortableNumericT],
+    output: ThreadDataLike[_CommonNumericT],
     /,
     *,
     algorithm: BlockLoadStoreAlgorithm = "direct",
@@ -37,12 +37,12 @@ def load(
 def load(
     group: BlockGroup,
     source: object,
-    output: ThreadDataLike[_PortableNumericT],
+    output: ThreadDataLike[_CommonNumericT],
     /,
     *,
     algorithm: BlockLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
-    oob_default: _PortableNumericT | float,
+    oob_default: _CommonNumericT | int | float,
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> None: ...
@@ -50,7 +50,7 @@ def load(
 def load(
     group: WarpGroup,
     source: object,
-    output: ThreadDataLike[_PortableNumericT],
+    output: ThreadDataLike[_CommonNumericT],
     /,
     *,
     algorithm: WarpLoadStoreAlgorithm = "direct",
@@ -63,12 +63,12 @@ def load(
 def load(
     group: WarpGroup,
     source: object,
-    output: ThreadDataLike[_PortableNumericT],
+    output: ThreadDataLike[_CommonNumericT],
     /,
     *,
     algorithm: WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
-    oob_default: _PortableNumericT | float,
+    oob_default: _CommonNumericT | int | float,
     offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> None: ...
@@ -76,7 +76,7 @@ def load(
 def store(
     group: BlockGroup,
     destination: object,
-    value: _PortableNumericT | PortableThreadDataLike[_PortableNumericT],
+    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
     /,
     *,
     algorithm: BlockLoadStoreAlgorithm = "direct",
@@ -88,7 +88,7 @@ def store(
 def store(
     group: WarpGroup,
     destination: object,
-    value: _PortableNumericT | PortableThreadDataLike[_PortableNumericT],
+    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
     /,
     *,
     algorithm: WarpLoadStoreAlgorithm = "direct",

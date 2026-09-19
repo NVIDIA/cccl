@@ -2,7 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Common constructors for the current CUDA thread groups.
+
+The constructors either delegate to the active compiler backend or return the
+backend-neutral symbolic group used during characterization and planning. This
+module does not resolve launch facts or select primitive implementations.
+"""
+
 from __future__ import annotations
+
+from typing import Any
 
 from ..thread_group import (
     Hierarchy,
@@ -14,6 +23,7 @@ from ..thread_group import (
     this_thread,
     this_warp,
 )
+from ._dispatch import _backend_member, _backend_module_name
 
 _core_this_block = this_block
 _core_this_cluster = this_cluster
@@ -27,6 +37,17 @@ MemoryGroup = ThreadGroup
 ReductionGroup = ThreadGroup
 BlockGroup = ThreadGroup
 WarpGroup = ThreadGroup
+
+
+def _group_constructor(
+    name: str,
+    fallback: Any,
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
+    if _backend_module_name() is None:
+        return fallback(*args, **kwargs)
+    return _backend_member(name)(*args, **kwargs)
 
 
 def this_thread() -> ThreadGroup:
@@ -51,7 +72,7 @@ def this_thread() -> ThreadGroup:
     does not synchronize threads or launch a kernel.
     """
 
-    return _core_this_thread()
+    return _group_constructor("this_thread", _core_this_thread)
 
 
 def this_warp() -> ThreadGroup:
@@ -70,14 +91,14 @@ def this_warp() -> ThreadGroup:
 
     Notes
     -----
-    Warp collectives require a block size divisible by 32; the descriptor
+    Warp primitives require a block size divisible by 32; the descriptor
     does not turn a partial final warp into a complete group. The primitive
     documents its supported logical widths and
     :ref:`participation requirements <coop-participation>`.
     See :ref:`thread groups <coop-thread-groups>` for the group hierarchy.
     """
 
-    return _core_this_warp()
+    return _group_constructor("this_warp", _core_this_warp)
 
 
 def this_block() -> ThreadGroup:
@@ -101,7 +122,7 @@ def this_block() -> ThreadGroup:
     :ref:`participation requirements <coop-participation>`.
     """
 
-    return _core_this_block()
+    return _group_constructor("this_block", _core_this_block)
 
 
 def this_cluster() -> ThreadGroup:
@@ -119,7 +140,7 @@ def this_cluster() -> ThreadGroup:
     The descriptor obtains its dimensions from the launch; it does not
     create a cluster or enable cluster scheduling. See
     :ref:`thread groups <coop-thread-groups>` and each primitive's supported
-    scopes. Grid collectives are a separate, unsupported scope.
+    scopes. Grid primitives are a separate, unsupported scope.
 
     Examples
     --------
@@ -133,7 +154,7 @@ def this_cluster() -> ThreadGroup:
         :dedent: 4
     """
 
-    return _core_this_cluster()
+    return _group_constructor("this_cluster", _core_this_cluster)
 
 
 def this_grid() -> ThreadGroup:
@@ -152,13 +173,18 @@ def this_grid() -> ThreadGroup:
 
     Notes
     -----
-    Grid collectives and grid synchronization are unavailable. Constructing
+    Grid primitives and grid synchronization are unavailable. Constructing
     this descriptor does not request a cooperative launch. See
     :ref:`thread groups <coop-thread-groups>` and
     :ref:`ranks and sizes <coop-group-queries>`.
     """
 
-    return _core_this_grid()
+    group = _group_constructor("this_grid", _core_this_grid)
+    if _backend_module_name() is not None and isinstance(group, ThreadGroup):
+        assert group.hierarchy is not None
+        # Backends distinguish common grid policy from qualified grid access.
+        return group.with_hierarchy(group.hierarchy, source="common_root")
+    return group
 
 
 __all__ = [

@@ -71,7 +71,7 @@
       notes: [
         "Shuffle returns a new result and preserves its input. The diagram follows working copies, not mutations to the caller's payload.",
         is_scalar ? "Offset accepts signed distances. Rotate requires 1 <= distance < block size. Runtime distances may differ between threads; this diagram uses a uniform distance." : "Up and Down require a fixed-size per-thread payload and compile-time distance 1. The boundary output is undefined, not wrapped or copied through.",
-        "The group is the complete block. All threads must reach the collective; guard consumption of undefined outputs afterward.",
+        "The group is the complete block. All threads must call the primitive; guard consumption of undefined outputs afterward.",
       ],
       caption: "Teaching model: eight threads. Up/Down shift a blocked tile of 1, 2, or 4 items per thread; Offset/Rotate operate on one scalar per thread. Stages show ownership and dependencies, not instruction timing. Arrow keys inspect neighboring values.",
     };

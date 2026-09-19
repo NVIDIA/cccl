@@ -11,7 +11,7 @@ import numba_cuda_mlir.numba_cuda.types as _numba_types
 from numba_cuda_mlir import cuda as _cuda_module
 from numba_cuda_mlir.cuda.local import array as _cuda_local_array
 
-import cuda.coop._core.api as _portable_api
+import cuda.coop._core.api as _common_api
 from cuda.coop._core import (
     ArgumentBinding,
     GroupLoweringPlan,
@@ -439,7 +439,7 @@ class GroupPlanningContext:
                 isinstance(definition, ir.Expr)
                 and definition.op == "call"
                 and self._callable(definition.func)
-                in {ThreadData, _portable_api.ThreadData}
+                in {ThreadData, _common_api.ThreadData}
             ):
                 previous = self._dtype_definition(definition, seen=set())
                 if previous is not None and previous != dtype:
@@ -564,7 +564,7 @@ class GroupPlanningContext:
         if definition.op != "call":
             return None
         function = self._callable(definition.func)
-        if function in {ThreadData, _portable_api.ThreadData}:
+        if function in {ThreadData, _common_api.ThreadData}:
             bound = self.bind(function, definition)
             resolved, dtype = self.try_constant(bound.arguments["dtype"])
             if resolved and dtype is not None:
@@ -665,7 +665,7 @@ class GroupPlanningContext:
                 isinstance(definition, ir.Expr)
                 and definition.op == "call"
                 and self._callable(definition.func)
-                in {TempStorage, _portable_api.TempStorage}
+                in {TempStorage, _common_api.TempStorage}
             ):
                 non_descriptor = True
                 continue

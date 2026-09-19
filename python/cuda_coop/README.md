@@ -1,9 +1,9 @@
 # `cuda.coop`
 
-`cuda.coop` provides cooperative primitives for CUDA thread groups in Python
-kernel DSLs. They cover data movement, reductions, scans, sorting, selection,
-neighbor comparisons, counting, and run-length decoding. The first backend
-targets Numba-CUDA-MLIR and uses CUB and CUDAX implementations.
+`cuda.coop` provides cooperative data-movement and reduction
+primitives for CUDA thread groups in Python kernel DSLs. The first backend
+targets Numba-CUDA-MLIR and lowers data movement to CUB and hierarchy-aware
+reductions to CUDAX or CUB.
 
 The distribution is a universal Python wheel containing a coherent bundle of
 CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
@@ -41,23 +41,6 @@ selected CUDA major version.
 
 Python 3.10 through 3.14 is supported. The current backend integration requires
 `numba-cuda-mlir>=0.5.0,<0.6`.
-
-Backend compiler and runtime CI is configured for Linux x86-64 with Python 3.14:
-CUDA 13 in pull requests and CUDA 12 in the nightly matrix. The nightly
-matrix also configures H100 runtime tests with serial synchronization race
-checking under CUDA 13. Linux host contracts cover Python 3.10 and 3.14.
-Windows checks build and import the universal wheel and verify its headers;
-they do not execute the compiler
-backend. Other combinations need separate runtime qualification. See the
-[validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
-for coverage and hardware requirements.
-
-With Numba-CUDA-MLIR 0.5.0 through 0.5.3, keep a compiled kernel's dispatcher
-and configured launch callables in their original CUDA context. Reuse on
-another device or after context teardown is not qualified because cached
-architecture or launch state can belong to the original context. The upstream
-[context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
-must be released and qualified before relying on that reuse.
 
 ## Backend registration and imports
 
@@ -104,41 +87,13 @@ can replace the name used for Numba's `cuda.jit`.
 Shared operations retain the common signatures, string selectors, and
 inference rules. The backend namespace adds Numba local-array payloads and
 memory namespaces.
-Both namespaces accept `ThreadData(items_per_thread, alignment=None)`: use a compile-time
+Both namespaces accept `ThreadData(items_per_thread=..., alignment=None)`: use a compile-time
 positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
 or Store arrays.
 
-Pass `items_per_thread` as a kernel argument. Numba-CUDA-MLIR specializes
-the kernel for its value. The payload count stays fixed during execution.
-
-The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
-namespace choices and temporary storage. The
-[Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
-explains terms and concepts, including blocked and striped layouts.
-
-## Primitive families
-
-| Family | Entry points |
-| --- | --- |
-| Memory operations | `load`, `store` |
-| Reduction | `reduce`, `sum`, `reduce_batched` |
-| Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
-| Data rearrangement | `exchange`, `shuffle` |
-| Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
-| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank_keys` |
-| Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
-| Neighbor comparisons | `adjacent_difference`, `discontinuity` |
-| Counting | `histogram` |
-| Run Length Decode | `run_length_decode`, `run_length_decode_into` |
-
-Each operation documents its supported groups and result ownership in the
-[API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
-The [visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html)
-explain these contracts with interactive diagrams and tested kernel examples.
-Histogram returns fresh counters that callers can accumulate in ordinary
-payloads. Bulk Run Length Decode prepares and consumes its run table within
-one call; neither API requires a persistent parent object.
+The [overview](https://nvidia.github.io/cccl/unstable/python/coop.html) explains
+groups, data layouts, and temporary storage.
 
 ## Configuration
 
@@ -176,8 +131,8 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 
 The common `cuda.coop` entry points and the qualified
 `cuda.coop.numba_mlir` entry points have matching signatures. The following
-kernel-body example clamps a grid tile tail, where `source`, `destination`,
-`count`, and `items_per_thread` are kernel arguments:
+kernel-body example clamps a grid tile tail, where `source`, `destination`, and
+`count` are kernel arguments:
 
 ```python
 from numba_cuda_mlir import cuda, types
@@ -185,8 +140,8 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(items_per_thread)
-tile_items = cuda.blockDim.x * items_per_thread
+items = coop.ThreadData(items_per_thread=2)
+tile_items = cuda.blockDim.x * 2
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
 if valid_items < 0:
@@ -301,8 +256,8 @@ compile-time constants. A logical threads-within-warp group can query its
 threads and immediate parent Warp; a mapped warps-within-block group can query
 its threads, physical Warps, and immediate parent block. Queries above the
 immediate physical parent are rejected. Mapped warps-within-block groups expose
-queries and `is_member()` but not `sync()` or `sync_aligned()`; the planner
-does not manage the lifetime of their block barriers. For a
+queries and `is_member()` but not `sync()` or `sync_aligned()`; their block
+barrier lifetime must be owned by a future planner contract. For a
 non-exhaustive partition, use `is_member()` to guard rank-dependent work for
 excluded threads. Do not use that branch to skip a primitive unless the
 primitive's participation contract explicitly permits it; every required
@@ -374,15 +329,15 @@ reductions also allocate internal static shared memory, even without a
 or dynamic cooperative backing in these compiler releases.
 
 With `auto_sync=False`, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is unsupported:
-the compiler cannot prove that caller barriers protect the merged region,
-even when a particular program supplies sufficient barriers.
+constructor site. Selecting between multiple manual-sync constructors is an
+MVP restriction: the compiler cannot prove that caller barriers protect the
+merged region, even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 `@cuda.jit(device=True, inline="always")` when selecting the helper's
 policy explicitly. Standalone primitive helpers and primitives inside
-standalone callbacks are unsupported. `literal_unroll` values cannot
-determine cooperative payload extents, group dimensions,
+standalone callbacks are unsupported. For the MVP, `literal_unroll`
+values cannot determine cooperative payload extents, group dimensions,
 selectors, or descriptor constructor arguments. Write separate calls with
 explicit constants, or use an ordinary loop with one fixed cooperative shape.
 An unrelated `literal_unroll` loop does not add this restriction.
@@ -410,7 +365,7 @@ selected group must participate.
 By default, `broadcast=True` gives every group member the reduced scalar. With
 `broadcast=False`, only rank zero of each selected group has a defined result;
 other members must still execute the call and must not consume their returned
-value. For example, this full block reduction combines `items_per_thread` values per thread
+value. For example, this full block reduction combines two values per thread
 but writes only from the block root:
 
 ```python
@@ -420,11 +375,11 @@ from cuda import coop
 
 
 @cuda.jit
-def block_sum(source, output, items_per_thread):
+def block_sum(source, output):
     thread = cuda.threadIdx.x
-    values = coop.ThreadData(items_per_thread)
-    for item in range(items_per_thread):
-        values[item] = source[items_per_thread * thread + item]
+    values = coop.ThreadData(items_per_thread=2)
+    values[0] = source[2 * thread]
+    values[1] = source[2 * thread + 1]
     total = coop.sum(coop.this_block(), values, broadcast=False)
     if thread == 0:
         output[0] = total
@@ -542,7 +497,7 @@ def carry_prefix(state, block_aggregate):
 running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
 
 # Inside a kernel, before a loop over tiles:
-state = coop.ThreadData(1)
+state = coop.ThreadData(items_per_thread=1)
 state[0] = types.int64(0)
 scanned = coop.exclusive_sum(
     coop.this_block(),
@@ -587,9 +542,9 @@ from cuda import coop
 
 
 @cuda.jit
-def block_scan_kernel(values, prefixes, items_per_thread):
+def block_scan_kernel(values, prefixes):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread)
+    items = coop.ThreadData(items_per_thread=2)
     coop.load(block, values, items)
     scanned = coop.exclusive_sum(block, items)
     coop.store(block, prefixes, scanned)

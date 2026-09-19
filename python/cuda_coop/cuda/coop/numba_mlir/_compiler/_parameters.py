@@ -13,7 +13,7 @@ import numpy as np
 from numba_cuda_mlir import types as numba_mlir_types
 
 from cuda.coop._core.dtype_policy import (
-    validate_portable_numeric_dtype_name,
+    validate_common_numeric_dtype_name,
 )
 
 dim3 = namedtuple("dim3", ("x", "y", "z"))
@@ -154,7 +154,7 @@ def _validate_common_numeric_dtype(
     """Return one normalized dtype from the common API's numeric profile."""
 
     dtype, dtype_name = _normalize_common_dtype(dtype)
-    validate_portable_numeric_dtype_name(
+    validate_common_numeric_dtype_name(
         dtype_name,
         operation=operation,
         parameter=parameter,

@@ -1233,7 +1233,7 @@ class _StorageRewrite:
                         f"{names!r} is passed to a device "
                         "function that was not inlined into this kernel "
                         f"({helper_name!r}); let Numba-CUDA-MLIR inline the "
-                        "collective helper (inline='always') or move its "
+                        "primitive helper (inline='always') or move its "
                         "cooperative calls into the kernel."
                     )
                 raise CoopSinglePhaseRewriteError(

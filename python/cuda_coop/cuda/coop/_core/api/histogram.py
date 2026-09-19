@@ -6,16 +6,22 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..block._common import normalize_positive_int
+from ..block.histogram import normalize_histogram_algorithm, validate_histogram_dtype
+from ..thread_group import ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _backend_module_name,
+    _common_group_operation,
+    _group_primitive_marker,
 )
 from ._payload import (
-    TempStorageLike,
+    _common_payload_dtype,
+    _common_thread_data_extent,
+    _validate_common_thread_data_payload,
 )
 
 
-@_portable_group_operation("histogram", group_kinds=("block",))
+@_common_group_operation("histogram", group_kinds=("block",))
 def histogram(
     group: ThreadGroup,
     samples: Any,
@@ -23,9 +29,9 @@ def histogram(
     *,
     bins: Any,
     bins_per_thread: Any = 1,
-    counter_dtype: object | None = None,
+    counter_dtype: Any = None,
     algorithm: str = "atomic",
-    temp_storage: TempStorageLike | None = None,
+    temp_storage: Any = None,
 ) -> Any:
     """Return fresh striped bin counts, preserving the input samples.
 
@@ -73,8 +79,26 @@ def histogram(
     size must fit signed 32-bit integers. The CUB counterpart is
     ``cub::BlockHistogram``.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.histogram must be called from a supported GPU kernel."
+    normalize_positive_int("bins", bins)
+    normalize_positive_int("bins_per_thread", bins_per_thread)
+    normalize_histogram_algorithm(algorithm)
+    if counter_dtype is not None:
+        validate_histogram_dtype(counter_dtype, counter=True)
+    if _backend_module_name() is not None:
+        _validate_common_thread_data_payload(
+            "histogram", "samples", samples, allow_readonly=True
+        )
+        _common_thread_data_extent("histogram", "samples", samples)
+        validate_histogram_dtype(_common_payload_dtype("histogram", "samples", samples))
+    return _group_primitive_marker(
+        "histogram",
+        group,
+        samples,
+        bins=bins,
+        bins_per_thread=bins_per_thread,
+        counter_dtype=counter_dtype,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
     )
 
 

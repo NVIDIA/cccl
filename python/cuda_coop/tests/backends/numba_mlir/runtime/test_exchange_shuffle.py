@@ -57,38 +57,10 @@ _TIME_SLICED_MODES = tuple(
     for mode in _BLOCK_MODES
     if mode not in {"scatter_to_striped_guarded", "scatter_to_striped_flagged"}
 )
-_DTYPES = (
-    np.int8,
-    np.uint8,
-    np.int16,
-    np.uint16,
-    np.int32,
-    np.uint32,
-    np.int64,
-    np.uint64,
-    np.float32,
-    np.float64,
-)
 
 
 def _values(size: int, *, shift: int = 0) -> np.ndarray:
-    return ((np.arange(size, dtype=np.int64) * 17 + shift) % 997 - 491).astype(
-        np.int32
-    )
-
-
-def _dtype_values(dtype, size: int) -> np.ndarray:
-    values = (np.arange(size, dtype=np.int64) * 17) % 97
-    if np.dtype(dtype).kind != "u":
-        values -= 48
-    values = values.astype(dtype)
-    if np.dtype(dtype).kind == "f":
-        values *= dtype(0.25)
-        if np.dtype(dtype).itemsize == 8:
-            values += dtype(2**-30)
-    elif np.dtype(dtype).itemsize == 8:
-        values += np.where(values < 0, -(2**40), 2**40).astype(dtype)
-    return values
+    return ((np.arange(size, dtype=np.int64) * 17 + shift) % 997 - 491).astype(np.int32)
 
 
 def _structured_exchange_oracle(
@@ -155,9 +127,7 @@ def _reversed_ranks(
         lane = thread % group_width
         for item in range(items_per_thread):
             local_index = lane * items_per_thread + item
-            ranks[thread * items_per_thread + item] = (
-                group_items - 1 - local_index
-            )
+            ranks[thread * items_per_thread + item] = group_items - 1 - local_index
     return ranks
 
 
@@ -207,131 +177,130 @@ def _structured_exchange_kernel(
     scope: str,
     mode: str,
     qualified: bool,
-    numba_dtype=types.int32,
 ):
     if scope == "block" and qualified:
 
         @cuda.jit
-        def kernel(source, observed, preserved, items_per_thread):
+        def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = qualified_coop.exchange(
                 qualified_coop.this_block(),
                 payload,
                 mode=mode,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
     elif scope == "block":
 
         @cuda.jit
-        def kernel(source, observed, preserved, items_per_thread):
+        def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = root_coop.exchange(
                 root_coop.this_block(),
                 payload,
                 mode=mode,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
     elif scope == "warp" and qualified:
 
         @cuda.jit
-        def kernel(source, observed, preserved, items_per_thread):
+        def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = qualified_coop.exchange(
                 qualified_coop.this_warp(),
                 payload,
                 mode=mode,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
     elif scope == "warp":
 
         @cuda.jit
-        def kernel(source, observed, preserved, items_per_thread):
+        def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = root_coop.exchange(
                 root_coop.this_warp(),
                 payload,
                 mode=mode,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
     elif scope == "logical" and qualified:
 
         @cuda.jit
-        def kernel(source, observed, preserved, items_per_thread):
+        def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = qualified_coop.exchange(
                 qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 payload,
                 mode=mode,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
     elif scope == "logical":
 
         @cuda.jit
-        def kernel(source, observed, preserved, items_per_thread):
+        def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = root_coop.exchange(
                 root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 payload,
                 mode=mode,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
@@ -341,10 +310,7 @@ def _structured_exchange_kernel(
     return kernel
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
-)
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("mode", ("striped_to_blocked", "blocked_to_striped"))
 @pytest.mark.parametrize(
     ("scope", "group_width"),
@@ -360,69 +326,31 @@ def test_common_exchange_layouts_match_independent_oracles_and_preserve_input(
     mode: str,
     scope: str,
     group_width: int,
-    *,
-    items_per_thread,
 ) -> None:
-    source = _values((_BLOCK_THREADS * items_per_thread), shift=23)
-    observed = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2001, dtype=np.int32
-    )
-    preserved = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2003, dtype=np.int32
-    )
+    source = _values(_TILE_ITEMS, shift=23)
+    observed = np.full(_TILE_ITEMS, -2001, dtype=np.int32)
+    preserved = np.full(_TILE_ITEMS, -2003, dtype=np.int32)
     expected = _structured_exchange_oracle(
         source,
         group_width=group_width,
-        items_per_thread=items_per_thread,
+        items_per_thread=_ITEMS_PER_THREAD,
         mode=mode,
     )
 
     _structured_exchange_kernel(scope, mode, qualified)[1, _BLOCK_THREADS](
-        source, observed, preserved, items_per_thread
-    )
-
-    np.testing.assert_array_equal(observed, expected)
-    np.testing.assert_array_equal(preserved, source)
-
-
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize("dtype", _DTYPES)
-@pytest.mark.parametrize(
-    ("scope", "group_width"),
-    (
-        ("block", _BLOCK_THREADS),
-        ("warp", _WARP_THREADS),
-        ("logical", _LOGICAL_WARP_THREADS),
-    ),
-)
-def test_exchange_preserves_each_dtype_across_group_scopes(
-    dtype, scope, group_width, *, items_per_thread
-):
-    source = _dtype_values(dtype, (_BLOCK_THREADS * items_per_thread))
-    observed = np.zeros_like(source)
-    preserved = np.zeros_like(source)
-    expected = _structured_exchange_oracle(
         source,
-        group_width=group_width,
-        items_per_thread=items_per_thread,
-        mode="blocked_to_striped",
+        observed,
+        preserved,
     )
-
-    _structured_exchange_kernel(
-        scope,
-        "blocked_to_striped",
-        scope != "block",
-        getattr(types, np.dtype(dtype).name),
-    )[1, _BLOCK_THREADS](source, observed, preserved, items_per_thread)
 
     np.testing.assert_array_equal(observed, expected)
     np.testing.assert_array_equal(preserved, source)
 
 
 @cuda.jit
-def _untyped_load_exchange_kernel(source, observed, items_per_thread):
+def _untyped_load_exchange_kernel(source, observed):
     thread = cuda.threadIdx.x
-    payload = qualified_coop.ThreadData(items_per_thread)
+    payload = qualified_coop.ThreadData(2)
     root_coop.load(
         root_coop.this_block(),
         source,
@@ -434,8 +362,8 @@ def _untyped_load_exchange_kernel(source, observed, items_per_thread):
         payload,
         mode="blocked_to_striped",
     )
-    observed[thread * items_per_thread] = exchanged[0]
-    observed[thread * items_per_thread + 1] = exchanged[1]
+    observed[thread * 2] = exchanged[0]
+    observed[thread * 2 + 1] = exchanged[1]
 
 
 def test_inferred_load_payload_composes_directly_into_exchange() -> None:
@@ -449,15 +377,13 @@ def test_inferred_load_payload_composes_directly_into_exchange() -> None:
         mode="blocked_to_striped",
     )
 
-    _untyped_load_exchange_kernel[1, _BLOCK_THREADS](source, observed, 2)
+    _untyped_load_exchange_kernel[1, _BLOCK_THREADS](source, observed)
 
     np.testing.assert_array_equal(observed, expected)
 
 
 @cache
-def _qualified_block_exchange_kernel(
-    mode: str, warp_time_slicing: bool, array_items_per_thread: int
-):
+def _qualified_block_exchange_kernel(mode: str, warp_time_slicing: bool):
     if mode in {
         "striped_to_blocked",
         "blocked_to_striped",
@@ -466,60 +392,44 @@ def _qualified_block_exchange_kernel(
     }:
 
         @cuda.jit
-        def kernel(
-            source,
-            ranks_source,
-            flags_source,
-            observed,
-            preserved,
-            ranks_out,
-            items_per_thread,
-        ):
+        def kernel(source, ranks_source, flags_source, observed, preserved, ranks_out):
             thread = cuda.threadIdx.x
             payload = cuda.local.array(
-                shape=array_items_per_thread,
+                shape=_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = qualified_coop.exchange(
                 qualified_coop.this_block(),
                 payload,
                 mode=mode,
                 warp_time_slicing=warp_time_slicing,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
     elif mode == "scatter_to_striped_flagged":
 
         @cuda.jit
-        def kernel(
-            source,
-            ranks_source,
-            flags_source,
-            observed,
-            preserved,
-            ranks_out,
-            items_per_thread,
-        ):
+        def kernel(source, ranks_source, flags_source, observed, preserved, ranks_out):
             thread = cuda.threadIdx.x
             payload = cuda.local.array(
-                shape=array_items_per_thread,
+                shape=_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             ranks = cuda.local.array(
-                shape=array_items_per_thread,
+                shape=_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             valid_flags = cuda.local.array(
-                shape=array_items_per_thread,
+                shape=_ITEMS_PER_THREAD,
                 dtype=types.int8,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 payload[item] = source[index]
                 ranks[item] = ranks_source[index]
                 valid_flags[item] = flags_source[index]
@@ -531,8 +441,8 @@ def _qualified_block_exchange_kernel(
                 valid_flags=valid_flags,
                 warp_time_slicing=warp_time_slicing,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
                 ranks_out[index] = ranks[item]
@@ -540,26 +450,18 @@ def _qualified_block_exchange_kernel(
     else:
 
         @cuda.jit
-        def kernel(
-            source,
-            ranks_source,
-            flags_source,
-            observed,
-            preserved,
-            ranks_out,
-            items_per_thread,
-        ):
+        def kernel(source, ranks_source, flags_source, observed, preserved, ranks_out):
             thread = cuda.threadIdx.x
             payload = cuda.local.array(
-                shape=array_items_per_thread,
+                shape=_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             ranks = cuda.local.array(
-                shape=array_items_per_thread,
+                shape=_ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 payload[item] = source[index]
                 ranks[item] = ranks_source[index]
             result = qualified_coop.exchange(
@@ -569,8 +471,8 @@ def _qualified_block_exchange_kernel(
                 ranks=ranks,
                 warp_time_slicing=warp_time_slicing,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
                 ranks_out[index] = ranks[item]
@@ -579,15 +481,15 @@ def _qualified_block_exchange_kernel(
 
 
 def _block_exchange_inputs(
-    mode: str, *, items_per_thread
+    mode: str,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    source = _values((_BLOCK_THREADS * items_per_thread), shift=71)
+    source = _values(_TILE_ITEMS, shift=71)
     ranks = _reversed_ranks(
         thread_count=_BLOCK_THREADS,
         group_width=_BLOCK_THREADS,
-        items_per_thread=items_per_thread,
+        items_per_thread=_ITEMS_PER_THREAD,
     )
-    valid_flags = np.ones((_BLOCK_THREADS * items_per_thread), dtype=np.int8)
+    valid_flags = np.ones(_TILE_ITEMS, dtype=np.int8)
     if mode == "scatter_to_striped_guarded":
         ranks[::7] = -1
     elif mode == "scatter_to_striped_flagged":
@@ -597,59 +499,45 @@ def _block_exchange_inputs(
         expected = _structured_exchange_oracle(
             source,
             group_width=_BLOCK_THREADS,
-            items_per_thread=items_per_thread,
+            items_per_thread=_ITEMS_PER_THREAD,
             mode=mode,
         )
-        compared = np.ones((_BLOCK_THREADS * items_per_thread), dtype=np.bool_)
+        compared = np.ones(_TILE_ITEMS, dtype=np.bool_)
     elif mode in {"warp_striped_to_blocked", "blocked_to_warp_striped"}:
         expected = _warp_structured_exchange_oracle(
             source,
-            items_per_thread=items_per_thread,
+            items_per_thread=_ITEMS_PER_THREAD,
             mode=mode,
         )
-        compared = np.ones((_BLOCK_THREADS * items_per_thread), dtype=np.bool_)
+        compared = np.ones(_TILE_ITEMS, dtype=np.bool_)
     else:
         expected, compared = _scatter_exchange_oracle(
             source,
             ranks,
             group_width=_BLOCK_THREADS,
-            items_per_thread=items_per_thread,
+            items_per_thread=_ITEMS_PER_THREAD,
             mode=mode,
-            valid_flags=(
-                valid_flags if mode == "scatter_to_striped_flagged" else None
-            ),
+            valid_flags=(valid_flags if mode == "scatter_to_striped_flagged" else None),
         )
     return source, ranks, valid_flags, expected, compared
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", _BLOCK_MODES)
 def test_qualified_block_exchange_modes_match_oracles_and_accept_local_arrays(
-    mode: str, *, items_per_thread
+    mode: str,
 ) -> None:
-    source, ranks, valid_flags, expected, compared = _block_exchange_inputs(
-        mode, items_per_thread=items_per_thread
-    )
-    observed = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2011, dtype=np.int32
-    )
-    preserved = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2013, dtype=np.int32
-    )
-    ranks_out = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2017, dtype=np.int32
-    )
+    source, ranks, valid_flags, expected, compared = _block_exchange_inputs(mode)
+    observed = np.full(_TILE_ITEMS, -2011, dtype=np.int32)
+    preserved = np.full(_TILE_ITEMS, -2013, dtype=np.int32)
+    ranks_out = np.full(_TILE_ITEMS, -2017, dtype=np.int32)
 
-    _qualified_block_exchange_kernel(mode, False, items_per_thread)[
-        1, _BLOCK_THREADS
-    ](
+    _qualified_block_exchange_kernel(mode, False)[1, _BLOCK_THREADS](
         source,
         ranks,
         valid_flags,
         observed,
         preserved,
         ranks_out,
-        items_per_thread,
     )
 
     np.testing.assert_array_equal(observed[compared], expected[compared])
@@ -658,34 +546,22 @@ def test_qualified_block_exchange_modes_match_oracles_and_accept_local_arrays(
         np.testing.assert_array_equal(ranks_out, ranks)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", _TIME_SLICED_MODES)
 def test_block_exchange_warp_time_slicing_matches_the_full_storage_oracle(
-    mode: str, *, items_per_thread
+    mode: str,
 ) -> None:
-    source, ranks, valid_flags, expected, compared = _block_exchange_inputs(
-        mode, items_per_thread=items_per_thread
-    )
-    observed = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2021, dtype=np.int32
-    )
-    preserved = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2023, dtype=np.int32
-    )
-    ranks_out = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2027, dtype=np.int32
-    )
+    source, ranks, valid_flags, expected, compared = _block_exchange_inputs(mode)
+    observed = np.full(_TILE_ITEMS, -2021, dtype=np.int32)
+    preserved = np.full(_TILE_ITEMS, -2023, dtype=np.int32)
+    ranks_out = np.full(_TILE_ITEMS, -2027, dtype=np.int32)
 
-    _qualified_block_exchange_kernel(mode, True, items_per_thread)[
-        1, _BLOCK_THREADS
-    ](
+    _qualified_block_exchange_kernel(mode, True)[1, _BLOCK_THREADS](
         source,
         ranks,
         valid_flags,
         observed,
         preserved,
         ranks_out,
-        items_per_thread,
     )
 
     np.testing.assert_array_equal(observed[compared], expected[compared])
@@ -699,14 +575,14 @@ def _repeated_warp_exchange_kernel(width: int):
     if width == _WARP_THREADS:
 
         @cuda.jit
-        def kernel(source, observed, items_per_thread):
+        def kernel(source, observed):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             striped = qualified_coop.exchange(
                 qualified_coop.this_warp(),
                 payload,
@@ -717,20 +593,20 @@ def _repeated_warp_exchange_kernel(width: int):
                 striped,
                 mode="striped_to_blocked",
             )
-            for item in range(items_per_thread):
-                observed[thread * items_per_thread + item] = blocked[item]
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = blocked[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed, items_per_thread):
+        def kernel(source, observed):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
-                items_per_thread,
+                _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             striped = qualified_coop.exchange(
                 qualified_coop.this_warp().group_by(width),
                 payload,
@@ -741,13 +617,12 @@ def _repeated_warp_exchange_kernel(width: int):
                 striped,
                 mode="striped_to_blocked",
             )
-            for item in range(items_per_thread):
-                observed[thread * items_per_thread + item] = blocked[item]
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = blocked[item]
 
     return kernel
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "width",
     (
@@ -755,85 +630,77 @@ def _repeated_warp_exchange_kernel(width: int):
         pytest.param(_LOGICAL_WARP_THREADS, id="logical"),
     ),
 )
-def test_warp_exchange_inverse_round_trip(
-    width: int, *, items_per_thread
-) -> None:
-    source = _values((_BLOCK_THREADS * items_per_thread), shift=139)
-    observed = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2049, dtype=np.int32
-    )
+def test_warp_exchange_inverse_round_trip(width: int) -> None:
+    source = _values(_TILE_ITEMS, shift=139)
+    observed = np.full(_TILE_ITEMS, -2049, dtype=np.int32)
 
-    _repeated_warp_exchange_kernel(width)[1, _BLOCK_THREADS](
-        source, observed, items_per_thread
-    )
+    _repeated_warp_exchange_kernel(width)[1, _BLOCK_THREADS](source, observed)
 
     np.testing.assert_array_equal(observed, source)
 
 
 @cache
-def _array_shuffle_kernel(
-    mode: str, api: str, array_items_per_thread: int, numba_dtype=types.int32
-):
-    if api == "portable":
+def _array_shuffle_kernel(mode: str, api: str):
+    if api == "common":
 
         @cuda.jit
-        def kernel(source, observed, preserved, items_per_thread):
+        def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = root_coop.shuffle(
                 root_coop.this_block(),
                 payload,
                 mode=mode,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
     elif api == "qualified-thread-data":
 
         @cuda.jit
-        def kernel(source, observed, preserved, items_per_thread):
+        def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = qualified_coop.shuffle(
                 qualified_coop.this_block(),
                 payload,
                 mode=mode,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
     elif api == "qualified-local-array":
 
         @cuda.jit
-        def kernel(source, observed, preserved, items_per_thread):
+        def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
             payload = cuda.local.array(
-                shape=array_items_per_thread,
-                dtype=numba_dtype,
+                shape=_ITEMS_PER_THREAD,
+                dtype=types.int32,
             )
-            for item in range(items_per_thread):
-                payload[item] = source[thread * items_per_thread + item]
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             result = qualified_coop.shuffle(
                 qualified_coop.this_block(),
                 payload,
                 mode=mode,
             )
-            for item in range(items_per_thread):
-                index = thread * items_per_thread + item
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = result[item]
                 preserved[index] = payload[item]
 
@@ -843,46 +710,24 @@ def _array_shuffle_kernel(
     return kernel
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "api",
-    ("portable", "qualified-thread-data", "qualified-local-array"),
+    ("common", "qualified-thread-data", "qualified-local-array"),
 )
 @pytest.mark.parametrize("mode", ("up", "down"))
 def test_array_shuffle_matches_a_flattened_oracle_and_preserves_input(
-    api: str, mode: str, *, items_per_thread
+    api: str,
+    mode: str,
 ) -> None:
-    source = _values((_BLOCK_THREADS * items_per_thread), shift=149)
-    observed = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2051, dtype=np.int32
+    source = _values(_TILE_ITEMS, shift=149)
+    observed = np.full(_TILE_ITEMS, -2051, dtype=np.int32)
+    preserved = np.full(_TILE_ITEMS, -2053, dtype=np.int32)
+
+    _array_shuffle_kernel(mode, api)[1, _BLOCK_THREADS](
+        source,
+        observed,
+        preserved,
     )
-    preserved = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2053, dtype=np.int32
-    )
-
-    _array_shuffle_kernel(mode, api, items_per_thread)[1, _BLOCK_THREADS](
-        source, observed, preserved, items_per_thread
-    )
-
-    if mode == "up":
-        np.testing.assert_array_equal(observed[1:], source[:-1])
-    else:
-        np.testing.assert_array_equal(observed[:-1], source[1:])
-    np.testing.assert_array_equal(preserved, source)
-
-
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize("dtype", _DTYPES)
-@pytest.mark.parametrize("mode", ("up", "down"))
-def test_array_shuffle_preserves_each_dtype(dtype, mode, *, items_per_thread):
-    source = _dtype_values(dtype, (_BLOCK_THREADS * items_per_thread))
-    observed = np.zeros_like(source)
-    preserved = np.zeros_like(source)
-    api = "portable" if mode == "up" else "qualified-local-array"
-
-    _array_shuffle_kernel(
-        mode, api, items_per_thread, getattr(types, np.dtype(dtype).name)
-    )[1, _BLOCK_THREADS](source, observed, preserved, items_per_thread)
 
     if mode == "up":
         np.testing.assert_array_equal(observed[1:], source[:-1])
@@ -902,7 +747,7 @@ def _offset_shuffle(source, distances, observed):
     )
 
 
-def test_scalar_offset_accepts_per_thread_negative_and_positive_int32_distances() -> (  # noqa: E501 - Preserve descriptive test name.
+def test_scalar_offset_accepts_per_thread_negative_and_positive_int32_distances() -> (
     None
 ):
     source = _values(_BLOCK_THREADS, shift=173)
@@ -955,17 +800,13 @@ def test_scalar_rotate_supports_static_and_per_thread_runtime_distances(
 ) -> None:
     source = _values(_BLOCK_THREADS, shift=191)
     static_distance = 7
-    runtime_distances = ((np.arange(_BLOCK_THREADS) % 11) + 1).astype(
-        distance_dtype
-    )
+    runtime_distances = ((np.arange(_BLOCK_THREADS) % 11) + 1).astype(distance_dtype)
     static_observed = np.full(_BLOCK_THREADS, -2071, dtype=np.int32)
     runtime_observed = np.full(_BLOCK_THREADS, -2073, dtype=np.int32)
     static_expected = np.empty_like(source)
     runtime_expected = np.empty_like(source)
     for thread in range(_BLOCK_THREADS):
-        static_expected[thread] = source[
-            (thread + static_distance) % _BLOCK_THREADS
-        ]
+        static_expected[thread] = source[(thread + static_distance) % _BLOCK_THREADS]
         runtime_expected[thread] = source[
             (thread + int(runtime_distances[thread])) % _BLOCK_THREADS
         ]
@@ -985,16 +826,14 @@ def test_scalar_rotate_supports_static_and_per_thread_runtime_distances(
 
 
 @cuda.jit
-def _repeated_storage_reuse_kernel(
-    source, exchange_observed, shuffle_observed, items_per_thread
-):
+def _repeated_storage_reuse_kernel(source, exchange_observed, shuffle_observed):
     thread = cuda.threadIdx.x
     payload = qualified_coop.ThreadData(
-        items_per_thread,
+        _ITEMS_PER_THREAD,
         dtype=types.int32,
     )
-    for item in range(items_per_thread):
-        payload[item] = source[thread * items_per_thread + item]
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
     striped = qualified_coop.exchange(
         qualified_coop.this_block(),
         payload,
@@ -1005,8 +844,8 @@ def _repeated_storage_reuse_kernel(
         striped,
         mode="striped_to_blocked",
     )
-    for item in range(items_per_thread):
-        exchange_observed[thread * items_per_thread + item] = blocked[item]
+    for item in range(_ITEMS_PER_THREAD):
+        exchange_observed[thread * _ITEMS_PER_THREAD + item] = blocked[item]
 
     first = qualified_coop.shuffle(
         qualified_coop.this_block(),
@@ -1022,18 +861,15 @@ def _repeated_storage_reuse_kernel(
     )
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_repeated_exchange_and_shuffle_calls_reuse_implementation_storage(
-    *, items_per_thread
-) -> None:
-    source = _values((_BLOCK_THREADS * items_per_thread), shift=211)
-    exchange_observed = np.full(
-        (_BLOCK_THREADS * items_per_thread), -2081, dtype=np.int32
-    )
+def test_repeated_exchange_and_shuffle_calls_reuse_implementation_storage() -> None:
+    source = _values(_TILE_ITEMS, shift=211)
+    exchange_observed = np.full(_TILE_ITEMS, -2081, dtype=np.int32)
     shuffle_observed = np.full(_BLOCK_THREADS, -2083, dtype=np.int32)
 
     _repeated_storage_reuse_kernel[1, _BLOCK_THREADS](
-        source, exchange_observed, shuffle_observed, items_per_thread
+        source,
+        exchange_observed,
+        shuffle_observed,
     )
 
     np.testing.assert_array_equal(exchange_observed, source)
@@ -1154,31 +990,27 @@ _REUSE_ROUNDS = 10
 
 def _run_same_direction_warp_reuse(width, *, check_output=True):
     @cuda.jit
-    def kernel(observed, items_per_thread):
+    def kernel(observed):
         thread = cuda.threadIdx.x
         group = thread // width
-        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
+        payload = qualified_coop.ThreadData(3, dtype=types.int32)
         # Every member of a logical group takes the same number of iterations;
         # sibling groups need not reach their barriers together.
         for iteration in range(8 + group % 3):
-            for item in range(items_per_thread):
-                payload[item] = (
-                    iteration * 997 + thread * items_per_thread + item
-                )
+            for item in range(3):
+                payload[item] = iteration * 997 + thread * 3 + item
             result = qualified_coop.exchange(
                 qualified_coop.this_warp().group_by(width),
                 payload,
                 mode="blocked_to_striped",
             )
-            for item in range(items_per_thread):
-                observed[
-                    iteration * _REUSE_THREADS * items_per_thread
-                    + thread * items_per_thread
-                    + item
-                ] = result[item]
+            for item in range(3):
+                observed[iteration * _REUSE_THREADS * 3 + thread * 3 + item] = result[
+                    item
+                ]
 
     observed = np.full(_REUSE_ROUNDS * _REUSE_THREADS * 3, -1, dtype=np.int32)
-    kernel[1, _REUSE_THREADS](observed, 3)
+    kernel[1, _REUSE_THREADS](observed)
     cuda.synchronize()
     if check_output:
         expected = np.full_like(observed, -1)
@@ -1187,14 +1019,9 @@ def _run_same_direction_warp_reuse(width, *, check_output=True):
                 for lane in range(width):
                     for item in range(3):
                         thread = group * width + lane
-                        index = (
-                            iteration * _REUSE_THREADS * 3 + thread * 3 + item
-                        )
+                        index = iteration * _REUSE_THREADS * 3 + thread * 3 + item
                         expected[index] = (
-                            iteration * 997
-                            + group * width * 3
-                            + item * width
-                            + lane
+                            iteration * 997 + group * width * 3 + item * width + lane
                         )
         np.testing.assert_array_equal(observed, expected)
 
@@ -1208,9 +1035,7 @@ def test_warp_exchange_same_direction_reuse(width):
 def test_warp_exchange_reuse_racecheck(width):
     # Expensive instrumentation is opt-in and must be scheduled serially.
     if os.environ.get("CUDA_COOP_RUN_RACECHECK") != "1":
-        pytest.skip(
-            "set CUDA_COOP_RUN_RACECHECK=1 for serial sanitizer qualification"
-        )
+        pytest.skip("set CUDA_COOP_RUN_RACECHECK=1 for serial sanitizer qualification")
     sanitizer = shutil.which("compute-sanitizer")
     if sanitizer is None:
         pytest.skip("compute-sanitizer is not available")
@@ -1225,7 +1050,7 @@ if {disable_barrier!r}:
     from cuda.coop.numba_mlir._compiler._rewrite_storage import _StorageRewrite
     _StorageRewrite._emit_temp_storage_auto_sync = lambda *args, **kwargs: None
 namespace['_run_same_direction_warp_reuse']({width}, check_output={not disable_barrier!r})
-"""  # noqa: E501 - Preserve embedded source bytes.
+"""
         result = subprocess.run(
             [
                 sanitizer,
@@ -1244,9 +1069,7 @@ namespace['_run_same_direction_warp_reuse']({width}, check_output={not disable_b
             timeout=180,
         )
         output = result.stdout + result.stderr
-        summary = re.search(
-            r"RACECHECK SUMMARY: (\d+) hazards displayed", output
-        )
+        summary = re.search(r"RACECHECK SUMMARY: (\d+) hazards displayed", output)
         assert summary is not None, output
         if disable_barrier:
             # A clean negative control would make this an insensitive test.

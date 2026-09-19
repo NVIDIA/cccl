@@ -162,7 +162,7 @@
       notes: [
         "Each destination equals the number of keys with a preceding digit plus the number of earlier input keys with the same digit. Equal digits keep their original blocked order, even when descending=True.",
         "Radix Rank returns one rank per key for one digit. It does not perform the scatter or the sequence of passes that Radix Sort performs. There is no pairs or striped-output rank option.",
-        "The count and prefix rows explain the mathematics. The common call returns only ranks. The qualified exclusive_digit_prefix side output is optional and has a separate per-thread bin layout; it is not enabled by this picture.",
+        "The count and prefix rows explain the mathematics. The common API returns only ranks. The qualified exclusive_digit_prefix side output is optional and has a separate per-thread bin layout; it is not enabled by this picture.",
       ],
     };
   }

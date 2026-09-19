@@ -6,22 +6,24 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..thread_group import ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _backend_module_name,
+    _common_group_operation,
+    _group_primitive_marker,
 )
-from ._payload import TempStorageLike
+from ._payload import _validate_common_numeric_value
 
 
-@_portable_group_operation("topk_min_keys", group_kinds=("block",))
+@_common_group_operation("topk_min_keys", group_kinds=("block",))
 def topk_min_keys(
     group: ThreadGroup,
     keys: Any,
     /,
     *,
     k: Any,
-    valid_items: object = None,
-    temp_storage: TempStorageLike | None = None,
+    valid_items: Any = None,
+    temp_storage: Any = None,
 ) -> Any:
     """Select the smallest keys in a block.
 
@@ -46,7 +48,7 @@ def topk_min_keys(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -72,12 +74,25 @@ def topk_min_keys(
     It rejects invalid static counts during compilation and traps
     on invalid runtime counts.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_min_keys must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_min_keys",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_min_keys",
+        group,
+        keys,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
-@_portable_group_operation("topk_min_pairs", group_kinds=("block",))
+@_common_group_operation("topk_min_pairs", group_kinds=("block",))
 def topk_min_pairs(
     group: ThreadGroup,
     keys: Any,
@@ -85,8 +100,8 @@ def topk_min_pairs(
     /,
     *,
     k: Any,
-    valid_items: object = None,
-    temp_storage: TempStorageLike | None = None,
+    valid_items: Any = None,
+    temp_storage: Any = None,
 ) -> Any:
     """Select the smallest key/value pairs in a block.
 
@@ -115,7 +130,7 @@ def topk_min_pairs(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -142,20 +157,41 @@ def topk_min_pairs(
     It rejects invalid static counts during compilation and traps
     on invalid runtime counts.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_min_pairs must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_min_pairs",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        _validate_common_numeric_value(
+            "topk_min_pairs",
+            "values",
+            values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_min_pairs",
+        group,
+        keys,
+        values,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
-@_portable_group_operation("topk_max_keys", group_kinds=("block",))
+@_common_group_operation("topk_max_keys", group_kinds=("block",))
 def topk_max_keys(
     group: ThreadGroup,
     keys: Any,
     /,
     *,
     k: Any,
-    valid_items: object = None,
-    temp_storage: TempStorageLike | None = None,
+    valid_items: Any = None,
+    temp_storage: Any = None,
 ) -> Any:
     """Select the largest keys in a block.
 
@@ -180,7 +216,7 @@ def topk_max_keys(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -206,12 +242,25 @@ def topk_max_keys(
     It rejects invalid static counts during compilation and traps
     on invalid runtime counts.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_max_keys must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_max_keys",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_max_keys",
+        group,
+        keys,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
-@_portable_group_operation("topk_max_pairs", group_kinds=("block",))
+@_common_group_operation("topk_max_pairs", group_kinds=("block",))
 def topk_max_pairs(
     group: ThreadGroup,
     keys: Any,
@@ -219,8 +268,8 @@ def topk_max_pairs(
     /,
     *,
     k: Any,
-    valid_items: object = None,
-    temp_storage: TempStorageLike | None = None,
+    valid_items: Any = None,
+    temp_storage: Any = None,
 ) -> Any:
     """Select the largest key/value pairs in a block.
 
@@ -249,7 +298,7 @@ def topk_max_pairs(
     temp_storage : TempStorage, optional
         Shared scratch descriptor. Omit it to let the compiler allocate
         storage. With ``auto_sync=False``, synchronize the block before
-        reusing the descriptor in another collective.
+        reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -276,8 +325,29 @@ def topk_max_pairs(
     It rejects invalid static counts during compilation and traps
     on invalid runtime counts.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_max_pairs must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_max_pairs",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        _validate_common_numeric_value(
+            "topk_max_pairs",
+            "values",
+            values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_max_pairs",
+        group,
+        keys,
+        values,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
