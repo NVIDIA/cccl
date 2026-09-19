@@ -9,9 +9,9 @@
 CUTLASS Programming Guide
 =========================
 
-Use ``cuda.coop`` inside a CuTe kernel for the cooperative primitives
-documented below. The CUTLASS backend implements each supported operation
-with CUB or CUDAX; see :ref:`backend coverage <coop-backends>`.
+Use ``cuda.coop`` inside a CuTe kernel to load a tile, reduce or scan its
+values, rearrange or sort items, and store the result. The CUTLASS
+backend implements these primitives with CUB and CUDAX.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
 object and returns ``None``; ``store`` writes its items to memory without
@@ -32,23 +32,10 @@ compiler integration works. For Numba kernels, see the
 Choosing the common or qualified API
 ------------------------------------
 
-For CUTLASS-only code, use the qualified namespace directly:
-
-.. code-block:: python
-
-   import cuda.coop.cutlass as coop
-
-This import registers the CUTLASS integration. Use ordinary Load/Store and
-CuTe register conversions through this one import, without a separate
-``coop.register(...)`` call.
-
-The common namespace, ``from cuda import coop``, is useful for code shared
-across compilers. Examples that compare common and qualified calls use
-``coop`` for the common API and ``cutlass_coop`` for the CUTLASS API. An
-application can use either API on its own.
-
-The host ``cuda.coop.register`` helper belongs to the common namespace;
-qualified imports perform that registration directly.
+Start with ``from cuda import coop`` for the common API. Use
+``import cuda.coop.cutlass as coop`` when you need the extra controls in the
+table below, such as scatter ranks for Exchange or a Scan aggregate.
+Both imports call the same implementation inside a CuTe kernel.
 
 .. list-table:: Common and CUTLASS-qualified APIs
    :header-rows: 1
@@ -82,6 +69,10 @@ qualified imports perform that registration directly.
      - Built-in ascending/descending keys or pairs, including partial tiles.
      - Also accepts CuTe register tensors and returns fresh ``ThreadData``;
        see :ref:`coop-cutlass-merge-sort`. Custom comparators are unsupported.
+   * - Radix Sort and Rank
+     - Block payloads with 32- or 64-bit integer keys.
+     - Adds scalar and register-tensor inputs, floating-point Sort keys,
+       striped Sort results, and Rank bin prefixes; see :ref:`coop-cutlass-radix`.
 
 .. _coop-cutlass-differences:
 
@@ -96,12 +87,6 @@ payload you can pass to ``store`` or another primitive.
 ``values.to_register_tensor()`` converts a payload back to a CuTe register
 tensor. See :ref:`coop-cutlass-register-payloads`.
 
-Construct payloads with ``cuda.coop.ThreadData`` or
-``cuda.coop.cutlass.ThreadData`` inside a CuTe kernel. Both create CUTLASS
-payloads that work with common and qualified calls. ``ThreadDataLike`` describes the shared
-interface; implementing that interface in a user class does not register a
-new payload representation with the compiler.
-
 Group queries return CuTe scalars. For example, ``block.rank()`` returns a
 ``cutlass.Uint32`` that you can use in pointer arithmetic or a condition
 inside the kernel. Use ``block.rank_as(cutlass.Int32)`` when you need a signed
@@ -113,8 +98,8 @@ describe the requirements for block, warp, and mapped groups.
 
 Reduce and Scan support the built-in operators listed below. Custom
 operators and Scan prefix callbacks are not yet supported. The shared
-:ref:`coverage table <coop-backends>` lists the implemented primitive families
-and their backend support.
+:ref:`coverage table <coop-backends>` lists the available primitives and
+planned additions, including TopK.
 
 .. _coop-cutlass-mixed-backends:
 
@@ -122,14 +107,6 @@ Mixing kernels from both compilers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CUTLASS and Numba-CUDA-MLIR kernels can run in the same process. Use the
-aliases ``numba_coop`` and ``cutlass_coop`` in a module containing both:
-
-.. code-block:: python
-
-   import cuda.coop.numba_mlir as numba_coop
-   import cuda.coop.cutlass as cutlass_coop
-
-Call each qualified API from its own compiler's kernels. Use the
 selected device's primary CUDA context before allocating memory or launching
 kernels with either runtime. Numba-CUDA-MLIR requires this context; it rejects
 a context created independently by another runtime.
@@ -137,8 +114,6 @@ a context created independently by another runtime.
 Synchronize a kernel's work before the other runtime reads its output. Pass
 data between kernels through device memory; ``ThreadData`` and CuTe register
 tensors are local to the kernel that uses them.
-
-.. _coop-cutlass-requirements:
 
 Runtime requirements
 --------------------
@@ -159,12 +134,10 @@ and NVRTC must be available to compile the CUB and CUDAX functions. See the
 for the required CuTe integration hooks. Importing :mod:`cuda.coop` alone does
 not load CUTLASS or initialize CUDA bindings.
 
-.. _coop-cutlass-load-store:
-
 Activation and example
 ----------------------
 
-To use the common API, register CUTLASS on the host before compiling:
+Register CUTLASS on the host before compiling:
 
 .. code-block:: python
 
@@ -200,70 +173,6 @@ specifies the number of valid items in that tile. Load may fill its
 out-of-bounds items with ``oob_default``. Without that default, initialize
 any items that the valid prefix will not overwrite before reading them.
 All threads in the block must call the primitive with uniform controls.
-
-.. _coop-cutlass-payload-types:
-
-Payloads, dtypes, and result ownership
---------------------------------------
-
-``ThreadData`` holds a fixed number of values per thread. In blocked order,
-thread ``t`` owns tile positions ``t * items_per_thread + i``. In striped
-order, it owns positions ``t + i * group_size``. A Load/Store algorithm
-determines the layout expected by that call; the payload does not carry a
-layout tag. See the :doc:`Load <coop/visualizations/load>` and
-:doc:`Exchange <coop/visualizations/exchange>` visualizations for the mappings.
-
-Load infers an untyped payload's dtype from its memory operand. When building
-values directly, use an explicit numeric type such as ``cutlass.Int32`` or
-``numpy.int32``. Supported payload types are signed and unsigned integers of
-8, 16, 32, or 64 bits and 32- or 64-bit floating point. An individual primitive
-can accept a smaller set; for example, bitwise operators require integers.
-Boolean, half-precision, complex, and structured payloads are unsupported.
-
-NumPy types select a numeric representation; expressions inside the kernel
-are CuTe values. Store requires the payload dtype to match the destination
-element type. Cast arithmetic results explicitly when necessary, for example
-with ``cutlass.Int32(value)``. Integer sums can overflow, and a parallel
-floating-point sum can differ from a sequential CPU sum because the order
-of additions differs.
-
-Load initializes the destination payload in place and returns ``None``.
-Store leaves its input unchanged and also returns ``None``. Other
-operations document their result ownership below. Read results only at the
-positions or threads where the primitive defines them.
-
-Index payloads with compile-time integers and initialize each item before
-reading it. ``ThreadData(4, dtype=cutlass.Float32, alignment=16)`` requests at
-least 16-byte alignment when storage is materialized. Input and output memory
-alignment is separate. The compiler decides which values remain in registers
-and which spill to local memory. The :ref:`qualified conversion methods
-<coop-cutlass-register-payloads>` connect payloads to CuTe register tensors
-and immutable register values.
-
-.. _coop-cutlass-helpers:
-
-Helpers and compile-time values
--------------------------------
-
-A ``@cute.jit`` helper called by a ``@cute.kernel`` can contain cooperative
-operations. Its calls are traced in the enclosing kernel's compiler
-environment and contribute to that kernel's provider bundle and scratch
-requirements. Every required group member must reach a cooperative call,
-including when it appears in a helper or loop.
-
-Payload extents, group mappings, dtype selectors, algorithm names, and
-``TempStorage`` constructor options must be known while tracing. Use
-``cutlass.range_constexpr`` when a loop index selects payload items or
-constructs different static calls. Runtime loops may repeat a fixed call
-shape, and an initialized ``ThreadData`` can pass through CuTe runtime
-branches and loops. Scalar controls such as ``valid_items`` and ``offset``
-may be runtime values where the primitive allows them.
-
-A helper containing a cooperative call is different from an operator passed
-to Reduce, Scan, or Merge Sort. CUTLASS currently accepts the documented
-built-in operators and aliases; it does not compile arbitrary device
-callbacks. Numba's callback support is described in its
-:doc:`Programming Guide <coop/programming_guide>`.
 
 Block algorithms
 ----------------
@@ -307,8 +216,6 @@ scratch-reuse barrier, even when passed a ``TempStorage`` descriptor.
 ``ThreadData(alignment=...)`` requests a minimum payload alignment; it does
 not change the logical item layout.
 
-.. _coop-cutlass-storage:
-
 Block scratch and reuse
 -----------------------
 
@@ -318,14 +225,6 @@ capacity across calls. An omitted size lets the compiler allocate enough
 storage for all uses; an explicit byte capacity must accommodate them.
 ``alignment`` is a minimum: the allocation also satisfies each primitive's
 alignment requirements.
-
-Scratch belongs to one kernel execution on one block. It cannot preserve
-application state between blocks or launches. CUTLASS materializes scratch
-through CuTe's shared-memory allocator after tracing has collected the
-requirements; CuTe owns the resulting kernel's shared-memory accounting.
-See :ref:`the allocation walkthrough <coop-cutlass-scratch-allocation>` for
-the compiler path. The Numba-specific ``cuda.shared.array`` coexistence rules
-in the Numba guide describe that compiler's allocation model.
 
 ``sharing="shared"`` reuses one slice across call sites. With
 ``sharing="exclusive"``, distinct call sites receive separate slices.
@@ -417,8 +316,6 @@ eight groups of eight threads, each loading its own partial tile.
    :start-after: docs: start cutlass-logical-warp-load-store
    :end-before: docs: end cutlass-logical-warp-load-store
 
-.. _coop-cutlass-hierarchy:
-
 Hierarchy queries and synchronization
 -------------------------------------
 
@@ -448,8 +345,6 @@ unsupported. Queries and synchronization consume the exact dimensions and
 launch flags supplied by the compiler. Cluster primitives require consistent
 cluster dimensions and launch mode; grid queries also require exact grid
 dimensions.
-
-.. _coop-cutlass-reduce:
 
 Built-in Reduce and Sum
 -----------------------
@@ -723,12 +618,99 @@ key/value association against independent CPU references.
    :start-after: docs: start cutlass-merge-sort
    :end-before: docs: end cutlass-merge-sort
 
+.. _coop-cutlass-radix:
+
+Radix Sort and Rank
+-------------------
+
+``radix_sort_keys(block, keys, ...)`` returns sorted keys, and
+``radix_sort_pairs(block, keys, values, ...)`` returns sorted keys and their
+associated values. ``radix_rank(block, keys, ...)`` instead returns each
+input item's position in the order of a selected digit. It preserves the
+input arrangement; use the returned ranks when assigning destinations.
+All three primitives preserve their inputs. Equal selected digits retain
+flattened blocked input order in both ascending and descending modes.
+
+These primitives require a complete physical block, including multidimensional
+blocks. Every block thread participates with identical controls and per-thread
+extents. A block tile contains at most 65,535 items. Warp and mapped groups
+are unsupported. Inputs use blocked layout,
+and array results are fresh ``ThreadData`` payloads with the same item count.
+Read-only inputs are accepted. Sort preserves the key and value dtypes;
+Rank returns signed ``cutlass.Int32`` values. The
+:doc:`Radix visualization <coop/visualizations/radix>` illustrates the relation
+between digits, ranks, and sorted positions.
+
+The common API accepts payloads of ``int32``, ``uint32``, ``int64``, or
+``uint64`` keys. Pair values may use any of the ten numeric dtypes supported
+by Scan; key and value extents must match. The qualified API additionally
+accepts scalars and CuTe register tensors. Scalar pairs require two scalars;
+array pairs require two arrays. Scalar inputs produce scalar results.
+Register-tensor inputs produce ``ThreadData`` results.
+
+Sort intervals and output layout
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sort uses the half-open transformed-bit interval ``[begin_bit, end_bit)``.
+The default begin is zero, and the default end is the key width, including
+when begin is nonzero. Bounds must satisfy
+``0 <= begin_bit < end_bit <= key_width``. They may be runtime signed integers
+up to 64 bits or unsigned integers up to 32 bits; invalid runtime bounds trap
+before narrowing. ``descending`` is a compile-time Boolean.
+
+Signed integer keys invert their sign bit before selecting digits. Qualified
+Sort also accepts ``float32`` and ``float64`` keys. Floating keys invert all
+bits when negative and only the sign bit when nonnegative. Negative and
+positive zero compare equivalently; NaNs follow transformed-bit ordering.
+Returned keys retain their original bit representations.
+
+Results use blocked layout by default. Qualified Sort's compile-time
+``blocked_to_striped=True`` maps item ``i`` at thread ``t`` to sorted index
+``i * block_threads + t``. This applies to both outputs of a pair sort.
+Match the Store algorithm to this register layout when writing a contiguous
+sorted tile. Sort accepts ``temp_storage`` with the size, alignment, sharing,
+and synchronization rules described above. It does not accept a valid count,
+comparison callback, or algorithm selector.
+
+Rank digits and bin prefixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Rank keys are always 32- or 64-bit integers, including through the qualified
+API. Signed keys invert the sign bit before digit extraction. Its bounds
+and ``radix_bits`` must be compile-time integers, selecting one through eight
+bits within the key width. Omitted ``end_bit`` means ``begin_bit + radix_bits``,
+or ``begin_bit + 4`` when both controls are omitted. An explicit end and width
+must describe the same interval. Defaults do not clamp to the key width.
+Rank manages scratch and reuse synchronization automatically and does not
+accept ``temp_storage``.
+
+Qualified Rank adds ``exclusive_digit_prefix``, a writable signed Int32
+``ThreadData`` output distinct from the keys. Its dtype may be inferred.
+For digit width ``R`` and block size ``T``, each thread supplies
+``P = max(1, ceil(2**R / T))`` slots. Slot ``i`` of thread ``t`` owns bin
+``t * P + i`` in both directions. Each prefix counts keys with smaller digits
+in ascending mode or greater digits in descending mode. Slots beyond the
+number of bins are undefined and must not be read. These bin counts are
+separate from the returned per-item ranks.
+
+This example sorts full signed keys, orders pairs by their transformed high
+digit, and computes that digit's inverse ranks. The qualified path also uses
+striped Sort output and descending bin prefixes. CPU checks verify stable
+pair order, the signed-key transformation, ranks, and input preservation.
+:download:`Download the Radix Sort and Rank example
+<../../python/cuda_coop/examples/cutlass/radix.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/radix.py
+   :language: python
+   :start-after: docs: start cutlass-radix
+   :end-before: docs: end cutlass-radix
+
 .. _coop-cutlass-register-payloads:
 
 Qualified register payloads
 ---------------------------
 
-Import ``cuda.coop.cutlass`` as ``cutlass_coop`` when a kernel needs CuTe register
+Import ``cuda.coop.cutlass`` as ``coop`` when a kernel needs CuTe register
 conversions. The qualified ``ThreadData`` provides ``from_register_tensor``
 and ``to_register_tensor`` for register-memory tensors, and ``from_vector``
 and ``to_tensor_ssa`` for immutable register values. These conversions use the
@@ -746,49 +728,8 @@ producer or tensor adapter loses the intended unsigned element type, use
 
 .. code-block:: python
 
-   import cuda.coop.cutlass as cutlass_coop
+   import cuda.coop.cutlass as coop
 
    # Inside a CuTe kernel, with a register-memory fragment:
-   values = cutlass_coop.ThreadData.from_register_tensor(fragment)
-   cutlass_coop.store(cutlass_coop.this_block(), destination, values)
-
-.. _coop-cutlass-checking:
-
-Checking and tuning a kernel
-----------------------------
-
-Check values and ownership against a CPU reference before timing a kernel.
-Include partial tiles, nonzero offsets, multiple warp groups, and repeated
-scratch reuse when those cases occur in the application. For operations with
-undefined tails or nonleader results, compare only the defined outputs.
-
-Compile before timing and synchronize the measured work. ``cute.compile``
-returns a callable you can retain for repeated launches; the
-:ref:`debugger walkthrough <cuda.coop.cutlass.debugger_walkthrough>` shows
-compilation followed by two executions. The first compilation includes
-provider generation, NVRTC, and device linking.
-
-To inspect generated C++, set ``CUDA_COOP_SOURCE_DUMP_DIR`` before compilation.
-Use the final linked cubin to assess inlining, barriers, shared memory, and
-register use. A provider's source or intermediate PTX does not establish what
-remains in the kernel. Use Compute Sanitizer race checking when changing
-scratch reuse or synchronization.
-
-.. _coop-cutlass-launch-facts:
-
-Launch dimensions and resources
--------------------------------
-
-Specify the block dimensions in the CuTe launch, including all dimensions of
-a multidimensional block. Primitives specialize for those exact dimensions.
-Grid queries also need exact grid dimensions; cluster operations require
-exact cluster dimensions and the corresponding launch flags. Grid reductions
-and synchronization are unsupported. A maximum thread bound cannot substitute
-for the actual participating group size. Missing required facts cause a
-compilation error; see :ref:`the compiler launch contract
-<coop-cutlass-exact-launch-facts>`.
-
-More items per thread can increase register use, and additional scratch can
-reduce the number of resident blocks. Check the compiled kernel's resource
-usage as well as its execution time. Use inferred scratch capacity and
-alignment unless the kernel needs an explicit allocation policy.
+   values = coop.ThreadData.from_register_tensor(fragment)
+   coop.store(coop.this_block(), destination, values)
