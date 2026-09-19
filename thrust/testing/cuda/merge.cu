@@ -49,7 +49,7 @@ void TestMergeDevice(ExecutionPolicy exec)
     stream.sync();
 
     const auto h_end = thrust::merge(h_a.begin(), h_a.end(), h_b.begin(), h_b.begin() + size, h_result.begin());
-    ASSERT_EQUAL_QUIET(h_result.end(), h_end);
+    REQUIRE(h_result.end() == h_end);
 
     auto result = cuda::make_device_buffer<int>(stream, device, h_result.size(), cuda::no_init);
 
@@ -76,7 +76,7 @@ DECLARE_UNITTEST(TestMergeDeviceDevice);
 void TestMergeCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto a      = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
   auto b      = cuda::make_device_buffer<int>(stream, device, {0, 3, 3, 4});
@@ -86,7 +86,7 @@ void TestMergeCudaStreams()
     thrust::merge(thrust::cuda::par.on(stream.get()), a.begin(), a.end(), b.begin(), b.end(), result.begin());
   stream.sync();
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {0, 0, 2, 3, 3, 4, 4});
 }
 DECLARE_UNITTEST(TestMergeCudaStreams);

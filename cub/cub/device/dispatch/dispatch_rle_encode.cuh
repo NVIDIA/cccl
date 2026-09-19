@@ -15,6 +15,7 @@
 
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/kernels/kernel_rle_encode_lookahead.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
@@ -30,6 +31,7 @@
 #include <cuda/__memory/align_up.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/iterator>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -204,14 +206,6 @@ struct DeviceRleEncodeKernelSource
 #endif // __cccl_ptx_isa >= 920
 };
 
-// a preprocessor directive inside the NV_IF_TARGET argument list is undefined behavior (MSVC C5101),
-// so the CUB_DEBUG_LOG guard has to live in this macro instead of around the _CubLog calls
-#ifdef CUB_DEBUG_LOG
-#  define CUB_DETAIL_RLE_ENCODE_LOG(...) _CubLog(__VA_ARGS__)
-#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-#  define CUB_DETAIL_RLE_ENCODE_LOG(...)
-#endif // !CUB_DEBUG_LOG
-
 // the lookahead kernel only exists from PTX ISA 9.2 (CUDA 13.2); below that, dispatch is streaming-only
 #if __cccl_ptx_isa >= 920
 // compile-time half of the lookahead viability
@@ -337,11 +331,17 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   {
     constexpr int init_kernel_threads = 128;
     const auto init_grid_size         = ::cuda::ceil_div(num_tiles, init_kernel_threads);
-    CUB_DETAIL_RLE_ENCODE_LOG(
-      "Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
-      init_grid_size,
-      init_kernel_threads,
-      (long long) stream);
+#  ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
+            init_grid_size,
+            init_kernel_threads,
+            (long long) stream);
+#  else // CUB_DEBUG_LOG
+    log("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
+        init_grid_size,
+        init_kernel_threads,
+        (long long) stream);
+#  endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* dependent_launch */ false)
             .doit(kernel_source.InitKernel(), tile_partial_states, static_cast<::cuda::std::int64_t>(num_tiles))))
@@ -359,12 +359,19 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   }
   {
     const int block_dim = num_total_threads(lookahead_policy);
-    CUB_DETAIL_RLE_ENCODE_LOG(
-      "Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
-      num_tiles,
-      block_dim,
-      dyn_smem_bytes,
-      (long long) stream);
+#  ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
+            num_tiles,
+            block_dim,
+            dyn_smem_bytes,
+            (long long) stream);
+#  else // CUB_DEBUG_LOG
+    log("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
+        num_tiles,
+        block_dim,
+        dyn_smem_bytes,
+        (long long) stream);
+#  endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(
           launcher_factory(num_tiles,
                            block_dim,
@@ -439,6 +446,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
     return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+#  if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+      NV_IF_TARGET(NV_IS_HOST, ({
+                     ::std::stringstream ss;
+                     ss << policy_getter();
+                     _CubLog("Dispatching DeviceRunLengthEncode::Encode to compute capability %d.%d with tuning: %s\n",
+                             cc.major_cap(),
+                             cc.minor_cap(),
+                             ss.str().c_str());
+                   }))
+#  else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+      log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
+#  endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+
       if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == RleAlgorithm::lookahead)
       {
         return invoke_lookahead(

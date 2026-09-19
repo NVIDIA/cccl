@@ -65,7 +65,7 @@ template <class _Group>
 }
 
 _CCCL_TEMPLATE(class _Group, class _Callable, class... _Args)
-_CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_invocable_v<_Callable, _Args...>
+_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_invocable_v<_Callable, _Args...>
                  _CCCL_AND ::cuda::std::is_void_v<::cuda::std::invoke_result_t<_Callable, _Args...>>)
 _CCCL_DEVICE_API void invoke_one(const _Group& __group, _Callable&& __callable, _Args&&... __args) noexcept(
   ::cuda::std::is_nothrow_invocable_v<_Callable, _Args...>)
@@ -80,7 +80,7 @@ _CCCL_TEMPLATE(class _Group,
                class _Callable,
                class... _Args,
                class _InvokeResult = ::cuda::std::invoke_result_t<_Callable, _Args...>)
-_CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_invocable_v<_Callable, _Args...> _CCCL_AND(
+_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_invocable_v<_Callable, _Args...> _CCCL_AND(
   !::cuda::std::is_void_v<_InvokeResult>))
 [[nodiscard]]
 _CCCL_DEVICE_API auto invoke_one(const _Group& __group, _Callable&& __callable, _Args&&... __args) noexcept(

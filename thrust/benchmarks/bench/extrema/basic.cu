@@ -8,7 +8,7 @@
 #include "nvbench_helper.cuh"
 
 template <typename T, typename Func>
-static void bench_extremum(nvbench::state& state, nvbench::type_list<T>, Func func, std::size_t num_outputs = 1)
+static void bench_extremum(nvbench::state& state, nvbench::type_list<T>, Func func, int output_count = 1)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -18,7 +18,7 @@ static void bench_extremum(nvbench::state& state, nvbench::type_list<T>, Func fu
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_writes<offset_t>(num_outputs);
+  state.add_global_memory_writes<offset_t>(output_count);
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
@@ -56,14 +56,13 @@ NVBENCH_BENCH_TYPES(max_element, NVBENCH_TYPE_AXES(fundamental_types))
 template <typename T>
 static void minmax_element(nvbench::state& state, nvbench::type_list<T> list)
 {
-  // minmax_element writes two iterators
   bench_extremum(
     state,
     list,
     [](auto&&... args) {
       return thrust::minmax_element(args...);
     },
-    2);
+    /* output_count = */ 2);
 }
 
 NVBENCH_BENCH_TYPES(minmax_element, NVBENCH_TYPE_AXES(fundamental_types))

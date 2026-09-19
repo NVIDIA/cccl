@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// %PARAM% TEST_ERR err 0:1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16:17:18:19:20:21:22
+// %PARAM% TEST_ERR err 0:1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16:17:18:19:20:21:22:23:24
 
 // Defer the unsupported-architecture diagnosis to the dispatch's runtime check (not a compile-time static_assert)
 // so only the requirement static_asserts under test fire, regardless of which architectures this test is compiled for.
@@ -24,7 +24,7 @@
 // Verifies that cub::DeviceBatchedTopK rejects, at compile time, requests the public contract marks as ill-formed.
 // Each variant makes exactly one argument ill-formed (the others take valid defaults) and checks the single diagnostic:
 //
-//   * requirements (variants 0-5):
+//   * requirements (variants 0-5, 23-24):
 //       - determinism and tie_break must be acknowledged together, both specified or both omitted to take the default
 //       - an explicit tie_break of prefer_smaller_index / prefer_larger_index pins the result set across GPUs and so
 //         requires determinism::gpu_to_gpu (it cannot be paired with not_guaranteed or run_to_run)
@@ -159,11 +159,21 @@ int main()
   auto requirements =
     ex::require(ex::determinism::run_to_run, ex::tie_break::prefer_larger_index, ex::output_ordering::unsorted);
   // expected-error-5 {{"pins the result set across GPUs and therefore requires"}}
+#elif TEST_ERR == 23
+  auto requirements =
+    ex::require(ex::determinism::not_guaranteed, ex::tie_break::unspecified, ex::output_ordering::stable_sorted);
+  // expected-error-23 {{"does not yet implement cuda::execution::output_ordering::stable_sorted"}}
+#elif TEST_ERR == 24
+  // expected-error-24 {{"does not yet implement cuda::execution::output_ordering::stable_sorted"}}
 #else
   auto requirements = ex::require(ex::output_ordering::unsorted);
 #endif
 
-  auto env                  = cuda::std::execution::env{requirements};
+#if TEST_ERR == 24
+  auto env = cuda::std::execution::env{};
+#else
+  auto env = cuda::std::execution::env{requirements};
+#endif
   size_t temp_storage_bytes = 0;
   auto error                = cub::DeviceBatchedTopK::MaxKeys(
     nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segments, env);

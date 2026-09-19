@@ -63,7 +63,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
       cuda::execution::tune(bench_scan_by_key_policy_selector{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceScan::ExclusiveScanByKey,
       "ExclusiveScanByKey failed",
       d_keys,

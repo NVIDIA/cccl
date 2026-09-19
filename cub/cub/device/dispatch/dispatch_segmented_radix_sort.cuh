@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_radix_sort.cuh>
 #include <cub/util_debug.cuh>
@@ -288,7 +289,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
     cudaError error = cudaSuccess;
 
     // The number of bits to process in this pass
-    int pass_bits = ::cuda::std::min(pass_config.radix_bits, (end_bit - current_bit));
+    const int pass_bits = ::cuda::std::min(pass_config.radix_bits, (end_bit - current_bit));
 
     // The offset type (used to specialize the kernel template), large enough to index any segment within a single
     // invocation
@@ -311,7 +312,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       const auto num_current_segments =
         ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
 
-// Log kernel configuration
+      // Log kernel configuration
 #ifdef CUB_DEBUG_LOG
       _CubLog(
         "Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
@@ -325,7 +326,20 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
         (long long) current_segment_offset,
         current_bit,
         pass_bits);
-#endif
+#else // CUB_DEBUG_LOG
+      detail::log(
+        "Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
+        "%lld items per thread, %lld SM occupancy, "
+        "current segment offset %lld, current bit %d, bit_grain %d\n",
+        (long long) num_current_segments,
+        (long long) pass_config.segmented_config.threads_per_block,
+        (long long) stream,
+        (long long) pass_config.segmented_config.items_per_thread,
+        (long long) pass_config.segmented_config.sm_occupancy,
+        (long long) current_segment_offset,
+        current_bit,
+        pass_bits);
+#endif // CUB_DEBUG_LOG
 
       launcher_factory(
         static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.threads_per_block, 0, stream)
@@ -433,8 +447,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       }
 
       // Temporary storage allocation requirements
-      void* allocations[2]       = {};
-      size_t allocation_sizes[2] = {
+      void* allocations[2]             = {};
+      const size_t allocation_sizes[2] = {
         // bytes needed for 3rd keys buffer
         (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
 
@@ -461,13 +475,13 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
 
       // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
       // preferred digit size
-      int radix_bits         = policy.RadixBits(policy.Segmented());
-      int alt_radix_bits     = policy.RadixBits(policy.AltSegmented());
-      int num_bits           = end_bit - begin_bit;
-      int num_passes         = ::cuda::std::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
-      bool is_num_passes_odd = num_passes & 1;
-      int max_alt_passes     = (num_passes * radix_bits) - num_bits;
-      int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
+      const int radix_bits     = policy.RadixBits(policy.Segmented());
+      const int alt_radix_bits = policy.RadixBits(policy.AltSegmented());
+      const int num_bits       = end_bit - begin_bit;
+      int num_passes           = ::cuda::std::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
+      const bool is_num_passes_odd = num_passes & 1;
+      const int max_alt_passes     = (num_passes * radix_bits) - num_bits;
+      const int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
 
       DoubleBuffer<KeyT> d_keys_remaining_passes(
         (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[0]),
@@ -709,8 +723,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
     return error;
   }
 
-  void* allocations[2]       = {};
-  size_t allocation_sizes[2] = {
+  void* allocations[2]             = {};
+  const size_t allocation_sizes[2] = {
     (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
     (is_overwrite_okay || keys_only) ? 0 : num_items * sizeof(ValueT),
   };
@@ -797,7 +811,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
         (long long) current_segment_offset,
         current_bit,
         pass_bits);
-#endif
+#else // CUB_DEBUG_LOG
+      log("Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
+          "%lld items per thread, %lld SM occupancy, "
+          "current segment offset %lld, current bit %d, bit_grain %d\n",
+          (long long) num_current_segments,
+          (long long) config.threads_per_block,
+          (long long) stream,
+          (long long) config.items_per_thread,
+          (long long) config.sm_occupancy,
+          (long long) current_segment_offset,
+          current_bit,
+          pass_bits);
+#endif // CUB_DEBUG_LOG
 
       if (const auto err = CubDebug(
             launcher_factory(static_cast<unsigned int>(num_current_segments), config.threads_per_block, 0, stream)
@@ -952,6 +978,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceSegmentedRadixSort", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   return invoke_passes(

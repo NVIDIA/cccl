@@ -55,11 +55,11 @@ struct __narrowing_check
   };
 
   template <class _Dest, class _Source>
-  using _Apply _CCCL_NODEBUG_ALIAS = typename __narrowing_check_impl<_Dest, _Source>::type;
+  using _Apply _CCCL_NODEBUG = typename __narrowing_check_impl<_Dest, _Source>::type;
 };
 
 template <class _Dest, class _Source>
-using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename conditional_t<
+using __check_for_narrowing _CCCL_NODEBUG = typename conditional_t<
 #ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
   false &&
 #endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
@@ -109,11 +109,11 @@ template <size_t... _Idx>
 struct __make_overloads_imp<__tuple_indices<_Idx...>>
 {
   template <class... _Types>
-  using _Apply _CCCL_NODEBUG_ALIAS = __all_overloads<__overload<_Types, _Idx>...>;
+  using _Apply _CCCL_NODEBUG = __all_overloads<__overload<_Types, _Idx>...>;
 };
 
 template <class... _Types>
-using _MakeOverloads _CCCL_NODEBUG_ALIAS =
+using _MakeOverloads _CCCL_NODEBUG =
   typename __make_overloads_imp<__make_indices_imp<sizeof...(_Types), 0>>::template _Apply<_Types...>;
 
 template <class _Tp, class... _Types>

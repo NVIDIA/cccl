@@ -105,14 +105,10 @@ def host_segmented_sort(
 
 
 @pytest.mark.parametrize("dtype, num_segments, segment_size", DTYPE_SEGMENT_PARAMS)
-def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
-    # Disable SASS verification only for this test when dtype is int64
-    if np.dtype(dtype) == np.dtype(np.int64):
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_sort_keys(dtype, num_segments, segment_size):
     order = cuda.compute.SortOrder.ASCENDING
     num_items = num_segments * segment_size
 

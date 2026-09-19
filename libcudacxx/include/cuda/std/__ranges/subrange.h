@@ -439,22 +439,22 @@ tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : integral_constant<siz
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Ip;
+  using type _CCCL_NODEBUG = _Ip;
 };
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Sp;
+  using type _CCCL_NODEBUG = _Sp;
 };
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Ip;
+  using type _CCCL_NODEBUG = _Ip;
 };
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Sp;
+  using type _CCCL_NODEBUG = _Sp;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -470,22 +470,22 @@ struct tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : ::cuda::std::i
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<0, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Ip;
+  using type _CCCL_NODEBUG = _Ip;
 };
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<1, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Sp;
+  using type _CCCL_NODEBUG = _Sp;
 };
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<0, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Ip;
+  using type _CCCL_NODEBUG = _Ip;
 };
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 struct tuple_element<1, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Sp;
+  using type _CCCL_NODEBUG = _Sp;
 };
 
 _CCCL_END_NAMESPACE_STD

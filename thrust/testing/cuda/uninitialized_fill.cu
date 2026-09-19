@@ -22,44 +22,44 @@ void TestUninitializedFillDevice(ExecutionPolicy exec)
   uninitialized_fill_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 4, sub);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   Vector ref{0, sub, sub, sub, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   sub = 8;
 
   uninitialized_fill_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 3, sub);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ref = {sub, sub, sub, 7, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   sub = 9;
 
   uninitialized_fill_kernel<<<1, 1>>>(exec, v.begin() + 2, v.end(), sub);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ref = {8, 8, sub, sub, 9};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   sub = 1;
 
   uninitialized_fill_kernel<<<1, 1>>>(exec, v.begin(), v.end(), sub);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ref = Vector(5, sub);
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 }
 
 void TestUninitializedFillDeviceSeq()
@@ -81,7 +81,7 @@ void TestUninitializedFillCudaStreams()
   using T      = Vector::value_type;
 
   Vector v{0, 1, 2, 3, 4};
-  T sub(7);
+  const T sub(7);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -89,8 +89,8 @@ void TestUninitializedFillCudaStreams()
   thrust::uninitialized_fill(thrust::cuda::par.on(s), v.begin(), v.end(), sub);
   cudaStreamSynchronize(s);
 
-  Vector ref(v.size(), sub);
-  ASSERT_EQUAL(v, ref);
+  const Vector ref(v.size(), sub);
+  REQUIRE(v == ref);
 
   cudaStreamDestroy(s);
 }
@@ -117,57 +117,57 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
   uninitialized_fill_n_kernel<<<1, 1>>>(exec, v.begin() + 1, 3, sub, iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   Vector::iterator iter = iter_vec[0];
 
   Vector ref{0, sub, sub, sub, 4};
-  ASSERT_EQUAL(v, ref);
-  ASSERT_EQUAL_QUIET(v.begin() + 4, iter);
+  REQUIRE(v == ref);
+  REQUIRE(v.begin() + 4 == iter);
 
   sub = 8;
 
   uninitialized_fill_n_kernel<<<1, 1>>>(exec, v.begin() + 0, 3, sub, iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   iter = iter_vec[0];
 
   ref = {sub, sub, sub, 7, 4};
-  ASSERT_EQUAL(v, ref);
-  ASSERT_EQUAL_QUIET(v.begin() + 3, iter);
+  REQUIRE(v == ref);
+  REQUIRE(v.begin() + 3 == iter);
 
   sub = 9;
 
   uninitialized_fill_n_kernel<<<1, 1>>>(exec, v.begin() + 2, 3, sub, iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   iter = iter_vec[0];
 
   ref = {8, 8, sub, sub, 9};
-  ASSERT_EQUAL(v, ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v == ref);
+  REQUIRE(v.end() == iter);
 
   sub = 1;
 
   uninitialized_fill_n_kernel<<<1, 1>>>(exec, v.begin(), v.size(), sub, iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   iter = iter_vec[0];
 
   ref = Vector(5, sub);
 
-  ASSERT_EQUAL(v, ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v == ref);
+  REQUIRE(v.end() == iter);
 }
 
 void TestUninitializedFillNDeviceSeq()
@@ -189,7 +189,7 @@ void TestUninitializedFillNCudaStreams()
   using T      = Vector::value_type;
 
   Vector v{0, 1, 2, 3, 4};
-  T sub(7);
+  const T sub(7);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -197,8 +197,8 @@ void TestUninitializedFillNCudaStreams()
   thrust::uninitialized_fill_n(thrust::cuda::par.on(s), v.begin(), v.size(), sub);
   cudaStreamSynchronize(s);
 
-  Vector ref(5, sub);
-  ASSERT_EQUAL(v, ref);
+  const Vector ref(5, sub);
+  REQUIRE(v == ref);
 
   cudaStreamDestroy(s);
 }

@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/concepts.cuh>
 #include <cuda/experimental/__group/fwd.cuh>
@@ -60,8 +61,8 @@ __do_group_view_mapping(const _Unit& __unit, const _Group& __group) noexcept
     return _MappingResult{
       __group_mapping_result.group_count(),
       __group_mapping_result.group_rank(),
-      ::cuda::experimental::__count_query_group<unsigned, _Unit>(__group),
-      ::cuda::experimental::__rank_query_group<unsigned, _Unit>(__group),
+      ::cuda::experimental::__count_query_group<::cuda::std::uint32_t, _Unit>(__group),
+      ::cuda::experimental::__rank_query_group<::cuda::std::uint32_t, _Unit>(__group),
       __group_mapping_result.lane_mask()};
   }
 }
@@ -74,7 +75,7 @@ template <class _Unit, class _Group>
 class group_view
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
-  static_assert(is_group<_Group>);
+  static_assert(group<_Group>);
   static_assert(__unit_same_as_or_below_v<_Unit, typename _Group::unit_type>,
                 "unit_type must be same as or below the _Group's unit_type");
 
@@ -135,6 +136,16 @@ public:
     return __synchronizer_instance_;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
+  {
+    return _MappingResult::is_always_exhaustive();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  {
+    return _MappingResult::is_always_contiguous();
+  }
+
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() const noexcept
@@ -188,14 +199,14 @@ public:
 };
 
 _CCCL_TEMPLATE(class _Group)
-_CCCL_REQUIRES(is_group<_Group>)
+_CCCL_REQUIRES(group<_Group>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_view(const _Group&) -> group_view<typename _Group::unit_type, _Group>;
 
 template <class _Unit, class _Group>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_view(const group_view<_Unit, _Group>&) -> group_view<_Unit, _Group>;
 
 _CCCL_TEMPLATE(class _Unit, class _Group)
-_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_Group>)
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND group<_Group>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_view(const _Unit&, const _Group&) -> group_view<_Unit, _Group>;
 
 _CCCL_TEMPLATE(class _Unit, class _OtherUnit, class _Group)

@@ -34,6 +34,7 @@
 #include <shared_mutex>
 #include <stack>
 #include <thread>
+#include <tuple>
 
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
 #include "cuda/experimental/__stf/internal/task.cuh"
@@ -1339,6 +1340,27 @@ public:
     template <typename T>
     using data_t_of = typename T::data_t;
 
+    // cuda_kernel drops void_interface (token) instances from the arguments
+    // it applies to the wrapper functor (task_dep_vector::non_void_instance),
+    // so the wrapper below receives only the non-void instances. Like the
+    // parallel_for kernels and their deps_tup_t (see parallel_for_scope.cuh),
+    // the kernel takes those instances bundled in a single tuple, which the
+    // device side unpacks onto the condition function.
+    using filtered_data_t = reserved::remove_void_interface_from_pack_t<data_t_of<Deps>...>;
+
+    // The tuple that crosses the kernel boundary is the cuda::std rebind of
+    // filtered_data_t (see condition_update_kernel for why).
+    template <typename Tuple>
+    struct to_cuda_tuple;
+
+    template <typename... Ts>
+    struct to_cuda_tuple<::std::tuple<Ts...>>
+    {
+      using type = ::cuda::std::tuple<Ts...>;
+    };
+
+    using kernel_tuple_t = typename to_cuda_tuple<filtered_data_t>::type;
+
     template <typename CondFunc>
     void operator->*(CondFunc&& cond_func)
     {
@@ -1347,9 +1369,15 @@ public:
           return this->ctx_.cuda_kernel(deps...).set_symbol("condition_update");
         },
         tdeps)
-          ->*[cond_func = mv(cond_func), h = handle_](data_t_of<Deps>... args) {
+          ->*[cond_func = mv(cond_func), h = handle_](auto... args) {
                 return cuda_kernel_desc{
-                  reserved::condition_update_kernel<CondFunc, data_t_of<Deps>...>, 1, 1, 0, h, cond_func, args...};
+                  reserved::condition_update_kernel<::cuda::std::decay_t<CondFunc>, kernel_tuple_t>,
+                  1,
+                  1,
+                  0,
+                  h,
+                  cond_func,
+                  kernel_tuple_t{mv(args)...}};
               };
     }
 

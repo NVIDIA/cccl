@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__group/concepts.cuh>
@@ -50,19 +51,23 @@ namespace cuda::experimental
 {
 template <class _Unit, class _ParentGroup, class _Mapping>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto
-__do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, const _Mapping& __mapping) noexcept
+__do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping) noexcept
 {
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
   using _InitMappingResult =
     __mapping_result</*initial static group count*/ 1,
                      ::cuda::experimental::__static_count_query_group<_Unit, _ParentGroup>(),
-                     _ParentMappingResult::is_always_exhaustive(),
+                     /*initial is always exhaustive*/ true,
                      _ParentMappingResult::is_always_contiguous()>;
+  const auto& __parent_mapping_result = __parent.__mapping_result();
+  _CCCL_ASSERT(__parent_mapping_result.is_valid(),
+               "A new group can be created only by units that are part of the parent group");
+
   const _InitMappingResult __init_mapping_result{
     /*initial group count*/ 1,
     /*initial group rank*/ 0,
-    ::cuda::experimental::__count_query_group<unsigned, _Unit>(__parent),
-    ::cuda::experimental::__rank_query_group<unsigned, _Unit>(__parent),
+    ::cuda::experimental::__count_query_group<::cuda::std::uint32_t, _Unit>(__parent),
+    ::cuda::experimental::__rank_query_group<::cuda::std::uint32_t, _Unit>(__parent),
     __parent.__mapping_result().lane_mask()};
 
   const auto __mapping_result = __mapping.map(__unit, __parent, __init_mapping_result);
@@ -91,15 +96,13 @@ __do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, const _Map
 
 template <class _Unit, class _ParentGroup, class _Mapping>
 using __group_mapping_result_t = decltype(::cuda::experimental::__do_group_mapping(
-  ::cuda::std::declval<const _Unit&>(),
-  ::cuda::std::declval<const _ParentGroup&>(),
-  ::cuda::std::declval<const _Mapping&>()));
+  ::cuda::std::declval<const _Unit&>(), ::cuda::std::declval<const _ParentGroup&>(), ::cuda::std::declval<_Mapping>()));
 
 template <class _Unit, class _ParentGroup, class _MappingResult>
 class virtual_group
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
-  static_assert(is_group<_ParentGroup>);
+  static_assert(group<_ParentGroup>);
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
@@ -121,14 +124,20 @@ public:
   _CCCL_TEMPLATE(class _Mapping)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_MappingResult, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>>)
   _CCCL_DEVICE_API explicit virtual_group(
-    const _Unit& __unit, const _ParentGroup& __parent, const _Mapping& __mapping) noexcept
+    const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping) noexcept
       : __hier_{__parent.hierarchy()}
-      , __mapping_result_{::cuda::experimental::__do_group_mapping(__unit, __parent, __mapping)}
+      , __mapping_result_{::cuda::experimental::__do_group_mapping(
+          __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping))}
       , __synchronizer_instance_{__parent.__synchronizer_instance().view()}
   {
-    // todo(dabayer): Remove this if we allow non-exhaustive virtual groups.
     _CCCL_ASSERT(__mapping_result_.is_valid(), "virtual_group requires all units to be part of the group");
   }
+
+  // Groups can't be copied, moved nor assigned.
+  virtual_group(const virtual_group&)            = delete;
+  virtual_group(virtual_group&&)                 = delete;
+  virtual_group& operator=(const virtual_group&) = delete;
+  virtual_group& operator=(virtual_group&&)      = delete;
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
   {
@@ -145,15 +154,27 @@ public:
     return __synchronizer_instance_;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
+  {
+    return _MappingResult::is_always_exhaustive();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  {
+    return _MappingResult::is_always_contiguous();
+  }
+
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() const noexcept
   {
+    // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
+    // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
   }
 
@@ -166,6 +187,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
   __count_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&) noexcept
   {
+    // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     return static_cast<_Tp>(__mapping_result.group_count());
   }
 
@@ -185,6 +207,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
   __rank_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&) noexcept
   {
+    // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     return static_cast<_Tp>(__mapping_result.group_rank());
   }
 
@@ -205,9 +228,9 @@ _CCCL_TEMPLATE(class _Unit,
                class _ParentGroup,
                class _Mapping,
                class _MappingResult = __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>)
-_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup> _CCCL_AND
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND group<_ParentGroup> _CCCL_AND
                  __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES virtual_group(const _Unit&, const _ParentGroup&, const _Mapping&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES virtual_group(const _Unit&, const _ParentGroup&, _Mapping&&)
   -> virtual_group<_Unit, _ParentGroup, _MappingResult>;
 } // namespace cuda::experimental
 

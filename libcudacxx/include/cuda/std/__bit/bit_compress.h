@@ -25,12 +25,28 @@
 #include <cuda/__ptx/instructions/bfind.h>
 #include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/countl.h>
+#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__bit/shl.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
+
+// clang-23 implements __builtin_elementwise_pext which is portable.
+// On x86_64, the __builtin_ia32_pext_Xi/_pext_uXX builtins can be used for targets that support BMI2.
+#if _CCCL_HAS_BUILTIN(__builtin_elementwise_pext)
+#  define _CCCL_BUILTIN_ELEMENTWISE_PEXT(...) __builtin_elementwise_pext(__VA_ARGS__)
+#elif _CCCL_HOST_ARCH_FEAT(X86_64, BMI2)
+#  if (_CCCL_HAS_BUILTIN(__builtin_ia32_pext_si) && _CCCL_HAS_BUILTIN(__builtin_ia32_pext_di)) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_IA32_PEXT_SI(...) __builtin_ia32_pext_si(__VA_ARGS__)
+#    define _CCCL_BUILTIN_IA32_PEXT_DI(...) __builtin_ia32_pext_di(__VA_ARGS__)
+#  elif _CCCL_COMPILER(MSVC)
+#    include <intrin.h>
+#    define _CCCL_BUILTIN_IA32_PEXT_SI(...) ::_pext_u32(__VA_ARGS__)
+#    define _CCCL_BUILTIN_IA32_PEXT_DI(...) ::_pext_u64(__VA_ARGS__)
+#  endif
+#endif
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -71,6 +87,44 @@ template <class _Tp>
   }
   return __ret;
 }
+
+#if _CCCL_HOST_COMPILATION()
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API _Tp __bit_compress_impl_host(const _Tp __v, const _Tp __mask) noexcept
+{
+#  if defined(_CCCL_BUILTIN_ELEMENTWISE_PEXT)
+  return _CCCL_BUILTIN_ELEMENTWISE_PEXT(__v, __mask);
+#  elif defined(_CCCL_BUILTIN_IA32_PEXT_SI) && defined(_CCCL_BUILTIN_IA32_PEXT_DI)
+  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  {
+    return static_cast<_Tp>(_CCCL_BUILTIN_IA32_PEXT_SI(uint32_t{__v}, uint32_t{__mask}));
+  }
+  else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    return _CCCL_BUILTIN_IA32_PEXT_DI(__v, __mask);
+  }
+#    if _CCCL_HAS_INT128()
+  else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+  {
+    const auto __v_lo    = static_cast<uint64_t>(__v);
+    const auto __v_hi    = static_cast<uint64_t>(__v >> 64);
+    const auto __mask_lo = static_cast<uint64_t>(__mask);
+    const auto __mask_hi = static_cast<uint64_t>(__mask >> 64);
+
+    const auto __lower_bits = _CCCL_BUILTIN_IA32_PEXT_DI(__v_lo, __mask_lo);
+    const auto __upper_bits = _CCCL_BUILTIN_IA32_PEXT_DI(__v_hi, __mask_hi);
+    return (_Tp{__upper_bits} << ::cuda::std::popcount(__mask_lo)) | __lower_bits;
+  }
+#    endif // _CCCL_HAS_INT128()
+  else
+  {
+    return ::cuda::std::__bit_compress_impl_generic(__v, __mask);
+  }
+#  else // ^^^ has pext builtin ^^^ / vvv no pext builtin vvv
+  return ::cuda::std::__bit_compress_impl_generic(__v, __mask);
+#  endif // ^^^ no pext builtin ^^^
+}
+#endif // _CCCL_HOST_COMPILATION()
 
 #if _CCCL_CUDA_COMPILATION()
 template <class _Tp>
@@ -186,7 +240,9 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 {
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_DEVICE, ({ return ::cuda::std::__bit_compress_impl_device(__v, __mask); }))
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, ({ return ::cuda::std::__bit_compress_impl_device(__v, __mask); }), ({
+                        return ::cuda::std::__bit_compress_impl_host(__v, __mask);
+                      }))
   }
   return ::cuda::std::__bit_compress_impl_generic(__v, __mask);
 }

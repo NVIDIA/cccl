@@ -89,7 +89,7 @@ DECLARE_UNITTEST(TestSetUnionByKeyDeviceDevice);
 void TestSetUnionByKeyCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4});
   auto b_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4});
@@ -109,8 +109,8 @@ void TestSetUnionByKeyCudaStreams()
     result_key.begin(),
     result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   test_runtime::assert_equal(stream, result_key, {0, 2, 3, 3, 4});
   test_runtime::assert_equal(stream, result_val, {0, 0, 1, 1, 0});
 }

@@ -19,10 +19,10 @@ void TestSetUnionDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_union(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestSetUnionDispatchExplicit);
 
@@ -44,7 +44,7 @@ void TestSetUnionDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestSetUnionDispatchImplicit);
 
@@ -58,10 +58,10 @@ void TestSetUnionSimple()
   Vector ref{0, 2, 3, 3, 4};
   Vector result(5);
 
-  Iterator end = thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin());
+  const Iterator end = thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetUnionSimple);
 
@@ -75,18 +75,18 @@ void TestSetUnionWithEquivalentElementsSimple()
   Vector ref{0, 2, 2, 2, 3};
   Vector result(5);
 
-  Iterator end = thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin());
+  const Iterator end = thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetUnionWithEquivalentElementsSimple);
 
 template <typename T>
 void TestSetUnion(const size_t n)
 {
-  size_t sizes[]   = {0, 1, n / 2, n, n + 1, 2 * n};
-  size_t num_sizes = sizeof(sizes) / sizeof(size_t);
+  size_t sizes[]         = {0, 1, n / 2, n, n + 1, 2 * n};
+  const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
 
   thrust::host_vector<T> random =
     unittest::random_integers<unittest::int8_t>(n + *thrust::max_element(sizes, sizes + num_sizes));
@@ -100,10 +100,8 @@ void TestSetUnion(const size_t n)
   thrust::device_vector<T> d_a = h_a;
   thrust::device_vector<T> d_b = h_b;
 
-  for (size_t i = 0; i < num_sizes; i++)
+  for (const size_t size : sizes)
   {
-    size_t size = sizes[i];
-
     thrust::host_vector<T> h_result(n + size);
     thrust::device_vector<T> d_result(n + size);
 
@@ -116,7 +114,7 @@ void TestSetUnion(const size_t n)
     d_end = thrust::set_union(d_a.begin(), d_a.end(), d_b.begin(), d_b.begin() + size, d_result.begin());
     d_result.resize(d_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnion);
@@ -138,7 +136,7 @@ void TestSetUnionToDiscardIterator(const size_t n)
   thrust::discard_iterator<> d_result;
 
   thrust::host_vector<T> h_reference(2 * n);
-  typename thrust::host_vector<T>::iterator h_end =
+  const typename thrust::host_vector<T>::iterator h_end =
     thrust::set_union(h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), h_reference.begin());
   h_reference.erase(h_end, h_reference.end());
 
@@ -146,9 +144,9 @@ void TestSetUnionToDiscardIterator(const size_t n)
 
   d_result = thrust::set_union(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(h_reference.size());
+  const thrust::discard_iterator<> reference(h_reference.size());
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionToDiscardIterator);

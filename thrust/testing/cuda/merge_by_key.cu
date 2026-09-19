@@ -89,7 +89,7 @@ DECLARE_UNITTEST(TestMergeByKeyDeviceDevice);
 void TestMergeByKeyCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto a_key = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
   auto a_val = cuda::make_device_buffer<int>(stream, device, {13, 7, 42});
@@ -111,8 +111,8 @@ void TestMergeByKeyCudaStreams()
     result_val.begin());
   stream.sync();
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   test_runtime::assert_equal(stream, result_key, {0, 0, 2, 3, 3, 4, 4});
   test_runtime::assert_equal(stream, result_val, {13, 42, 7, 42, 7, 42, 13});
 }

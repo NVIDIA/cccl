@@ -80,6 +80,8 @@
 // Namespaces related to <simd>
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD _CCCL_BEGIN_NAMESPACE(cuda::std::simd)
 #define _CCCL_END_NAMESPACE_CUDA_STD_SIMD   _CCCL_END_NAMESPACE(cuda::std::simd)
+#define _CCCL_BEGIN_NAMESPACE_CUDA_SIMD     _CCCL_BEGIN_NAMESPACE(cuda::simd)
+#define _CCCL_END_NAMESPACE_CUDA_SIMD       _CCCL_END_NAMESPACE(cuda::simd)
 
 // Namespaces related to <ranges>
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES _CCCL_BEGIN_NAMESPACE(cuda::std::ranges)
@@ -117,6 +119,9 @@
 
 #define _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT _CCCL_BEGIN_NAMESPACE(cuda::args)
 #define _CCCL_END_NAMESPACE_CUDA_ARGUMENT   _CCCL_END_NAMESPACE(cuda::args)
+
+#define _CCCL_BEGIN_NAMESPACE_CUDA_MGMN _CCCL_BEGIN_NAMESPACE(cuda::experimental::mgmn)
+#define _CCCL_END_NAMESPACE_CUDA_MGMN   _CCCL_END_NAMESPACE(cuda::experimental::mgmn)
 
 // Namespace to avoid name collisions with CPOs on clang-16 (see
 // https://godbolt.org/z/9TadonrdM for example). MSVC's ancient parser also gets confused with

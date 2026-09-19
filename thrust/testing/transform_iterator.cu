@@ -54,17 +54,17 @@ void TestTransformIterator()
   thrust::sequence(input.begin(), input.end(), 1);
 
   // construct transform_iterator
-  thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
+  const thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
 
   thrust::copy(iter, iter + 4, output.begin());
 
   Vector ref{-1, -2, -3, -4};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestTransformIterator);
 
 template <class Vector>
-void TestMakeTransformIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformIterator()
 {
   using T = typename Vector::value_type;
 
@@ -78,14 +78,14 @@ void TestMakeTransformIterator()
   thrust::sequence(input.begin(), input.end(), 1);
 
   // construct transform_iterator
-  thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
+  const thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
 
   thrust::copy(thrust::make_transform_iterator(input.begin(), UnaryFunction()),
                thrust::make_transform_iterator(input.end(), UnaryFunction()),
                output.begin());
 
   Vector ref{-1, -2, -3, -4};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestMakeTransformIterator);
 
@@ -105,10 +105,10 @@ struct TestTransformIteratorReduce
     T d_result = thrust::reduce(thrust::make_transform_iterator(d_data.begin(), ::cuda::std::negate<T>()),
                                 thrust::make_transform_iterator(d_data.end(), ::cuda::std::negate<T>()));
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
-VariableUnitTest<TestTransformIteratorReduce, IntegralTypes> TestTransformIteratorReduceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformIteratorReduce, IntegralTypes);
 
 struct ExtractValue
 {
@@ -127,10 +127,10 @@ void TestTransformIteratorNonCopyable()
   hv[3] = std::make_unique<int>(4);
 
   auto transformed = thrust::make_transform_iterator(hv.begin(), ExtractValue{});
-  ASSERT_EQUAL(transformed[0], 1);
-  ASSERT_EQUAL(transformed[1], 2);
-  ASSERT_EQUAL(transformed[2], 3);
-  ASSERT_EQUAL(transformed[3], 4);
+  REQUIRE(transformed[0] == 1);
+  REQUIRE(transformed[1] == 2);
+  REQUIRE(transformed[2] == 3);
+  REQUIRE(transformed[3] == 4);
 }
 
 DECLARE_UNITTEST(TestTransformIteratorNonCopyable);
@@ -246,9 +246,9 @@ void TestTransformIteratorIdentity()
 {
   thrust::device_vector<int> v(3, 42);
 
-  ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), cuda::std::identity{}), 42);
+  REQUIRE(*thrust::make_transform_iterator(v.begin(), cuda::std::identity{}) == 42);
   using namespace thrust::placeholders;
-  ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), _1), 42);
+  REQUIRE(*thrust::make_transform_iterator(v.begin(), _1) == 42);
 }
 
 DECLARE_UNITTEST(TestTransformIteratorIdentity);

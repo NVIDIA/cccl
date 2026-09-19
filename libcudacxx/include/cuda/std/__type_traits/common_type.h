@@ -38,7 +38,7 @@ template <class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type;
 
 template <class... _Tp>
-using common_type_t _CCCL_NODEBUG_ALIAS = typename common_type<_Tp...>::type;
+using common_type_t _CCCL_NODEBUG = typename common_type<_Tp...>::type;
 
 // Let COND_RES(X, Y) be:
 template <class _Tp, class _Up>
@@ -102,7 +102,7 @@ using __msvc_declval_workaround =
 template <class _Tp, class _Up>
 struct __common_type2_imp<_Tp, _Up, void_t<__cond_type<_Tp, _Up>, __msvc_declval_workaround<_Tp, _Up>>>
 {
-  using type _CCCL_NODEBUG_ALIAS = decay_t<__cond_type<_Tp, _Up>>;
+  using type _CCCL_NODEBUG = decay_t<__cond_type<_Tp, _Up>>;
 };
 
 template <class, class = void>
@@ -158,7 +158,7 @@ common_type<_Tp, _Up, _Vp, _Rest...> : __common_type_impl<__common_types<_Tp, _U
 {};
 
 template <class... _Tp>
-using common_type_t _CCCL_NODEBUG_ALIAS = typename common_type<_Tp...>::type;
+using common_type_t _CCCL_NODEBUG = typename common_type<_Tp...>::type;
 
 template <class, class, class = void>
 inline constexpr bool __has_common_type = false;

@@ -9,7 +9,7 @@ void verify_stream()
 {
   auto exec   = thrust::device;
   auto stream = thrust::cuda_cub::stream(exec);
-  ASSERT_EQUAL(stream, cudaStreamLegacy);
+  REQUIRE(stream == cudaStreamLegacy);
 }
 
 void TestLegacyDefaultStream()

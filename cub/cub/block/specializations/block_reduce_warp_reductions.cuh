@@ -125,7 +125,7 @@ struct BlockReduceWarpReductions
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_60,
         ({
-          ::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
+          const ::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
           atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);
         }),
         (atomicAdd(&temp_storage.warp_aggregates[0], warp_aggregate);));
@@ -189,7 +189,7 @@ struct BlockReduceWarpReductions
   template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
-    ::cuda::std::plus<> reduction_op;
+    const ::cuda::std::plus<> reduction_op;
     const int warp_offset = (warp_id * logical_warp_size);
     const int warp_num_valid =
       ((FullTile && even_warp_multiple) || (warp_offset + logical_warp_size <= num_valid))

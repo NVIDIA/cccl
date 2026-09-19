@@ -47,7 +47,7 @@ class __shared_library_base
 {
   struct __platform_deleter
   {
-    using pointer _CCCL_NODEBUG_ALIAS = HMODULE;
+    using pointer _CCCL_NODEBUG = HMODULE;
 
     _CCCL_HOST_API void operator()(HMODULE __mod) const noexcept
     {
@@ -58,7 +58,7 @@ class __shared_library_base
 protected:
   static constexpr ::cuda::std::int32_t __platform_default_flags = LOAD_LIBRARY_SEARCH_SYSTEM32;
 
-  using __platform_handle_t _CCCL_NODEBUG_ALIAS =
+  using __platform_handle_t _CCCL_NODEBUG =
     ::cuda::std::unique_ptr<::cuda::std::remove_pointer_t<HMODULE>, __platform_deleter>;
 
   _CCCL_HOST_API __shared_library_base(const char* const __lib_path, const ::cuda::std::int32_t __flags)
@@ -90,7 +90,7 @@ class __shared_library_base
   };
 
 protected:
-  using __platform_handle_t _CCCL_NODEBUG_ALIAS = ::cuda::std::unique_ptr<void, __platform_deleter>;
+  using __platform_handle_t _CCCL_NODEBUG = ::cuda::std::unique_ptr<void, __platform_deleter>;
 
 private:
   [[nodiscard]] _CCCL_HOST_API static __platform_handle_t

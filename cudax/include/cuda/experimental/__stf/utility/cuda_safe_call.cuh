@@ -35,7 +35,7 @@
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/source_location>
 
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <cstdlib>

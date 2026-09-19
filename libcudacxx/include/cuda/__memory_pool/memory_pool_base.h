@@ -30,6 +30,7 @@
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/types.h>
 #  include <cuda/__stream/internal_streams.h>
+#  include <cuda/__stream/relaxed_capture_scope.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -354,9 +355,13 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
                "Before CUDA 13 only device memory pools have a default");
   ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(::CUdevice{__location.id});
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
-  if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
   {
-    ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
+    // Pool attribute accesses are refused while the calling thread is capturing.
+    const ::cuda::__relaxed_capture_scope __relaxed{};
+    if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
+    {
+      ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
+    }
   }
   return __pool;
 }
@@ -447,7 +452,7 @@ struct memory_pool_properties
   }
 
   ::CUmemoryPool __cuda_pool_handle{};
-  ::cudaError_t __error = ::cuda::__driver::__mempoolCreateNoThrow(&__cuda_pool_handle, &__pool_properties);
+  const ::cudaError_t __error = ::cuda::__driver::__mempoolCreateNoThrow(&__cuda_pool_handle, &__pool_properties);
   if (__error != ::cudaSuccess)
   {
     auto __device = __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? __location.id : 0;
@@ -466,12 +471,13 @@ struct memory_pool_properties
   // We need to use a new stream so we do not wait on other work
   if (__properties.initial_pool_size != 0)
   {
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(
+    const ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(
       __properties.initial_pool_size, __cuda_pool_handle, __cccl_allocation_stream().get());
-    if (::cuda::__driver::__freeAsyncNoThrow(__ptr, __cccl_allocation_stream().get()) != ::cudaSuccess)
-    {
-      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorMemoryAllocation, "Failed to allocate initial pool size");
-    }
+    _CCCL_TRY_DRIVER_API(
+      ::cuda::__driver::__freeAsyncNoThrow,
+      "Failed to allocate initial pool size",
+      __ptr,
+      __cccl_allocation_stream().get());
   }
   return __cuda_pool_handle;
 }
@@ -514,7 +520,8 @@ public:
       _CCCL_THROW(::std::invalid_argument, "Invalid alignment passed to __memory_pool_base::allocate_sync.");
     }
 
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
+    const ::CUdeviceptr __ptr =
+      ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
     __cccl_allocation_stream().sync();
     return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
@@ -535,7 +542,7 @@ public:
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_pool_base::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_DRIVER_API(
       ::cuda::__driver::__freeAsyncNoThrow,
       "deallocate failed",
       reinterpret_cast<::CUdeviceptr>(__ptr),
@@ -569,7 +576,7 @@ public:
   //! @returns Pointer to the newly allocated memory.
   [[nodiscard]] _CCCL_HOST_API void* allocate(const ::cuda::stream_ref __stream, const size_t __bytes)
   {
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __stream.get());
+    const ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __stream.get());
     return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
@@ -665,7 +672,7 @@ public:
   //! synchronize all relevant streams before calling `deallocate`.
   _CCCL_HOST_API void deallocate(const ::cuda::stream_ref __stream, void* __ptr, size_t) noexcept
   {
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_DRIVER_API(
       ::cuda::__driver::__freeAsyncNoThrow, "deallocate failed", reinterpret_cast<::CUdeviceptr>(__ptr), __stream.get());
   }
 

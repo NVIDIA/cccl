@@ -77,7 +77,39 @@ struct reduce_build
       input,
       output,
       op,
-      init,
+      init.type,
+      cccl_init_kind_t::CCCL_VALUE_INIT,
+      determinism,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path);
+  }
+
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    cccl_determinism_t determinism,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_op_t op,
+    void* /*init*/,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_reduce_build(
+      build_ptr,
+      input,
+      output,
+      op,
+      input.value_type, // The type is used to determine the accumulator type
+      cccl_init_kind_t::CCCL_NO_INIT,
       determinism,
       cc_major,
       cc_minor,
@@ -122,7 +154,8 @@ struct reduce_build_ex
       input,
       output,
       op,
-      init,
+      init.type,
+      cccl_init_kind_t::CCCL_VALUE_INIT,
       determinism,
       cc_major,
       cc_minor,
@@ -154,6 +187,27 @@ struct reduce_run
   }
 };
 
+struct reduce_run_no_init
+{
+  template <typename... Rest>
+  CUresult operator()(
+    cccl_device_reduce_build_result_t build,
+    void* d_temp_storage,
+    size_t* temp_storage_bytes,
+    cccl_determinism_t /*determinism*/,
+    cccl_iterator_t d_in,
+    cccl_iterator_t d_out,
+    uint64_t num_items,
+    cccl_op_t op,
+    void* /*init*/,
+    Rest... args) const noexcept
+  {
+    // The init argument is ignored for CCCL_NO_INIT builds; pass an empty value.
+    return cccl_device_reduce(
+      build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, cccl_value_t{}, args...);
+  }
+};
+
 template <typename BuildCache = reduce_build_cache_t, typename KeyT = std::string>
 void reduce(cccl_iterator_t input,
             cccl_iterator_t output,
@@ -166,6 +220,19 @@ void reduce(cccl_iterator_t input,
 {
   AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run, BuildCache, KeyT>(
     cache, lookup_key, determinism, input, output, num_items, op, init);
+}
+
+template <typename BuildCache = reduce_build_cache_t, typename KeyT = std::string>
+void reduce(cccl_iterator_t input,
+            cccl_iterator_t output,
+            uint64_t num_items,
+            cccl_op_t op,
+            cccl_determinism_t determinism,
+            std::optional<BuildCache>& cache,
+            const std::optional<KeyT>& lookup_key)
+{
+  AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run_no_init, BuildCache, KeyT>(
+    cache, lookup_key, determinism, input, output, num_items, op, nullptr);
 }
 
 // ===============
@@ -201,7 +268,7 @@ C2H_TEST("Reduce works with integral types with well-known operations", "[reduce
   using T = c2h::get<0, TestType>;
 
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
-  cccl_op_t op                = make_well_known_binary_operation();
+  const cccl_op_t op          = make_well_known_binary_operation();
   const std::vector<T> input  = generate<T>(num_items);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(1);
@@ -214,6 +281,30 @@ C2H_TEST("Reduce works with integral types with well-known operations", "[reduce
 
   const T output   = output_ptr[0];
   const T expected = std::accumulate(input.begin(), input.end(), init.value);
+  REQUIRE(output == expected);
+}
+
+struct Reduce_NoInitValue_Fixture_Tag;
+C2H_TEST("Reduce works with no init value", "[reduce]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  // With no init value the output is left unmodified for empty inputs, so
+  // seed it with a sentinel and check that an empty reduction preserves it.
+  const T sentinel = T{42};
+  pointer_t<T> output_ptr(std::vector<T>{sentinel});
+
+  auto& build_cache    = get_cache<Reduce_NoInitValue_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  reduce(input_ptr, output_ptr, num_items, op, CCCL_RUN_TO_RUN, build_cache, test_key);
+
+  const T output   = output_ptr[0];
+  const T expected = num_items == 0 ? sentinel : std::accumulate(input.begin() + 1, input.end(), input.front());
   REQUIRE(output == expected);
 }
 
@@ -328,7 +419,7 @@ C2H_TEST("Reduce works with output iterators", "[reduce]")
     make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   const std::vector<int> input = generate<int>(num_items);
   pointer_t<int> input_it(input);
-  pointer_t<int> inner_output_it(1);
+  const pointer_t<int> inner_output_it(1);
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
@@ -351,7 +442,7 @@ C2H_TEST("Reduce works with input and output iterators", "[reduce]")
   input_it.state.value                                     = 1;
   iterator_t<int, random_access_iterator_state_t<int>> output_it =
     make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
-  pointer_t<int> inner_output_it(1);
+  const pointer_t<int> inner_output_it(1);
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
@@ -414,7 +505,7 @@ struct invocation_counter_state_t
 C2H_TEST("Reduce works with stateful operators", "[reduce]")
 {
   const int num_items = 1 << 12;
-  pointer_t<int> counter(1);
+  const pointer_t<int> counter(1);
   stateful_operation_t<invocation_counter_state_t> op = make_operation(
     "op",
     R"(struct invocation_counter_state_t { int* d_counter; };
@@ -434,7 +525,7 @@ extern "C" __device__ void op(void* state_ptr, void* a_ptr, void* b_ptr, void* o
 
   // turn off caching, since the example is only compiled once
   std::optional<reduce_build_cache_t> build_cache = std::nullopt;
-  std::optional<std::string> test_key             = std::nullopt;
+  const std::optional<std::string> test_key       = std::nullopt;
 
   reduce(input_ptr, output_ptr, num_items, op, init, CCCL_RUN_TO_RUN, build_cache, test_key);
 
@@ -454,7 +545,7 @@ C2H_TEST("Reduce works with C++ source operations", "[reduce]")
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source instead of LTO-IR
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     extern "C" __device__ void op(void* a, void* b, void* out) {
       int* ia = (int*)a;
       int* ib = (int*)b;
@@ -471,7 +562,7 @@ C2H_TEST("Reduce works with C++ source operations", "[reduce]")
   value_t<T> init{T{0}};
 
   // Test key including flag that this uses C++ source
-  std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
+  const std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
 
   auto& cache                                   = get_cache<Reduce_IntegralTypes_Fixture_Tag>();
   std::optional<reduce_build_cache_t> cache_opt = cache;
@@ -512,6 +603,34 @@ C2H_TEST("Reduce works with floating point types", "[reduce]", floating_point_ty
   REQUIRE_APPROX_EQ(std::vector<T>{output}, std::vector<T>{expected});
 }
 
+#if _CCCL_HAS_NVBF16()
+struct Reduce_BFloat16_Fixture_Tag;
+C2H_TEST("Reduce works with bfloat16", "[reduce]")
+{
+  using T = __nv_bfloat16;
+
+  // Keep the total below 256: bfloat16 has only 8 significand bits, so larger
+  // running sums round differently between the host's sequential accumulation
+  // and the device's tree reduction order.
+  const std::size_t num_items = GENERATE(10, 42, 200);
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input(num_items, T{1});
+
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  value_t<T> init{T{42}};
+
+  auto& build_cache    = get_cache<Reduce_BFloat16_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  reduce(input_ptr, output_ptr, num_items, op, init, CCCL_RUN_TO_RUN, build_cache, test_key);
+
+  const T output   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), init.value);
+  REQUIRE(float{output} == float{expected});
+}
+#endif // _CCCL_HAS_NVBF16()
+
 struct Reduce_CppSourceWithEx_Fixture_Tag;
 C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
 {
@@ -520,7 +639,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source that uses the identity function from header
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     #include "test_identity.h"
     extern "C" __device__ void op(void* a, void* b, void* out) {
       int* ia = (int*)a;
@@ -548,7 +667,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
   const auto& build_info  = BuildInformation<device_id>::init();
 
   BuildResultT build{};
-  reduce_build_ex builder(extra_flags, 1, extra_includes, 1);
+  const reduce_build_ex builder(extra_flags, 1, extra_includes, 1);
 
   REQUIRE(
     CUDA_SUCCESS
@@ -573,7 +692,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
           == cccl_device_reduce(
             build, nullptr, &temp_storage_bytes, input_ptr, output_ptr, num_items, op, init, null_stream));
 
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(CUDA_SUCCESS
           == cccl_device_reduce(
             build, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, num_items, op, init, null_stream));
@@ -598,7 +717,6 @@ C2H_TEST("Reduce build result has serialization metadata populated", "[reduce][s
   const std::vector<T> input = generate<T>(16);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(1);
-  value_t<T> init{T{0}};
 
   BuildResultT build{};
   REQUIRE(
@@ -608,7 +726,8 @@ C2H_TEST("Reduce build result has serialization metadata populated", "[reduce][s
       input_ptr,
       output_ptr,
       op,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
@@ -641,7 +760,7 @@ C2H_TEST("Reduce works with not_guaranteed determinism and plus", "[reduce][nond
   using T = float;
 
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
-  cccl_op_t op                = make_well_known_binary_operation(); // plus
+  const cccl_op_t op          = make_well_known_binary_operation(); // plus
   const std::vector<T> input(num_items, T{1});
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(1);
@@ -664,7 +783,7 @@ C2H_TEST("Reduce compile/load round-trip", "[reduce][serialization]")
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  cccl_op_t op = make_well_known_binary_operation(); // plus
+  const cccl_op_t op = make_well_known_binary_operation(); // plus
   pointer_t<T> dummy_in(1);
   pointer_t<T> dummy_out(1);
   value_t<T> init{T{0}};
@@ -677,7 +796,8 @@ C2H_TEST("Reduce compile/load round-trip", "[reduce][serialization]")
       dummy_in,
       dummy_out,
       op,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
@@ -712,7 +832,7 @@ C2H_TEST("Reduce compile/load round-trip", "[reduce][serialization]")
   REQUIRE(CUDA_SUCCESS
           == cccl_device_reduce(build, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
 
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(CUDA_SUCCESS
           == cccl_device_reduce(
             build, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
@@ -752,7 +872,8 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][serialization]")
       dummy_in,
       dummy_out,
       op_ko,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
@@ -769,9 +890,9 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][serialization]")
   CHECK(build.library == nullptr);
 
   // Compile the operator LTOIR separately (this is the "user-supplied" op blob).
-  operation_t op_full = make_operation("op", get_reduce_op(get_type_info<T>().type));
-  const void* op_blob = op_full.code.data();
-  size_t op_size      = op_full.code.size();
+  operation_t op_full  = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const void* op_blob  = op_full.code.data();
+  const size_t op_size = op_full.code.size();
 
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_link_ltoir(&build, &op_blob, &op_size, 1));
   REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
@@ -787,14 +908,14 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][serialization]")
   CUstream null_stream      = nullptr;
   size_t temp_storage_bytes = 0;
 
-  cccl_op_t op_run    = op_full;
-  cccl_value_t init_v = init;
+  const cccl_op_t op_run    = op_full;
+  const cccl_value_t init_v = init;
 
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_reduce(build, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init_v, null_stream));
 
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(CUDA_SUCCESS
           == cccl_device_reduce(
             build, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init_v, null_stream));
@@ -813,7 +934,7 @@ C2H_TEST("Reduce serialize/deserialize round-trip (cubin)", "[reduce][serializat
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  cccl_op_t op = make_well_known_binary_operation(); // plus
+  const cccl_op_t op = make_well_known_binary_operation(); // plus
   pointer_t<T> dummy_in(1);
   pointer_t<T> dummy_out(1);
   value_t<T> init{T{0}};
@@ -827,7 +948,8 @@ C2H_TEST("Reduce serialize/deserialize round-trip (cubin)", "[reduce][serializat
       dummy_in,
       dummy_out,
       op,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
@@ -871,7 +993,7 @@ C2H_TEST("Reduce serialize/deserialize round-trip (cubin)", "[reduce][serializat
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_reduce(build_b, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(CUDA_SUCCESS
           == cccl_device_reduce(
             build_b, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
@@ -911,7 +1033,8 @@ C2H_TEST("Reduce serialize/deserialize round-trip (ltoir + link_ltoir)", "[reduc
       dummy_in,
       dummy_out,
       op_ko,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
@@ -932,9 +1055,9 @@ C2H_TEST("Reduce serialize/deserialize round-trip (ltoir + link_ltoir)", "[reduc
   REQUIRE(build_b.payload_kind == CCCL_PAYLOAD_LTOIR);
 
   // Link in the operator LTOIR (as user-supplied) and load.
-  operation_t op_full = make_operation("op", get_reduce_op(get_type_info<T>().type));
-  const void* op_blob = op_full.code.data();
-  size_t op_size      = op_full.code.size();
+  operation_t op_full  = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const void* op_blob  = op_full.code.data();
+  const size_t op_size = op_full.code.size();
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_link_ltoir(&build_b, &op_blob, &op_size, 1));
   REQUIRE(build_b.payload_kind == CCCL_PAYLOAD_CUBIN);
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_load(&build_b));
@@ -946,11 +1069,11 @@ C2H_TEST("Reduce serialize/deserialize round-trip (ltoir + link_ltoir)", "[reduc
   CUstream null_stream      = nullptr;
   size_t temp_storage_bytes = 0;
 
-  cccl_op_t op_run = op_full;
+  const cccl_op_t op_run = op_full;
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_reduce(build_b, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init, null_stream));
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(CUDA_SUCCESS
           == cccl_device_reduce(
             build_b, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init, null_stream));
