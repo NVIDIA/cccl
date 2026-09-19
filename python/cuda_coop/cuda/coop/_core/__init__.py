@@ -81,6 +81,7 @@ from .block.merge_sort import (
     make_block_merge_sort_semantics,
     make_block_merge_sort_spec,
 )
+from .block.neighbors import BlockNeighborSemantics, make_block_neighbor_spec
 from .group import (
     ArgumentPrecondition,
     CudaxCallDescription,
@@ -122,6 +123,7 @@ from .group import (
 from .group.merge_sort import (
     GroupMergeSortSemantics,
 )
+from .group.neighbors import GroupNeighborSemantics
 from .launch import (
     Dim3,
     LaunchFactConflict,
@@ -183,6 +185,9 @@ from .warp.merge_sort import (
 )
 
 __all__ = [
+    "BlockNeighborSemantics",
+    "make_block_neighbor_spec",
+    "GroupNeighborSemantics",
     "GroupMergeSortSemantics",
     "WarpMergeSortPayload",
     "WarpMergeSortTilePolicy",

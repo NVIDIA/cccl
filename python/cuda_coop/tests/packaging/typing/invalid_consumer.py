@@ -614,3 +614,34 @@ coop.topk_max_keys(
     k=3,
     valid_items=1.5,  # expected-error: [arg-type]
 )
+
+
+portable.adjacent_difference(
+    portable.this_warp(),  # expected-error: [arg-type]
+    portable_values,
+)
+portable.adjacent_difference(
+    portable_block,
+    portable_values,
+    valid_items=1.5,  # expected-error: [arg-type]
+)
+portable.adjacent_difference(  # expected-error: [call-arg]
+    portable_block,
+    portable_values,
+    difference_op=lambda a, b: a - b,
+)
+portable.discontinuity(  # expected-error: [call-overload]
+    portable_block,
+    portable_values,
+    valid_items=4,
+)
+coop.discontinuity(  # expected-error: [call-overload]
+    qualified_block,
+    values,
+    mode="unknown",
+)
+coop.adjacent_difference(
+    qualified_block,
+    values,
+    difference_op="minus",  # expected-error: [arg-type]
+)
