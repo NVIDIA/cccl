@@ -68,3 +68,55 @@ Availability: CCCL 3.1.0 / CUDA 13.1
        s.sync();
      } // Stream is automatically destroyed here
    }
+
+:cpp:class:`cuda::stream_pool`
+-------------------------------
+.. _cccl-runtime-stream-stream-pool:
+
+:cpp:class:`cuda::stream_pool` owns a fixed number of non-blocking :cpp:struct:`cuda::stream` objects created on one
+device or green context. It is meant for code that wants to spread independent work over a few streams without
+managing their lifetime.
+
+- ``get_stream()``: returns the next stream in round-robin order
+- ``get_stream(i)``: returns the stream in slot ``i % size()``
+- ``size()``, ``device()``, ``priority()``: the parameters given at construction; the constructors throw
+  ``std::invalid_argument`` for a size of zero
+
+Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool. The streams are
+destroyed with the pool, so the work submitted to them must be synchronized before the pool goes away; the pool does
+not do it. When the streams are created is chosen with a ``cuda::stream_pool::creation`` value passed after the size:
+
+- ``creation::lazy``, the default: a stream is created the first time its slot is requested, and the getters take a
+  mutex to do so.
+- ``creation::eager``: every stream is created in the constructor, and the getters take no lock at all.
+
+All getters can be called concurrently from several threads.
+
+A pool can be neither copied nor moved. Code that needs to hand a pool around, store it in a container, or share it
+between several owners should allocate it with ``std::make_unique`` or ``std::make_shared``.
+
+Availability: CCCL 3.6.0
+
+.. code:: cpp
+
+   #include <cuda/stream>
+   #include <cuda/devices>
+
+   int main() {
+     // 16 streams on device 0, each created on the first request for its slot
+     cuda::stream_pool pool{cuda::devices[0], 16};
+
+     for (int i = 0; i < 64; ++i) {
+       // Cycles through the 16 streams
+       cuda::stream_ref s = pool.get_stream();
+       // Pass to a stream-ordered API
+     }
+
+     // Always the same stream, for work that must stay ordered
+     cuda::stream_ref fixed = pool.get_stream(3);
+
+     // Wait for everything submitted to the pool before it goes away
+     for (std::size_t i = 0; i < pool.size(); ++i) {
+       pool.get_stream(i).sync();
+     }
+   } // All streams are destroyed here
