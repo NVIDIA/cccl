@@ -99,9 +99,8 @@ The qualified import selects the Numba-CUDA-MLIR API explicitly:
 
 Both imports can be used in the same program. This guide uses ``coop`` for
 common calls and ``numba_coop`` for qualified calls so the choice is visible.
-The qualified namespace includes every common kernel operation. An
-application using only Numba can import it as ``coop``; see the
-:ref:`namespace FAQ <coop-faq-qualified-only>`.
+In a program that uses only the qualified API, importing it as ``coop`` is
+also fine.
 
 The qualified API accepts Numba-specific payloads and adds controls to
 several operations. This table describes those extensions for
@@ -164,8 +163,8 @@ Numba-CUDA-MLIR:
    Numba-CUDA-MLIR integration. Some qualified controls, such as Scan
    aggregate output and block scatter, are also available in CUTLASS.
    Check the selected backend's guide before carrying a qualified call
-   between compilers. Check backend coverage before selecting Merge Sort, Radix Sort/Rank,
-   or TopK for a CuTe kernel.
+   between compilers. Merge Sort, Radix Sort/Rank, and TopK are implemented
+   in Numba-CUDA-MLIR; their CUTLASS implementations are still planned.
 
 For example, suppose you need both the exclusive sum and each tile's total.
 The qualified Scan can produce both in one call. Here it also consumes an
@@ -186,10 +185,10 @@ initial value is excluded from that aggregate. You could obtain a total
 with a separate common API reduction, but the qualified call is useful when
 you already need a scan and want its aggregate as well.
 
-Implemented common operations follow the documented group, dtype, and
-participation requirements; see :ref:`backend coverage <coop-backends>`. The kernels here also contain Numba
-launch and indexing code; porting a complete kernel to CuTe requires adapting
-those parts too.
+The common API defines backend-independent contracts. You must still
+check that the selected backend implements the requested group, dtype, and
+operation. The kernels here also contain Numba launch and indexing code;
+porting the complete kernel to another DSL involves those parts too.
 
 Registering the compiler backend
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1232,7 +1231,3 @@ Explicit bounds retain their meaning and must admit the exact launch. The
 inferred bound does not change the block dimensions or the kernel's launch
 specialization. Lower register use can require spilling, so this behavior does
 not imply a performance improvement.
-
-The :ref:`CUTLASS launch requirements <coop-cutlass-launch-facts>` describe
-how CuTe supplies exact group dimensions. Launch configuration and compiler
-resource controls belong to the DSL compiling each kernel.

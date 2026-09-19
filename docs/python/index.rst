@@ -26,7 +26,7 @@ which have been tuned to provide optimal performance across GPU architectures.
 Who is this for?
 ----------------
 
-- **Library authors** building parallel algorithms that need portable performance
+- **Library authors** building parallel algorithms that need common performance
   across GPU architectures—without dropping to CUDA C++.
 
 - **Application developers** using PyTorch, CuPy, or other GPU-accelerated frameworks

@@ -51,8 +51,7 @@ sorting the full tile. Blocks can compare neighboring items with
 with :doc:`Run Length Decode <coop/visualizations/run-length-decode>`.
 :doc:`Batched Warp Reduction <coop/visualizations/reduce-batched>` computes
 an independent reduction for each per-thread payload slot.
-The compiler integrations use CUB and CUDAX; see
-:ref:`backend coverage <coop-backends>` for the families each implements.
+The compiler integrations implement these primitives using CUB and CUDAX.
 
 This overview introduces the shared API and execution model. Choose a
 programming guide to write kernels, or a developer guide to work on the
@@ -82,10 +81,9 @@ the :doc:`API reference <coop_api>`.
 Backend coverage
 ----------------
 
-The common API defines shared contracts for groups, dtypes, and result
-ownership. The table records which families each integration implements.
-Their qualified APIs add compiler-specific payloads and controls, described
-in the programming guides.
+A common API name does not imply that every backend implements it. The
+current integrations provide the following families; group shapes, dtypes,
+and qualified controls have the limits described in each programming guide.
 
 .. list-table:: Current primitive families
    :header-rows: 1
@@ -108,25 +106,13 @@ in the programming guides.
      - Available
    * - Merge Sort, keys and pairs
      - Available
-     - Not implemented
+     - Planned; unavailable
    * - Radix Sort, keys and pairs; Radix Rank
      - Available
-     - Not implemented
+     - Planned; unavailable
    * - TopK, minimum and maximum keys or pairs
      - Available
-     - Not implemented
-   * - Adjacent Difference and Discontinuity
-     - Available
-     - Not implemented
-   * - Histogram
-     - Available
-     - Not implemented
-   * - Run Length Decode, windowed and bulk
-     - Available
-     - Not implemented
-   * - Batched Warp Reduction
-     - Available
-     - Not implemented
+     - Planned; unavailable
 
 .. _block-prefix-callbacks:
 
@@ -150,18 +136,16 @@ programming guide before selecting a runtime.
 Common and qualified APIs
 -------------------------
 
-``from cuda import coop`` selects the common namespace. It defines the
-shared contracts for groups, payloads, operations, and temporary storage
-across supported DSLs. Calls inside a kernel are compiler markers; they are not
+``from cuda import coop`` selects the common namespace. It describes
+groups, payloads, operations, and temporary storage independently of a
+compiler. Calls inside a kernel are compiler markers; they are not
 host-side implementations of those operations.
 
 The qualified namespaces, ``cuda.coop.numba_mlir`` and
-``cuda.coop.cutlass``, expose their implemented common operations and
-backend-specific extensions. A program using one compiler can use its qualified
-namespace alone. CUTLASS-only code can use ``import cuda.coop.cutlass as coop``. Use
-``numba_coop`` and ``cutlass_coop`` when a module contains both DSLs.
-Common and qualified calls can appear in the same kernel when they belong
-to its compiler. The comparisons in the
+``cuda.coop.cutlass``, expose the shared operations and their backend's
+extensions. Use a qualified call when an operation needs a compiler-specific
+value or control. Common and qualified calls can appear in the same
+kernel when they belong to its compiler. The comparisons in the
 :ref:`Numba-CUDA-MLIR guide <coop-programming-api-choice>` and
 :ref:`CUTLASS guide <coop-cutlass-api-choice>` list the differences.
 
@@ -169,25 +153,6 @@ A common call preserves its operation's contract across backends. Moving
 a kernel still requires adapting launch syntax, array arguments, control
 flow, and other DSL code. Compiler-owned payloads cannot be passed between
 Numba and CuTe traces.
-
-.. _coop-common-calling-conventions:
-
-Calling conventions
--------------------
-
-A primitive's group and input/output operands precede ``/`` in its
-signature and are passed positionally. Controls after ``*`` are keyword-only:
-
-.. code-block:: python
-
-   coop.load(group, source, items, valid_items=count, offset=offset)
-   result = coop.reduce(group, items, binary_op="max")
-
-These conventions apply to both backends. A qualified signature can add
-operands or controls; check the :doc:`API reference <coop_api>` rather than
-passing a backend extension to the common namespace. Load fills its output
-in place and returns ``None``; an operation that returns a new value leaves
-its input payload unchanged unless its contract says otherwise.
 
 Installation
 ------------
@@ -199,8 +164,7 @@ Install ``cuda-coop`` without adding Python package dependencies:
    python -m pip install cuda-coop
 
 The wheel includes the common API, every shipped DSL integration (including
-``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``), type declarations, and
-a matching bundle of CUB,
+``cuda.coop.numba_mlir``), type declarations, and a matching bundle of CUB,
 Thrust, libcu++, and CUDAX headers. The base install declares no Python
 package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
 using an integration requires its backend dependencies to be installed.
@@ -217,10 +181,6 @@ integrations. The extra only adds the dependency requirements declared in
 ``pyproject.toml`` so pip installs the supported Numba-CUDA-MLIR stack for
 the selected CUDA major version. The current integration requires
 ``numba-cuda-mlir>=0.5.0,<0.6``.
-For CUTLASS / CuTe DSL, install the base wheel alongside a runtime meeting
-the :ref:`CUTLASS requirements <coop-cutlass-requirements>`. A public CUTLASS
-extra and minimum version await qualification of an official artifact.
-
 Installing an extra does not register a backend in a running Python process;
 see :ref:`installation versus registration <coop-faq-installed-extra>`.
 
@@ -284,9 +244,8 @@ compiler hooks and does not repair dispatcher context state.
 Registering a backend
 ---------------------
 
-When you cannot ensure import order, call :func:`cuda.coop.register` on the
-host before compiling kernels to activate its compiler integration
-explicitly. For a Numba-CUDA-MLIR kernel:
+Call :func:`cuda.coop.register` on the host before compiling kernels to
+activate its compiler integration explicitly:
 
 .. code-block:: python
 
@@ -296,21 +255,17 @@ explicitly. For a Numba-CUDA-MLIR kernel:
 
    from numba_cuda_mlir import cuda
 
-For a CuTe kernel:
+Registration loads the backend and installs its compiler hooks, so this
+works regardless of whether ``cuda.coop`` or Numba-CUDA-MLIR was imported
+first. Repeated calls are safe and return ``None``. The spelling
+``"numba_cuda_mlir"`` is also accepted. Registration requires the backend's
+dependencies to be installed; it does not install packages.
 
-.. code-block:: python
-
-   from cuda import coop
-
-   coop.register("cutlass")
-
-   from cutlass import cute
-
-Registration loads the selected backend and installs its compiler hooks.
-Both integrations support either import order and repeated registration;
-the call returns ``None``. Numba-CUDA-MLIR also accepts the spelling
-``"numba_cuda_mlir"``. Registration requires the backend's dependencies to
-be installed; it does not install packages.
+For a compatible CUTLASS environment, use ``coop.register("cutlass")``.
+Importing ``cuda.coop.cutlass`` also registers that backend. See the
+:doc:`CUTLASS Programming Guide <coop_cutlass>` for runtime requirements
+and prerequisite packages. A public CUTLASS installation extra and minimum
+version await qualification of an official artifact.
 
 For convenience, importing ``cuda.coop`` after a supported compiler runtime
 also attempts to register its backend automatically. A standalone
@@ -324,19 +279,13 @@ Importing the backend namespace also registers it:
 
    import cuda.coop.numba_mlir as numba_coop
 
-Or, for CuTe kernels:
-
-.. code-block:: python
-
-   import cuda.coop.cutlass as cutlass_coop
-
-The documentation reserves ``coop`` for common calls and uses ``numba_coop``
-or ``cutlass_coop`` for qualified calls. See the
-:ref:`namespace FAQ <coop-faq-qualified-only>` and the
-:ref:`Numba <coop-programming-api-choice>` and
-:ref:`CUTLASS <coop-cutlass-api-choice>` API comparisons. Both backends can be
-registered in one process; the compiler tracing a kernel selects the
-implementation.
+Use ``numba_coop`` when mixing common and backend calls. If your program uses
+only the backend namespace, you can import it as ``coop`` instead. See the
+:ref:`namespace FAQ <coop-faq-numba-only>` and
+:ref:`Numba API comparison <coop-programming-api-choice>`. For CuTe kernels,
+use ``cuda.coop.cutlass`` and its
+:ref:`API comparison <coop-cutlass-api-choice>`. Both backends can be registered
+in one process; the compiler tracing a kernel selects the implementation.
 
 Shared execution model
 ----------------------
@@ -399,13 +348,10 @@ to skip a required participant or a reuse barrier.
 Per-thread payloads
 ^^^^^^^^^^^^^^^^^^^
 
-``coop.ThreadData(items_per_thread)`` describes a fixed-size payload of
-``items_per_thread`` values owned by each thread. Pass that count as a kernel
-argument: Numba-CUDA-MLIR specializes it automatically; CuTe kernels and their
-launchers declare it as ``items_per_thread: cutlass.Constexpr``.
-Leave the element type unspecified for
-normal use: Load infers it from its source, fills the payload in place, and
-returns ``None``. Other operations either consume that payload or
+``ThreadData(K, dtype=None, *, alignment=None)`` describes a fixed-size
+payload of ``K`` values owned by each thread. Load fills the supplied
+payload in place and returns ``None``. Its source can establish the dtype
+of an untyped output. Other operations either consume that payload or
 return a new scalar or payload according to their contract. As in CUB,
 transpose Store algorithms may rearrange the input payload in place. Copy
 values before Store if they are needed later.
@@ -420,12 +366,7 @@ The payload extent is a compile-time value available as
 Load without ``oob_default`` leaves invalid slots unspecified. Assign those
 slots after Load before reading them. Backend value rules still apply: Numba-qualified calls can accept supported local
 arrays, while CUTLASS-qualified ``ThreadData`` supports CuTe register-tensor
-conversions. Supported typed assignments and cooperative producers can
-establish the element type. The :ref:`element-type inference FAQ
-<coop-faq-thread-data-dtype>` covers cases that need explicit information.
-For backend details, see the
-:ref:`Numba type rules <coop-thread-data>` and
-:ref:`CUTLASS payload conversions <coop-cutlass-register-payloads>`.
+conversions. Those extensions are documented in the respective guides.
 
 .. _coop-common-layouts:
 .. _exchange-semantics:
@@ -468,9 +409,8 @@ Check the operation's group and algorithm contract before consuming a result.
 
 Sorting and selection operate on one group's tile. Sorting each block does
 not sort a whole array. TopK defines an unordered selected prefix; the
-remaining payload positions are not output. See
-:ref:`backend coverage <coop-backends>` for the available sorting and
-selection families.
+remaining payload positions are not output. These families currently use
+the Numba backend; see :ref:`backend coverage <coop-backends>`.
 
 .. _coop-common-storage:
 .. _temporary-storage:
@@ -488,25 +428,19 @@ For operations that accept an explicit descriptor, construct
 one region or request capacity and minimum alignment. An undersized
 request is an error. ``sharing="shared"`` overlaps the uses of one
 descriptor; ``sharing="exclusive"`` assigns distinct call sites separate
-slices. With automatic synchronization disabled, separate slices avoid barriers
-needed solely for cross-call scratch reuse, at the cost of more shared memory.
-Independent descriptors do not alias. See
-:ref:`the exclusive-storage FAQ <coop-faq-exclusive-storage>`.
+slices. Independent descriptors do not alias.
 
-Explicit descriptors default to ``auto_sync=False`` for both sharing modes.
-The kernel must provide the required barrier before reuse, including across
-iterations: a call site inside a loop reuses its slice even with exclusive
-storage. Set ``auto_sync=True`` to insert a trailing reuse barrier after each
-storage-using call. Compiler-managed scratch, used when no descriptor is
-supplied, synchronizes automatically. A scratch reuse barrier does not replace
-synchronization for the kernel's own shared data.
+Automatic trailing synchronization defaults to enabled for both sharing
+modes. A call site inside a loop reuses its slice even with exclusive
+storage. With ``auto_sync=False``, the kernel must provide the required
+barrier before reuse, including across iterations. A scratch reuse barrier
+does not replace synchronization for the kernel's own shared data.
 
-Warp operations that need scratch keep independent storage per physical or
-logical group and use the appropriate warp mask. Each primitive documents
-whether it accepts explicit storage. Rules for combining cooperative scratch
-with the kernel's own shared memory depend on the compiler. See
+Warp operations use independent scratch per physical or logical group and
+the appropriate warp mask. Explicit storage support and user shared-memory
+restrictions vary by family and backend. See
 :ref:`Numba storage <coop-temp-storage>`, the
-:ref:`CUTLASS storage <coop-cutlass-storage>`, and the
+:doc:`CUTLASS Programming Guide <coop_cutlass>`, and the
 :ref:`storage FAQ <coop-faq-temp-storage>` for examples and limits.
 
 Configuration
@@ -559,8 +493,8 @@ and leading and trailing whitespace is ignored. An unset variable is false.
 ``CUDA_COOP_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
    Files use ``cuda_coop_<backend>_<hash>.cu`` names so different backends can
-   share a directory. Set it before compiling; both backends also write
-   the source when their provider compilation cache is hit. Unset or empty
+   share a directory. Set it before compiling; the Numba backend also writes
+   the source when its provider compilation cache is hit. Unset or empty
    disables dumping.
 
 ``CUDA_PATH``

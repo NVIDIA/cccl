@@ -40,9 +40,7 @@ Terms
       ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
       ``inclusive_sum``. Families organize implementation modules; a
       :term:`thread group` describes the threads executing a primitive.
-      See the implementation discussions in the
-      :doc:`Numba-CUDA-MLIR <developer_overview>` and
-      :doc:`CUTLASS <cutlass_developer_guide>` Developer Guides.
+      See :ref:`implementation families <coop-implementation-families>`.
 
    payload
       The values contributed or received by one thread. ``ThreadData(K)``
@@ -107,36 +105,35 @@ Terms
       A key used for ordering or selection and an associated value, such as
       its original array index. Pair operations move the two together.
       Key and value payloads have the same extent but may have different
-      dtypes. See :doc:`Merge Sort <visualizations/merge-sort>`.
+      dtypes. See :ref:`Merge Sort <coop-merge-sort>`.
 
    stable sort
       A sort that preserves the input order of elements with equal keys.
       A function's contract must promise stability before a program relies
       on it. Radix Sort in ``cuda.coop`` is stable; Merge Sort does not
-      promise equal-key order. See :doc:`radix sorting <visualizations/radix>`.
+      promise equal-key order. See :ref:`radix sorting <coop-radix>`.
 
    radix digit
       A fixed-width interval of key bits used in one ranking or sorting
       step. ``radix_rank_keys`` assigns ranks according to one such digit;
       ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
-      requested bit interval. See :doc:`radix sorting and ranks <visualizations/radix>`.
+      requested bit interval. See :ref:`radix sorting and ranks <coop-radix>`.
 
    common API
       .. raw:: html
 
          <span id="term-portable-API"></span>
 
-      The contract shared by Numba-CUDA-MLIR and CUTLASS, exposed through
-      ``from cuda import coop``. Implemented operations on thread groups,
-      values, and storage follow the documented argument and result rules;
-      see :ref:`backend coverage <coop-backends>` for availability. Qualified APIs add compiler-specific extensions. See
+      The backend-independent API exposed through ``from cuda import coop``.
+      It describes operations on thread groups, values, and storage.
+      Support for particular operations and argument types depends on the
+      backend. Qualified APIs provide backend-specific extensions. See
       :ref:`choosing an API <coop-api-namespaces>`.
 
    qualified API
       A backend's namespace: ``cuda.coop.numba_mlir`` or
-      ``cuda.coop.cutlass``. Each includes its supported common operations and
-      compiler-specific extensions. Host registration uses
-      ``cuda.coop.register`` or occurs when importing the qualified namespace. See
+      ``cuda.coop.cutlass``. It provides the supported common operations
+      and compiler-specific extensions. See
       :ref:`namespace choices <coop-faq-namespaces>`.
 
    striped
@@ -166,7 +163,7 @@ Terms
    top-k
       Selection of the smallest or largest ``k`` keys, optionally with
       associated values. ``cuda.coop`` TopK returns an unordered selection;
-      only its selected prefix is defined. See :doc:`TopK <visualizations/topk>`.
+      only its selected prefix is defined. See :ref:`TopK <coop-topk>`.
 
 .. _coop-glossary-layouts:
 
