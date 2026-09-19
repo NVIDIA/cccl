@@ -110,12 +110,13 @@ Groups and thread data
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
 consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
 Exchange, Reduce, Scan, and Merge Sort support block, physical-Warp, and logical-Warp
-forms; Shuffle, Radix Sort, Radix Rank, and TopK are block-only. For Warp
-primitives, the enclosing block must contain a multiple of 32 threads, with
-no incomplete final physical warp. For a multidimensional block, threads are
-linearized in x-major order. Every member of a participating group must reach
-its primitive; complete sibling logical groups may take different control-flow
-paths.
+forms. Shuffle, Radix Sort, Radix Rank, TopK, Adjacent Difference,
+Discontinuity, Histogram, and Run Length Decode are block-only. Batched
+Reduction supports physical and logical warps. For Warp primitives, the
+enclosing block must contain a multiple of 32 threads, with no incomplete
+final physical warp. For a multidimensional block, threads are linearized in
+x-major order. Every member of a participating group must reach its primitive;
+complete sibling logical groups may take different control-flow paths.
 
 The common group vocabulary also includes thread, cluster, grid, and mapped
 groups of physical warps. These groups support hierarchy queries; the
@@ -559,4 +560,8 @@ and Shuffle always use compiler-owned storage and append a group-scoped reuse
 barrier. Block Scan uses compiler-owned storage unless the caller passes a
 ``TempStorage`` descriptor. Both the common and qualified APIs reject explicit
 ``TempStorage`` for every Warp Load and Store algorithm, including the
-storage-free modes, and for Warp Reduce and Scan.
+storage-free modes, and for Warp Reduce and Scan. Batched Reduction also uses
+compiler-owned storage per warp and has no ``temp_storage`` argument. Adjacent
+Difference, Discontinuity, Histogram, and both Run Length Decode forms accept
+explicit block scratch. Prepared Run Length Decode tables live only for the
+duration of each call.
