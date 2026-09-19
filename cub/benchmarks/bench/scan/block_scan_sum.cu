@@ -52,7 +52,7 @@ template <typename T, int BlockSize>
 void run_block_scan(nvbench::state& state)
 {
   constexpr int unroll_factor = 128; // compromise between compile time and noise
-  const auto& kernel          = benchmark_kernel<BlockSize, unroll_factor, benchmark_op_t<BlockSize>, T>;
+  const auto& kernel          = benchmark_kernel<BlockSize, unroll_factor, benchmark_op_t<BlockSize>, T, false>;
   const int num_SMs     = state.get_device().value().get_number_of_sms(); // NOLINT(bugprone-unchecked-optional-access)
   int max_blocks_per_SM = 0;
   NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, BlockSize, 0));
