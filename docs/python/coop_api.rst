@@ -89,6 +89,7 @@ See :ref:`reduction and result ownership <coop-reductions>`.
 
 .. autofunction:: reduce
 .. autofunction:: sum
+.. autofunction:: reduce_batched
 
 Scan
 ^^^^
@@ -136,6 +137,30 @@ See :ref:`selecting the smallest or largest keys <coop-topk>`.
 .. autofunction:: topk_min_pairs
 .. autofunction:: topk_max_pairs
 
+Neighbor comparisons
+^^^^^^^^^^^^^^^^^^^^
+
+See :doc:`neighbor operations <coop/neighbor-operations>` for tile boundaries
+and the difference between arithmetic results and flags.
+
+.. autofunction:: adjacent_difference
+.. autofunction:: discontinuity
+
+Histogram
+^^^^^^^^^
+
+See the :doc:`Histogram visualization <coop/visualizations/histogram>`.
+
+.. autofunction:: histogram
+
+Run Length Decode
+^^^^^^^^^^^^^^^^^
+
+See :doc:`windowed and bulk decoding <coop/visualizations/run-length-decode>`.
+
+.. autofunction:: run_length_decode
+.. autofunction:: run_length_decode_into
+
 .. _coop-numba-extensions:
 
 Numba-CUDA-MLIR-qualified API
@@ -148,7 +173,7 @@ follow the :ref:`Common API <coop-common-api>`.
 
 .. code-block:: python
 
-   from cuda.coop import numba_mlir as numba_coop
+   import cuda.coop.numba_mlir as coop
 
 Qualified calls also accept fixed-size, one-dimensional local arrays where
 the operation accepts per-thread payloads. ``local`` and ``shared`` expose
@@ -160,6 +185,7 @@ Reduction
 ^^^^^^^^^
 
 .. autofunction:: reduce
+.. autofunction:: reduce_batched
 
 Scan
 ^^^^
@@ -200,3 +226,20 @@ Top-k selection
 .. autofunction:: topk_max_keys
 .. autofunction:: topk_min_pairs
 .. autofunction:: topk_max_pairs
+
+Neighbor comparisons
+^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: adjacent_difference
+.. autofunction:: discontinuity
+
+Histogram
+^^^^^^^^^
+
+.. autofunction:: histogram
+
+Run Length Decode
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: run_length_decode
+.. autofunction:: run_length_decode_into

@@ -17,12 +17,22 @@ _EXPLORERS = {
     "merge-sort": "coop-merge-sort.js",
     "radix": "coop-radix.js",
     "topk": "coop-topk.js",
+    "adjacent-difference": "coop-neighbors.js",
+    "discontinuity": "coop-neighbors.js",
+    "histogram": "coop-histogram.js",
+    "run-length-decode": "coop-run-length-decode.js",
+    "reduce-batched": "coop-reduce-batched.js",
 }
 
 _VISUALIZATION_TITLES = {
     "merge-sort": "Merge Sort",
     "radix": "Radix Rank/Sort",
     "topk": "TopK",
+    "adjacent-difference": "Adjacent Difference",
+    "discontinuity": "Discontinuity",
+    "histogram": "Histogram",
+    "run-length-decode": "Run Length Decode",
+    "reduce-batched": "Batched Warp Reduction",
 }
 
 _API_VISUALIZATIONS = (
@@ -31,7 +41,13 @@ _API_VISUALIZATIONS = (
         "scan",
     )
     | {name: name for name in _EXPLORERS}
-    | {"sum": "reduce"}
+    | {
+        "sum": "reduce",
+        "adjacent_difference": "adjacent-difference",
+        "run_length_decode": "run-length-decode",
+        "run_length_decode_into": "run-length-decode",
+        "reduce_batched": "reduce-batched",
+    }
     | dict.fromkeys(("merge_sort_keys", "merge_sort_pairs"), "merge-sort")
     | dict.fromkeys(("radix_sort_keys", "radix_sort_pairs", "radix_rank"), "radix")
     | dict.fromkeys(
@@ -103,8 +119,8 @@ def setup(app):
     app.connect("autodoc-process-docstring", add_api_visualization_link)
     app.connect("html-page-context", add_visualization_assets)
     return {
-        "version": "6",
-        "env_version": 5,
+        "version": "7",
+        "env_version": 6,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }
