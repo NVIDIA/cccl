@@ -14,13 +14,12 @@
  * @brief `for_each_shard`: the map family's driver as a public verb. Covers
  *        the three body arities, a raw per-shard kernel, a per-shard
  *        reduction returning P host values (the first half of `reduce`,
- *        written by the caller), scratch drawn from the shard environment's
- *        memory resource, the skip of empty shards, and the asynchronous
+ *        written by the caller: CUB on the shard environment, result to a
+ *        device slot, no host sync in the body), the skip of empty shards, and the asynchronous
  *        lane-ordered form followed by `barrier`.
  */
 
-#include <thrust/execution_policy.h>
-#include <thrust/reduce.h>
+#include <cub/device/device_reduce.cuh>
 
 #include <cuda/stream>
 
@@ -88,8 +87,9 @@ void test_per_shard_reduce_with_env(place_group& group)
     const ::cuda::stream_ref s = ::cuda::get_stream(env);
     auto mr                    = ::cuda::mr::get_memory_resource(env);
     slots[g]                   = static_cast<long long*>(mr.allocate(s, sizeof(long long), alignof(long long)));
-    const long long r          = thrust::reduce(thrust::cuda::par_nosync.on(s.get()), d.data, d.data + d.size, 0LL);
-    cuda_safe_call(cudaMemcpyAsync(slots[g], &r, sizeof(long long), cudaMemcpyHostToDevice, s.get()));
+    // The shard env is a CUB env: stream + memory resource for temp storage.
+    // Result to a device slot, no host sync inside the body.
+    cuda_safe_call(cub::DeviceReduce::Sum(d.data, slots[g], d.size, env));
     cuda_safe_call(cudaMemcpyAsync(&totals[g], slots[g], sizeof(long long), cudaMemcpyDeviceToHost, s.get()));
   });
   // The synchronous form has already drained the lanes; a barrier is what

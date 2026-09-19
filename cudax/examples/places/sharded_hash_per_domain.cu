@@ -31,9 +31,11 @@
  *     shard's execution context; the driver owns the ordering, skips empty
  *     shards, and drains the lanes (synchronous form) or leaves them
  *     lane-ordered (asynchronous form);
- *  3. three body arities: `(g, shard, env)` when the body needs the shard's
- *     memory resource for scratch, `(g, shard, stream)` when it needs the
- *     shard index, `(shard, stream)` otherwise.
+ *  3. three body arities: `(g, shard, env)` when the body hands the shard's
+ *     environment to CUB (stream + memory resource for scratch),
+ *     `(g, shard, stream)` when it needs the shard index, `(shard, stream)`
+ *     otherwise. The body only enqueues: results go to device slots, the
+ *     host reads them after `barrier(envs)`.
  *
  * Data: key i of the build side is the odd number 2i+1, stored with payload i.
  * Probe i asks for 2i+1 when i is odd (a hit, in the probing domain's own
@@ -41,10 +43,10 @@
  * per domain is therefore the number of odd global indices in its shard.
  */
 
-#include <thrust/execution_policy.h>
+#include <cub/device/device_reduce.cuh>
+
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
-#include <thrust/reduce.h>
 
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
 #include <cuda/experimental/sharded.cuh>
@@ -134,17 +136,20 @@ int main()
   });
 
   // 3. PER-DOMAIN COUNT: a reduction per shard whose P results the caller keeps
-  //    (`reduce` without its fold). (g, shard, env) arity: scratch comes from
-  //    the shard environment's memory resource, so it lands on the shard's
-  //    place; the host copy is enqueued on the lane and read after barrier().
+  //    (`reduce` without its fold). (g, shard, env) arity: the shard
+  //    environment IS a CUB environment — `cub::DeviceReduce::Sum(in, out, n,
+  //    env)` runs on its stream and draws its temp storage from its memory
+  //    resource, so scratch lands on the shard's place. The result goes to a
+  //    device slot, never to the host inside the body: a value-returning
+  //    reduce would synchronize the stream and serialize the lanes. The host
+  //    copies are enqueued on the lanes and read after barrier().
   ::std::vector<long long*> slots(P, nullptr);
   ::std::vector<long long> hits(P, -1);
   for_each_shard(found, envs, [&](::std::size_t g, const auto& d, const auto& env) {
     const ::cuda::stream_ref s = ::cuda::get_stream(env);
     auto mr                    = ::cuda::mr::get_memory_resource(env);
     slots[g]                   = static_cast<long long*>(mr.allocate(s, sizeof(long long), alignof(long long)));
-    const long long h          = thrust::reduce(thrust::cuda::par_nosync.on(s.get()), d.data, d.data + d.size, 0LL);
-    cuda_safe_call(cudaMemcpyAsync(slots[g], &h, sizeof(long long), cudaMemcpyHostToDevice, s.get()));
+    cuda_safe_call(cub::DeviceReduce::Sum(d.data, slots[g], d.size, env));
     cuda_safe_call(cudaMemcpyAsync(&hits[g], slots[g], sizeof(long long), cudaMemcpyDeviceToHost, s.get()));
   });
   barrier(envs);
