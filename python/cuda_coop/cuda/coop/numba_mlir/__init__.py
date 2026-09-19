@@ -23,6 +23,8 @@ from ._thread_group import (
 )
 
 __all__ = [
+    "adjacent_difference",
+    "discontinuity",
     "Hierarchy",
     "TempStorage",
     "TempStorageLike",
@@ -63,6 +65,8 @@ __all__ = [
 
 def __getattr__(name):
     if name in {
+        "adjacent_difference",
+        "discontinuity",
         "merge_sort_keys",
         "merge_sort_pairs",
         "radix_rank",
@@ -83,6 +87,8 @@ def __getattr__(name):
         "topk_min_pairs",
     }:
         module_name = {
+            "adjacent_difference": "_group_neighbors",
+            "discontinuity": "_group_neighbors",
             "merge_sort_keys": "_group_merge_sort",
             "merge_sort_pairs": "_group_merge_sort",
             "radix_rank": "_group_radix",
