@@ -286,21 +286,32 @@ CUB_NAMESPACE_BEGIN
 //! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
+//! @tparam WarpAggregateThreshold
+//!   **[optional]** Minimum number of warps required to use the parallel warp-0 reduction path.
+//!   Only applies when Algorithm is BLOCK_REDUCE_WARP_REDUCTIONS or
+//!   BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC.
+//!   -1 (default): only use parallel path when HW redux is available.
+//!   0: always use sequential path.
+//!   >0: use parallel path when warps >= threshold. (default: -1)
+//!
 template <typename T,
           int BlockDimX,
           BlockReduceAlgorithm Algorithm = BLOCK_REDUCE_WARP_REDUCTIONS,
           int BlockDimY                  = 1,
-          int BlockDimZ                  = 1>
+          int BlockDimZ                  = 1,
+          int WarpAggregateThreshold     = -1>
 class BlockReduce
 {
 private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-  using WarpReductions                 = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using WarpReductionsNondeterministic = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false>;
-  using RakingCommutativeOnly          = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using Raking                         = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductions =
+    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, true, WarpAggregateThreshold>;
+  using WarpReductionsNondeterministic =
+    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false, WarpAggregateThreshold>;
+  using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using Raking                = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Internal specialization type
   using InternalBlockReduce =
