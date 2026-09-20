@@ -4,14 +4,6 @@
 
 #include <unittest/unittest.h>
 
-// There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 11)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
 // New GCC, new miscompile. 13 + TBB this time.
 #if _CCCL_COMPILER(GCC, ==, 13) && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_TBB
 #  define THRUST_GCC13_TBB_MISCOMPILE
@@ -29,7 +21,7 @@ void TestReplaceSimple()
 
   Vector result{4, 5, 4, 3, 5};
 
-  ASSERT_EQUAL(data, result);
+  REQUIRE(data == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceSimple);
 
@@ -46,7 +38,7 @@ void TestReplaceDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace(sys, vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceDispatchExplicit);
 
@@ -62,7 +54,7 @@ void TestReplaceDispatchImplicit()
 
   thrust::replace(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceDispatchImplicit);
 
@@ -96,7 +88,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
   thrust::replace_copy(dest.begin(), dest.end(), dest.begin(), (T) 2, (T) 5);
 
   Vector result{4, 5, 4, 3, 5};
-  ASSERT_EQUAL(dest, result);
+  REQUIRE(dest == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopySimple);
 #endif
@@ -115,7 +107,7 @@ void TestReplaceCopyDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_copy(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceCopyDispatchExplicit);
 
@@ -133,7 +125,7 @@ void TestReplaceCopyDispatchImplicit()
   thrust::replace_copy(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceCopyDispatchImplicit);
 
@@ -174,8 +166,8 @@ void TestReplaceCopyToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestReplaceCopyToDiscardIterator);
 
@@ -199,7 +191,7 @@ void TestReplaceIfSimple()
 
   Vector result{0, 0, 0, 6, 5};
 
-  ASSERT_EQUAL(data, result);
+  REQUIRE(data == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceIfSimple);
 
@@ -216,7 +208,7 @@ void TestReplaceIfDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_if(sys, vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceIfDispatchExplicit);
 
@@ -232,7 +224,7 @@ void TestReplaceIfDispatchImplicit()
 
   thrust::replace_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceIfDispatchImplicit);
 
@@ -248,7 +240,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencilSimple()
 
   Vector result{1, 0, 4, 0, 5};
 
-  ASSERT_EQUAL(data, result);
+  REQUIRE(data == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceIfStencilSimple);
 
@@ -265,7 +257,7 @@ void TestReplaceIfStencilDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_if(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceIfStencilDispatchExplicit);
 
@@ -282,7 +274,7 @@ void TestReplaceIfStencilDispatchImplicit()
   thrust::replace_if(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceIfStencilDispatchImplicit);
 
@@ -327,7 +319,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfSimple()
   thrust::replace_copy_if(data.begin(), data.end(), dest.begin(), less_than_five<T>(), (T) 0);
 
   Vector result{0, 0, 0, 6, 5};
-  ASSERT_EQUAL(dest, result);
+  REQUIRE(dest == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopyIfSimple);
 
@@ -346,7 +338,7 @@ void TestReplaceCopyIfDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceCopyIfDispatchExplicit);
 
@@ -364,7 +356,7 @@ void TestReplaceCopyIfDispatchImplicit()
   thrust::replace_copy_if(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceCopyIfDispatchImplicit);
 
@@ -382,7 +374,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilSimple()
 
   Vector result{0, 3, 0, 6, 5};
 
-  ASSERT_EQUAL(dest, result);
+  REQUIRE(dest == result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopyIfStencilSimple);
 
@@ -401,7 +393,7 @@ void TestReplaceCopyIfStencilDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::replace_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReplaceCopyIfStencilDispatchExplicit);
 
@@ -425,7 +417,7 @@ void TestReplaceCopyIfStencilDispatchImplicit()
     0,
     0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestReplaceCopyIfStencilDispatchImplicit);
 
@@ -460,8 +452,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfToDiscardIterator(con
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestReplaceCopyIfToDiscardIterator);
 
@@ -502,7 +494,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilToDiscardItera
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestReplaceCopyIfStencilToDiscardIterator);

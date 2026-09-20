@@ -15,44 +15,44 @@ void TestIsSortedUntilSimple()
 
   Iterator last = v.begin() + 0;
   Iterator ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last));
+  REQUIRE(ref == thrust::is_sorted_until(first, last));
 
   last = v.begin() + 1;
   ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last));
+  REQUIRE(ref == thrust::is_sorted_until(first, last));
 
   last = v.begin() + 2;
   ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last));
+  REQUIRE(ref == thrust::is_sorted_until(first, last));
 
   last = v.begin() + 3;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last));
+  REQUIRE(ref == thrust::is_sorted_until(first, last));
 
   last = v.begin() + 4;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last));
+  REQUIRE(ref == thrust::is_sorted_until(first, last));
 
   last = v.begin() + 3;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::less<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(first, last, ::cuda::std::less<T>()));
 
   last = v.begin() + 4;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::less<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(first, last, ::cuda::std::less<T>()));
 
   last = v.begin() + 1;
   ref  = v.begin() + 1;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
 
   last = v.begin() + 4;
   ref  = v.begin() + 1;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
 
   first = v.begin() + 2;
   last  = v.begin() + 4;
   ref   = v.begin() + 4;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
 }
 DECLARE_VECTOR_UNITTEST(TestIsSortedUntilSimple);
 
@@ -61,7 +61,7 @@ void TestIsSortedUntilRepeatedElements()
 {
   Vector v{0, 1, 1, 2, 3, 4, 5, 5, 5, 6};
 
-  ASSERT_EQUAL_QUIET(v.end(), thrust::is_sorted_until(v.begin(), v.end()));
+  REQUIRE(v.end() == thrust::is_sorted_until(v.begin(), v.end()));
 }
 DECLARE_VECTOR_UNITTEST(TestIsSortedUntilRepeatedElements);
 
@@ -77,11 +77,11 @@ void TestIsSortedUntil()
   v[0] = 1;
   v[1] = 0;
 
-  ASSERT_EQUAL_QUIET(v.begin() + 1, thrust::is_sorted_until(v.begin(), v.end()));
+  REQUIRE(v.begin() + 1 == thrust::is_sorted_until(v.begin(), v.end()));
 
   thrust::sort(v.begin(), v.end());
 
-  ASSERT_EQUAL_QUIET(v.end(), thrust::is_sorted_until(v.begin(), v.end()));
+  REQUIRE(v.end() == thrust::is_sorted_until(v.begin(), v.end()));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestIsSortedUntil);
 
@@ -99,7 +99,7 @@ void TestIsSortedUntilExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::is_sorted_until(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestIsSortedUntilExplicit);
 
@@ -116,6 +116,6 @@ void TestIsSortedUntilImplicit()
 
   thrust::is_sorted_until(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestIsSortedUntilImplicit);

@@ -8,9 +8,6 @@
 #include <cuda_runtime_api.h>
 #include <testing.cuh>
 
-using std::size_t;
-using std::uintptr_t;
-
 struct Counts
 {
   int object_count           = 0;
@@ -62,8 +59,8 @@ struct Counts
 struct test_fixture_
 {
   Counts counts;
-  size_t bytes_ = 0;
-  size_t align_ = 0;
+  std::size_t bytes_ = 0;
+  std::size_t align_ = 0;
   static thread_local Counts* counts_;
 
   test_fixture_() noexcept
@@ -72,13 +69,13 @@ struct test_fixture_
     counts_ = &counts;
   }
 
-  size_t bytes(size_t sz) noexcept
+  std::size_t bytes(std::size_t sz) noexcept
   {
     bytes_ = sz;
     return bytes_;
   }
 
-  size_t align(size_t align) noexcept
+  std::size_t align(std::size_t align) noexcept
   {
     align_ = align;
     return align_;
@@ -224,7 +221,7 @@ struct test_resource
   using default_queries = cuda::mr::properties_list<>;
 };
 
-using big_resource   = test_resource<uintptr_t>;
+using big_resource   = test_resource<std::uintptr_t>;
 using small_resource = test_resource<unsigned int>;
 
 static_assert(sizeof(big_resource) > cuda::__default_small_object_size);

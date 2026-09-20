@@ -41,7 +41,7 @@ template <bool _Dummy = false>
 }
 
 _CCCL_TEMPLATE(class _Group, class _Tp)
-_CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
+_CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
                  _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
 [[nodiscard]] _CCCL_DEVICE_API _Tp __shuffle_impl(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
 {
@@ -55,7 +55,7 @@ _CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group
   const auto __lane_offset = static_cast<int>(__src_unit_rank) - static_cast<int>(__mapping_result.unit_rank());
 
   unsigned __src_lane{};
-  if constexpr (_MappingResult::is_always_contiguous())
+  if constexpr (_Group::is_always_contiguous())
   {
     const auto __lane = ::cuda::ptx::get_sreg_laneid();
     __src_lane        = static_cast<unsigned>(__lane + __lane_offset);
@@ -75,6 +75,8 @@ _CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group
 template <class _Group, class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp shuffle(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
 {
+  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
+               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__shuffle_impl(__group, __value, __src_unit_rank);
 }
 } // namespace cuda::experimental::coop

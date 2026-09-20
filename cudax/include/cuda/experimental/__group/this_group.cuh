@@ -153,6 +153,16 @@ public:
     return __synchronizer_instance_;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
+  {
+    return __mapping_result_type::is_always_exhaustive();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  {
+    return __mapping_result_type::is_always_contiguous();
+  }
+
   _CCCL_DEVICE_API void sync() const noexcept
   {
     __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
@@ -241,25 +251,11 @@ class this_thread : public __this_group_base<thread_level, _Hierarchy>
 
 public:
   using __base_type::__base_type;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS()
-  template <class _Parent>
-  _CCCL_DEVICE_API this_thread(const ::cooperative_groups::thread_block_tile<1, _Parent>&) noexcept
-      : __base_type{::cuda::experimental::implicit_hierarchy()}
-  {}
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
-
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_thread() -> this_thread<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_thread(const _Hierarchy&) -> this_thread<__hierarchy_type_of<_Hierarchy>>;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS()
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_thread(const ::cooperative_groups::thread_block_tile<1, void>&)
-  -> this_thread<__implicit_hierarchy_t>;
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 template <class _Hierarchy>
 class this_warp : public __this_group_base<warp_level, _Hierarchy>
@@ -268,26 +264,11 @@ class this_warp : public __this_group_base<warp_level, _Hierarchy>
 
 public:
   using __base_type::__base_type;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS()
-  template <class _Parent>
-  _CCCL_DEVICE_API this_warp(const ::cooperative_groups::thread_block_tile<32, _Parent>&) noexcept
-      : __base_type{::cuda::experimental::implicit_hierarchy()}
-  {}
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
-
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_warp() -> this_warp<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_warp(const _Hierarchy&) -> this_warp<__hierarchy_type_of<_Hierarchy>>;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS()
-template <class _Parent>
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_warp(const ::cooperative_groups::thread_block_tile<32, _Parent>&)
-  -> this_warp<__implicit_hierarchy_t>;
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 template <class _Hierarchy>
 class this_block : public __this_group_base<block_level, _Hierarchy>
@@ -296,24 +277,11 @@ class this_block : public __this_group_base<block_level, _Hierarchy>
 
 public:
   using __base_type::__base_type;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS()
-  _CCCL_DEVICE_API this_block(const ::cooperative_groups::thread_block&) noexcept
-      : __base_type{::cuda::experimental::implicit_hierarchy()}
-  {}
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
-
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_block() -> this_block<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_block(const _Hierarchy&) -> this_block<__hierarchy_type_of<_Hierarchy>>;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS()
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_block(const ::cooperative_groups::thread_block&)
-  -> this_block<__implicit_hierarchy_t>;
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 template <class _Hierarchy>
 class this_cluster : public __this_group_base<cluster_level, _Hierarchy>
@@ -322,24 +290,11 @@ class this_cluster : public __this_group_base<cluster_level, _Hierarchy>
 
 public:
   using __base_type::__base_type;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
-  _CCCL_DEVICE_API this_cluster(const ::cooperative_groups::cluster_group&) noexcept
-      : __base_type{::cuda::experimental::implicit_hierarchy()}
-  {}
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
 };
-
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_cluster() -> this_cluster<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_cluster(const _Hierarchy&) -> this_cluster<__hierarchy_type_of<_Hierarchy>>;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_cluster(const ::cooperative_groups::cluster_group&)
-  -> this_cluster<__implicit_hierarchy_t>;
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
 
 template <class _Hierarchy>
 class this_grid : public __this_group_base<grid_level, _Hierarchy>
@@ -348,24 +303,11 @@ class this_grid : public __this_group_base<grid_level, _Hierarchy>
 
 public:
   using __base_type::__base_type;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS()
-  _CCCL_DEVICE_API this_grid(const ::cooperative_groups::grid_group&) noexcept
-      : __base_type{::cuda::experimental::implicit_hierarchy()}
-  {}
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
-
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_grid() -> this_grid<__implicit_hierarchy_t>;
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_grid(const _Hierarchy&) -> this_grid<__hierarchy_type_of<_Hierarchy>>;
-
-#  if _CCCL_HAS_COOPERATIVE_GROUPS()
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_grid(const ::cooperative_groups::grid_group&)
-  -> this_grid<__implicit_hierarchy_t>;
-#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 _CCCL_TEMPLATE(class _Level, class... _Args)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Level>)

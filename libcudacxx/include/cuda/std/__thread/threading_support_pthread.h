@@ -131,7 +131,8 @@ _CCCL_HOST_DEVICE_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::n
 {
   auto __ts = __cccl_to_timespec(__ns);
   while (nanosleep(&__ts, &__ts) == -1 && errno == EINTR)
-    ;
+  {
+  }
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

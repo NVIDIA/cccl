@@ -74,7 +74,7 @@ template <class _Hierarchy>
 class this_grid;
 
 template <class _Unit, class _ParentGroup, class _MappingResult, class _SynchronizerInstance>
-class group;
+class generic_group;
 
 template <class _Unit, class _ParentGroup, class _MappingResult>
 class virtual_group;
@@ -90,7 +90,7 @@ class group_view;
 template <class _Fn>
 class binary_partition;
 
-template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
+template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent, bool _IsAlwaysExhaustive = true>
 class group_by;
 
 template <class _Data, bool _IsExahustive>
@@ -105,6 +105,9 @@ class take;
 
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer;
+
+template <class _Range>
+class interwarp_synchronizer;
 
 class lane_synchronizer;
 
@@ -127,10 +130,10 @@ inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 
 template <class _Tp>
 inline constexpr bool __is_group_mapping_v = false;
-template <::cuda::std::size_t _UnitCount, bool _IsExhaustive>
-inline constexpr bool __is_group_mapping_v<group_by<_UnitCount, _IsExhaustive>> = true;
-template <class _Data, bool _IsExhaustive>
-inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsExhaustive>> = true;
+template <::cuda::std::size_t _UnitCount, bool _IsAlwaysExhaustive>
+inline constexpr bool __is_group_mapping_v<group_by<_UnitCount, _IsAlwaysExhaustive>> = true;
+template <class _Data, bool _IsAlwaysExhaustive>
+inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsAlwaysExhaustive>> = true;
 
 // tags
 
