@@ -53,7 +53,6 @@ def test_algorithm_identity_distinguishes_specializations():
 @pytest.mark.parametrize(
     "callback",
     [
-        partial(lambda value: value, 1),
         staticmethod(lambda value: value),
         classmethod(lambda cls, value: value),
     ],
@@ -61,6 +60,27 @@ def test_algorithm_identity_distinguishes_specializations():
 def test_wrapped_callbacks_raise(callback):
     with pytest.raises(TypeError, match="callable values are not supported"):
         _algorithm(template_arguments={"T": "int", "callback": callback})
+
+
+def test_partial_callbacks_keep_distinct_algorithm_entries():
+    def make_callback(offset):
+        def callback(value):
+            return value + offset
+
+        return callback
+
+    callback = make_callback(1)
+
+    def specialization(fn):
+        return _algorithm(template_arguments={"T": "int", "callback": fn})
+
+    first = specialization(partial(callback, 2))
+    captured = specialization(partial(make_callback(2), 2))
+    argument = specialization(partial(callback, 3))
+    cache = {first: "first", captured: "captured", argument: "argument"}
+
+    assert len(cache) == 3
+    assert cache[specialization(partial(callback, 2))] == "first"
 
 
 @pytest.mark.parametrize("value", (False, True))
