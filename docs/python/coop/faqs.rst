@@ -48,6 +48,7 @@ adaptation when moving between compilers; compiler-owned payloads cannot cross
 that boundary. See the :ref:`operation support table
 <coop-backend-operation-support>` for the families each backend implements.
 
+.. _i-only-use-numba-cuda-mlir-can-i-import-its-namespace-as-coop:
 .. _coop-faq-numba-only:
 .. _coop-faq-qualified-only:
 
