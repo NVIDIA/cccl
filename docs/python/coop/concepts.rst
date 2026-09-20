@@ -16,6 +16,56 @@ for complete kernels and launch examples.
 
 The :doc:`CUTLASS Programming Guide <../coop_cutlass>` covers CuTe kernels.
 
+.. _coop-backend-operation-support:
+
+Backend operation support
+-------------------------
+
+A common API name does not imply that every backend implements it. The
+current integrations provide the following families; group shapes, dtypes,
+and qualified controls have the limits described in each programming guide.
+
+.. list-table:: Current primitive families
+   :header-rows: 1
+   :widths: 48 26 26
+
+   * - Family
+     - Numba-CUDA-MLIR
+     - CUTLASS
+   * - Group queries and supported synchronization
+     - Available
+     - Available
+   * - Block and warp Load/Store
+     - Available
+     - Available
+   * - Built-in Reduce/Sum and Scan
+     - Available
+     - Available
+   * - Block and warp Exchange; block Shuffle
+     - Available
+     - Available
+   * - Merge Sort, keys and pairs
+     - Available
+     - Available
+   * - Radix Sort, keys and pairs; Radix Rank
+     - Available
+     - Available
+   * - TopK, minimum and maximum keys or pairs
+     - Available
+     - Available
+   * - Adjacent Difference and Discontinuity
+     - Available
+     - Not implemented
+   * - Histogram
+     - Available
+     - Not implemented
+   * - Run Length Decode, windowed and bulk
+     - Available
+     - Not implemented
+   * - Batched Warp Reduction
+     - Available
+     - Not implemented
+
 .. _block-prefix-callbacks:
 
 Numba-CUDA-MLIR additionally supports qualified device operators and
@@ -267,8 +317,9 @@ contract before consuming a result.
 
 Sorting and selection operate on one group's tile. Sorting each block does not
 sort a whole array. TopK defines an unordered selected prefix; the remaining
-payload positions are not output. See :ref:`backend coverage <coop-backends>`
-for the available sorting and selection families.
+payload positions are not output. For the available sorting and selection
+families, see :ref:`backend operation support
+<coop-backend-operation-support>`.
 
 .. _coop-common-storage:
 .. _temporary-storage:
