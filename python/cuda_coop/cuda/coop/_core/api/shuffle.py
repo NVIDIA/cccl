@@ -44,10 +44,10 @@ def shuffle(
     ----------
     group : cuda.coop.ThreadGroup
         Complete block whose members all call the primitive; see
-        :ref:`thread groups <coop-thread-groups>`. Warp, mapped-warp, cluster,
+        :ref:`thread groups <coop-common-groups>`. Warp, mapped-warp, cluster,
         and grid groups are unsupported.
     value : cuda.coop.ThreadDataLike
-        Readable :ref:`per-thread payload <coop-thread-data>` in blocked
+        Readable :ref:`per-thread payload <coop-common-payloads>` in blocked
         order. All threads must use the same dtype and fixed extent.
         Supports signed and unsigned 8-, 16-, 32-, and 64-bit integers,
         ``float32``, and ``float64``. Scalar inputs are unsupported.
@@ -76,7 +76,7 @@ def shuffle(
     -----
     The shift has no wraparound. Its unit is one element in the flattened
     block tile. The implementation manages
-    :ref:`temporary storage <coop-temp-storage>` automatically.
+    :ref:`temporary storage <coop-common-storage>` automatically.
 
     See Also
     --------

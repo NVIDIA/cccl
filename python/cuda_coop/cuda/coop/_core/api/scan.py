@@ -170,13 +170,13 @@ def scan(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating threads; see :ref:`thread groups <coop-thread-groups>`.
+        Participating threads; see :ref:`thread groups <coop-common-groups>`.
         Supports blocks and physical or logical warps. Warp scans require
         an enclosing block size divisible by 32. All group members must
         execute the primitive together.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. Payloads have the same item count and dtype in each thread.
         A block scans payloads in blocked order: all items from thread zero,
         then all items from thread one, and so on. Scalar inputs follow
@@ -207,7 +207,7 @@ def scan(
         ``"warp_scans"`` combines warp scans and requires a block size
         divisible by 32. Warp groups require ``None``.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for a block scan.
+        :ref:`Scratch descriptor <coop-common-storage>` for a block scan.
         ``None`` uses automatic scratch and reuse synchronization. Warp
         scans require ``None`` and use automatic storage for each group.
 
@@ -292,11 +292,11 @@ def exclusive_sum(
     ----------
     group : cuda.coop.ThreadGroup
         Block or physical/logical warp whose members execute the primitive
-        together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
+        together; see :ref:`thread groups <coop-common-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
@@ -307,7 +307,7 @@ def exclusive_sum(
         Warp groups require ``None``. See :func:`cuda.coop.scan` for the
         algorithm choices.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for blocks. ``None``
+        :ref:`Scratch descriptor <coop-common-storage>` for blocks. ``None``
         uses automatic scratch and reuse synchronization. Warp groups
         require ``None``.
 
@@ -383,11 +383,11 @@ def inclusive_sum(
     ----------
     group : cuda.coop.ThreadGroup
         Block or physical/logical warp whose members execute the primitive
-        together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
+        together; see :ref:`thread groups <coop-common-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
@@ -398,7 +398,7 @@ def inclusive_sum(
         Warp groups require ``None``. See :func:`cuda.coop.scan` for the
         algorithm choices.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for blocks. ``None``
+        :ref:`Scratch descriptor <coop-common-storage>` for blocks. ``None``
         uses automatic scratch and reuse synchronization. Warp groups
         require ``None``.
 
@@ -477,11 +477,11 @@ def exclusive_scan(
     ----------
     group : cuda.coop.ThreadGroup
         Block or physical/logical warp whose members execute the primitive
-        together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
+        together; see :ref:`thread groups <coop-common-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
@@ -505,7 +505,7 @@ def exclusive_scan(
         Warp groups require ``None``. See :func:`cuda.coop.scan` for the
         algorithm choices.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for blocks. ``None``
+        :ref:`Scratch descriptor <coop-common-storage>` for blocks. ``None``
         uses automatic scratch and reuse synchronization. Warp groups
         require ``None``.
 
@@ -585,11 +585,11 @@ def inclusive_scan(
     ----------
     group : cuda.coop.ThreadGroup
         Block or physical/logical warp whose members execute the primitive
-        together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
+        together; see :ref:`thread groups <coop-common-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
@@ -607,7 +607,7 @@ def inclusive_scan(
         Warp groups require ``None``. See :func:`cuda.coop.scan` for the
         algorithm choices.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for blocks. ``None``
+        :ref:`Scratch descriptor <coop-common-storage>` for blocks. ``None``
         uses automatic scratch and reuse synchronization. Warp groups
         require ``None``.
 

@@ -26,8 +26,8 @@ def ThreadData(
     """Construct a fixed-size payload owned by the calling thread.
 
     Each thread has its own slots. See :ref:`per-thread payloads
-    <coop-thread-data>` for their relationship to a group tile and the
-    :ref:`blocked and striped layouts <coop-data-layouts>`.
+    <coop-common-payloads>` for their relationship to a group tile and the
+    :ref:`blocked and striped layouts <coop-common-layouts>`.
 
     Parameters
     ----------

@@ -190,13 +190,13 @@ def reduce(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating :ref:`thread group <coop-thread-groups>`. Supports a
+        Participating :ref:`thread group <coop-common-groups>`. Supports a
         single thread, physical or logical warp, block, mapped group of warps,
         or cluster. Grid reductions are unsupported. Every member must call
         the primitive, including members excluded by ``valid_items``.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's contribution. A :ref:`per-thread payload
-        <coop-thread-data>` contributes all its elements to the same scalar
+        <coop-common-payloads>` contributes all its elements to the same scalar
         reduction; its dtype and fixed extent must agree across the group.
         Input values are preserved. Supported dtypes are signed and unsigned
         8-, 16-, 32-, and 64-bit integers, ``float32``, and ``float64``.
@@ -234,7 +234,7 @@ def reduce(
     -----
     The reduction can regroup operations, so floating-point results can differ
     from a sequential fold. This call manages any required
-    :ref:`temporary storage <coop-temp-storage>` automatically.
+    :ref:`temporary storage <coop-common-storage>` automatically.
 
     See Also
     --------
@@ -301,13 +301,13 @@ def sum(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating :ref:`thread group <coop-thread-groups>`. Supports a
+        Participating :ref:`thread group <coop-common-groups>`. Supports a
         single thread, physical or logical warp, block, mapped group of warps,
         or cluster. Grid reductions are unsupported. Every member must call
         the primitive.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's contribution. A :ref:`per-thread payload
-        <coop-thread-data>` contributes all its elements; its dtype and fixed
+        <coop-common-payloads>` contributes all its elements; its dtype and fixed
         extent must agree across the group. Input values are preserved.
         Supports signed and unsigned 8-, 16-, 32-, and 64-bit integers,
         ``float32``, and ``float64``.
@@ -339,7 +339,7 @@ def sum(
     -----
     Floating-point addition can be regrouped, so the result can differ from a
     sequential sum. The implementation manages any required
-    :ref:`temporary storage <coop-temp-storage>` automatically.
+    :ref:`temporary storage <coop-common-storage>` automatically.
 
     See Also
     --------

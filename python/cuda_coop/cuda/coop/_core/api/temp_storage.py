@@ -28,7 +28,7 @@ def TempStorage(
 
     Construct the descriptor inside the kernel and pass it as
     ``temp_storage`` to operations that accept explicit block scratch.
-    See :ref:`temporary storage <coop-temp-storage>` for supported operations,
+    See :ref:`temporary storage <coop-common-storage>` for supported operations,
     allocation lifetime, and launch-time shared-memory requirements.
 
     Parameters

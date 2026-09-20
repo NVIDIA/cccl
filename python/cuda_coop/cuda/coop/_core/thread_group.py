@@ -139,8 +139,8 @@ class ThreadHierarchy:
 
     Use :func:`cuda.coop.this_block`, :func:`cuda.coop.this_warp`, or another
     group factory in a kernel to obtain a :class:`cuda.coop.ThreadGroup`.
-    See :ref:`thread groups <coop-thread-groups>` for the hierarchy and
-    :ref:`ranks and sizes <coop-group-queries>` for runtime queries.
+    See :ref:`thread groups <coop-common-groups>` for the hierarchy and
+    :ref:`ranks and sizes <coop-common-groups>` for runtime queries.
     The corresponding C++ abstraction is
     :ref:`cuda::hierarchy <cccl-runtime-hierarchy>`.
 
@@ -212,7 +212,7 @@ class ThreadHierarchy:
         """Return a descriptor for the compiler's current kernel launch.
 
         Equivalent to ``ThreadHierarchy()``. See
-        :ref:`thread groups <coop-thread-groups>`.
+        :ref:`thread groups <coop-common-groups>`.
         """
 
         return cls()
@@ -350,8 +350,8 @@ class ThreadGroup:
     ``rank()`` and ``count()`` query the calling thread's rank and the group's
     size. ``group_by()`` describes smaller groups within a physical warp or
     block. The supported primitive scopes are documented by each primitive;
-    see :ref:`thread groups <coop-thread-groups>` and
-    :ref:`participation requirements <coop-participation>`.
+    see :ref:`thread groups <coop-common-groups>` and
+    :ref:`participation requirements <coop-common-participation>`.
 
     Both Numba-CUDA-MLIR and CUTLASS use the C++ ``cuda::experimental::coop``
     group types from the :github:`group header
@@ -616,8 +616,8 @@ class ThreadGroup:
         groups may query their constituents and immediate physical parent,
         but not a higher hierarchy level. Groups of physical warps have
         limited primitive support and no explicit synchronization methods.
-        See :ref:`thread groups <coop-thread-groups>` and
-        :ref:`participation requirements <coop-participation>`.
+        See :ref:`thread groups <coop-common-groups>` and
+        :ref:`participation requirements <coop-common-participation>`.
 
         Examples
         --------
@@ -682,7 +682,7 @@ class ThreadGroup:
             an outer level selects this group's rank within that outer group.
             For example, ``block.rank("warp")`` gives the calling warp's
             rank in its block, while ``block.rank("grid")`` gives the block's
-            rank in the grid. See :ref:`ranks and sizes <coop-group-queries>`
+            rank in the grid. See :ref:`ranks and sizes <coop-common-groups>`
             for supported levels and mapped-group restrictions.
 
         Returns
@@ -714,7 +714,7 @@ class ThreadGroup:
             groups of this kind in the outer group. For example,
             ``block.count("warp")`` counts the block's warps and
             ``block.count("grid")`` counts the grid's blocks. See
-            :ref:`ranks and sizes <coop-group-queries>`.
+            :ref:`ranks and sizes <coop-common-groups>`.
 
         Returns
         -------
@@ -743,7 +743,7 @@ class ThreadGroup:
         level : str, optional
             Compile-time hierarchy level, default ``"thread"``. Has the
             same meaning and restrictions as ``rank(level)``; see
-            :ref:`ranks and sizes <coop-group-queries>`.
+            :ref:`ranks and sizes <coop-common-groups>`.
 
         Returns
         -------
@@ -772,7 +772,7 @@ class ThreadGroup:
         level : str, optional
             Compile-time hierarchy level, default ``"thread"``. Has the
             same meaning and restrictions as ``count(level)``; see
-            :ref:`ranks and sizes <coop-group-queries>`.
+            :ref:`ranks and sizes <coop-common-groups>`.
 
         Returns
         -------
@@ -797,7 +797,7 @@ class ThreadGroup:
         None
             The call waits for the group's participating threads at the
             barrier. All participants must execute it in converged control
-            flow; see :ref:`participation requirements <coop-participation>`.
+            flow; see :ref:`participation requirements <coop-common-participation>`.
 
         Notes
         -----
@@ -805,7 +805,7 @@ class ThreadGroup:
         logical-warp, block, and supported cluster synchronization. Both reject
         grid synchronization and synchronization of mapped groups of physical
         warps. A one-thread synchronization has no other threads to wait for.
-        See :ref:`thread groups <coop-thread-groups>` for scope restrictions.
+        See :ref:`thread groups <coop-common-groups>` for scope restrictions.
 
         See Also
         --------
@@ -830,7 +830,7 @@ class ThreadGroup:
         All participating threads must execute the call in converged control
         flow. Both Numba-CUDA-MLIR and CUTLASS reject grid and
         mapped-physical-warp synchronization, as for ``sync()``. See
-        :ref:`participation requirements <coop-participation>`.
+        :ref:`participation requirements <coop-common-participation>`.
 
         See Also
         --------
@@ -855,7 +855,7 @@ class ThreadGroup:
         -----
         Use this query to guard rank-dependent work for excluded threads.
         Before guarding a primitive, check that primitive's
-        :ref:`participation requirements <coop-participation>`; a membership
+        :ref:`participation requirements <coop-common-participation>`; a membership
         check alone does not make a divergent primitive valid.
 
         See Also
