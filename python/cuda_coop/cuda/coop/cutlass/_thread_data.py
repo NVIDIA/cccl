@@ -312,13 +312,44 @@ def _resolve_export_dtype(dtype: Any, *, fallback: Any, source: str) -> Any:
 
 
 class ThreadData:
-    """Per-thread register payload used by CUTLASS cooperative primitives.
+    """Hold a fixed number of items per thread inside a CuTe kernel.
 
-    ``ThreadData`` carries the number of logical items owned by each thread,
-    optional dtype metadata, and the per-item register values traced by a
-    CUTLASS DSL kernel. Block- and warp-group primitives infer
-    ``items_per_thread`` from this object, so users specify the item count once
-    when constructing the payload.
+    This is the CUTLASS implementation of :class:`cuda.coop.ThreadData`.
+    Primitives infer the item count from the payload. Indexing uses
+    compile-time integers; initialize each item before reading it or passing
+    it to an operation that reads the payload.
+
+    The conversion methods below copy values between this payload and CuTe
+    registers. Use :func:`cuda.coop.load` and :func:`cuda.coop.store` to move
+    data to or from global memory. See :ref:`coop-cutlass-register-payloads`
+    for the distinction between mutable register tensors and ``TensorSSA``.
+
+    Parameters
+    ----------
+    items_per_thread : int
+        Positive compile-time item count.
+    dtype : type, optional
+        Numeric dtype metadata, such as ``cutlass.Int32`` or ``numpy.int32``.
+        If omitted, consuming primitives infer the type from initialized
+        values. The constructor does not cast entries supplied in ``values``.
+    values : tuple or list, optional
+        Initial values, with exactly ``items_per_thread`` entries. When
+        omitted, the items remain uninitialized until assigned or loaded.
+    alignment : int, optional
+        Minimum byte alignment for materialized storage. Must be a positive
+        power of two. The backend may select a larger alignment.
+
+    Examples
+    --------
+    Convert a CuTe register tensor to a payload, change one item, and export
+    both immutable and mutable register results. The original tensor retains
+    its values:
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_payload_examples.py
+       :language: python
+       :start-after: # example-begin
+       :end-before: # example-end
+       :dedent: 4
     """
 
     def __init__(
@@ -360,6 +391,20 @@ class ThreadData:
 
     @classmethod
     def from_values(cls, *values: Any, dtype: Any = None) -> ThreadData:
+        """Construct a payload from one or more per-thread scalar values.
+
+        Parameters
+        ----------
+        *values : scalar
+            Initial items, in payload order. At least one value is required.
+        dtype : type, optional
+            Dtype metadata. Values are stored as supplied, without casting.
+
+        Returns
+        -------
+        ThreadData
+            A new payload containing ``len(values)`` initialized items.
+        """
         if len(values) == 0:
             raise ValueError("ThreadData.from_values requires at least one value")
         return cls(len(values), dtype=dtype, values=list(values))
@@ -372,7 +417,25 @@ class ThreadData:
         *,
         dtype: Any = None,
     ) -> ThreadData:
-        """Build ThreadData by calling ``fn(item_idx)`` for each item."""
+        """Initialize each item with a compile-time Python callable.
+
+        Parameters
+        ----------
+        items_per_thread : int
+            Positive compile-time item count.
+        fn : callable
+            Called once for each integer index from zero to
+            ``items_per_thread - 1`` while tracing the kernel. It may build
+            CuTe scalar expressions; it is not a device callback.
+        dtype : type, optional
+            Dtype for the generated values. An explicit CUTLASS numeric type
+            casts each item to that type.
+
+        Returns
+        -------
+        ThreadData
+            A new initialized payload in increasing item-index order.
+        """
         items_per_thread = _validate_items_per_thread(items_per_thread)
         if not callable(fn):
             raise TypeError("ThreadData.from_fn requires a callable")
@@ -400,13 +463,26 @@ class ThreadData:
         items_per_thread: int | None = None,
         dtype: Any = None,
     ) -> ThreadData:
-        """
-        Build ThreadData from a per-thread register-backed CuTe tensor fragment.
+        """Copy a CuTe register tensor into a per-thread payload.
 
-        This bridge is intentionally strict: it only accepts rmem fragments so users
-        cannot accidentally pass global/shared tensors as cooperative thread payload.
-        Passing an explicit CUTLASS DSL dtype casts the extracted register values
-        to that dtype.
+        Parameters
+        ----------
+        fragment : cute.Tensor
+            Tensor in CuTe register memory (``rmem``). Global- and
+            shared-memory tensors are rejected; load their data first.
+        items_per_thread : int, optional
+            Positive compile-time item count. Inferred from the static
+            tensor shape when available. An explicit count must match the
+            inferred count; it is required when inference is unavailable.
+        dtype : type, optional
+            Defaults to ``fragment.element_type``. An explicit CUTLASS
+            numeric type casts each extracted item.
+
+        Returns
+        -------
+        ThreadData
+            A new payload in the tensor's flat integer-index order.
+            Subsequent assignments to either object do not update the other.
         """
         try:
             memspace = getattr(fragment, "memspace", None)
@@ -450,12 +526,26 @@ class ThreadData:
         items_per_thread: int | None = None,
         dtype: Any = None,
     ) -> ThreadData:
-        """
-        Build ThreadData from a register vector-like object.
+        """Copy an immutable register value into a per-thread payload.
 
-        This bridge accepts CuTe ``TensorSSA`` values and CUTLASS register
-        vectors that expose a static item count through ``numel()`` or 1-D shape
-        metadata and support integer indexing for each per-thread item.
+        Parameters
+        ----------
+        vector : cute.TensorSSA or CUTLASS register vector
+            Integer-indexable register value. Memory-backed tensors and
+            arrays are rejected. For mutable CuTe ``rmem`` tensors, use
+            :meth:`from_register_tensor`.
+        items_per_thread : int, optional
+            Positive compile-time item count, normally inferred from
+            ``numel()`` or a static one-dimensional shape. An explicit count
+            must match any inferred count.
+        dtype : type, optional
+            Defaults to the value's dtype metadata. An explicit CUTLASS
+            numeric type casts each extracted item.
+
+        Returns
+        -------
+        ThreadData
+            A new payload in flat integer-index order. The input is unchanged.
         """
         if _is_memory_backed_payload(vector):
             raise TypeError(
@@ -501,16 +591,28 @@ class ThreadData:
         items_per_thread: int | None = None,
         dtype: Any = None,
     ) -> ThreadData:
-        """
-        Build ThreadData from a backend-specific per-thread register payload.
+        """Adapt a ``ThreadData`` or CuTe register payload.
 
-        This qualified bridge accepts payloads that are already
-        thread-local: CuTe register-memory fragments are adapted through
-        :meth:`from_register_tensor`, while CuTe ``TensorSSA`` and CUTLASS
-        vector-like values are adapted through :meth:`from_vector`.
-        Memory-backed tensors and arrays remain outside this boundary; use
-        group-first load/store helpers to move them into per-thread registers
-        first.
+        Parameters
+        ----------
+        payload : ThreadData, cute.Tensor, cute.TensorSSA, or register vector
+            Per-thread values. CuTe tensors must use register memory;
+            global/shared tensors and arrays require a load first.
+        items_per_thread : int, optional
+            Positive compile-time item count. If supplied, it must match the
+            existing or inferred count.
+        dtype : type, optional
+            Dtype for conversion. For an existing ``ThreadData`` with dtype
+            metadata, this must match that dtype; this method does not recast
+            an already typed payload.
+
+        Returns
+        -------
+        ThreadData
+            The same object when ``payload`` is already ``ThreadData`` and
+            no dtype change is needed. Supplying a dtype to an untyped
+            ``ThreadData`` creates a new payload. CuTe inputs produce a new
+            payload through :meth:`from_register_tensor` or :meth:`from_vector`.
         """
         if isinstance(payload, cls):
             if items_per_thread is not None:
@@ -564,13 +666,24 @@ class ThreadData:
         dtype: Any = None,
         shape: Any = None,
     ) -> Any:
-        """Materialize this payload as a register-only CuTe ``TensorSSA``.
+        """Export initialized items as an immutable CuTe register value.
 
-        The default shape is ``(items_per_thread,)``. An explicit shape may be
-        nested, but it must be positive, fully static, and contain the same
-        number of logical elements. The result preserves ``ThreadData`` flat
-        item order; it does not recover an input fragment's original shape.
+        Parameters
+        ----------
+        dtype : type, optional
+            Supported CUTLASS or NumPy numeric dtype. Defaults to this
+            payload's dtype; required if the payload has no dtype metadata.
+        shape : int or tuple, optional
+            Defaults to ``(items_per_thread,)``. May be nested, but every
+            extent must be a positive compile-time integer and the total
+            number of elements must equal ``items_per_thread``.
 
+        Returns
+        -------
+        cute.TensorSSA
+            Register values with the requested dtype and shape, in payload
+            item order. The original input fragment's shape is not retained
+            automatically. Later payload assignments do not change this value.
         """
 
         source = "ThreadData.to_tensor_ssa"
@@ -594,11 +707,22 @@ class ThreadData:
         dtype: Any = None,
         shape: Any = None,
     ) -> Any:
-        """Materialize this payload as a fresh mutable CuTe rmem tensor.
+        """Export initialized items to a new mutable CuTe register tensor.
 
-        This creates addressable register-memory storage and stores a newly
-        assembled ``TensorSSA`` into it. It does not alias this ``ThreadData``
-        object, and code generation may still spill register storage locally.
+        Parameters
+        ----------
+        dtype : type, optional
+            Output dtype, with the same rules as :meth:`to_tensor_ssa`.
+        shape : int or tuple, optional
+            Static output shape, with the same rules as :meth:`to_tensor_ssa`.
+
+        Returns
+        -------
+        cute.Tensor
+            A new ``rmem`` tensor containing the payload values. It does not
+            alias the payload or an earlier input fragment. Its storage honors
+            this payload's minimum alignment. As with other register tensors,
+            the compiler may spill values to local memory.
         """
 
         ssa = self.to_tensor_ssa(dtype=dtype, shape=shape)
