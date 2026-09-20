@@ -186,7 +186,7 @@ their compiler implementation.
 
 .. code-block:: python
 
-   import cuda.coop.numba_mlir as coop
+   import cuda.coop.numba_mlir as numba_coop
 
 Qualified calls also accept fixed-size, one-dimensional local arrays where
 the operation accepts per-thread payloads. ``local`` and ``shared`` expose
