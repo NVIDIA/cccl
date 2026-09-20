@@ -18,7 +18,7 @@ from cuda.coop._core.warp.reduce_batched import make_warp_reduce_batched_spec
 
 from .._compiler._operations import StorageABI, register_factory
 from .._compiler._parameters import _validate_common_numeric_dtype, normalize_dim_param
-from .._semantic import _normalize_numba_callable
+from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from .._types import make_invocable_from_specialization, numba_type_to_wrapper
 from ._core import NumbaMlirCoreAdapter
 from ._reduce import normalize_reduce_operation, validate_reduce_operator_dtype
@@ -45,6 +45,7 @@ def reduction_operator(binary_op, dtype, *, is_common_root=False):
         canonical = normalize_reduce_operation(binary_op)
     except NotImplementedError:
         return PythonOperator(
+            op_tokenizer=_numba_semantic_token,
             ret_dtype=Dependency("T"),
             arg_dtypes=(Dependency("T"), Dependency("T")),
             op=_normalize_numba_callable(binary_op),
