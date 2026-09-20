@@ -15,11 +15,9 @@ Common API
 
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi``
-files are authoritative for overload and result typing. Implemented
-operations follow these common contracts; see
-:ref:`backend coverage <coop-backends>` for each integration.
-The :ref:`calling conventions <coop-common-calling-conventions>` explain
-positional operands and keyword-only controls for both DSLs.
+files are authoritative for overload and result typing. See
+:ref:`backend coverage <coop-backends>` for implemented families; a common
+entry point does not imply support in every compiler.
 
 .. currentmodule:: cuda.coop
 
@@ -176,9 +174,8 @@ Numba-CUDA-MLIR-qualified API
 
 .. py:module:: cuda.coop.numba_mlir
 
-This module includes every common kernel operation and the Numba extensions
-below. Shared parameters and behavior follow the
-:ref:`Common API <coop-common-api>`. The
+Use this module for the extensions below. Shared parameters and behavior
+follow the :ref:`Common API <coop-common-api>`. The
 :ref:`comparison table <coop-programming-api-choice>` in the
 :doc:`Numba-CUDA-MLIR Programming Guide <coop/programming_guide>` explains
 when to choose qualified calls. The
@@ -187,28 +184,13 @@ their compiler implementation.
 
 .. code-block:: python
 
-   import cuda.coop.numba_mlir as numba_coop
+   import cuda.coop.numba_mlir as coop
 
 Qualified calls also accept fixed-size, one-dimensional local arrays where
 the operation accepts per-thread payloads. ``local`` and ``shared`` expose
 Numba-CUDA-MLIR's memory namespaces.
 
 .. currentmodule:: cuda.coop.numba_mlir
-
-Payloads and temporary storage
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: ThreadData
-
-.. autoclass:: TempStorage
-   :no-members:
-   :no-special-members:
-
-Memory operations
-^^^^^^^^^^^^^^^^^
-
-.. autofunction:: load
-.. autofunction:: store
 
 Reduction
 ^^^^^^^^^
@@ -280,12 +262,12 @@ CUTLASS-qualified API
 
 .. py:module:: cuda.coop.cutlass
 
-This module includes the implemented common operations, CuTe register
-conversions, and the extensions documented below:
+Use this module for CuTe register conversions and the extensions documented
+below:
 
 .. code-block:: python
 
-   import cuda.coop.cutlass as cutlass_coop
+   from cuda.coop import cutlass as cutlass_coop
 
 Group construction, synchronization, Load/Store, and temporary storage follow
 the :ref:`Common API <coop-common-api>`. Qualified operations also accept CuTe

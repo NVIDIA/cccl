@@ -87,11 +87,9 @@ def scan(
 
     Notes
     -----
-    Only blocks accept ``algorithm`` and explicit ``temp_storage``. The
-    compiler synchronizes automatically when it manages scratch. An explicit
-    :func:`cuda.coop.TempStorage` defaults to ``auto_sync=False`` and requires
-    block barriers before reuse; request ``auto_sync=True`` for automatic
-    reuse synchronization.
+    Only blocks accept ``algorithm`` and explicit ``temp_storage``. Automatic
+    trailing synchronization protects scratch reuse; disabling it on a
+    :class:`cuda.coop.TempStorage` requires explicit block barriers.
     Prefix callbacks and callback state are not supported.
 
     See Also
@@ -109,28 +107,20 @@ def scan(
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"{_SCOPE}.scan group must be a ThreadGroup")
     if group.kind not in {"block", "warp", "threads_within_warp"}:
-        raise NotImplementedError(
-            f"{_SCOPE}.scan requires a block or warp group"
-        )
+        raise NotImplementedError(f"{_SCOPE}.scan requires a block or warp group")
     mode = _selector(mode, name="mode", choices={"inclusive", "exclusive"})
     if algorithm is not None:
         algorithm = _selector(algorithm, name="algorithm", choices=_ALGORITHMS)
     op = normalize_operator(scan_op, primitive="scan")
     if mode == "inclusive" and initial_value is not None:
-        raise ValueError(
-            f"{_SCOPE}.scan inclusive mode does not accept initial_value"
-        )
+        raise ValueError(f"{_SCOPE}.scan inclusive mode does not accept initial_value")
     if mode == "exclusive" and op != "sum" and initial_value is None:
         raise ValueError(f"{_SCOPE}.scan exclusive {op} requires initial_value")
     if group.kind != "block":
         if algorithm is not None:
-            raise ValueError(
-                f"{_SCOPE}.scan algorithm selection requires a block"
-            )
+            raise ValueError(f"{_SCOPE}.scan algorithm selection requires a block")
         if temp_storage is not None:
-            raise ValueError(
-                f"{_SCOPE}.scan temp_storage is supported only for blocks"
-            )
+            raise ValueError(f"{_SCOPE}.scan temp_storage is supported only for blocks")
     elif temp_storage is not None:
         _validate_common_temp_storage("scan", temp_storage)
     value = _coerce_thread_payload(
@@ -193,8 +183,7 @@ def exclusive_scan(
     Every lane participates and receives the aggregate. Only valid lanes
     write their prefixes. ``operator.add`` selects the built-in sum.
 
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_scan_examples.py
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
         :language: python
         :start-after: # qualified-exclusive-scan-example-begin
         :end-before: # qualified-exclusive-scan-example-end
@@ -343,10 +332,4 @@ def inclusive_sum(
     )
 
 
-__all__ = [
-    "exclusive_scan",
-    "exclusive_sum",
-    "inclusive_scan",
-    "inclusive_sum",
-    "scan",
-]
+__all__ = ["exclusive_scan", "exclusive_sum", "inclusive_scan", "inclusive_sum", "scan"]
