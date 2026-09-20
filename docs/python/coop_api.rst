@@ -18,9 +18,11 @@ Common API
 
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi`` files are
-authoritative for overload and result typing. See :ref:`backend operation
-support <coop-backend-operation-support>` for implemented families; a common
-entry point does not imply support in every compiler.
+authoritative for overload and result typing. See :ref:`backend coverage
+<coop-backends>` for implemented families; a common entry point does not imply
+support in every compiler. The :ref:`calling conventions
+<coop-common-calling-conventions>` explain positional operands and
+keyword-only controls for both DSLs.
 
 .. currentmodule:: cuda.coop
 
