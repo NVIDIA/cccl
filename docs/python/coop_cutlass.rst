@@ -32,23 +32,12 @@ compiler integration works. For Numba kernels, see the
 Choosing the common or qualified API
 ------------------------------------
 
-For CUTLASS-only code, use the qualified namespace directly:
-
-.. code-block:: python
-
-   import cuda.coop.cutlass as coop
-
-This import registers the CUTLASS integration. Use ordinary Load/Store and
-CuTe register conversions through this one import, without a separate
-``coop.register(...)`` call.
-
-The common namespace, ``from cuda import coop``, is useful for code shared
-across compilers. Examples that compare common and qualified calls use
-``coop`` for the common API and ``cutlass_coop`` for the CUTLASS API. An
-application can use either API on its own.
-
-The host ``cuda.coop.register`` helper belongs to the common namespace;
-qualified imports perform that registration directly.
+Start with ``from cuda import coop`` for the common API. Use
+``import cuda.coop.cutlass as cutlass_coop`` when you need the extra controls in the
+table below, such as scatter ranks for Exchange or a Scan aggregate.
+Both imports call the same implementation inside a CuTe kernel.
+Use ``coop`` for common calls and ``cutlass_coop`` for qualified calls,
+including in programs that use only one of those APIs.
 
 .. list-table:: Common and CUTLASS-qualified APIs
    :header-rows: 1
@@ -104,13 +93,6 @@ payload you can pass to ``store`` or another primitive.
 ``values.to_register_tensor()`` converts a payload back to a CuTe register
 tensor. See :ref:`coop-cutlass-register-payloads`.
 
-Construct payloads with ``cuda.coop.ThreadData`` or
-``cuda.coop.cutlass.ThreadData`` inside a CuTe kernel. Both create CUTLASS
-payloads that work with common and qualified calls, including writable Scan
-aggregates and Radix Rank prefixes. ``ThreadDataLike`` describes the shared
-interface; implementing that interface in a user class does not register a
-new payload representation with the compiler.
-
 Group queries return CuTe scalars. For example, ``block.rank()`` returns a
 ``cutlass.Uint32`` that you can use in pointer arithmetic or a condition
 inside the kernel. Use ``block.rank_as(cutlass.Int32)`` when you need a signed
@@ -131,14 +113,6 @@ Mixing kernels from both compilers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CUTLASS and Numba-CUDA-MLIR kernels can run in the same process. Use the
-aliases ``numba_coop`` and ``cutlass_coop`` in a module containing both:
-
-.. code-block:: python
-
-   import cuda.coop.numba_mlir as numba_coop
-   import cuda.coop.cutlass as cutlass_coop
-
-Call each qualified API from its own compiler's kernels. Use the
 selected device's primary CUDA context before allocating memory or launching
 kernels with either runtime. Numba-CUDA-MLIR requires this context; it rejects
 a context created independently by another runtime.
@@ -173,7 +147,7 @@ not load CUTLASS or initialize CUDA bindings.
 Activation and example
 ----------------------
 
-To use the common API, register CUTLASS on the host before compiling:
+Register CUTLASS on the host before compiling:
 
 .. code-block:: python
 
