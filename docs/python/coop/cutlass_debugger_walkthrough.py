@@ -26,32 +26,24 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def main(*, algorithm="direct", items_per_thread=2):
+def main(*, algorithm="direct"):
     # docs: start cutlass-debug-kernel
     @cute.kernel
-    def copy_tile(
-        source: cute.Pointer,
-        destination: cute.Pointer,
-        items_per_thread: cutlass.Constexpr,
-    ):
+    def copy_tile(source: cute.Pointer, destination: cute.Pointer):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread)
-        scratch = coop.TempStorage(auto_sync=True)
+        items = coop.ThreadData(2, dtype=np.int32)
+        scratch = coop.TempStorage()
         coop.load(block, source, items, algorithm=algorithm, temp_storage=scratch)
         coop.store(block, destination, items, algorithm=algorithm, temp_storage=scratch)
 
     @cute.jit
-    def launch(
-        source: cute.Pointer,
-        destination: cute.Pointer,
-        items_per_thread: cutlass.Constexpr,
-    ):
-        copy_tile(source, destination, items_per_thread).launch(grid=1, block=128)
+    def launch(source: cute.Pointer, destination: cute.Pointer):
+        copy_tile(source, destination).launch(grid=1, block=128)
 
     # docs: end cutlass-debug-kernel
 
     cutlass.cuda.initialize_cuda_context()
-    source = np.arange(128 * items_per_thread, dtype=np.int32)
+    source = np.arange(256, dtype=np.int32)
     destination = np.full_like(source, -1)
     source_device = _check(driver.cuMemAlloc(source.nbytes))
     try:
@@ -74,9 +66,7 @@ def main(*, algorithm="direct", items_per_thread=2):
             )
 
             # docs: start cutlass-debug-launches
-            compiled = cute.compile(
-                launch, source_pointer, destination_pointer, items_per_thread
-            )
+            compiled = cute.compile(launch, source_pointer, destination_pointer)
             for iteration in range(2):
                 destination.fill(-1)
                 _check(
@@ -106,9 +96,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--algorithm", choices=("direct", "transpose"), default="direct"
     )
-    parser.add_argument("--items-per-thread", type=int, default=2)
     args = parser.parse_args()
     # Each debug session reaches NVRTC; the second launch still reuses its kernel.
     with tempfile.TemporaryDirectory(prefix="cuda-coop-cutlass-debug-") as cache_dir:
         os.environ["CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR"] = cache_dir
-        main(algorithm=args.algorithm, items_per_thread=args.items_per_thread)
+        main(algorithm=args.algorithm)
