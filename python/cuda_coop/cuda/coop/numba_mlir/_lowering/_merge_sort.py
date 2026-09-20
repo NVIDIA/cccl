@@ -25,7 +25,7 @@ from .._compiler._parameters import (
     _validate_common_numeric_dtype,
     normalize_dim_param,
 )
-from .._semantic import _normalize_numba_callable
+from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from .._types import make_invocable_from_specialization
 from ._core import NumbaMlirCoreAdapter
 
@@ -43,6 +43,7 @@ def comparison_operator(descending, compare_op):
                 "Merge Sort compare_op must be a stateless callable"
             )
         return PythonOperator(
+            op_tokenizer=_numba_semantic_token,
             ret_dtype=INT8,
             arg_dtypes=(Dependency("KeyT"), Dependency("KeyT")),
             op=_normalize_numba_callable(compare_op),
