@@ -16,57 +16,6 @@ for complete kernels and launch examples.
 
 The :doc:`CUTLASS Programming Guide <../coop_cutlass>` covers CuTe kernels.
 
-.. _coop-backend-operation-support:
-
-Backend operation support
--------------------------
-
-The common API defines shared contracts for groups, dtypes, and result
-ownership. The table records which families each integration implements.
-Their qualified APIs add compiler-specific payloads and controls, described
-in the programming guides.
-
-.. list-table:: Current primitive families
-   :header-rows: 1
-   :widths: 48 26 26
-
-   * - Family
-     - Numba-CUDA-MLIR
-     - CUTLASS
-   * - Group queries and supported synchronization
-     - Available
-     - Available
-   * - Block and warp Load/Store
-     - Available
-     - Available
-   * - Built-in Reduce/Sum and Scan
-     - Available
-     - Available
-   * - Block and warp Exchange; block Shuffle
-     - Available
-     - Available
-   * - Merge Sort, keys and pairs
-     - Available
-     - Available
-   * - Radix Sort, keys and pairs; Radix Rank
-     - Available
-     - Available
-   * - TopK, minimum and maximum keys or pairs
-     - Available
-     - Available
-   * - Adjacent Difference and Discontinuity
-     - Available
-     - Not implemented
-   * - Histogram
-     - Available
-     - Not implemented
-   * - Run Length Decode, windowed and bulk
-     - Available
-     - Not implemented
-   * - Batched Warp Reduction
-     - Available
-     - Not implemented
-
 .. _block-prefix-callbacks:
 
 Numba-CUDA-MLIR additionally supports qualified device operators and
@@ -318,9 +267,8 @@ contract before consuming a result.
 
 Sorting and selection operate on one group's tile. Sorting each block does not
 sort a whole array. TopK defines an unordered selected prefix; the remaining
-payload positions are not output. For the available sorting and selection
-families, see :ref:`backend operation support
-<coop-backend-operation-support>`.
+payload positions are not output. See :ref:`backend coverage <coop-backends>`
+for the available sorting and selection families.
 
 .. _coop-common-storage:
 .. _temporary-storage:
@@ -351,10 +299,9 @@ storage-using call. Compiler-managed scratch, used when no descriptor is
 supplied, synchronizes automatically. A scratch reuse barrier does not replace
 synchronization for the kernel's own shared data.
 
-Warp operations that need scratch keep independent storage per physical or
-logical group and use the appropriate warp mask. Each primitive documents
-whether it accepts explicit storage. Rules for combining cooperative scratch
-with the kernel's own shared memory depend on the compiler. See
+Warp operations use independent scratch per physical or logical group and
+the appropriate warp mask. Explicit storage support and user shared-memory
+restrictions vary by family and backend. See
 :ref:`Numba storage <coop-temp-storage>`, the
 :ref:`CUTLASS storage <coop-cutlass-storage>`, and the
 :ref:`storage FAQ <coop-faq-temp-storage>` for examples and limits.

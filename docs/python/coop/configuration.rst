@@ -98,8 +98,8 @@ and leading and trailing whitespace is ignored. An unset variable is false.
 ``CUDA_COOP_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
    Files use ``cuda_coop_<backend>_<hash>.cu`` names so different backends can
-   share a directory. Set it before compiling; both backends also write
-   the source when their provider compilation cache is hit. Unset or empty
+   share a directory. Set it before compiling; the Numba backend also writes
+   the source when its provider compilation cache is hit. Unset or empty
    disables dumping.
 
 ``CUDA_PATH``
