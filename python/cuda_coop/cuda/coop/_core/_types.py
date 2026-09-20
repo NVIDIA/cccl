@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from enum import Enum
 from numbers import Integral
-from typing import Any
+from typing import Any, Mapping
 
 _I64_MIN = -(1 << 63)
 _I64_MAX = (1 << 63) - 1
@@ -29,6 +29,8 @@ class ParameterRole(str, Enum):
     INOUT = "inout"
     CONSTANT = "constant"
     TEMP_STORAGE = "temp_storage"
+    OPERATOR = "operator"
+    STATE = "state"
 
 
 @dataclass(frozen=True)
@@ -114,6 +116,10 @@ class _StaticParameter:
     @property
     def argument_kind(self) -> ArgumentKind:
         return ArgumentKind.STATIC
+
+    @property
+    def role(self) -> ParameterRole:
+        return ParameterRole.OPERATOR
 
 
 @dataclass(frozen=True)
@@ -223,6 +229,59 @@ class CxxFunction(_StaticParameter):
     @property
     def role(self) -> ParameterRole:
         return ParameterRole.CONSTANT
+
+
+@dataclass(frozen=True)
+class CxxOperator(_StaticParameter):
+    cpp: str
+    dtype: Any
+    name: str | None = None
+
+
+@dataclass(frozen=True)
+class PythonOperator(_StaticParameter):
+    """Python callable with an optional backend policy for callback identity.
+
+    ``op_tokenizer`` returns a semantic token for ``op`` without traversing the
+    backend's compiler implementation. Core planning evaluates it on each walk
+    so changes to the callable's dependencies remain visible.
+    """
+
+    ret_dtype: Any
+    arg_dtypes: tuple[Any, ...]
+    op: Any
+    name: str | None = None
+    op_tokenizer: Callable[[Any], Any] | None = field(
+        default=None, compare=False, repr=False
+    )
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "arg_dtypes", tuple(self.arg_dtypes))
+
+
+@dataclass(frozen=True)
+class StatefulOperator(_RuntimeParameter):
+    """Python callable whose state is passed as a runtime operand.
+
+    ``op_tokenizer`` has the same identity contract as for ``PythonOperator``.
+    """
+
+    op: Any
+    state_dtype: Any
+    ret_dtype: Any
+    arg_dtypes: tuple[Any, ...]
+    name: str | None = None
+    is_output: bool = False
+    op_tokenizer: Callable[[Any], Any] | None = field(
+        default=None, compare=False, repr=False
+    )
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "arg_dtypes", tuple(self.arg_dtypes))
+
+    @property
+    def role(self) -> ParameterRole:
+        return ParameterRole.STATE
 
 
 def classify_parameter(parameter: Any) -> ParameterClassification:
