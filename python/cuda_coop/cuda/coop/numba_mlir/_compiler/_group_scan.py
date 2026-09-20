@@ -274,6 +274,7 @@ class _ScanPlanning:
                         f"{descriptor_dtype}"
                     )
             operator = StatefulOperator(
+                op_tokenizer=_numba_semantic_token,
                 op=callback.op,
                 state_dtype=descriptor_dtype,
                 ret_dtype=Dependency("T"),
@@ -296,6 +297,7 @@ class _ScanPlanning:
         return (
             prefix_ref,
             PythonOperator(
+                op_tokenizer=_numba_semantic_token,
                 ret_dtype=Dependency("T"),
                 arg_dtypes=(Dependency("T"),),
                 op=normalized,
