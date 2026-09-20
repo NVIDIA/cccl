@@ -45,8 +45,8 @@ Importing a qualified namespace also registers its backend. Common and
 qualified calls for the same compiler can appear in one kernel and follow the
 shared contracts. Kernel launch syntax and other DSL code still need
 adaptation when moving between compilers; compiler-owned payloads cannot cross
-that boundary. The :ref:`coverage table <coop-backends>` lists which families
-each backend currently implements.
+that boundary. See the :ref:`operation support table
+<coop-backend-operation-support>` for the families each backend implements.
 
 .. _coop-faq-numba-only:
 .. _coop-faq-qualified-only:
@@ -193,7 +193,9 @@ operations use compiler-owned storage and reject explicit descriptors. See the
 Numba's restrictions on combining cooperative backing with user static or
 dynamic shared arrays are specific to that backend. Numba also accepts
 explicit block scratch for Adjacent Difference, Discontinuity, Histogram, and
-both Run Length Decode forms.
+both Run Length Decode forms. CUTLASS does not yet implement these families or
+Batched Warp Reduction; see :ref:`backend operation support
+<coop-backend-operation-support>`.
 
 .. _coop-faq-installed-extra:
 
@@ -332,7 +334,7 @@ length is invalid. The values associated with padding runs are ignored.
 
 A windowed decode fills positions beyond the expanded sequence with
 zero. Zero may also be a real run value, so use the total decoded size
-to determine which positions are valid. The qualified API can write
+to determine which positions are valid. The Numba-qualified API can write
 that total and relative run offsets to auxiliary payloads; invalid
 relative offsets contain the maximum value of the selected unsigned
 offset dtype. Bulk decoding writes only valid items, leaving the rest
