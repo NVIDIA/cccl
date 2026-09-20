@@ -34,8 +34,9 @@ do not predict GPU performance.
 Using the kernel fragments
 ---------------------------
 
-Common-API fragments on these pages use ``from cuda import coop`` and
-``import numpy as np``. Register the backend on the host before compiling;
+The common-API fragments on the Load, Store, Exchange, Shuffle, Reduce,
+and Scan pages run under either integration. They use
+``from cuda import coop`` and ``import numpy as np``. Register the backend on the host before compiling;
 see :ref:`backend registration <coop-backend-registration>`. The fragments
 assume one-dimensional blocks and use these local index names:
 
@@ -63,7 +64,10 @@ cute.make_layout(element_count))``. The programming guides provide complete
 :doc:`Numba <../programming_guide>` and :doc:`CuTe <../../coop_cutlass>`
 launch and memory examples.
 
-The diagrams' common modes describe both integrations. Qualified controls
-are identified on each page; custom device operators and Scan prefix
-callbacks currently require Numba-CUDA-MLIR. CuTe supports built-in
-operators and its qualified register-payload conversions.
+The diagrams describe each primitive independently of its compiler. Check
+:ref:`backend coverage <coop-backends>` before using a family: Adjacent
+Difference, Discontinuity, Histogram, Run Length Decode, and Batched Warp
+Reduction currently require Numba-CUDA-MLIR. Qualified controls are
+identified on each page. Custom device operators and Scan prefix callbacks
+also require Numba-CUDA-MLIR; CuTe supports built-in operators and its
+qualified register-payload conversions.

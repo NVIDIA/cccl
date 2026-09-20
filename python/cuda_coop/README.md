@@ -173,9 +173,10 @@ Runtime configuration is controlled by these environment variables:
 | --- | --- |
 | `CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION` | A truthy value disables automatic backend activation during `cuda.coop` import. Explicit `coop.register(...)` and backend imports still work. |
 | `CUDA_COOP_CCCL_ROOT` | Selects a CCCL source checkout or a `cuda-coop` header bundle. An invalid configured root is an error; resolution does not fall back to another CCCL source. |
-| `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache. The value is read when the backend cache module is imported. |
-| `XDG_CACHE_HOME` | On Linux and other POSIX systems, sets the cache base directory; entries are stored in `<value>/cccl`. Unset, empty, or relative values fall back to `~/.cache/cccl`. Read when the backend cache module is imported. |
-| `LOCALAPPDATA` | On Windows, sets the cache base directory; entries are stored in `<value>\cccl`. Unset, empty, or relative values fall back to `~\AppData\Local\cccl`. Read when the backend cache module is imported. |
+| `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the Numba-CUDA-MLIR persistent compiler cache. The value is read when its cache module is imported. |
+| `XDG_CACHE_HOME` | For Numba-CUDA-MLIR on Linux and other POSIX systems, sets the cache base directory; entries are stored in `<value>/cccl`. Unset, empty, or relative values fall back to `~/.cache/cccl`. Read when the backend cache module is imported. |
+| `LOCALAPPDATA` | For Numba-CUDA-MLIR on Windows, sets the cache base directory; entries are stored in `<value>\cccl`. Unset, empty, or relative values fall back to `~\AppData\Local\cccl`. Read when the backend cache module is imported. |
+| `CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR` | Selects the CUTLASS provider artifact cache directory. The default is a user-specific directory under the system temporary directory; see the [CUTLASS Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/cutlass_developer_guide.html) for cache validation and artifact lifetime. |
 | `CUDA_COOP_SOURCE_DUMP_DIR` | Writes generated CUDA source as `cuda_coop_<backend>_<hash>.cu` files. Set before compiling; provider cache hits in both integrations also dump source. Unset or empty disables dumping. |
 | `CUDA_PATH` | Supplies `<value>/include` as a CUDA header candidate if `cuda-pathfinder` does not resolve one. |
 | `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
