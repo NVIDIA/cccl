@@ -89,11 +89,9 @@ def scan(
 
     Notes
     -----
-    Only blocks accept ``algorithm`` and explicit ``temp_storage``. The
-    compiler synchronizes automatically when it manages scratch. An explicit
-    :func:`cuda.coop.TempStorage` defaults to ``auto_sync=False`` and requires
-    block barriers before reuse; request ``auto_sync=True`` for automatic
-    reuse synchronization.
+    Only blocks accept ``algorithm`` and explicit ``temp_storage``. Automatic
+    trailing synchronization protects scratch reuse; disabling it on a
+    :class:`cuda.coop.TempStorage` requires explicit block barriers.
     Prefix callbacks and callback state are not supported.
 
     See Also
@@ -187,7 +185,7 @@ def exclusive_scan(
     Every lane participates and receives the aggregate. Only valid lanes
     write their prefixes. ``operator.add`` selects the built-in sum.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_scan_examples.py
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
         :language: python
         :start-after: # qualified-exclusive-scan-example-begin
         :end-before: # qualified-exclusive-scan-example-end

@@ -1,6 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+# ruff: noqa: E402
 
 """Executable register conversion example for the qualified API reference."""
 
@@ -23,7 +24,7 @@ def test_register_conversion_example():
 
     @cute.kernel
     def convert_registers(destination: cute.Pointer):
-        thread = cute.arch.thread_idx()[0]
+        thread = cutlass_coop.this_block().rank()
         original = cute.make_rmem_tensor(2, cutlass.Int32)
         original[0] = thread * 2
         original[1] = thread * 2 + 1
