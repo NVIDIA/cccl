@@ -858,3 +858,39 @@ def test_warp_reduction_rejects_explicit_storage(group_kind):
     _, planner = _plan(kernel, arg_types=(types.int32,))
     with pytest.raises(NotImplementedError, match="temp_storage.*block"):
         planner.run()
+
+
+def test_batched_reduction_operator_tracks_nested_device_helper(monkeypatch):
+    from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.descriptor import MLIRDispatcher
+
+    from cuda.coop._core import _symbols, semantic_token
+    from cuda.coop.numba_mlir._lowering._reduce_batched import (
+        reduction_operator,
+    )
+
+    original = _symbols._type_dependency_token
+
+    def reject_dispatcher_class(value, state):
+        assert value is not MLIRDispatcher, (
+            "fingerprinting compiler implementation"
+        )
+        return original(value, state)
+
+    monkeypatch.setattr(
+        _symbols, "_type_dependency_token", reject_dispatcher_class
+    )
+
+    def make_operator(offset):
+        @cuda.jit(device=True)
+        def helper(left, right):
+            return left + right + offset
+
+        def callback(left, right):
+            return helper(left, right)
+
+        return reduction_operator(callback, types.int32)
+
+    first = semantic_token(make_operator(1))
+    assert first == semantic_token(make_operator(1))
+    assert first != semantic_token(make_operator(2))
