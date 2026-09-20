@@ -45,12 +45,12 @@ def exchange(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating :ref:`thread group <coop-thread-groups>`: a complete
+        Participating :ref:`thread group <coop-common-groups>`: a complete
         block, physical warp, or logical warp. Logical warp widths must be
         powers of two between 1 and 32. Every member must call the primitive;
         warp operations require an enclosing block size divisible by 32.
     value : cuda.coop.ThreadDataLike
-        Readable :ref:`per-thread payload <coop-thread-data>` with a fixed
+        Readable :ref:`per-thread payload <coop-common-payloads>` with a fixed
         number of items. All members must use the same dtype and extent.
         Supports signed and unsigned 8-, 16-, 32-, and 64-bit integers,
         ``float32``, and ``float64``. Scalar inputs are unsupported.
@@ -74,7 +74,7 @@ def exchange(
     -----
     The call rearranges values already held by the group; it does not load or
     store a memory tile. The implementation manages
-    :ref:`temporary storage <coop-temp-storage>` automatically. For ranked
+    :ref:`temporary storage <coop-common-storage>` automatically. For ranked
     scatter and block warp-striped layouts, use
     :func:`cuda.coop.numba_mlir.exchange` or :func:`cuda.coop.cutlass.exchange`.
     Their qualified payloads are Numba local arrays and CuTe register values,
