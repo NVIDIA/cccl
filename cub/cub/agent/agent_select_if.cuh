@@ -480,10 +480,37 @@ struct AgentSelectIf
       // predicated on them. `items` does not travel through shared memory on this path, so the barrier
       // that normally separates `load_flags` from `load_items` is unnecessary here; the barrier between
       // this function and the block scan in Consume*Tile still guards the shared-memory reuse.
+      // Issue the prefetch before the flags are resolved, as the original ordering does, so the
+      // fallback below keeps the overlap between the flag loads and the payload prefetch instead of
+      // losing it to the compile-time branch. The predicated path ignores the prefetched lines.
+      if constexpr (prefetch_before_items)
+      {
+        BlockPrefetch<BLOCK_THREADS, AgentSelectIfPolicyT::LOAD_PREFETCH>::Prefetch(
+          (GetInputIterator() + streaming_context.input_offset()) + tile_offset, num_tile_items);
+      }
+
       InitializeSelections<IS_FIRST_TILE, IS_LAST_TILE>(
         tile_offset, num_tile_items, items, selection_flags, constant_v<SELECT_METHOD>);
 
-      LoadItemsPredicated<IS_LAST_TILE>(tile_offset, num_tile_items, items, selection_flags);
+      int num_selected = 0;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      {
+        num_selected += (selection_flags[ITEM] != 0);
+      }
+
+      // Skipping a load only pays while the thread is mostly dropping items. Past that point the
+      // predicated form is strictly worse than the dense load it replaces, because it gives up the
+      // vectorised access without saving memory traffic.
+      if (num_selected * 4 <= ITEMS_PER_THREAD)
+      {
+        LoadItemsPredicated<IS_LAST_TILE>(tile_offset, num_tile_items, items, selection_flags);
+      }
+      else
+      {
+        if constexpr (prefetch_before_items) { __syncthreads(); }
+        LoadItems<IS_LAST_TILE>(tile_offset, num_tile_items, items);
+      }
     }
     else if constexpr (prefetch_before_items)
     {
