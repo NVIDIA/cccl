@@ -32,23 +32,12 @@ compiler integration works. For Numba kernels, see the
 Choosing the common or qualified API
 ------------------------------------
 
-For CUTLASS-only code, use the qualified namespace directly:
-
-.. code-block:: python
-
-   import cuda.coop.cutlass as coop
-
-This import registers the CUTLASS integration. Use ordinary Load/Store and
-CuTe register conversions through this one import, without a separate
-``coop.register(...)`` call.
-
-The common namespace, ``from cuda import coop``, is useful for code shared
-across compilers. Examples that compare common and qualified calls use
-``coop`` for the common API and ``cutlass_coop`` for the CUTLASS API. An
-application can use either API on its own.
-
-The host ``cuda.coop.register`` helper belongs to the common namespace;
-qualified imports perform that registration directly.
+Start with ``from cuda import coop`` for the common API. Use
+``import cuda.coop.cutlass as cutlass_coop`` when you need the extra controls in the
+table below, such as scatter ranks for Exchange or a Scan aggregate.
+Both imports call the same implementation inside a CuTe kernel.
+Use ``coop`` for common calls and ``cutlass_coop`` for qualified calls,
+including in programs that use only one of those APIs.
 
 .. list-table:: Common and CUTLASS-qualified APIs
    :header-rows: 1
@@ -104,13 +93,6 @@ payload you can pass to ``store`` or another primitive.
 ``values.to_register_tensor()`` converts a payload back to a CuTe register
 tensor. See :ref:`coop-cutlass-register-payloads`.
 
-Construct payloads with ``cuda.coop.ThreadData`` or
-``cuda.coop.cutlass.ThreadData`` inside a CuTe kernel. Both create CUTLASS
-payloads that work with common and qualified calls, including writable Scan
-aggregates and Radix Rank prefixes. ``ThreadDataLike`` describes the shared
-interface; implementing that interface in a user class does not register a
-new payload representation with the compiler.
-
 Group queries return CuTe scalars. For example, ``block.rank()`` returns a
 ``cutlass.Uint32`` that you can use in pointer arithmetic or a condition
 inside the kernel. Use ``block.rank_as(cutlass.Int32)`` when you need a signed
@@ -131,14 +113,6 @@ Mixing kernels from both compilers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CUTLASS and Numba-CUDA-MLIR kernels can run in the same process. Use the
-aliases ``numba_coop`` and ``cutlass_coop`` in a module containing both:
-
-.. code-block:: python
-
-   import cuda.coop.numba_mlir as numba_coop
-   import cuda.coop.cutlass as cutlass_coop
-
-Call each qualified API from its own compiler's kernels. Use the
 selected device's primary CUDA context before allocating memory or launching
 kernels with either runtime. Numba-CUDA-MLIR requires this context; it rejects
 a context created independently by another runtime.
@@ -173,24 +147,25 @@ not load CUTLASS or initialize CUDA bindings.
 Activation and example
 ----------------------
 
-Import CuTe before ``cuda.coop`` to register the backend automatically:
+Register CUTLASS on the host before compiling:
 
 .. code-block:: python
 
-   import cutlass.cute as cute
-
    from cuda import coop
 
-If you cannot ensure import order, call ``coop.register("cutlass")`` on the
-host before compiling. It is safe to repeat, including when the backend is
-already registered, and remains available when automatic registration is
-disabled. Importing ``cuda.coop.cutlass`` also registers the backend.
+   coop.register("cutlass")
+
+   import cutlass.cute as cute
+
+Registration works in either import order, is safe to repeat, and remains
+available when automatic registration is disabled. Importing
+``cuda.coop.cutlass`` also registers the backend. For convenience, importing
+``cuda.coop`` after ``cutlass`` activates it automatically.
 
 After registration, call the primitives inside ``@cute.kernel`` or a
 ``@cute.jit`` function called by that kernel.
 
-This example takes ``items_per_thread`` as a kernel argument; its host entry
-point defaults to two adjacent items per thread. It stores a partial tile in
+This example loads two adjacent items per thread and stores a partial tile in
 the same blocked layout. ``module`` selects the common or qualified API. The
 full example defines the tile dimensions and checks the output against a CPU
 reference. :download:`Download the example
@@ -221,13 +196,6 @@ determines the layout expected by that call; the payload does not carry a
 layout tag. See the :doc:`Load <coop/visualizations/load>` and
 :doc:`Exchange <coop/visualizations/exchange>` visualizations for the mappings.
 
-Pass the item count as ``items_per_thread: cutlass.Constexpr`` on the
-``@cute.kernel`` and its ``@cute.jit`` launcher, and construct the payload
-with ``coop.ThreadData(items_per_thread)``. Forward the host value through
-the launcher to the kernel. CuTe specializes the count during compilation;
-it remains fixed while the kernel executes. Use
-``cutlass.range_constexpr(items_per_thread)`` when indexing each slot.
-
 Leave the constructor's element type unspecified for normal use. Load
 infers it from the memory operand; consuming primitives can infer it from
 homogeneous initialized values. Use typed scalar assignments, such as
@@ -253,7 +221,7 @@ scalar even when each thread contributes multiple items. Read results
 only at the positions or threads where the primitive defines them.
 
 Index payloads with compile-time integers and initialize each item before
-reading it. ``ThreadData(items_per_thread, alignment=16)`` requests at
+reading it. ``ThreadData(items_per_thread=4, alignment=16)`` requests at
 least 16-byte alignment when storage is materialized. Input and output memory
 alignment is separate. The compiler decides which values remain in registers
 and which spill to local memory. The :ref:`qualified conversion methods
@@ -340,7 +308,7 @@ alignment permit them, with direct accesses as a fallback.
 
 Direct, striped, and vectorized Load/Store use no shared scratch and need no
 scratch-reuse barrier, even when passed a ``TempStorage`` descriptor.
-``ThreadData(items_per_thread, alignment=...)`` requests a minimum payload alignment; it does
+``ThreadData(items_per_thread=2, alignment=...)`` requests a minimum payload alignment; it does
 not change the logical item layout.
 
 .. _coop-cutlass-storage:
@@ -558,7 +526,7 @@ Built-in Scan
 ``scan``, ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
 ``inclusive_sum`` support block, physical warp, and logical warp groups. Block
 primitives accept scalars and fixed multi-item payloads; warp primitives
-accept one scalar per lane. A ``ThreadData(1)`` remains an array payload
+accept one scalar per lane. A ``ThreadData(items_per_thread=1)`` remains an array payload
 and is not accepted by Warp Scan. Input values are preserved. A scalar input
 returns a scalar; a block payload returns a fresh ``ThreadData`` with the same
 dtype and extent in blocked order.

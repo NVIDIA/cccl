@@ -51,8 +51,7 @@ sorting the full tile. Blocks can compare neighboring items with
 with :doc:`Run Length Decode <coop/visualizations/run-length-decode>`.
 :doc:`Batched Warp Reduction <coop/visualizations/reduce-batched>` computes
 an independent reduction for each per-thread payload slot.
-The compiler integrations use CUB and CUDAX; see
-:ref:`backend coverage <coop-backends>` for the families each implements.
+The compiler integrations implement these primitives using CUB and CUDAX.
 
 This overview introduces the shared API and execution model. Choose a
 programming guide to write kernels, or a developer guide to work on the
@@ -82,10 +81,9 @@ the :doc:`API reference <coop_api>`.
 Backend coverage
 ----------------
 
-The common API defines shared contracts for groups, dtypes, and result
-ownership. The table records which families each integration implements.
-Their qualified APIs add compiler-specific payloads and controls, described
-in the programming guides.
+A common API name does not imply that every backend implements it. The
+current integrations provide the following families; group shapes, dtypes,
+and qualified controls have the limits described in each programming guide.
 
 .. list-table:: Current primitive families
    :header-rows: 1
@@ -115,18 +113,6 @@ in the programming guides.
    * - TopK, minimum and maximum keys or pairs
      - Available
      - Available
-   * - Adjacent Difference and Discontinuity
-     - Available
-     - Not implemented
-   * - Histogram
-     - Available
-     - Not implemented
-   * - Run Length Decode, windowed and bulk
-     - Available
-     - Not implemented
-   * - Batched Warp Reduction
-     - Available
-     - Not implemented
 
 .. _block-prefix-callbacks:
 
@@ -150,18 +136,16 @@ programming guide before selecting a runtime.
 Common and qualified APIs
 -------------------------
 
-``from cuda import coop`` selects the common namespace. It defines the
-shared contracts for groups, payloads, operations, and temporary storage
-across supported DSLs. Calls inside a kernel are compiler markers; they are not
+``from cuda import coop`` selects the common namespace. It describes
+groups, payloads, operations, and temporary storage independently of a
+compiler. Calls inside a kernel are compiler markers; they are not
 host-side implementations of those operations.
 
 The qualified namespaces, ``cuda.coop.numba_mlir`` and
-``cuda.coop.cutlass``, expose their implemented common operations and
-backend-specific extensions. A program using one compiler can use its qualified
-namespace alone. CUTLASS-only code can use ``import cuda.coop.cutlass as coop``. Use
-``numba_coop`` and ``cutlass_coop`` when a module contains both DSLs.
-Common and qualified calls can appear in the same kernel when they belong
-to its compiler. The comparisons in the
+``cuda.coop.cutlass``, expose the shared operations and their backend's
+extensions. Use a qualified call when an operation needs a compiler-specific
+value or control. Common and qualified calls can appear in the same
+kernel when they belong to its compiler. The comparisons in the
 :ref:`Numba-CUDA-MLIR guide <coop-programming-api-choice>` and
 :ref:`CUTLASS guide <coop-cutlass-api-choice>` list the differences.
 
@@ -199,8 +183,7 @@ Install ``cuda-coop`` without adding Python package dependencies:
    python -m pip install cuda-coop
 
 The wheel includes the common API, every shipped DSL integration (including
-``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``), type declarations, and
-a matching bundle of CUB,
+``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``), type declarations, and a matching bundle of CUB,
 Thrust, libcu++, and CUDAX headers. The base install declares no Python
 package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
 using an integration requires its backend dependencies to be installed.
@@ -501,10 +484,9 @@ storage-using call. Compiler-managed scratch, used when no descriptor is
 supplied, synchronizes automatically. A scratch reuse barrier does not replace
 synchronization for the kernel's own shared data.
 
-Warp operations that need scratch keep independent storage per physical or
-logical group and use the appropriate warp mask. Each primitive documents
-whether it accepts explicit storage. Rules for combining cooperative scratch
-with the kernel's own shared memory depend on the compiler. See
+Warp operations use independent scratch per physical or logical group and
+the appropriate warp mask. Explicit storage support and user shared-memory
+restrictions vary by family and backend. See
 :ref:`Numba storage <coop-temp-storage>`, the
 :ref:`CUTLASS storage <coop-cutlass-storage>`, and the
 :ref:`storage FAQ <coop-faq-temp-storage>` for examples and limits.
@@ -559,8 +541,8 @@ and leading and trailing whitespace is ignored. An unset variable is false.
 ``CUDA_COOP_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
    Files use ``cuda_coop_<backend>_<hash>.cu`` names so different backends can
-   share a directory. Set it before compiling; both backends also write
-   the source when their provider compilation cache is hit. Unset or empty
+   share a directory. Set it before compiling; the Numba backend also writes
+   the source when its provider compilation cache is hit. Unset or empty
    disables dumping.
 
 ``CUDA_PATH``
