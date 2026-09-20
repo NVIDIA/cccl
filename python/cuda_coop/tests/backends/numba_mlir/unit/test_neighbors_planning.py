@@ -88,3 +88,34 @@ def test_mode_requests_literal_specialization():
     # The dispatcher must specialize the selector before choosing output arity.
     with pytest.raises(ForceLiteralArg):
         _plan(kernel, (types.unicode_type,))
+
+
+@pytest.mark.parametrize("operation", ["adjacent_difference", "discontinuity"])
+def test_neighbor_operator_tracks_nested_device_helper(monkeypatch, operation):
+    from numba_cuda_mlir import cuda
+    from numba_cuda_mlir.descriptor import MLIRDispatcher
+
+    from cuda.coop._core import _symbols, semantic_token
+    from cuda.coop.numba_mlir._lowering._neighbors import neighbor_operator
+
+    original = _symbols._type_dependency_token
+
+    def reject_dispatcher_class(value, state):
+        assert value is not MLIRDispatcher, "fingerprinting compiler implementation"
+        return original(value, state)
+
+    monkeypatch.setattr(_symbols, "_type_dependency_token", reject_dispatcher_class)
+
+    def make_operator(offset):
+        @cuda.jit(device=True)
+        def helper(left, right):
+            return left - right + offset
+
+        def callback(left, right):
+            return helper(left, right)
+
+        return neighbor_operator(operation, callback)
+
+    first = semantic_token(make_operator(1))
+    assert first == semantic_token(make_operator(1))
+    assert first != semantic_token(make_operator(2))
