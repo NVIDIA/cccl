@@ -70,7 +70,8 @@ and compilation hooks described in its developer guide.
 
 ## Backend registration and imports
 
-Register the backend on the host before compiling kernels:
+Register the chosen backend on the host before compiling kernels. For
+Numba-CUDA-MLIR:
 
 ```python
 from cuda import coop
@@ -80,54 +81,61 @@ coop.register("numba-cuda-mlir")
 from numba_cuda_mlir import cuda
 ```
 
+For CUTLASS CuTe:
+
+```python
+from cuda import coop
+
+coop.register("cutlass")
+
+from cutlass import cute
+```
+
 `register` loads the backend and installs its compiler hooks regardless of
-import order. It also accepts `"numba_cuda_mlir"`. Repeated calls are safe and
-return `None`. It requires installed backend dependencies and does not install
-packages. Installing an extra is separate from registering a compiler in the
-running process; installed package metadata does not reliably record which
-extra was requested.
+import order. Repeated calls are safe and return `None`. The Numba name also
+accepts `"numba_cuda_mlir"`. Registration requires compatible dependencies;
+it does not install packages. Installing an extra is separate from activating
+a compiler in the running process.
 
-Importing `cuda.coop` after `numba_cuda_mlir` also registers the backend
-automatically. A standalone `cuda.coop` import does not load optional
-compilers. Explicit registration works when a dependency or earlier notebook
-cell already imported `cuda.coop`.
+Importing `cuda.coop` after either compiler runtime automatically registers a
+compatible integration. Importing `cuda.coop` alone does not load either
+compiler. Use explicit registration when a dependency or earlier notebook cell
+already imported `cuda.coop`. Both integrations can be registered in one
+process; common calls select the backend from the active compiler context.
 
-The common API exposed by `cuda.coop` describes operations independently of
-a particular compiler backend. Its public entry points are implemented in
-`cuda/coop/_core/api/`; the private `_core` package also contains shared
-implementation used by the backends. Each backend implements its supported
-operations, so a common spelling does not guarantee support in every compiler.
+The common API in `cuda.coop` describes operations independently of a compiler.
+Its public entry points live in `cuda/coop/_core/api/`; the private `_core`
+package also contains shared implementation. A common spelling does not
+guarantee that every backend supports the operation.
 
-To use Numba-specific features, import the qualified backend namespace; this
-also registers it:
+Import the qualified namespace for compiler-specific features. These imports
+also register the corresponding integration:
 
 ```python
 import cuda.coop.numba_mlir as numba_coop
+import cuda.coop.cutlass as cutlass_coop
 ```
 
-Use `numba_coop` alongside common calls. In a program using only this backend,
-`import cuda.coop.numba_mlir as coop` is also supported. Keep the alias: a bare
-`import cuda.coop.numba_mlir` binds `cuda` to the top-level Python package and
-can replace the name used for Numba's `cuda.jit`.
+Use `coop` for the common API, `numba_coop` for Numba-CUDA-MLIR extensions, and
+`cutlass_coop` for CUTLASS extensions. Aliasing the qualified imports also avoids
+rebinding `cuda`, which Numba examples use for `cuda.jit`.
 
-Shared operations retain the common signatures, string selectors, and
-inference rules. The backend namespace adds Numba local-array payloads and
-memory namespaces.
-Both namespaces accept `ThreadData(..., alignment=None)`: use a compile-time
+Both qualified APIs retain shared signatures, string selectors, and inference
+rules. Numba-CUDA-MLIR adds local-array payloads, memory namespaces, and device
+callbacks. CUTLASS adds CuTe register conversions and qualified controls such
+as warp Scan aggregates and scalar Shuffle. Custom operators and Scan prefix
+callbacks are currently supported only by Numba-CUDA-MLIR.
+
+Both integrations accept `ThreadData(..., alignment=None)`: use a compile-time
 positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
-or Store arrays.
+or Store memory operands. Results belong to the active compiler; a NumPy dtype
+selector in a CuTe kernel still produces CuTe values.
 
 The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
 namespace choices and temporary storage. The
 [Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
 explains terms and concepts, including blocked and striped layouts.
-
-For CuTe kernels, `coop.register("cutlass")` explicitly activates the CUTLASS
-integration. Importing `cuda.coop.cutlass` also registers it. Common calls
-select the backend from the active compiler context; use the qualified
-namespace for CuTe register conversions and the additional controls listed
-in the CUTLASS Programming Guide.
 
 ## Primitive families
 
@@ -143,6 +151,11 @@ in the CUTLASS Programming Guide.
 | Neighbor comparisons | `adjacent_difference`, `discontinuity` |
 | Counting | `histogram` |
 | Run Length Decode | `run_length_decode`, `run_length_decode_into` |
+
+Both backends implement Load/Store, Reduce/Sum, Scan, Exchange/Shuffle,
+Merge Sort, Radix Sort/Rank, and TopK. Adjacent Difference, Discontinuity,
+Histogram, Run Length Decode, and Batched Warp Reduction are currently
+implemented only by Numba-CUDA-MLIR.
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
@@ -163,7 +176,7 @@ Runtime configuration is controlled by these environment variables:
 | `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache. The value is read when the backend cache module is imported. |
 | `XDG_CACHE_HOME` | On Linux and other POSIX systems, sets the cache base directory; entries are stored in `<value>/cccl`. Unset, empty, or relative values fall back to `~/.cache/cccl`. Read when the backend cache module is imported. |
 | `LOCALAPPDATA` | On Windows, sets the cache base directory; entries are stored in `<value>\cccl`. Unset, empty, or relative values fall back to `~\AppData\Local\cccl`. Read when the backend cache module is imported. |
-| `CUDA_COOP_SOURCE_DUMP_DIR` | Writes generated CUDA source as `cuda_coop_<backend>_<hash>.cu` files. Set before compiling; Numba provider cache hits also dump source. Unset or empty disables dumping. |
+| `CUDA_COOP_SOURCE_DUMP_DIR` | Writes generated CUDA source as `cuda_coop_<backend>_<hash>.cu` files. Set before compiling; provider cache hits in both integrations also dump source. Unset or empty disables dumping. |
 | `CUDA_PATH` | Supplies `<value>/include` as a CUDA header candidate if `cuda-pathfinder` does not resolve one. |
 | `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
 | `CUDA_ROOT` | Supplies `<value>/include` after `CUDA_HOME` under the same fallback rule. |
@@ -186,10 +199,10 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 
 ## Block and Warp Load and Store
 
-The common `cuda.coop` entry points and the qualified
-`cuda.coop.numba_mlir` entry points have matching signatures. The following
-kernel-body example clamps a grid tile tail, where `source`, `destination`, and
-`count` are kernel arguments:
+The common `cuda.coop` and qualified `numba_coop` and `cutlass_coop`
+Load/Store calls share algorithm names, tile controls, and in-place Load
+behavior. The following Numba kernel body clamps a grid tile tail, where
+`source`, `destination`, and `count` are kernel arguments:
 
 ```python
 from numba_cuda_mlir import cuda, types
@@ -224,10 +237,15 @@ coop.store(
 )
 ```
 
+The [CuTe tile-copy example](examples/cutlass/block_load_store.py) uses the
+same controls with CuTe pointers. It includes allocation, launch, and a NumPy
+reference check.
+
 `load` fills the caller's output in place and returns `None`. `valid_items`
 counts items across the selected group tile, while `offset` is a nonnegative
-element offset. Runtime offsets are caller-validated. Source and destination arrays
-must be one-dimensional and contiguous. Without `oob_default`, invalid Load
+element offset. Runtime offsets are caller-validated. Numba source and
+destination arrays must be one-dimensional and contiguous. CuTe operands may
+be global-memory pointers or supported contiguous one-dimensional tensors. Without `oob_default`, invalid Load
 slots retain their previous values. Every supplied runtime control
 (`valid_items`, `oob_default`, and `offset`) must be uniform within its selected
 group; different groups may use different values.
@@ -258,6 +276,11 @@ cast computed values before storing them:
 value = types.int32(source[cuda.threadIdx.x] + 1)
 coop.store(block, destination, value, algorithm="direct")
 ```
+
+CuTe kernels have the same exact-dtype Store requirement; use a CUTLASS scalar
+constructor such as `cutlass.Int32(expression)` when an explicit conversion
+is needed. A NumPy dtype selector does not turn a traced CuTe scalar into a
+host NumPy value.
 
 Both common and qualified entry points use the same lowercase string
 algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
@@ -302,11 +325,15 @@ when the group or queried outer level is the grid. Use
 an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
 `is_member()` returns an integer membership flag.
 
+These widths apply to both integrations. CuTe queries return `Uint32` or
+`Uint64`, and `is_member()` returns `Uint8`; Numba queries return the matching
+Numba integer types.
+
 `sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
 participating members must reach `sync()`. `sync_aligned()` additionally
-requires the caller to keep the group aligned and converged. Grid
-synchronization is not available because this backend cannot request a
-cooperative grid launch.
+requires the caller to keep the group aligned and converged. Neither integration
+supports grid synchronization. Numba-CUDA-MLIR cannot request a cooperative
+grid launch; CUTLASS does not expose a grid synchronization implementation.
 
 `group_by` remains static compiler vocabulary: `count` and `exhaustive` must be
 compile-time constants. A logical threads-within-warp group can query its
@@ -335,65 +362,66 @@ coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
 For block, physical Warp, and logical Warp calls, `direct`, `striped`, and
-`vectorize` are storage-free: they default-construct CUB primitives without shared-memory allocation, pointer arguments, or
-barriers. For block calls, an explicit descriptor is validated but does not
-change their code generation. Construct `TempStorage` inside the kernel; module-global storage
-descriptors cannot be resolved. A descriptor may be passed to a device helper
-that Numba-CUDA-MLIR inlines into the kernel, which is the default.
+`vectorize` are storage-free in both integrations: they need no shared-memory
+allocation, storage pointer arguments, or reuse barriers. An explicit block
+descriptor is validated but does not change that code generation.
 
-The three block transpose algorithms use CUB temporary storage. Without a descriptor,
-the compiler allocates the specialization's exact storage and inserts a block
-reuse barrier. A caller descriptor can select shared or exclusive ownership,
-request capacity and alignment, or opt into dynamic shared memory. The provider
-remains authoritative for the required byte count and alignment.
+The three block transpose algorithms use CUB temporary storage. Without a
+descriptor, each compiler allocates the specialization's exact storage and
+inserts a block reuse barrier. A descriptor selects shared or exclusive slices
+and may request capacity and minimum alignment. The provider determines the
+required byte count and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
-every call that passes the same descriptor on one region, while `"exclusive"`
-gives each call site its own slice. A call site inside a loop reuses its slice
-under either layout, so `auto_sync` is independent of `sharing` and defaults to
-`True` for both.
+calls that pass the same descriptor on one region; `"exclusive"` gives each
+call site its own slice. A call site inside a loop reuses its slice under either
+policy. `auto_sync` defaults to `True` for both policies and both integrations.
 
-The synchronization model is deliberately simple. A descriptor names one
-region; distinct descriptors and compiler-owned storage never alias each other.
-With `auto_sync` enabled (the default) the compiler appends
-`cuda.syncthreads()` for block groups or `cuda.syncwarp(mask)` for Warp groups
-immediately after every call that consumes the storage, including the last
-one, and never inserts a barrier before a call. That trailing barrier only
-orders reuse of the temporary storage; it is not a general barrier for the
-kernel's own shared-memory traffic and disappears with `auto_sync=False`, in
-which case the caller issues `cuda.syncthreads()` between consecutive uses,
-and a call site inside a loop counts as a reuse on every iteration.
-Compiler-owned storage always synchronizes.
+Distinct descriptors and compiler-owned storage do not alias each other. Each
+scratch-using call appends a barrier after the operation, including the last
+call. That barrier protects reuse of CUB scratch; it does not replace barriers
+needed by the kernel's own shared-memory operations. With `auto_sync=False`,
+call `storage.sync()` or the appropriate block barrier before reusing the
+scratch, including on the next loop iteration. Compiler-owned scratch always
+synchronizes.
 
-All descriptors and compiler-owned requirements of a kernel share one
-shared-memory backing. Above the 48 KiB static limit that backing moves to
-dynamic shared memory and the launch reserves the exact byte count.
-Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
-allocations reliably. A kernel using cooperative temporary storage must not
-also declare a zero-sized or runtime-sized `cuda.shared.array`. When
-cooperative backing becomes dynamic, user static shared arrays are also
-unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. Storage-free operations do not add this
-restriction.
+Construct descriptors inside the kernel. Numba-CUDA-MLIR resolves descriptors
+in its compiler passes; a descriptor may also be passed to a device helper
+inlined into that kernel. CUTLASS records uses while tracing the CuTe kernel,
+probes exact storage requirements, and allocates through CuTe's shared-memory
+allocator before compilation finishes. The
+[Numba storage example](tests/backends/numba_mlir/runtime/test_storage_examples.py)
+and [CuTe storage example](examples/cutlass/block_storage.py) demonstrate
+reuse policies and synchronization.
 
-With `auto_sync=False`, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is an
-MVP restriction: the compiler cannot prove that caller barriers protect the
-merged region, even when a particular program supplies sufficient barriers.
+Numba-CUDA-MLIR has these additional compiler constraints:
 
-Cooperative calls in device helpers must be inlined into the kernel; use
-`@cuda.jit(device=True, inline="always")` when selecting the helper's
-policy explicitly. Standalone primitive helpers and primitives inside
-standalone callbacks are unsupported. For the MVP, `literal_unroll`
-values cannot determine cooperative payload extents, group dimensions,
-selectors, or descriptor constructor arguments. Write separate calls with
-explicit constants, or use an ordinary loop with one fixed cooperative shape.
-An unrelated `literal_unroll` loop does not add this restriction.
+- All cooperative storage in a kernel shares one backing. Above the 48 KiB
+  static limit it moves to dynamic shared memory and the launch reserves the
+  exact byte count. Supported Numba-CUDA-MLIR releases do not reliably separate
+  static and dynamic allocations: a scratch-using kernel must not also declare
+  a zero-sized or runtime-sized `cuda.shared.array`. When cooperative backing
+  becomes dynamic, user static shared arrays are also unsupported. Storage-free
+  operations do not add these restrictions.
+- A descriptor with `auto_sync=False` must originate from one constructor site.
+  Selecting between multiple manual-sync constructors is unsupported.
+- Cooperative calls in device helpers must be inlined into the kernel. Use
+  `@cuda.jit(device=True, inline="always")` when selecting the policy explicitly.
+  Standalone primitive helpers and primitives inside standalone callbacks are
+  unsupported. `literal_unroll` values cannot determine cooperative payload
+  extents, group dimensions, selectors, or descriptor arguments. An unrelated
+  `literal_unroll` loop does not add this restriction.
+
+CuTe traces helper functions through its own compiler and allocates cooperative
+scratch through its shared-memory allocator. For CuTe helper functions and
+compiler-owned allocation, see the
+[CUTLASS Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop_cutlass.html)
+and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/cutlass_developer_guide.html).
 
 Warp `transpose` uses compiler-owned storage with one disjoint slice per
-physical or logical group and inserts `syncwarp` with the exact group mask.
-Explicit `TempStorage` is rejected by both the common and qualified APIs for
-every Warp Load and Store algorithm, including the storage-free modes.
+physical or logical group and masked synchronization for reuse. Both
+integrations reject explicit `TempStorage` for every Warp Load and Store
+algorithm, including the storage-free modes.
 
 ## Reduce and Sum
 
@@ -401,7 +429,8 @@ every Warp Load and Store algorithm, including the storage-free modes.
 one scalar with the payload element dtype. The common API accepts a numeric
 scalar or fixed-size `ThreadData`; reducing a `ThreadData` payload combines all
 items contributed by every participating member. The qualified
-`cuda.coop.numba_mlir` API also accepts fixed-size `cuda.local.array` payloads.
+`numba_coop` API also accepts fixed-size `cuda.local.array` payloads;
+`cutlass_coop` accepts CuTe register tensors and `TensorSSA` values.
 
 A full built-in reduction has no `valid_items` or explicit `algorithm`. It uses
 the storage-free CUDAX implementation for the current thread, a physical Warp,
@@ -433,14 +462,16 @@ def block_sum(source, output):
         output[0] = total
 ```
 
-The complete runnable form is in `examples/numba_mlir/block_sum.py`.
+The complete Numba example is [block_sum.py](examples/numba_mlir/block_sum.py).
+The [CuTe reduction example](examples/cutlass/reduce.py) also demonstrates
+payload sums, logical-warp reductions, and root-only prefix results.
 
 `sum` selects addition. `reduce` accepts the aliases `+`, `sum`, `add`, and
 `plus`; `*`, `mul`, `multiply`, and `multiplies`; `min` and `minimum`; `max`
 and `maximum`; and the bitwise pairs `&`/`bit_and`, `|`/`bit_or`, and
 `^`/`bit_xor`. Bitwise reductions require an integer payload dtype. The
-qualified API additionally recognizes the corresponding Python `operator`
-functions and NumPy ufuncs. Built-in operator and algorithm selectors are
+qualified APIs in both integrations additionally recognize the corresponding
+Python `operator` functions and NumPy ufuncs. Built-in operator and algorithm selectors are
 normalized to canonical lowercase strings. Enum-like and other non-string
 selector objects are rejected.
 
@@ -461,8 +492,8 @@ Three controls select a direct CUB reduction instead:
   `cuda.coop.numba_mlir.reduce`, must be stateless, and requires
   `broadcast=False`. It uses CUB for block, physical-Warp, or logical-Warp
   groups. Warp callbacks accept scalar payloads; block callbacks may also
-  reduce fixed arrays. Stateful callbacks and their per-launch state plumbing
-  are deferred.
+  reduce fixed arrays. CUTLASS supports built-in reductions only. Stateful
+  reduction callbacks are unsupported in both integrations.
 
 Full CUDAX reductions have no external temporary-storage ABI, backing
 allocation, or compiler-inserted post-call barrier; the primitive call still
@@ -483,37 +514,42 @@ with `mode="exclusive"` or `mode="inclusive"`; the other names make that choice
 explicit. Every form returns a fresh scalar or per-thread payload and leaves
 the input unchanged.
 
-Block Scan accepts a numeric scalar, fixed-size `ThreadData`, or, in the
-qualified `cuda.coop.numba_mlir` API, a fixed-size `cuda.local.array`. The
+Block Scan accepts a numeric scalar or fixed-size `ThreadData`. Qualified
+`numba_coop` calls also accept fixed-size `cuda.local.array` payloads;
+`cutlass_coop` calls accept CuTe register tensors and `TensorSSA` values. The
 `raking`, `raking_memoize`, and `warp_scans` algorithms are available for
 blocks. Physical- and logical-Warp Scan accept one scalar per thread and have
 no algorithm selector.
 
 Sum is the default operation. `scan`, `exclusive_scan`, and `inclusive_scan`
-accept the same built-in string aliases as Reduce. The qualified API also
-recognizes the corresponding Python `operator` functions and NumPy ufuncs, and
-accepts stateless device callbacks. A non-sum exclusive scan requires an
+accept the same built-in string aliases as Reduce. Both qualified APIs also
+recognize the corresponding Python `operator` functions and NumPy ufuncs.
+Numba-CUDA-MLIR additionally accepts stateless device callbacks; CUTLASS does
+not support custom scan operators. A non-sum exclusive scan requires an
 `initial_value` matching the payload dtype; ordinary Python literals are
-checked and converted in that context. A block-prefix callback can supply that
-prefix instead. Inclusive scans reject an initial value. The aggregate reports
+checked and converted in that context. A Numba block-prefix callback can
+supply that prefix instead. Inclusive scans reject an initial value. The aggregate reports
 only the input reduction and does not include the exclusive initial value.
 
-The qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
-`ThreadData` or local array populated with the group aggregate. Warp forms also
+Both qualified APIs accept `aggregate_output`, a one-item `ThreadData`
+populated with the group aggregate. Its dtype must match the input or be
+omitted for inference. Numba-CUDA-MLIR also accepts a one-item local array;
+CUTLASS requires writable `ThreadData` for this output. Warp forms also
 accept `valid_items`, which selects the first N lanes by group rank and requires
 `1 <= N <= warp_width`; only those N result lanes are defined. The initial
 value and `valid_items` must be uniform across participating members. An
 out-of-range runtime `valid_items` value triggers a deterministic device trap
 before CUB's 32-bit parameter is formed, invalidating the current CUDA context.
 
-All five qualified Block Scan spellings accept a block-prefix callback through
-the `prefix_op` keyword. A stateless callback receives the block aggregate and
+All five Numba-qualified Block Scan spellings accept a block-prefix callback
+through the `prefix_op` keyword. CUTLASS does not support prefix callbacks or
+callback state. A stateless callback receives the block aggregate and
 returns the prefix:
 
 ```python
 from numba_cuda_mlir import cuda, types
 
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 
 
 @cuda.jit(device=True)
@@ -522,8 +558,8 @@ def prefix_after_aggregate(block_aggregate):
 
 
 # Inside a kernel:
-scanned = coop.exclusive_sum(
-    coop.this_block(),
+scanned = numba_coop.exclusive_sum(
+    numba_coop.this_block(),
     value,
     prefix_op=prefix_after_aggregate,
 )
@@ -542,13 +578,13 @@ def carry_prefix(state, block_aggregate):
     return previous
 
 
-running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
+running_prefix = numba_coop.StatefulFunction(carry_prefix, types.int64)
 
 # Inside a kernel, before a loop over tiles:
-state = coop.ThreadData(1, dtype=types.int64)
+state = numba_coop.ThreadData(1, dtype=types.int64)
 state[0] = types.int64(0)
-scanned = coop.exclusive_sum(
-    coop.this_block(),
+scanned = numba_coop.exclusive_sum(
+    numba_coop.this_block(),
     value,
     state,
     prefix_op=running_prefix,
@@ -562,18 +598,18 @@ every participating thread the same initial contents. CUB may invoke the
 callback in every lane of the block's first warp, but only lane 0's returned
 prefix is applied; only thread 0's state is authoritative after the calls.
 
-Prefix callbacks are available only through qualified Block Scan. They are
+Prefix callbacks are available only through Numba-qualified Block Scan. They are
 mutually exclusive with `initial_value` and `aggregate_output`, are not
 stateful binary `scan_op` values, and do not support Warp Scan, `valid_items`,
 or structured state.
 
-All Scan providers use CUB temporary storage. Block calls may use implicit,
-caller-owned, or dynamic `TempStorage` and append a block reuse barrier unless
+All Scan providers use CUB temporary storage. Block calls may use implicit or
+caller-owned `TempStorage` and append a block reuse barrier unless
 a caller-owned descriptor explicitly sets `auto_sync=False`. Physical and
 logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
 for the exact participating mask. Prefix callbacks retain the same storage
 rules. When repeated calls reuse Block Scan storage, keep automatic
-synchronization enabled or issue `cuda.syncthreads()` after each call when
+synchronization enabled or call `storage.sync()` before reuse when
 `auto_sync=False`. The prefix state is persistent per-thread data, not CUB
 temporary storage.
 
@@ -596,7 +632,9 @@ def block_scan_kernel(values, prefixes):
     coop.store(block, prefixes, scanned)
 ```
 
-The complete runnable form is in `examples/numba_mlir/block_scan.py`.
+The complete Numba example is [block_scan.py](examples/numba_mlir/block_scan.py).
+The [CuTe Scan example](examples/cutlass/scan.py) performs the same tile
+composition with an explicit initial value and shared scratch.
 
 ## Exchange and Shuffle
 
@@ -606,11 +644,12 @@ unchanged. The common API accepts `striped_to_blocked` and
 blocked tile gives each thread consecutive items. A striped tile gives item
 `i` to lane `i % group_size` at per-thread position `i // group_size`.
 
-The qualified `cuda.coop.numba_mlir.exchange` API additionally exposes the
+Both `numba_coop.exchange` and `cutlass_coop.exchange` expose the
 block-only `warp_striped_to_blocked` and `blocked_to_warp_striped` layouts and
 the CUB scatter modes. Scatter ranks are local to the selected group tile and
-must use a signed integer `ThreadData` or local-array payload with the same
-extent as `value`. Unguarded ranks must be in
+must use a signed integer payload with the same extent as `value`.
+Both accept `ThreadData`; qualified Numba calls also accept local arrays, and
+qualified CUTLASS calls accept CuTe register payloads. Unguarded ranks must be in
 `[0, group_size * items_per_thread)`. Guarded scatter skips negative ranks;
 every nonnegative rank must still be in range. Flagged scatter uses only ranks
 whose corresponding non-boolean integer flag is nonzero; each active rank must
@@ -621,8 +660,8 @@ for guarded or flagged scatter.
 
 `shuffle(block, value, mode=...)` is block-only. The common API accepts a
 `ThreadData` payload, `up` or `down`, and the fixed distance `1`; the vacated
-edge item is unspecified. The qualified API also accepts scalar `offset` and
-`rotate` modes. Offset distance is signed, may vary by thread, and must fit a
+edge item is unspecified. Both qualified APIs also accept scalar `offset`
+and `rotate` modes. Offset distance is signed, may vary by thread, and must fit a
 signed 32-bit integer. Static overflows are rejected during compilation;
 runtime overflows trap before narrowing to CUB. Within that range, a source
 rank outside the block leaves that thread's result unspecified. Rotate
@@ -636,6 +675,10 @@ selected group. They use compiler-owned CUB temporary storage and append a
 reuse barrier after every call. Block operations use one block-wide storage
 instance and `syncthreads`; physical and logical Warp Exchange use one
 disjoint slice per group and `syncwarp` with the exact group mask.
+
+The [Numba rearrangement examples](tests/backends/numba_mlir/runtime/test_rearrangement_examples.py)
+and [CuTe Exchange/Shuffle example](examples/cutlass/exchange_shuffle.py)
+demonstrate these layouts and payload-preserving operations.
 
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.

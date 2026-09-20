@@ -87,15 +87,20 @@ def merge_sort_keys(
 
     Notes
     -----
-    The Numba backend uses ``cub::BlockMergeSort::Sort`` or
+    Numba-CUDA-MLIR and CUTLASS use ``cub::BlockMergeSort::Sort`` or
     ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
     keys must obey the comparison's ordering requirements.
-    Use ``cuda.coop.numba_mlir`` for fixed-size Numba local-array inputs or
-    a custom comparison predicate.
+    The qualified Numba-CUDA-MLIR API accepts fixed-size local-array inputs
+    and custom comparison predicates. The qualified CUTLASS API accepts CuTe
+    register payloads and supports built-in ascending or descending ordering.
 
     See Also
     --------
     merge_sort_pairs
+    cuda.coop.numba_mlir.merge_sort_keys
+        Local-array inputs and custom comparison predicates.
+    cuda.coop.cutlass.merge_sort_keys
+        CuTe register inputs with built-in ordering.
     """
 
     if not isinstance(descending, bool):
@@ -192,15 +197,20 @@ def merge_sort_pairs(
 
     Notes
     -----
-    The Numba backend uses ``cub::BlockMergeSort::Sort`` or
+    Numba-CUDA-MLIR and CUTLASS use ``cub::BlockMergeSort::Sort`` or
     ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
     keys must obey the comparison's ordering requirements.
-    Use ``cuda.coop.numba_mlir`` for fixed-size Numba local-array inputs or
-    a custom comparison predicate.
+    The qualified Numba-CUDA-MLIR API accepts fixed-size local-array inputs
+    and custom comparison predicates. The qualified CUTLASS API accepts CuTe
+    register payloads and supports built-in ascending or descending ordering.
 
     See Also
     --------
     merge_sort_keys
+    cuda.coop.numba_mlir.merge_sort_pairs
+        Local-array inputs and custom comparison predicates.
+    cuda.coop.cutlass.merge_sort_pairs
+        CuTe register inputs with built-in ordering.
     """
 
     if not isinstance(descending, bool):

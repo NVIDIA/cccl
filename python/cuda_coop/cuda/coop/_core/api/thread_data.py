@@ -62,6 +62,10 @@ def ThreadData(
         :start-after: # thread-data-example-begin
         :end-before: # thread-data-example-end
         :dedent: 4
+
+    For per-thread payloads in CuTe kernels, see
+    :ref:`CUTLASS Load and Store <coop-cutlass-load-store>`. The qualified
+    :class:`cuda.coop.cutlass.ThreadData` also converts CuTe register values.
     """
 
     alignment = _normalize_alignment(alignment)

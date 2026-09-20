@@ -353,7 +353,7 @@ class ThreadGroup:
     see :ref:`thread groups <coop-thread-groups>` and
     :ref:`participation requirements <coop-participation>`.
 
-    The Numba-CUDA-MLIR implementation uses the C++ ``cuda::experimental::coop``
+    Both Numba-CUDA-MLIR and CUTLASS use the C++ ``cuda::experimental::coop``
     group types from the :github:`group header
     <cudax/include/cuda/experimental/coop/group>` and the
     :ref:`CUDA C++ hierarchy queries <cccl-runtime-hierarchy-queries>`.
@@ -368,6 +368,9 @@ class ThreadGroup:
         :start-after: # queries-example-begin
         :end-before: # queries-example-end
         :dedent: 4
+
+    For CuTe query types, mapped groups, and synchronization, see
+    :ref:`CUTLASS hierarchy queries <coop-cutlass-hierarchy>`.
     """
 
     kind: str
@@ -626,6 +629,9 @@ class ThreadGroup:
             :start-after: # partition-example-begin
             :end-before: # partition-example-end
             :dedent: 4
+
+        CuTe kernels use the same partition descriptors; see
+        :ref:`CUTLASS hierarchy queries <coop-cutlass-hierarchy>`.
         """
 
         if self.mapping is not None:
@@ -683,9 +689,11 @@ class ThreadGroup:
         -------
         integer scalar
             The rank, using the backend's unsigned hierarchy result type.
-            Numba-CUDA-MLIR uses ``uint32``, or ``uint64`` when this group or
-            the queried level is the grid. Use ``rank_as`` for an explicit
-            dtype. A mapped-group rank requires ``is_member()`` to be true.
+            Both Numba-CUDA-MLIR and CUTLASS use a 32-bit unsigned integer,
+            or 64 bits when this group or the queried level is the grid.
+            CUTLASS returns a CuTe ``Uint32`` or ``Uint64`` scalar. Use
+            ``rank_as`` for an explicit dtype. A mapped-group rank requires
+            ``is_member()`` to be true.
 
         See Also
         --------
@@ -741,6 +749,8 @@ class ThreadGroup:
         -------
         integer scalar
             The same rank as ``rank(level)``, represented in ``dtype``.
+            The active compiler owns the scalar: a NumPy dtype selector in
+            a CuTe kernel still produces a CuTe value.
 
         See Also
         --------
@@ -768,6 +778,8 @@ class ThreadGroup:
         -------
         integer scalar
             The same count as ``count(level)``, represented in ``dtype``.
+            The active compiler owns the scalar: a NumPy dtype selector in
+            a CuTe kernel still produces a CuTe value.
 
         See Also
         --------
@@ -789,9 +801,9 @@ class ThreadGroup:
 
         Notes
         -----
-        Numba-CUDA-MLIR supports thread, physical-warp, logical-warp, block,
-        and supported cluster synchronization. It rejects grid
-        synchronization and synchronization of mapped groups of physical
+        Both Numba-CUDA-MLIR and CUTLASS support thread, physical-warp,
+        logical-warp, block, and supported cluster synchronization. Both reject
+        grid synchronization and synchronization of mapped groups of physical
         warps. A one-thread synchronization has no other threads to wait for.
         See :ref:`thread groups <coop-thread-groups>` for scope restrictions.
 
@@ -816,8 +828,8 @@ class ThreadGroup:
         Notes
         -----
         All participating threads must execute the call in converged control
-        flow. Numba-CUDA-MLIR rejects grid and mapped-physical-warp
-        synchronization, as for ``sync()``. See
+        flow. Both Numba-CUDA-MLIR and CUTLASS reject grid and
+        mapped-physical-warp synchronization, as for ``sync()``. See
         :ref:`participation requirements <coop-participation>`.
 
         See Also
@@ -834,9 +846,10 @@ class ThreadGroup:
         -------
         integer scalar
             A predicate suitable for an ``if`` condition. Numba-CUDA-MLIR
-            returns ``uint8``: one for a physical group or a member of a
-            complete mapped group, and zero for trailing threads excluded by
-            a non-exhaustive ``group_by`` partition.
+            returns ``uint8`` and CUTLASS returns a CuTe ``Uint8``: one for a
+            physical group or a member of a complete mapped group, and zero
+            for trailing threads excluded by a non-exhaustive ``group_by``
+            partition.
 
         Notes
         -----

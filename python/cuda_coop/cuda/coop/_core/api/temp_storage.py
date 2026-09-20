@@ -71,6 +71,10 @@ def TempStorage(
         :start-after: # temp-storage-example-begin
         :end-before: # temp-storage-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS storage example <coop-cutlass-storage>` demonstrates
+    the same shared/exclusive policies and automatic or explicit reuse
+    synchronization in a CuTe kernel.
     """
 
     alignment = _normalize_alignment(alignment)

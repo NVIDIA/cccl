@@ -4,7 +4,7 @@
 //
 // Adapted from python/cuda_coop/docs/fern/fern/components/CooperativeReductionScan.tsx
 // at cccl-mirror trentn/dev/cuda-coop 5dba3d36b6eaae48b967d6fa48f9d15e98136000.
-// API choices follow the current common and Numba-CUDA-MLIR group planners.
+// API choices follow the shared planners and backend-specific callback contracts.
 
 (() => {
   "use strict";
@@ -106,7 +106,7 @@
       state.ownership === "broadcast" ? "The built-in group path broadcasts one aggregate to every member." : "With broadcast=False, only rank zero of each group has a defined return value; ? marks every other return.",
       "The partial-combine rows show an illustrative legal reduction tree, not a CUB instruction trace. Floating-point results can depend on combination order.",
     ];
-    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir, with broadcast=False; the common API accepts built-in operator names.");
+    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir, with broadcast=False. CUTLASS supports built-in operators; the common API accepts built-in operator names.");
     if (state.scope === "cluster") notes.push("Cluster reduction is implemented for compute capability 9.0 or newer and requires a cluster launch. The picture uses two teaching blocks; grid reduction is unsupported.");
     if (state.scope === "mapped_warps") notes.push("this_block().group_by(2) selects groups of two physical warps (64 threads in executable code); it does not select two individual threads.");
     return {
@@ -204,10 +204,10 @@
       "The local and incoming prefixes are mathematical decompositions. Raking stages through shared segments; memoization retains partials in registers; warp_scans propagates totals between warp scans. The figure does not specify exact instructions or storage padding.",
       state.scope === "block" ? "Block scans accept scalar values or ThreadData, and return a separate result without changing the input." : "Physical and logical warp scans accept one scalar per lane. Every lane participates; ranks beyond valid_items have undefined scan outputs.",
     ];
-    if (state.prefix === "callback") notes.push(`The qualified block prefix callback receives input aggregate ${aggregates[0]} and returns ${seeds[0]} (aggregate + 7). That returned value is combined before the scanned sequence.`);
-    if (state.prefix === "stateful") notes.push("The qualified StatefulFunction receives one-item mutable running state as the third positional argument. Here it returns 10 and combines the tile aggregate into the state for a later scan.");
-    if (state.operator === "custom_max" && !state.variant.endsWith("_sum")) notes.push("Custom maximum is a device callback passed as scan_op through cuda.coop.numba_mlir.");
-    if (state.aggregate === "emit") notes.push("aggregate_output is a qualified-backend one-item output. It excludes any initial prefix and cannot be combined with a prefix callback.");
+    if (state.prefix === "callback") notes.push(`The Numba-qualified block prefix callback receives input aggregate ${aggregates[0]} and returns ${seeds[0]} (aggregate + 7). That returned value is combined before the scanned sequence.`);
+    if (state.prefix === "stateful") notes.push("The Numba-qualified StatefulFunction receives one-item mutable running state as the third positional argument. Here it returns 10 and combines the tile aggregate into the state for a later scan.");
+    if (state.operator === "custom_max" && !state.variant.endsWith("_sum")) notes.push("Custom maximum is a device callback passed as scan_op through cuda.coop.numba_mlir. CUTLASS supports built-in scan operators and does not accept callbacks.");
+    if (state.aggregate === "emit") notes.push("Both qualified APIs support aggregate_output as a one-item output. It excludes any initial prefix and cannot be combined with a prefix callback.");
     return {
       detail: `${algorithm.label}: ${state.variant.replaceAll("_", " ")} over ${width * items} ordered items per ${state.scope.replaceAll("_", " ")} group.`,
       rows,

@@ -12,8 +12,8 @@ payload. Exchange itself performs no global-memory load or store.
 
 The common API provides ``striped_to_blocked`` and ``blocked_to_striped``.
 The explorer also includes the six additional block modes available through
-``cuda.coop.numba_mlir.exchange``: two warp-striped conversions and four
-rank-based scatters. Each option identifies which API provides it.
+:func:`cuda.coop.numba_mlir.exchange` and :func:`cuda.coop.cutlass.exchange`:
+two warp-striped conversions and four rank-based scatters. Each option identifies which API provides it.
 
 .. coop-visualization:: exchange
 
@@ -76,22 +76,22 @@ and unguarded scatters. Guarded and flagged scatter do not support it.
 Using Exchange in a kernel
 --------------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel, with
-``cuda`` imported from ``numba_cuda_mlir``, ``numpy as np``, and
-``cuda.coop as coop``. Launch with 128 threads and provide at least 256
+This common-API fragment works in either DSL with the
+:ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
+128 threads and provide at least 256
 source and destination elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
    items = coop.ThreadData(2, dtype=np.int32)
-   offset = cuda.blockIdx.x * 256
+   offset = block_index * 256
    coop.load(block, source, items, algorithm="striped", offset=offset)
    blocked = coop.exchange(block, items, mode="striped_to_blocked")
    coop.store(block, destination, blocked, algorithm="direct", offset=offset)
    # blocked owns consecutive pairs; items retains striped ownership.
 
-To scatter, import ``cuda.coop.numba_mlir as numba_coop`` and use its
+To scatter in Numba, import ``cuda.coop.numba_mlir as numba_coop`` and use its
 qualified operation. With the same 128-thread, two-item launch, the
 following full-tile permutation writes every destination exactly once:
 
@@ -110,5 +110,16 @@ following full-tile permutation writes every destination exactly once:
    )
    coop.store(block, destination, striped, algorithm="striped", offset=offset)
 
+For CuTe, :func:`cuda.coop.cutlass.exchange` accepts the same scatter modes
+through ``cutlass_coop``. Its tested example constructs signed ranks,
+scatters a tile, and stores the result:
+
+.. literalinclude:: ../../../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+   :language: python
+   :start-after: # qualified-scatter-example-begin
+   :end-before: # qualified-scatter-example-end
+   :dedent: 4
+
 See :func:`cuda.coop.exchange` for the common operation and the
-:doc:`../programming_guide` for backend activation and group participation.
+:doc:`Numba <../programming_guide>` and :ref:`CUTLASS <coop-cutlass-exchange>`
+guides for group participation and qualified payload forms.

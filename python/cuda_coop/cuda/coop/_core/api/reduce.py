@@ -205,8 +205,9 @@ def reduce(
         ``"min"``, ``"max"``, ``"bit_and"``, ``"bit_or"``, or ``"bit_xor"``.
         ``None`` selects sum. Bitwise operators require integer values.
         Operator aliases include ``"+"``, ``"*"``, ``"&"``, ``"|"``, and
-        ``"^"``. Use the qualified ``cuda.coop.<backend>`` API for custom
-        operators where supported.
+        ``"^"``. :func:`cuda.coop.numba_mlir.reduce` also accepts custom
+        operators. :func:`cuda.coop.cutlass.reduce` accepts recognized Python
+        and NumPy aliases for built-in operators, but no custom callbacks.
     broadcast : bool, optional
         Compile-time flag, default ``True``. Return the result to every group
         member. With ``False``, only group rank zero has a defined result;
@@ -252,6 +253,9 @@ def reduce(
         :start-after: # reduce-example-begin
         :end-before: # reduce-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS reduction example <coop-cutlass-reduce>` covers CuTe
+    block and logical-warp reductions, valid prefixes, and result ownership.
     """
 
     algorithm = _common_reduce_algorithm("reduce", algorithm)
@@ -353,6 +357,9 @@ def sum(
         :start-after: # sum-example-begin
         :end-before: # sum-example-end
         :dedent: 4
+
+    For CuTe payload sums and a scalar valid-prefix sum, see
+    :ref:`CUTLASS Reduce and Sum <coop-cutlass-reduce>`.
     """
 
     algorithm = _common_reduce_algorithm("sum", algorithm)

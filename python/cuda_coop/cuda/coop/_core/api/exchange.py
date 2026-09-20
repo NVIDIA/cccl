@@ -75,8 +75,10 @@ def exchange(
     The call rearranges values already held by the group; it does not load or
     store a memory tile. The implementation manages
     :ref:`temporary storage <coop-temp-storage>` automatically. For ranked
-    scatter and other backend-specific modes, use a qualified
-    ``cuda.coop.<backend>`` API where supported.
+    scatter and block warp-striped layouts, use
+    :func:`cuda.coop.numba_mlir.exchange` or :func:`cuda.coop.cutlass.exchange`.
+    Their qualified payloads are Numba local arrays and CuTe register values,
+    respectively.
 
     See Also
     --------
@@ -93,6 +95,11 @@ def exchange(
         :start-after: # exchange-example-begin
         :end-before: # exchange-example-end
         :dedent: 4
+
+    For the same layout conversion in CuTe, see
+    :ref:`CUTLASS Exchange <coop-cutlass-exchange>`. Qualified scatter forms
+    are documented by :func:`cuda.coop.numba_mlir.exchange` and
+    :func:`cuda.coop.cutlass.exchange`.
     """
 
     mode = _common_selector(

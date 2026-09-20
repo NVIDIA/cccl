@@ -57,30 +57,32 @@ shows the mathematical dependencies, not an instruction trace. Executable
 blocks selecting ``warp_scans`` must contain a multiple of 32 threads.
 
 Block scans accept scalars or several items per thread. Physical- and
-logical-warp scans accept one scalar per lane. The qualified warp API also
-accepts ``valid_items``: every lane participates, but only the first
+logical-warp scans accept one scalar per lane. Both qualified warp APIs
+accept ``valid_items``: every lane participates, but only the first
 ``valid_items`` lanes have defined scan results. The explorer marks other
 results with ``?``.
 
 Exclusive sums begin at zero. A generic exclusive scan accepts
-``initial_value``; a non-sum operator requires it unless a qualified block
-prefix callback supplies the prefix. Inclusive scans reject
+``initial_value``; a non-sum operator requires it. Numba-CUDA-MLIR also
+permits a qualified block prefix callback to supply the prefix. Inclusive scans reject
 ``initial_value``. The initial value is an operand: for maximum, an initial
 value of 10 keeps every output at least 10.
 
-The qualified ``aggregate_output`` returns the input aggregate to every
-member, excluding the initial prefix. Prefix callbacks are block-only and
+Both qualified APIs can write ``aggregate_output``, the input aggregate at
+every member, excluding the initial prefix. Numba-CUDA-MLIR
+prefix callbacks are block-only and
 cannot be combined with ``initial_value`` or ``aggregate_output``. The
 callback receives the input aggregate and returns the prefix to apply. The
 explorer's stateless callback returns ``aggregate + 7``; its stateful example
 returns the previous running value of 10 and updates that value with the tile
-aggregate.
+aggregate. CUTLASS supports built-in scans, initial values, and aggregate
+outputs; it does not accept custom binary operators or prefix callbacks.
 
 Using Scan in a kernel
 ----------------------
 
-This fragment runs inside a Numba-CUDA-MLIR kernel with ``cuda`` imported from
-``numba_cuda_mlir``, ``numpy as np``, and ``cuda.coop as coop``. Launch with
+This common-API fragment works in either DSL with the
+:ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
 128 threads and provide at least 256 elements for each block. Each block
 scans its own tile independently.
 
@@ -88,7 +90,7 @@ scans its own tile independently.
 
    block = coop.this_block()
    values = coop.ThreadData(2, dtype=np.int32)
-   offset = cuda.blockIdx.x * 256
+   offset = block_index * 256
    coop.load(block, source, values, offset=offset)
    prefixes = coop.inclusive_sum(block, values, algorithm="raking_memoize")
    coop.store(block, output, prefixes, offset=offset)
@@ -98,17 +100,27 @@ To compute an exclusive maximum with a prefix, replace the scan call with:
 .. code-block:: python
 
    prefixes = coop.exclusive_scan(
-       block, values, scan_op="max", initial_value=np.int32(10)
+       block, values, scan_op="max", initial_value=10
    )
 
-Custom binary operators use ``scan_op`` through the qualified namespace.
+For a CuTe qualified call, this tested example scans a logical warp's valid
+prefix and writes its aggregate. ``operator.add`` selects the built-in sum;
+it is not a custom device callback.
+
+.. literalinclude:: ../../../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+   :language: python
+   :start-after: # qualified-exclusive-scan-example-begin
+   :end-before: # qualified-exclusive-scan-example-end
+   :dedent: 4
+
+Custom binary operators use ``scan_op`` through the Numba-qualified namespace.
 This scalar kernel illustrates an inclusive maximum; launch one block whose
 size matches the input:
 
 .. code-block:: python
 
    from numba_cuda_mlir import cuda
-   import cuda.coop.numba_mlir as coop
+   import cuda.coop.numba_mlir as numba_coop
 
    @cuda.jit(device=True)
    def maximum(left, right):
@@ -117,8 +129,8 @@ size matches the input:
    @cuda.jit
    def running_maximum(source, output):
        thread = cuda.threadIdx.x
-       output[thread] = coop.inclusive_scan(
-           coop.this_block(), source[thread], scan_op=maximum
+       output[thread] = numba_coop.inclusive_scan(
+           numba_coop.this_block(), source[thread], scan_op=maximum
        )
 
 A stateless prefix callback uses the qualified ``prefix_op`` argument. Define
@@ -131,8 +143,8 @@ this function at module scope, then pass it inside the kernel:
        return aggregate + 7
 
    # Inside a kernel, with an int32 scalar value in each thread:
-   prefix = coop.exclusive_sum(
-       coop.this_block(), value, prefix_op=prefix_after_aggregate
+   prefix = numba_coop.exclusive_sum(
+       numba_coop.this_block(), value, prefix_op=prefix_after_aggregate
    )
 
 For consecutive tiles, a ``StatefulFunction`` carries a running prefix. This
@@ -150,19 +162,19 @@ state is authoritative.
        state[0] = previous + aggregate
        return previous
 
-   prefix_callback = coop.StatefulFunction(
+   prefix_callback = numba_coop.StatefulFunction(
        running_prefix, types.int64, name="running_prefix"
    )
 
    @cuda.jit
    def scan_two_tiles(source, output, final_state):
        thread = cuda.threadIdx.x
-       state = coop.ThreadData(1, dtype=types.int64)
+       state = numba_coop.ThreadData(1, dtype=types.int64)
        state[0] = 10
        for tile in range(2):
            index = tile * 128 + thread
-           output[index] = coop.exclusive_sum(
-               coop.this_block(), source[index], state,
+           output[index] = numba_coop.exclusive_sum(
+               numba_coop.this_block(), source[index], state,
                prefix_op=prefix_callback,
            )
        if thread == 0:
@@ -170,4 +182,5 @@ state is authoritative.
 
 Keep the default synchronization when reusing scan scratch between calls.
 See :doc:`../../coop_api` for the qualified callback and aggregate-output
-contracts, and the :doc:`../programming_guide` for backend activation.
+contracts. The :ref:`Numba <coop-scans>` and :ref:`CUTLASS <coop-cutlass-scan>`
+guides cover their supported scan profiles.

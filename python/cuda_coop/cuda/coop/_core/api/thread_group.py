@@ -152,6 +152,9 @@ def this_cluster() -> ThreadGroup:
         :start-after: # cluster-example-begin
         :end-before: # cluster-example-end
         :dedent: 4
+
+    CuTe kernels supply cluster dimensions through the launch interface; see
+    :ref:`CUTLASS hierarchy and launch requirements <coop-cutlass-hierarchy>`.
     """
 
     return _group_constructor("this_cluster", _core_this_cluster)

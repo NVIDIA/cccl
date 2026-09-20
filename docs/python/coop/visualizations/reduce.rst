@@ -64,25 +64,25 @@ explorer offers this choice only for one item per thread.
 A custom operator uses the qualified ``cuda.coop.numba_mlir`` namespace.
 It must be associative and is supported through the CUB block or warp path,
 with a result defined only at the group root. Custom warp reductions accept
-one scalar per lane. The common namespace accepts
-built-in names such as ``"sum"``, ``"max"``, ``"min"``, ``"multiplies"``,
+one scalar per lane. CUTLASS currently supports built-in operators only.
+The common namespace accepts built-in names such as ``"sum"``, ``"max"``, ``"min"``, ``"multiplies"``,
 and the integer bitwise operators.
 
 Using Reduce in a kernel
 ------------------------
 
-This fragment runs inside a Numba-CUDA-MLIR kernel with ``cuda`` imported from
-``numba_cuda_mlir``, ``numpy as np``, and ``cuda.coop as coop``. Launch with
+This common-API fragment works in either DSL with the
+:ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
 128 threads and supply at least 256 input elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
    values = coop.ThreadData(2, dtype=np.int32)
-   coop.load(block, source, values, offset=cuda.blockIdx.x * 256)
+   coop.load(block, source, values, offset=block_index * 256)
    total = coop.sum(block, values, broadcast=False, algorithm="raking")
-   if cuda.threadIdx.x == 0:
-       output[cuda.blockIdx.x] = total
+   if thread_rank == 0:
+       output[block_index] = total
 
 The input ``values`` is unchanged. Omit ``algorithm`` and use the default
 ``broadcast=True`` when every group member needs the aggregate. For one 128-thread block,
@@ -91,20 +91,22 @@ this fragment gives every member of each two-warp group the same sum:
 .. code-block:: python
 
    group = coop.this_block().group_by(2)
-   total = coop.sum(group, source[cuda.threadIdx.x])
-   output[cuda.threadIdx.x] = total
+   total = coop.sum(group, source[thread_rank])
+   output[thread_rank] = total
 
 With 128 threads, this creates two groups of 64 threads. A logical warp uses
 ``coop.this_warp().group_by(8)`` instead, yielding four groups of eight lanes
 inside each physical warp. All these groups have separate aggregates.
 
 For the explorer's custom-maximum choice, use a device callback and the
-qualified API. Launch this kernel with one block whose size matches the input:
+Numba-qualified API. CuTe can select the built-in ``binary_op="max"`` for
+the same maximum operation. Launch this Numba kernel with one block whose
+size matches the input:
 
 .. code-block:: python
 
    from numba_cuda_mlir import cuda
-   import cuda.coop.numba_mlir as coop
+   import cuda.coop.numba_mlir as numba_coop
 
    @cuda.jit(device=True)
    def maximum(left, right):
@@ -113,8 +115,8 @@ qualified API. Launch this kernel with one block whose size matches the input:
    @cuda.jit
    def block_maximum(source, output):
        thread = cuda.threadIdx.x
-       result = coop.reduce(
-           coop.this_block(),
+       result = numba_coop.reduce(
+           numba_coop.this_block(),
            source[thread],
            binary_op=maximum,
            broadcast=False,
@@ -141,6 +143,15 @@ arrays with at least 64 elements.
        (2, 1, 1), (32, 1, 1), cluster=(2, 1, 1)
    )(source, output)
 
-Grid reduction is not supported in this backend. See
-:func:`cuda.coop.reduce` and the :doc:`../programming_guide` for the full
-operation and group contracts.
+CuTe also requires an explicit cluster launch. Within a ``@cute.jit``
+launcher, a CuTe cluster kernel uses
+``kernel(source, output).launch(grid=(2, 1, 1), block=(32, 1, 1),
+cluster=(2, 1, 1))``. Its kernel body obtains the block and thread indices
+from ``cute.arch`` and accesses scalar inputs through a CuTe tensor.
+The :ref:`CUTLASS reduction example <coop-cutlass-reduce>` demonstrates its
+common and qualified reductions; the
+:ref:`hierarchy section <coop-cutlass-hierarchy>` covers cluster requirements.
+
+Grid reduction is unsupported in both backends. See
+:func:`cuda.coop.reduce` and the :ref:`Numba <coop-reductions>` and
+:ref:`CUTLASS <coop-cutlass-reduce>` guides for supported groups and controls.

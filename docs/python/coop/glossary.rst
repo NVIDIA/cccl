@@ -40,7 +40,9 @@ Terms
       ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
       ``inclusive_sum``. Families organize implementation modules; a
       :term:`thread group` describes the threads executing a primitive.
-      See :ref:`implementation families <coop-implementation-families>`.
+      See the implementation discussions in the
+      :doc:`Numba-CUDA-MLIR <developer_overview>` and
+      :doc:`CUTLASS <cutlass_developer_guide>` Developer Guides.
 
    payload
       The values contributed or received by one thread. ``ThreadData(K)``
@@ -105,19 +107,19 @@ Terms
       A key used for ordering or selection and an associated value, such as
       its original array index. Pair operations move the two together.
       Key and value payloads have the same extent but may have different
-      dtypes. See :ref:`Merge Sort <coop-merge-sort>`.
+      dtypes. See :doc:`Merge Sort <visualizations/merge-sort>`.
 
    stable sort
       A sort that preserves the input order of elements with equal keys.
       A function's contract must promise stability before a program relies
       on it. Radix Sort in ``cuda.coop`` is stable; Merge Sort does not
-      promise equal-key order. See :ref:`radix sorting <coop-radix>`.
+      promise equal-key order. See :doc:`radix sorting <visualizations/radix>`.
 
    radix digit
       A fixed-width interval of key bits used in one ranking or sorting
       step. ``radix_rank`` assigns ranks according to one such digit;
       ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
-      requested bit interval. See :ref:`radix sorting and ranks <coop-radix>`.
+      requested bit interval. See :doc:`radix sorting and ranks <visualizations/radix>`.
 
    common API
       .. raw:: html
@@ -163,7 +165,7 @@ Terms
    top-k
       Selection of the smallest or largest ``k`` keys, optionally with
       associated values. ``cuda.coop`` TopK returns an unordered selection;
-      only its selected prefix is defined. See :ref:`TopK <coop-topk>`.
+      only its selected prefix is defined. See :doc:`TopK <visualizations/topk>`.
 
 .. _coop-glossary-layouts:
 

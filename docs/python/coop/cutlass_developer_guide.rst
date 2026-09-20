@@ -22,8 +22,8 @@ where to look when changing the implementation. Numba-CUDA-MLIR has its own
 :doc:`Programming Guide <programming_guide>`.
 
 For a hands-on tour, follow the :ref:`cuda.coop.cutlass.debugger_walkthrough`.
-It uses the same 128-thread tile copy as the Numba walkthrough and shows
-where the two compiler integrations differ.
+Both compiler walkthroughs use a 128-thread tile copy, so their registration,
+planning, code generation, and linking steps can be compared directly.
 
 Following a tile copy
 ---------------------
@@ -83,8 +83,8 @@ A call through the common API must select the backend for the compiler
 tracing the kernel. CUTLASS registers a predicate that compares the active
 environment with CuTe's initialized environment. The dispatcher calls it
 without creating another compiler or importing another runtime. An explicit
-private ``_compiler_scope`` takes precedence, so the Numba compiler can
-select its own backend even when CUTLASS is installed. If two predicates
+private ``_compiler_scope`` takes precedence over environment detection.
+Both integrations can be registered in the same process. If two predicates
 claim the same active environment, dispatch fails.
 
 The selection code is in ``_core/api/_dispatch.py`` and
@@ -120,8 +120,8 @@ required by CUB.
 
 The shared planner uses those arguments and the kernel's launch dimensions
 to choose a CUB specialization. It also determines which threads must
-participate and what scratch storage and barriers the call needs. Numba uses
-this planner too. The CUTLASS lowering puts the plan and CuTe scalar type
+participate and what scratch storage and barriers the call needs. Both
+backends use this planner. The CUTLASS lowering puts the plan and CuTe scalar type
 into a provider request, which the renderer uses to generate the wrapper.
 
 In the example, the default ``direct`` algorithm selects CUB Block Load and
@@ -141,6 +141,8 @@ Other primitive families use the same approach. For Reduce, the planner
 chooses CUDAX for supported full-group reductions. It chooses CUB when the
 call supplies a valid-prefix count or a block algorithm. The Reduce lowering
 then generates the wrapper and adapts CuTe's values to its arguments.
+
+.. _coop-cutlass-exact-launch-facts:
 
 Exact launch facts
 -------------------
@@ -196,6 +198,8 @@ pending scratch uses. Finalization removes only its own session. Lifecycle
 tests exercise failed compilation or linking followed by a successful retry,
 as well as repeated and nested compilation. These checks matter because a
 single Python process can compile many kernels through the same CuTe DSL.
+
+.. _coop-cutlass-scratch-allocation:
 
 Scratch allocation after tracing
 ---------------------------------
@@ -299,8 +303,7 @@ synchronizes, and checks all 256 values against NumPy. Here,
 ``cute.compile`` makes compilation an explicit step before either launch.
 The two calls to ``compiled`` reuse that kernel.
 
-This is a useful difference from the Numba example, whose first launch
-triggers compilation. A direct call to a CuTe ``@cute.jit`` function can
+A direct call to a CuTe ``@cute.jit`` function can
 trace again to compute the module's cache key, even when compiled code
 is reusable. Retaining the compiled callable makes the two GPU launches
 independent of that tracing path.
@@ -612,8 +615,7 @@ Open the dumped C++ and find ``temp_storage_auto_sync``. Each wrapper
 ends with a conditional ``__syncthreads()``; this example passes a true
 flag, so Load finishes using the workspace before Store reuses it.
 
-This differs from the Numba integration, which inserts reuse
-synchronization in its rewrite. CUTLASS emits the trailing barrier in
+CUTLASS emits the trailing barrier in
 the provider wrapper and patches deferred storage operands after obtaining
 the C++ layouts. ``ThreadData`` still holds the per-thread payload;
 ``TempStorage`` describes the shared workspace used during each primitive.

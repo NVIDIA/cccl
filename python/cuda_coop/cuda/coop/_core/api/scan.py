@@ -190,7 +190,9 @@ def scan(
         Compile-time operator: ``"sum"``, ``"multiplies"``, ``"min"``,
         ``"max"``, ``"bit_and"``, ``"bit_or"``, or ``"bit_xor"``.
         ``None`` selects sum. Bitwise operators require integer values.
-        Use a backend-qualified API for custom operators.
+        :func:`cuda.coop.numba_mlir.scan` also accepts custom operators.
+        :func:`cuda.coop.cutlass.scan` accepts recognized Python and NumPy
+        aliases for built-ins, but no custom operators or prefix callbacks.
     initial_value : numeric scalar, optional
         First output of an exclusive scan, combined with every subsequent
         prefix. Defaults to zero for sum; required for other exclusive
@@ -240,6 +242,11 @@ def scan(
         :start-after: # scan-example-begin
         :end-before: # scan-example-end
         :dedent: 4
+
+    For a CuTe block scan with shared scratch, see
+    :ref:`CUTLASS Scan <coop-cutlass-scan>`. Both qualified APIs add built-in
+    operator aliases and aggregate outputs; only Numba-CUDA-MLIR supports
+    custom operators and prefix callbacks.
     """
 
     mode = _common_selector(
@@ -333,6 +340,10 @@ def exclusive_sum(
         :start-after: # exclusive-sum-example-begin
         :end-before: # exclusive-sum-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS Scan example <coop-cutlass-scan>` shows the CuTe
+    block form. Its explicit seed can be omitted for an exclusive sum
+    starting at zero.
     """
 
     algorithm = _common_selector(
@@ -421,6 +432,10 @@ def inclusive_sum(
         :start-after: # inclusive-sum-example-begin
         :end-before: # inclusive-sum-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS Scan example <coop-cutlass-scan>` uses the same
+    Load/Scan/Store composition in CuTe. Use ``inclusive_sum`` without an
+    ``initial_value`` to include the current item.
     """
 
     algorithm = _common_selector(
@@ -474,7 +489,9 @@ def exclusive_scan(
         Compile-time operator: ``"sum"``, ``"multiplies"``, ``"min"``,
         ``"max"``, ``"bit_and"``, ``"bit_or"``, or ``"bit_xor"``.
         ``None`` selects sum. Bitwise operators require integer values.
-        Use a backend-qualified API for custom operators.
+        :func:`cuda.coop.numba_mlir.scan` also accepts custom operators.
+        :func:`cuda.coop.cutlass.scan` accepts recognized Python and NumPy
+        aliases for built-ins, but no custom operators or prefix callbacks.
     initial_value : numeric scalar, optional
         First output of each group, combined with every subsequent prefix.
         Defaults to zero for sum; required for all other operators. Must
@@ -523,6 +540,11 @@ def exclusive_scan(
         :start-after: # exclusive-scan-example-begin
         :end-before: # exclusive-scan-example-end
         :dedent: 4
+
+    For an exclusive scan with an initial value in CuTe, see
+    :ref:`CUTLASS Scan <coop-cutlass-scan>`. The qualified
+    :func:`cuda.coop.cutlass.exclusive_scan` reference also shows a partial
+    logical warp with an aggregate output.
     """
 
     algorithm = _common_selector(
@@ -575,7 +597,9 @@ def inclusive_scan(
         Compile-time operator: ``"sum"``, ``"multiplies"``, ``"min"``,
         ``"max"``, ``"bit_and"``, ``"bit_or"``, or ``"bit_xor"``.
         ``None`` selects sum. Bitwise operators require integer values.
-        Use a backend-qualified API for custom operators.
+        :func:`cuda.coop.numba_mlir.scan` also accepts custom operators.
+        :func:`cuda.coop.cutlass.scan` accepts recognized Python and NumPy
+        aliases for built-ins, but no custom operators or prefix callbacks.
     algorithm : str, optional
         Compile-time block algorithm: ``"raking"``, ``"raking_memoize"``,
         or ``"warp_scans"``; ``None`` selects ``"raking"``. The
@@ -616,6 +640,10 @@ def inclusive_scan(
         :start-after: # inclusive-scan-example-begin
         :end-before: # inclusive-scan-example-end
         :dedent: 4
+
+    CuTe kernels use the same logical-warp descriptor. See
+    :func:`cuda.coop.cutlass.inclusive_scan` for qualified controls and
+    :ref:`CUTLASS Scan <coop-cutlass-scan>` for the executable block example.
     """
 
     algorithm = _common_selector(

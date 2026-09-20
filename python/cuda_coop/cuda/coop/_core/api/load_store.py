@@ -216,9 +216,12 @@ def load(
         :end-before: # example-end
         :dedent: 4
 
-    The qualified import activates the Numba-CUDA-MLIR backend even if another
-    module imported ``cuda.coop`` first. Use the qualified
-    ``cuda.coop.<backend>`` API for backend-specific behavior.
+    Importing ``cuda.coop.numba_mlir`` or ``cuda.coop.cutlass`` activates that
+    integration even if another module imported ``cuda.coop`` first. Use the
+    aliases ``numba_coop`` and ``cutlass_coop`` for qualified calls.
+
+    For CuTe pointers and register payloads, see the executable
+    :ref:`CUTLASS Load and Store example <coop-cutlass-load-store>`.
     """
 
     algorithm = _common_selector(
@@ -338,6 +341,9 @@ def store(
 
     See :ref:`participation and synchronization <coop-participation>` for
     control-flow requirements at primitive calls.
+
+    For a CuTe kernel with partial stores and element offsets, see
+    :ref:`CUTLASS Load and Store <coop-cutlass-load-store>`.
     """
 
     algorithm = _common_selector(

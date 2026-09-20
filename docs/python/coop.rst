@@ -154,6 +154,25 @@ a kernel still requires adapting launch syntax, array arguments, control
 flow, and other DSL code. Compiler-owned payloads cannot be passed between
 Numba and CuTe traces.
 
+.. _coop-common-calling-conventions:
+
+Calling conventions
+-------------------
+
+A primitive's group and input/output operands precede ``/`` in its
+signature and are passed positionally. Controls after ``*`` are keyword-only:
+
+.. code-block:: python
+
+   coop.load(group, source, items, valid_items=count, offset=offset)
+   result = coop.reduce(group, items, binary_op="max")
+
+These conventions apply to both backends. A qualified signature can add
+operands or controls; check the :doc:`API reference <coop_api>` rather than
+passing a backend extension to the common namespace. Load fills its output
+in place and returns ``None``; an operation that returns a new value leaves
+its input payload unchanged unless its contract says otherwise.
+
 Installation
 ------------
 
@@ -164,7 +183,7 @@ Install ``cuda-coop`` without adding Python package dependencies:
    python -m pip install cuda-coop
 
 The wheel includes the common API, every shipped DSL integration (including
-``cuda.coop.numba_mlir``), type declarations, and a matching bundle of CUB,
+``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``), type declarations, and a matching bundle of CUB,
 Thrust, libcu++, and CUDAX headers. The base install declares no Python
 package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
 using an integration requires its backend dependencies to be installed.
@@ -181,6 +200,10 @@ integrations. The extra only adds the dependency requirements declared in
 ``pyproject.toml`` so pip installs the supported Numba-CUDA-MLIR stack for
 the selected CUDA major version. The current integration requires
 ``numba-cuda-mlir>=0.5.0,<0.6``.
+For CUTLASS / CuTe DSL, install the base wheel alongside a runtime meeting
+the :ref:`CUTLASS requirements <coop-cutlass-requirements>`. A public CUTLASS
+extra and minimum version await qualification of an official artifact.
+
 Installing an extra does not register a backend in a running Python process;
 see :ref:`installation versus registration <coop-faq-installed-extra>`.
 
@@ -245,7 +268,7 @@ Registering a backend
 ---------------------
 
 Call :func:`cuda.coop.register` on the host before compiling kernels to
-activate its compiler integration explicitly:
+activate its compiler integration explicitly. For a Numba-CUDA-MLIR kernel:
 
 .. code-block:: python
 
@@ -255,17 +278,21 @@ activate its compiler integration explicitly:
 
    from numba_cuda_mlir import cuda
 
-Registration loads the backend and installs its compiler hooks, so this
-works regardless of whether ``cuda.coop`` or Numba-CUDA-MLIR was imported
-first. Repeated calls are safe and return ``None``. The spelling
-``"numba_cuda_mlir"`` is also accepted. Registration requires the backend's
-dependencies to be installed; it does not install packages.
+For a CuTe kernel:
 
-For a compatible CUTLASS environment, use ``coop.register("cutlass")``.
-Importing ``cuda.coop.cutlass`` also registers that backend. See the
-:doc:`CUTLASS Programming Guide <coop_cutlass>` for runtime requirements
-and prerequisite packages. A public CUTLASS installation extra and minimum
-version await qualification of an official artifact.
+.. code-block:: python
+
+   from cuda import coop
+
+   coop.register("cutlass")
+
+   from cutlass import cute
+
+Registration loads the selected backend and installs its compiler hooks.
+Both integrations support either import order and repeated registration;
+the call returns ``None``. Numba-CUDA-MLIR also accepts the spelling
+``"numba_cuda_mlir"``. Registration requires the backend's dependencies to
+be installed; it does not install packages.
 
 For convenience, importing ``cuda.coop`` after a supported compiler runtime
 also attempts to register its backend automatically. A standalone
@@ -279,13 +306,19 @@ Importing the backend namespace also registers it:
 
    import cuda.coop.numba_mlir as numba_coop
 
-Use ``numba_coop`` when mixing common and backend calls. If your program uses
-only the backend namespace, you can import it as ``coop`` instead. See the
-:ref:`namespace FAQ <coop-faq-numba-only>` and
-:ref:`Numba API comparison <coop-programming-api-choice>`. For CuTe kernels,
-use ``cuda.coop.cutlass`` and its
-:ref:`API comparison <coop-cutlass-api-choice>`. Both backends can be registered
-in one process; the compiler tracing a kernel selects the implementation.
+Or, for CuTe kernels:
+
+.. code-block:: python
+
+   import cuda.coop.cutlass as cutlass_coop
+
+The documentation reserves ``coop`` for common calls and uses ``numba_coop``
+or ``cutlass_coop`` for qualified calls. See the
+:ref:`namespace FAQ <coop-faq-qualified-only>` and the
+:ref:`Numba <coop-programming-api-choice>` and
+:ref:`CUTLASS <coop-cutlass-api-choice>` API comparisons. Both backends can be
+registered in one process; the compiler tracing a kernel selects the
+implementation.
 
 Shared execution model
 ----------------------
@@ -365,7 +398,11 @@ The payload extent is a compile-time value available as
 Load without ``oob_default`` does not initialize invalid slots. Backend
 value rules still apply: Numba-qualified calls can accept supported local
 arrays, while CUTLASS-qualified ``ThreadData`` supports CuTe register-tensor
-conversions. Those extensions are documented in the respective guides.
+conversions. A dtype selector describes the element representation; the
+active compiler still owns the scalar values. For example, selecting a
+NumPy dtype in a CuTe kernel produces CuTe values. See the
+:ref:`Numba type rules <coop-thread-data>` and
+:ref:`CUTLASS payload conversions <coop-cutlass-register-payloads>`.
 
 .. _coop-common-layouts:
 .. _exchange-semantics:
@@ -440,7 +477,7 @@ Warp operations use independent scratch per physical or logical group and
 the appropriate warp mask. Explicit storage support and user shared-memory
 restrictions vary by family and backend. See
 :ref:`Numba storage <coop-temp-storage>`, the
-:doc:`CUTLASS Programming Guide <coop_cutlass>`, and the
+:ref:`CUTLASS storage <coop-cutlass-storage>`, and the
 :ref:`storage FAQ <coop-faq-temp-storage>` for examples and limits.
 
 Configuration
