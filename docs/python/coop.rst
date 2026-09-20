@@ -51,7 +51,8 @@ sorting the full tile. Blocks can compare neighboring items with
 with :doc:`Run Length Decode <coop/visualizations/run-length-decode>`.
 :doc:`Batched Warp Reduction <coop/visualizations/reduce-batched>` computes
 an independent reduction for each per-thread payload slot.
-The compiler integrations implement these primitives using CUB and CUDAX.
+The compiler integrations use CUB and CUDAX; see
+:ref:`backend coverage <coop-backends>` for the families each implements.
 
 This overview introduces the shared API and execution model. Choose a
 programming guide to write kernels, or a developer guide to work on the
@@ -113,6 +114,18 @@ and qualified controls have the limits described in each programming guide.
    * - TopK, minimum and maximum keys or pairs
      - Available
      - Available
+   * - Adjacent Difference and Discontinuity
+     - Available
+     - Not implemented
+   * - Histogram
+     - Available
+     - Not implemented
+   * - Run Length Decode, windowed and bulk
+     - Available
+     - Not implemented
+   * - Batched Warp Reduction
+     - Available
+     - Not implemented
 
 .. _block-prefix-callbacks:
 
@@ -183,7 +196,8 @@ Install ``cuda-coop`` without adding Python package dependencies:
    python -m pip install cuda-coop
 
 The wheel includes the common API, every shipped DSL integration (including
-``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``), type declarations, and a matching bundle of CUB,
+``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``), type declarations, and
+a matching bundle of CUB,
 Thrust, libcu++, and CUDAX headers. The base install declares no Python
 package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
 using an integration requires its backend dependencies to be installed.
@@ -525,8 +539,8 @@ and leading and trailing whitespace is ignored. An unset variable is false.
 ``CUDA_COOP_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
    Files use ``cuda_coop_<backend>_<hash>.cu`` names so different backends can
-   share a directory. Set it before compiling; the Numba backend also writes
-   the source when its provider compilation cache is hit. Unset or empty
+   share a directory. Set it before compiling; both backends also write
+   the source when their provider compilation cache is hit. Unset or empty
    disables dumping.
 
 ``CUDA_PATH``

@@ -154,12 +154,12 @@
       notes: [
         "The input run tile and output window can have different per-thread extents. All block members participate, including those holding only zero-length padding.",
         bulk ? "Bulk decoding prepares CUB once inside this call. The table remains live while the provider loops over windows, then scratch can be reused with the normal TempStorage synchronization." : "Each separate window call prepares its own table. decoded_window_offset is an explicit stream index; a previous call does not advance a hidden cursor.",
-        bulk ? "Both namespaces return the total to every block member. The qualified API can also write a relative-offset destination and select uint64 totals and offsets." : "Relative offsets restart at zero for each run. The common API returns decoded values; the Numba-CUDA-MLIR-qualified API also exposes total_decoded_size and relative_offsets. MAX here is UINT32_MAX (4294967295).",
+        bulk ? "Both namespaces return the total to every block member. The Numba-qualified API can also write a relative-offset destination and select uint64 totals and offsets." : "Relative offsets restart at zero for each run. The common API returns decoded values; the Numba-CUDA-MLIR-qualified API also exposes total_decoded_size and relative_offsets. MAX here is UINT32_MAX (4294967295).",
         bulk ? "destination_offset shifts where the full stream is written. The output arrays must not overlap each other or the run inputs. A partial final window writes only valid items; other destination cells keep their original contents." : "An empty stream or a window starting at or beyond the total returns zero values and MAX relative offsets. These tail values are defined by the wrapper.",
         "Negative lengths, interior zero lengths followed by positive runs, and total-size overflow are rejected before CUB decoding. Uniform group controls are a caller precondition.",
       ],
       summary: capacity_error ? "Insufficient capacity: trap before writes; both output arrays stay untouched."
-        : `${bulk ? "Destination" : "Window values"}: [${result_tokens.map(token => token.label).join(", ")}]. Total ${total}${bulk ? ", returned to every member" : ", available through the qualified total output"}.`,
+        : `${bulk ? "Destination" : "Window values"}: [${result_tokens.map(token => token.label).join(", ")}]. Total ${total}${bulk ? ", returned to every member" : ", available through the Numba-qualified total output"}.`,
       caption: "Four threads illustrate one complete block. CUB selects the actual scan and decode implementation; these stages show data ownership and prepared-table lifetime, not its compiled instruction sequence. The tested kernels below use 128 threads.",
     };
   }
@@ -177,7 +177,7 @@
       { id: "offset", label: "Decoded window offset", value: "2", hidden: state => state.algorithm === "bulk", choices: state => Array.from({ length: total_for(state) + 3 }, (_, index) => String(index)) },
       { id: "destination_offset", label: "Destination offset", value: "3", hidden: state => state.algorithm === "window", choices: ["0", "3"] },
       { id: "capacity", label: "Destination capacity", value: "padded", hidden: state => state.algorithm === "window", choices: state => [choice("padded", "Enough, with spare slots"), choice("exact", "Exactly enough"), ...(required_capacity(state) ? [choice("short", "One slot too small")] : [])] },
-      { id: "relative", label: "Show relative offsets", value: "yes", choices: [choice("yes", "Yes (qualified API)"), choice("no", "No")] },
+      { id: "relative", label: "Show relative offsets", value: "yes", choices: [choice("yes", "Yes (Numba-qualified API)"), choice("no", "No")] },
     ],
     build,
   });

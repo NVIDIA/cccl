@@ -6,6 +6,9 @@
 Discontinuity
 =============
 
+These primitives are currently implemented by Numba-CUDA-MLIR. CUTLASS
+does not yet implement them; see :ref:`backend coverage <coop-backends>`.
+
 :func:`cuda.coop.discontinuity` flags changes between adjacent values in a
 full block tile. A head marks the start of a run; a tail marks its end.
 The default predicate compares neighboring values for inequality.
