@@ -228,6 +228,7 @@ def _prefix_operator(
             parameter="prefix_state",
         )
         return StatefulOperator(
+            op_tokenizer=_numba_semantic_token,
             op=prefix_op.op,
             state_dtype=NumbaMlirCoreAdapter().core_dtype(state_dtype),
             ret_dtype=Dependency("T"),
@@ -241,6 +242,7 @@ def _prefix_operator(
             "prefix_op must be a stateless device callable or StatefulFunction"
         )
     return PythonOperator(
+        op_tokenizer=_numba_semantic_token,
         ret_dtype=Dependency("T"),
         arg_dtypes=(Dependency("T"),),
         op=normalized,
