@@ -209,6 +209,30 @@ def test_qualified_custom_comparator(width):
     _run(width=width, qualified=True, custom=True)
 
 
+def test_qualified_comparator_with_nested_device_helper():
+    @cuda.jit(device=True)
+    def less(left, right):
+        return left < right
+
+    def compare(left, right):
+        return less(left, right)
+
+    @cuda.jit
+    def kernel(source, observed):
+        thread = cuda.threadIdx.x
+        keys = numba_coop.ThreadData(1)
+        keys[0] = source[thread]
+        result = numba_coop.merge_sort_keys(
+            numba_coop.this_block(), keys, compare_op=compare
+        )
+        observed[thread] = result[0]
+
+    source = ((np.arange(64, dtype=np.int32) * 7) % 41) - 20
+    observed = np.full_like(source, -1)
+    kernel[1, 64](source, observed)
+    np.testing.assert_array_equal(observed, np.sort(source))
+
+
 def test_qualified_local_arrays_and_device_helper():
     from numba_cuda_mlir import types
 
