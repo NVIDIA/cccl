@@ -18,7 +18,7 @@ from cuda.coop._core.block.neighbors import (
 
 from .._compiler._operations import StorageABI, factory_operation, register_factory
 from .._compiler._parameters import _validate_common_numeric_dtype, normalize_dim_param
-from .._semantic import _normalize_numba_callable
+from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from .._types import make_invocable_from_specialization
 from ._core import NumbaMlirCoreAdapter
 
@@ -31,6 +31,7 @@ def neighbor_operator(operation, op):
     if not callable(op):
         raise TypeError(f"{operation} operator must be a stateless callable")
     return PythonOperator(
+        op_tokenizer=_numba_semantic_token,
         ret_dtype=dtype if operation == "adjacent_difference" else INT8,
         arg_dtypes=(dtype, dtype),
         op=_normalize_numba_callable(op),
