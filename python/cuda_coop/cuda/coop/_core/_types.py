@@ -6,11 +6,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from enum import Enum
 from numbers import Integral
-from typing import Any
+from typing import Any, Mapping
 
 _I64_MIN = -(1 << 63)
 _I64_MAX = (1 << 63) - 1
@@ -252,10 +252,20 @@ class CxxOperator(_StaticParameter):
 
 @dataclass(frozen=True)
 class PythonOperator(_StaticParameter):
+    """Python callable with an optional backend policy for callback identity.
+
+    ``op_tokenizer`` returns a semantic token for ``op`` without traversing the
+    backend's compiler implementation. Core planning evaluates it on each walk
+    so changes to the callable's dependencies remain visible.
+    """
+
     ret_dtype: Any
     arg_dtypes: tuple[Any, ...]
     op: Any
     name: str | None = None
+    op_tokenizer: Callable[[Any], Any] | None = field(
+        default=None, compare=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "arg_dtypes", tuple(self.arg_dtypes))
@@ -263,7 +273,10 @@ class PythonOperator(_StaticParameter):
 
 @dataclass(frozen=True)
 class StatefulOperator(_RuntimeParameter):
-    """Python callable whose state is passed as a runtime operand."""
+    """Python callable whose state is passed as a runtime operand.
+
+    ``op_tokenizer`` has the same identity contract as for ``PythonOperator``.
+    """
 
     op: Any
     state_dtype: Any
@@ -271,6 +284,9 @@ class StatefulOperator(_RuntimeParameter):
     arg_dtypes: tuple[Any, ...]
     name: str | None = None
     is_output: bool = False
+    op_tokenizer: Callable[[Any], Any] | None = field(
+        default=None, compare=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "arg_dtypes", tuple(self.arg_dtypes))

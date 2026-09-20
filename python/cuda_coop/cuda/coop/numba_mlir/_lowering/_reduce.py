@@ -40,7 +40,7 @@ from .._compiler._parameters import (
     normalize_dim_param,
     normalize_dtype_param,
 )
-from .._semantic import _normalize_numba_callable
+from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from .._types import (
     NUMBA_TYPES_TO_CPP,
     Array,
@@ -229,6 +229,7 @@ def _block_reduce(
             if not callable(binary_op):
                 raise TypeError("binary_op must be a stateless device callable")
             reduce_operator = PythonOperator(
+                op_tokenizer=_numba_semantic_token,
                 ret_dtype=Dependency("T"),
                 arg_dtypes=(Dependency("T"), Dependency("T")),
                 op=_normalize_numba_callable(binary_op),
@@ -366,6 +367,7 @@ def _warp_reduce(
             if not callable(binary_op):
                 raise TypeError("binary_op must be a stateless device callable")
             reduce_operator = PythonOperator(
+                op_tokenizer=_numba_semantic_token,
                 ret_dtype=Dependency("T"),
                 arg_dtypes=(Dependency("T"), Dependency("T")),
                 op=_normalize_numba_callable(binary_op),

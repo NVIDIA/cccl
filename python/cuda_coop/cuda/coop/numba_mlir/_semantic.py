@@ -16,14 +16,35 @@ def _normalize_numba_callable(value):
     return value
 
 
-def _numba_semantic_token(value):
+def _normalize_numba_semantic_value(value):
+    if isinstance(value, MLIRDispatcher):
+        # Nested callees retain their own compile options, unlike the outer
+        # callback that cuda.coop recompiles from its Python function. Inspect
+        # only these inputs, not dispatcher caches, locks, or compiler state.
+        signatures = None
+        if not value._can_compile:
+            signatures = tuple(
+                (signature.return_type, signature.args)
+                for signature in value.nopython_signatures
+            )
+        return (
+            "numba-cuda-mlir-device-callee-v1",
+            value.py_func,
+            value.targetoptions,
+            value.locals,
+            signatures,
+        )
     if isinstance(value, types.Type):
-        value = (
+        # The display name is not unique; key defines Numba type equality.
+        return (
             "numba-cuda-mlir-type",
             type(value).__module__,
             type(value).__qualname__,
-            str(value),
+            value.key,
         )
-    else:
-        value = _normalize_numba_callable(value)
-    return semantic_token(value)
+    return value
+
+
+def _numba_semantic_token(value):
+    value = _normalize_numba_callable(value)
+    return semantic_token(value, normalize=_normalize_numba_semantic_value)
