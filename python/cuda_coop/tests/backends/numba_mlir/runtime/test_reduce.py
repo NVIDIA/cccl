@@ -465,6 +465,33 @@ def _maximum(left, right):
 _device_maximum = cuda.jit(device=True)(_maximum)
 
 
+@pytest.mark.parametrize("inline", [True, False])
+def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(inline):
+    helper = cuda.jit(device=True, inline=inline)(_maximum)
+
+    @cuda.jit(device=True)
+    def maximum(left, right):
+        return helper(left, right)
+
+    @cuda.jit
+    def kernel(source, observed):
+        thread = cuda.threadIdx.x
+        value = source[thread]
+        result = qualified_coop.reduce(
+            qualified_coop.this_block(),
+            value,
+            binary_op=maximum,
+            broadcast=False,
+        )
+        if thread == 0:
+            observed[0] = result
+
+    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
+    observed = np.full(1, -1, dtype=np.int32)
+    kernel[1, _BLOCK_THREADS](source, observed)
+    np.testing.assert_array_equal(observed, np.full_like(observed, source.max()))
+
+
 @cuda.jit
 def _stateless_callback_reductions(
     source,
