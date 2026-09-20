@@ -25,7 +25,7 @@ from cuda.coop._core import (
     plan_group_primitive,
 )
 
-from .._semantic import _normalize_numba_callable
+from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from ._group_planner_support import (
     Any,
     GroupRewriteError,
@@ -129,6 +129,7 @@ class _ReducePlanning:
                 "reduce",
                 "callback",
                 PythonOperator(
+                    op_tokenizer=_numba_semantic_token,
                     ret_dtype=Dependency("T"),
                     arg_dtypes=(Dependency("T"), Dependency("T")),
                     op=_normalize_numba_callable(binary_op),
