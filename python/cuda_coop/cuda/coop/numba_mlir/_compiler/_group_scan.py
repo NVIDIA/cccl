@@ -29,7 +29,7 @@ from cuda.coop._core import (
     plan_group_primitive,
 )
 
-from .._semantic import _normalize_numba_callable
+from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from ._group_planner_support import (
     _PAYLOAD_DTYPE_LIKE,
     GroupRewriteError,
@@ -147,6 +147,7 @@ class _ScanPlanning:
         return (
             "callback",
             PythonOperator(
+                op_tokenizer=_numba_semantic_token,
                 ret_dtype=Dependency("T"),
                 arg_dtypes=(Dependency("T"), Dependency("T")),
                 op=_normalize_numba_callable(scan_op),
