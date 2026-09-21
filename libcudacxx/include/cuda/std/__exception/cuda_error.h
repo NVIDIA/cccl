@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__driver/entry_point.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/msg_storage.h>
 #include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/source_location>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -42,10 +44,11 @@ namespace __detail
 {
 [[nodiscard]] _CCCL_HOST_API inline char* __format_cuda_error(
   ::cuda::__msg_storage& __msg_buffer,
+  const ::cuda::std::source_location& __loc,
+  const char* __api,
+  const char* __error_str,
   const int __status,
-  const char* __msg,
-  const char* __api                  = nullptr,
-  ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
+  const char* __msg) noexcept
 {
   ::snprintf(
     __msg_buffer.__buffer,
@@ -55,11 +58,7 @@ namespace __detail
     __loc.line(),
     __api ? __api : "",
     __api ? " " : "",
-#  if _CCCL_HAS_CTK()
-    ::cudaGetErrorString(::cudaError_t(__status)),
-#  else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
-    "cudaError",
-#  endif // ^^^ !_CCCL_HAS_CTK() ^^^
+    (__error_str != nullptr) ? __error_str : "cudaError",
     __status,
     __msg);
   return __msg_buffer.__buffer;
@@ -71,15 +70,34 @@ namespace __detail
  */
 class cuda_error : public ::std::runtime_error
 {
-public:
+  __cuda_error_t __status_;
+
   _CCCL_HOST_API cuda_error(
     const __cuda_error_t __status,
+    const char* __error_str,
     const char* __msg,
-    const char* __api                  = nullptr,
-    ::cuda::std::source_location __loc = ::cuda::std::source_location::current(),
-    __msg_storage __msg_buffer         = {}) noexcept
-      : ::std::runtime_error(::cuda::__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
+    const char* __api,
+    const ::cuda::std::source_location& __loc,
+    __msg_storage __msg_buffer = {})
+      : ::std::runtime_error(
+          ::cuda::__detail::__format_cuda_error(__msg_buffer, __loc, __api, __error_str, __status, __msg))
       , __status_(__status)
+  {}
+
+public:
+  _CCCL_HOST_API cuda_error(const __cuda_error_t __status,
+                            const char* __msg,
+                            const char* __api                         = nullptr,
+                            const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current())
+      : cuda_error{__status,
+#  if _CCCL_HAS_CTK()
+                   ::cuda::__driver::__getErrorString(static_cast<::cudaError_t>(__status)),
+#  else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
+                   "cudaError",
+#  endif // ^^^ !_CCCL_HAS_CTK() ^^^
+                   __msg,
+                   __api,
+                   __loc}
   {}
 
   [[nodiscard]] _CCCL_HOST_API constexpr auto status() const noexcept -> __cuda_error_t
@@ -87,8 +105,33 @@ public:
     return __status_;
   }
 
-private:
-  __cuda_error_t __status_;
+  template <int _Error>
+  [[noreturn]] friend _CCCL_HOST_API void
+  __throw_cuda_error(const char* __msg, const char* __api, const ::cuda::std::source_location& __loc)
+  {
+    const char* __error_str{};
+    if constexpr (_Error == /*::cudaErrorInvalidValue*/ 1)
+    {
+      __error_str = "invalid value";
+    }
+    else if constexpr (_Error == /*::cudaErrorInitializationError*/ 3)
+    {
+      __error_str = "initialization error";
+    }
+    else if constexpr (_Error == /*::cudaErrorNotSupported*/ 801)
+    {
+      __error_str = "operation not supported";
+    }
+    else if constexpr (_Error == /*::cudaErrorUnknown*/ 999)
+    {
+      __error_str = "unknown error";
+    }
+    else
+    {
+      static_assert(::cuda::std::__always_false_v<decltype(_Error)>, "unknown _Error");
+    }
+    _CCCL_THROW(::cuda::cuda_error, static_cast<__cuda_error_t>(_Error), __error_str, __msg, __api, __loc);
+  }
 };
 #endif // _CCCL_HOSTED()
 
