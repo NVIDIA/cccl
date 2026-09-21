@@ -97,6 +97,9 @@ C2H_CCCLRT_TEST("Stream pool type properties", "[stream][stream_pool]")
 
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>().next_stream()), cuda::stream_ref>);
+  STATIC_REQUIRE(
+    cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>().at(0)), cuda::stream_ref>);
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>()[0]), cuda::stream_ref>);
 }
 
 C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
@@ -136,6 +139,12 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(s2 != s0);
     REQUIRE(pool[2] == s2);
     REQUIRE(pool[0] == s0);
+
+    // at() is the same accessor, spelled out
+    for (cuda::std::size_t i = 0; i < 2 * pool.size(); ++i)
+    {
+      REQUIRE(pool.at(i) == pool[i]);
+    }
   }
 
   SECTION("A lazy pool touches nothing on the device until a stream is requested")

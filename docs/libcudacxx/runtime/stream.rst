@@ -78,7 +78,7 @@ device or green context. It is meant for code that wants to spread independent w
 managing their lifetime.
 
 - ``next_stream()``: returns the next stream in round-robin order
-- ``operator[](i)``: returns the stream in slot ``i % size()``
+- ``at(i)`` and ``operator[](i)``: return the stream in slot ``i % size()``
 - ``size()``, ``device()``, ``priority()``: the parameters given at construction; the constructors throw
   ``std::invalid_argument`` for a size of zero
 
