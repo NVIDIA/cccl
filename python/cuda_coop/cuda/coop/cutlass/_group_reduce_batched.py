@@ -9,7 +9,6 @@ from enum import Enum
 from cuda.coop._core.thread_group import ThreadGroup
 
 from ._compiler._launch import current_kernel_launch_facts
-from ._operators import normalize_operator
 from ._thread_data import _snapshot_readable_payload
 from ._thread_group import _require_complete_warp_partition
 
@@ -67,6 +66,8 @@ def reduce_batched(group, value, /, *, binary_op=None, output_layout="striped"):
     output_layout = output_layout.strip().lower().replace("-", "_")
     if output_layout not in {"striped", "blocked"}:
         raise ValueError("reduce_batched output_layout must be striped or blocked")
+    from ._operators import normalize_operator
+
     op = normalize_operator(binary_op, primitive="reduce_batched")
     value = _snapshot_readable_payload(value, name="value", primitive="reduce_batched")
     launch = current_kernel_launch_facts()
