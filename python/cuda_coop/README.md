@@ -168,10 +168,10 @@ explains terms and concepts, including blocked and striped layouts.
 | Counting | `histogram` |
 | Run Length Decode | `run_length_decode`, `run_length_decode_into` |
 
-Numba-CUDA-MLIR implements every family in this table. CUTLASS coverage
-expands with its implemented families; the [coverage
-table](https://nvidia.github.io/cccl/unstable/python/coop/concepts.html#coop-backend-operation-support)
-lists current support. Each guide describes its qualified API's extensions.
+Both backends implement Load/Store, Reduce/Sum, Scan, Exchange/Shuffle, Merge
+Sort, Radix Sort/Rank, TopK, Adjacent Difference, Discontinuity, and
+Histogram. Run Length Decode and Batched Warp Reduction are currently
+implemented only by Numba-CUDA-MLIR.
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
