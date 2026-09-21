@@ -78,7 +78,7 @@ device or green context. It is meant for code that wants to spread independent w
 managing their lifetime.
 
 - ``next_stream()``: returns the next stream in round-robin order
-- ``get_stream(i)``: returns the stream in slot ``i % size()``
+- ``operator[](i)``: returns the stream in slot ``i % size()``
 - ``size()``, ``device()``, ``priority()``: the parameters given at construction; the constructors throw
   ``std::invalid_argument`` for a size of zero
 
@@ -114,10 +114,10 @@ Availability: CCCL 3.6.0
      }
 
      // Always the same stream, for work that must stay ordered
-     cuda::stream_ref fixed = pool.get_stream(3);
+     cuda::stream_ref fixed = pool[3];
 
      // Wait for everything submitted to the pool before it goes away
      for (std::size_t i = 0; i < pool.size(); ++i) {
-       pool.get_stream(i).sync();
+       pool[i].sync();
      }
    } // All streams are destroyed here

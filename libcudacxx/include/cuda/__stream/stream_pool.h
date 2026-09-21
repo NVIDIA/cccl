@@ -88,7 +88,7 @@ enum class stream_pool_creation
 //! @brief A fixed-size pool of non-blocking streams on one device or green context.
 //!
 //! The pool owns its streams and destroys them with the pool. `next_stream()` hands out the streams in
-//! round-robin order; `get_stream(i)` addresses slot `i % size()`. Both return a `cuda::stream_ref` that
+//! round-robin order; `pool[i]` addresses slot `i % size()`. Both return a `cuda::stream_ref` that
 //! stays valid for the lifetime of the pool. Destroying the pool destroys the streams; it is the caller's
 //! responsibility to synchronize the work submitted to them first. The pool can be neither copied nor moved; to
 //! hand it around or share it, allocate it with `std::make_unique` or `std::make_shared`.
@@ -200,7 +200,7 @@ public:
   //! @return A reference to a stream owned by the pool
   //!
   //! @throws cuda_error if the stream has to be created and the creation fails
-  [[nodiscard]] _CCCL_HOST_API stream_ref get_stream(::cuda::std::size_t __index) const
+  [[nodiscard]] _CCCL_HOST_API stream_ref operator[](::cuda::std::size_t __index) const
   {
     return __stream_at(__index % __streams_.size());
   }

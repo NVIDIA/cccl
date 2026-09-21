@@ -129,13 +129,13 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
     const cuda::stream_ref s0 = pool.next_stream();
     REQUIRE(s0.get() != nullptr);
-    REQUIRE(pool.get_stream(0) == s0);
-    REQUIRE(pool.get_stream(4) == s0);
+    REQUIRE(pool[0] == s0);
+    REQUIRE(pool[4] == s0);
 
-    const cuda::stream_ref s2 = pool.get_stream(2);
+    const cuda::stream_ref s2 = pool[2];
     REQUIRE(s2 != s0);
-    REQUIRE(pool.get_stream(2) == s2);
-    REQUIRE(pool.get_stream(0) == s0);
+    REQUIRE(pool[2] == s2);
+    REQUIRE(pool[0] == s0);
   }
 
   SECTION("A lazy pool touches nothing on the device until a stream is requested")
@@ -172,7 +172,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(pool.priority() == cuda::stream::default_priority);
 
     const cuda::stream_ref s0 = pool.next_stream();
-    REQUIRE(pool.get_stream(0) == s0);
+    REQUIRE(pool[0] == s0);
   }
 
   SECTION("Round-robin hands out every slot once before repeating")
@@ -197,15 +197,15 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
   {
     const cuda::stream_pool pool{device, 3};
 
-    const cuda::stream_ref s1 = pool.get_stream(1);
-    REQUIRE(pool.get_stream(4) == s1);
-    REQUIRE(pool.get_stream(7) == s1);
+    const cuda::stream_ref s1 = pool[1];
+    REQUIRE(pool[4] == s1);
+    REQUIRE(pool[7] == s1);
 
     // Round-robin still starts at slot 0 and reaches slot 1 second.
     const cuda::stream_ref first = pool.next_stream();
     REQUIRE(first != s1);
     REQUIRE(pool.next_stream() == s1);
-    REQUIRE(pool.get_stream(0) == first);
+    REQUIRE(pool[0] == first);
   }
 
   SECTION("A pool of one stream always returns that stream")
@@ -213,8 +213,8 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     const cuda::stream_pool pool{device, 1};
     const cuda::stream_ref only = pool.next_stream();
     REQUIRE(pool.next_stream() == only);
-    REQUIRE(pool.get_stream(0) == only);
-    REQUIRE(pool.get_stream(17) == only);
+    REQUIRE(pool[0] == only);
+    REQUIRE(pool[17] == only);
   }
 
   SECTION("Streams live on the requested device and run work")
@@ -297,7 +297,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     std::vector<cuda::stream_ref> all;
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
-      all.push_back(pool.get_stream(i));
+      all.push_back(pool[i]);
     }
 
     // Every entry is a distinct, valid stream on the device.
@@ -314,7 +314,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     // The getters keep handing out the same streams.
     for (cuda::std::size_t i = 0; i < all.size(); ++i)
     {
-      REQUIRE(pool.get_stream(i) == all[i]);
+      REQUIRE(pool[i] == all[i]);
       REQUIRE(pool.next_stream() == all[i]);
     }
   }
@@ -328,7 +328,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
-      const cuda::stream_ref str = pool.get_stream(i);
+      const cuda::stream_ref str = pool[i];
       REQUIRE(str.get() != nullptr);
       REQUIRE(str.device() == device);
       REQUIRE(pool.next_stream() == str);
@@ -347,7 +347,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
-      pool.get_stream(i).sync();
+      pool[i].sync();
     }
     REQUIRE(*value0 == 42);
     REQUIRE(*value1 == 42);
@@ -361,7 +361,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
     const auto before = ::test::count_driver_stack();
     (void) pool.next_stream();
-    (void) pool.get_stream(1);
+    (void) pool[1];
     REQUIRE(::test::count_driver_stack() == before);
   }
 }
@@ -396,7 +396,7 @@ C2H_CCCLRT_TEST("Stream pool is usable from several threads", "[stream][stream_p
   std::set<cudaStream_t> slots;
   for (cuda::std::size_t i = 0; i < pool.size(); ++i)
   {
-    slots.insert(pool.get_stream(i).get());
+    slots.insert(pool[i].get());
   }
   REQUIRE(slots.size() == pool.size());
 
@@ -450,7 +450,7 @@ C2H_CCCLRT_TEST("Round-robin order survives the counter being pulled back", "[st
     REQUIRE(pool.__next_ticket() == 3 * n);
     for (cuda::std::size_t i = 0; i < seen.size(); ++i)
     {
-      REQUIRE(seen[i] == pool.get_stream(i % n));
+      REQUIRE(seen[i] == pool[i % n]);
     }
   }
 
@@ -515,7 +515,7 @@ C2H_CCCLRT_TEST("Concurrent first requests for one slot create a single stream",
     for (int t = 0; t < num_threads; ++t)
     {
       threads.emplace_back([&pool, &seen, t] {
-        seen[t] = pool.get_stream(1).get();
+        seen[t] = pool[1].get();
       });
     }
     for (auto& thread : threads)
@@ -527,7 +527,7 @@ C2H_CCCLRT_TEST("Concurrent first requests for one slot create a single stream",
     {
       REQUIRE(handle == seen[0]);
     }
-    REQUIRE(pool.get_stream(1).get() == seen[0]);
+    REQUIRE(pool[1].get() == seen[0]);
   }
 }
 
@@ -538,7 +538,7 @@ C2H_CCCLRT_TEST("Eager stream pool is usable from several threads", "[stream][st
   std::set<cudaStream_t> slots;
   for (cuda::std::size_t i = 0; i < pool.size(); ++i)
   {
-    slots.insert(pool.get_stream(i).get());
+    slots.insert(pool[i].get());
   }
   REQUIRE(slots.size() == 4);
 
@@ -608,7 +608,7 @@ C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captur
     REQUIRE(begin_capture(capturing.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 
     const cuda::stream_pool pool{device, 2};
-    REQUIRE(pool.get_stream(0) != pool.get_stream(1));
+    REQUIRE(pool[0] != pool[1]);
 
     ::CUstreamCaptureMode mode = ::CU_STREAM_CAPTURE_MODE_GLOBAL;
     cuda::__driver::__threadExchangeStreamCaptureMode(mode);
@@ -698,7 +698,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
 
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
-      REQUIRE(pool.get_stream(i).__logical_device().green_context() == ldev.green_context());
+      REQUIRE(pool[i].__logical_device().green_context() == ldev.green_context());
     }
   }
 
