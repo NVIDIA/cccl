@@ -163,9 +163,10 @@ TEST_CASE("TestUninitializedCopyNonPODHost", "[uninitialized_copy]")
 
   thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
 
-  x = v2[0];
-  REQUIRE_FALSE(x.copy_constructed_on_device);
-  REQUIRE(x.copy_constructed_on_host);
+  const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+  const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
+  REQUIRE(n_device == 0u);
+  REQUIRE(n_host == v2.size());
 }
 
 TEST_CASE("TestUninitializedCopyNNonPODHost", "[uninitialized_copy]")
@@ -184,7 +185,8 @@ TEST_CASE("TestUninitializedCopyNNonPODHost", "[uninitialized_copy]")
 
   thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
 
-  x = v2[0];
-  REQUIRE_FALSE(x.copy_constructed_on_device);
-  REQUIRE(x.copy_constructed_on_host);
+  const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+  const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
+  REQUIRE(n_device == 0u);
+  REQUIRE(n_host == v2.size());
 }
