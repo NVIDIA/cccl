@@ -128,9 +128,9 @@ See the :ref:`shared storage model <coop-common-storage>`,
 :ref:`CUTLASS storage rules <coop-cutlass-storage>` for each family's limits.
 Numba's restrictions on combining cooperative backing with user static or
 dynamic shared arrays are specific to that backend.
-Both backends also accept explicit block scratch for Adjacent Difference
-and Discontinuity. Numba additionally supports Histogram and both Run
-Length Decode forms. CUTLASS does not yet implement those families or
+Both backends also accept explicit block scratch for Adjacent Difference,
+Discontinuity, and Histogram. Numba additionally supports both Run Length
+Decode forms. CUTLASS does not yet implement those forms or
 Batched Warp Reduction; see
 :ref:`backend coverage <coop-backends>`.
 
