@@ -49,6 +49,13 @@ static_assert(::cuda::std::is_constructible_v<int64_t, ffloat>, "");
 // wherever _CCCL_HAS_FLOAT128() and long double on IEEE-128 long double platforms.
 static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, cudax::__fpmp_fp128>, "");
 static_assert(::cuda::std::is_constructible_v<cudax::__fpmp_fp128, cudax::fp64mp2>, "");
+#  if _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
+// GCC's _Float128 is often a second binary128 type (distinct from __fpmp_fp128
+// on both x86 __float128 and aarch64 long double). The extra members cover that
+// spelling; when the types coincide these asserts still hold via __fpmp_fp128.
+static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, _Float128>, "");
+static_assert(::cuda::std::is_constructible_v<_Float128, cudax::fp64mp2>, "");
+#  endif
 
 // fp32mp2 carries ~48 bits, fewer than a double, so quad is not its interchange
 // type: both directions are deliberately deleted, like the 128-bit integers above.
@@ -56,6 +63,10 @@ static_assert(::cuda::std::is_constructible_v<cudax::__fpmp_fp128, cudax::fp64mp
 // conversion would silently route through operator double().
 static_assert(!::cuda::std::is_constructible_v<ffloat, cudax::__fpmp_fp128>, "");
 static_assert(!::cuda::std::is_constructible_v<cudax::__fpmp_fp128, ffloat>, "");
+#  if _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
+static_assert(!::cuda::std::is_constructible_v<ffloat, _Float128>, "");
+static_assert(!::cuda::std::is_constructible_v<_Float128, ffloat>, "");
+#  endif
 // The double image stays reachable, spelled out.
 static_assert(::cuda::std::is_constructible_v<cudax::__fpmp_fp128, double>, "");
 #endif // _CCCL_FPMP_FP128_ENABLE == 1
@@ -164,9 +175,25 @@ TEST_HOST_DEVICE_FUNC void test()
   run_test();
 }
 
+#if _CCCL_FPMP_FP128_ENABLE == 1 && _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
+// Host-only: nvcc rejects _Float128 in device code below sm_100, and the extra
+// conversion members are host functions there anyway.
+void run_iec_float128()
+{
+  const _Float128 q = static_cast<_Float128>(1.25);
+  const cudax::fp64mp2 x(q);
+  assert(static_cast<_Float128>(x) == q);
+  const cudax::fp64mp2 y = x / cudax::fp64mp2(static_cast<_Float128>(1));
+  assert(static_cast<_Float128>(y) == q);
+}
+#endif
+
 int main(int, char**)
 {
   test();
+#if _CCCL_FPMP_FP128_ENABLE == 1 && _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
+  NV_IF_TARGET(NV_IS_HOST, (run_iec_float128();))
+#endif
 
   return 0;
 }
