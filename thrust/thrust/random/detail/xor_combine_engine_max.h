@@ -143,7 +143,7 @@ struct xor_combine_engine_max_aux_2
   static constexpr ResultType value = compute_value();
 };
 
-template <typename ResultType, ResultType A, ResultType B, int D, bool use_case1 = (A == 0) || (B < two_to_the_power(D))>
+template <typename ResultType, ResultType A, ResultType B, int D, bool UseCase1 = (A == 0) || (B < two_to_the_power(D))>
 struct xor_combine_engine_max_aux_1 : xor_combine_engine_max_aux_case1<ResultType, A, B, D>
 {};
 
