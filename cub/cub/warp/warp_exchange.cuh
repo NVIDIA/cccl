@@ -36,11 +36,11 @@ enum WarpExchangeAlgorithm
 
 namespace detail
 {
-template <typename InputT, int ItemsPerThread, int LOGICAL_WARP_THREADS, WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
+template <typename InputT, int ItemsPerThread, int LogicalWarpThreads, WarpExchangeAlgorithm Algorithm>
 using InternalWarpExchangeImpl =
-  ::cuda::std::_If<WARP_EXCHANGE_ALGORITHM == WARP_EXCHANGE_SMEM,
-                   WarpExchangeSmem<InputT, ItemsPerThread, LOGICAL_WARP_THREADS>,
-                   WarpExchangeShfl<InputT, ItemsPerThread, LOGICAL_WARP_THREADS>>;
+  ::cuda::std::_If<Algorithm == WARP_EXCHANGE_SMEM,
+                   WarpExchangeSmem<InputT, ItemsPerThread, LogicalWarpThreads>,
+                   WarpExchangeShfl<InputT, ItemsPerThread, LogicalWarpThreads>>;
 } // namespace detail
 
 /**
@@ -53,7 +53,7 @@ using InternalWarpExchangeImpl =
  * @tparam ItemsPerThread
  *   The number of items partitioned onto each thread.
  *
- * @tparam LOGICAL_WARP_THREADS
+ * @tparam LogicalWarpThreads
  *   <b>[optional]</b> The number of threads per "logical" warp (may be less
  *   than the number of hardware warp threads). Default is the warp size of the
  *   targeted CUDA compute-capability (e.g., 32 threads for SM86). Must be a
@@ -111,13 +111,11 @@ using InternalWarpExchangeImpl =
  */
 template <typename InputT,
           int ItemsPerThread,
-          int LOGICAL_WARP_THREADS                      = detail::warp_threads,
-          WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM = WARP_EXCHANGE_SMEM>
-class WarpExchange
-    : private detail::InternalWarpExchangeImpl<InputT, ItemsPerThread, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>
+          int LogicalWarpThreads          = detail::warp_threads,
+          WarpExchangeAlgorithm Algorithm = WARP_EXCHANGE_SMEM>
+class WarpExchange : private detail::InternalWarpExchangeImpl<InputT, ItemsPerThread, LogicalWarpThreads, Algorithm>
 {
-  using InternalWarpExchange =
-    detail::InternalWarpExchangeImpl<InputT, ItemsPerThread, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>;
+  using InternalWarpExchange = detail::InternalWarpExchangeImpl<InputT, ItemsPerThread, LogicalWarpThreads, Algorithm>;
 
 public:
   /// \smemstorage{WarpExchange}

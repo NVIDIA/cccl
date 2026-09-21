@@ -123,11 +123,11 @@ using non_void_value_t = typename non_void_value_impl<It, FallbackT>::type;
  *     Log2<8>::VALUE   // 3
  *     Log2<3>::VALUE   // 2
  */
-template <int N, int CURRENT_VAL = N, int COUNT = 0>
+template <int N, int CurrentVal = N, int COUNT = 0>
 struct Log2
 {
   /// Static logarithm value
-  static constexpr int VALUE = Log2<N, (CURRENT_VAL >> 1), COUNT + 1>::VALUE;
+  static constexpr int VALUE = Log2<N, (CurrentVal >> 1), COUNT + 1>::VALUE;
 };
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document

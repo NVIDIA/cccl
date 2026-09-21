@@ -727,14 +727,14 @@ public:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 
-    template <bool ALL_LANES_VALID, typename ReductionOp>
+    template <bool AllLanesValid, typename ReductionOp>
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
     Reduce(T input, int /* valid_items */, ReductionOp /* reduction_op */)
     {
       return input;
     }
 
-    template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+    template <bool HeadSegmented, typename FlagT, typename ReductionOp>
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
     SegmentedReduce(T input, FlagT /* flag */, ReductionOp /* reduction_op */)
     {

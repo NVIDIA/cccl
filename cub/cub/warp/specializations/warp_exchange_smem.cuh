@@ -29,14 +29,14 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename InputT, int ItemsPerThread, int LOGICAL_WARP_THREADS = warp_threads>
+template <typename InputT, int ItemsPerThread, int LogicalWarpThreads = warp_threads>
 class WarpExchangeSmem
 {
-  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-  static constexpr int ITEMS_PER_TILE = ItemsPerThread * LOGICAL_WARP_THREADS + 1;
+  static constexpr int ITEMS_PER_TILE = ItemsPerThread * LogicalWarpThreads + 1;
 
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == warp_threads;
+  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == warp_threads;
 
   static constexpr int LOG_SMEM_BANKS = log2_smem_banks;
 
@@ -66,9 +66,9 @@ public:
 
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
-      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
-      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
+      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
+      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
+      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
   {}
 
   template <typename OutputT>
@@ -84,7 +84,7 @@ public:
 
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx      = LOGICAL_WARP_THREADS * item + lane_id;
+      const int idx      = LogicalWarpThreads * item + lane_id;
       output_items[item] = temp_storage.items_shared[idx];
     }
   }
@@ -95,7 +95,7 @@ public:
   {
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx                  = LOGICAL_WARP_THREADS * item + lane_id;
+      const int idx                  = LogicalWarpThreads * item + lane_id;
       temp_storage.items_shared[idx] = input_items[item];
     }
     __syncwarp(member_mask);
@@ -135,7 +135,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
     {
-      int item_offset = (ITEM * LOGICAL_WARP_THREADS) + lane_id;
+      int item_offset = (ITEM * LogicalWarpThreads) + lane_id;
 
       if (INSERT_PADDING)
       {

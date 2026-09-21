@@ -24,18 +24,18 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename InputT, int ItemsPerThread, int LOGICAL_WARP_THREADS = warp_threads>
+template <typename InputT, int ItemsPerThread, int LogicalWarpThreads = warp_threads>
 class WarpExchangeShfl
 {
-  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-  static_assert(ItemsPerThread == LOGICAL_WARP_THREADS,
+  static_assert(ItemsPerThread == LogicalWarpThreads,
                 "WARP_EXCHANGE_SHUFFLE currently only works when ItemsPerThread == "
-                "LOGICAL_WARP_THREADS");
+                "LogicalWarpThreads");
 
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == warp_threads;
+  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == warp_threads;
 
-  template <int NUM_ENTRIES, int IDX>
+  template <int NumEntries, int IDX>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   transpose_foreach(InputT (&vals)[ItemsPerThread], const bool xor_bit_set, const unsigned mask)
   {
@@ -68,7 +68,7 @@ class WarpExchangeShfl
     //       =======
     //  t0  t1  t2  t3  t4  t5  t6  t7
     //                 ┌──────────────┐
-    //  A0  A1  A2  A3 │A4  A5  A6  A7│    NUM_ENTRIES == 4 tells us how many
+    //  A0  A1  A2  A3 │A4  A5  A6  A7│    NumEntries == 4 tells us how many
     //                 │              │       entries we have in a submatrix,
     //                 │              │       in this case 4 and the size of
     //  B0  B1  B2  B3 │B4  B5  B6  B7│       the jumps between submatrices.
@@ -96,7 +96,7 @@ class WarpExchangeShfl
     //       =======
     //  t0  t1  t2  t3  t4  t5  t6  t7
     //         ┌──────┐        ┌──────┐
-    //  A0  A1 │A2  A3│ E0  E1 │E2  E3│    NUM_ENTRIES == 2 so we have 2
+    //  A0  A1 │A2  A3│ E0  E1 │E2  E3│    NumEntries == 2 so we have 2
     //         │      │        │      │       submatrices per thread and there
     //         │      │        │      │       are 2 elements between these
     //  B0  B1 │B2  B3│ F0  F1 │F2  F3│       submatrices.
@@ -124,7 +124,7 @@ class WarpExchangeShfl
     //       =======
     //  t0  t1  t2  t3  t4  t5  t6  t7
     //     ┌──┐    ┌──┐    ┌──┐    ┌──┐
-    //  A0 │A1│ C0 │C1│ E0 │E1│ G0 │G1│    NUM_ENTRIES == 1 so we have 4
+    //  A0 │A1│ C0 │C1│ E0 │E1│ G0 │G1│    NumEntries == 1 so we have 4
     //     └──┘    └──┘    └──┘    └──┘       submatrices per thread and there
     // ┌──┐    ┌──┐    ┌──┐    ┌──┐           is 1 element between these
     // │B0│ B1 │D0│ D1 │F0│ F1 │H0│ H1        submatrices.
@@ -178,27 +178,27 @@ class WarpExchangeShfl
 
     // NOTE: Do *NOT* try to refactor this code to use a reference, since nvcc
     //       tends to choke on it and then drop everything into local memory.
-    const InputT send_val = (xor_bit_set ? vals[IDX] : vals[IDX + NUM_ENTRIES]);
-    const InputT recv_val = __shfl_xor_sync(mask, send_val, NUM_ENTRIES, LOGICAL_WARP_THREADS);
-    (xor_bit_set ? vals[IDX] : vals[IDX + NUM_ENTRIES]) = recv_val;
+    const InputT send_val = (xor_bit_set ? vals[IDX] : vals[IDX + NumEntries]);
+    const InputT recv_val = __shfl_xor_sync(mask, send_val, NumEntries, LogicalWarpThreads);
+    (xor_bit_set ? vals[IDX] : vals[IDX + NumEntries]) = recv_val;
 
-    constexpr int next_idx = IDX + 1 + ((IDX + 1) % NUM_ENTRIES == 0) * NUM_ENTRIES;
+    constexpr int next_idx = IDX + 1 + ((IDX + 1) % NumEntries == 0) * NumEntries;
     if constexpr (next_idx < ItemsPerThread)
     {
-      transpose_foreach<NUM_ENTRIES, next_idx>(vals, xor_bit_set, mask);
+      transpose_foreach<NumEntries, next_idx>(vals, xor_bit_set, mask);
     }
   }
 
-  template <int NUM_ENTRIES>
+  template <int NumEntries>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   transpose(InputT (&vals)[ItemsPerThread], const unsigned int lane_id, const unsigned int mask)
   {
-    if constexpr (NUM_ENTRIES != 0)
+    if constexpr (NumEntries != 0)
     {
-      const bool xor_bit_set = lane_id & NUM_ENTRIES;
-      transpose_foreach<NUM_ENTRIES, 0>(vals, xor_bit_set, mask);
+      const bool xor_bit_set = lane_id & NumEntries;
+      transpose_foreach<NumEntries, 0>(vals, xor_bit_set, mask);
 
-      transpose<NUM_ENTRIES / 2>(vals, lane_id, mask);
+      transpose<NumEntries / 2>(vals, lane_id, mask);
     }
   }
 
@@ -228,9 +228,9 @@ public:
   WarpExchangeShfl() = delete;
 
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeShfl(TempStorage&)
-      : lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
-      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
-      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
+      : lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
+      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
+      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
   {}
 
   template <typename OutputT>

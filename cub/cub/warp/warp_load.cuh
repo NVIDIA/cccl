@@ -234,7 +234,7 @@ CUB_NAMESPACE_BEGIN
 //!   <b>[optional]</b> cub::WarpLoadAlgorithm tuning policy.
 //!   default: cub::WARP_LOAD_DIRECT.
 //!
-//! @tparam LOGICAL_WARP_THREADS
+//! @tparam LogicalWarpThreads
 //!   <b>[optional]</b> The number of threads per "logical" warp (may be less
 //!   than the number of hardware warp threads). Default is the warp size of the
 //!   targeted CUDA compute-capability (e.g., 32 threads for SM86). Must be a
@@ -243,12 +243,12 @@ CUB_NAMESPACE_BEGIN
 template <typename InputT,
           int ItemsPerThread,
           WarpLoadAlgorithm ALGORITHM = WARP_LOAD_DIRECT,
-          int LOGICAL_WARP_THREADS    = detail::warp_threads>
+          int LogicalWarpThreads      = detail::warp_threads>
 class WarpLoad
 {
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
+  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == detail::warp_threads;
 
-  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
 private:
   /*****************************************************************************
@@ -304,20 +304,20 @@ private:
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread])
     {
-      LoadDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
+      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
     }
 
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items)
     {
-      LoadDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items);
+      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
     }
 
     template <typename InputIteratorT, typename DefaultT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items, DefaultT oob_default)
     {
-      LoadDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items, oob_default);
+      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items, oob_default);
     }
   };
 
@@ -372,7 +372,7 @@ private:
   template <int DUMMY>
   struct LoadInternal<WARP_LOAD_TRANSPOSE, DUMMY>
   {
-    using WarpExchangeT = WarpExchange<InputT, ItemsPerThread, LOGICAL_WARP_THREADS>;
+    using WarpExchangeT = WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads>;
 
     struct _TempStorage : WarpExchangeT::TempStorage
     {};
@@ -392,14 +392,14 @@ private:
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread])
     {
-      LoadDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
+      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
       WarpExchangeT(temp_storage).StripedToBlocked(items, items);
     }
 
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items)
     {
-      LoadDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items);
+      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
       WarpExchangeT(temp_storage).StripedToBlocked(items, items);
     }
 
@@ -407,7 +407,7 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items, DefaultT oob_default)
     {
-      LoadDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items, oob_default);
+      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items, oob_default);
       WarpExchangeT(temp_storage).StripedToBlocked(items, items);
     }
   };
@@ -456,7 +456,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpLoad()
       : temp_storage(PrivateStorage())
       , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as
@@ -464,7 +464,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpLoad(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @}

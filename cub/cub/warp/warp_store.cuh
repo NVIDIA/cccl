@@ -240,7 +240,7 @@ CUB_NAMESPACE_BEGIN
 //!   <b>[optional]</b> cub::WarpStoreAlgorithm tuning policy enumeration.
 //!   default: cub::WARP_STORE_DIRECT.
 //!
-//! @tparam LOGICAL_WARP_THREADS
+//! @tparam LogicalWarpThreads
 //!   <b>[optional]</b> The number of threads per "logical" warp (may be less
 //!   than the number of hardware warp threads). Default is the warp size of the
 //!   targeted CUDA compute-capability (e.g., 32 threads for SM86). Must be a
@@ -249,12 +249,12 @@ CUB_NAMESPACE_BEGIN
 template <typename T,
           int ItemsPerThread,
           WarpStoreAlgorithm ALGORITHM = WARP_STORE_DIRECT,
-          int LOGICAL_WARP_THREADS     = detail::warp_threads>
+          int LogicalWarpThreads       = detail::warp_threads>
 class WarpStore
 {
-  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
+  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == detail::warp_threads;
 
 private:
   /// Store helper
@@ -299,13 +299,13 @@ private:
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
-      StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
+      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
-      StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items);
+      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
     }
   };
 
@@ -341,7 +341,7 @@ private:
   template <int DUMMY>
   struct StoreInternal<WARP_STORE_TRANSPOSE, DUMMY>
   {
-    using WarpExchangeT = WarpExchange<T, ItemsPerThread, LOGICAL_WARP_THREADS>;
+    using WarpExchangeT = WarpExchange<T, ItemsPerThread, LogicalWarpThreads>;
 
     struct _TempStorage : WarpExchangeT::TempStorage
     {};
@@ -362,14 +362,14 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       WarpExchangeT(temp_storage).BlockedToStriped(items, items);
-      StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
+      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       WarpExchangeT(temp_storage).BlockedToStriped(items, items);
-      StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items);
+      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
     }
   };
 
@@ -401,7 +401,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore()
       : temp_storage(PrivateStorage())
       , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as
@@ -409,7 +409,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}
 
   //! @}
