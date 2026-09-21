@@ -6,6 +6,9 @@
 Neighbor operations
 ===================
 
+Both Numba-CUDA-MLIR and CUTLASS implement these primitives with built-in
+subtraction and inequality.
+
 Adjacent Difference and Discontinuity read neighboring items in a block's
 flattened, blocked sequence. They return new per-thread payloads and
 preserve their inputs. A neighbor can belong to the same thread, another
@@ -47,6 +50,16 @@ are unsupported. The functions infer dtype and per-thread extent from
 ``ThreadData``. See :doc:`programming_guide` for group participation and
 :ref:`temporary storage <coop-temp-storage>` for caller-owned scratch.
 Both operations can use automatic scratch or an explicit ``TempStorage``.
+
+CuTe register payloads
+----------------------
+
+The CUTLASS-qualified functions also accept CuTe register tensors and
+immutable register vectors. They snapshot the input and return fresh
+``ThreadData``; flags contain CuTe ``Int32`` values. The
+:ref:`CuTe example <coop-cutlass-neighbors>` computes deltas and both flags
+using the same scratch descriptor. CUTLASS supports the built-in operations
+only; custom device callables remain specific to Numba-CUDA-MLIR.
 
 Custom operations with Numba-CUDA-MLIR
 --------------------------------------
