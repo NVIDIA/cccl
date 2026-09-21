@@ -28,12 +28,8 @@ def test_dynamic_payload(dtype, api):
         return payload
 
     @cute.kernel
-    def kernel(
-        memory: cute.Pointer,
-        iterations: cutlass.Int32,
-        items_per_thread: cutlass.Constexpr,
-    ):
-        payload = api.ThreadData(items_per_thread, dtype=dtype, alignment=64)
+    def kernel(memory: cute.Pointer, iterations: cutlass.Int32):
+        payload = api.ThreadData(2, dtype=dtype, alignment=64)
         payload[0] = 1
         payload[1] = 3
         for iteration in range(iterations):
@@ -51,12 +47,33 @@ def test_dynamic_payload(dtype, api):
         output[1] = payload[1]
 
     @cute.jit
-    def launch(
-        memory: cute.Pointer,
-        iterations: cutlass.Int32,
-        items_per_thread: cutlass.Constexpr,
-    ):
-        kernel(memory, iterations, items_per_thread).launch(grid=1, block=1)
+    def launch(memory: cute.Pointer, iterations: cutlass.Int32):
+        kernel(memory, iterations).launch(grid=1, block=1)
 
     pointer = make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
-    assert cute.compile[(GPUArch("sm_80"),)](launch, pointer, 3, 2) is not None
+    assert cute.compile[(GPUArch("sm_80"),)](launch, pointer, 3) is not None
+
+
+def test_tensor_ssa_conversion_across_regions():
+    @cute.kernel
+    def kernel(memory: cute.Pointer, iterations: cutlass.Int32):
+        payload = cutlass_coop.ThreadData.from_values(
+            cutlass.Int32(1), cutlass.Int32(3), dtype=cutlass.Int32
+        )
+        vector = payload.to_tensor_ssa()
+        output = cute.make_tensor(memory, cute.make_layout(6))
+        for _ in range(iterations):
+            inside = cutlass_coop.ThreadData.from_vector(vector)
+            output[0], output[1] = inside[0], inside[1]
+        outside = cutlass_coop.ThreadData.from_vector(vector)
+        output[2], output[3] = outside[0], outside[1]
+        output[4], output[5] = vector[0], vector[1]
+
+    @cute.jit
+    def launch(memory: cute.Pointer, iterations: cutlass.Int32):
+        kernel(memory, iterations).launch(grid=1, block=1)
+
+    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, pointer, cutlass.Int32(3)) is not None
+    )
