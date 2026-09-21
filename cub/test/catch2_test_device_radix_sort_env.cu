@@ -11,13 +11,13 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
-#include <cuda/devices>
 #include <cuda/stream>
 
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRadixSort::SortPairs, device_radix_sort_pairs);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRadixSort::SortPairsDescending, device_radix_sort_pairs_descending);
@@ -596,7 +596,7 @@ CUB_TEST_CASE("Device radix sort pairs uses custom stream", "[radix_sort][device
   auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
   auto values_out = c2h::device_vector<int>(7);
 
-  const cuda::stream custom_stream{cuda::devices[0]};
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -639,7 +639,7 @@ CUB_TEST_CASE("Device radix sort pairs descending uses custom stream", "[radix_s
   auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
   auto values_out = c2h::device_vector<int>(7);
 
-  const cuda::stream custom_stream{cuda::devices[0]};
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -680,7 +680,7 @@ CUB_TEST_CASE("Device radix sort keys uses custom stream", "[radix_sort][device]
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
 
-  const cuda::stream custom_stream{cuda::devices[0]};
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -709,7 +709,7 @@ CUB_TEST_CASE("Device radix sort keys descending uses custom stream", "[radix_so
   auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = c2h::device_vector<int>(7);
 
-  const cuda::stream custom_stream{cuda::devices[0]};
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -740,7 +740,7 @@ CUB_TEST_CASE("Device radix sort pairs decomposer uses custom stream", "[radix_s
   auto values_in  = c2h::device_vector<int>{0, 1, 2};
   auto values_out = c2h::device_vector<int>(3);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
 
   REQUIRE(
@@ -822,7 +822,7 @@ CUB_TEST_CASE("Device radix sort pairs DB decomposer uses custom stream", "[radi
   cub::DoubleBuffer<custom_pair_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
   cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
 
   REQUIRE(cudaSuccess
@@ -844,7 +844,7 @@ CUB_TEST_CASE("Device radix sort keys decomposer+bits uses custom stream", "[rad
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -869,7 +869,7 @@ CUB_TEST_CASE("Device radix sort keys decomposer uses custom stream", "[radix_so
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -889,7 +889,7 @@ CUB_TEST_CASE("Device radix sort keys DB decomposer uses custom stream", "[radix
 
   cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -909,7 +909,7 @@ CUB_TEST_CASE("Device radix sort keys DB decomposer+bits uses custom stream", "[
 
   cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -929,7 +929,7 @@ CUB_TEST_CASE("Device radix sort keys descending decomposer+bits uses custom str
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -954,7 +954,7 @@ CUB_TEST_CASE("Device radix sort keys descending decomposer uses custom stream",
   auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
   auto keys_out = c2h::device_vector<custom_key_t>(7);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -974,7 +974,7 @@ CUB_TEST_CASE("Device radix sort keys descending DB decomposer uses custom strea
 
   cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -997,7 +997,7 @@ CUB_TEST_CASE("Device radix sort keys descending DB decomposer+bits uses custom 
 
   cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -1019,7 +1019,7 @@ CUB_TEST_CASE("Device radix sort pairs descending decomposer+bits uses custom st
   auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
   auto values_out = c2h::device_vector<int>(7);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -1050,7 +1050,7 @@ CUB_TEST_CASE("Device radix sort pairs descending decomposer uses custom stream"
   auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
   auto values_out = c2h::device_vector<int>(7);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -1082,7 +1082,7 @@ CUB_TEST_CASE("Device radix sort pairs descending DB decomposer uses custom stre
   cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
   cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 
@@ -1111,7 +1111,7 @@ CUB_TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom
   cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
   cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref};
 

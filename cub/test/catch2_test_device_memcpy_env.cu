@@ -21,6 +21,7 @@ struct stream_registry_factory_t;
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMemcpy::Batched, device_memcpy_batched);
 
@@ -120,7 +121,7 @@ CUB_TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]", CU
     iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto sizes = cuda::transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
 
-  const cuda::stream custom_stream(cuda::device_ref{0});
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
