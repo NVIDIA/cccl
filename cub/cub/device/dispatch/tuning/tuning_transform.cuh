@@ -342,7 +342,7 @@ tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool fill
       // otherwise, the tunings for B200 are good
     }
 
-    // manually tuned fill on B200/H200
+    // manually tuned fill on B200, same as H200
     if (cc >= ::cuda::compute_capability{9, 0})
     {
       return TransformVectorizedPolicy{
