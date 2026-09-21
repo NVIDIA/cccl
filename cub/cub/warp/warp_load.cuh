@@ -256,7 +256,7 @@ private:
    ****************************************************************************/
 
   /// Load helper
-  template <WarpLoadAlgorithm _POLICY, int DUMMY>
+  template <WarpLoadAlgorithm Algorithm, int DUMMY>
   struct LoadInternal;
 
   template <int DUMMY>

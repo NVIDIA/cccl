@@ -832,14 +832,14 @@ namespace detail
 {
 struct is_primitive_impl;
 
-// case for _CATEGORY = NOT_A_NUMBER, or _PRIMITIVE = false
-template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
+// case for Kind = NOT_A_NUMBER, or Primitive = false
+template <Category Kind, bool Primitive, typename _UnsignedBits, typename T>
 struct BaseTraits
 {
 private:
   friend struct is_primitive_impl;
 
-  static constexpr bool is_primitive = _PRIMITIVE;
+  static constexpr bool is_primitive = Primitive;
 };
 
 template <typename _UnsignedBits, typename T>
@@ -984,8 +984,8 @@ private:
 
 //! Use this class as base when specializing \ref NumericTraits for primitive signed/unsigned integers or floating-point
 //! types.
-template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
-using BaseTraits = detail::BaseTraits<_CATEGORY, _PRIMITIVE, _UnsignedBits, T>;
+template <Category Kind, bool Primitive, typename _UnsignedBits, typename T>
+using BaseTraits = detail::BaseTraits<Kind, Primitive, _UnsignedBits, T>;
 
 //! Numeric type traits for radix sort key operations, decoupled lookback and tuning. You can specialize this template
 //! for your own types if:

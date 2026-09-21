@@ -258,7 +258,7 @@ class WarpStore
 
 private:
   /// Store helper
-  template <WarpStoreAlgorithm _POLICY, int DUMMY>
+  template <WarpStoreAlgorithm Algorithm, int DUMMY>
   struct StoreInternal;
 
   template <int DUMMY>
