@@ -127,8 +127,10 @@ __global__ void iterator_kernel(int num_iterations, KeyT* keys_in, ValueT* value
   warp_topk_t warp_topk{temp_storage[threadIdx.x / warp_threads]};
   for (int i = 0; i < num_iterations; ++i)
   {
-    const std::size_t offset = input_offset + i * num_items;
-    warp_topk.TopK(keys_in + offset, values_in + offset, CustomLess{}, k, num_items, keys_out, values_out);
+    const std::size_t offset            = input_offset + i * num_items;
+    constexpr int load_items_per_thread = 2;
+    warp_topk.TopK<load_items_per_thread>(
+      keys_in + offset, values_in + offset, CustomLess{}, k, num_items, keys_out, values_out);
     sink(keys_out);
     sink(values_out);
   }

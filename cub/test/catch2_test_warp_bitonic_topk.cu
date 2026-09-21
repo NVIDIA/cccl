@@ -44,6 +44,7 @@ struct CustomLess
 
 using cub::detail::warp_threads;
 using cub::detail::WarpBitonicTopKAlgorithm;
+inline constexpr int vectorized_load_bytes = 16;
 
 /**
  * @brief Kernel to dispatch to the appropriate array-based WarpBitonicTopK member function.
@@ -237,6 +238,20 @@ struct topk_keys_iterator_t
 };
 
 /**
+ * @brief Delegate wrapper for WarpBitonicTopK::TopK on keys-only via vectorized iterator loads
+ */
+struct topk_keys_vectorized_iterator_t
+{
+  template <typename WarpTopKT, typename KeyInputIteratorT, typename KeyT, int MaxKPerThread>
+  __device__ void operator()(
+    WarpTopKT& warp_topk, KeyInputIteratorT keys_in, int k, int num_items, KeyT (&keys_out)[MaxKPerThread]) const
+  {
+    constexpr int load_items_per_thread = vectorized_load_bytes / sizeof(KeyT);
+    warp_topk.template TopK<load_items_per_thread>(keys_in, CustomLess{}, k, num_items, keys_out);
+  }
+};
+
+/**
  * @brief Delegate wrapper for WarpBitonicTopK::TopK on key-value pairs
  */
 struct topk_pairs_full_t
@@ -300,6 +315,31 @@ struct topk_pairs_iterator_t
 };
 
 /**
+ * @brief Delegate wrapper for WarpBitonicTopK::TopK on key-value pairs via vectorized iterator loads
+ */
+struct topk_pairs_vectorized_iterator_t
+{
+  template <typename WarpTopKT,
+            typename KeyInputIteratorT,
+            typename ValueInputIteratorT,
+            typename KeyT,
+            typename ValueT,
+            int MaxKPerThread>
+  __device__ void operator()(
+    WarpTopKT& warp_topk,
+    KeyInputIteratorT keys_in,
+    ValueInputIteratorT values_in,
+    int k,
+    int num_items,
+    KeyT (&keys_out)[MaxKPerThread],
+    ValueT (&values_out)[MaxKPerThread]) const
+  {
+    constexpr int load_items_per_thread = vectorized_load_bytes / sizeof(KeyT);
+    warp_topk.template TopK<load_items_per_thread>(keys_in, values_in, CustomLess{}, k, num_items, keys_out, values_out);
+  }
+};
+
+/**
  * @brief Dispatch helper function for keys
  */
 template <int MaxK,
@@ -312,7 +352,8 @@ template <int MaxK,
 void warp_bitonic_topk(c2h::device_vector<KeyT>& in, c2h::device_vector<KeyT>& out, int k, int num_items, ActionT action)
 {
   const auto kernel = [] {
-    if constexpr (cuda::std::is_same_v<ActionT, topk_keys_iterator_t>)
+    if constexpr (cuda::std::is_same_v<ActionT, topk_keys_iterator_t>
+                  || cuda::std::is_same_v<ActionT, topk_keys_vectorized_iterator_t>)
     {
       return &iterator_kernel<MaxK, LogicalWarpThreads, Algo, ItemsPerThread, TotalWarps, KeyT, cub::NullType, ActionT>;
     }
@@ -351,7 +392,8 @@ void warp_bitonic_topk(
   ActionT action)
 {
   const auto kernel = [] {
-    if constexpr (cuda::std::is_same_v<ActionT, topk_pairs_iterator_t>)
+    if constexpr (cuda::std::is_same_v<ActionT, topk_pairs_iterator_t>
+                  || cuda::std::is_same_v<ActionT, topk_pairs_vectorized_iterator_t>)
     {
       return &iterator_kernel<MaxK, LogicalWarpThreads, Algo, ItemsPerThread, TotalWarps, KeyT, ValueT, ActionT>;
     }
@@ -588,6 +630,40 @@ CUB_TEST("Warp top-k iterator on keys of a partial warp-tile works",
   test_topk_keys<TestType, topk_keys_iterator_t>(k, num_items);
 }
 
+CUB_TEST("Warp top-k vectorized iterator on keys works",
+         "[topk][warp]",
+         CUB_SMALL,
+         key_types,
+         c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::buffered>,
+         logical_warp_threads_list,
+         max_k_per_thread_list,
+         c2h::enum_type_list<int, 0> // extra_items_per_thread is not used by iterator overload
+)
+{
+  using params        = params_t<TestType>;
+  constexpr int max_k = params::max_k;
+  constexpr int vectorized_tile_items =
+    vectorized_load_bytes / sizeof(typename params::key_type) * params::logical_warp_threads;
+
+  const int k         = GENERATE_COPY(1, max_k, take(5, random(1, max_k)));
+  const int num_items = GENERATE_COPY(
+    k,
+    k + 1,
+    take(5, random(k + 2, k + 100)),
+    take(5, random(k + 100, k + 1000)),
+    std::max(k, max_k - 1), // num_items >= k is required
+    max_k,
+    max_k + 1,
+    std::max(k, vectorized_tile_items - 1),
+    std::max(k, vectorized_tile_items),
+    std::max(k, vectorized_tile_items + 1),
+    std::max(k, 2 * vectorized_tile_items - 1),
+    std::max(k, 2 * vectorized_tile_items),
+    std::max(k, 2 * vectorized_tile_items + 1));
+
+  test_topk_keys<TestType, topk_keys_vectorized_iterator_t>(k, num_items);
+}
+
 CUB_TEST("Warp top-k on key-value pairs works",
          "[topk][warp]",
          CUB_SMALL,
@@ -662,6 +738,40 @@ CUB_TEST("Warp top-k iterator on key-value pairs of a partial warp-tile works",
   const int num_items = GENERATE_COPY(k, k + 1, take(5, random(k + 2, k + 100)), take(5, random(k + 100, k + 1000)));
 
   test_topk_pairs<TestType, topk_pairs_iterator_t>(k, num_items);
+}
+
+CUB_TEST("Warp top-k vectorized iterator on key-value pairs works",
+         "[topk][warp]",
+         CUB_SMALL,
+         key_types,
+         c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::buffered>,
+         logical_warp_threads_list,
+         max_k_per_thread_list,
+         c2h::enum_type_list<int, 0>, // extra_items_per_thread is not used by iterator overload
+         value_types)
+{
+  using params        = params_t<TestType>;
+  constexpr int max_k = params::max_k;
+  constexpr int vectorized_tile_items =
+    vectorized_load_bytes / sizeof(typename params::key_type) * params::logical_warp_threads;
+
+  const int k         = GENERATE_COPY(1, max_k, take(5, random(1, max_k)));
+  const int num_items = GENERATE_COPY(
+    k,
+    k + 1,
+    take(5, random(k + 2, k + 100)),
+    take(5, random(k + 100, k + 1000)),
+    std::max(k, max_k - 1), // num_items >= k is required
+    max_k,
+    max_k + 1,
+    std::max(k, vectorized_tile_items - 1),
+    std::max(k, vectorized_tile_items),
+    std::max(k, vectorized_tile_items + 1),
+    std::max(k, 2 * vectorized_tile_items - 1),
+    std::max(k, 2 * vectorized_tile_items),
+    std::max(k, 2 * vectorized_tile_items + 1));
+
+  test_topk_pairs<TestType, topk_pairs_vectorized_iterator_t>(k, num_items);
 }
 
 // Keep custom_t coverage narrow because it is expensive to instantiate.

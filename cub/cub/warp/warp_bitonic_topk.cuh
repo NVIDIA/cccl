@@ -17,10 +17,12 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_bitonic_sort.cuh>
+#include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__cmath/round_up.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -162,21 +164,26 @@ enum class WarpBitonicTopKAlgorithm
 //!
 //!    __global__ void ArrayExampleKernel(...)
 //!    {
-//!        constexpr int max_k            = 32;
-//!        constexpr int items_per_thread = 2;
 //!        constexpr int warp_threads = 32;
+//!        constexpr int items_per_thread = 2;
+//!        constexpr int threads_per_block = 256;
+//!        constexpr int warps_per_block = threads_per_block / warp_threads;
+//!        constexpr int max_k = 32;
+//!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
 //!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<
 //!          max_k, int, warp_threads, cub::NullType, cub::detail::WarpBitonicTopKAlgorithm::eager>;
+//!        __shared__ typename WarpBitonicTopKT::TempStorage temp_storage[warps_per_block];
 //!
+//!        // Obtain items and put them in thread_keys
 //!        int thread_keys[items_per_thread];
 //!        // ...
 //!
-//!        WarpBitonicTopKT{temp_storage}.TopK(thread_keys, CustomLess{}, 30);
+//!        WarpBitonicTopKT{temp_storage[warp_id]}.TopK(thread_keys, CustomLess{}, 30);
 //!    }
 //!
 //! Suppose the set of input ``thread_keys`` across a warp of threads is
-//! ``{ [0,63], [1,62], [2,61], ..., [31,32] }``.
+//! ``{ [63,31], [62,30], [61,29], ..., [33,1], [32,0] }``.
 //! The corresponding output ``thread_keys`` in those threads will be
 //! ``{ [0,?], [1,?], [2,?], ..., [29,?], [?,?], [?,?] }``.
 //! (``?`` represents an undetermined value.)
@@ -190,19 +197,22 @@ enum class WarpBitonicTopKAlgorithm
 //!
 //!    __global__ void IteratorExampleKernel(const int* keys_in, int num_items)
 //!    {
-//!        constexpr int max_k = 32;
 //!        constexpr int warp_threads = 32;
+//!        constexpr int threads_per_block = 256;
+//!        constexpr int warps_per_block = threads_per_block / warp_threads;
+//!        constexpr int max_k = 32;
+//!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
 //!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<max_k, int>;
-//!        __shared__ typename WarpBitonicTopKT::TempStorage temp_storage;
+//!        __shared__ typename WarpBitonicTopKT::TempStorage temp_storage[warps_per_block];
 //!
 //!        int keys_out[max_k / warp_threads];
 //!
-//!        WarpBitonicTopKT{temp_storage}.TopK(keys_in, CustomLess{}, 30, num_items, keys_out);
+//!        WarpBitonicTopKT{temp_storage[warp_id]}.TopK(keys_in, CustomLess{}, 30, num_items, keys_out);
 //!    }
 //!
-//! Suppose the input ``keys_in`` is [0, 1, ..., 63]. The output ``keys_out`` in a warp of threads will be
-//! ``{ [0,?], [1,?], [2,?], ..., [29,?], [?,?], [?,?] }``.
+//! Suppose the input ``keys_in`` is [63, 62, ..., 1, 0]. The output ``keys_out`` in a warp of threads will be
+//! ``{ [0], [1], [2], ..., [29], [?], [?] }``.
 //! (``?`` represents an undetermined value.)
 //! Note keys in ``keys_out`` are in a :ref:`striped arrangement <flexible-data-arrangement>` across warp lanes.
 //!
@@ -663,6 +673,8 @@ public:
 
   //! @brief Selects top-k keys from iterator input.
   //!
+  //! @tparam LoadItemsPerThread Number of items per thread for load. Must be positive. Default is 1. Larger values
+  //! utilize WarpLoad's vectorized load.
   //! @tparam KeyInputIteratorT Random-access iterator type for input keys.
   //! @tparam CompareOp Comparison functor type.
   //!
@@ -672,17 +684,19 @@ public:
   //! @param[in] k Number of keys to select. Valid range is [1, min(`MaxK`, `num_items`)].
   //! @param[in] num_items Number of input keys.
   //! @param[out] keys_out Selected keys in striped arrangement.
-  template <typename KeyInputIteratorT, typename CompareOp>
+  template <int LoadItemsPerThread = 1, typename KeyInputIteratorT, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(
     KeyInputIteratorT keys_in, CompareOp compare_op, int k, int num_items, KeyT (&keys_out)[MaxK / LogicalWarpThreads])
   {
     static_assert(keys_only);
     ValueT values_out[max_k_per_thread];
-    TopK(keys_in, nullptr, compare_op, k, num_items, keys_out, values_out);
+    TopK<LoadItemsPerThread>(keys_in, nullptr, compare_op, k, num_items, keys_out, values_out);
   }
 
   //! @brief Selects top-k key-value pairs from iterator input.
   //!
+  //! @tparam LoadItemsPerThread Number of items per thread for load. Must be positive. Default is 1. Larger values
+  //! utilize WarpLoad's vectorized load.
   //! @tparam KeyInputIteratorT Random-access iterator type for input keys.
   //! @tparam ValueInputIteratorT Random-access iterator type for input values.
   //! @tparam CompareOp Comparison functor type.
@@ -696,7 +710,7 @@ public:
   //! @param[in] num_items Number of input pairs.
   //! @param[out] keys_out Selected keys in striped arrangement.
   //! @param[out] values_out Values selected together with their corresponding keys.
-  template <typename KeyInputIteratorT, typename ValueInputIteratorT, typename CompareOp>
+  template <int LoadItemsPerThread = 1, typename KeyInputIteratorT, typename ValueInputIteratorT, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyInputIteratorT keys_in,
        ValueInputIteratorT values_in,
@@ -706,6 +720,10 @@ public:
        KeyT (&keys_out)[MaxK / LogicalWarpThreads],
        ValueT (&values_out)[MaxK / LogicalWarpThreads])
   {
+    // When LoadItemsPerThread > 1, WarpLoad with WARP_LOAD_VECTORIZE is used to load data.
+    // Also, the striped arrangement makes WARP_LOAD_DIRECT and WARP_LOAD_TRANSPOSE unsuitable.
+    static_assert(LoadItemsPerThread > 0, "LoadItemsPerThread must be positive");
+
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < max_k_per_thread; ++i)
     {
@@ -737,24 +755,69 @@ public:
     KeyT k_th          = get_key_threshold(keys_out, k_th_item, k_th_lane);
     int num_candidates = 0;
 
-    const int num_items_per_thread = ::cuda::ceil_div(num_items, LogicalWarpThreads);
-    for (int i = max_k_per_thread; i < num_items_per_thread; ++i)
-    {
-      const int pos = i * LogicalWarpThreads + lane;
+    const auto load_and_process_candidate = [&](int offset) {
+      const int pos           = offset + lane;
+      const bool is_candidate = pos < num_items;
       KeyT key;
       ValueT value;
-      bool is_candidate = false;
-      if (pos < num_items)
+      if (is_candidate)
       {
         key = keys_in[pos];
         if constexpr (!keys_only)
         {
           value = values_in[pos];
         }
-        is_candidate = true;
       }
       process_candidate(
         keys_out, values_out, key, value, compare_op, is_candidate, k_th_item, k_th_lane, k_th, num_candidates);
+    };
+
+    if constexpr (LoadItemsPerThread == 1)
+    {
+      const int num_items_per_thread = ::cuda::ceil_div(num_items, LogicalWarpThreads);
+      for (int i = max_k_per_thread; i < num_items_per_thread; ++i)
+      {
+        load_and_process_candidate(i * LogicalWarpThreads);
+      }
+    }
+    else
+    {
+      // Process items between MaxK and the next complete WarpLoad tile.
+      constexpr int rounded_items_per_thread = ::cuda::round_up(max_k_per_thread, LoadItemsPerThread);
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = max_k_per_thread; i < rounded_items_per_thread; ++i)
+      {
+        load_and_process_candidate(i * LogicalWarpThreads);
+      }
+
+      WarpLoad<KeyT, LoadItemsPerThread, WARP_LOAD_VECTORIZE, LogicalWarpThreads> key_loader{};
+      WarpLoad<ValueT, LoadItemsPerThread, WARP_LOAD_VECTORIZE, LogicalWarpThreads> value_loader{};
+      KeyT keys[LoadItemsPerThread];
+      ValueT values[LoadItemsPerThread];
+
+      // Process complete tiles with WarpLoad.
+      constexpr int tile_items = LoadItemsPerThread * LogicalWarpThreads;
+      int offset               = rounded_items_per_thread * LogicalWarpThreads;
+      for (; offset + tile_items <= num_items; offset += tile_items)
+      {
+        key_loader.Load(keys_in + offset, keys);
+        if constexpr (!keys_only)
+        {
+          value_loader.Load(values_in + offset, values);
+        }
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < LoadItemsPerThread; ++i)
+        {
+          process_candidate(
+            keys_out, values_out, keys[i], values[i], compare_op, true, k_th_item, k_th_lane, k_th, num_candidates);
+        }
+      }
+
+      for (; offset < num_items; offset += LogicalWarpThreads)
+      {
+        load_and_process_candidate(offset);
+      }
     }
 
     flush_candidates(keys_out, values_out, compare_op, num_candidates);
