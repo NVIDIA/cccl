@@ -52,121 +52,121 @@ _CCCL_HOST_DEVICE constexpr auto log2(UIntType n) -> UIntType
   return cur;
 }
 
-template <typename result_type, result_type a, result_type b, int d>
+template <typename ResultType, ResultType A, ResultType B, int D>
 class xor_combine_engine_max_aux_constants
 {
 public:
-  static constexpr result_type two_to_the_d = two_to_the_power(d);
-  static constexpr result_type c            = lshift(a, result_type(d));
-  static constexpr result_type t            = (::cuda::std::max) (c, b);
-  static constexpr result_type u            = (::cuda::std::min) (c, b);
-  static constexpr result_type p            = log2(u);
-  static constexpr result_type two_to_the_p = two_to_the_power(p);
-  static constexpr result_type k            = t / two_to_the_p;
+  static constexpr ResultType two_to_the_d = two_to_the_power(D);
+  static constexpr ResultType c            = lshift(A, ResultType(D));
+  static constexpr ResultType t            = (::cuda::std::max) (c, B);
+  static constexpr ResultType u            = (::cuda::std::min) (c, B);
+  static constexpr ResultType p            = log2(u);
+  static constexpr ResultType two_to_the_p = two_to_the_power(p);
+  static constexpr ResultType k            = t / two_to_the_p;
 };
 
-template <typename result_type, result_type, result_type, int>
+template <typename ResultType, ResultType, ResultType, int>
 struct xor_combine_engine_max_aux;
 
-template <typename result_type, result_type a, result_type b, int d>
+template <typename ResultType, ResultType A, ResultType B, int D>
 struct xor_combine_engine_max_aux_case4
 {
-  using constants = xor_combine_engine_max_aux_constants<result_type, a, b, d>;
+  using constants = xor_combine_engine_max_aux_constants<ResultType, A, B, D>;
 
-  static constexpr result_type k_plus_1_times_two_to_the_p = lshift(constants::k + 1, constants::p);
+  static constexpr ResultType k_plus_1_times_two_to_the_p = lshift(constants::k + 1, constants::p);
 
-  static constexpr result_type M =
-    xor_combine_engine_max_aux<result_type,
+  static constexpr ResultType M =
+    xor_combine_engine_max_aux<ResultType,
                                (constants::u % constants::two_to_the_p) / constants::two_to_the_p,
                                constants::t % constants::two_to_the_p,
-                               d>::value;
+                               D>::value;
 
-  static constexpr result_type value = k_plus_1_times_two_to_the_p + M;
+  static constexpr ResultType value = k_plus_1_times_two_to_the_p + M;
 };
 
-template <typename result_type, result_type a, result_type b, int d>
+template <typename ResultType, ResultType A, ResultType B, int D>
 struct xor_combine_engine_max_aux_case3
 {
-  using constants = xor_combine_engine_max_aux_constants<result_type, a, b, d>;
+  using constants = xor_combine_engine_max_aux_constants<ResultType, A, B, D>;
 
-  static constexpr result_type k_plus_1_times_two_to_the_p = lshift(constants::k + 1, constants::p);
+  static constexpr ResultType k_plus_1_times_two_to_the_p = lshift(constants::k + 1, constants::p);
 
-  static constexpr result_type M =
-    xor_combine_engine_max_aux<result_type,
+  static constexpr ResultType M =
+    xor_combine_engine_max_aux<ResultType,
                                (constants::t % constants::two_to_the_p) / constants::two_to_the_p,
                                constants::u % constants::two_to_the_p,
-                               d>::value;
+                               D>::value;
 
-  static constexpr result_type value = k_plus_1_times_two_to_the_p + M;
+  static constexpr ResultType value = k_plus_1_times_two_to_the_p + M;
 };
 
-template <typename result_type, result_type a, result_type b, int d>
+template <typename ResultType, ResultType A, ResultType B, int D>
 struct xor_combine_engine_max_aux_case2
 {
-  using constants = xor_combine_engine_max_aux_constants<result_type, a, b, d>;
+  using constants = xor_combine_engine_max_aux_constants<ResultType, A, B, D>;
 
-  static constexpr result_type k_plus_1_times_two_to_the_p = lshift(constants::k + 1, constants::p);
-  static constexpr result_type value                       = k_plus_1_times_two_to_the_p - 1;
+  static constexpr ResultType k_plus_1_times_two_to_the_p = lshift(constants::k + 1, constants::p);
+  static constexpr ResultType value                       = k_plus_1_times_two_to_the_p - 1;
 };
 
-template <typename result_type, result_type a, result_type b, int d>
+template <typename ResultType, ResultType A, ResultType B, int D>
 struct xor_combine_engine_max_aux_case1
 {
-  static constexpr result_type c     = lshift(a, result_type(d));
-  static constexpr result_type value = c + b;
+  static constexpr ResultType c     = lshift(A, ResultType(D));
+  static constexpr ResultType value = c + B;
 };
 
-template <typename result_type, result_type a, result_type b, int d>
+template <typename ResultType, ResultType A, ResultType B, int D>
 struct xor_combine_engine_max_aux_2
 {
-  using constants = xor_combine_engine_max_aux_constants<result_type, a, b, d>;
+  using constants = xor_combine_engine_max_aux_constants<ResultType, A, B, D>;
 
-  _CCCL_HOST_DEVICE static constexpr result_type compute_value()
+  _CCCL_HOST_DEVICE static constexpr ResultType compute_value()
   {
     // if k is odd...
     if constexpr (constants::k % 2 == 1)
     {
-      return xor_combine_engine_max_aux_case2<result_type, a, b, d>::value;
+      return xor_combine_engine_max_aux_case2<ResultType, A, B, D>::value;
     }
-    // otherwise if a * 2^3 >= b, then case 3
-    else if constexpr (a * constants::two_to_the_d >= b)
+    // otherwise if A * 2^3 >= B, then case 3
+    else if constexpr (A * constants::two_to_the_d >= B)
     {
-      return xor_combine_engine_max_aux_case3<result_type, a, b, d>::value;
+      return xor_combine_engine_max_aux_case3<ResultType, A, B, D>::value;
     }
     else
     {
       // otherwise, case 4
-      return xor_combine_engine_max_aux_case4<result_type, a, b, d>::value;
+      return xor_combine_engine_max_aux_case4<ResultType, A, B, D>::value;
     }
   }
 
-  static constexpr result_type value = compute_value();
+  static constexpr ResultType value = compute_value();
 };
 
-template <typename result_type, result_type a, result_type b, int d, bool use_case1 = (a == 0) || (b < two_to_the_power(d))>
-struct xor_combine_engine_max_aux_1 : xor_combine_engine_max_aux_case1<result_type, a, b, d>
+template <typename ResultType, ResultType A, ResultType B, int D, bool use_case1 = (A == 0) || (B < two_to_the_power(D))>
+struct xor_combine_engine_max_aux_1 : xor_combine_engine_max_aux_case1<ResultType, A, B, D>
 {};
 
-template <typename result_type, result_type a, result_type b, int d>
-struct xor_combine_engine_max_aux_1<result_type, a, b, d, false> : xor_combine_engine_max_aux_2<result_type, a, b, d>
+template <typename ResultType, ResultType A, ResultType B, int D>
+struct xor_combine_engine_max_aux_1<ResultType, A, B, D, false> : xor_combine_engine_max_aux_2<ResultType, A, B, D>
 {};
 
-template <typename result_type, result_type a, result_type b, int d>
-struct xor_combine_engine_max_aux : xor_combine_engine_max_aux_1<result_type, a, b, d>
+template <typename ResultType, ResultType A, ResultType B, int D>
+struct xor_combine_engine_max_aux : xor_combine_engine_max_aux_1<ResultType, A, B, D>
 {};
 
-template <typename Engine1, size_t s1, typename Engine2, size_t s2, typename result_type>
+template <typename Engine1, size_t S1, typename Engine2, size_t S2, typename ResultType>
 struct xor_combine_engine_max
 {
-  static constexpr size_t w = ::cuda::std::numeric_limits<result_type>::digits;
-  static constexpr result_type m1 =
-    (::cuda::std::min) (result_type(Engine1::max - Engine1::min), result_type(two_to_the_power(w - s1) - 1));
-  static constexpr result_type m2 =
-    (::cuda::std::min) (result_type(Engine2::max - Engine2::min), result_type(two_to_the_power(w - s2) - 1));
-  static constexpr result_type s = s1 - s2;
-  static constexpr result_type M = xor_combine_engine_max_aux<result_type, m1, m2, s>::value;
-  // the value is M(m1,m2,s) lshift_w s2
-  static constexpr result_type value = lshift(M, result_type(s2));
+  static constexpr size_t w = ::cuda::std::numeric_limits<ResultType>::digits;
+  static constexpr ResultType m1 =
+    (::cuda::std::min) (ResultType(Engine1::max - Engine1::min), ResultType(two_to_the_power(w - S1) - 1));
+  static constexpr ResultType m2 =
+    (::cuda::std::min) (ResultType(Engine2::max - Engine2::min), ResultType(two_to_the_power(w - S2) - 1));
+  static constexpr ResultType s = S1 - S2;
+  static constexpr ResultType M = xor_combine_engine_max_aux<ResultType, m1, m2, s>::value;
+  // the value is M(m1,m2,s) lshift_w S2
+  static constexpr ResultType value = lshift(M, ResultType(S2));
 };
 } // namespace random::detail
 
