@@ -354,3 +354,9 @@ Histogram
 ^^^^^^^^^
 
 .. autofunction:: histogram
+
+Run Length Decode
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: run_length_decode
+.. autofunction:: run_length_decode_into

@@ -342,3 +342,14 @@ cutlass_coop.histogram(
 cutlass_coop.histogram(  # expected-error: [call-overload]
     block, values, bins=32, algorithm="other"
 )
+
+cutlass_coop.run_length_decode(
+    warp,  # expected-error: [arg-type]
+    values,
+    values,
+    decoded_items_per_thread=2,
+)
+cutlass_coop.run_length_decode(block, values, values)  # expected-error: [call-overload]
+cutlass_coop.run_length_decode(  # expected-error: [call-overload]
+    block, scalar, values, decoded_items_per_thread=2
+)

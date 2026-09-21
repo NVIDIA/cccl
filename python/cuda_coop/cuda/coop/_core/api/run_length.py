@@ -31,9 +31,6 @@ def run_length_decode(
 ) -> Any:
     """Return a fresh blocked window of the decoded run stream.
 
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
-
     Parameters
     ----------
     group : ThreadGroup
@@ -81,7 +78,9 @@ def run_length_decode(
     :func:`cuda.coop.run_length_decode_into` to write a full stream while preparing
     that table once, or :func:`cuda.coop.numba_mlir.run_length_decode` for
     total-size and relative run-offset outputs. The qualified Numba operation
-    also accepts local-array run inputs.
+    also accepts local-array run inputs. The CUTLASS-qualified form
+    :func:`cuda.coop.cutlass.run_length_decode` also accepts CuTe register
+    payloads.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -125,9 +124,6 @@ def run_length_decode_into(
     temp_storage: Any = None,
 ) -> Any:
     """Decode a complete run stream into an array and return its total size.
-
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
 
     Parameters
     ----------
@@ -174,6 +170,8 @@ def run_length_decode_into(
 
     :func:`cuda.coop.numba_mlir.run_length_decode_into` also accepts local-array
     run inputs and can write relative run offsets to a separate output array.
+    :func:`cuda.coop.cutlass.run_length_decode_into` takes a contiguous CuTe
+    global-memory tensor as its destination and returns a CuTe ``Uint32``.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(

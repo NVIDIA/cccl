@@ -15,6 +15,7 @@ from typing_extensions import assert_type
 
 import cuda.coop.cutlass as cutlass_coop
 from cuda import coop as common_coop
+from cuda.coop.cutlass._thread_data import CutlassTensorSample
 
 
 def register_cutlass() -> None:
@@ -725,4 +726,42 @@ def check_cutlass_histogram() -> None:
             block, samples.to_tensor_ssa(), bins=65, bins_per_thread=2, algorithm="sort"
         ),
         cutlass_coop.ThreadData[Int32],
+    )
+
+
+def check_cutlass_run_length_surface(destination: CutlassTensorSample) -> None:
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(2, Int32)
+    lengths = cutlass_coop.ThreadData(2, Uint64)
+    storage = cutlass_coop.TempStorage()
+    assert_type(
+        cutlass_coop.run_length_decode(
+            block,
+            values,
+            lengths,
+            decoded_items_per_thread=3,
+            decoded_window_offset=Uint64(1),
+            temp_storage=storage,
+        ),
+        cutlass_coop.ThreadData[Int32],
+    )
+    assert_type(
+        cutlass_coop.run_length_decode(
+            block,
+            values.to_tensor_ssa(),
+            lengths,
+            decoded_items_per_thread=3,
+        ),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.run_length_decode_into(
+            block,
+            values,
+            lengths.to_register_tensor(),
+            destination,
+            decoded_items_per_thread=3,
+            destination_offset=Int64(0),
+        ),
+        Uint32,
     )
