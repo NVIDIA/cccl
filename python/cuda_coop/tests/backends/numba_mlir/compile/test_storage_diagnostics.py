@@ -16,7 +16,7 @@ from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 from numba_cuda_mlir.numba_cuda.misc.special import literal_unroll
 
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
 from cuda.coop.numba_mlir._compiler._rewrite_support import CoopSinglePhaseRewriteError
 
@@ -55,7 +55,7 @@ def _compile(kernel, *arg_types, block=(32, 1, 1)):
 def test_load_return_cannot_be_used_as_a_store_payload(qualified, dtype):
     from cuda import coop as common_coop
 
-    module = coop if qualified else common_coop
+    module = numba_coop if qualified else common_coop
 
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
@@ -70,13 +70,13 @@ def test_load_return_cannot_be_used_as_a_store_payload(qualified, dtype):
 def test_default_helper_accepts_descriptor_alias_chain():
     @cuda.jit(device=True)
     def helper(source, storage):
-        payload = coop.ThreadData(1, types.int32)
-        coop.load(coop.this_block(), source, payload, temp_storage=storage)
+        payload = numba_coop.ThreadData(1, types.int32)
+        numba_coop.load(numba_coop.this_block(), source, payload, temp_storage=storage)
         return payload[0]
 
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
-        storage = coop.TempStorage()
+        storage = numba_coop.TempStorage()
         alias = storage
         chained = alias
         destination[cuda.threadIdx.x] = helper(source, chained)
@@ -88,11 +88,11 @@ def test_none_alias_reports_descriptor_error_before_type_inference():
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         empty = None
-        storage = coop.TempStorage()
+        storage = numba_coop.TempStorage()
         if source[0] > 0:
             storage = empty
-        payload = coop.ThreadData(1, types.int32)
-        coop.load(coop.this_block(), source, payload, temp_storage=storage)
+        payload = numba_coop.ThreadData(1, types.int32)
+        numba_coop.load(numba_coop.this_block(), source, payload, temp_storage=storage)
         destination[cuda.threadIdx.x] = payload[0]
 
     with pytest.raises(
@@ -104,7 +104,7 @@ def test_none_alias_reports_descriptor_error_before_type_inference():
 def test_standalone_primitive_helper_reports_inline_requirement():
     @cuda.jit(device=True, inline="never")
     def standalone(destination, value):
-        coop.store(coop.this_block(), destination, value)
+        numba_coop.store(numba_coop.this_block(), destination, value)
 
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
@@ -124,12 +124,12 @@ def test_literal_unroll_cannot_determine_cooperative_payload_shape(payload_kind)
     def kernel(source, destination):
         for count in literal_unroll((1, 2)):
             if payload_kind == "thread_data":
-                payload = coop.ThreadData(count, types.int32)
+                payload = numba_coop.ThreadData(count, types.int32)
             elif payload_kind == "local_array":
                 payload = cuda.local.array(count, types.int32)
             else:
                 payload = cuda.local.array(shape=count, dtype=types.int32)
-            coop.load(coop.this_block(), source, payload)
+            numba_coop.load(numba_coop.this_block(), source, payload)
             destination[cuda.threadIdx.x] = payload[0]
 
     with pytest.raises(
@@ -144,7 +144,7 @@ def test_unrelated_literal_unroll_can_coexist_with_cooperative_calls():
         value = 0
         for item in literal_unroll((1, 2)):
             value += item
-        coop.store(coop.this_block(), destination, value)
+        numba_coop.store(numba_coop.this_block(), destination, value)
 
     assert _compile(kernel, types.int64[::1]).metadata["ltoir"]
 
@@ -154,7 +154,7 @@ def test_storage_free_operation_can_coexist_with_user_dynamic_shared_memory():
     def kernel(destination):
         mine = cuda.shared.array(0, types.int32)
         mine[cuda.threadIdx.x] = 42
-        coop.store(coop.this_block(), destination, mine[cuda.threadIdx.x])
+        numba_coop.store(numba_coop.this_block(), destination, mine[cuda.threadIdx.x])
 
     assert _compile(kernel, types.int32[::1]).metadata["ltoir"]
 
@@ -163,8 +163,8 @@ def test_literal_unroll_cannot_determine_cooperative_selector():
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         for algorithm in literal_unroll(("direct", "striped")):
-            coop.store(
-                coop.this_block(),
+            numba_coop.store(
+                numba_coop.this_block(),
                 destination,
                 source[cuda.threadIdx.x],
                 algorithm=algorithm,
@@ -215,11 +215,11 @@ def test_inlined_user_shared_allocation_is_checked_after_inlining(
         mine = user_allocation(source[0])
         thread = cuda.threadIdx.x
         mine[thread] = source[thread]
-        storage = coop.TempStorage(size_in_bytes)
-        payload = coop.ThreadData(1, types.int32)
+        storage = numba_coop.TempStorage(size_in_bytes)
+        payload = numba_coop.ThreadData(1, types.int32)
         payload[0] = mine[thread]
-        coop.store(
-            coop.this_block(),
+        numba_coop.store(
+            numba_coop.this_block(),
             destination,
             payload,
             algorithm="transpose",
@@ -241,12 +241,12 @@ def test_literal_unroll_cannot_determine_cooperative_storage_or_partition(argume
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         for count in literal_unroll((32, 64)):
-            block = coop.this_block()
+            block = numba_coop.this_block()
             if argument == "storage":
-                storage = coop.TempStorage(count)
-                payload = coop.ThreadData(1, types.int32)
+                storage = numba_coop.TempStorage(count)
+                payload = numba_coop.ThreadData(1, types.int32)
                 payload[0] = source[cuda.threadIdx.x]
-                coop.store(
+                numba_coop.store(
                     block,
                     destination,
                     payload,
@@ -255,7 +255,7 @@ def test_literal_unroll_cannot_determine_cooperative_storage_or_partition(argume
                 )
             else:
                 group = block.group_by(count)
-                coop.store(group, destination, source[cuda.threadIdx.x])
+                numba_coop.store(group, destination, source[cuda.threadIdx.x])
 
     with pytest.raises(
         (GroupRewriteError, TypingError), match="does not support literal_unroll values"
@@ -280,10 +280,12 @@ def test_implicit_oversized_storage_rejects_user_static_shared_allocation(monkey
         mine = cuda.shared.array(1024, types.int32)
         thread = cuda.threadIdx.x
         mine[thread] = source[thread]
-        payload = coop.ThreadData(16, types.int32)
+        payload = numba_coop.ThreadData(16, types.int32)
         for item in range(16):
             payload[item] = mine[thread]
-        coop.store(coop.this_block(), destination, payload, algorithm="transpose")
+        numba_coop.store(
+            numba_coop.this_block(), destination, payload, algorithm="transpose"
+        )
 
     with pytest.raises(
         CoopSinglePhaseRewriteError,

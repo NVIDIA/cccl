@@ -701,7 +701,7 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
     from numba_cuda_mlir.numbair_transforms import ir
 
     import cuda.coop as common_coop
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import (
         GroupLoweringPlan,
         LaunchFacts,
@@ -890,7 +890,7 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
         )
         for frontend_name, module in (
             ("common", common_coop),
-            ("qualified", qualified_coop),
+            ("qualified", numba_coop),
         ):
             for (
                 shape,
@@ -925,7 +925,7 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
         ]
         pipeline_results = {("common", "scalar"): (first_ir, first_rewrite)}
         for frontend_name, shape in pipeline_cases[1:]:
-            module = common_coop if frontend_name == "common" else qualified_coop
+            module = common_coop if frontend_name == "common" else numba_coop
             func_ir, args = _lazy_fake_family_frontend(
                 module,
                 markers[frontend_name][shape],
@@ -1068,11 +1068,11 @@ def test_lazy_fake_logical_warp_uses_one_aligned_slice_per_group(frontend_name):
     from numba_cuda_mlir import cuda
 
     import cuda.coop as common_coop
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
 
     sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
     operations, markers = _register_lazy_fake_frontends()
-    module = common_coop if frontend_name == "common" else qualified_coop
+    module = common_coop if frontend_name == "common" else numba_coop
     func_ir, args = _lazy_fake_family_frontend(
         module,
         markers[frontend_name]["pair"],
@@ -1181,11 +1181,11 @@ def test_lazy_fake_thread_scope_uses_one_aligned_slice_per_thread(frontend_name)
     from numba_cuda_mlir import cuda
 
     import cuda.coop as common_coop
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
 
     sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
     operations, markers = _register_lazy_fake_frontends()
-    module = common_coop if frontend_name == "common" else qualified_coop
+    module = common_coop if frontend_name == "common" else numba_coop
     func_ir, args = _lazy_fake_family_frontend(
         module,
         markers[frontend_name]["thread_storage"],
@@ -1304,7 +1304,7 @@ def test_lazy_fake_warp_rejects_caller_owned_storage_before_provider(
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     import cuda.coop as common_coop
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
     from cuda.coop.numba_mlir._compiler._group_planner_support import (
         GroupRewriteError,
@@ -1312,7 +1312,7 @@ def test_lazy_fake_warp_rejects_caller_owned_storage_before_provider(
 
     sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
     operations, markers = _register_lazy_fake_frontends()
-    module = common_coop if frontend_name == "common" else qualified_coop
+    module = common_coop if frontend_name == "common" else numba_coop
     pair = markers[frontend_name]["pair"]
     if logical_width is None:
 
@@ -1553,7 +1553,7 @@ def test_storage_free_provider_accepts_unused_temp_storage_descriptor():
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir._compiler import _operations
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
@@ -1592,7 +1592,7 @@ def test_storage_free_provider_accepts_unused_temp_storage_descriptor():
     )
 
     def kernel(value):
-        storage = coop.TempStorage()
+        storage = numba_coop.TempStorage()
         return provider(value, temp_storage=storage)
 
     func_ir = run_frontend(kernel)

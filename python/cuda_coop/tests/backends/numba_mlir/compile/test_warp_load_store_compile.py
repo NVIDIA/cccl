@@ -291,7 +291,7 @@ def test_logical_warp_widths_have_distinct_specializations_and_cache_keys(
 def test_production_routes_compile_common_and_qualified_warp_kernels(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
 
     compiler_cuda = _production_compile_environment(monkeypatch)
@@ -307,11 +307,9 @@ def test_production_routes_compile_common_and_qualified_warp_kernels(
             offset,
         ):
             thread = compiler_cuda.threadIdx.x
-            load_payload = qualified_coop.ThreadData(
-                _ITEMS_PER_THREAD, dtype=types.int32
-            )
-            qualified_coop.load(
-                qualified_coop.this_warp(),
+            load_payload = numba_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+            numba_coop.load(
+                numba_coop.this_warp(),
                 load_source,
                 load_payload,
                 algorithm=algorithm,
@@ -319,7 +317,7 @@ def test_production_routes_compile_common_and_qualified_warp_kernels(
                 oob_default=types.int32(-17),
                 offset=offset,
             )
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
@@ -327,8 +325,8 @@ def test_production_routes_compile_common_and_qualified_warp_kernels(
                 index = thread * _ITEMS_PER_THREAD + item
                 observed[index] = load_payload[item]
                 payload[item] = store_source[index]
-            qualified_coop.store(
-                qualified_coop.this_warp(),
+            numba_coop.store(
+                numba_coop.this_warp(),
                 destination,
                 payload,
                 algorithm=algorithm,
@@ -418,7 +416,7 @@ def test_production_routes_compile_common_and_qualified_warp_kernels(
 def test_production_routes_compile_common_and_qualified_logical_warp_kernels(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
 
     compiler_cuda = _production_compile_environment(monkeypatch)
@@ -426,12 +424,12 @@ def test_production_routes_compile_common_and_qualified_logical_warp_kernels(
     def qualified_kernel(algorithm: str):
         @compiler_cuda.jit(chip="sm_90")
         def kernel(source, destination, valid_items, offset):
-            group = qualified_coop.this_warp().group_by(8)
-            payload = qualified_coop.ThreadData(
+            group = numba_coop.this_warp().group_by(8)
+            payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            qualified_coop.load(
+            numba_coop.load(
                 group,
                 source,
                 payload,
@@ -440,7 +438,7 @@ def test_production_routes_compile_common_and_qualified_logical_warp_kernels(
                 oob_default=types.int32(-17),
                 offset=offset,
             )
-            qualified_coop.store(
+            numba_coop.store(
                 group,
                 destination,
                 payload,
@@ -509,7 +507,7 @@ def test_warp_scalar_literal_store_compiles_with_destination_dtype(
     monkeypatch: pytest.MonkeyPatch,
     qualified: bool,
 ) -> None:
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
 
     compiler_cuda = _production_compile_environment(monkeypatch)
@@ -517,8 +515,8 @@ def test_warp_scalar_literal_store_compiles_with_destination_dtype(
 
         @compiler_cuda.jit(chip="sm_90")
         def kernel(destination):
-            qualified_coop.store(
-                qualified_coop.this_warp(),
+            numba_coop.store(
+                numba_coop.this_warp(),
                 destination,
                 23,
                 algorithm="direct",
@@ -548,7 +546,7 @@ def test_warp_scalar_runtime_expression_rejects_implicit_narrowing(
     monkeypatch: pytest.MonkeyPatch,
     qualified: bool,
 ) -> None:
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
 
     compiler_cuda = _production_compile_environment(monkeypatch)
@@ -557,8 +555,8 @@ def test_warp_scalar_runtime_expression_rejects_implicit_narrowing(
         @compiler_cuda.jit(chip="sm_90")
         def kernel(source, destination):
             thread = compiler_cuda.threadIdx.x
-            qualified_coop.store(
-                qualified_coop.this_warp(),
+            numba_coop.store(
+                numba_coop.this_warp(),
                 destination,
                 source[thread] + 1,
                 algorithm="direct",

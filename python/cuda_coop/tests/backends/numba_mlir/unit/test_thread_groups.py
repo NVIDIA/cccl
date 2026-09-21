@@ -5,7 +5,7 @@
 import pytest
 
 import cuda.coop as common_coop
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 import cuda.coop.numba_mlir._thread_group as numba_mlir_groups
 from cuda.coop._core import ThreadHierarchy as CoreThreadHierarchy
 
@@ -13,8 +13,8 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 def test_group_exports_use_the_shared_hierarchy_contract():
-    assert coop.Hierarchy is coop.ThreadHierarchy
-    assert coop.ThreadHierarchy is CoreThreadHierarchy
+    assert numba_coop.Hierarchy is numba_coop.ThreadHierarchy
+    assert numba_coop.ThreadHierarchy is CoreThreadHierarchy
 
     for name in (
         "Hierarchy",
@@ -26,32 +26,32 @@ def test_group_exports_use_the_shared_hierarchy_contract():
         "this_cluster",
         "this_grid",
     ):
-        assert name in coop.__all__
+        assert name in numba_coop.__all__
 
 
 def test_current_group_construction_preserves_backend_type():
-    current = coop.this_block()
+    current = numba_coop.this_block()
 
-    assert type(current) is coop.ThreadGroup
+    assert type(current) is numba_coop.ThreadGroup
     assert current.is_current
     assert repr(current).startswith("ThreadGroup(kind='block'")
     assert current.block_dim is None
     assert current.static_size is None
-    assert coop.this_cluster().static_size is None
-    assert coop.this_grid().static_size is None
-    assert coop.this_thread().static_size == 1
-    assert coop.this_warp().static_size == 32
+    assert numba_coop.this_cluster().static_size is None
+    assert numba_coop.this_grid().static_size is None
+    assert numba_coop.this_thread().static_size == 1
+    assert numba_coop.this_warp().static_size == 32
 
 
 def test_group_equality_hashing_and_group_by_use_numba_mlir_type():
-    first = coop.this_block()
-    second = coop.this_block()
+    first = numba_coop.this_block()
+    second = numba_coop.this_block()
     mapped = first.group_by(2)
 
     assert first == second
     assert hash(first) == hash(second)
-    assert type(mapped) is coop.ThreadGroup
-    assert type(mapped.parent) is coop.ThreadGroup
+    assert type(mapped) is numba_coop.ThreadGroup
+    assert type(mapped.parent) is numba_coop.ThreadGroup
     assert mapped.kind == "warps_within_block"
     assert mapped.static_size == 64
     assert mapped.groups_per_parent is None
@@ -60,15 +60,15 @@ def test_group_equality_hashing_and_group_by_use_numba_mlir_type():
 
 def test_group_constructors_preserve_shared_validation():
     with pytest.raises(TypeError):
-        coop.ThreadHierarchy(block_dim=64)
+        numba_coop.ThreadHierarchy(block_dim=64)
     with pytest.raises(TypeError):
-        coop.this_warp(16)
+        numba_coop.this_warp(16)
     with pytest.raises(TypeError):
-        coop.this_warp(block_dim=64)
+        numba_coop.this_warp(block_dim=64)
     with pytest.raises(ValueError, match="requires the count to divide"):
-        coop.this_warp().group_by(12)
+        numba_coop.this_warp().group_by(12)
     with pytest.raises(NotImplementedError, match="nested"):
-        coop.this_warp().group_by(8).group_by(2)
+        numba_coop.this_warp().group_by(8).group_by(2)
 
 
 def test_group_methods_use_one_compile_time_marker(monkeypatch):
@@ -84,7 +84,7 @@ def test_group_methods_use_one_compile_time_marker(monkeypatch):
         "_thread_group_method_marker",
         marker,
     )
-    group = coop.this_block()
+    group = numba_coop.this_block()
 
     assert group.rank("block") is marker_result
     assert group.count("grid") is marker_result
@@ -106,13 +106,13 @@ def test_group_methods_use_one_compile_time_marker(monkeypatch):
 
 def test_group_method_marker_fails_clearly_outside_compilation():
     with pytest.raises(RuntimeError, match="whole-function planner"):
-        coop.this_block().rank()
+        numba_coop.this_block().rank()
 
     with pytest.raises(ValueError, match="level must be one of"):
-        coop.this_block().count("tile")
+        numba_coop.this_block().count("tile")
 
 
-@pytest.mark.parametrize("api", (common_coop, coop), ids=("common", "qualified"))
+@pytest.mark.parametrize("api", (common_coop, numba_coop), ids=("common", "qualified"))
 def test_thread_group_surface_exposes_hierarchy_operations(api):
     group = api.this_block()
 
