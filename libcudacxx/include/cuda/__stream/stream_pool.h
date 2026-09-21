@@ -102,14 +102,14 @@ public:
     int __priority              = stream::default_priority)
       : __device_{__device}
       , __priority_{__priority}
-      , __lazy_{__mode == stream_pool_creation::lazy}
+      , __mode_{__mode}
   {
     if (__size == 0)
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::stream_pool requires at least one stream");
     }
     __streams_.reserve(__size);
-    if (__lazy_)
+    if (__mode_ == stream_pool_creation::lazy)
     {
       for (::cuda::std::size_t __i = 0; __i < __size; ++__i)
       {
@@ -202,7 +202,7 @@ private:
   //! lock is needed to read one. A lazy pool takes the mutex and creates the stream on the first request.
   [[nodiscard]] _CCCL_HOST_API stream_ref __stream_at(::cuda::std::size_t __i) const
   {
-    if (!__lazy_)
+    if (__mode_ == stream_pool_creation::eager)
     {
       return __streams_[__i];
     }
@@ -228,9 +228,9 @@ private:
 #  endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
   }
 
-  __logical_device_ref __device_;
-  int __priority_;
-  bool __lazy_;
+  const __logical_device_ref __device_;
+  const int __priority_;
+  const stream_pool_creation __mode_;
   //! Guards the creation of streams in a lazy pool. Unused in an eager pool.
   mutable ::std::mutex __mutex_{};
   //! The slots, `size()` of them; a slot without a stream holds `__invalid_stream()`.
