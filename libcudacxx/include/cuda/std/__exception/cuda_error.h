@@ -132,6 +132,12 @@ public:
     }
     _CCCL_THROW(::cuda::cuda_error, static_cast<__cuda_error_t>(_Error), __error_str, __msg, __api, __loc);
   }
+
+  [[noreturn]] friend _CCCL_HOST_API void
+  __throw_cuda_error(int __error, const char* __msg, const char* __api, const ::cuda::std::source_location& __loc)
+  {
+    _CCCL_THROW(::cuda::cuda_error, static_cast<__cuda_error_t>(__error), __msg, __api, __loc);
+  }
 };
 #endif // _CCCL_HOSTED()
 

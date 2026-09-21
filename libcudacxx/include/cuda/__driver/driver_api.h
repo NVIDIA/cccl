@@ -58,19 +58,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 
-//! @brief Initializes the CUDA Driver.
-//!
-//! @return A dummy bool value.
-//!
-//! @warning This function should be called only once from __get_driver_entry_point function.
-[[nodiscard]] _CCCL_HOST_API inline bool __init()
-{
-  static const auto __driver_fn =
-    reinterpret_cast<decltype(::cuInit)*>(::cuda::__driver::__get_driver_entry_point_no_init("cuInit"));
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to initialize CUDA Driver", 0);
-  return true;
-}
-
 //! @brief Converts CUdevice to ordinal device id.
 //!
 //! @note Currently, CUdevice value is the same as the ordinal device id. But that might change in the future.

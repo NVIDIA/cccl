@@ -47,6 +47,12 @@ template <int _Error>
   const char* __api                         = nullptr,
   const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
 
+[[noreturn]] _CCCL_HOST_API void __throw_cuda_error(
+  const int __error,
+  const char* __msg,
+  const char* __api                         = nullptr,
+  const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
+
 _CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
@@ -159,8 +165,23 @@ __get_driver_entry_point_no_init(const char* __name, int __major = 12, int __min
   return (__ret != nullptr) ? __ret : "unrecognized error code";
 }
 
-// Forward declare __init, so we can use it in __get_driver_entry_point.
-[[nodiscard]] _CCCL_HOST_API inline bool __init();
+//! @brief Initializes the CUDA Driver.
+//!
+//! @return A dummy bool value.
+//!
+//! @warning This function should be called only once from __get_driver_entry_point function.
+[[nodiscard]] _CCCL_HOST_API inline bool __init()
+{
+  constexpr auto __symbol_name = "cuInit";
+  static const auto __driver_fn =
+    reinterpret_cast<decltype(::cuInit)*>(::cuda::__driver::__get_driver_entry_point_no_init(__symbol_name));
+  const auto __status = static_cast<::cudaError_t>(__driver_fn(0));
+  if (__status != ::cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(__status, "Failed to initialize CUDA Driver", __symbol_name);
+  }
+  return true;
+}
 
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version. This function also
 //!        initializes the CUDA Driver.
