@@ -76,42 +76,34 @@ void TestUninitializedFillPOD()
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedFillPOD);
 
-struct TestUninitializedFillNonPOD
-{
-  void operator()(const size_t)
-  {
-    using T                       = CopyConstructTest;
-    const thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
-
-    const T exemplar;
-    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
-    REQUIRE_FALSE(exemplar.copy_constructed_on_host);
-
-    const T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
-    REQUIRE_FALSE(host_copy_of_exemplar.copy_constructed_on_device);
-    REQUIRE(host_copy_of_exemplar.copy_constructed_on_host);
-
-    // copy construct v from the exemplar
-    thrust::uninitialized_fill(v, v + 1, exemplar);
-
-    const auto n_device = thrust::count_if(v, v + 1, is_copy_constructed_on_device{});
-    const auto n_host   = thrust::count_if(v, v + 1, is_copy_constructed_on_host{});
-    if constexpr (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA)
-    {
-      REQUIRE(n_device == 1);
-      REQUIRE(n_host == 0);
-    }
-    else
-    {
-      REQUIRE(n_device == 0);
-      REQUIRE(n_host == 1);
-    }
-
-    thrust::device_free(v);
-  }
-};
 TEST_CASE("TestUninitializedFillNonPOD", "[uninitialized_fill]")
 {
-  const size_t s = GENERATE_THRUST_TEST_SIZES();
-  TestUninitializedFillNonPOD{}(s);
+  using T                       = CopyConstructTest;
+  const thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
+
+  const T exemplar;
+  REQUIRE_FALSE(exemplar.copy_constructed_on_device);
+  REQUIRE_FALSE(exemplar.copy_constructed_on_host);
+
+  const T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
+  REQUIRE_FALSE(host_copy_of_exemplar.copy_constructed_on_device);
+  REQUIRE(host_copy_of_exemplar.copy_constructed_on_host);
+
+  // copy construct v from the exemplar
+  thrust::uninitialized_fill(v, v + 1, exemplar);
+
+  const auto n_device = thrust::count_if(v, v + 1, is_copy_constructed_on_device{});
+  const auto n_host   = thrust::count_if(v, v + 1, is_copy_constructed_on_host{});
+  if constexpr (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA)
+  {
+    REQUIRE(n_device == 1);
+    REQUIRE(n_host == 0);
+  }
+  else
+  {
+    REQUIRE(n_device == 0);
+    REQUIRE(n_host == 1);
+  }
+
+  thrust::device_free(v);
 }

@@ -103,120 +103,88 @@ void TestUninitializedCopyNSimplePOD()
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedCopyNSimplePOD);
 
-struct TestUninitializedCopyNonPODDevice
-{
-  void operator()(const size_t)
-  {
-    using T = CopyConstructTest;
-
-    thrust::device_vector<T> v1(5), v2(5);
-
-    thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
-
-    const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
-    const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
-    if constexpr (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA)
-    {
-      REQUIRE(n_device == v2.size());
-      REQUIRE(n_host == 0u);
-    }
-    else
-    {
-      REQUIRE(n_device == 0u);
-      REQUIRE(n_host == v2.size());
-    }
-  }
-};
 TEST_CASE("TestUninitializedCopyNonPODDevice", "[uninitialized_copy]")
 {
-  const size_t s = GENERATE_THRUST_TEST_SIZES();
-  TestUninitializedCopyNonPODDevice{}(s);
+  using T = CopyConstructTest;
+
+  thrust::device_vector<T> v1(5), v2(5);
+
+  thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
+
+  const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+  const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
+  if constexpr (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA)
+  {
+    REQUIRE(n_device == v2.size());
+    REQUIRE(n_host == 0u);
+  }
+  else
+  {
+    REQUIRE(n_device == 0u);
+    REQUIRE(n_host == v2.size());
+  }
 }
 
-struct TestUninitializedCopyNNonPODDevice
-{
-  void operator()(const size_t)
-  {
-    using T = CopyConstructTest;
-
-    thrust::device_vector<T> v1(5), v2(5);
-
-    thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
-
-    const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
-    const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
-    if constexpr (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA)
-    {
-      REQUIRE(n_device == v2.size());
-      REQUIRE(n_host == 0u);
-    }
-    else
-    {
-      REQUIRE(n_device == 0u);
-      REQUIRE(n_host == v2.size());
-    }
-  }
-};
 TEST_CASE("TestUninitializedCopyNNonPODDevice", "[uninitialized_copy]")
 {
-  const size_t s = GENERATE_THRUST_TEST_SIZES();
-  TestUninitializedCopyNNonPODDevice{}(s);
+  using T = CopyConstructTest;
+
+  thrust::device_vector<T> v1(5), v2(5);
+
+  thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
+
+  const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+  const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
+  if constexpr (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA)
+  {
+    REQUIRE(n_device == v2.size());
+    REQUIRE(n_host == 0u);
+  }
+  else
+  {
+    REQUIRE(n_device == 0u);
+    REQUIRE(n_host == v2.size());
+  }
 }
 
-struct TestUninitializedCopyNonPODHost
-{
-  void operator()(const size_t)
-  {
-    using T = CopyConstructTest;
-
-    thrust::host_vector<T> v1(5), v2(5);
-
-    T x;
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
-    x = v1[0];
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
-    thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
-
-    x = v2[0];
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE(x.copy_constructed_on_host);
-  }
-};
 TEST_CASE("TestUninitializedCopyNonPODHost", "[uninitialized_copy]")
 {
-  const size_t s = GENERATE_THRUST_TEST_SIZES();
-  TestUninitializedCopyNonPODHost{}(s);
+  using T = CopyConstructTest;
+
+  thrust::host_vector<T> v1(5), v2(5);
+
+  T x;
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE_FALSE(x.copy_constructed_on_host);
+
+  x = v1[0];
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE_FALSE(x.copy_constructed_on_host);
+
+  thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
+
+  x = v2[0];
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE(x.copy_constructed_on_host);
 }
 
-struct TestUninitializedCopyNNonPODHost
-{
-  void operator()(const size_t)
-  {
-    using T = CopyConstructTest;
-
-    thrust::host_vector<T> v1(5), v2(5);
-
-    T x;
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
-    x = v1[0];
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
-    thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
-
-    x = v2[0];
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE(x.copy_constructed_on_host);
-  }
-};
 TEST_CASE("TestUninitializedCopyNNonPODHost", "[uninitialized_copy]")
 {
-  const size_t s = GENERATE_THRUST_TEST_SIZES();
-  TestUninitializedCopyNNonPODHost{}(s);
+  using T = CopyConstructTest;
+
+  thrust::host_vector<T> v1(5), v2(5);
+
+  T x;
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE_FALSE(x.copy_constructed_on_host);
+
+  x = v1[0];
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE_FALSE(x.copy_constructed_on_host);
+
+  thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
+
+  x = v2[0];
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE(x.copy_constructed_on_host);
 }
