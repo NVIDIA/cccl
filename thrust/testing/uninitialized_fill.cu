@@ -1,9 +1,9 @@
+#include <thrust/count.h>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/uninitialized_fill.h>
 
-#include <nv/target>
-
+#include "copy_construct_test.h"
 #include <unittest/unittest.h>
 
 template <typename ForwardIterator, typename T>
@@ -76,50 +76,34 @@ void TestUninitializedFillPOD()
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedFillPOD);
 
-struct CopyConstructTest
+TEST_CASE("TestUninitializedFillNonPOD", "[uninitialized_fill]")
 {
-  CopyConstructTest() = default;
+  using T                       = CopyConstructTest;
+  const thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
 
-  _CCCL_HOST_DEVICE CopyConstructTest(const CopyConstructTest&)
+  const T exemplar;
+  REQUIRE_FALSE(exemplar.copy_constructed_on_device);
+  REQUIRE_FALSE(exemplar.copy_constructed_on_host);
+
+  const T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
+  REQUIRE_FALSE(host_copy_of_exemplar.copy_constructed_on_device);
+  REQUIRE(host_copy_of_exemplar.copy_constructed_on_host);
+
+  // copy construct v from the exemplar
+  thrust::uninitialized_fill(v, v + 1, exemplar);
+
+  const auto n_device = thrust::count_if(v, v + 1, is_copy_constructed_on_device{});
+  const auto n_host   = thrust::count_if(v, v + 1, is_copy_constructed_on_host{});
+  if constexpr (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA)
   {
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (copy_constructed_on_device = true; copy_constructed_on_host = false;),
-                 (copy_constructed_on_device = false; copy_constructed_on_host = true;));
+    REQUIRE(n_device == 1);
+    REQUIRE(n_host == 0);
+  }
+  else
+  {
+    REQUIRE(n_device == 0);
+    REQUIRE(n_host == 1);
   }
 
-  CopyConstructTest& operator=(const CopyConstructTest&) = default;
-
-  bool copy_constructed_on_host{false};
-  bool copy_constructed_on_device{false};
-};
-
-struct TestUninitializedFillNonPOD
-{
-  void operator()(const size_t)
-  {
-    using T                       = CopyConstructTest;
-    const thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
-
-    const T exemplar;
-    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
-    REQUIRE_FALSE(exemplar.copy_constructed_on_host);
-
-    const T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
-    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
-    REQUIRE(exemplar.copy_constructed_on_host);
-
-    // copy construct v from the exemplar
-    thrust::uninitialized_fill(v, v + 1, exemplar);
-
-    T x;
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
-    x = v[0];
-    REQUIRE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
-    thrust::device_free(v);
-  }
-};
-DECLARE_UNITTEST(TestUninitializedFillNonPOD);
+  thrust::device_free(v);
+}
