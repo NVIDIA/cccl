@@ -258,7 +258,7 @@ __ctxGetCurrentNoThrow(::CUcontext& __ctx) noexcept // NOLINT(bugprone-exception
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuCtxGetDevice);
   ::CUdevice __result{};
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to get current context", &__result);
+  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to get current context's device", &__result);
   return __result;
 }
 
