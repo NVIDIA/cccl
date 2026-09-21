@@ -57,6 +57,8 @@
 #  include <climits>
 #  include <cmath>
 #  include <cstddef>
+
+#  include <assert.h>
 // string.h must precede __clang_cuda_device_functions.h: cuda_fp16.hpp uses
 // memcpy from __host__ __device__ ctors. device_functions.h only declares a
 // __device__ memcpy, so the host-side call site needs the stub's host-callable
@@ -301,14 +303,6 @@ __host__ __device__ void __nv_tex_surf_handler(const char* name, T* ptr, cudaTex
 // Phase 8: Device-side system calls & std wrappers
 // ============================================================================
 extern "C" {
-#  if defined(_WIN32)
-// The freestanding Windows host has no libc __assert_fail. Keep CCCL's
-// unconditional verification checks fatal without depending on a CRT symbol.
-__host__ __attribute__((noreturn)) inline void __assert_fail(const char*, const char*, unsigned, const char*) noexcept
-{
-  __builtin_trap();
-}
-#  endif
 __device__ int vprintf(const char*, const char*);
 __device__ void free(void*) __attribute((nothrow));
 __device__ void* malloc(size_t) __attribute((nothrow)) __attribute__((malloc));
