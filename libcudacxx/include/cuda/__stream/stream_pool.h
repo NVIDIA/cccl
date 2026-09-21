@@ -30,18 +30,51 @@
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__utility/no_init.h>
+#  include <cuda/std/__atomic/order.h>
+#  include <cuda/std/__atomic/platform.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__limits/numeric_limits.h>
 
-#  include <atomic>
 #  include <mutex>
 #  include <vector>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+// Relaxed atomics on the round-robin counter of a stream_pool through the compiler builtins, so that the header does
+// not pull in <atomic>. MSVC gets the same builtins from cuda/std/__atomic/platform.h, in namespace cuda::std.
+#  if _CCCL_COMPILER(MSVC)
+#    define _CUDA_STREAM_POOL_ATOMIC(__op) ::cuda::std::__op
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#    define _CUDA_STREAM_POOL_ATOMIC(__op) __op
+#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
+_CCCL_HOST_API inline ::cuda::std::size_t
+__stream_pool_fetch_add_relaxed(::cuda::std::size_t* __ptr, ::cuda::std::size_t __val) noexcept
+{
+  return _CUDA_STREAM_POOL_ATOMIC(__atomic_fetch_add)(__ptr, __val, __ATOMIC_RELAXED);
+}
+
+_CCCL_HOST_API inline ::cuda::std::size_t
+__stream_pool_fetch_sub_relaxed(::cuda::std::size_t* __ptr, ::cuda::std::size_t __val) noexcept
+{
+  return _CUDA_STREAM_POOL_ATOMIC(__atomic_fetch_sub)(__ptr, __val, __ATOMIC_RELAXED);
+}
+
+_CCCL_HOST_API inline ::cuda::std::size_t __stream_pool_load_relaxed(const ::cuda::std::size_t* __ptr) noexcept
+{
+  return _CUDA_STREAM_POOL_ATOMIC(__atomic_load_n)(__ptr, __ATOMIC_RELAXED);
+}
+
+_CCCL_HOST_API inline void __stream_pool_store_relaxed(::cuda::std::size_t* __ptr, ::cuda::std::size_t __val) noexcept
+{
+  _CUDA_STREAM_POOL_ATOMIC(__atomic_store_n)(__ptr, __val, __ATOMIC_RELAXED);
+}
+
+#  undef _CUDA_STREAM_POOL_ATOMIC
 
 //! @brief When the streams of a `stream_pool` are created
 enum class stream_pool_creation
@@ -144,7 +177,7 @@ public:
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref next_stream() const
   {
-    const ::cuda::std::size_t __ticket = __next_.fetch_add(1, ::std::memory_order_relaxed);
+    const ::cuda::std::size_t __ticket = ::cuda::__stream_pool_fetch_add_relaxed(&__next_, 1);
     if (__ticket == __wrap_)
     {
       // Tickets are unique, so exactly one caller draws `__wrap_` and it alone pulls the counter back. Until
@@ -152,7 +185,7 @@ public:
       // `__wrap_` is a multiple of `size()`, so the modulo below maps those tickets to slots 1, 2, ..., exactly
       // the slots that follow the wrap ticket. Once the subtraction lands the counter continues from the same
       // slot sequence, so the round-robin order is exact and the counter never overflows.
-      __next_.fetch_sub(__wrap_, ::std::memory_order_relaxed);
+      ::cuda::__stream_pool_fetch_sub_relaxed(&__next_, __wrap_);
     }
     return __stream_at(__ticket % __streams_.size());
   }
@@ -202,7 +235,7 @@ public:
   //! @brief The round-robin ticket the next call to `next_stream()` draws. For tests only.
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __next_ticket() const noexcept
   {
-    return __next_.load(::std::memory_order_relaxed);
+    return ::cuda::__stream_pool_load_relaxed(&__next_);
   }
 
   //! @brief Sets the round-robin ticket the next call to `next_stream()` draws. For tests only.
@@ -210,7 +243,7 @@ public:
   //! @param[in] __ticket The ticket, must not exceed `__wrap_ticket()`
   _CCCL_HOST_API void __set_next_ticket(::cuda::std::size_t __ticket) const noexcept
   {
-    __next_.store(__ticket, ::std::memory_order_relaxed);
+    ::cuda::__stream_pool_store_relaxed(&__next_, __ticket);
   }
 
   //! @brief The ticket at which the round-robin counter is pulled back by that same amount. For tests only.
@@ -277,7 +310,8 @@ private:
   mutable ::std::mutex __mutex_{};
   //! The slots, `size()` of them; a slot without a stream holds `__invalid_stream()`.
   mutable ::std::vector<stream> __streams_{};
-  mutable ::std::atomic<::cuda::std::size_t> __next_{0};
+  //! The round-robin counter; only ever accessed through the relaxed atomic builtins at the top of this file.
+  mutable ::cuda::std::size_t __next_{0};
 };
 
 _CCCL_END_NAMESPACE_CUDA
