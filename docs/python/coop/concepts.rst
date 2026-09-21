@@ -56,7 +56,7 @@ in the programming guides.
      - Available
    * - Adjacent Difference and Discontinuity
      - Available
-     - Not implemented
+     - Available
    * - Histogram
      - Available
      - Not implemented
