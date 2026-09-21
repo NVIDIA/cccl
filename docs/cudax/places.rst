@@ -146,7 +146,7 @@ domain can improve locality. Locality domain places expose this capability:
   method; the single-device counterpart of ``exec_place::all_devices()``
   (``make_locality_domain_grid(devid[, split])`` is the equivalent free
   function)
-- ``exec_place::locality_domains([split])`` -- the machine-wide form: a grid
+- ``exec_place::all_locality_domains([split])`` -- the machine-wide form: a grid
   with one execution place per domain of every visible device, in
   device-major order; devices without locality-domain support contribute a
   single whole-device place (``make_locality_domain_grid([split])`` is the
@@ -669,7 +669,7 @@ The partitioning granularity is specified by ``place_partition_scope``:
 Partitioning ``exec_place::all_devices()`` at ``locality_domain`` scope is
 the machine-wide form: it yields every locality domain of every device. The
 helpers ``exec_place::locality_domains(dev_id)`` (single device) and
-``exec_place::locality_domains()`` (every device), or equivalently
+``exec_place::all_locality_domains()`` (every device), or equivalently
 ``make_locality_domain_grid(dev_id)`` / ``make_locality_domain_grid()``, are
 convenience sugar over this mechanism.
 

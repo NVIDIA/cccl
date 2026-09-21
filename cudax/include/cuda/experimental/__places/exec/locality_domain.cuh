@@ -22,7 +22,7 @@
  *    both VMM physical handles and stream-ordered memory pools),
  *  - `exec_place::locality_domains(dev)` / `make_locality_domain_grid(dev)`
  *    build a grid over every domain of a device;
- *    `exec_place::locality_domains()` / `make_locality_domain_grid()` over
+ *    `exec_place::all_locality_domains()` / `make_locality_domain_grid()` over
  *    every domain of every device,
  *  - `locality_domain_helper` enumerates the domains of a device.
  *
@@ -1005,7 +1005,7 @@ inline exec_place exec_place::locality_domains(int dev_id, locality_domain_sm_sp
 }
 
 //! Machine-wide sugar over make_locality_domain_grid: every domain of every device, like all_devices() one level down
-inline exec_place exec_place::locality_domains(locality_domain_sm_split split)
+inline exec_place exec_place::all_locality_domains(locality_domain_sm_split split)
 {
   return make_locality_domain_grid(split);
 }
