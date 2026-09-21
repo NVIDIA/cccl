@@ -214,7 +214,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //! @striped
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam BlockThreads
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -235,7 +235,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //!
 //! @param[in] items
 //!   Data to store
-template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
+template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
@@ -245,7 +245,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
+    thread_itr[(ITEM * BlockThreads)] = items[ITEM];
   }
 }
 
@@ -259,7 +259,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! @striped
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam BlockThreads
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -283,7 +283,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //!
 //! @param[in] valid_items
 //!   Number of valid items to write
-template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
+template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
@@ -293,9 +293,9 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    if ((ITEM * BLOCK_THREADS) + linear_tid < valid_items)
+    if ((ITEM * BlockThreads) + linear_tid < valid_items)
     {
-      thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
+      thread_itr[(ITEM * BlockThreads)] = items[ITEM];
     }
   }
 }
