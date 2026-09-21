@@ -69,15 +69,22 @@ __device__ __forceinline__ static void sink(T (&values)[Size])
   }
 }
 
-// UnrollFactor is the workload either way; Unroll only decides whether the compiler emits copies or a loop.
 template <int ThreadsPerBlock, int UnrollFactor, typename ActionT, typename T, bool Unroll = true>
 __launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(const ActionT action)
 {
   auto data = generate_random_data<T>();
-  _CCCL_PRAGMA_UNROLL(Unroll ? UnrollFactor : 1)
-  for (int i = 0; i < UnrollFactor; ++i)
+  if constexpr (Unroll)
   {
-    data = action(data);
+    cuda::static_for<UnrollFactor>([&]([[maybe_unused]] auto _) {
+      data = action(data);
+    });
+  }
+  else
+  {
+    for (int i = 0; i < UnrollFactor; ++i)
+    {
+      data = action(data);
+    }
   }
   sink(data);
 }
