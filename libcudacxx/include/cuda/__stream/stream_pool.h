@@ -103,6 +103,9 @@ class stream_pool
 public:
   //! @brief Constructs a pool of streams on the primary context of a device
   //!
+  //! Every stream is created like a `cuda::stream`: non-blocking with respect to the legacy default stream, with
+  //! the given priority.
+  //!
   //! @param[in] __device The device the streams are created on
   //! @param[in] __size Number of streams in the pool, must be greater than zero
   //! @param[in] __mode When the streams are created, defaults to `stream_pool_creation::eager`
@@ -120,7 +123,8 @@ public:
 
   //! @brief Constructs a pool of streams on a logical device, that is a device or a green context
   //!
-  //! The pool does not own the green context, which must outlive the pool.
+  //! Every stream is created like a `cuda::stream`: non-blocking with respect to the legacy default stream, with
+  //! the given priority. The pool does not own the green context, which must outlive the pool.
   //!
   //! @param[in] __device The logical device the streams are created on
   //! @param[in] __size Number of streams in the pool, must be greater than zero

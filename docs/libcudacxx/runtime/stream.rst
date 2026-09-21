@@ -82,6 +82,10 @@ managing their lifetime.
 - ``size()``, ``device()``, ``priority()``: the parameters given at construction; the constructors throw
   ``std::invalid_argument`` for a size of zero
 
+Every stream of the pool is created like a :cpp:struct:`cuda::stream`: non-blocking with respect to the legacy
+default stream, with the priority given at construction. These are the only creation parameters
+:cpp:struct:`cuda::stream` exposes, and the pool forwards them unchanged.
+
 Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool. The streams are
 destroyed with the pool, so the work submitted to them must be synchronized before the pool goes away; the pool does
 not do it. When the streams are created is chosen with a ``cuda::stream_pool_creation`` value passed after the size:
