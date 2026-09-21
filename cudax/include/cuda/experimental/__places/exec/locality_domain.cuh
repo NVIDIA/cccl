@@ -971,17 +971,15 @@ make_locality_domain_grid(int dev_id, locality_domain_sm_split split = locality_
   return make_grid(mv(domains));
 }
 
-/**
- * @brief Create a grid of execution places over every locality domain of
- * every visible device, in device-major order.
- *
- * Devices without locality-domain support (or with the fallback backend)
- * contribute a single whole-device place, so this is safe on every machine.
- *
- * @param split SM split method applied to every place of the grid; see
- *        `locality_domain_sm_split`.
- * @return exec_place grid with one place per locality domain per device
- */
+//! @brief Create a grid of execution places over every locality domain of
+//! every visible device, in device-major order.
+//!
+//! Devices without locality-domain support (or with the fallback backend)
+//! contribute a single whole-device place, so this is safe on every machine.
+//!
+//! @param[in] split SM split method applied to every place of the grid; see
+//!        @c locality_domain_sm_split
+//! @return exec_place grid with one place per locality domain per device
 inline exec_place make_locality_domain_grid(locality_domain_sm_split split = locality_domain_sm_split::backfill)
 {
   const int ndevs = cuda_try<cudaGetDeviceCount>();
@@ -1004,7 +1002,10 @@ inline exec_place exec_place::locality_domains(int dev_id, locality_domain_sm_sp
   return make_locality_domain_grid(dev_id, split);
 }
 
-//! Machine-wide sugar over make_locality_domain_grid: every domain of every device, like all_devices() one level down
+//! @brief Machine-wide sugar over @c make_locality_domain_grid: every domain of every device, like @c all_devices()
+//! one level down the hierarchy
+//! @param[in] split SM split method applied to every place of the grid; see @c locality_domain_sm_split
+//! @return exec_place grid with one place per locality domain per device
 inline exec_place exec_place::all_locality_domains(locality_domain_sm_split split)
 {
   return make_locality_domain_grid(split);

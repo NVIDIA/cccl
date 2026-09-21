@@ -1011,20 +1011,17 @@ public:
    */
   static exec_place locality_domains(int dev_id, locality_domain_sm_split split = locality_domain_sm_split::backfill);
 
-  /**
-   * @brief Returns a grid of execution places over every locality domain of every visible device
-   *
-   * Machine-wide sugar over `make_locality_domain_grid(split)`, the counterpart
-   * of `all_devices()` one level down the hierarchy (as `locality_domains(dev_id)`
-   * is to `device(dev_id)`): one place per locality
-   * domain per device, in device-major order (devices without locality-domain
-   * support contribute a single whole-device place). Defined in
-   * `exec/locality_domain.cuh`.
-   *
-   * @param[in] split SM split method applied to every place of the grid; see
-   *        `locality_domain_sm_split`
-   * @return exec_place grid with one place per locality domain per device
-   */
+  //! @brief Returns a grid of execution places over every locality domain of every visible device
+  //!
+  //! Machine-wide sugar over @c make_locality_domain_grid(split), the counterpart
+  //! of @c all_devices() one level down the hierarchy (as @c locality_domains(dev_id)
+  //! is to @c device(dev_id)): one place per locality domain per device, in
+  //! device-major order (devices without locality-domain support contribute a
+  //! single whole-device place). Defined in @c exec/locality_domain.cuh.
+  //!
+  //! @param[in] split SM split method applied to every place of the grid; see
+  //!        @c locality_domain_sm_split
+  //! @return exec_place grid with one place per locality domain per device
   static exec_place all_locality_domains(locality_domain_sm_split split = locality_domain_sm_split::backfill);
 
   static exec_place n_devices(size_t n, dim4 dims);
