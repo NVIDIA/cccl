@@ -149,16 +149,18 @@ see its programming guide before selecting a runtime.
 Common and qualified APIs
 -------------------------
 
-``from cuda import coop`` selects the common namespace. It describes
-groups, payloads, operations, and temporary storage independently of a
-compiler. Calls inside a kernel are compiler markers; they are not
+``from cuda import coop`` selects the common namespace. It defines the
+shared contracts for groups, payloads, operations, and temporary storage
+across supported DSLs. Calls inside a kernel are compiler markers; they are not
 host-side implementations of those operations.
 
 The qualified namespaces, ``cuda.coop.numba_mlir`` and
 ``cuda.coop.cutlass``, expose the shared operations and their backend's
-extensions. Use a qualified call when an operation needs a compiler-specific
-value or control. Common and qualified calls can appear in the same
-kernel when they belong to its compiler. The comparisons in the
+extensions. A program using one compiler can use its qualified namespace
+alone. CUTLASS-only code can use ``import cuda.coop.cutlass as coop``. Use
+``numba_coop`` and ``cutlass_coop`` when a module contains both DSLs.
+Common and qualified calls can appear in the same kernel when they belong
+to its compiler. The comparisons in the
 :ref:`Numba-CUDA-MLIR guide <coop-programming-api-choice>` and
 :ref:`CUTLASS guide <coop-cutlass-api-choice>` list the differences.
 
