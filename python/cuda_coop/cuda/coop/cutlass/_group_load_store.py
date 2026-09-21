@@ -128,7 +128,7 @@ def store(
 def _normalize_algorithm(algorithm: Any) -> GroupLoadStoreAlgorithm:
     token = getattr(algorithm, "value", algorithm)
     if isinstance(token, str):
-        token = token.lower().replace("-", "_")
+        token = token.strip().lower().replace("-", "_")
     try:
         return GroupLoadStoreAlgorithm(token)
     except (TypeError, ValueError) as exc:
