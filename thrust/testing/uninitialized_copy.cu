@@ -1,8 +1,11 @@
+#include <thrust/copy.h>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/uninitialized_copy.h>
 
 #include <nv/target>
+
+#include <cstring>
 
 #include <unittest/unittest.h>
 
@@ -120,6 +123,27 @@ struct CopyConstructTest
   bool copy_constructed_on_device{false};
 };
 
+// Reading *ptr through a device_reference (e.g. `v[0]`) round-trips the value through
+// get_value(), which materializes it via a host-side return-by-value chain. Unless the
+// compiler elides every one of those returns (not guaranteed), that chain itself invokes T's
+// copy constructor on the host, clobbering the very flags this test observes. Bypass all of
+// that by copying the raw bytes, which never calls a constructor.
+template <typename T>
+T read_raw(thrust::device_ptr<T> ptr)
+{
+  const auto* byte_ptr = reinterpret_cast<const unsigned char*>(thrust::raw_pointer_cast(ptr));
+  thrust::host_vector<unsigned char> bytes(sizeof(T));
+  thrust::copy(thrust::device_pointer_cast(byte_ptr), thrust::device_pointer_cast(byte_ptr) + sizeof(T), bytes.begin());
+  T result;
+  std::memcpy(reinterpret_cast<unsigned char*>(&result), bytes.data(), sizeof(T));
+  return result;
+}
+
+// Only the CUDA backend runs "device" work as actual device code; the OMP/TBB/CPP backends
+// execute their device_system algorithms on the host, so CopyConstructTest's copy constructor
+// always takes the host branch there.
+inline constexpr bool device_system_is_cuda = THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA;
+
 struct TestUninitializedCopyNonPODDevice
 {
   void operator()(const size_t)
@@ -128,19 +152,19 @@ struct TestUninitializedCopyNonPODDevice
 
     thrust::device_vector<T> v1(5), v2(5);
 
-    T x;
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
-    x = v1[0];
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
     thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
 
-    x = v2[0];
-    REQUIRE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
+    const T x = read_raw(v2.data());
+    if constexpr (device_system_is_cuda)
+    {
+      REQUIRE(x.copy_constructed_on_device);
+      REQUIRE_FALSE(x.copy_constructed_on_host);
+    }
+    else
+    {
+      REQUIRE_FALSE(x.copy_constructed_on_device);
+      REQUIRE(x.copy_constructed_on_host);
+    }
   }
 };
 TEST_CASE("TestUninitializedCopyNonPODDevice", "[uninitialized_copy]")
@@ -157,19 +181,19 @@ struct TestUninitializedCopyNNonPODDevice
 
     thrust::device_vector<T> v1(5), v2(5);
 
-    T x;
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
-    x = v1[0];
-    REQUIRE_FALSE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
-
     thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
 
-    x = v2[0];
-    REQUIRE(x.copy_constructed_on_device);
-    REQUIRE_FALSE(x.copy_constructed_on_host);
+    const T x = read_raw(v2.data());
+    if constexpr (device_system_is_cuda)
+    {
+      REQUIRE(x.copy_constructed_on_device);
+      REQUIRE_FALSE(x.copy_constructed_on_host);
+    }
+    else
+    {
+      REQUIRE_FALSE(x.copy_constructed_on_device);
+      REQUIRE(x.copy_constructed_on_host);
+    }
   }
 };
 TEST_CASE("TestUninitializedCopyNNonPODDevice", "[uninitialized_copy]")
