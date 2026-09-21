@@ -241,17 +241,21 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     }
   }
 
-  SECTION("Streams are non-blocking")
+  SECTION("Every stream is non-blocking, whether created eagerly or lazily")
   {
-    const cuda::stream_pool pool{device, 2};
-    const cuda::stream_ref str = pool.next_stream();
-
-    unsigned int flags{};
+    for (const auto mode : {cuda::stream_pool_creation::eager, cuda::stream_pool_creation::lazy})
     {
-      const cuda::__ensure_current_context guard(device);
-      CUDART(cudaStreamGetFlags(str.get(), &flags));
+      const cuda::stream_pool pool{device, 3, mode};
+      for (cuda::std::size_t i = 0; i < pool.size(); ++i)
+      {
+        unsigned int flags{};
+        {
+          const cuda::__ensure_current_context guard(device);
+          CUDART(cudaStreamGetFlags(pool[i].get(), &flags));
+        }
+        REQUIRE((flags & cudaStreamNonBlocking) != 0);
+      }
     }
-    REQUIRE((flags & cudaStreamNonBlocking) != 0);
   }
 
   SECTION("The requested priority reaches every stream")
@@ -599,6 +603,13 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
       REQUIRE(str.__logical_device().kind() == cuda::__logical_device_ref::kinds::green_context);
       REQUIRE(str.__logical_device().green_context() == ldev.green_context());
       REQUIRE(cuda::__driver::__streamGetCtx(str.get()) == cuda::__driver::__ctxFromGreenCtx(ldev.green_context()));
+
+      unsigned int flags{};
+      {
+        const cuda::__ensure_current_context guard(device);
+        CUDART(cudaStreamGetFlags(str.get(), &flags));
+      }
+      REQUIRE((flags & cudaStreamNonBlocking) != 0);
 
       ::test::pinned<int> value(0);
       ::test::launch_kernel_single_thread(str, ::test::assign_42{}, value.get());
