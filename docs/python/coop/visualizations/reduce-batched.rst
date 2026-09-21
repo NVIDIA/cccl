@@ -6,9 +6,6 @@
 Batched Warp Reduction
 ======================
 
-These primitives are currently implemented by Numba-CUDA-MLIR. CUTLASS
-does not yet implement them; see :ref:`backend coverage <coop-backends>`.
-
 :func:`cuda.coop.reduce_batched` reduces several independent batches across
 a warp. Each thread contributes one item to each batch: local slot zero
 belongs to batch zero, slot one to batch one, and so on. The result has
@@ -84,11 +81,21 @@ The host test launches two warps and checks their feature sums separately.
 For more than one block, include the block's input and output base offsets.
 The primitive never combines results from different warps.
 
-The Numba-CUDA-MLIR backend supports complete physical warps and logical
-warps of 1, 2, 4, 8, or 16 threads. Every member of the selected warp must
+CuTe kernels use the same per-feature contract. This executable example
+also launches two warps and checks their sums against NumPy:
+
+.. literalinclude:: ../../../../python/cuda_coop/examples/cutlass/reduce_batched.py
+   :language: python
+   :start-after: # docs: start cutlass-reduce-batched
+   :end-before: # docs: end cutlass-reduce-batched
+   :dedent: 4
+
+Both backends support complete physical warps and logical
+warps of 1, 2, 4, 8, 16, or 32 threads. Every member of the selected warp must
 participate, even if that member owns no result. Other logical warps may
-take another branch. Temporary storage is allocated per warp by the
-compiler; this operation does not accept a caller ``TempStorage``.
+take another branch. The compiler manages provider storage; this operation
+does not accept a caller ``TempStorage``. The CUTLASS provider needs no shared
+scratch allocation or trailing storage-reuse barrier.
 
 The batch count is a positive compile-time payload extent. The result
 uses the input dtype without accumulator promotion. Built-in operator
@@ -96,3 +103,7 @@ strings match :func:`~cuda.coop.reduce`; the qualified
 :func:`cuda.coop.numba_mlir.reduce_batched` form additionally accepts a
 stateless device callback and fixed local-array inputs. Reduction
 operators must be associative and commutative.
+
+The qualified :func:`cuda.coop.cutlass.reduce_batched` form accepts CuTe
+register tensors and immutable register values in addition to ``ThreadData``.
+Its result is a fresh ``ThreadData`` with the same ownership rules.

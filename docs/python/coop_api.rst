@@ -306,6 +306,7 @@ Reduction
 ^^^^^^^^^
 
 .. autofunction:: reduce
+.. autofunction:: reduce_batched
 .. autofunction:: sum
 
 Scan
