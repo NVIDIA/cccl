@@ -27,7 +27,7 @@ void TestUninitializedFillNDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_fill_n(sys, vec.begin(), vec.size(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUninitializedFillNDispatchExplicit);
 
@@ -45,7 +45,7 @@ void TestUninitializedFillNDispatchImplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_fill_n(sys, vec.begin(), vec.size(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUninitializedFillNDispatchImplicit);
 
@@ -61,28 +61,32 @@ void TestUninitializedFillNPOD()
   typename Vector::iterator iter = thrust::uninitialized_fill_n(v.begin() + 1, 3, exemplar);
 
   Vector ref{0, exemplar, exemplar, exemplar, 4};
-  ASSERT_EQUAL_QUIET(v.begin() + 4, iter);
+  REQUIRE(v.begin() + 4 == iter);
+  REQUIRE(v == ref);
 
   exemplar = 8;
 
   iter = thrust::uninitialized_fill_n(v.begin() + 0, 3, exemplar);
 
   ref = {exemplar, exemplar, exemplar, 7, 4};
-  ASSERT_EQUAL_QUIET(v.begin() + 3, iter);
+  REQUIRE(v.begin() + 3 == iter);
+  REQUIRE(v == ref);
 
   exemplar = 9;
 
   iter = thrust::uninitialized_fill_n(v.begin() + 2, 3, exemplar);
 
   ref = {8, 8, exemplar, exemplar, 9};
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v.end() == iter);
+  REQUIRE(v == ref);
 
   exemplar = 1;
 
   iter = thrust::uninitialized_fill_n(v.begin(), v.size(), exemplar);
 
   ref = {exemplar, exemplar, exemplar, exemplar, exemplar};
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v.end() == iter);
+  REQUIRE(v == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedFillNPOD);
 
@@ -111,23 +115,23 @@ struct TestUninitializedFillNNonPOD
     const thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
 
     const T exemplar;
-    ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
-    ASSERT_EQUAL(false, exemplar.copy_constructed_on_host);
+    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
+    REQUIRE_FALSE(exemplar.copy_constructed_on_host);
 
     const T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
-    ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
-    ASSERT_EQUAL(true, exemplar.copy_constructed_on_host);
+    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
+    REQUIRE(exemplar.copy_constructed_on_host);
 
     // copy construct v from the exemplar
     thrust::uninitialized_fill_n(v, 1, exemplar);
 
     T x;
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+    REQUIRE_FALSE(x.copy_constructed_on_device);
+    REQUIRE_FALSE(x.copy_constructed_on_host);
 
     x = v[0];
-    ASSERT_EQUAL(true, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+    REQUIRE(x.copy_constructed_on_device);
+    REQUIRE_FALSE(x.copy_constructed_on_host);
 
     thrust::device_free(v);
   }

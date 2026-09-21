@@ -54,12 +54,12 @@ void TestUniversalAllocateUnique()
   static_assert(std::is_same_v<decltype(obj.get()), thrust::universal_ptr<some_object<T>>>,
                 "Unexpected pointer type returned from std::unique_ptr::get.");
 
-  ASSERT_EQUAL(*raw, T(42));
-  ASSERT_EQUAL(*raw.get(), T(42));
-  ASSERT_EQUAL(obj->getter(), T(42));
-  ASSERT_EQUAL((*obj).getter(), T(42));
-  ASSERT_EQUAL(obj.get()->getter(), T(42));
-  ASSERT_EQUAL((*obj.get()).getter(), T(42));
+  REQUIRE(*raw == T(42));
+  REQUIRE(*raw.get() == T(42));
+  REQUIRE(obj->getter() == T(42));
+  REQUIRE((*obj).getter() == T(42));
+  REQUIRE(obj.get()->getter() == T(42));
+  REQUIRE((*obj.get()).getter() == T(42));
 }
 DECLARE_GENERIC_UNITTEST(TestUniversalAllocateUnique);
 
@@ -73,8 +73,8 @@ void TestUniversalIterationRaw()
 
   for (auto iter = array.get(), end = array.get() + 6; iter < end; ++iter)
   {
-    ASSERT_EQUAL(*iter, T(42));
-    ASSERT_EQUAL(*iter.get(), T(42));
+    REQUIRE(*iter == T(42));
+    REQUIRE(*iter.get() == T(42));
   }
 }
 DECLARE_GENERIC_UNITTEST(TestUniversalIterationRaw);
@@ -89,10 +89,10 @@ void TestUniversalIterationObj()
 
   for (auto iter = array.get(), end = array.get() + 6; iter < end; ++iter)
   {
-    ASSERT_EQUAL(iter->getter(), T(42));
-    ASSERT_EQUAL((*iter).getter(), T(42));
-    ASSERT_EQUAL(iter.get()->getter(), T(42));
-    ASSERT_EQUAL((*iter.get()).getter(), T(42));
+    REQUIRE(iter->getter() == T(42));
+    REQUIRE((*iter).getter() == T(42));
+    REQUIRE(iter.get()->getter() == T(42));
+    REQUIRE((*iter.get()).getter() == T(42));
   }
 }
 DECLARE_GENERIC_UNITTEST(TestUniversalIterationObj);
@@ -112,10 +112,10 @@ void TestUniversalRawPointerCast()
                 "Unexpected pointer type returned from cuda::std::to_address.");
 
   *thrust::raw_pointer_cast(obj.get()) = T(17);
-  ASSERT_EQUAL(*obj, T(17));
+  REQUIRE(*obj == T(17));
 
   *cuda::std::to_address(obj.get()) = T(42);
-  ASSERT_EQUAL(*obj, T(42));
+  REQUIRE(*obj == T(42));
 }
 DECLARE_GENERIC_UNITTEST(TestUniversalRawPointerCast);
 
@@ -130,9 +130,9 @@ void TestUniversalThrustVector(std::size_t const n)
 
   thrust::sequence(host.begin(), host.end(), 0);
   thrust::sequence(universal.begin(), universal.end(), 0);
-  ASSERT_EQUAL(host.size(), n);
-  ASSERT_EQUAL(universal.size(), n);
-  ASSERT_EQUAL(host, universal);
+  REQUIRE(host.size() == n);
+  REQUIRE(universal.size() == n);
+  REQUIRE(host == universal);
 }
 DECLARE_VARIABLE_UNITTEST(TestUniversalThrustVector);
 
@@ -149,9 +149,9 @@ void TestUniversalHostPinnedThrustVector(std::size_t const n)
   thrust::sequence(host.begin(), host.end(), 0);
   thrust::sequence(universal.begin(), universal.end(), 0);
 
-  ASSERT_EQUAL(host.size(), n);
-  ASSERT_EQUAL(universal.size(), n);
-  ASSERT_EQUAL(host, universal);
+  REQUIRE(host.size() == n);
+  REQUIRE(universal.size() == n);
+  REQUIRE(host == universal);
 }
 DECLARE_VARIABLE_UNITTEST(TestUniversalHostPinnedThrustVector);
 
@@ -169,8 +169,8 @@ void TestUniversalStdVector(std::size_t const n)
   std::iota(host.begin(), host.end(), 0);
   std::iota(universal.begin(), universal.end(), 0);
 
-  ASSERT_EQUAL(host.size(), n);
-  ASSERT_EQUAL(universal.size(), n);
+  REQUIRE(host.size() == n);
+  REQUIRE(universal.size() == n);
   // host and universal have different allocator types, so std::vector::operator== does not apply
   REQUIRE_THAT(universal, Catch::Matchers::RangeEquals(host));
 }

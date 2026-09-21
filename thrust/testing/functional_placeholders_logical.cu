@@ -72,5 +72,5 @@ TEMPLATE_LIST_TEST_CASE("LogicalNot", "[functional]", integral_vector_list)
 
   thrust::transform(input.begin(), input.end(), reference.begin(), ::cuda::std::logical_not<T>{});
   thrust::transform(input.begin(), input.end(), result.begin(), !_1);
-  ASSERT_EQUAL(reference, result);
+  REQUIRE(reference == result);
 }

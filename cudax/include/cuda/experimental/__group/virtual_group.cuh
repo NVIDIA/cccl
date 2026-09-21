@@ -57,8 +57,12 @@ __do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, _Mapping&&
   using _InitMappingResult =
     __mapping_result</*initial static group count*/ 1,
                      ::cuda::experimental::__static_count_query_group<_Unit, _ParentGroup>(),
-                     _ParentMappingResult::is_always_exhaustive(),
+                     /*initial is always exhaustive*/ true,
                      _ParentMappingResult::is_always_contiguous()>;
+  const auto& __parent_mapping_result = __parent.__mapping_result();
+  _CCCL_ASSERT(__parent_mapping_result.is_valid(),
+               "A new group can be created only by units that are part of the parent group");
+
   const _InitMappingResult __init_mapping_result{
     /*initial group count*/ 1,
     /*initial group rank*/ 0,
@@ -126,7 +130,6 @@ public:
           __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping))}
       , __synchronizer_instance_{__parent.__synchronizer_instance().view()}
   {
-    // todo(dabayer): Remove this if we allow non-exhaustive virtual groups.
     _CCCL_ASSERT(__mapping_result_.is_valid(), "virtual_group requires all units to be part of the group");
   }
 
@@ -165,11 +168,13 @@ public:
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() const noexcept
   {
+    // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
+    // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
   }
 
@@ -182,6 +187,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
   __count_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&) noexcept
   {
+    // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     return static_cast<_Tp>(__mapping_result.group_count());
   }
 
@@ -201,6 +207,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
   __rank_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&) noexcept
   {
+    // We can skip mapping result validity check, because virtual_group requires all units to be part of a group.
     return static_cast<_Tp>(__mapping_result.group_rank());
   }
 

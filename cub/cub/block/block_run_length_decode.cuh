@@ -256,7 +256,7 @@ public:
 private:
   /**
    * @brief Returns the offset of the first value within @p input which compares greater than
-   * @p val. This version takes @p MAX_NUM_ITEMS, an upper bound of the array size, which will
+   * @p val. This version takes @p MaxNumItems, an upper bound of the array size, which will
    * be used to determine the number of binary search iterations at compile time.
    *
    * @param[in] input
@@ -268,14 +268,14 @@ private:
    * @param[in] val
    *   Search key
    */
-  template <int MAX_NUM_ITEMS, typename InputIteratorT, typename OffsetT, typename T>
+  template <int MaxNumItems, typename InputIteratorT, typename OffsetT, typename T>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT StaticUpperBound(InputIteratorT input, OffsetT num_items, T val)
   {
     OffsetT lower_bound = 0;
     OffsetT upper_bound = num_items;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i <= Log2<MAX_NUM_ITEMS>::VALUE; i++)
+    for (int i = 0; i <= Log2<MaxNumItems>::VALUE; i++)
     {
       OffsetT mid = cub::MidPoint<OffsetT>(lower_bound, upper_bound);
       mid         = (::cuda::std::min) (mid, num_items - 1);
