@@ -116,7 +116,7 @@ Availability: CCCL 3.6.0
      // Always the same stream, for work that must stay ordered
      cuda::stream_ref fixed = pool[3];
 
-     // Wait for everything submitted to the pool before it goes away
+     // Synchronize streams with submitted work before the pool is destroyed
      for (std::size_t i = 0; i < pool.size(); ++i) {
        pool[i].sync();
      }
