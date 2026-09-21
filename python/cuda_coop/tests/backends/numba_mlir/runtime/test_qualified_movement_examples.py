@@ -25,21 +25,21 @@ def test_scatter_example():
     import numpy as np
     from numba_cuda_mlir import cuda, types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit
     def reverse_tile(source, destination):
-        block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
-        ranks = coop.ThreadData(2, dtype=np.int32)
-        coop.load(block, source, items)
+        block = numba_coop.this_block()
+        items = numba_coop.ThreadData(2, dtype=np.int32)
+        ranks = numba_coop.ThreadData(2, dtype=np.int32)
+        numba_coop.load(block, source, items)
         for item in range(2):
             index = cuda.threadIdx.x * 2 + item
             ranks[item] = types.int32(cuda.blockDim.x * 2 - 1 - index)
-        reversed_items = coop.exchange(
+        reversed_items = numba_coop.exchange(
             block, items, mode="scatter_to_blocked", ranks=ranks
         )
-        coop.store(block, destination, reversed_items)
+        numba_coop.store(block, destination, reversed_items)
 
     values = np.arange(256, dtype=np.int32) * 3 - 200
     source = cuda.to_device(values)
@@ -54,13 +54,13 @@ def test_rotate_example():
     import numpy as np
     from numba_cuda_mlir import cuda
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit
     def rotate_tile(source, destination):
         thread = cuda.threadIdx.x
-        destination[thread] = coop.shuffle(
-            coop.this_block(), source[thread], mode="rotate", distance=7
+        destination[thread] = numba_coop.shuffle(
+            numba_coop.this_block(), source[thread], mode="rotate", distance=7
         )
 
     values = np.arange(128, dtype=np.int32) * 3 - 200

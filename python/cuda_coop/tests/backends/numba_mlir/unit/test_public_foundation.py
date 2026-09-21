@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 import cuda.coop as common_coop
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda.coop.numba_mlir import _temp_storage, _thread_data
 from cuda.coop.numba_mlir._compiler import _activation, _numba_mlir_compat
 
@@ -77,8 +77,8 @@ _EXCLUDED_BACKEND_MODULES = (
 def test_public_exports_are_only_the_supported_group_families():
     assert common_coop.__all__ == _COMMON_EXPORTS
     assert dir(common_coop) == sorted(_COMMON_EXPORTS)
-    assert coop.__all__ == _QUALIFIED_EXPORTS
-    assert dir(coop) == sorted(_QUALIFIED_EXPORTS)
+    assert numba_coop.__all__ == _QUALIFIED_EXPORTS
+    assert dir(numba_coop) == sorted(_QUALIFIED_EXPORTS)
 
     excluded_exports = {
         "BlockLoadAlgorithm",
@@ -90,10 +90,10 @@ def test_public_exports_are_only_the_supported_group_families():
         "WarpStoreAlgorithm",
     }
     assert excluded_exports.isdisjoint(common_coop.__all__)
-    assert excluded_exports.isdisjoint(coop.__all__)
-    assert not hasattr(coop, "BlockScanAlgorithm")
+    assert excluded_exports.isdisjoint(numba_coop.__all__)
+    assert not hasattr(numba_coop, "BlockScanAlgorithm")
     assert "StatefulFunction" not in common_coop.__all__
-    assert "StatefulFunction" in coop.__all__
+    assert "StatefulFunction" in numba_coop.__all__
 
     loaded = set(sys.modules)
     assert "cuda.coop.numba_mlir._group_load_store" in loaded
@@ -106,12 +106,15 @@ def test_public_exports_are_only_the_supported_group_families():
 
 
 def test_qualified_surface_is_common_plus_backend_extensions():
-    assert set(coop.__all__) - set(common_coop.__all__) == {
+    assert set(numba_coop.__all__) - set(common_coop.__all__) == {
         "StatefulFunction",
         "local",
         "shared",
     }
-    assert set(common_coop.__all__) - set(coop.__all__) == {"__version__", "register"}
+    assert set(common_coop.__all__) - set(numba_coop.__all__) == {
+        "__version__",
+        "register",
+    }
 
     def call_shape(function):
         return tuple(
@@ -120,14 +123,16 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         )
 
     for operation in ("load", "reduce", "shuffle", "store", "sum"):
-        assert inspect.signature(getattr(coop, operation)) == inspect.signature(
+        assert inspect.signature(getattr(numba_coop, operation)) == inspect.signature(
             getattr(common_coop, operation)
         )
 
-    assert call_shape(coop.reduce_batched) == call_shape(common_coop.reduce_batched)
+    assert call_shape(numba_coop.reduce_batched) == call_shape(
+        common_coop.reduce_batched
+    )
 
     common_exchange = inspect.signature(common_coop.exchange)
-    qualified_exchange = inspect.signature(coop.exchange)
+    qualified_exchange = inspect.signature(numba_coop.exchange)
     for name, parameter in common_exchange.parameters.items():
         assert qualified_exchange.parameters[name] == parameter
     assert qualified_exchange.return_annotation == common_exchange.return_annotation
@@ -145,7 +150,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         "scan",
     ):
         common_scan = inspect.signature(getattr(common_coop, operation))
-        qualified_scan = inspect.signature(getattr(coop, operation))
+        qualified_scan = inspect.signature(getattr(numba_coop, operation))
         for name, parameter in common_scan.parameters.items():
             assert qualified_scan.parameters[name] == parameter
         assert qualified_scan.return_annotation == common_scan.return_annotation
@@ -160,7 +165,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
             "prefix_op",
         )
 
-    assert call_shape(coop.TempStorage) == call_shape(common_coop.TempStorage)
+    assert call_shape(numba_coop.TempStorage) == call_shape(common_coop.TempStorage)
     for constructor in (
         "this_thread",
         "this_warp",
@@ -168,19 +173,19 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         "this_cluster",
         "this_grid",
     ):
-        assert call_shape(getattr(coop, constructor)) == call_shape(
+        assert call_shape(getattr(numba_coop, constructor)) == call_shape(
             getattr(common_coop, constructor)
         )
 
     common_thread_data = call_shape(common_coop.ThreadData)
-    qualified_thread_data = call_shape(coop.ThreadData)
+    qualified_thread_data = call_shape(numba_coop.ThreadData)
     assert qualified_thread_data == common_thread_data
     assert qualified_thread_data[-1] == (
         "alignment",
         inspect.Parameter.KEYWORD_ONLY,
         None,
     )
-    assert call_shape(coop.TempStorage) == (
+    assert call_shape(numba_coop.TempStorage) == (
         ("size_in_bytes", inspect.Parameter.POSITIONAL_OR_KEYWORD, None),
         ("alignment", inspect.Parameter.KEYWORD_ONLY, None),
         ("auto_sync", inspect.Parameter.KEYWORD_ONLY, None),
@@ -196,23 +201,23 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         "is_member",
     ):
         assert inspect.signature(
-            getattr(coop.ThreadGroup, method)
+            getattr(numba_coop.ThreadGroup, method)
         ) == inspect.signature(getattr(common_coop.ThreadGroup, method))
-    assert call_shape(coop.ThreadGroup.group_by) == call_shape(
+    assert call_shape(numba_coop.ThreadGroup.group_by) == call_shape(
         common_coop.ThreadGroup.group_by
     )
 
-    assert coop.ThreadDataLike is common_coop.ThreadDataLike
-    assert coop.TempStorageLike is common_coop.TempStorageLike
-    assert coop.ThreadHierarchy is common_coop.ThreadHierarchy
-    assert coop.Hierarchy is common_coop.Hierarchy
+    assert numba_coop.ThreadDataLike is common_coop.ThreadDataLike
+    assert numba_coop.TempStorageLike is common_coop.TempStorageLike
+    assert numba_coop.ThreadHierarchy is common_coop.ThreadHierarchy
+    assert numba_coop.Hierarchy is common_coop.Hierarchy
 
     common_load_annotations = inspect.get_annotations(
         common_coop.load,
         eval_str=True,
     )
     qualified_load_annotations = inspect.get_annotations(
-        coop.load,
+        numba_coop.load,
         eval_str=True,
     )
     assert qualified_load_annotations["output"] == common_load_annotations["output"]
@@ -235,7 +240,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
 
 def test_group_descriptors_expose_only_canonical_extent_names():
     assert not hasattr(common_coop.ThreadHierarchy, "thread_count")
-    for group_type in (common_coop.ThreadGroup, coop.ThreadGroup):
+    for group_type in (common_coop.ThreadGroup, numba_coop.ThreadGroup):
         assert not hasattr(group_type, "static_thread_count")
         assert not hasattr(group_type, "thread_count")
         assert hasattr(group_type, "static_size")
@@ -310,7 +315,7 @@ def test_python_operator_compilation_supports_explicit_state():
 def test_group_markers_use_exact_callable_identity(operation):
     from cuda.coop.numba_mlir._compiler._operations import group_operation_name
 
-    marker = getattr(coop, operation)
+    marker = getattr(numba_coop, operation)
     assert group_operation_name(marker) == operation
 
     def impostor(*args, **kwargs):
@@ -427,11 +432,11 @@ def test_compiler_hooks_are_registered_exactly_once_and_idempotently():
 
 
 def test_public_runtime_helpers_have_semantic_module_owners():
-    assert coop.local is importlib.import_module("numba_cuda_mlir.cuda").local
-    assert coop.shared is importlib.import_module("numba_cuda_mlir.cuda").shared
-    assert coop.ThreadData is _thread_data.ThreadData
-    assert coop.TempStorage is _temp_storage.TempStorage
-    assert coop.ThreadDataLike is common_coop.ThreadDataLike
-    assert coop.TempStorageLike is common_coop.TempStorageLike
-    assert coop.ThreadData.__module__ == "cuda.coop.numba_mlir._thread_data"
-    assert coop.TempStorage.__module__ == "cuda.coop.numba_mlir._temp_storage"
+    assert numba_coop.local is importlib.import_module("numba_cuda_mlir.cuda").local
+    assert numba_coop.shared is importlib.import_module("numba_cuda_mlir.cuda").shared
+    assert numba_coop.ThreadData is _thread_data.ThreadData
+    assert numba_coop.TempStorage is _temp_storage.TempStorage
+    assert numba_coop.ThreadDataLike is common_coop.ThreadDataLike
+    assert numba_coop.TempStorageLike is common_coop.TempStorageLike
+    assert numba_coop.ThreadData.__module__ == "cuda.coop.numba_mlir._thread_data"
+    assert numba_coop.TempStorage.__module__ == "cuda.coop.numba_mlir._temp_storage"

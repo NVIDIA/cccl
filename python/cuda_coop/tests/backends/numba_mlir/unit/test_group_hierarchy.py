@@ -10,7 +10,7 @@ from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 from numba_cuda_mlir.numbair_transforms import ir
 
 import cuda.coop as common_coop
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda.coop._core import LaunchFactOrigin, LaunchFacts, resolve_thread_group
 from cuda.coop.numba_mlir._compiler import _nvrtc
 from cuda.coop.numba_mlir._compiler._group_planner import (
@@ -29,8 +29,8 @@ _GROUP_KINDS = (
     ("this_cluster", "cluster"),
     ("this_grid", "grid"),
 )
-_GLOBAL_BLOCK_GROUP = coop.this_block()
-_ALTERNATE_GLOBAL_BLOCK_GROUP = coop.this_block()
+_GLOBAL_BLOCK_GROUP = numba_coop.this_block()
+_ALTERNATE_GLOBAL_BLOCK_GROUP = numba_coop.this_block()
 
 
 def _state(function, args=()):
@@ -104,7 +104,7 @@ def _assigned_var(state, name):
 
 def test_group_marker_detection_distinguishes_group_ir():
     def group_marker_function():
-        return coop.this_block().count()
+        return numba_coop.this_block().count()
 
     def plain_function(value):
         return value + 1
@@ -120,7 +120,7 @@ def test_planner_shares_compile_context_across_group_methods(monkeypatch):
     context = _compile_context()
 
     def query():
-        group = coop.this_block()
+        group = numba_coop.this_block()
         return group.count("thread") + group.rank("thread")
 
     class _Invocable:
@@ -158,7 +158,7 @@ def test_planner_deduplicates_canonical_group_query_dtypes(monkeypatch):
     captured = []
 
     def query():
-        group = coop.this_block()
+        group = numba_coop.this_block()
         return (
             group.rank()
             + group.rank_as(types.uint32)
@@ -185,7 +185,7 @@ def test_planner_deduplicates_canonical_group_query_dtypes(monkeypatch):
 def test_mapped_parent_queries_render_the_parent_group():
     thread_group_lowering = _thread_group_lowering_module()
     mapped = resolve_thread_group(
-        coop.this_warp().group_by(8),
+        numba_coop.this_warp().group_by(8),
         LaunchFacts(exact_block_dim=64),
         through_level="warp",
     ).require_supported()
@@ -203,7 +203,7 @@ def test_mapped_parent_queries_render_the_parent_group():
 
 def test_mapped_queries_above_the_immediate_parent_fail_during_planning():
     def query():
-        return coop.this_warp().group_by(8).count("block")
+        return numba_coop.this_warp().group_by(8).count("block")
 
     with pytest.raises(NotImplementedError, match="immediate parent"):
         _GroupCallPlanner(_state(query), _launch()).run()
@@ -211,7 +211,7 @@ def test_mapped_queries_above_the_immediate_parent_fail_during_planning():
 
 def test_block_warp_queries_reject_a_block_smaller_than_one_warp():
     def query():
-        return coop.this_block().count("warp")
+        return numba_coop.this_block().count("warp")
 
     with pytest.raises(
         NotImplementedError, match="at least one complete 32-thread Warp"
@@ -224,7 +224,7 @@ def test_thread_parent_warp_queries_allow_a_block_smaller_than_one_warp(monkeypa
     captured = []
 
     def query():
-        return coop.this_thread().count("warp")
+        return numba_coop.this_thread().count("warp")
 
     class _Invocable:
         def __call__(self):
@@ -247,23 +247,23 @@ def test_grid_synchronization_fails_during_planning(operation):
     if operation == "sync":
 
         def grid_sync():
-            coop.this_grid().sync()
+            numba_coop.this_grid().sync()
 
     else:
 
         def grid_sync():
-            coop.this_grid().sync_aligned()
+            numba_coop.this_grid().sync_aligned()
 
     with pytest.raises(NotImplementedError, match="cooperative launch"):
         _GroupCallPlanner(_state(grid_sync), _launch()).run()
 
 
 def _query_mapped_warp_sync():
-    coop.this_block().group_by(2).sync()
+    numba_coop.this_block().group_by(2).sync()
 
 
 def _query_mapped_warp_sync_aligned():
-    coop.this_block().group_by(2).sync_aligned()
+    numba_coop.this_block().group_by(2).sync_aligned()
 
 
 @pytest.mark.parametrize(
@@ -276,31 +276,31 @@ def test_mapped_warp_synchronization_requires_planner_owned_barriers(query):
 
 
 def _query_rank():
-    return coop.this_block().rank()
+    return numba_coop.this_block().rank()
 
 
 def _query_count():
-    return coop.this_block().count("block")
+    return numba_coop.this_block().count("block")
 
 
 def _query_rank_as():
-    return coop.this_block().rank_as(types.uint16)
+    return numba_coop.this_block().rank_as(types.uint16)
 
 
 def _query_count_as():
-    return coop.this_block().count_as(types.int64, "grid")
+    return numba_coop.this_block().count_as(types.int64, "grid")
 
 
 def _query_is_member():
-    return coop.this_block().is_member()
+    return numba_coop.this_block().is_member()
 
 
 def _query_sync():
-    coop.this_block().sync()
+    numba_coop.this_block().sync()
 
 
 def _query_sync_aligned():
-    coop.this_block().sync_aligned()
+    numba_coop.this_block().sync_aligned()
 
 
 @pytest.mark.parametrize(
@@ -350,9 +350,9 @@ def test_group_method_call_shapes_reach_the_provider(
 @pytest.mark.parametrize(
     ("constructor", "operation", "level", "expected_dtype"),
     [
-        (coop.this_block, "rank", "thread", types.uint32),
-        (coop.this_block, "count", "grid", types.uint64),
-        (coop.this_grid, "rank", "thread", types.uint64),
+        (numba_coop.this_block, "rank", "thread", types.uint32),
+        (numba_coop.this_block, "count", "grid", types.uint64),
+        (numba_coop.this_grid, "rank", "thread", types.uint64),
     ],
 )
 def test_group_method_provider_chooses_the_default_query_dtype(
@@ -405,7 +405,7 @@ def test_group_method_provider_accepts_explicit_integral_query_dtypes(
     cpp_name,
 ):
     lowering, created = _capture_group_method_provider(monkeypatch)
-    group = _resolved_provider_group(coop.this_block())
+    group = _resolved_provider_group(numba_coop.this_block())
 
     result = lowering.make_group_method_invocable(
         group=group,
@@ -437,7 +437,7 @@ def test_group_method_provider_rejects_explicit_non_integral_query_dtypes(
     dtype,
 ):
     lowering, created = _capture_group_method_provider(monkeypatch)
-    group = _resolved_provider_group(coop.this_block())
+    group = _resolved_provider_group(numba_coop.this_block())
 
     with pytest.raises(TypeError, match="query dtype must be one of"):
         lowering.make_group_method_invocable(
@@ -455,7 +455,7 @@ def test_mapped_warp_queries_and_membership_do_not_construct_barrier_group(
 ):
     lowering, created = _capture_group_method_provider(monkeypatch)
     group = _resolved_provider_group(
-        coop.this_block().group_by(3, exhaustive=False),
+        numba_coop.this_block().group_by(3, exhaustive=False),
         through_level="block",
         block=(128, 1, 1),
     )
@@ -497,7 +497,7 @@ def test_mapped_warp_queries_and_membership_do_not_construct_barrier_group(
 @pytest.mark.parametrize("operation", ("sync", "sync_aligned"))
 def test_mapped_warp_provider_rejects_synchronization(monkeypatch, operation):
     lowering, created = _capture_group_method_provider(monkeypatch)
-    group = _resolved_provider_group(coop.this_block().group_by(2))
+    group = _resolved_provider_group(numba_coop.this_block().group_by(2))
 
     with pytest.raises(NotImplementedError, match="planner-owned barrier lifetime"):
         lowering.make_group_method_invocable(
@@ -514,7 +514,7 @@ def test_group_method_provider_symbols_include_compile_context(monkeypatch):
     from cuda.coop.numba_mlir._compiler._operations import StorageABI
 
     lowering, created = _capture_group_method_provider(monkeypatch)
-    group = _resolved_provider_group(coop.this_block())
+    group = _resolved_provider_group(numba_coop.this_block())
     context_a = _compile_context("headers-a")
     context_a_equal = _compile_context("headers-a")
     context_b = _compile_context("headers-b")
@@ -585,7 +585,7 @@ def test_group_marker_detection_follows_merged_group_by_receivers(monkeypatch):
     assert has_group_markers(run_frontend(grouped))
 
 
-@pytest.mark.parametrize("api", (common_coop, coop), ids=("common", "qualified"))
+@pytest.mark.parametrize("api", (common_coop, numba_coop), ids=("common", "qualified"))
 def test_standalone_primitive_helper_is_rejected_without_requesting_launch(
     api, monkeypatch
 ):
@@ -618,7 +618,7 @@ def test_standalone_primitive_helper_is_rejected_without_requesting_launch(
     } == before
 
 
-@pytest.mark.parametrize("api", (common_coop, coop), ids=("common", "qualified"))
+@pytest.mark.parametrize("api", (common_coop, numba_coop), ids=("common", "qualified"))
 @pytest.mark.parametrize(("constructor_name", "kind"), _GROUP_KINDS)
 def test_planner_recognizes_the_full_group_descriptor_vocabulary(
     api,
@@ -643,10 +643,10 @@ def test_planner_recognizes_the_full_group_descriptor_vocabulary(
 
 def test_group_constructor_recognition_uses_exact_callable_identity():
     def impostor_this_block():
-        return coop.this_block()
+        return numba_coop.this_block()
 
-    impostor_this_block.__module__ = coop.this_block.__module__
-    impostor_this_block.__name__ = coop.this_block.__name__
+    impostor_this_block.__module__ = numba_coop.this_block.__module__
+    impostor_this_block.__name__ = numba_coop.this_block.__name__
     impostor_this_block.__cuda_coop_backend_member__ = "this_block"
 
     def describe_group():
@@ -731,7 +731,7 @@ def test_core_resolves_every_physical_group_from_exact_launch_facts(
             verified=True,
         ),
     )
-    group = getattr(coop, constructor_name)()
+    group = getattr(numba_coop, constructor_name)()
     resolved = resolve_thread_group(group, launch).require_supported()
 
     assert resolved.kind == kind
@@ -747,7 +747,7 @@ def test_core_resolves_every_physical_group_from_exact_launch_facts(
 
 @pytest.mark.parametrize(
     "constructor",
-    (common_coop.this_block, coop.this_block),
+    (common_coop.this_block, numba_coop.this_block),
     ids=("common", "qualified"),
 )
 def test_descriptor_values_cannot_escape_to_runtime(constructor):

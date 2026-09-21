@@ -8,7 +8,7 @@ from enum import Enum
 import numpy as np
 import pytest
 
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda.coop.numba_mlir import _thread_data
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
@@ -41,13 +41,13 @@ def fake_runtime(monkeypatch):
 
 
 def test_thread_data_accepts_canonical_extent_forms(fake_runtime):
-    result = coop.ThreadData(
+    result = numba_coop.ThreadData(
         items_per_thread=4,
         dtype="int32",
         alignment=16,
     )
-    compatible = coop.ThreadData(1, "int16", alignment=16)
-    inferred = coop.ThreadData(2)
+    compatible = numba_coop.ThreadData(1, "int16", alignment=16)
+    inferred = numba_coop.ThreadData(2)
 
     assert result == (4, "int32", 16, {})
     assert compatible == (1, "int16", 16, {})
@@ -58,9 +58,9 @@ def test_thread_data_accepts_canonical_extent_forms(fake_runtime):
 @pytest.mark.parametrize(
     "call",
     [
-        lambda: coop.ThreadData(shape=4),
-        lambda: coop.ThreadData(4, address_space="local"),
-        lambda: coop.ThreadData(4, items_per_thread=4),
+        lambda: numba_coop.ThreadData(shape=4),
+        lambda: numba_coop.ThreadData(4, address_space="local"),
+        lambda: numba_coop.ThreadData(4, items_per_thread=4),
     ],
 )
 def test_thread_data_rejects_unknown_or_duplicate_arguments(fake_runtime, call):
@@ -86,7 +86,7 @@ def test_thread_data_validates_extent(
 ):
     del fake_runtime
     with pytest.raises(error_type, match=message):
-        coop.ThreadData(items_per_thread)
+        numba_coop.ThreadData(items_per_thread)
 
 
 @pytest.mark.parametrize(
@@ -107,12 +107,12 @@ def test_thread_data_validates_alignment(
 ):
     del fake_runtime
     with pytest.raises(error_type, match=message):
-        coop.ThreadData(1, alignment=alignment)
+        numba_coop.ThreadData(1, alignment=alignment)
 
 
 @pytest.mark.parametrize("alignment", [None, 1, 2, 4, 8, 16, np.int64(32)])
 def test_thread_data_normalizes_minimum_alignment(fake_runtime, alignment):
-    result = coop.ThreadData(2, "int32", alignment=alignment)
+    result = numba_coop.ThreadData(2, "int32", alignment=alignment)
     expected = None if alignment is None else max(struct.calcsize("P"), alignment)
     assert result == (2, "int32", expected, {})
     assert fake_runtime.local.calls == [result]
@@ -120,26 +120,28 @@ def test_thread_data_normalizes_minimum_alignment(fake_runtime, alignment):
 
 @pytest.mark.parametrize("alignment", [None, 1, 2, 4, 8, 16, np.int64(32)])
 def test_temp_storage_accepts_minimum_alignment(alignment):
-    storage = coop.TempStorage(alignment=alignment)
+    storage = numba_coop.TempStorage(alignment=alignment)
     assert storage.alignment == alignment
     assert storage.alignment is None or type(storage.alignment) is int
 
 
 def test_temp_storage_uses_canonical_defaults_and_normalization():
-    shared = coop.TempStorage(sharing=" SHARED ")
-    exclusive = coop.TempStorage(sharing=" Exclusive ")
+    shared = numba_coop.TempStorage(sharing=" SHARED ")
+    exclusive = numba_coop.TempStorage(sharing=" Exclusive ")
 
     assert shared.sharing == "shared"
     assert shared.auto_sync is True
     assert exclusive.sharing == "exclusive"
     assert exclusive.auto_sync is True
-    assert coop.TempStorage(sharing="exclusive", auto_sync=True).auto_sync is True
-    assert coop.TempStorage(sharing="exclusive", auto_sync=False).auto_sync is False
+    assert numba_coop.TempStorage(sharing="exclusive", auto_sync=True).auto_sync is True
+    assert (
+        numba_coop.TempStorage(sharing="exclusive", auto_sync=False).auto_sync is False
+    )
 
 
 def test_temp_storage_rejects_string_enum_sharing():
     with pytest.raises(TypeError, match="sharing must be a string"):
-        coop.TempStorage(sharing=_StringSharing.SHARED)
+        numba_coop.TempStorage(sharing=_StringSharing.SHARED)
 
 
 @pytest.mark.parametrize(
@@ -179,4 +181,4 @@ def test_temp_storage_rejects_string_enum_sharing():
 )
 def test_temp_storage_validation(kwargs, error_type, message):
     with pytest.raises(error_type, match=message):
-        coop.TempStorage(**kwargs)
+        numba_coop.TempStorage(**kwargs)

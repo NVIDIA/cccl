@@ -7,7 +7,7 @@
 import numpy as np
 from numba_cuda_mlir import cuda
 
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 
 _THREADS = 32
 _ITEMS_PER_THREAD = 2
@@ -20,11 +20,11 @@ def block_store(source, destination, valid_items):
     """Store the valid tile prefix while retaining the destination suffix."""
 
     thread = cuda.threadIdx.x
-    payload = coop.ThreadData(_ITEMS_PER_THREAD)
+    payload = numba_coop.ThreadData(_ITEMS_PER_THREAD)
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-    coop.store(
-        coop.this_block(),
+    numba_coop.store(
+        numba_coop.this_block(),
         destination,
         payload,
         algorithm="direct",

@@ -22,11 +22,11 @@ if not cuda.is_available():
 
 from numba_cuda_mlir import types
 
-import cuda.coop.numba_mlir as qualified_coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop as root_coop
 
-assert qualified_coop.__file__ is not None
-_QUALIFIED_COOP_ORIGIN = Path(qualified_coop.__file__).resolve()
+assert numba_coop.__file__ is not None
+_QUALIFIED_COOP_ORIGIN = Path(numba_coop.__file__).resolve()
 _SAFE_PATH_FLAG = "-P" if sys.version_info >= (3, 11) else "-I"
 
 pytestmark = [
@@ -60,17 +60,17 @@ def _exclusive_sum(values: np.ndarray, initial: int = 0) -> np.ndarray:
 def _five_scan_spellings(source, output, aggregates, initial):
     thread = cuda.threadIdx.x
     value = source[thread]
-    aggregate = qualified_coop.ThreadData(1)
+    aggregate = numba_coop.ThreadData(1)
 
     output[0 * _BLOCK_THREADS + thread] = root_coop.scan(root_coop.this_block(), value)
-    output[1 * _BLOCK_THREADS + thread] = qualified_coop.exclusive_scan(
-        qualified_coop.this_block(),
+    output[1 * _BLOCK_THREADS + thread] = numba_coop.exclusive_scan(
+        numba_coop.this_block(),
         value,
         initial_value=initial,
         aggregate_output=aggregate,
     )
-    output[2 * _BLOCK_THREADS + thread] = qualified_coop.inclusive_scan(
-        qualified_coop.this_block(), value, scan_op="max"
+    output[2 * _BLOCK_THREADS + thread] = numba_coop.inclusive_scan(
+        numba_coop.this_block(), value, scan_op="max"
     )
     output[3 * _BLOCK_THREADS + thread] = root_coop.exclusive_sum(
         root_coop.this_block(), value
@@ -174,8 +174,8 @@ def _local_array_numpy_scan(source, output, preserved, aggregates):
     for item in range(_ITEMS_PER_THREAD):
         index = thread * _ITEMS_PER_THREAD + item
         value[item] = source[index]
-    scanned = qualified_coop.inclusive_scan(
-        qualified_coop.this_block(),
+    scanned = numba_coop.inclusive_scan(
+        numba_coop.this_block(),
         value,
         scan_op=np.maximum,
         algorithm="raking_memoize",
@@ -219,8 +219,8 @@ def test_qualified_scan_accepts_a_callback_with_a_nested_device_helper():
     @cuda.jit
     def kernel(source, observed):
         thread = cuda.threadIdx.x
-        observed[thread] = qualified_coop.inclusive_scan(
-            qualified_coop.this_block(), source[thread], scan_op=maximum
+        observed[thread] = numba_coop.inclusive_scan(
+            numba_coop.this_block(), source[thread], scan_op=maximum
         )
 
     source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
@@ -241,7 +241,7 @@ def _running_prefix_int64(state, block_aggregate):
     return previous
 
 
-_RUNNING_PREFIX_INT64 = qualified_coop.StatefulFunction(
+_RUNNING_PREFIX_INT64 = numba_coop.StatefulFunction(
     _running_prefix_int64,
     types.int64,
     name="cuda_coop_test_running_prefix_int64",
@@ -256,8 +256,8 @@ def _block_scan_prefix(source, output):
         index = thread * _ITEMS_PER_THREAD + item
         values[item] = source[index]
 
-    scanned = qualified_coop.exclusive_scan(
-        qualified_coop.this_block(),
+    scanned = numba_coop.exclusive_scan(
+        numba_coop.this_block(),
         values,
         scan_op=_device_maximum,
         prefix_op=_prefix_after_block_aggregate,
@@ -285,13 +285,13 @@ def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
         @cuda.jit
         def kernel(source, output, final_state):
             thread = cuda.threadIdx.x
-            state = qualified_coop.ThreadData(1, dtype=types.int64)
+            state = numba_coop.ThreadData(1, dtype=types.int64)
             state[0] = _PREFIX_INITIAL_STATE
-            storage = qualified_coop.TempStorage(sharing="shared")
+            storage = numba_coop.TempStorage(sharing="shared")
             for tile in range(_PREFIX_TILE_COUNT):
                 index = tile * _BLOCK_THREADS + thread
-                output[index] = qualified_coop.inclusive_sum(
-                    qualified_coop.this_block(),
+                output[index] = numba_coop.inclusive_sum(
+                    numba_coop.this_block(),
                     source[index],
                     state,
                     prefix_op=_RUNNING_PREFIX_INT64,
@@ -308,14 +308,14 @@ def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
             thread = cuda.threadIdx.x
             state = cuda.local.array(1, dtype=types.int64)
             state[0] = _PREFIX_INITIAL_STATE
-            storage = qualified_coop.TempStorage(
+            storage = numba_coop.TempStorage(
                 _DYNAMIC_STORAGE_BYTES,
                 alignment=16,
             )
             for tile in range(_PREFIX_TILE_COUNT):
                 index = tile * _BLOCK_THREADS + thread
-                output[index] = qualified_coop.exclusive_sum(
-                    qualified_coop.this_block(),
+                output[index] = numba_coop.exclusive_sum(
+                    numba_coop.this_block(),
                     source[index],
                     state,
                     prefix_op=_RUNNING_PREFIX_INT64,
@@ -330,16 +330,16 @@ def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
         @cuda.jit
         def kernel(source, output, final_state):
             thread = cuda.threadIdx.x
-            state = qualified_coop.ThreadData(1, dtype=types.int64)
+            state = numba_coop.ThreadData(1, dtype=types.int64)
             state[0] = _PREFIX_INITIAL_STATE
-            storage = qualified_coop.TempStorage(
+            storage = numba_coop.TempStorage(
                 sharing="shared",
                 auto_sync=False,
             )
             for tile in range(_PREFIX_TILE_COUNT):
                 index = tile * _BLOCK_THREADS + thread
-                output[index] = qualified_coop.exclusive_sum(
-                    qualified_coop.this_block(),
+                output[index] = numba_coop.exclusive_sum(
+                    numba_coop.this_block(),
                     source[index],
                     state,
                     prefix_op=_RUNNING_PREFIX_INT64,
@@ -401,16 +401,16 @@ def test_stateful_prefix_tracks_repeated_scans_across_modes_and_storage(
 def _warp_scans(source, operator_output, callback_output, partial, aggregates, valid):
     thread = cuda.threadIdx.x
     value = source[thread]
-    logical_warp = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-    aggregate = qualified_coop.ThreadData(1, dtype=types.int32)
+    logical_warp = numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
+    aggregate = numba_coop.ThreadData(1, dtype=types.int32)
 
-    operator_output[thread] = qualified_coop.inclusive_scan(
-        qualified_coop.this_warp(), value, scan_op=operator.add
+    operator_output[thread] = numba_coop.inclusive_scan(
+        numba_coop.this_warp(), value, scan_op=operator.add
     )
-    callback_output[thread] = qualified_coop.inclusive_scan(
-        qualified_coop.this_warp(), value, scan_op=_device_maximum
+    callback_output[thread] = numba_coop.inclusive_scan(
+        numba_coop.this_warp(), value, scan_op=_device_maximum
     )
-    partial[thread] = qualified_coop.exclusive_sum(
+    partial[thread] = numba_coop.exclusive_sum(
         logical_warp,
         value,
         valid_items=valid,
@@ -464,9 +464,9 @@ def test_physical_and_logical_warp_forms_cover_alias_callback_and_valid_prefix()
 @cuda.jit
 def _warp_scan_combined_runtime_abi(source, output, aggregates, initial, valid):
     thread = cuda.threadIdx.x
-    aggregate = qualified_coop.ThreadData(1, dtype=types.int32)
-    output[thread] = qualified_coop.exclusive_scan(
-        qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
+    aggregate = numba_coop.ThreadData(1, dtype=types.int32)
+    output[thread] = numba_coop.exclusive_scan(
+        numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
         source[thread],
         scan_op="max",
         initial_value=initial,
@@ -516,8 +516,8 @@ def _storage_scan_kernel(storage_mode: str):
         @cuda.jit
         def kernel(source, output):
             thread = cuda.threadIdx.x
-            output[thread] = qualified_coop.inclusive_sum(
-                qualified_coop.this_block(), source[thread]
+            output[thread] = numba_coop.inclusive_sum(
+                numba_coop.this_block(), source[thread]
             )
 
     elif storage_mode == "caller":
@@ -525,9 +525,9 @@ def _storage_scan_kernel(storage_mode: str):
         @cuda.jit
         def kernel(source, output):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(sharing="shared")
-            output[thread] = qualified_coop.inclusive_sum(
-                qualified_coop.this_block(),
+            storage = numba_coop.TempStorage(sharing="shared")
+            output[thread] = numba_coop.inclusive_sum(
+                numba_coop.this_block(),
                 source[thread],
                 temp_storage=storage,
             )
@@ -537,9 +537,9 @@ def _storage_scan_kernel(storage_mode: str):
         @cuda.jit
         def kernel(source, output):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(64 * 1024, alignment=16)
-            output[thread] = qualified_coop.inclusive_sum(
-                qualified_coop.this_block(),
+            storage = numba_coop.TempStorage(64 * 1024, alignment=16)
+            output[thread] = numba_coop.inclusive_sum(
+                numba_coop.this_block(),
                 source[thread],
                 temp_storage=storage,
             )
@@ -564,13 +564,13 @@ def test_block_scan_accepts_implicit_caller_and_dynamic_storage(storage_mode: st
 @cuda.jit
 def _reuse_scan_storage(source, exclusive, inclusive, preserved):
     thread = cuda.threadIdx.x
-    storage = qualified_coop.TempStorage(sharing="shared")
+    storage = numba_coop.TempStorage(sharing="shared")
     value = source[thread]
-    exclusive[thread] = qualified_coop.exclusive_sum(
-        qualified_coop.this_block(), value, temp_storage=storage
+    exclusive[thread] = numba_coop.exclusive_sum(
+        numba_coop.this_block(), value, temp_storage=storage
     )
-    inclusive[thread] = qualified_coop.inclusive_sum(
-        qualified_coop.this_block(), value, temp_storage=storage
+    inclusive[thread] = numba_coop.inclusive_sum(
+        numba_coop.this_block(), value, temp_storage=storage
     )
     preserved[thread] = value
 
@@ -598,10 +598,10 @@ import numpy as np
 import numba_cuda_mlir.cuda as cuda
 from pathlib import Path
 
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 
 expected_origin = Path({str(_QUALIFIED_COOP_ORIGIN)!r})
-actual_origin = Path(coop.__file__).resolve()
+actual_origin = Path(numba_coop.__file__).resolve()
 if actual_origin != expected_origin:
     raise RuntimeError(
         f"trap probe imported cuda.coop from {{actual_origin}}, "
@@ -614,8 +614,8 @@ _WIDTH = {_LOGICAL_WARP_THREADS}
 @cuda.jit
 def kernel(source, output, valid):
     thread = cuda.threadIdx.x
-    output[thread] = coop.inclusive_sum(
-        coop.this_warp().group_by(_WIDTH),
+    output[thread] = numba_coop.inclusive_sum(
+        numba_coop.this_warp().group_by(_WIDTH),
         source[thread],
         valid_items=valid,
     )
@@ -667,8 +667,8 @@ def test_large_int64_raking_scan_uses_exact_launch_bound(block):
         thread = cuda.threadIdx.x + cuda.blockDim.x * (
             cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
         )
-        output[thread] = qualified_coop.inclusive_sum(
-            qualified_coop.this_block(), source[thread], algorithm="raking"
+        output[thread] = numba_coop.inclusive_sum(
+            numba_coop.this_block(), source[thread], algorithm="raking"
         )
 
     source = np.arange(1024, dtype=np.int64) % 17

@@ -24,11 +24,11 @@ if not cuda.is_available():
 
 from numba_cuda_mlir import types
 
-import cuda.coop.numba_mlir as qualified_coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop as root_coop
 
-assert qualified_coop.__file__ is not None
-_QUALIFIED_COOP_ORIGIN = Path(qualified_coop.__file__).resolve()
+assert numba_coop.__file__ is not None
+_QUALIFIED_COOP_ORIGIN = Path(numba_coop.__file__).resolve()
 _SAFE_PATH_FLAG = "-P" if sys.version_info >= (3, 11) else "-I"
 
 pytestmark = [
@@ -186,14 +186,14 @@ def _structured_exchange_kernel(
         @cuda.jit
         def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-            result = qualified_coop.exchange(
-                qualified_coop.this_block(),
+            result = numba_coop.exchange(
+                numba_coop.this_block(),
                 payload,
                 mode=mode,
             )
@@ -228,14 +228,14 @@ def _structured_exchange_kernel(
         @cuda.jit
         def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-            result = qualified_coop.exchange(
-                qualified_coop.this_warp(),
+            result = numba_coop.exchange(
+                numba_coop.this_warp(),
                 payload,
                 mode=mode,
             )
@@ -270,14 +270,14 @@ def _structured_exchange_kernel(
         @cuda.jit
         def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-            result = qualified_coop.exchange(
-                qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
+            result = numba_coop.exchange(
+                numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 payload,
                 mode=mode,
             )
@@ -353,7 +353,7 @@ def test_common_exchange_layouts_match_independent_oracles_and_preserve_input(
 @cuda.jit
 def _untyped_load_exchange_kernel(source, observed):
     thread = cuda.threadIdx.x
-    payload = qualified_coop.ThreadData(2)
+    payload = numba_coop.ThreadData(2)
     root_coop.load(
         root_coop.this_block(),
         source,
@@ -403,8 +403,8 @@ def _qualified_block_exchange_kernel(mode: str, warp_time_slicing: bool):
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-            result = qualified_coop.exchange(
-                qualified_coop.this_block(),
+            result = numba_coop.exchange(
+                numba_coop.this_block(),
                 payload,
                 mode=mode,
                 warp_time_slicing=warp_time_slicing,
@@ -436,8 +436,8 @@ def _qualified_block_exchange_kernel(mode: str, warp_time_slicing: bool):
                 payload[item] = source[index]
                 ranks[item] = ranks_source[index]
                 valid_flags[item] = flags_source[index]
-            result = qualified_coop.exchange(
-                qualified_coop.this_block(),
+            result = numba_coop.exchange(
+                numba_coop.this_block(),
                 payload,
                 mode=mode,
                 ranks=ranks,
@@ -467,8 +467,8 @@ def _qualified_block_exchange_kernel(mode: str, warp_time_slicing: bool):
                 index = thread * _ITEMS_PER_THREAD + item
                 payload[item] = source[index]
                 ranks[item] = ranks_source[index]
-            result = qualified_coop.exchange(
-                qualified_coop.this_block(),
+            result = numba_coop.exchange(
+                numba_coop.this_block(),
                 payload,
                 mode=mode,
                 ranks=ranks,
@@ -580,19 +580,19 @@ def _repeated_warp_exchange_kernel(width: int):
         @cuda.jit
         def kernel(source, observed):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-            striped = qualified_coop.exchange(
-                qualified_coop.this_warp(),
+            striped = numba_coop.exchange(
+                numba_coop.this_warp(),
                 payload,
                 mode="blocked_to_striped",
             )
-            blocked = qualified_coop.exchange(
-                qualified_coop.this_warp(),
+            blocked = numba_coop.exchange(
+                numba_coop.this_warp(),
                 striped,
                 mode="striped_to_blocked",
             )
@@ -604,19 +604,19 @@ def _repeated_warp_exchange_kernel(width: int):
         @cuda.jit
         def kernel(source, observed):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-            striped = qualified_coop.exchange(
-                qualified_coop.this_warp().group_by(width),
+            striped = numba_coop.exchange(
+                numba_coop.this_warp().group_by(width),
                 payload,
                 mode="blocked_to_striped",
             )
-            blocked = qualified_coop.exchange(
-                qualified_coop.this_warp().group_by(width),
+            blocked = numba_coop.exchange(
+                numba_coop.this_warp().group_by(width),
                 striped,
                 mode="striped_to_blocked",
             )
@@ -670,14 +670,14 @@ def _array_shuffle_kernel(mode: str, api: str):
         @cuda.jit
         def kernel(source, observed, preserved):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-            result = qualified_coop.shuffle(
-                qualified_coop.this_block(),
+            result = numba_coop.shuffle(
+                numba_coop.this_block(),
                 payload,
                 mode=mode,
             )
@@ -697,8 +697,8 @@ def _array_shuffle_kernel(mode: str, api: str):
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-            result = qualified_coop.shuffle(
-                qualified_coop.this_block(),
+            result = numba_coop.shuffle(
+                numba_coop.this_block(),
                 payload,
                 mode=mode,
             )
@@ -742,8 +742,8 @@ def test_array_shuffle_matches_a_flattened_oracle_and_preserves_input(
 @cuda.jit
 def _offset_shuffle(source, distances, observed):
     thread = cuda.threadIdx.x
-    observed[thread] = qualified_coop.shuffle(
-        qualified_coop.this_block(),
+    observed[thread] = numba_coop.shuffle(
+        numba_coop.this_block(),
         source[thread],
         mode="offset",
         distance=distances[thread],
@@ -776,8 +776,8 @@ def _static_rotate_kernel(distance: int):
     @cuda.jit
     def kernel(source, observed):
         thread = cuda.threadIdx.x
-        observed[thread] = qualified_coop.shuffle(
-            qualified_coop.this_block(),
+        observed[thread] = numba_coop.shuffle(
+            numba_coop.this_block(),
             source[thread],
             mode="rotate",
             distance=distance,
@@ -789,8 +789,8 @@ def _static_rotate_kernel(distance: int):
 @cuda.jit
 def _runtime_rotate_kernel(source, distances, observed):
     thread = cuda.threadIdx.x
-    observed[thread] = qualified_coop.shuffle(
-        qualified_coop.this_block(),
+    observed[thread] = numba_coop.shuffle(
+        numba_coop.this_block(),
         source[thread],
         mode="rotate",
         distance=distances[thread],
@@ -831,33 +831,33 @@ def test_scalar_rotate_supports_static_and_per_thread_runtime_distances(
 @cuda.jit
 def _repeated_storage_reuse_kernel(source, exchange_observed, shuffle_observed):
     thread = cuda.threadIdx.x
-    payload = qualified_coop.ThreadData(
+    payload = numba_coop.ThreadData(
         _ITEMS_PER_THREAD,
         dtype=types.int32,
     )
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
-    striped = qualified_coop.exchange(
-        qualified_coop.this_block(),
+    striped = numba_coop.exchange(
+        numba_coop.this_block(),
         payload,
         mode="blocked_to_striped",
     )
-    blocked = qualified_coop.exchange(
-        qualified_coop.this_block(),
+    blocked = numba_coop.exchange(
+        numba_coop.this_block(),
         striped,
         mode="striped_to_blocked",
     )
     for item in range(_ITEMS_PER_THREAD):
         exchange_observed[thread * _ITEMS_PER_THREAD + item] = blocked[item]
 
-    first = qualified_coop.shuffle(
-        qualified_coop.this_block(),
+    first = numba_coop.shuffle(
+        numba_coop.this_block(),
         source[thread],
         mode="rotate",
         distance=5,
     )
-    shuffle_observed[thread] = qualified_coop.shuffle(
-        qualified_coop.this_block(),
+    shuffle_observed[thread] = numba_coop.shuffle(
+        numba_coop.this_block(),
         first,
         mode="rotate",
         distance=9,
@@ -896,10 +896,10 @@ import numpy as np
 import numba_cuda_mlir.cuda as cuda
 from pathlib import Path
 
-import cuda.coop.numba_mlir as qualified_coop
+import cuda.coop.numba_mlir as numba_coop
 
 expected_origin = Path({str(_QUALIFIED_COOP_ORIGIN)!r})
-actual_origin = Path(qualified_coop.__file__).resolve()
+actual_origin = Path(numba_coop.__file__).resolve()
 if actual_origin != expected_origin:
     raise RuntimeError(
         f"trap probe imported cuda.coop from {{actual_origin}}, "
@@ -911,8 +911,8 @@ BLOCK_THREADS = {_BLOCK_THREADS}
 @cuda.jit
 def kernel(source, distances, observed):
     thread = cuda.threadIdx.x
-    observed[thread] = qualified_coop.shuffle(
-        qualified_coop.this_block(),
+    observed[thread] = numba_coop.shuffle(
+        numba_coop.this_block(),
         source[thread],
         mode={mode!r},
         distance=distances[thread],
@@ -996,14 +996,14 @@ def _run_same_direction_warp_reuse(width, *, check_output=True):
     def kernel(observed):
         thread = cuda.threadIdx.x
         group = thread // width
-        payload = qualified_coop.ThreadData(3, dtype=types.int32)
+        payload = numba_coop.ThreadData(3, dtype=types.int32)
         # Every member of a logical group takes the same number of iterations;
         # sibling groups need not reach their barriers together.
         for iteration in range(8 + group % 3):
             for item in range(3):
                 payload[item] = iteration * 997 + thread * 3 + item
-            result = qualified_coop.exchange(
-                qualified_coop.this_warp().group_by(width),
+            result = numba_coop.exchange(
+                numba_coop.this_warp().group_by(width),
                 payload,
                 mode="blocked_to_striped",
             )
@@ -1046,8 +1046,8 @@ def test_warp_exchange_reuse_racecheck(width):
         script = f"""
 import runpy
 from pathlib import Path
-import cuda.coop.numba_mlir as coop
-assert Path(coop.__file__).resolve() == Path({_QUALIFIED_COOP_ORIGIN.as_posix()!r})
+import cuda.coop.numba_mlir as numba_coop
+assert Path(numba_coop.__file__).resolve() == Path({_QUALIFIED_COOP_ORIGIN.as_posix()!r})
 namespace = runpy.run_path({str(Path(__file__).resolve())!r})
 if {disable_barrier!r}:
     from cuda.coop.numba_mlir._compiler._rewrite_storage import _StorageRewrite

@@ -25,7 +25,7 @@ def test_qualified_inclusive_scan_example():
     import numpy as np
     from numba_cuda_mlir import cuda, types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(device=True)
     def maximum(left, right):
@@ -35,11 +35,11 @@ def test_qualified_inclusive_scan_example():
 
     @cuda.jit
     def running_maximum(source, destination):
-        block = coop.this_block()
+        block = numba_coop.this_block()
         items = cuda.local.array(2, dtype=types.int32)
         for item in range(2):
             items[item] = source[2 * cuda.threadIdx.x + item]
-        prefixes = coop.inclusive_scan(block, items, scan_op=maximum)
+        prefixes = numba_coop.inclusive_scan(block, items, scan_op=maximum)
         for item in range(2):
             destination[2 * cuda.threadIdx.x + item] = prefixes[item]
 
@@ -57,14 +57,14 @@ def test_qualified_exclusive_scan_example():
     import numpy as np
     from numba_cuda_mlir import cuda
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit
     def partial_prefixes(source, destination, totals, initial, valid):
         thread = cuda.threadIdx.x
-        group = coop.this_warp().group_by(8)
-        aggregate = coop.ThreadData(1, dtype=np.int32)
-        prefix = coop.exclusive_scan(
+        group = numba_coop.this_warp().group_by(8)
+        aggregate = numba_coop.ThreadData(1, dtype=np.int32)
+        prefix = numba_coop.exclusive_scan(
             group,
             source[thread],
             initial_value=initial,
@@ -97,7 +97,7 @@ def test_qualified_exclusive_sum_example():
     import numpy as np
     from numba_cuda_mlir import cuda, types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(device=True)
     def carry_total(state, tile_total):
@@ -105,17 +105,17 @@ def test_qualified_exclusive_sum_example():
         state[0] = previous + tile_total
         return previous
 
-    running_prefix = coop.StatefulFunction(carry_total, types.int64)
+    running_prefix = numba_coop.StatefulFunction(carry_total, types.int64)
 
     @cuda.jit
     def scan_successive_tiles(source, destination, final_total):
-        block = coop.this_block()
-        state = coop.ThreadData(1, dtype=types.int64)
+        block = numba_coop.this_block()
+        state = numba_coop.ThreadData(1, dtype=types.int64)
         state[0] = types.int64(0)
-        scratch = coop.TempStorage()
+        scratch = numba_coop.TempStorage()
         for tile in range(3):
             index = tile * cuda.blockDim.x + cuda.threadIdx.x
-            destination[index] = coop.exclusive_sum(
+            destination[index] = numba_coop.exclusive_sum(
                 block,
                 source[index],
                 state,
