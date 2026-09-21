@@ -22,24 +22,49 @@ def is_device_array(obj: object) -> bool:
     return hasattr(obj, "__cuda_array_interface__")
 
 
+# Perf: which of the branches below works depends only on an array's type,
+# not its value, so the very first call for a given type determines it once
+# and every later call for that type skips straight to the right one --
+# avoiding, in particular, an unconditional (and for CuPy arrays always
+# failing) arr.data_ptr() attempt on every single call: raising and
+# catching AttributeError in CPython is not free (exception construction,
+# stack unwind), measured at several times the cost of a direct attribute
+# read. Same fallback order and behavior as before, just memoized per type.
+_DATA_POINTER_ACCESSOR_CACHE: dict = {}
+
+
 def get_data_pointer(arr: DeviceArrayLike) -> int:
+    accessor = _DATA_POINTER_ACCESSOR_CACHE.get(type(arr))
+    if accessor is not None:
+        return accessor(arr)
+
     # TODO: these are fast paths for CuPy and PyTorch until
     # we have a more general solution.
 
     # Fast path for PyTorch (arr.data_ptr())
     try:
-        return arr.data_ptr()  # type: ignore
+        ptr = arr.data_ptr()  # type: ignore
     except AttributeError:
         pass
+    else:
+        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data_ptr()
+        return ptr
 
     # Fast path for CuPy (arr.data.ptr)
     try:
-        return arr.data.ptr  # type: ignore
+        ptr = arr.data.ptr  # type: ignore
     except AttributeError:
         pass
+    else:
+        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data.ptr
+        return ptr
 
     # Fall back to __cuda_array_interface__
-    return arr.__cuda_array_interface__["data"][0]
+    ptr = arr.__cuda_array_interface__["data"][0]
+    _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.__cuda_array_interface__[
+        "data"
+    ][0]
+    return ptr
 
 
 def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
