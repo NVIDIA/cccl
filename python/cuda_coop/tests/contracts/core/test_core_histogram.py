@@ -64,6 +64,21 @@ def test_unsupported_dtype(name, dtype):
         _spec(**{name: dtype})
 
 
+@pytest.mark.parametrize("name", ["Int32", "Uint32", "Int64", "Uint64"])
+def test_structural_compiler_dtype_names(name):
+    dtype = type(name, (), {})
+    spec = _spec(sample_dtype=dtype, counter_dtype=dtype)
+    assert spec.specialization.template_arguments["SampleT"] is dtype
+    assert spec.specialization.template_arguments["CounterT"] is dtype
+
+
+@pytest.mark.parametrize("name", ["Bool", "Boolean", "Float32", "Float64", "Int16"])
+@pytest.mark.parametrize("parameter", ["sample_dtype", "counter_dtype"])
+def test_unsupported_structural_compiler_dtype_names(name, parameter):
+    with pytest.raises(TypeError, match="dtype"):
+        _spec(**{parameter: type(name, (), {})})
+
+
 def test_result_extent_and_dtype_are_independent_of_samples():
     operation = GroupHistogramSemantics(INT32, 3, 65, 2, UINT64, "sort")
     plan = plan_group_primitive(

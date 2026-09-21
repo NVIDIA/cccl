@@ -21,6 +21,8 @@ def validate_histogram_dtype(dtype: Any, *, counter: bool = False) -> Any:
     if dtype is int:
         dtype = INT32
     name = getattr(dtype, "name", getattr(dtype, "__name__", dtype))
+    if isinstance(name, str):
+        name = name.lower()
     allowed = HISTOGRAM_COUNTER_DTYPES if counter else HISTOGRAM_SAMPLE_DTYPES
     if name not in allowed:
         parameter = "counter_dtype" if counter else "samples"
