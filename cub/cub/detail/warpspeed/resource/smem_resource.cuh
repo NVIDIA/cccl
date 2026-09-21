@@ -28,9 +28,9 @@ namespace detail::warpspeed
 template <typename _Tp>
 struct SmemResource : SmemResourceRaw
 {
-  template <int stageCount>
-  _CCCL_HOST_DEVICE_API SmemResource(SyncHandler& syncHandler, _Tp (&smemBuffer)[stageCount])
-      : SmemResourceRaw(syncHandler, smemBuffer, sizeof(smemBuffer[0]), sizeof(smemBuffer[0]), stageCount)
+  template <int StageCount>
+  _CCCL_HOST_DEVICE_API SmemResource(SyncHandler& syncHandler, _Tp (&smemBuffer)[StageCount])
+      : SmemResourceRaw(syncHandler, smemBuffer, sizeof(smemBuffer[0]), sizeof(smemBuffer[0]), StageCount)
   {}
 
   _CCCL_HOST_DEVICE_API constexpr SmemResource(

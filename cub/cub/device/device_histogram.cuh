@@ -384,11 +384,11 @@ struct DeviceHistogram
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
-  //!   a record of ``NUM_CHANNELS`` consecutive data samples
+  //!   a record of ``NumChannels`` consecutive data samples
   //!   (e.g., an *RGBA* pixel).
-  //! - ``NUM_CHANNELS`` can be up to 4.
-  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
-  //!   histograms for the first ``NUM_ACTIVE_CHANNELS``
+  //! - ``NumChannels`` can be up to 4.
+  //! - Of the ``NumChannels`` specified, the function will only compute
+  //!   histograms for the first ``NumActiveChannels``
   //!   (e.g., only *RGB* histograms from *RGBA* pixel samples).
   //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
   //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
@@ -400,8 +400,8 @@ struct DeviceHistogram
   //!   the cuda error ``cudaErrorInvalidValue`` is returned. If the common type is 128 bits wide, bin computation
   //!   will use 128-bit arithmetic and ``cudaErrorInvalidValue`` will only be returned if bin
   //!   computation would overflow for 128-bit arithmetic.
-  //! - For a given channel ``c`` in ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
-  //!   ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` and
+  //! - For a given channel ``c`` in ``[0, NumActiveChannels)``, the ranges
+  //!   ``[d_samples, d_samples + NumChannels * num_pixels)`` and
   //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
   //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
   //!   and SampleT must be valid arithmetic types.
@@ -453,11 +453,11 @@ struct DeviceHistogram
   //!
   //! @endrst
   //!
-  //! @tparam NUM_CHANNELS
+  //! @tparam NumChannels
   //!   Number of channels interleaved in the input data (may be greater than
   //!   the number of channels being actively histogrammed)
   //!
-  //! @tparam NUM_ACTIVE_CHANNELS
+  //! @tparam NumActiveChannels
   //!   **[inferred]** Number of channels actively being histogrammed
   //!
   //! @tparam SampleIteratorT
@@ -509,14 +509,14 @@ struct DeviceHistogram
   //!   The upper sample value bound (exclusive) for the highest histogram bin in each active channel.
   //!
   //! @param[in] num_pixels
-  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NUM_CHANNELS`)
+  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NumChannels`)
   //!
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -526,17 +526,17 @@ struct DeviceHistogram
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
+    ::cuda::std::array<int, NumActiveChannels> num_levels,
+    ::cuda::std::array<LevelT, NumActiveChannels> lower_level,
+    ::cuda::std::array<LevelT, NumActiveChannels> upper_level,
     OffsetT num_pixels,
     const EnvT& env = {})
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
-    return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    return MultiHistogramEven<NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
@@ -546,7 +546,7 @@ struct DeviceHistogram
       upper_level,
       num_pixels,
       static_cast<OffsetT>(1),
-      sizeof(SampleT) * NUM_CHANNELS * num_pixels,
+      sizeof(SampleT) * NumChannels * num_pixels,
       env);
   }
 
@@ -561,8 +561,8 @@ private:
 
 public:
   //! Deprecate [Since 3.0]
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -573,23 +573,23 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    CounterT* d_histogram[NumActiveChannels],
+    const int num_levels[NumActiveChannels],
+    const LevelT lower_level[NumActiveChannels],
+    const LevelT upper_level[NumActiveChannels],
     OffsetT num_pixels,
     const EnvT& env = {})
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    return MultiHistogramEven<NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      to_array<NUM_ACTIVE_CHANNELS>(d_histogram),
-      to_array<NUM_ACTIVE_CHANNELS>(num_levels),
-      to_array<NUM_ACTIVE_CHANNELS>(lower_level),
-      to_array<NUM_ACTIVE_CHANNELS>(upper_level),
+      to_array<NumActiveChannels>(d_histogram),
+      to_array<NumActiveChannels>(num_levels),
+      to_array<NumActiveChannels>(lower_level),
+      to_array<NumActiveChannels>(upper_level),
       num_pixels,
       env);
   }
@@ -602,10 +602,10 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
-  //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
-  //! - ``NUM_CHANNELS`` can be up to 4.
-  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
-  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., only *RGB*
+  //!   comprises a record of ``NumChannels`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NumChannels`` can be up to 4.
+  //! - Of the ``NumChannels`` specified, the function will only compute
+  //!   histograms for the first ``NumActiveChannels`` (e.g., only *RGB*
   //!   histograms from *RGBA* pixel samples).
   //! - A two-dimensional *region of interest* within ``d_samples`` can be
   //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
@@ -624,9 +624,9 @@ public:
   //! - For a given row ``r`` in ``[0, num_rows)``, and sample ``s`` in
   //!   ``[0, num_row_pixels)``, let
   //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
-  //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
-  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel ``c`` in
-  //!   ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
+  //!   ``sample_begin = row_begin + s * NumChannels``, and
+  //!   ``sample_end = sample_begin + NumActiveChannels``. For a given channel ``c`` in
+  //!   ``[0, NumActiveChannels)``, the ranges
   //!   ``[sample_begin, sample_end)`` and
   //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
   //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
@@ -649,7 +649,7 @@ public:
   //!    // samples and output histograms
   //!    int              num_row_pixels;     // e.g., 3
   //!    int              num_rows;           // e.g., 2
-  //!    size_t           row_stride_bytes;   // e.g., 4 * sizeof(unsigned char) * NUM_CHANNELS
+  //!    size_t           row_stride_bytes;   // e.g., 4 * sizeof(unsigned char) * NumChannels
   //!    unsigned char*   d_samples;          // e.g., [(2, 6, 7, 5), (3, 0, 2, 1), (7, 0, 6, 2), (-, -, -, -),
   //!                                         //        (0, 6, 7, 5), (3, 0, 2, 6), (1, 1, 1, 1), (-, -, -, -)]
   //!    int*             d_histogram[3];     // e.g., three device pointers to three device buffers,
@@ -682,11 +682,11 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam NUM_CHANNELS
+  //! @tparam NumChannels
   //!   Number of channels interleaved in the input data (may be greater than
   //!   the number of channels being actively histogrammed)
   //!
-  //! @tparam NUM_ACTIVE_CHANNELS
+  //! @tparam NumActiveChannels
   //!   **[inferred]** Number of channels actively being histogrammed
   //!
   //! @tparam SampleIteratorT
@@ -751,8 +751,8 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -762,10 +762,10 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
+    ::cuda::std::array<int, NumActiveChannels> num_levels,
+    ::cuda::std::array<LevelT, NumActiveChannels> lower_level,
+    ::cuda::std::array<LevelT, NumActiveChannels> upper_level,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
@@ -777,7 +777,7 @@ public:
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
     using default_policy_selector =
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
@@ -787,7 +787,7 @@ public:
         {
           if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
-            return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+            return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -804,7 +804,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,
@@ -822,8 +822,8 @@ public:
   }
 
   //! Deprecate [Since 3.0]
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -834,23 +834,23 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    CounterT* d_histogram[NumActiveChannels],
+    const int num_levels[NumActiveChannels],
+    const LevelT lower_level[NumActiveChannels],
+    const LevelT upper_level[NumActiveChannels],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
     const EnvT& env = {})
   {
-    return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    return MultiHistogramEven<NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      to_array<NUM_ACTIVE_CHANNELS>(d_histogram),
-      to_array<NUM_ACTIVE_CHANNELS>(num_levels),
-      to_array<NUM_ACTIVE_CHANNELS>(lower_level),
-      to_array<NUM_ACTIVE_CHANNELS>(upper_level),
+      to_array<NumActiveChannels>(d_histogram),
+      to_array<NumActiveChannels>(num_levels),
+      to_array<NumActiveChannels>(lower_level),
+      to_array<NumActiveChannels>(upper_level),
       num_row_pixels,
       num_rows,
       row_stride_bytes,
@@ -1144,19 +1144,19 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
-  //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
-  //! - ``NUM_CHANNELS`` can be up to 4.
-  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
-  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
+  //!   comprises a record of ``NumChannels`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NumChannels`` can be up to 4.
+  //! - Of the ``NumChannels`` specified, the function will only compute
+  //!   histograms for the first ``NumActiveChannels`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
   //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
   //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
-  //! - For given channels ``c1`` and ``c2`` in ``[0, NUM_ACTIVE_CHANNELS)``, the
+  //! - For given channels ``c1`` and ``c2`` in ``[0, NumActiveChannels)``, the
   //!   range ``[d_histogram[c1], d_histogram[c1] + num_levels[c1] - 1)`` shall
-  //!   not overlap ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` nor
+  //!   not overlap ``[d_samples, d_samples + NumChannels * num_pixels)`` nor
   //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` in any way.
   //!   The ranges ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` and
-  //!   ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` may overlap.
+  //!   ``[d_samples, d_samples + NumChannels * num_pixels)`` may overlap.
   //! - @devicestorage
   //!
   //! Snippet
@@ -1203,11 +1203,11 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam NUM_CHANNELS
+  //! @tparam NumChannels
   //!   Number of channels interleaved in the input data (may be greater than
   //!   the number of channels being actively histogrammed)
   //!
-  //! @tparam NUM_ACTIVE_CHANNELS
+  //! @tparam NumActiveChannels
   //!   **[inferred]** Number of channels actively being histogrammed
   //!
   //! @tparam SampleIteratorT
@@ -1260,14 +1260,14 @@ public:
   //!   are exclusive.
   //!
   //! @param[in] num_pixels
-  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NUM_CHANNELS`)
+  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NumChannels`)
   //!
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -1277,16 +1277,16 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
-    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
+    ::cuda::std::array<int, NumActiveChannels> num_levels,
+    ::cuda::std::array<const LevelT*, NumActiveChannels> d_levels,
     OffsetT num_pixels,
     const EnvT& env = {})
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
-    return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    return MultiHistogramRange<NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
@@ -1295,13 +1295,13 @@ public:
       d_levels,
       num_pixels,
       (OffsetT) 1,
-      (size_t) (sizeof(SampleT) * NUM_CHANNELS * num_pixels),
+      (size_t) (sizeof(SampleT) * NumChannels * num_pixels),
       env);
   }
 
   //! Deprecate [Since 3.0]
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -1311,19 +1311,19 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
+    CounterT* d_histogram[NumActiveChannels],
+    const int num_levels[NumActiveChannels],
+    const LevelT* const d_levels[NumActiveChannels],
     OffsetT num_pixels,
     cudaStream_t stream = nullptr)
   {
-    return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    return MultiHistogramRange<NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      to_array<NUM_ACTIVE_CHANNELS>(d_histogram),
-      to_array<NUM_ACTIVE_CHANNELS>(num_levels),
-      to_array<NUM_ACTIVE_CHANNELS>(d_levels),
+      to_array<NumActiveChannels>(d_histogram),
+      to_array<NumActiveChannels>(num_levels),
+      to_array<NumActiveChannels>(d_levels),
       num_pixels,
       stream);
   }
@@ -1336,10 +1336,10 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
-  //!   a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
-  //! - ``NUM_CHANNELS`` can be up to 4.
-  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
-  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
+  //!   a record of ``NumChannels`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NumChannels`` can be up to 4.
+  //! - Of the ``NumChannels`` specified, the function will only compute
+  //!   histograms for the first ``NumActiveChannels`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - A two-dimensional *region of interest* within ``d_samples`` can be
   //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
   //! - The row stride must be a whole multiple of the sample data type
@@ -1349,9 +1349,9 @@ public:
   //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
   //! - For a given row ``r`` in ``[0, num_rows)``, and sample ``s`` in ``[0, num_row_pixels)``, let
   //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
-  //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
-  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For given channels
-  //!   ``c1`` and ``c2`` in ``[0, NUM_ACTIVE_CHANNELS)``, the range
+  //!   ``sample_begin = row_begin + s * NumChannels``, and
+  //!   ``sample_end = sample_begin + NumActiveChannels``. For given channels
+  //!   ``c1`` and ``c2`` in ``[0, NumActiveChannels)``, the range
   //!   ``[d_histogram[c1], d_histogram[c1] + num_levels[c1] - 1)`` shall not overlap
   //!   ``[sample_begin, sample_end)`` nor
   //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` in any way. The ranges
@@ -1375,7 +1375,7 @@ public:
   //!    // samples and output histograms
   //!    int              num_row_pixels;     // e.g., 3
   //!    int              num_rows;           // e.g., 2
-  //!    size_t           row_stride_bytes;   // e.g., 4 * sizeof(unsigned char) * NUM_CHANNELS
+  //!    size_t           row_stride_bytes;   // e.g., 4 * sizeof(unsigned char) * NumChannels
   //!    unsigned char*   d_samples;          // e.g., [(2, 6, 7, 5),(3, 0, 2, 1),(1, 1, 1, 1),(-, -, -, -),
   //!                                         //        (7, 0, 6, 2),(0, 6, 7, 5),(3, 0, 2, 6),(-, -, -, -)]
   //!    int*             d_histogram[3];     // e.g., [[ -, -, -, -],[ -, -, -, -],[ -, -, -, -]];
@@ -1408,11 +1408,11 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam NUM_CHANNELS
+  //! @tparam NumChannels
   //!   Number of channels interleaved in the input data (may be greater than
   //!   the number of channels being actively histogrammed)
   //!
-  //! @tparam NUM_ACTIVE_CHANNELS
+  //! @tparam NumActiveChannels
   //!   **[inferred]** Number of channels actively being histogrammed
   //!
   //! @tparam SampleIteratorT
@@ -1478,8 +1478,8 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -1489,9 +1489,9 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
-    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
+    ::cuda::std::array<int, NumActiveChannels> num_levels,
+    ::cuda::std::array<const LevelT*, NumActiveChannels> d_levels,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
@@ -1503,7 +1503,7 @@ public:
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
     using default_policy_selector =
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1513,7 +1513,7 @@ public:
         {
           if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
-            return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+            return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -1529,7 +1529,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,
@@ -1546,8 +1546,8 @@ public:
   }
 
   //! Deprecate [Since 3.0]
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -1557,21 +1557,21 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    const int num_levels[NUM_ACTIVE_CHANNELS],
-    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
+    CounterT* d_histogram[NumActiveChannels],
+    const int num_levels[NumActiveChannels],
+    const LevelT* const d_levels[NumActiveChannels],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
     cudaStream_t stream = nullptr)
   {
-    return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    return MultiHistogramRange<NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      to_array<NUM_ACTIVE_CHANNELS>(d_histogram),
-      to_array<NUM_ACTIVE_CHANNELS>(num_levels),
-      to_array<NUM_ACTIVE_CHANNELS>(d_levels),
+      to_array<NumActiveChannels>(d_histogram),
+      to_array<NumActiveChannels>(num_levels),
+      to_array<NumActiveChannels>(d_levels),
       num_row_pixels,
       num_rows,
       row_stride_bytes,
@@ -1815,11 +1815,11 @@ public:
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
-  //!   a record of ``NUM_CHANNELS`` consecutive data samples
+  //!   a record of ``NumChannels`` consecutive data samples
   //!   (e.g., an *RGBA* pixel).
-  //! - ``NUM_CHANNELS`` can be up to 4.
-  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
-  //!   histograms for the first ``NUM_ACTIVE_CHANNELS``
+  //! - ``NumChannels`` can be up to 4.
+  //! - Of the ``NumChannels`` specified, the function will only compute
+  //!   histograms for the first ``NumActiveChannels``
   //!   (e.g., only *RGB* histograms from *RGBA* pixel samples).
   //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
   //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
@@ -1831,8 +1831,8 @@ public:
   //!   the cuda error ``cudaErrorInvalidValue`` is returned. If the common type is 128 bits wide, bin computation
   //!   will use 128-bit arithmetic and ``cudaErrorInvalidValue`` will only be returned if bin
   //!   computation would overflow for 128-bit arithmetic.
-  //! - For a given channel ``c`` in ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
-  //!   ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` and
+  //! - For a given channel ``c`` in ``[0, NumActiveChannels)``, the ranges
+  //!   ``[d_samples, d_samples + NumChannels * num_pixels)`` and
   //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
   //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
   //!   and SampleT must be valid arithmetic types.
@@ -1850,11 +1850,11 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam NUM_CHANNELS
+  //! @tparam NumChannels
   //!   Number of channels interleaved in the input data (may be greater than the number of channels being
   //!   actively histogrammed)
   //!
-  //! @tparam NUM_ACTIVE_CHANNELS
+  //! @tparam NumActiveChannels
   //!   **[inferred]** Number of channels actively being histogrammed
   //!
   //! @tparam SampleIteratorT
@@ -1888,14 +1888,14 @@ public:
   //!   Array of the upper sample value bound (exclusive) for the highest bin of each active channel.
   //!
   //! @param[in] num_pixels
-  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NUM_CHANNELS`)
+  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NumChannels`)
   //!
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -1903,15 +1903,15 @@ public:
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
     SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
+    ::cuda::std::array<int, NumActiveChannels> num_levels,
+    ::cuda::std::array<LevelT, NumActiveChannels> lower_level,
+    ::cuda::std::array<LevelT, NumActiveChannels> upper_level,
     OffsetT num_pixels,
     const EnvT& env = {})
   {
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    return MultiHistogramEven<NumChannels, NumActiveChannels>(
       d_samples,
       d_histogram,
       num_levels,
@@ -1919,7 +1919,7 @@ public:
       upper_level,
       num_pixels,
       static_cast<OffsetT>(1),
-      sizeof(SampleT) * NUM_CHANNELS * num_pixels,
+      sizeof(SampleT) * NumChannels * num_pixels,
       env);
   }
 
@@ -1936,10 +1936,10 @@ public:
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
-  //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
-  //! - ``NUM_CHANNELS`` can be up to 4.
-  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
-  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., only *RGB*
+  //!   comprises a record of ``NumChannels`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NumChannels`` can be up to 4.
+  //! - Of the ``NumChannels`` specified, the function will only compute
+  //!   histograms for the first ``NumActiveChannels`` (e.g., only *RGB*
   //!   histograms from *RGBA* pixel samples).
   //! - A two-dimensional *region of interest* within ``d_samples`` can be
   //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
@@ -1958,9 +1958,9 @@ public:
   //! - For a given row ``r`` in ``[0, num_rows)``, and sample ``s`` in
   //!   ``[0, num_row_pixels)``, let
   //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
-  //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
-  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel ``c`` in
-  //!   ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
+  //!   ``sample_begin = row_begin + s * NumChannels``, and
+  //!   ``sample_end = sample_begin + NumActiveChannels``. For a given channel ``c`` in
+  //!   ``[0, NumActiveChannels)``, the ranges
   //!   ``[sample_begin, sample_end)`` and
   //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
   //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
@@ -1979,11 +1979,11 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam NUM_CHANNELS
+  //! @tparam NumChannels
   //!   Number of channels interleaved in the input data (may be greater than the number of channels being
   //!   actively histogrammed)
   //!
-  //! @tparam NUM_ACTIVE_CHANNELS
+  //! @tparam NumActiveChannels
   //!   **[inferred]** Number of channels actively being histogrammed
   //!
   //! @tparam SampleIteratorT
@@ -2041,8 +2041,8 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -2050,10 +2050,10 @@ public:
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
     SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
+    ::cuda::std::array<int, NumActiveChannels> num_levels,
+    ::cuda::std::array<LevelT, NumActiveChannels> lower_level,
+    ::cuda::std::array<LevelT, NumActiveChannels> upper_level,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
@@ -2065,14 +2065,14 @@ public:
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
     using default_policy_selector =
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, true>;
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
           {
-            return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+            return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -2089,7 +2089,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,
@@ -2317,19 +2317,19 @@ public:
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
-  //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
-  //! - ``NUM_CHANNELS`` can be up to 4.
-  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
-  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
+  //!   comprises a record of ``NumChannels`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NumChannels`` can be up to 4.
+  //! - Of the ``NumChannels`` specified, the function will only compute
+  //!   histograms for the first ``NumActiveChannels`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
   //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
   //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
-  //! - For given channels ``c1`` and ``c2`` in ``[0, NUM_ACTIVE_CHANNELS)``, the
+  //! - For given channels ``c1`` and ``c2`` in ``[0, NumActiveChannels)``, the
   //!   range ``[d_histogram[c1], d_histogram[c1] + num_levels[c1] - 1)`` shall
-  //!   not overlap ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` nor
+  //!   not overlap ``[d_samples, d_samples + NumChannels * num_pixels)`` nor
   //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` in any way.
   //!   The ranges ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` and
-  //!   ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` may overlap.
+  //!   ``[d_samples, d_samples + NumChannels * num_pixels)`` may overlap.
   //! - @devicestorage
   //!
   //! Snippet
@@ -2343,11 +2343,11 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam NUM_CHANNELS
+  //! @tparam NumChannels
   //!   Number of channels interleaved in the input data (may be greater than the number of channels being
   //!   actively histogrammed)
   //!
-  //! @tparam NUM_ACTIVE_CHANNELS
+  //! @tparam NumActiveChannels
   //!   **[inferred]** Number of channels actively being histogrammed
   //!
   //! @tparam SampleIteratorT
@@ -2378,14 +2378,14 @@ public:
   //!   Array of pointers to the arrays of boundaries (levels) for each active channel.
   //!
   //! @param[in] num_pixels
-  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NUM_CHANNELS`)
+  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NumChannels`)
   //!
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -2393,21 +2393,21 @@ public:
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
     SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
-    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
+    ::cuda::std::array<int, NumActiveChannels> num_levels,
+    ::cuda::std::array<const LevelT*, NumActiveChannels> d_levels,
     OffsetT num_pixels,
     const EnvT& env = {})
   {
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+    return MultiHistogramRange<NumChannels, NumActiveChannels>(
       d_samples,
       d_histogram,
       num_levels,
       d_levels,
       num_pixels,
       static_cast<OffsetT>(1),
-      sizeof(SampleT) * NUM_CHANNELS * num_pixels,
+      sizeof(SampleT) * NumChannels * num_pixels,
       env);
   }
 
@@ -2424,10 +2424,10 @@ public:
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
-  //!   a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
-  //! - ``NUM_CHANNELS`` can be up to 4.
-  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
-  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
+  //!   a record of ``NumChannels`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NumChannels`` can be up to 4.
+  //! - Of the ``NumChannels`` specified, the function will only compute
+  //!   histograms for the first ``NumActiveChannels`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - A two-dimensional *region of interest* within ``d_samples`` can be
   //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
   //! - The row stride must be a whole multiple of the sample data type
@@ -2437,9 +2437,9 @@ public:
   //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
   //! - For a given row ``r`` in ``[0, num_rows)``, and sample ``s`` in ``[0, num_row_pixels)``, let
   //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
-  //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
-  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For given channels
-  //!   ``c1`` and ``c2`` in ``[0, NUM_ACTIVE_CHANNELS)``, the range
+  //!   ``sample_begin = row_begin + s * NumChannels``, and
+  //!   ``sample_end = sample_begin + NumActiveChannels``. For given channels
+  //!   ``c1`` and ``c2`` in ``[0, NumActiveChannels)``, the range
   //!   ``[d_histogram[c1], d_histogram[c1] + num_levels[c1] - 1)`` shall not overlap
   //!   ``[sample_begin, sample_end)`` nor
   //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` in any way. The ranges
@@ -2458,11 +2458,11 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam NUM_CHANNELS
+  //! @tparam NumChannels
   //!   Number of channels interleaved in the input data (may be greater than the number of channels being
   //!   actively histogrammed)
   //!
-  //! @tparam NUM_ACTIVE_CHANNELS
+  //! @tparam NumActiveChannels
   //!   **[inferred]** Number of channels actively being histogrammed
   //!
   //! @tparam SampleIteratorT
@@ -2505,8 +2505,8 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <int NUM_CHANNELS,
-            int NUM_ACTIVE_CHANNELS,
+  template <int NumChannels,
+            int NumActiveChannels,
             typename SampleIteratorT,
             typename CounterT,
             typename LevelT,
@@ -2514,9 +2514,9 @@ public:
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
     SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
-    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
+    ::cuda::std::array<int, NumActiveChannels> num_levels,
+    ::cuda::std::array<const LevelT*, NumActiveChannels> d_levels,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
@@ -2528,14 +2528,14 @@ public:
     ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
 
     using default_policy_selector =
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, false>;
+      detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
           {
-            return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+            return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -2551,7 +2551,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+        return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,

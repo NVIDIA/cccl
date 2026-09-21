@@ -388,7 +388,7 @@ struct AgentRadixSortUpsweep
   /**
    * Extract counts (saving them to the external array)
    */
-  template <bool IS_DESCENDING>
+  template <bool IsDescending>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT* counters, int bin_stride = 1, int bin_offset = 0)
   {
     const unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
@@ -431,7 +431,7 @@ struct AgentRadixSortUpsweep
         bin_count += temp_storage.block_counters[i][bin_idx];
       }
 
-      if (IS_DESCENDING)
+      if (IsDescending)
       {
         bin_idx = RADIX_DIGITS - bin_idx - 1;
       }
@@ -451,7 +451,7 @@ struct AgentRadixSortUpsweep
         bin_count += temp_storage.block_counters[i][bin_idx];
       }
 
-      if (IS_DESCENDING)
+      if (IsDescending)
       {
         bin_idx = RADIX_DIGITS - bin_idx - 1;
       }
@@ -465,11 +465,11 @@ struct AgentRadixSortUpsweep
    *
    * @param[out] bin_count
    *   The exclusive prefix sum for the digits
-   *   [(threadIdx.x * BINS_TRACKED_PER_THREAD) ... (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD -
+   *   [(threadIdx.x * BinsTrackedPerThread) ... (threadIdx.x * BinsTrackedPerThread) + BinsTrackedPerThread -
    * 1]
    */
-  template <int BINS_TRACKED_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])
+  template <int BinsTrackedPerThread>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BinsTrackedPerThread])
   {
     const unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     const unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
@@ -497,9 +497,9 @@ struct AgentRadixSortUpsweep
 
     // Rake-reduce bin_count reductions
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
+    for (int track = 0; track < BinsTrackedPerThread; ++track)
     {
-      const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BinsTrackedPerThread) + track;
 
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {

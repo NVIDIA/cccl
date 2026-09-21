@@ -43,10 +43,10 @@ namespace detail
  * @tparam T
  *   Data type being scanned
  *
- * @tparam LOGICAL_WARP_THREADS
+ * @tparam LogicalWarpThreads
  *   Number of threads per logical warp
  */
-template <typename T, int LOGICAL_WARP_THREADS>
+template <typename T, int LogicalWarpThreads>
 struct WarpScanSmem
 {
   /******************************************************************************
@@ -54,16 +54,16 @@ struct WarpScanSmem
    ******************************************************************************/
 
   /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
+  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == warp_threads);
 
   /// The number of warp scan steps
-  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
+  static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
 
   /// The number of threads in half a warp
   static constexpr int HALF_WARP_THREADS = 1 << (STEPS - 1);
 
   /// The number of shared memory elements per warp
-  static constexpr int WARP_SMEM_ELEMENTS = LOGICAL_WARP_THREADS + HALF_WARP_THREADS;
+  static constexpr int WARP_SMEM_ELEMENTS = LogicalWarpThreads + HALF_WARP_THREADS;
 
   /// Shared memory storage layout type (1.5 warps-worth of elements for each warp)
   using _TempStorage = T[WARP_SMEM_ELEMENTS];
@@ -89,10 +89,10 @@ struct WarpScanSmem
       : temp_storage(temp_storage.Alias())
       ,
 
-      lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
+      lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
       ,
 
-      member_mask(WarpMask<LOGICAL_WARP_THREADS>(::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
+      member_mask(WarpMask<LogicalWarpThreads>(::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
   {}
 
   /******************************************************************************
@@ -100,7 +100,7 @@ struct WarpScanSmem
    ******************************************************************************/
 
   /// Basic inclusive scan iteration (template unrolled, inductive-case specialization)
-  template <bool HAS_IDENTITY, int STEP, typename ScanOp>
+  template <bool HasIdentity, int STEP, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& partial, ScanOp scan_op, constant_t<STEP> /*step*/)
   {
     constexpr int OFFSET = 1 << STEP;
@@ -111,18 +111,18 @@ struct WarpScanSmem
     __syncwarp(member_mask);
 
     // Update partial if addend is in range
-    if (HAS_IDENTITY || (lane_id >= OFFSET))
+    if (HasIdentity || (lane_id >= OFFSET))
     {
       T addend = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - OFFSET]);
       partial  = scan_op(addend, partial);
     }
     __syncwarp(member_mask);
 
-    ScanStep<HAS_IDENTITY>(partial, scan_op, constant_v<STEP + 1>);
+    ScanStep<HasIdentity>(partial, scan_op, constant_v<STEP + 1>);
   }
 
   /// Basic inclusive scan iteration(template unrolled, base-case specialization)
-  template <bool HAS_IDENTITY, typename ScanOp>
+  template <bool HasIdentity, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& /*partial*/, ScanOp /*scan_op*/, constant_t<STEPS> /*step*/)
   {}
 
@@ -299,7 +299,7 @@ struct WarpScanSmem
 
     __syncwarp(member_mask);
 
-    warp_aggregate = temp_storage[HALF_WARP_THREADS + ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1)];
+    warp_aggregate = temp_storage[HALF_WARP_THREADS + ::cuda::std::clamp(valid_items - 1, 0, LogicalWarpThreads - 1)];
 
     __syncwarp(member_mask);
   }
@@ -579,7 +579,7 @@ struct WarpScanSmem
 
     __syncwarp(member_mask);
 
-    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LogicalWarpThreads - 1);
     warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
     // Compute exclusive
     if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
@@ -632,7 +632,7 @@ struct WarpScanSmem
 
     __syncwarp(member_mask);
 
-    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LogicalWarpThreads - 1);
     warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
 
     __syncwarp(member_mask);

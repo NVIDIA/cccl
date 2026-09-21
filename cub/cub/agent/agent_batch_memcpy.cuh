@@ -89,13 +89,13 @@ using AgentBatchMemcpyPolicy
 
 namespace detail::batch_memcpy
 {
-template <bool PTR_IS_FOUR_BYTE_ALIGNED>
+template <bool PtrIsFourByteAligned>
 _CCCL_FORCEINLINE _CCCL_DEVICE void
 LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint4& data_out)
 {
   data_out = {aligned_ptr[0], aligned_ptr[1], aligned_ptr[2], aligned_ptr[3]};
 
-  if constexpr (!PTR_IS_FOUR_BYTE_ALIGNED)
+  if constexpr (!PtrIsFourByteAligned)
   {
     const uint32_t tail = aligned_ptr[4];
     data_out.x          = __funnelshift_r(data_out.x, data_out.y, bit_shift);
@@ -105,13 +105,13 @@ LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint4
   }
 }
 
-template <bool PTR_IS_FOUR_BYTE_ALIGNED>
+template <bool PtrIsFourByteAligned>
 _CCCL_FORCEINLINE _CCCL_DEVICE void
 LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint2& data_out)
 {
   data_out = {aligned_ptr[0], aligned_ptr[1]};
 
-  if constexpr (!PTR_IS_FOUR_BYTE_ALIGNED)
+  if constexpr (!PtrIsFourByteAligned)
   {
     const uint32_t tail = aligned_ptr[2];
     data_out.x          = __funnelshift_r(data_out.x, data_out.y, bit_shift);
@@ -119,13 +119,13 @@ LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint2
   }
 }
 
-template <bool PTR_IS_FOUR_BYTE_ALIGNED>
+template <bool PtrIsFourByteAligned>
 _CCCL_FORCEINLINE _CCCL_DEVICE void
 LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint32_t& data_out)
 {
   data_out = aligned_ptr[0];
 
-  if constexpr (!PTR_IS_FOUR_BYTE_ALIGNED)
+  if constexpr (!PtrIsFourByteAligned)
   {
     const uint32_t tail = aligned_ptr[1];
     data_out            = __funnelshift_r(data_out, tail, bit_shift);
@@ -257,17 +257,17 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
  * \p VectorT for addresses within [dest, dest + num_bytes) that are aligned to \p VectorT. A
  * byte-wise copy is used for byte-ranges that are not aligned to \p VectorT.
  *
- * @tparam LOGICAL_WARP_SIZE The number of threads cooperaing to copy the data; all threads within
- * [0,  `LOGICAL_WARP_SIZE`) must invoke this method with the same arguments
+ * @tparam LogicalWarpSize The number of threads cooperaing to copy the data; all threads within
+ * [0,  `LogicalWarpSize`) must invoke this method with the same arguments
  * @tparam VectorT The vector type used for vectorized stores (i.e., one of uint4, uint2, uint32_t)
  * @tparam ByteOffsetT Type used to index the bytes within the buffers
  * @param thread_rank The thread rank within the group that cooperates to copy the data must be
- * within [0, `LOGICAL_WARP_SIZE`)
+ * within [0, `LogicalWarpSize`)
  * @param dest Pointer to the memory location to copy to
  * @param num_bytes Number of bytes to copy
  * @param src Pointer to the memory location to copy from
  */
-template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
+template <int LogicalWarpSize, typename VectorT, typename ByteOffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const void* src)
 {
@@ -280,7 +280,7 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
   // If byte range for which we can use vectorized copies is empty -> use byte-wise copies
   if (aligned_range.out_end <= aligned_range.out_begin)
   {
-    for (ByteOffsetT ichar = thread_rank; ichar < num_bytes; ichar += LOGICAL_WARP_SIZE)
+    for (ByteOffsetT ichar = thread_rank; ichar < num_bytes; ichar += LogicalWarpSize)
     {
       out_ptr[ichar] = in_ptr[ichar];
     }
@@ -293,8 +293,8 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
     while (out_ptr < reinterpret_cast<char*>(aligned_range.out_begin))
     {
       *out_ptr = *in_ptr;
-      out_ptr += LOGICAL_WARP_SIZE;
-      in_ptr += LOGICAL_WARP_SIZE;
+      out_ptr += LogicalWarpSize;
+      in_ptr += LogicalWarpSize;
     }
 
     // Copy bytes in range `[aligned_range.out_begin, aligned_range.out_end)`
@@ -305,8 +305,8 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
       VectorT data_in;
       LoadVector(in_aligned_begin, data_in);
       *aligned_range_begin = data_in;
-      in_aligned_begin += sizeof(VectorT) * LOGICAL_WARP_SIZE;
-      aligned_range_begin += LOGICAL_WARP_SIZE;
+      in_aligned_begin += sizeof(VectorT) * LogicalWarpSize;
+      aligned_range_begin += LogicalWarpSize;
     }
 
     // Copy bytes in range `[aligned_range.out_end, dest + num_bytes)`.
@@ -315,20 +315,20 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
     while (out_ptr < static_cast<char*>(dest) + num_bytes)
     {
       *out_ptr = *in_ptr;
-      out_ptr += LOGICAL_WARP_SIZE;
-      in_ptr += LOGICAL_WARP_SIZE;
+      out_ptr += LogicalWarpSize;
+      in_ptr += LogicalWarpSize;
     }
   }
 }
 
-template <bool IsMemcpy, uint32_t LOGICAL_WARP_SIZE, typename InputBufferT, typename OutputBufferT, typename OffsetT>
+template <bool IsMemcpy, uint32_t LogicalWarpSize, typename InputBufferT, typename OutputBufferT, typename OffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_items, OffsetT offset = 0)
 {
   if constexpr (IsMemcpy)
   {
-    vectorized_copy<LOGICAL_WARP_SIZE, uint4>(
-      threadIdx.x % LOGICAL_WARP_SIZE,
+    vectorized_copy<LogicalWarpSize, uint4>(
+      threadIdx.x % LogicalWarpSize,
       &reinterpret_cast<char*>(output_buffer)[offset],
       num_items,
       &reinterpret_cast<const char*>(input_buffer)[offset]);
@@ -337,7 +337,7 @@ copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_i
   {
     output_buffer += offset;
     input_buffer += offset;
-    for (OffsetT i = threadIdx.x % LOGICAL_WARP_SIZE; i < num_items; i += LOGICAL_WARP_SIZE)
+    for (OffsetT i = threadIdx.x % LogicalWarpSize; i < num_items; i += LogicalWarpSize)
     {
       *(output_buffer + i) = *(input_buffer + i);
     }

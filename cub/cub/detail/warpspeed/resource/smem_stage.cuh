@@ -49,7 +49,7 @@ struct SmemStage
 };
 
 // Helper: Container to expose SmemPhase for structured binding
-template <typename _Tp, ::cuda::std::size_t numPhases>
+template <typename _Tp, ::cuda::std::size_t NumPhases>
 struct SmemPhaseStructuredBinding
 {
   SmemResourceRaw& mSmemResourceRaw;
@@ -62,13 +62,13 @@ struct SmemPhaseStructuredBinding
 };
 
 // The binding function
-template <::cuda::std::size_t numPhases, typename _Tp>
-[[nodiscard]] _CCCL_DEVICE_API SmemPhaseStructuredBinding<_Tp, numPhases> bindPhases(SmemStage<_Tp>& smemStage)
+template <::cuda::std::size_t NumPhases, typename _Tp>
+[[nodiscard]] _CCCL_DEVICE_API SmemPhaseStructuredBinding<_Tp, NumPhases> bindPhases(SmemStage<_Tp>& smemStage)
 {
-  _WS_CONSTANT_ASSERT(smemStage.mSmemResourceRaw.mNumPhases == numPhases,
+  _WS_CONSTANT_ASSERT(smemStage.mSmemResourceRaw.mNumPhases == NumPhases,
                       "Number of bound phases must match resource phases.");
 
-  return SmemPhaseStructuredBinding<_Tp, numPhases>{smemStage.mSmemResourceRaw};
+  return SmemPhaseStructuredBinding<_Tp, NumPhases>{smemStage.mSmemResourceRaw};
 }
 } // namespace detail::warpspeed
 
@@ -77,14 +77,14 @@ CUB_NAMESPACE_END
 // Tuple protocol specializations
 namespace std
 {
-template <typename _Tp, size_t numPhases>
-struct tuple_size<CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBinding<_Tp, numPhases>>
+template <typename _Tp, size_t NumPhases>
+struct tuple_size<CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBinding<_Tp, NumPhases>>
 {
-  static constexpr size_t value = numPhases;
+  static constexpr size_t value = NumPhases;
 };
 
-template <typename _Tp, size_t _Index, ::cuda::std::size_t numPhases>
-struct tuple_element<_Index, CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBinding<_Tp, numPhases>>
+template <typename _Tp, size_t _Index, ::cuda::std::size_t NumPhases>
+struct tuple_element<_Index, CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBinding<_Tp, NumPhases>>
 {
   using type = CUB_NS_QUALIFIER::detail::warpspeed::SmemPhase<_Tp>;
 };

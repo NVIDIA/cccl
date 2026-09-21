@@ -662,9 +662,9 @@ template <typename InputIteratorT,
           typename NumRunsOutputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
-          typename length_t       = non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-          typename key_t          = it_value_t<InputIteratorT>,
-          typename PolicySelector = non_trivial_runs::policy_selector_from_types<length_t, key_t>>
+          typename LengthT        = non_void_value_t<LengthsOutputIteratorT, OffsetT>,
+          typename KeyT           = it_value_t<InputIteratorT>,
+          typename PolicySelector = non_trivial_runs::policy_selector_from_types<LengthT, KeyT>>
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -685,8 +685,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static constexpr bool use_streaming_invocation =
     ::cuda::std::numeric_limits<OffsetT>::max() > ::cuda::std::numeric_limits<local_offset_t>::max();
   using streaming_context_t = ::cuda::std::
-    conditional_t<use_streaming_invocation, streaming_context<InputIteratorT, length_t, global_offset_t>, NullType>;
-  using ScanTileStateT                     = ReduceByKeyScanTileState<length_t, local_offset_t>;
+    conditional_t<use_streaming_invocation, streaming_context<InputIteratorT, LengthT, global_offset_t>, NullType>;
+  using ScanTileStateT                     = ReduceByKeyScanTileState<LengthT, local_offset_t>;
   static constexpr int init_kernel_threads = 128;
 
   ::cuda::compute_capability cc{};
@@ -736,7 +736,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
   allocation_sizes[1] = num_partitions > 1 ? sizeof(global_offset_t) * 2 : size_t{0};
-  allocation_sizes[2] = num_partitions > 1 ? sizeof(length_t) * 2 : size_t{0};
+  allocation_sizes[2] = num_partitions > 1 ? sizeof(LengthT) * 2 : size_t{0};
 
   void* allocations[3] = {};
   if (const auto error =
@@ -810,7 +810,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       if constexpr (use_streaming_invocation)
       {
         auto tmp_num_uniques          = static_cast<global_offset_t*>(allocations[1]);
-        auto tmp_prefix               = static_cast<length_t*>(allocations[2]);
+        auto tmp_prefix               = static_cast<LengthT*>(allocations[2]);
         const bool is_first_partition = (partition_idx == 0);
         const bool is_last_partition  = (partition_idx + 1 == num_partitions);
         const int buffer_selector     = partition_idx % 2;

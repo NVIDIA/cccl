@@ -44,8 +44,8 @@ int g_grid_size = 1;
 /**
  * Simple kernel for performing a block-wide exclusive prefix sum over integers
  */
-template <int BLOCK_THREADS,
-          int ITEMS_PER_THREAD,
+template <int BlockThreads,
+          int ItemsPerThread,
           BlockScanAlgorithm ALGORITHM>
 __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
                                      int* d_out, // Tile of output
@@ -53,14 +53,14 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
 {
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  using BlockLoadT = BlockLoad<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using BlockLoadT = BlockLoad<int, BlockThreads, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
 
   // Specialize BlockStore type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  using BlockStoreT = BlockStore<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_STORE_WARP_TRANSPOSE>;
+  using BlockStoreT = BlockStore<int, BlockThreads, ItemsPerThread, BLOCK_STORE_WARP_TRANSPOSE>;
 
   // Specialize BlockScan type for our thread block
-  using BlockScanT = BlockScan<int, BLOCK_THREADS, ALGORITHM>;
+  using BlockScanT = BlockScan<int, BlockThreads, ALGORITHM>;
 
   // Shared memory
   __shared__ union TempStorage
@@ -71,7 +71,7 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
   } temp_storage;
 
   // Per-thread tile data
-  int data[ITEMS_PER_THREAD];
+  int data[ItemsPerThread];
 
   // Load items into a blocked arrangement
   BlockLoadT(temp_storage.load).Load(d_in, data);
@@ -98,8 +98,8 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
   // Store aggregate and elapsed clocks
   if (threadIdx.x == 0)
   {
-    *d_elapsed                              = (start > stop) ? start - stop : stop - start;
-    d_out[BLOCK_THREADS * ITEMS_PER_THREAD] = aggregate;
+    *d_elapsed                           = (start > stop) ? start - stop : stop - start;
+    d_out[BlockThreads * ItemsPerThread] = aggregate;
   }
 }
 
@@ -129,10 +129,10 @@ int Initialize(int* h_in, int* h_reference, int num_items)
 /**
  * Test thread block scan
  */
-template <int BLOCK_THREADS, int ITEMS_PER_THREAD, BlockScanAlgorithm ALGORITHM>
+template <int BlockThreads, int ItemsPerThread, BlockScanAlgorithm ALGORITHM>
 void Test()
 {
-  constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+  constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 
   // Allocate host arrays
   int* h_in        = new int[TILE_SIZE];
@@ -164,7 +164,7 @@ void Test()
   // Kernel props
   int max_sm_occupancy;
   CubDebugExit(
-    MaxSmOccupancy(max_sm_occupancy, BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>, BLOCK_THREADS));
+    MaxSmOccupancy(max_sm_occupancy, BlockPrefixSumKernel<BlockThreads, ItemsPerThread, ALGORITHM>, BlockThreads));
 
   // Copy problem to device
   cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice);
@@ -179,13 +179,12 @@ void Test()
     TILE_SIZE,
     g_timing_iterations,
     g_grid_size,
-    BLOCK_THREADS,
-    ITEMS_PER_THREAD,
+    BlockThreads,
+    ItemsPerThread,
     max_sm_occupancy);
 
   // Run aggregate/prefix kernel
-  BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>
-    <<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+  BlockPrefixSumKernel<BlockThreads, ItemsPerThread, ALGORITHM><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
   // Check results
   printf("\tOutput items: ");
@@ -212,8 +211,8 @@ void Test()
     timer.Start();
 
     // Run aggregate/prefix kernel
-    BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>
-      <<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+    BlockPrefixSumKernel<BlockThreads, ItemsPerThread, ALGORITHM>
+      <<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
     timer.Stop();
     elapsed_millis += timer.ElapsedMillis();

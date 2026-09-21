@@ -37,8 +37,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-//! @param ComputeT If void, use NOMINAL_4B_NUM_PARTS directly for NUM_PARTS. Otherwise, perform scaling.
-template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
+//! @param ComputeT If void, use Nominal4bNumParts directly for NUM_PARTS. Otherwise, perform scaling.
+template <int ThreadsPerBlock, int ItemsPerThread, int Nominal4bNumParts, typename ComputeT, int RadixBits>
 struct agent_radix_sort_histogram_policy
 {
   static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
@@ -50,11 +50,11 @@ struct agent_radix_sort_histogram_policy
   {
     if constexpr (::cuda::std::is_void_v<ComputeT>)
     {
-      return NOMINAL_4B_NUM_PARTS;
+      return Nominal4bNumParts;
     }
     else
     {
-      return ::cuda::std::max(1, NOMINAL_4B_NUM_PARTS * 4 / ::cuda::std::max(int{sizeof(ComputeType)}, 4));
+      return ::cuda::std::max(1, Nominal4bNumParts * 4 / ::cuda::std::max(int{sizeof(ComputeType)}, 4));
     }
   }
 
@@ -77,9 +77,9 @@ struct agent_radix_sort_exclusive_sum_policy
 } // namespace detail
 
 //! Deprecated [Since 3.5]
-template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
+template <int ThreadsPerBlock, int ItemsPerThread, int Nominal4bNumParts, typename ComputeT, int RadixBits>
 using AgentRadixSortHistogramPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") =
-  detail::agent_radix_sort_histogram_policy<ThreadsPerBlock, ItemsPerThread, NOMINAL_4B_NUM_PARTS, ComputeT, RadixBits>;
+  detail::agent_radix_sort_histogram_policy<ThreadsPerBlock, ItemsPerThread, Nominal4bNumParts, ComputeT, RadixBits>;
 
 //! Deprecated [Since 3.5]
 template <int ThreadsPerBlock, int RadixBits>
@@ -89,7 +89,7 @@ using AgentRadixSortExclusiveSumPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning A
 namespace detail::radix_sort
 {
 template <typename AgentRadixSortHistogramPolicy,
-          bool IS_DESCENDING,
+          bool IsDescending,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = identity_decomposer_t>
@@ -108,7 +108,7 @@ struct AgentRadixSortHistogram
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
-  using Twiddle             = RadixSortTwiddle<IS_DESCENDING, KeyT>;
+  using Twiddle             = RadixSortTwiddle<IsDescending, KeyT>;
   using ShmemCounterT       = uint32_t;
   using ShmemAtomicCounterT = ShmemCounterT;
 

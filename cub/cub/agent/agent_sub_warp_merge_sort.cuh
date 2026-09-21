@@ -74,7 +74,7 @@ namespace detail::sub_warp_merge_sort
  * `PolicyT::LOAD_ALGORITHM`, sort it using `WarpMergeSort`, and store it back
  * using `PolicyT::STORE_ALGORITHM`.
  *
- * @tparam IS_DESCENDING
+ * @tparam IsDescending
  *   Whether or not the sorted-order is high-to-low
  *
  * @tparam PolicyT
@@ -89,7 +89,7 @@ namespace detail::sub_warp_merge_sort
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <bool IS_DESCENDING, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
+template <bool IsDescending, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
 class AgentSubWarpSort
 {
   using traits           = detail::radix::traits_t<KeyT>;
@@ -100,7 +100,7 @@ class AgentSubWarpSort
     template <typename T>
     _CCCL_DEVICE bool operator()(T lhs, T rhs) const noexcept
     {
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         return lhs > rhs;
       }
@@ -115,7 +115,7 @@ class AgentSubWarpSort
     _CCCL_DEVICE bool operator()(__half lhs, __half rhs) const noexcept
     {
       // Need to explicitly cast to float for SM <= 52.
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
       }
@@ -131,7 +131,7 @@ class AgentSubWarpSort
     _CCCL_DEVICE bool operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const noexcept
     {
       // Need to explicitly cast to float for SM < 80.
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_80, (return __hgt(lhs, rhs);), (return __bfloat162float(lhs) > __bfloat162float(rhs);));
@@ -231,7 +231,7 @@ public:
         {
           // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
           // comparison with oob unreliable.
-          return !IS_DESCENDING;
+          return !IsDescending;
         }
         else
         {
@@ -240,8 +240,8 @@ public:
           // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
           // Segmented sort doesn't support custom types at the moment.
-          bit_ordered_type default_key_bits = IS_DESCENDING ? traits::min_raw_binary_key(identity_decomposer_t{})
-                                                            : traits::max_raw_binary_key(identity_decomposer_t{});
+          bit_ordered_type default_key_bits = IsDescending ? traits::min_raw_binary_key(identity_decomposer_t{})
+                                                           : traits::max_raw_binary_key(identity_decomposer_t{});
           return reinterpret_cast<KeyT&>(default_key_bits);
         }
       }();
