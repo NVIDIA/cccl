@@ -228,10 +228,16 @@ def get_value_type(
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
-    if cccl_it.is_kind_pointer():
+    # Perf: is_ptr_kind is a plain attribute (a C struct field read via
+    # Iterator's cached, readonly flag) set once when cccl_it was built --
+    # cheaper than calling is_kind_pointer() every time, and correct
+    # because an iterator's kind can never change after construction.
+    # bind_pointer_state reuses a Pointer wrapper across calls (see
+    # Iterator.bind_pointer_state in _bindings_impl.pyx) instead of
+    # allocating a fresh one via make_pointer_object every call.
+    if cccl_it.is_ptr_kind:
         ptr = get_data_pointer(input_it)
-        ptr_obj = make_pointer_object(ptr, input_it)
-        cccl_it.state = ptr_obj
+        cccl_it.bind_pointer_state(ptr, input_it)
     else:
         state_ = input_it.state
         if isinstance(state_, (IteratorState, Pointer)):
