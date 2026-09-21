@@ -15,8 +15,9 @@
  *
  * Checks that `make_locality_domain_grid` builds a grid whose size adapts to
  * the queried domain count and whose sub-places match the scalar factories,
- * and that `exec_place::locality_domains` is the same grid. The no-argument
- * forms cover every domain of every visible device, in device-major order.
+ * and that `exec_place::locality_domains` is the same grid.
+ * `exec_place::all_locality_domains` / `make_locality_domain_grid()` cover
+ * every domain of every visible device, in device-major order.
  */
 
 #include <cuda/experimental/stf.cuh>
@@ -88,9 +89,9 @@ int main()
   // order, and the static-member spelling is the same grid
   const int ndevs = cuda_try<cudaGetDeviceCount>();
   exec_place all  = make_locality_domain_grid();
-  exec_place all2 = exec_place::locality_domains();
+  exec_place all2 = exec_place::all_locality_domains();
   EXPECT(all2 == all);
-  EXPECT(exec_place::locality_domains(locality_domain_sm_split::fine)
+  EXPECT(exec_place::all_locality_domains(locality_domain_sm_split::fine)
          == make_locality_domain_grid(locality_domain_sm_split::fine));
 
   size_t offset = 0;
