@@ -42,6 +42,15 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+//! @brief When the streams of a `stream_pool` are created
+enum class stream_pool_creation
+{
+  //! Every stream is created in the constructor
+  eager,
+  //! Each stream is created the first time its slot is requested
+  lazy,
+};
+
 //! @brief A fixed-size pool of non-blocking streams on one device or green context.
 //!
 //! The pool owns its streams and destroys them with the pool. `get_stream()` hands out the streams in
@@ -51,35 +60,27 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! hand it around or share it, allocate it with `std::make_unique` or `std::make_shared`.
 //!
 //! Whether the streams are created in the constructor or on the first request for their slot is chosen at
-//! construction with `stream_pool::creation`. With `creation::lazy`, the default, the getters take a mutex to
-//! create a stream the first time its slot is requested. With `creation::eager`, every stream is created in the
-//! constructor and the getters take no lock at all. All getters can be called concurrently from several threads.
+//! construction with a `stream_pool_creation` value. With `stream_pool_creation::eager`, the default, every stream
+//! is created in the constructor and the getters take no lock at all. With `stream_pool_creation::lazy`, the getters
+//! take a mutex to create a stream the first time its slot is requested. All getters can be called concurrently from
+//! several threads.
 class stream_pool
 {
 public:
-  //! @brief When the streams of a pool are created
-  enum class creation
-  {
-    //! Each stream is created the first time its slot is requested
-    lazy,
-    //! Every stream is created in the constructor
-    eager,
-  };
-
   //! @brief Constructs a pool of streams on the primary context of a device
   //!
   //! @param[in] __device The device the streams are created on
   //! @param[in] __size Number of streams in the pool, must be greater than zero
-  //! @param[in] __mode When the streams are created, defaults to `creation::lazy`
+  //! @param[in] __mode When the streams are created, defaults to `stream_pool_creation::eager`
   //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
   //!
   //! @throws std::invalid_argument if `__size` is zero
-  //! @throws cuda_error if `__mode` is `creation::eager` and a stream creation fails
+  //! @throws cuda_error if `__mode` is `stream_pool_creation::eager` and a stream creation fails
   _CCCL_HOST_API explicit stream_pool(
     device_ref __device,
     ::cuda::std::size_t __size,
-    creation __mode = creation::lazy,
-    int __priority  = stream::default_priority)
+    stream_pool_creation __mode = stream_pool_creation::eager,
+    int __priority              = stream::default_priority)
       : stream_pool{__logical_device_ref{__device}, __size, __mode, __priority}
   {}
 
@@ -89,19 +90,19 @@ public:
   //!
   //! @param[in] __device The logical device the streams are created on
   //! @param[in] __size Number of streams in the pool, must be greater than zero
-  //! @param[in] __mode When the streams are created, defaults to `creation::lazy`
+  //! @param[in] __mode When the streams are created, defaults to `stream_pool_creation::eager`
   //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
   //!
   //! @throws std::invalid_argument if `__size` is zero
-  //! @throws cuda_error if `__mode` is `creation::eager` and a stream creation fails
+  //! @throws cuda_error if `__mode` is `stream_pool_creation::eager` and a stream creation fails
   _CCCL_HOST_API explicit stream_pool(
     __logical_device_ref __device,
     ::cuda::std::size_t __size,
-    creation __mode = creation::lazy,
-    int __priority  = stream::default_priority)
+    stream_pool_creation __mode = stream_pool_creation::eager,
+    int __priority              = stream::default_priority)
       : __device_{__device}
       , __priority_{__priority}
-      , __lazy_{__mode == creation::lazy}
+      , __lazy_{__mode == stream_pool_creation::lazy}
   {
     if (__size == 0)
     {

@@ -81,16 +81,16 @@ C2H_CCCLRT_TEST("Stream pool type properties", "[stream][stream_pool]")
 
   // The creation mode follows the size and the priority comes last; an int cannot slip into the mode slot.
   STATIC_REQUIRE(
-    cuda::std::is_constructible_v<cuda::stream_pool, cuda::device_ref, cuda::std::size_t, cuda::stream_pool::creation>);
+    cuda::std::is_constructible_v<cuda::stream_pool, cuda::device_ref, cuda::std::size_t, cuda::stream_pool_creation>);
   STATIC_REQUIRE(
     cuda::std::
-      is_constructible_v<cuda::stream_pool, cuda::device_ref, cuda::std::size_t, cuda::stream_pool::creation, int>);
+      is_constructible_v<cuda::stream_pool, cuda::device_ref, cuda::std::size_t, cuda::stream_pool_creation, int>);
   STATIC_REQUIRE(!cuda::std::is_constructible_v<cuda::stream_pool, cuda::device_ref, cuda::std::size_t, int>);
   STATIC_REQUIRE(
     cuda::std::is_constructible_v<cuda::stream_pool,
                                   cuda::__logical_device_ref,
                                   cuda::std::size_t,
-                                  cuda::stream_pool::creation,
+                                  cuda::stream_pool_creation,
                                   int>);
 
   STATIC_REQUIRE(
@@ -114,8 +114,8 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
   SECTION("A size of zero is rejected")
   {
     REQUIRE_THROWS_AS((cuda::stream_pool{device, 0}), std::invalid_argument);
-    REQUIRE_THROWS_AS((cuda::stream_pool{device, 0, cuda::stream_pool::creation::lazy}), std::invalid_argument);
-    REQUIRE_THROWS_AS((cuda::stream_pool{device, 0, cuda::stream_pool::creation::eager}), std::invalid_argument);
+    REQUIRE_THROWS_AS((cuda::stream_pool{device, 0, cuda::stream_pool_creation::lazy}), std::invalid_argument);
+    REQUIRE_THROWS_AS((cuda::stream_pool{device, 0, cuda::stream_pool_creation::eager}), std::invalid_argument);
     REQUIRE_THROWS_AS((cuda::stream_pool{cuda::__logical_device_ref{device}, 0}), std::invalid_argument);
   }
 
@@ -151,20 +151,20 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
       const cuda::device_ref other = *untouched;
       const ::CUdevice handle      = cuda::__driver::__deviceGet(other.get());
 
-      const cuda::stream_pool lazy_pool{other, 2};
+      const cuda::stream_pool lazy_pool{other, 2, cuda::stream_pool_creation::lazy};
       REQUIRE(!cuda::__driver::__isPrimaryCtxActive(handle));
 
-      // Eager creation creates the streams, and with them the primary context.
-      const cuda::stream_pool eager_pool{other, 2, cuda::stream_pool::creation::eager};
+      // Eager creation, the default, creates the streams, and with them the primary context.
+      const cuda::stream_pool eager_pool{other, 2};
       REQUIRE(cuda::__driver::__isPrimaryCtxActive(handle));
       REQUIRE(eager_pool.get_stream().device() == other);
       REQUIRE(lazy_pool.get_stream().device() == other);
     }
   }
 
-  SECTION("Lazy creation can be spelled out")
+  SECTION("Lazy creation is opted into")
   {
-    const cuda::stream_pool pool{device, 3, cuda::stream_pool::creation::lazy};
+    const cuda::stream_pool pool{device, 3, cuda::stream_pool_creation::lazy};
     REQUIRE(pool.size() == 3);
     REQUIRE(pool.device() == device);
     REQUIRE(pool.priority() == cuda::stream::default_priority);
@@ -259,7 +259,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     if (least_priority != greatest_priority)
     {
       const auto priority = cuda::stream::default_priority - 1;
-      const cuda::stream_pool pool{device, 2, cuda::stream_pool::creation::lazy, priority};
+      const cuda::stream_pool pool{device, 2, cuda::stream_pool_creation::lazy, priority};
       REQUIRE(pool.priority() == priority);
       REQUIRE(pool.get_stream().priority() == priority);
       REQUIRE(pool.get_stream().priority() == priority);
@@ -290,7 +290,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Every slot of a lazy pool yields a distinct, valid stream")
   {
-    const cuda::stream_pool pool{device, 4};
+    const cuda::stream_pool pool{device, 4, cuda::stream_pool_creation::lazy};
 
     std::vector<cuda::stream_ref> all;
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
@@ -317,9 +317,9 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     }
   }
 
-  SECTION("Eager creation creates every slot in the constructor")
+  SECTION("Eager creation, the default, creates every slot in the constructor")
   {
-    const cuda::stream_pool pool{device, 3, cuda::stream_pool::creation::eager};
+    const cuda::stream_pool pool{device, 3};
     REQUIRE(pool.size() == 3);
     REQUIRE(pool.device() == device);
     REQUIRE(pool.priority() == cuda::stream::default_priority);
@@ -415,7 +415,7 @@ C2H_CCCLRT_TEST("Concurrent first requests for one slot create a single stream",
   constexpr int num_rounds  = 16;
   for (int round = 0; round < num_rounds; ++round)
   {
-    const cuda::stream_pool pool{device, 2};
+    const cuda::stream_pool pool{device, 2, cuda::stream_pool_creation::lazy};
     std::vector<cudaStream_t> seen(num_threads, nullptr);
     std::vector<std::thread> threads;
     threads.reserve(num_threads);
@@ -441,7 +441,7 @@ C2H_CCCLRT_TEST("Concurrent first requests for one slot create a single stream",
 C2H_CCCLRT_TEST("Eager stream pool is usable from several threads", "[stream][stream_pool]")
 {
   const auto device = cuda::devices[0];
-  const cuda::stream_pool pool{device, 4, cuda::stream_pool::creation::eager};
+  const cuda::stream_pool pool{device, 4, cuda::stream_pool_creation::eager};
   std::set<cudaStream_t> slots;
   for (cuda::std::size_t i = 0; i < pool.size(); ++i)
   {
@@ -486,7 +486,7 @@ C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captur
   {
     INFO("capture mode: " << c.name);
 
-    const cuda::stream_pool pool{device, 2};
+    const cuda::stream_pool pool{device, 2, cuda::stream_pool_creation::lazy};
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), c.mode) == ::CUDA_SUCCESS);
 
@@ -514,7 +514,7 @@ C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captur
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 
-    const cuda::stream_pool pool{device, 2, cuda::stream_pool::creation::eager};
+    const cuda::stream_pool pool{device, 2};
     REQUIRE(pool.get_stream(0) != pool.get_stream(1));
 
     ::CUstreamCaptureMode mode = ::CU_STREAM_CAPTURE_MODE_GLOBAL;
@@ -528,7 +528,7 @@ C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captur
 
   SECTION("The thread's capture mode is restored after the streams are created")
   {
-    const cuda::stream_pool pool{device, 1};
+    const cuda::stream_pool pool{device, 1, cuda::stream_pool_creation::lazy};
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 
@@ -601,7 +601,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
   SECTION("Eager creation creates every slot on the green context")
   {
     auto ldev = ::make_logical_device(device);
-    const cuda::stream_pool pool{ldev, 2, cuda::stream_pool::creation::eager};
+    const cuda::stream_pool pool{ldev, 2, cuda::stream_pool_creation::eager};
 
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
@@ -622,7 +622,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
   SECTION("The streams are created on the green context while the calling thread captures")
   {
     auto ldev = ::make_logical_device(device);
-    const cuda::stream_pool pool{ldev, 1};
+    const cuda::stream_pool pool{ldev, 1, cuda::stream_pool_creation::lazy};
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 

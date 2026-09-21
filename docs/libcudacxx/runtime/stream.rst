@@ -84,11 +84,12 @@ managing their lifetime.
 
 Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lifetime of the pool. The streams are
 destroyed with the pool, so the work submitted to them must be synchronized before the pool goes away; the pool does
-not do it. When the streams are created is chosen with a ``cuda::stream_pool::creation`` value passed after the size:
+not do it. When the streams are created is chosen with a ``cuda::stream_pool_creation`` value passed after the size:
 
-- ``creation::lazy``, the default: a stream is created the first time its slot is requested, and the getters take a
+- ``stream_pool_creation::eager``, the default: every stream is created in the constructor, and the getters take no
+  lock at all.
+- ``stream_pool_creation::lazy``: a stream is created the first time its slot is requested, and the getters take a
   mutex to do so.
-- ``creation::eager``: every stream is created in the constructor, and the getters take no lock at all.
 
 All getters can be called concurrently from several threads.
 
@@ -103,7 +104,7 @@ Availability: CCCL 3.6.0
    #include <cuda/devices>
 
    int main() {
-     // 16 streams on device 0, each created on the first request for its slot
+     // 16 streams on device 0, all created here
      cuda::stream_pool pool{cuda::devices[0], 16};
 
      for (int i = 0; i < 64; ++i) {
