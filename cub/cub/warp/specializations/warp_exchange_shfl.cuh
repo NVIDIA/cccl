@@ -24,20 +24,20 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = warp_threads>
+template <typename InputT, int ItemsPerThread, int LOGICAL_WARP_THREADS = warp_threads>
 class WarpExchangeShfl
 {
   static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
 
-  static_assert(ITEMS_PER_THREAD == LOGICAL_WARP_THREADS,
-                "WARP_EXCHANGE_SHUFFLE currently only works when ITEMS_PER_THREAD == "
+  static_assert(ItemsPerThread == LOGICAL_WARP_THREADS,
+                "WARP_EXCHANGE_SHUFFLE currently only works when ItemsPerThread == "
                 "LOGICAL_WARP_THREADS");
 
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == warp_threads;
 
   template <int NUM_ENTRIES, int IDX>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  transpose_foreach(InputT (&vals)[ITEMS_PER_THREAD], const bool xor_bit_set, const unsigned mask)
+  transpose_foreach(InputT (&vals)[ItemsPerThread], const bool xor_bit_set, const unsigned mask)
   {
     // The implementation here is a recursive divide-and-conquer approach
     // that takes inspiration from:
@@ -183,7 +183,7 @@ class WarpExchangeShfl
     (xor_bit_set ? vals[IDX] : vals[IDX + NUM_ENTRIES]) = recv_val;
 
     constexpr int next_idx = IDX + 1 + ((IDX + 1) % NUM_ENTRIES == 0) * NUM_ENTRIES;
-    if constexpr (next_idx < ITEMS_PER_THREAD)
+    if constexpr (next_idx < ItemsPerThread)
     {
       transpose_foreach<NUM_ENTRIES, next_idx>(vals, xor_bit_set, mask);
     }
@@ -191,7 +191,7 @@ class WarpExchangeShfl
 
   template <int NUM_ENTRIES>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  transpose(InputT (&vals)[ITEMS_PER_THREAD], const unsigned int lane_id, const unsigned int mask)
+  transpose(InputT (&vals)[ItemsPerThread], const unsigned int lane_id, const unsigned int mask)
   {
     if constexpr (NUM_ENTRIES != 0)
     {
@@ -204,16 +204,15 @@ class WarpExchangeShfl
 
   template <size_t... Is>
   _CCCL_DEVICE void copy_into(
-    InputT (&vals)[ITEMS_PER_THREAD], const InputT (&input_items)[ITEMS_PER_THREAD], ::cuda::std::index_sequence<Is...>)
+    InputT (&vals)[ItemsPerThread], const InputT (&input_items)[ItemsPerThread], ::cuda::std::index_sequence<Is...>)
   {
     // A #pragma unroll'ed for-loop is not sufficient, it produces worse SASS
     ((vals[Is] = input_items[Is]), ...);
   }
 
   template <typename OutputT, size_t... Is>
-  _CCCL_DEVICE void copy_out(OutputT (&output_items)[ITEMS_PER_THREAD],
-                             const InputT (&vals)[ITEMS_PER_THREAD],
-                             ::cuda::std::index_sequence<Is...>)
+  _CCCL_DEVICE void copy_out(
+    OutputT (&output_items)[ItemsPerThread], const InputT (&vals)[ItemsPerThread], ::cuda::std::index_sequence<Is...>)
   {
     // A #pragma unroll'ed for-loop is not sufficient, it produces worse SASS
     ((output_items[Is] = vals[Is]), ...);
@@ -236,19 +235,19 @@ public:
 
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  BlockedToStriped(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
-    InputT vals[ITEMS_PER_THREAD];
-    copy_into(vals, input_items, ::cuda::std::make_index_sequence<ITEMS_PER_THREAD>{});
+    InputT vals[ItemsPerThread];
+    copy_into(vals, input_items, ::cuda::std::make_index_sequence<ItemsPerThread>{});
 
-    transpose<ITEMS_PER_THREAD / 2>(vals, lane_id, member_mask);
+    transpose<ItemsPerThread / 2>(vals, lane_id, member_mask);
 
-    copy_out(output_items, vals, ::cuda::std::make_index_sequence<ITEMS_PER_THREAD>{});
+    copy_out(output_items, vals, ::cuda::std::make_index_sequence<ItemsPerThread>{});
   }
 
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  StripedToBlocked(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     BlockedToStriped(input_items, output_items);
   }
@@ -262,23 +261,23 @@ public:
   };
 
   template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(InputT (&)[ITEMS_PER_THREAD], OffsetT (&)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(InputT (&)[ItemsPerThread], OffsetT (&)[ItemsPerThread])
   {
     static_assert(dependent_false<OffsetT>::value,
                   "Shuffle specialization of warp exchange does not support\n"
-                  "ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD],\n"
-                  "                 OffsetT (&ranks)[ITEMS_PER_THREAD])");
+                  "ScatterToStriped(InputT (&items)[ItemsPerThread],\n"
+                  "                 OffsetT (&ranks)[ItemsPerThread])");
   }
 
   template <typename OutputT, typename OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScatterToStriped(const InputT (&)[ITEMS_PER_THREAD], OutputT (&)[ITEMS_PER_THREAD], OffsetT (&)[ITEMS_PER_THREAD])
+  ScatterToStriped(const InputT (&)[ItemsPerThread], OutputT (&)[ItemsPerThread], OffsetT (&)[ItemsPerThread])
   {
     static_assert(dependent_false<OffsetT>::value,
                   "Shuffle specialization of warp exchange does not support\n"
-                  "ScatterToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],\n"
-                  "                 OutputT (&output_items)[ITEMS_PER_THREAD],\n"
-                  "                 OffsetT (&ranks)[ITEMS_PER_THREAD])");
+                  "ScatterToStriped(const InputT (&input_items)[ItemsPerThread],\n"
+                  "                 OutputT (&output_items)[ItemsPerThread],\n"
+                  "                 OffsetT (&ranks)[ItemsPerThread])");
   }
 };
 } // namespace detail

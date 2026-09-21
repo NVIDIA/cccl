@@ -85,7 +85,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam KeyT
 //!   Key type
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   The number of items per thread
 //!
 //! @tparam LOGICAL_WARP_THREADS
@@ -98,21 +98,21 @@ CUB_NAMESPACE_BEGIN
 //!   <b>[optional]</b> Value type (default: cub::NullType, which indicates a
 //!   keys-only sort)
 //!
-template <typename KeyT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = detail::warp_threads, typename ValueT = NullType>
+template <typename KeyT, int ItemsPerThread, int LOGICAL_WARP_THREADS = detail::warp_threads, typename ValueT = NullType>
 class WarpMergeSort
     : public BlockMergeSortStrategy<KeyT,
                                     ValueT,
                                     LOGICAL_WARP_THREADS,
-                                    ITEMS_PER_THREAD,
-                                    WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>>
+                                    ItemsPerThread,
+                                    WarpMergeSort<KeyT, ItemsPerThread, LOGICAL_WARP_THREADS, ValueT>>
 {
 private:
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
   static constexpr bool KEYS_ONLY    = ::cuda::std::is_same_v<ValueT, NullType>;
-  static constexpr int TILE_SIZE     = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
+  static constexpr int TILE_SIZE     = ItemsPerThread * LOGICAL_WARP_THREADS;
 
   using BlockMergeSortStrategyT =
-    BlockMergeSortStrategy<KeyT, ValueT, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, WarpMergeSort>;
+    BlockMergeSortStrategy<KeyT, ValueT, LOGICAL_WARP_THREADS, ItemsPerThread, WarpMergeSort>;
 
   const unsigned int warp_id;
   const unsigned int member_mask;

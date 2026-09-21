@@ -50,20 +50,20 @@ bool g_uniform_keys;
  */
 template <typename Key,
           int BlockThreads,
-          int ITEMS_PER_THREAD>
+          int ItemsPerThread>
 __launch_bounds__(BlockThreads) __global__
   void BlockSortKernel(Key* d_in, // Tile of input
                        Key* d_out, // Tile of output
                        clock_t* d_elapsed) // Elapsed cycle count of block scan
 {
-  static constexpr int TILE_SIZE = BlockThreads * ITEMS_PER_THREAD;
+  static constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  using BlockLoadT = BlockLoad<Key, BlockThreads, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using BlockLoadT = BlockLoad<Key, BlockThreads, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
 
   // Specialize BlockRadixSort type for our thread block
-  using BlockRadixSortT = BlockRadixSort<Key, BlockThreads, ITEMS_PER_THREAD>;
+  using BlockRadixSortT = BlockRadixSort<Key, BlockThreads, ItemsPerThread>;
 
   // Shared memory
   __shared__ union TempStorage
@@ -73,7 +73,7 @@ __launch_bounds__(BlockThreads) __global__
   } temp_storage;
 
   // Per-thread tile items
-  Key items[ITEMS_PER_THREAD];
+  Key items[ItemsPerThread];
 
   // Our current block's offset
   const int block_offset = blockIdx.x * TILE_SIZE;
@@ -133,10 +133,10 @@ void Initialize(Key* h_in, Key* h_reference, int num_items, int tile_size)
 /**
  * Test BlockScan
  */
-template <typename Key, int BlockThreads, int ITEMS_PER_THREAD>
+template <typename Key, int BlockThreads, int ItemsPerThread>
 void Test()
 {
-  constexpr int TILE_SIZE = BlockThreads * ITEMS_PER_THREAD;
+  constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 
   // Allocate host arrays
   Key* h_in          = new Key[TILE_SIZE * g_grid_size];
@@ -167,7 +167,7 @@ void Test()
 
   // Kernel props
   int max_sm_occupancy;
-  CubDebugExit(MaxSmOccupancy(max_sm_occupancy, BlockSortKernel<Key, BlockThreads, ITEMS_PER_THREAD>, BlockThreads));
+  CubDebugExit(MaxSmOccupancy(max_sm_occupancy, BlockSortKernel<Key, BlockThreads, ItemsPerThread>, BlockThreads));
 
   // Copy problem to device
   CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(Key) * TILE_SIZE * g_grid_size, cudaMemcpyHostToDevice));
@@ -178,12 +178,12 @@ void Test()
     g_timing_iterations,
     g_grid_size,
     BlockThreads,
-    ITEMS_PER_THREAD,
+    ItemsPerThread,
     max_sm_occupancy);
   fflush(stdout);
 
   // Run kernel once to prime caches and check result
-  BlockSortKernel<Key, BlockThreads, ITEMS_PER_THREAD><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
+  BlockSortKernel<Key, BlockThreads, ItemsPerThread><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
   // Check for kernel errors and STDIO from the kernel, if any
   CubDebugExit(cudaPeekAtLastError());
@@ -206,7 +206,7 @@ void Test()
     timer.Start();
 
     // Run kernel
-    BlockSortKernel<Key, BlockThreads, ITEMS_PER_THREAD><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
+    BlockSortKernel<Key, BlockThreads, ItemsPerThread><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
     timer.Stop();
     elapsed_millis += timer.ElapsedMillis();

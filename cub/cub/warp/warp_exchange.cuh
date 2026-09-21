@@ -36,11 +36,11 @@ enum WarpExchangeAlgorithm
 
 namespace detail
 {
-template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS, WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
+template <typename InputT, int ItemsPerThread, int LOGICAL_WARP_THREADS, WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
 using InternalWarpExchangeImpl =
   ::cuda::std::_If<WARP_EXCHANGE_ALGORITHM == WARP_EXCHANGE_SMEM,
-                   WarpExchangeSmem<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>,
-                   WarpExchangeShfl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>>;
+                   WarpExchangeSmem<InputT, ItemsPerThread, LOGICAL_WARP_THREADS>,
+                   WarpExchangeShfl<InputT, ItemsPerThread, LOGICAL_WARP_THREADS>>;
 } // namespace detail
 
 /**
@@ -50,7 +50,7 @@ using InternalWarpExchangeImpl =
  * @tparam T
  *   The data type to be exchanged.
  *
- * @tparam ITEMS_PER_THREAD
+ * @tparam ItemsPerThread
  *   The number of items partitioned onto each thread.
  *
  * @tparam LOGICAL_WARP_THREADS
@@ -110,14 +110,14 @@ using InternalWarpExchangeImpl =
  * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [60,61,62,63] }</tt>.
  */
 template <typename InputT,
-          int ITEMS_PER_THREAD,
+          int ItemsPerThread,
           int LOGICAL_WARP_THREADS                      = detail::warp_threads,
           WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM = WARP_EXCHANGE_SMEM>
 class WarpExchange
-    : private detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>
+    : private detail::InternalWarpExchangeImpl<InputT, ItemsPerThread, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>
 {
   using InternalWarpExchange =
-    detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>;
+    detail::InternalWarpExchangeImpl<InputT, ItemsPerThread, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>;
 
 public:
   /// \smemstorage{WarpExchange}
@@ -197,7 +197,7 @@ public:
    */
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  BlockedToStriped(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     InternalWarpExchange::BlockedToStriped(input_items, output_items);
   }
@@ -257,7 +257,7 @@ public:
    */
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  StripedToBlocked(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     InternalWarpExchange::StripedToBlocked(input_items, output_items);
   }
@@ -318,8 +318,7 @@ public:
    * @param[in] ranks Corresponding scatter ranks
    */
   template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD], OffsetT (&ranks)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(InputT (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
   {
     InternalWarpExchange::ScatterToStriped(items, ranks);
   }
@@ -388,9 +387,9 @@ public:
    */
   template <typename OutputT, typename OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
-    const InputT (&input_items)[ITEMS_PER_THREAD],
-    OutputT (&output_items)[ITEMS_PER_THREAD],
-    OffsetT (&ranks)[ITEMS_PER_THREAD])
+    const InputT (&input_items)[ItemsPerThread],
+    OutputT (&output_items)[ItemsPerThread],
+    OffsetT (&ranks)[ItemsPerThread])
   {
     InternalWarpExchange::ScatterToStriped(input_items, output_items, ranks);
   }

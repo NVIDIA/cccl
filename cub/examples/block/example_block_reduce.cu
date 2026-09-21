@@ -45,7 +45,7 @@ int g_grid_size = 1;
  * Simple kernel for performing a block-wide reduction.
  */
 template <int BlockThreads,
-          int ITEMS_PER_THREAD,
+          int ItemsPerThread,
           BlockReduceAlgorithm ALGORITHM>
 __global__ void BlockReduceKernel(int* d_in, // Tile of input
                                   int* d_out, // Tile aggregate
@@ -58,7 +58,7 @@ __global__ void BlockReduceKernel(int* d_in, // Tile of input
   __shared__ typename BlockReduceT::TempStorage temp_storage;
 
   // Per-thread tile data
-  int data[ITEMS_PER_THREAD];
+  int data[ItemsPerThread];
   LoadDirectStriped<BlockThreads>(threadIdx.x, d_in, data);
 
   // Start cycle timer
@@ -102,10 +102,10 @@ int Initialize(int* h_in, int num_items)
 /**
  * Test thread block reduction
  */
-template <int BlockThreads, int ITEMS_PER_THREAD, BlockReduceAlgorithm ALGORITHM>
+template <int BlockThreads, int ItemsPerThread, BlockReduceAlgorithm ALGORITHM>
 void Test()
 {
-  constexpr int TILE_SIZE = BlockThreads * ITEMS_PER_THREAD;
+  constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 
   // Allocate host arrays
   int* h_in        = new int[TILE_SIZE];
@@ -136,7 +136,7 @@ void Test()
   // Kernel props
   int max_sm_occupancy;
   CubDebugExit(
-    MaxSmOccupancy(max_sm_occupancy, BlockReduceKernel<BlockThreads, ITEMS_PER_THREAD, ALGORITHM>, BlockThreads));
+    MaxSmOccupancy(max_sm_occupancy, BlockReduceKernel<BlockThreads, ItemsPerThread, ALGORITHM>, BlockThreads));
 
   // Copy problem to device
   cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice);
@@ -148,11 +148,11 @@ void Test()
          g_timing_iterations,
          g_grid_size,
          BlockThreads,
-         ITEMS_PER_THREAD,
+         ItemsPerThread,
          max_sm_occupancy);
 
   // Run kernel
-  BlockReduceKernel<BlockThreads, ITEMS_PER_THREAD, ALGORITHM><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
+  BlockReduceKernel<BlockThreads, ItemsPerThread, ALGORITHM><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
   // Check total aggregate
   printf("\tAggregate: ");
@@ -173,7 +173,7 @@ void Test()
     timer.Start();
 
     // Run kernel
-    BlockReduceKernel<BlockThreads, ITEMS_PER_THREAD, ALGORITHM><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
+    BlockReduceKernel<BlockThreads, ItemsPerThread, ALGORITHM><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
     timer.Stop();
     elapsed_millis += timer.ElapsedMillis();

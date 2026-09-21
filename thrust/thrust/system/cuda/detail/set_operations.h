@@ -177,15 +177,15 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
 } // func balanced_path
 
 template <int BlockThreads,
-          int _ITEMS_PER_THREAD                   = 1,
+          int ItemsPerThread                      = 1,
           cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_LDG,
           cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
   static constexpr int BLOCK_THREADS    = BlockThreads;
-  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE   = BlockThreads * _ITEMS_PER_THREAD - 1;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+  static constexpr int ITEMS_PER_TILE   = BlockThreads * ItemsPerThread - 1;
 
   static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
   static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
@@ -754,15 +754,15 @@ struct InitAgent
 struct serial_set_intersection
 {
   // max_input_size <= 32
-  template <class T, class CompareOp, int ITEMS_PER_THREAD>
+  template <class T, class CompareOp, int ItemsPerThread>
   int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
     int keys1_count,
     int keys2_count,
-    T (&output)[ITEMS_PER_THREAD],
-    int (&indices)[ITEMS_PER_THREAD],
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
     CompareOp compare_op)
   {
     int active_mask = 0;
@@ -776,7 +776,7 @@ struct serial_set_intersection
     T bKey = keys[bBegin];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < ItemsPerThread; ++i)
     {
       const bool pA = compare_op(aKey, bKey);
       const bool pB = compare_op(bKey, aKey);
@@ -809,15 +809,15 @@ struct serial_set_intersection
 struct serial_set_symmetric_difference
 {
   // max_input_size <= 32
-  template <class T, class CompareOp, int ITEMS_PER_THREAD>
+  template <class T, class CompareOp, int ItemsPerThread>
   int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
     int keys1_count,
     int keys2_count,
-    T (&output)[ITEMS_PER_THREAD],
-    int (&indices)[ITEMS_PER_THREAD],
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
     CompareOp compare_op)
   {
     int active_mask = 0;
@@ -832,7 +832,7 @@ struct serial_set_symmetric_difference
     T bKey = keys[bBegin];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < ItemsPerThread; ++i)
     {
       bool pB = aBegin >= aEnd;
       bool pA = !pB && bBegin >= bEnd;
@@ -871,15 +871,15 @@ struct serial_set_symmetric_difference
 struct serial_set_difference
 {
   // max_input_size <= 32
-  template <class T, class CompareOp, int ITEMS_PER_THREAD>
+  template <class T, class CompareOp, int ItemsPerThread>
   int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
     int keys1_count,
     int keys2_count,
-    T (&output)[ITEMS_PER_THREAD],
-    int (&indices)[ITEMS_PER_THREAD],
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
     CompareOp compare_op)
   {
     int active_mask = 0;
@@ -894,7 +894,7 @@ struct serial_set_difference
     T bKey = keys[bBegin];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < ItemsPerThread; ++i)
     {
       bool pB = aBegin >= aEnd;
       bool pA = !pB && bBegin >= bEnd;
@@ -933,15 +933,15 @@ struct serial_set_difference
 struct serial_set_union
 {
   // max_input_size <= 32
-  template <class T, class CompareOp, int ITEMS_PER_THREAD>
+  template <class T, class CompareOp, int ItemsPerThread>
   int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
     int keys1_count,
     int keys2_count,
-    T (&output)[ITEMS_PER_THREAD],
-    int (&indices)[ITEMS_PER_THREAD],
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
     CompareOp compare_op)
   {
     int active_mask = 0;
@@ -956,7 +956,7 @@ struct serial_set_union
     T bKey = keys[bBegin];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < ItemsPerThread; ++i)
     {
       bool pB = aBegin >= aEnd;
       bool pA = !pB && bBegin >= bEnd;

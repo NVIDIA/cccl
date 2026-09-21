@@ -319,19 +319,19 @@ struct AgentPartition
 };
 
 /**
- * \brief Concatenates up to ITEMS_PER_THREAD elements from input{1,2} into output array
+ * \brief Concatenates up to ItemsPerThread elements from input{1,2} into output array
  *
  * Reads data in a coalesced fashion [BlockThreads * item + tid] and
  * stores the result in output[item].
  */
-template <int BlockThreads, bool IS_FULL_TILE, int ITEMS_PER_THREAD, class T, class It1, class It2>
+template <int BlockThreads, bool IS_FULL_TILE, int ItemsPerThread, class T, class It1, class It2>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
+gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int count2)
 {
   if constexpr (IS_FULL_TILE)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+    for (int item = 0; item < ItemsPerThread; ++item)
     {
       const int idx = BlockThreads * item + threadIdx.x;
       // It1 and It2 could have different value types. Convert after load.
@@ -341,7 +341,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
   else
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+    for (int item = 0; item < ItemsPerThread; ++item)
     {
       const int idx = BlockThreads * item + threadIdx.x;
       if (idx < count1 + count2)
@@ -353,11 +353,11 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
 }
 
 /// \brief Stores data in a coalesced fashion in[item] -> out[BlockThreads * item + tid]
-template <int BlockThreads, int ITEMS_PER_THREAD, class T, class It>
-_CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
+template <int BlockThreads, int ItemsPerThread, class T, class It>
+_CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ItemsPerThread])
 {
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+  for (int item = 0; item < ItemsPerThread; ++item)
   {
     const int idx = BlockThreads * item + threadIdx.x;
     output[idx]   = input[item];

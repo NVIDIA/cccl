@@ -72,7 +72,7 @@ enum WarpStoreAlgorithm
   //! A :ref:`blocked arrangement <flexible-data-arrangement>` of data is written
   //! directly to memory using CUDA's built-in vectorized stores as a coalescing
   //! optimization. For example, ``st.global.v4.s32`` instructions will be
-  //! generated when ``T = int`` and ``ITEMS_PER_THREAD % 4 == 0``.
+  //! generated when ``T = int`` and ``ItemsPerThread % 4 == 0``.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -84,7 +84,7 @@ enum WarpStoreAlgorithm
   //! * The following conditions will prevent vectorization and writing will fall
   //!   back to ``cub::WARP_STORE_DIRECT``:
   //!
-  //!   * ``ITEMS_PER_THREAD`` is odd
+  //!   * ``ItemsPerThread`` is odd
   //!   * The ``OutputIteratorT`` is not a simple pointer type
   //!   * The block output offset is not quadword-aligned
   //!   * The data type ``T`` is not a built-in primitive or CUDA vector type
@@ -233,7 +233,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!   The type of data to be written.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam ALGORITHM
@@ -247,7 +247,7 @@ CUB_NAMESPACE_BEGIN
 //!   power of two.
 //!
 template <typename T,
-          int ITEMS_PER_THREAD,
+          int ItemsPerThread,
           WarpStoreAlgorithm ALGORITHM = WARP_STORE_DIRECT,
           int LOGICAL_WARP_THREADS     = detail::warp_threads>
 class WarpStore
@@ -273,13 +273,13 @@ private:
     {}
 
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       StoreDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
@@ -297,13 +297,13 @@ private:
     {}
 
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items);
     }
@@ -320,19 +320,19 @@ private:
         : linear_tid(linear_tid)
     {}
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* block_ptr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* block_ptr, T (&items)[ItemsPerThread])
     {
       StoreDirectBlockedVectorized(linear_tid, block_ptr, items);
     }
 
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       StoreDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
@@ -341,7 +341,7 @@ private:
   template <int DUMMY>
   struct StoreInternal<WARP_STORE_TRANSPOSE, DUMMY>
   {
-    using WarpExchangeT = WarpExchange<T, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>;
+    using WarpExchangeT = WarpExchange<T, ItemsPerThread, LOGICAL_WARP_THREADS>;
 
     struct _TempStorage : WarpExchangeT::TempStorage
     {};
@@ -359,14 +359,14 @@ private:
     {}
 
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       WarpExchangeT(temp_storage).BlockedToStriped(items, items);
       StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       WarpExchangeT(temp_storage).BlockedToStriped(items, items);
       StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items);
@@ -472,7 +472,7 @@ public:
   //! @param[out] block_itr The thread block's base output iterator for storing to
   //! @param[in] items Data to store
   template <typename OutputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
   {
     InternalStore(temp_storage, linear_tid).Store(block_itr, items);
   }
@@ -538,7 +538,7 @@ public:
   //! @param[in] valid_items Number of valid items to write
   //!
   template <typename OutputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
   {
     InternalStore(temp_storage, linear_tid).Store(block_itr, items, valid_items);
   }
