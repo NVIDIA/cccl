@@ -34,15 +34,16 @@ timing and geometry do not predict GPU performance.
 Using the kernel fragments
 ---------------------------
 
-Each page identifies which integrations support its kernel fragments. They use
-``from cuda import coop`` and ``import numpy as np``. Register the backend on
-the host before compiling; see :ref:`backend registration
-<coop-backend-registration>`. The fragments assume one-dimensional blocks
-and an ``items_per_thread`` kernel argument. Numba-CUDA-MLIR specializes that
-argument automatically. In CuTe, declare ``items_per_thread:
-cutlass.Constexpr`` on both the kernel and its launcher and forward the value
-when launching. Use ``cutlass.range_constexpr`` in place of ``range`` for CuTe
-loops that index payloads. The fragments use these local index names:
+The common-API fragments on the Load, Store, Exchange, Shuffle, Reduce, and
+Scan pages run under either integration. They use ``from cuda import coop``
+and ``import numpy as np``. Register the backend on the host before compiling;
+see :ref:`backend registration <coop-backend-registration>`. The fragments
+assume one-dimensional blocks and an ``items_per_thread`` kernel argument.
+Numba-CUDA-MLIR specializes that argument automatically. In CuTe, declare
+``items_per_thread: cutlass.Constexpr`` on both the kernel and its launcher
+and forward the value when launching. Use ``cutlass.range_constexpr`` in place
+of ``range`` for CuTe loops that index payloads. The fragments use these local
+index names:
 
 .. list-table:: DSL setup
    :header-rows: 1
@@ -68,9 +69,9 @@ cute.make_layout(element_count))``. The programming guides provide complete
 :doc:`Numba <../programming_guide>` and :doc:`CuTe <../../coop_cutlass>`
 launch and memory examples.
 
-The diagrams describe common primitive contracts. Check backend coverage for
-the families each integration currently implements. Qualified controls are
-identified on each page. Custom device operators and Scan prefix callbacks are
-Numba-qualified extensions. CuTe supports built-in operators and qualified
-register-payload conversions; see :ref:`common API and compiler extensions
-<coop-backends>` and the programming guides for their respective extensions.
+The diagrams describe the common contracts implemented by both Numba-CUDA-MLIR
+and CUTLASS. Qualified controls are identified on each page. Custom device
+operators and Scan prefix callbacks are Numba-qualified extensions. CuTe
+supports built-in operators and qualified register-payload conversions; see
+:ref:`common API and compiler extensions <coop-backends>` and the programming
+guides for their respective extensions.
