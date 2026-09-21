@@ -81,7 +81,8 @@ _CCCL_TEMPLATE(class _Group, class _Tp)
 _CCCL_REQUIRES(::cuda::std::is_same_v<_Tp, bool>)
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<bool> any_of(const _Group& __group, _Tp __thread_data)
 {
-  _CCCL_ASSERT(gpu_thread.is_part_of(__group), "Only threads that are part of the group can call cudax::coop::any_of");
+  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
+               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__any_of_impl(::cuda::std::false_type{}, __group, __thread_data);
 }
 
@@ -89,7 +90,8 @@ _CCCL_TEMPLATE(class _Group, class _Tp)
 _CCCL_REQUIRES(::cuda::std::is_same_v<_Tp, bool>)
 [[nodiscard]] _CCCL_DEVICE_API bool any_of(broadcasted_t, const _Group& __group, _Tp __thread_data)
 {
-  _CCCL_ASSERT(gpu_thread.is_part_of(__group), "Only threads that are part of the group can call cudax::coop::any_of");
+  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
+               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__any_of_impl(::cuda::std::true_type{}, __group, __thread_data);
 }
 
@@ -97,7 +99,8 @@ _CCCL_TEMPLATE(class _Group, class _Tp, ::cuda::std::size_t _Np)
 _CCCL_REQUIRES(::cuda::std::is_same_v<_Tp, bool>)
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<bool> any_of(const _Group& __group, _Tp (&__thread_data)[_Np])
 {
-  _CCCL_ASSERT(gpu_thread.is_part_of(__group), "Only threads that are part of the group can call cudax::coop::any_of");
+  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
+               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::any_of(
     __group, ::cuda::std::reduce(__thread_data, __thread_data + _Np, false, ::cuda::std::logical_or<bool>{}));
 }
@@ -106,7 +109,8 @@ _CCCL_TEMPLATE(class _Group, class _Tp, ::cuda::std::size_t _Np)
 _CCCL_REQUIRES(::cuda::std::is_same_v<_Tp, bool>)
 [[nodiscard]] _CCCL_DEVICE_API bool any_of(broadcasted_t, const _Group& __group, _Tp (&__thread_data)[_Np])
 {
-  _CCCL_ASSERT(gpu_thread.is_part_of(__group), "Only threads that are part of the group can call cudax::coop::any_of");
+  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
+               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::any_of(
     broadcasted,
     __group,

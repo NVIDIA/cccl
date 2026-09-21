@@ -75,6 +75,8 @@ _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::u
 template <class _Group, class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp shuffle(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
 {
+  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
+               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__shuffle_impl(__group, __value, __src_unit_rank);
 }
 } // namespace cuda::experimental::coop

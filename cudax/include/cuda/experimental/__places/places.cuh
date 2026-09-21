@@ -996,6 +996,36 @@ public:
 
   static exec_place all_devices();
 
+  /**
+   * @brief Returns a grid of execution places over all locality domains of a device
+   *
+   * Single-device sugar over `make_locality_domain_grid(dev_id, split)`, the
+   * counterpart of `all_devices()` one level down the hierarchy: one place per
+   * locality domain of `dev_id` (a single whole-device place on devices without
+   * locality-domain support). Defined in `exec/locality_domain.cuh`.
+   *
+   * @param[in] dev_id The CUDA device ordinal
+   * @param[in] split SM split method applied to every place of the grid; see
+   *        `locality_domain_sm_split`
+   * @return exec_place grid with one place per locality domain
+   */
+  static exec_place locality_domains(int dev_id, locality_domain_sm_split split = locality_domain_sm_split::backfill);
+
+  /**
+   * @brief Returns a grid of execution places over every locality domain of every visible device
+   *
+   * Machine-wide sugar over `make_locality_domain_grid(split)`, the counterpart
+   * of `all_devices()` one level down the hierarchy: one place per locality
+   * domain per device, in device-major order (devices without locality-domain
+   * support contribute a single whole-device place). Defined in
+   * `exec/locality_domain.cuh`.
+   *
+   * @param[in] split SM split method applied to every place of the grid; see
+   *        `locality_domain_sm_split`
+   * @return exec_place grid with one place per locality domain per device
+   */
+  static exec_place locality_domains(locality_domain_sm_split split = locality_domain_sm_split::backfill);
+
   static exec_place n_devices(size_t n, dim4 dims);
 
   static exec_place n_devices(size_t n);

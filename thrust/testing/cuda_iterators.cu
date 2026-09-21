@@ -5,7 +5,7 @@
 
 #include <vector>
 
-#include "catch2_test_helper.h"
+#include <unittest/unittest.h>
 
 TEST_CASE("discard_iterator", "[iterators]")
 {

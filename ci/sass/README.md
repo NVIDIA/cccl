@@ -26,7 +26,7 @@ run. Like every other skip tag, it blocks the merge until it is removed.
 ## Scripts
 
 - `ci/sass/sass_diff.sh`: adds a worktree for each ref, builds the selected
-  benchmark targets in both, dumps the disassembly with `cuobjdump -sass`, and
+  benchmark targets in both, dumps their CUDA object files with `cuobjdump -sass`, and
   calls `compare_sass.py`. Runs inside the devcontainer. The builds go through
   `ci/build_common.sh`, so they get the same sccache, memory-monitor and timeout
   handling as every other CI build.
@@ -107,6 +107,12 @@ python3 -m pytest ci/sass/
 ```
 
 ## What the comparison ignores
+
+The comparison uses the object files from each benchmark translation unit.
+This excludes kernels from linked libraries such as `nvbench_helper`.
+The CUB benchmark build generates `sass/<target>.objects` in the build directory,
+with one object path per line. Both worktrees use the current CUB benchmark
+`CMakeLists.txt` so older refs also generate these lists.
 
 `cuobjdump -sass` prints data that is not part of the generated code and that
 changes when unrelated code moves. The normalizer removes:

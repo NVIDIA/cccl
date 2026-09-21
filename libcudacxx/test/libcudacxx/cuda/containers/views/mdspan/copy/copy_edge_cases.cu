@@ -27,6 +27,7 @@
 // dst: (1):(1)
 TEST_CASE("copy d2d scalar", "[copy][d2d][0d]")
 {
+  using cuda::std::layout_right;
   const thrust::host_vector<int> data(1, 42);
   test_copy<layout_right>(data, 1);
 }
@@ -38,6 +39,7 @@ TEST_CASE("copy d2d scalar", "[copy][d2d][0d]")
 // __have_default_accessors is true, tile_size == tensor_size → path (1) DeviceTransform
 TEST_CASE("copy d2d different types", "[copy][d2d][1d][mixed_types]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 8;
   thrust::host_vector<int> h_src(N);
   for (int i = 0; i < N; ++i)
@@ -70,12 +72,13 @@ TEST_CASE("copy d2d different types", "[copy][d2d][1d][mixed_types]")
 // dst: (0,0):(0,1)
 TEST_CASE("copy d2d size 0", "[copy][d2d][zero_size]")
 {
+  using cuda::std::layout_right;
   thrust::device_vector<int> d_src(1, 0);
   thrust::device_vector<int> d_dst(1, 0);
 
   using extents_t = cuda::std::dextents<int, 2>;
   const extents_t ext(0, 0);
-  const cuda::std::layout_right::mapping<extents_t> mapping(ext);
+  const layout_right::mapping<extents_t> mapping(ext);
 
   const cuda::device_mdspan<int, extents_t, layout_right> src(thrust::raw_pointer_cast(d_src.data()), mapping);
   const cuda::device_mdspan<int, extents_t, layout_right> dst(thrust::raw_pointer_cast(d_dst.data()), mapping);
@@ -96,6 +99,7 @@ TEST_CASE("copy d2d size 0", "[copy][d2d][zero_size]")
 // Bypasses the DeviceTransform contiguous path since __have_default_accessors is false
 TEST_CASE("copy d2d contiguous scaled_accessor", "[copy][d2d][1d][accessor]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 128;
 
   auto h_src = make_iota<int>(N);
@@ -144,6 +148,7 @@ struct alignas(64) large_type_64
 // dst: (128):(1)
 TEST_CASE("copy d2d large element 64 bytes", "[copy][d2d][large_element]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 128;
   thrust::host_vector<large_type_64> data(N);
   for (int i = 0; i < N; ++i)
@@ -177,6 +182,7 @@ struct alignas(64) large_type_128
 // 2D with outer dim > 1 → tile_size != tensor_size → bypasses DeviceTransform path (1)
 TEST_CASE("copy d2d large element 128 bytes 2D contiguous", "[copy][d2d][large_element]")
 {
+  using cuda::std::layout_right;
   constexpr int M = 4;
   constexpr int N = 512;
   thrust::host_vector<large_type_128> data(M * N);
@@ -256,6 +262,7 @@ static_assert(alignof(overaligned_int) >= sizeof(overaligned_int));
 // 2D with outer dim > 1 → tile_size != tensor_size → bypasses DeviceTransform path (1)
 TEST_CASE("copy d2d overaligned type vectorized", "[copy][d2d][overaligned]")
 {
+  using cuda::std::layout_right;
   constexpr int M     = 2;
   constexpr int N     = 4096;
   constexpr int total = M * N;
@@ -275,6 +282,7 @@ TEST_CASE("copy d2d overaligned type vectorized", "[copy][d2d][overaligned]")
 // dst: (1024):(1)
 TEST_CASE("copy d2d tile boundary exact", "[copy][d2d][tile_boundary]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 1024;
   test_copy<layout_right>(make_iota<int>(N), N);
 }
@@ -283,6 +291,7 @@ TEST_CASE("copy d2d tile boundary exact", "[copy][d2d][tile_boundary]")
 // dst: (1020):(1)
 TEST_CASE("copy d2d tile boundary sub-tile", "[copy][d2d][tile_boundary]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 1020;
   test_copy<layout_right>(make_iota<int>(N), N);
 }
@@ -291,6 +300,7 @@ TEST_CASE("copy d2d tile boundary sub-tile", "[copy][d2d][tile_boundary]")
 // dst: (1028):(1)
 TEST_CASE("copy d2d tile boundary partial", "[copy][d2d][tile_boundary]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 1028;
   test_copy<layout_right>(make_iota<int>(N), N);
 }
@@ -301,6 +311,7 @@ TEST_CASE("copy d2d tile boundary partial", "[copy][d2d][tile_boundary]")
 
 TEST_CASE("copy d2d mismatched shapes", "[copy][d2d][negative]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 64;
   thrust::device_vector<float> d_src(N);
   thrust::device_vector<float> d_dst(N);
@@ -326,6 +337,7 @@ TEST_CASE("copy d2d mismatched shapes", "[copy][d2d][negative]")
 // dst: dextents<long long, 2>(4, 8), layout_right
 TEST_CASE("copy d2d different extent types", "[copy][d2d][mixed_types]")
 {
+  using cuda::std::layout_right;
   constexpr int M = 4;
   constexpr int N = 8;
 
@@ -387,6 +399,7 @@ TEST_CASE("copy d2d different extent and stride types", "[copy][d2d][mixed_types
 
 TEST_CASE("copy d2d misaligned pointer", "[copy][d2d][alignment]")
 {
+  using cuda::std::layout_right;
   constexpr int N = 512;
 
   thrust::host_vector<char> h_src(N);
@@ -425,6 +438,7 @@ TEST_CASE("copy d2d misaligned pointer", "[copy][d2d][alignment]")
 
 TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
 {
+  using cuda::std::layout_right;
   const auto N        = static_cast<size_t>(INT_MAX) + 257;
   const auto required = 2 * N;
 
