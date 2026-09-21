@@ -46,8 +46,8 @@ template <typename PolicySelector,
           typename ScanTileStateT,
           typename SelectFirstPartOp,
           typename SelectSecondPartOp,
-          typename per_partition_offset_t,
-          typename streaming_context_t,
+          typename PerPartitionOffsetT,
+          typename StreamingContextT,
           typename OffsetT>
 struct DeviceThreeWayPartitionKernelSource
 {
@@ -66,8 +66,8 @@ struct DeviceThreeWayPartitionKernelSource
       ScanTileStateT,
       SelectFirstPartOp,
       SelectSecondPartOp,
-      per_partition_offset_t,
-      streaming_context_t>);
+      PerPartitionOffsetT,
+      StreamingContextT>);
 };
 
 // TODO(bgruber): remove in CCCL 4.0

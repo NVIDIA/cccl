@@ -211,15 +211,15 @@ public:
   //!   The corresponding predecessor items (may be aliased to ``input``).
   //!   The item ``prev[0]`` is not updated for *thread*\ :sub:`0`.
   //!   @endrst
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Up(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD])
+  template <int ItemsPerThread>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Up(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread])
   {
-    temp_storage[linear_tid] = input[ITEMS_PER_THREAD - 1];
+    temp_storage[linear_tid] = input[ItemsPerThread - 1];
 
     __syncthreads();
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ITEM = ITEMS_PER_THREAD - 1; ITEM > 0; --ITEM)
+    for (int ITEM = ItemsPerThread - 1; ITEM > 0; --ITEM)
     {
       prev[ITEM] = input[ITEM - 1];
     }
@@ -254,10 +254,10 @@ public:
   //!
   //! @param[out] block_suffix
   //!   @rst
-  //!   The item ``input[ITEMS_PER_THREAD - 1]`` from *thread*\ :sub:`BLOCK_THREADS - 1`, provided to all threads
+  //!   The item ``input[ItemsPerThread - 1]`` from *thread*\ :sub:`BLOCK_THREADS - 1`, provided to all threads
   //!   @endrst
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Up(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD], T& block_suffix)
+  template <int ItemsPerThread>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Up(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread], T& block_suffix)
   {
     Up(input, prev);
     block_suffix = temp_storage[BLOCK_THREADS - 1];
@@ -283,22 +283,22 @@ public:
   //!   The corresponding predecessor items (may be aliased to ``input``).
   //!   The value ``prev[0]`` is not updated for *thread*\ :sub:`BLOCK_THREADS - 1`.
   //!   @endrst
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Down(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD])
+  template <int ItemsPerThread>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Down(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread])
   {
     temp_storage[linear_tid] = input[0];
 
     __syncthreads();
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ITEM++)
+    for (int ITEM = 0; ITEM < ItemsPerThread - 1; ITEM++)
     {
       prev[ITEM] = input[ITEM + 1];
     }
 
     if (linear_tid < BLOCK_THREADS - 1)
     {
-      prev[ITEMS_PER_THREAD - 1] = temp_storage[linear_tid + 1];
+      prev[ItemsPerThread - 1] = temp_storage[linear_tid + 1];
     }
   }
 
@@ -327,8 +327,8 @@ public:
   //!   @rst
   //!   The item ``input[0]`` from *thread*\ :sub:`0`, provided to all threads
   //!   @endrst
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Down(T (&input)[ITEMS_PER_THREAD], T (&prev)[ITEMS_PER_THREAD], T& block_prefix)
+  template <int ItemsPerThread>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Down(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread], T& block_prefix)
   {
     Down(input, prev);
     block_prefix = temp_storage[0];

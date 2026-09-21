@@ -10,27 +10,27 @@ DECLARE_UNITTEST(TestAssertEqual);
 
 void TestAssertLEqual()
 {
-  ASSERT_LEQUAL(0, 1);
-  ASSERT_LEQUAL(0, 0);
+  REQUIRE(0 <= 1);
+  REQUIRE(0 <= 0);
 }
 DECLARE_UNITTEST(TestAssertLEqual);
 
 void TestAssertGEqual()
 {
-  ASSERT_GEQUAL(1, 0);
-  ASSERT_GEQUAL(0, 0);
+  REQUIRE(1 >= 0);
+  REQUIRE(0 >= 0);
 }
 DECLARE_UNITTEST(TestAssertGEqual);
 
 void TestAssertLess()
 {
-  ASSERT_LESS(0, 1);
+  REQUIRE(0 < 1);
 }
 DECLARE_UNITTEST(TestAssertLess);
 
 void TestAssertGreater()
 {
-  ASSERT_GREATER(1, 0);
+  REQUIRE(1 > 0);
 }
 DECLARE_UNITTEST(TestAssertGreater);
 

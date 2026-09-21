@@ -18,7 +18,7 @@ void TestSetUnionDescendingSimple()
   const Iterator end =
     thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetUnionDescendingSimple);

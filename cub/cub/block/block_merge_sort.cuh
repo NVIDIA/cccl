@@ -414,7 +414,7 @@ public:
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`
    *   `CompareOp` is a model of [Strict Weak Ordering].
    *
-   * @tparam IS_LAST_TILE
+   * @tparam IsLastTile
    *   True if `valid_items` isn't equal to the `ITEMS_PER_TILE`
    *
    * @param[in,out] keys
@@ -436,7 +436,7 @@ public:
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
-  template <typename CompareOp, bool IS_LAST_TILE = true>
+  template <typename CompareOp, bool IsLastTile = true>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread],
        ValueT (&items)[ItemsPerThread],
@@ -444,7 +444,7 @@ public:
        int valid_items,
        KeyT oob_default)
   {
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       // Clamping the merge runs to valid_items, rather than padding the tile with oob_default and
       // sorting the full tile, means oob_default only ever bounds a thread's own padding. Its
@@ -700,7 +700,7 @@ public:
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
    *   `CompareOp` is a model of [Strict Weak Ordering].
    *
-   * @tparam IS_LAST_TILE
+   * @tparam IsLastTile
    *   True if `valid_items` isn't equal to the `ITEMS_PER_TILE`
    *
    * @param[in,out] keys
@@ -722,7 +722,7 @@ public:
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
-  template <typename CompareOp, bool IS_LAST_TILE = true>
+  template <typename CompareOp, bool IsLastTile = true>
   _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&items)[ItemsPerThread],
@@ -730,7 +730,7 @@ public:
     int valid_items,
     KeyT oob_default)
   {
-    Sort<CompareOp, IS_LAST_TILE>(keys, items, compare_op, valid_items, oob_default);
+    Sort<CompareOp, IsLastTile>(keys, items, compare_op, valid_items, oob_default);
   }
 
   /**

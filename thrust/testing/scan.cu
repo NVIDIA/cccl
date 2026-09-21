@@ -311,8 +311,8 @@ struct TestScanWithOperatorToDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), cuda::maximum<T>{});
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE((reference == h_result));
+    REQUIRE((reference == d_result));
 
     h_result = thrust::exclusive_scan(
       h_input.begin(), h_input.end(), thrust::make_discard_iterator(), T(13), cuda::maximum<T>{});
@@ -320,8 +320,8 @@ struct TestScanWithOperatorToDiscardIterator
     d_result = thrust::exclusive_scan(
       d_input.begin(), d_input.end(), thrust::make_discard_iterator(), T(13), cuda::maximum<T>{});
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE((reference == h_result));
+    REQUIRE((reference == d_result));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanWithOperatorToDiscardIterator,
@@ -382,15 +382,15 @@ struct TestScanToDiscardIterator
 
     const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE((reference == h_result));
+    REQUIRE((reference == d_result));
 
     h_result = thrust::exclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), (T) 11);
 
     d_result = thrust::exclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), (T) 11);
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE((reference == h_result));
+    REQUIRE((reference == d_result));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanToDiscardIterator,
@@ -454,12 +454,12 @@ void _TestScanWithLargeTypes()
   thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
   thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
 
-  ASSERT_EQUAL_QUIET(h_output, d_output);
+  REQUIRE((h_output == d_output));
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), FixedVector<T, N>(0));
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), FixedVector<T, N>(0));
 
-  ASSERT_EQUAL_QUIET(h_output, d_output);
+  REQUIRE((h_output == d_output));
 }
 
 void TestScanWithLargeTypes()

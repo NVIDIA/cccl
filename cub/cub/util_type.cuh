@@ -123,11 +123,11 @@ using non_void_value_t = typename non_void_value_impl<It, FallbackT>::type;
  *     Log2<8>::VALUE   // 3
  *     Log2<3>::VALUE   // 2
  */
-template <int N, int CURRENT_VAL = N, int COUNT = 0>
+template <int N, int CurrentVal = N, int COUNT = 0>
 struct Log2
 {
   /// Static logarithm value
-  static constexpr int VALUE = Log2<N, (CURRENT_VAL >> 1), COUNT + 1>::VALUE;
+  static constexpr int VALUE = Log2<N, (CurrentVal >> 1), COUNT + 1>::VALUE;
 };
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -483,7 +483,7 @@ template <typename T> struct UnitWord<const volatile T> : UnitWord<T> {};
  * \brief Exposes a member alias \p Type that names the corresponding CUDA vector type if one exists.  Otherwise \p
  * Type refers to the CubVector structure itself, which will wrap the corresponding \p x, \p y, etc. vector fields.
  */
-template <typename T, int vec_elements>
+template <typename T, int VecElements>
 struct CubVector
 {
   static_assert(!sizeof(T), "CubVector can only have 1-4 elements");
@@ -832,14 +832,14 @@ namespace detail
 {
 struct is_primitive_impl;
 
-// case for _CATEGORY = NOT_A_NUMBER, or _PRIMITIVE = false
-template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
+// case for Kind = NOT_A_NUMBER, or Primitive = false
+template <Category Kind, bool Primitive, typename _UnsignedBits, typename T>
 struct BaseTraits
 {
 private:
   friend struct is_primitive_impl;
 
-  static constexpr bool is_primitive = _PRIMITIVE;
+  static constexpr bool is_primitive = Primitive;
 };
 
 template <typename _UnsignedBits, typename T>
@@ -984,8 +984,8 @@ private:
 
 //! Use this class as base when specializing \ref NumericTraits for primitive signed/unsigned integers or floating-point
 //! types.
-template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
-using BaseTraits = detail::BaseTraits<_CATEGORY, _PRIMITIVE, _UnsignedBits, T>;
+template <Category Kind, bool Primitive, typename _UnsignedBits, typename T>
+using BaseTraits = detail::BaseTraits<Kind, Primitive, _UnsignedBits, T>;
 
 //! Numeric type traits for radix sort key operations, decoupled lookback and tuning. You can specialize this template
 //! for your own types if:

@@ -33,14 +33,14 @@ void TestCopyFromConstIterator()
 
   const thrust::host_vector<T> href{0, 1, 2, 3, 4};
   REQUIRE(h == href);
-  ASSERT_EQUAL_QUIET(h_result, h.end());
+  REQUIRE(h_result == h.end());
 
   // copy to device_vector
   thrust::device_vector<T> d(5, (T) 10);
   const thrust::device_vector<T>::iterator d_result = thrust::copy(begin, end, d.begin());
   const thrust::device_vector<T> dref{0, 1, 2, 3, 4};
   REQUIRE(d == dref);
-  ASSERT_EQUAL_QUIET(d_result, d.end());
+  REQUIRE(d_result == d.end());
 }
 DECLARE_UNITTEST(TestCopyFromConstIterator);
 
@@ -61,8 +61,8 @@ void TestCopyToDiscardIterator()
   const thrust::discard_iterator<> d_result =
     thrust::copy(d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_UNITTEST(TestCopyToDiscardIterator);
 
@@ -97,8 +97,8 @@ void TestCopyToDiscardIteratorZipped()
 
   REQUIRE(h_output == h_input);
   REQUIRE(d_output == d_input);
-  ASSERT_EQUAL_QUIET(reference, cuda::std::get<0>(h_result.get_iterator_tuple()));
-  ASSERT_EQUAL_QUIET(reference, cuda::std::get<0>(d_result.get_iterator_tuple()));
+  REQUIRE(reference == cuda::std::get<0>(h_result.get_iterator_tuple()));
+  REQUIRE(reference == cuda::std::get<0>(d_result.get_iterator_tuple()));
 }
 DECLARE_UNITTEST(TestCopyToDiscardIteratorZipped);
 
@@ -114,7 +114,7 @@ void TestCopyMatchingTypes()
   const typename thrust::host_vector<T>::iterator h_result = thrust::copy(v.begin(), v.end(), h.begin());
   const thrust::host_vector<T> href{0, 1, 2, 3, 4};
   REQUIRE(h == href);
-  ASSERT_EQUAL_QUIET(h_result, h.end());
+  REQUIRE(h_result == h.end());
 
   // copy to device_vector
   thrust::device_vector<T> d(5, (T) 10);
@@ -122,7 +122,7 @@ void TestCopyMatchingTypes()
 
   const thrust::device_vector<T> dref{0, 1, 2, 3, 4};
   REQUIRE(d == dref);
-  ASSERT_EQUAL_QUIET(d_result, d.end());
+  REQUIRE(d_result == d.end());
 }
 DECLARE_VECTOR_UNITTEST(TestCopyMatchingTypes);
 
@@ -139,14 +139,14 @@ void TestCopyMixedTypes()
   const typename thrust::host_vector<float>::iterator h_result = thrust::copy(v.begin(), v.end(), h.begin());
   const thrust::host_vector<float> href{0, 1, 2, 3, 4};
   REQUIRE(h == href);
-  ASSERT_EQUAL_QUIET(h_result, h.end());
+  REQUIRE(h_result == h.end());
 
   // copy to device_vector with different type
   thrust::device_vector<float> d(5, (float) 10);
   const typename thrust::device_vector<float>::iterator d_result = thrust::copy(v.begin(), v.end(), d.begin());
   const thrust::device_vector<float> dref{0, 1, 2, 3, 4};
   REQUIRE(d == dref);
-  ASSERT_EQUAL_QUIET(d_result, d.end());
+  REQUIRE(d_result == d.end());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyMixedTypes);
 
@@ -184,7 +184,7 @@ void TestCopyListTo()
 
   Vector ref{0, 1, 2, 3, 4};
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v_result, v.end());
+  REQUIRE(v_result == v.end());
 
   l.clear();
 
@@ -246,7 +246,7 @@ void TestCopyIfSimple()
 
   Vector ref{1, 2, 3, 4};
   REQUIRE(ref == dest);
-  ASSERT_EQUAL_QUIET(dest.end(), dest_end);
+  REQUIRE(dest.end() == dest_end);
 }
 DECLARE_VECTOR_UNITTEST(TestCopyIfSimple);
 
@@ -368,7 +368,7 @@ void TestCopyIfStencilSimple()
 
   Vector ref{0, 1, 3};
   REQUIRE(ref == dest);
-  ASSERT_EQUAL_QUIET(dest.end(), dest_end);
+  REQUIRE(dest.end() == dest_end);
 }
 DECLARE_VECTOR_UNITTEST(TestCopyIfStencilSimple);
 

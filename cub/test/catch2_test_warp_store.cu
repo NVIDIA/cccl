@@ -10,26 +10,26 @@
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
           int LOGICAL_WARP_THREADS,
-          int ITEMS_PER_THREAD,
+          int ItemsPerThread,
           int TOTAL_WARPS,
           typename T,
           typename OutputIteratorT,
           typename ActionT>
 __global__ void warp_store_kernel(OutputIteratorT output_iterator, ActionT action)
 {
-  using warp_store_t = cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS>;
+  using warp_store_t = cub::WarpStore<T, ItemsPerThread, StoreAlgorithm, LOGICAL_WARP_THREADS>;
   using storage_t    = typename warp_store_t::TempStorage;
 
-  constexpr int tile_size = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
+  constexpr int tile_size = ItemsPerThread * LOGICAL_WARP_THREADS;
   __shared__ storage_t storage[TOTAL_WARPS];
 
   const int tid =
     cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
-  T reg[ITEMS_PER_THREAD];
+  T reg[ItemsPerThread];
 
-  for (int item = 0; item < ITEMS_PER_THREAD; item++)
+  for (int item = 0; item < ItemsPerThread; item++)
   {
-    reg[item] = static_cast<T>(tid * ITEMS_PER_THREAD + item); // NOLINT(bugprone-misplaced-widening-cast)
+    reg[item] = static_cast<T>(tid * ItemsPerThread + item); // NOLINT(bugprone-misplaced-widening-cast)
   }
 
   const int warp_id = tid / LOGICAL_WARP_THREADS;
@@ -40,14 +40,14 @@ __global__ void warp_store_kernel(OutputIteratorT output_iterator, ActionT actio
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
           int LOGICAL_WARP_THREADS,
-          int ITEMS_PER_THREAD,
+          int ItemsPerThread,
           int TOTAL_WARPS,
           typename T,
           typename OutputIteratorT,
           typename ActionT>
 void warp_store(OutputIteratorT output_iterator, ActionT action)
 {
-  warp_store_kernel<StoreAlgorithm, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, T, OutputIteratorT, ActionT>
+  warp_store_kernel<StoreAlgorithm, LOGICAL_WARP_THREADS, ItemsPerThread, TOTAL_WARPS, T, OutputIteratorT, ActionT>
     <<<1, TOTAL_WARPS * LOGICAL_WARP_THREADS>>>(output_iterator, action);
 }
 
@@ -56,12 +56,12 @@ struct guarded_store_t
   int valid_items;
   template <cub::WarpStoreAlgorithm StoreAlgorithm,
             int LOGICAL_WARP_THREADS,
-            int ITEMS_PER_THREAD,
+            int ItemsPerThread,
             typename T,
             typename OutputIteratorT>
-  __device__ void operator()(cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
+  __device__ void operator()(cub::WarpStore<T, ItemsPerThread, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
                              OutputIteratorT output,
-                             T (&reg)[ITEMS_PER_THREAD])
+                             T (&reg)[ItemsPerThread])
   {
     store.Store(output, reg, valid_items);
   }
@@ -71,32 +71,28 @@ struct unguarded_store_t
 {
   template <cub::WarpStoreAlgorithm StoreAlgorithm,
             int LOGICAL_WARP_THREADS,
-            int ITEMS_PER_THREAD,
+            int ItemsPerThread,
             typename T,
             typename OutputIteratorT>
-  __device__ void operator()(cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
+  __device__ void operator()(cub::WarpStore<T, ItemsPerThread, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
                              OutputIteratorT output,
-                             T (&reg)[ITEMS_PER_THREAD])
+                             T (&reg)[ItemsPerThread])
   {
     store.Store(output, reg);
   }
 };
 
-template <cub::WarpStoreAlgorithm StoreAlgorithm,
-          int LOGICAL_WARP_THREADS,
-          int ITEMS_PER_THREAD,
-          int TOTAL_WARPS,
-          typename T>
+template <cub::WarpStoreAlgorithm StoreAlgorithm, int LOGICAL_WARP_THREADS, int ItemsPerThread, int TOTAL_WARPS, typename T>
 c2h::device_vector<T> compute_reference(int valid_items)
 {
-  constexpr int tile_size        = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
+  constexpr int tile_size        = LOGICAL_WARP_THREADS * ItemsPerThread;
   constexpr int total_item_count = TOTAL_WARPS * tile_size;
   c2h::device_vector<T> d_input(total_item_count);
 
   if constexpr (StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
   {
     c2h::host_vector<T> input(total_item_count);
-    fill_striped<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD * TOTAL_WARPS>(input.begin());
+    fill_striped<ItemsPerThread, LOGICAL_WARP_THREADS, ItemsPerThread * TOTAL_WARPS>(input.begin());
     d_input = input;
   }
   else
