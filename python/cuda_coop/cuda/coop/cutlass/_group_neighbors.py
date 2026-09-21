@@ -9,29 +9,11 @@ Adjacent differences retain the value dtype; discontinuity returns Int32
 flags. Both preserve the input and use separate output storage.
 """
 
-from __future__ import annotations
-
-from typing import Literal, TypeVar
-
 from cuda.coop._core.block.neighbors import validate_neighbor_options
 from cuda.coop._core.thread_group import ThreadGroup
 
-from .._core.api.thread_group import BlockGroup
-from .._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
-    IntegerValue,
-    TempStorageLike,
-)
 from ._temp_storage import TempStorage
-from ._thread_data import (
-    CutlassTensorSample,
-    CutlassTensorSSASample,
-    ThreadData,
-    _snapshot_readable_payload,
-)
-
-_T = TypeVar("_T", bound=CommonNumericScalar)
+from ._thread_data import _snapshot_readable_payload
 
 
 def _neighbors(
@@ -92,18 +74,16 @@ def _neighbors(
 
 
 def adjacent_difference(
-    group: BlockGroup,
-    values: CommonThreadDataLike[_T]
-    | CutlassTensorSample
-    | CutlassTensorSSASample,
+    group,
+    values,
     /,
     *,
-    direction: Literal["left", "right"] = "left",
-    valid_items: IntegerValue | None = None,
-    tile_predecessor_item: CommonNumericScalar | None = None,
-    tile_successor_item: CommonNumericScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
-) -> ThreadData:
+    direction="left",
+    valid_items=None,
+    tile_predecessor_item=None,
+    tile_successor_item=None,
+    temp_storage=None,
+):
     """Return blocked neighbor differences, preserving the input payload.
 
     Parameters, partial tiles, boundary values, and scratch reuse follow
@@ -131,21 +111,8 @@ def adjacent_difference(
     runtime count stops the kernel with a trap before conversion to CUB's
     int count.
 
-    Examples
-    --------
-    Compute left differences using zero as the tile predecessor, then
-    mark run heads and tails. Scratch is synchronized automatically before
-    reuse by the second collective.
-
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_neighbors_examples.py
-        :language: python
-        :start-after: # qualified-neighbors-example-begin
-        :end-before: # qualified-neighbors-example-end
-        :dedent: 4
+    See the :doc:`Adjacent Difference visualization
+    <coop/visualizations/adjacent-difference>` for tile boundaries.
     """
     return _neighbors(
         group,
@@ -160,17 +127,15 @@ def adjacent_difference(
 
 
 def discontinuity(
-    group: BlockGroup,
-    values: CommonThreadDataLike[_T]
-    | CutlassTensorSample
-    | CutlassTensorSSASample,
+    group,
+    values,
     /,
     *,
-    mode: Literal["heads", "tails", "heads_and_tails"] = "heads",
-    tile_predecessor_item: CommonNumericScalar | None = None,
-    tile_successor_item: CommonNumericScalar | None = None,
-    temp_storage: TempStorageLike | None = None,
-) -> ThreadData | tuple[ThreadData, ThreadData]:
+    mode="heads",
+    tile_predecessor_item=None,
+    tile_successor_item=None,
+    temp_storage=None,
+):
     """Flag unequal neighbors in a full blocked tile.
 
     Parameters, participation, boundary flags, and scratch reuse follow
@@ -191,20 +156,8 @@ def discontinuity(
     require a floating-point input dtype; finite values must fit its range,
     and infinite values and NaNs are accepted.
 
-    Examples
-    --------
-    Mark both ends of each equal-value run and compute adjacent
-    differences over the same tile.
-
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_neighbors_examples.py
-        :language: python
-        :start-after: # qualified-neighbors-example-begin
-        :end-before: # qualified-neighbors-example-end
-        :dedent: 4
+    See the :doc:`Discontinuity visualization
+    <coop/visualizations/discontinuity>` for head and tail flags.
     """
     return _neighbors(
         group,

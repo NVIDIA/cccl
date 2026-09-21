@@ -14,8 +14,8 @@ FAQs
 Why are there common and backend-qualified namespaces?
 ------------------------------------------------------
 
-``cuda.coop`` provides the contract shared by Numba-CUDA-MLIR and CUTLASS. See
-backend coverage for the implemented operations. Use this namespace for code
+``cuda.coop`` provides the contract shared by Numba-CUDA-MLIR and CUTLASS.
+Both backends implement its kernel operations. Use this namespace for code
 that shares group, ``ThreadData``, and built-in operator contracts across
 compilers. Register the compiler your kernel uses on the host:
 
@@ -34,7 +34,7 @@ For CuTe kernels, register ``"cutlass"`` instead:
    coop.register("cutlass")
 
 The qualified namespaces, ``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``,
-include their supported common operations and add features specific to their
+each include all common kernel operations and add features specific to their
 compiler. Numba's extensions include local-array payloads and device
 callbacks. CUTLASS adds CuTe register-tensor conversions. Both add
 operation-specific controls; see the :ref:`Numba comparison
@@ -45,8 +45,8 @@ Importing a qualified namespace also registers its backend. Common and
 qualified calls for the same compiler can appear in one kernel and follow the
 shared contracts. Kernel launch syntax and other DSL code still need
 adaptation when moving between compilers; compiler-owned payloads cannot cross
-that boundary. See the :ref:`operation support table
-<coop-backend-operation-support>` for the families each backend implements.
+that boundary. The :doc:`API reference <../coop_api>` lists the common
+operations and each compiler's extensions.
 
 .. _i-only-use-numba-cuda-mlir-can-i-import-its-namespace-as-coop:
 .. _coop-faq-numba-only:
@@ -197,7 +197,10 @@ sharing and the :doc:`CUTLASS Programming Guide <../coop_cutlass>` for the
 block operations that accept descriptors and their reuse rules.
 
 Numba's restrictions on combining cooperative backing with user static or
-dynamic shared arrays are specific to that backend.
+dynamic shared arrays are specific to that backend. Both backends also accept
+explicit block scratch for Adjacent Difference, Discontinuity, Histogram, and
+both Run Length Decode forms. Batched Warp Reduction manages its own resources
+and accepts no explicit descriptor.
 
 Warp operations reject explicit descriptors. When a Warp operation uses CUB,
 the compiler allocates any scratch that CUB requires.
@@ -375,7 +378,7 @@ missing or incompatible backend at setup time. The switch
 explicit registration and qualified imports still work.
 
 Check the operation's launch shape, dtype, and participation requirements.
-Check backend coverage for the common operation; qualified extensions follow
+Both backends implement the common contract; qualified extensions follow
 their compiler's guide. In a process using both DSLs, keep Numba values
 inside Numba kernels and CuTe values inside CuTe kernels.
 

@@ -10,64 +10,25 @@ read-only common payloads and CuTe register tensors or TensorSSA values are
 accepted. The lowering provider then resolves the dtypes and emits the call.
 """
 
-from __future__ import annotations
-
-from typing import TypeVar
-
 from cuda.coop._core.block._common import normalize_positive_int
 from cuda.coop._core.block.histogram import normalize_histogram_algorithm
 from cuda.coop._core.thread_group import ThreadGroup
-from cuda.coop._typing import CompilerIntegerLike
 
 from ._temp_storage import TempStorage
 from ._thread_data import _snapshot_readable_payload
 
-try:
-    import numpy as np
-except ModuleNotFoundError as exc:
-    if exc.name != "numpy":
-        raise
-from typing import Literal
-
-from .._core.api.thread_group import BlockGroup
-from .._typing import CommonThreadDataLike, TempStorageLike
-from ._thread_data import (
-    CutlassTensorSample,
-    CutlassTensorSSASample,
-    ThreadData,
-)
-
-_Counter = TypeVar(
-    "_Counter",
-    "np.int32",
-    "np.uint32",
-    "np.int64",
-    "np.uint64",
-    "CompilerIntegerLike",
-)
-
 
 def histogram(
-    group: BlockGroup,
-    samples: CommonThreadDataLike[
-        int
-        | np.uint8
-        | np.int32
-        | np.uint32
-        | np.int64
-        | np.uint64
-        | CompilerIntegerLike
-    ]
-    | CutlassTensorSample
-    | CutlassTensorSSASample,
+    group,
+    samples,
     /,
     *,
-    bins: int,
-    bins_per_thread: int = 1,
-    counter_dtype: type[int | _Counter] | np.dtype | None = None,
-    algorithm: Literal["atomic", "sort"] = "atomic",
-    temp_storage: TempStorageLike | None = None,
-) -> ThreadData:
+    bins,
+    bins_per_thread=1,
+    counter_dtype=None,
+    algorithm="atomic",
+    temp_storage=None,
+):
     """Count integer samples into fresh striped bin counters.
 
     Parameters
@@ -90,10 +51,8 @@ def histogram(
     algorithm : {"atomic", "sort"}, optional
         Compile-time algorithm. Both preserve the input samples.
     temp_storage : TempStorage, optional
-        Optional scratch for intermediate counters and CUB storage. Both
-        algorithms allocate counters in shared memory, including ``"atomic"``.
-        Omit the descriptor for automatic allocation. Requested alignment is
-        a minimum. With ``auto_sync=False``, synchronize the
+        Explicit scratch for CUB storage and intermediate counters. Requested
+        alignment is a minimum. With ``auto_sync=False``, synchronize the
         block before reusing the descriptor.
 
     Returns
@@ -108,23 +67,9 @@ def histogram(
     Each call starts from zero, even when scratch is reused. Accumulate
     returned counters explicitly to count several tiles. There is no
     ``valid_items`` control; padding contributes samples. The complete
-    contract is shared with :func:`cuda.coop.histogram`.
-
-    Examples
-    --------
-    Count samples with atomic and sort algorithms. Both return seventy
-    counters followed by zero padding in striped register order. Each output
-    allocation holds 128 counters for this 64-thread block.
-
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_histogram_examples.py
-        :language: python
-        :start-after: # qualified-histogram-example-begin
-        :end-before: # qualified-histogram-example-end
-        :dedent: 4
+    contract is shared with :func:`cuda.coop.histogram`. See the
+    :doc:`Histogram visualization <coop/visualizations/histogram>` for sample
+    and counter layouts.
     """
     if not isinstance(group, ThreadGroup):
         raise TypeError(
