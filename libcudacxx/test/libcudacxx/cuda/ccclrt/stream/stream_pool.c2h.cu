@@ -20,6 +20,8 @@
 #include <cuda/stream>
 
 #include <algorithm>
+#include <limits>
+#include <map>
 #include <set>
 #include <stdexcept>
 #include <thread>
@@ -403,6 +405,97 @@ C2H_CCCLRT_TEST("Stream pool is usable from several threads", "[stream][stream_p
     for (const auto handle : thread_picks)
     {
       REQUIRE(slots.count(handle) == 1);
+    }
+  }
+}
+
+C2H_CCCLRT_TEST("Round-robin order survives the counter being pulled back", "[stream][stream_pool]")
+{
+  const auto device = cuda::devices[0];
+
+  SECTION("The wrap ticket is a multiple of the size below half the counter range")
+  {
+    for (const cuda::std::size_t n :
+         {cuda::std::size_t{1},
+          cuda::std::size_t{2},
+          cuda::std::size_t{3},
+          cuda::std::size_t{7},
+          cuda::std::size_t{16},
+          cuda::std::size_t{1000}})
+    {
+      const cuda::stream_pool pool{device, n};
+      const cuda::std::size_t wrap = pool.__wrap_ticket();
+      REQUIRE(wrap % n == 0);
+      REQUIRE(wrap > 0);
+      REQUIRE(wrap <= std::numeric_limits<cuda::std::size_t>::max() / 2);
+      REQUIRE(wrap + n > wrap);
+    }
+  }
+
+  SECTION("Crossing the wrap ticket keeps the sequence of slots and pulls the counter back")
+  {
+    constexpr cuda::std::size_t n = 3;
+    const cuda::stream_pool pool{device, n};
+    const cuda::std::size_t wrap = pool.__wrap_ticket();
+
+    // Two full rounds before the wrap, the wrap ticket itself, then two rounds after it.
+    pool.__set_next_ticket(wrap - 2 * n);
+    std::vector<cuda::stream_ref> seen;
+    for (cuda::std::size_t i = 0; i < 5 * n; ++i)
+    {
+      seen.push_back(pool.next_stream());
+    }
+
+    // The counter was pulled back exactly once, by `wrap`, and no ticket was skipped or repeated.
+    REQUIRE(pool.__next_ticket() == 3 * n);
+    for (cuda::std::size_t i = 0; i < seen.size(); ++i)
+    {
+      REQUIRE(seen[i] == pool.get_stream(i % n));
+    }
+  }
+
+  SECTION("Concurrent callers crossing the wrap ticket each see every slot in turn")
+  {
+    constexpr cuda::std::size_t n = 4;
+    constexpr int num_threads     = 8;
+    constexpr int per_thread      = 64;
+    const cuda::stream_pool pool{device, n};
+    const cuda::std::size_t wrap = pool.__wrap_ticket();
+    pool.__set_next_ticket(wrap - (num_threads * per_thread) / 2);
+
+    std::vector<std::vector<cudaStream_t>> seen(num_threads);
+    std::vector<std::thread> threads;
+    threads.reserve(num_threads);
+    for (int t = 0; t < num_threads; ++t)
+    {
+      threads.emplace_back([&pool, &seen, t] {
+        for (int i = 0; i < per_thread; ++i)
+        {
+          seen[t].push_back(pool.next_stream().get());
+        }
+      });
+    }
+    for (auto& th : threads)
+    {
+      th.join();
+    }
+
+    // Overall the tickets were handed out exactly once each: the counter advanced by the total, minus one wrap.
+    REQUIRE(pool.__next_ticket() == (num_threads * per_thread) / 2);
+
+    // Every slot was drawn the same number of times: no ticket was lost or duplicated across the wrap.
+    std::map<cudaStream_t, int> counts;
+    for (const auto& s : seen)
+    {
+      for (const auto h : s)
+      {
+        ++counts[h];
+      }
+    }
+    REQUIRE(counts.size() == n);
+    for (const auto& kv : counts)
+    {
+      REQUIRE(kv.second == num_threads * per_thread / static_cast<int>(n));
     }
   }
 }

@@ -33,6 +33,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__limits/numeric_limits.h>
 
 #  include <atomic>
 #  include <mutex>
@@ -103,6 +104,7 @@ public:
       : __device_{__device}
       , __priority_{__priority}
       , __mode_{__mode}
+      , __wrap_{__wrap_ticket_for(__size)}
   {
     if (__size == 0)
     {
@@ -142,8 +144,14 @@ public:
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref next_stream() const
   {
-    // Wrapping around the counter only perturbs the order once every 2^64 requests.
     const ::cuda::std::size_t __ticket = __next_.fetch_add(1, ::std::memory_order_relaxed);
+    if (__ticket == __wrap_)
+    {
+      // Tickets are unique, so exactly one caller draws `__wrap_` and pulls the counter back. `__wrap_` is a
+      // multiple of `size()`, so every ticket drawn before or after the subtraction keeps its slot: the
+      // round-robin order is exact and the counter never overflows.
+      __next_.fetch_sub(__wrap_, ::std::memory_order_relaxed);
+    }
     return __stream_at(__ticket % __streams_.size());
   }
 
@@ -189,6 +197,26 @@ public:
     return __device_;
   }
 
+  //! @brief The round-robin ticket the next call to `next_stream()` draws. For tests only.
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __next_ticket() const noexcept
+  {
+    return __next_.load(::std::memory_order_relaxed);
+  }
+
+  //! @brief Sets the round-robin ticket the next call to `next_stream()` draws. For tests only.
+  //!
+  //! @param[in] __ticket The ticket, must not exceed `__wrap_ticket()`
+  _CCCL_HOST_API void __set_next_ticket(::cuda::std::size_t __ticket) const noexcept
+  {
+    __next_.store(__ticket, ::std::memory_order_relaxed);
+  }
+
+  //! @brief The ticket at which the round-robin counter is pulled back by that same amount. For tests only.
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __wrap_ticket() const noexcept
+  {
+    return __wrap_;
+  }
+
   //! @brief The priority given to every stream in the pool
   //!
   //! @return The priority given at construction
@@ -217,6 +245,16 @@ private:
     return __slot;
   }
 
+  //! The largest multiple of `__size` not above half the counter range: far enough that the counter cannot
+  //! overflow before the caller drawing it has subtracted it, and a multiple of `__size` so the subtraction
+  //! preserves every ticket's slot.
+  [[nodiscard]] _CCCL_HOST_API static constexpr ::cuda::std::size_t
+  __wrap_ticket_for(::cuda::std::size_t __size) noexcept
+  {
+    constexpr ::cuda::std::size_t __half = ::cuda::std::numeric_limits<::cuda::std::size_t>::max() / 2;
+    return __size == 0 ? __half : __half - __half % __size;
+  }
+
   //! Creates one stream on the logical device of the pool.
   [[nodiscard]] _CCCL_HOST_API stream __create_stream() const
   {
@@ -231,6 +269,8 @@ private:
   const __logical_device_ref __device_;
   const int __priority_;
   const stream_pool_creation __mode_;
+  //! The round-robin ticket at which the counter is pulled back by `__wrap_`; see `next_stream()`.
+  const ::cuda::std::size_t __wrap_;
   //! Guards the creation of streams in a lazy pool. Unused in an eager pool.
   mutable ::std::mutex __mutex_{};
   //! The slots, `size()` of them; a slot without a stream holds `__invalid_stream()`.
