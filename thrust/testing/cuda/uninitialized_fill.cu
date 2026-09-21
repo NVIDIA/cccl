@@ -124,7 +124,7 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
 
   Vector ref{0, sub, sub, sub, 4};
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.begin() + 4, iter);
+  REQUIRE(v.begin() + 4 == iter);
 
   sub = 8;
 
@@ -138,7 +138,7 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
 
   ref = {sub, sub, sub, 7, 4};
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.begin() + 3, iter);
+  REQUIRE(v.begin() + 3 == iter);
 
   sub = 9;
 
@@ -152,7 +152,7 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
 
   ref = {8, 8, sub, sub, 9};
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v.end() == iter);
 
   sub = 1;
 
@@ -167,7 +167,7 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
   ref = Vector(5, sub);
 
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v.end() == iter);
 }
 
 void TestUninitializedFillNDeviceSeq()

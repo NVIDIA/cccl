@@ -61,7 +61,7 @@ void TestSetIntersectionSimple()
 
   const Iterator end = thrust::set_intersection(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetIntersectionSimple);
@@ -130,8 +130,8 @@ void TestSetIntersectionToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(h_reference.size());
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionToDiscardIterator);
 

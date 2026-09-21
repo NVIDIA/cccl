@@ -86,8 +86,8 @@ void TestSetIntersectionByKeySimple()
   const cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
     a_key.begin(), a_key.end(), b_key.begin(), b_key.end(), a_val.begin(), result_key.begin(), result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }

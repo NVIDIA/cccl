@@ -38,7 +38,7 @@ void TestForEachSimple()
 
   Vector ref{0, 0, 1, 1, 1, 0, 1};
   REQUIRE(output == ref);
-  ASSERT_EQUAL_QUIET(result, input.end());
+  REQUIRE((result == input.end()));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachSimple);
 
@@ -92,7 +92,7 @@ void TestForEachNSimple()
 
   Vector ref{0, 0, 1, 1, 1, 0, 1};
   REQUIRE(output == ref);
-  ASSERT_EQUAL_QUIET(result, input.end());
+  REQUIRE((result == input.end()));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachNSimple);
 
@@ -143,7 +143,7 @@ void TestForEachSimpleAnySystem()
 
   const thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
   REQUIRE(output == ref);
-  ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
+  REQUIRE((result == thrust::make_counting_iterator(5)));
 }
 DECLARE_UNITTEST(TestForEachSimpleAnySystem);
 
@@ -158,7 +158,7 @@ void TestForEachNSimpleAnySystem()
 
   const thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
   REQUIRE(output == ref);
-  ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
+  REQUIRE((result == thrust::make_counting_iterator(5)));
 }
 DECLARE_UNITTEST(TestForEachNSimpleAnySystem);
 
@@ -189,8 +189,8 @@ void TestForEach(const size_t n)
   const typename thrust::device_vector<T>::iterator d_result = thrust::for_each(d_input.begin(), d_input.end(), d_f);
 
   REQUIRE(h_output == d_output);
-  ASSERT_EQUAL_QUIET(h_result, h_input.end());
-  ASSERT_EQUAL_QUIET(d_result, d_input.end());
+  REQUIRE((h_result == h_input.end()));
+  REQUIRE((d_result == d_input.end()));
 }
 DECLARE_VARIABLE_UNITTEST(TestForEach);
 
@@ -221,8 +221,8 @@ void TestForEachN(const size_t n)
   const typename thrust::device_vector<T>::iterator d_result = thrust::for_each_n(d_input.begin(), d_input.size(), d_f);
 
   REQUIRE(h_output == d_output);
-  ASSERT_EQUAL_QUIET(h_result, h_input.end());
-  ASSERT_EQUAL_QUIET(d_result, d_input.end());
+  REQUIRE((h_result == h_input.end()));
+  REQUIRE((d_result == d_input.end()));
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachN);
 
@@ -260,7 +260,7 @@ void _TestForEachWithLargeTypes()
   thrust::for_each(h_data.begin(), h_data.end(), func);
   thrust::for_each(d_data.begin(), d_data.end(), func);
 
-  ASSERT_EQUAL_QUIET(h_data, d_data);
+  REQUIRE((h_data == d_data));
 }
 
 void TestForEachWithLargeTypes()
@@ -301,7 +301,7 @@ void _TestForEachNWithLargeTypes()
   thrust::for_each_n(h_data.begin(), h_data.size(), func);
   thrust::for_each_n(d_data.begin(), d_data.size(), func);
 
-  ASSERT_EQUAL_QUIET(h_data, d_data);
+  REQUIRE((h_data == d_data));
 }
 
 void TestForEachNWithLargeTypes()

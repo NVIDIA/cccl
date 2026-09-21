@@ -78,7 +78,7 @@ public:
 
     REQUIRE(id_to_allocate != 0u);
     // Ensure that the allocation ID is unique
-    ASSERT_EQUAL_QUIET(find(allocation_ids.begin(), allocation_ids.end(), id_to_allocate), allocation_ids.end());
+    REQUIRE(find(allocation_ids.begin(), allocation_ids.end(), id_to_allocate) == allocation_ids.end());
 
     free_bytes -= bytes;
     used_bytes += bytes;
@@ -98,9 +98,9 @@ public:
   {
     REQUIRE(p.size == bytes);
     REQUIRE(p.alignment == alignment);
-    ASSERT_LEQUAL(bytes, used_bytes);
+    REQUIRE(bytes <= used_bytes);
     // Check that the id has been previously allocated
-    ASSERT_NOT_EQUAL_QUIET(find(allocation_ids.begin(), allocation_ids.end(), p.id), allocation_ids.end());
+    REQUIRE(find(allocation_ids.begin(), allocation_ids.end(), p.id) != allocation_ids.end());
 
     free_bytes += bytes;
     used_bytes -= bytes;
@@ -335,7 +335,12 @@ void TestDisjointPoolSqueeze()
   // Test that OOM throws bad_alloc
   {
     upstream.free_bytes = not_enough_bytes;
-    ASSERT_THROWS(pool->do_allocate(small_block), thrust::system::detail::bad_alloc);
+    REQUIRE_THROWS_MATCHES(
+      pool->do_allocate(small_block),
+      thrust::system::detail::bad_alloc,
+      Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring(
+        "Dummy allocation failed: insufficient free "
+        "bytes.")));
     REQUIRE(upstream.free_bytes == not_enough_bytes);
     upstream.assert_empty_and_reset();
   }
@@ -360,8 +365,18 @@ void TestDisjointPoolSqueeze()
     // Simulate OOM, ensure that the allocations are still in place:
     const std::size_t old_free_bytes = upstream.free_bytes;
     upstream.free_bytes              = not_enough_bytes;
-    ASSERT_THROWS(pool->do_allocate(medium_block), thrust::system::detail::bad_alloc);
-    ASSERT_THROWS(pool->do_allocate(oversized_block), thrust::system::detail::bad_alloc);
+    REQUIRE_THROWS_MATCHES(
+      pool->do_allocate(medium_block),
+      thrust::system::detail::bad_alloc,
+      Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring(
+        "Dummy allocation failed: insufficient free "
+        "bytes.")));
+    REQUIRE_THROWS_MATCHES(
+      pool->do_allocate(oversized_block),
+      thrust::system::detail::bad_alloc,
+      Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring(
+        "Dummy allocation failed: insufficient free "
+        "bytes.")));
     REQUIRE(upstream.free_bytes == not_enough_bytes);
     REQUIRE(upstream.allocation_ids.size() == 3u);
     REQUIRE(upstream.allocation_ids[0] == 1u);

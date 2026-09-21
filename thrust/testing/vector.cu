@@ -765,7 +765,7 @@ void TestVectorReserving()
 
   v.reserve(3);
 
-  ASSERT_GEQUAL(v.capacity(), 3lu);
+  REQUIRE(v.capacity() >= 3lu);
 
   const size_t old_capacity = v.capacity();
 
@@ -796,7 +796,7 @@ void TestVectorShrinkToFit()
 
   v.reserve(200);
 
-  ASSERT_GEQUAL(v.capacity(), 200lu);
+  REQUIRE(v.capacity() >= 200lu);
 
   v.push_back(1);
   v.push_back(2);
@@ -840,12 +840,12 @@ void TestVectorContainingLargeType()
   const thrust::device_vector<T> dv1;
   const thrust::host_vector<T> hv1;
 
-  ASSERT_EQUAL_QUIET(dv1, hv1);
+  REQUIRE((dv1 == hv1));
 
   const thrust::device_vector<T> dv2(20);
   const thrust::host_vector<T> hv2(20);
 
-  ASSERT_EQUAL_QUIET(dv2, hv2);
+  REQUIRE((dv2 == hv2));
 
   // initialize tofirst element to something nonzero
   T ls;
@@ -858,7 +858,7 @@ void TestVectorContainingLargeType()
   thrust::device_vector<T> dv3(20, ls);
   thrust::host_vector<T> hv3(20, ls);
 
-  ASSERT_EQUAL_QUIET(dv3, hv3);
+  REQUIRE((dv3 == hv3));
 
   // change first element
   ls.data[0] = -13;
@@ -866,7 +866,7 @@ void TestVectorContainingLargeType()
   dv3[2] = ls;
   hv3[2] = ls;
 
-  ASSERT_EQUAL_QUIET(dv3, hv3);
+  REQUIRE((dv3 == hv3));
 }
 DECLARE_UNITTEST(TestVectorContainingLargeType);
 
