@@ -88,7 +88,7 @@ enum class stream_pool_creation
 //! The pool owns its streams and destroys them with the pool. `next_stream()` hands out the streams in
 //! round-robin order; `at(i)` and `pool[i]` address slot `i % size()`. Both return a `cuda::stream_ref` that
 //! stays valid for the lifetime of the pool. Destroying the pool destroys the streams; it is the caller's
-//! responsibility to synchronize the work submitted to them first. The pool can be neither copied nor moved; to
+//! responsibility to synchronize the work submitted to them first. The pool cannot be copied or moved. To
 //! hand it around or share it, allocate it with `std::make_unique` or `std::make_shared`.
 //!
 //! Whether the streams are created in the constructor or on the first request for their slot is chosen at

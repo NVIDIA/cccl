@@ -96,7 +96,7 @@ not do it. When the streams are created is chosen with a ``cuda::stream_pool_cre
 
 The getters never block: they are lock-free in both modes and can be called concurrently from several threads.
 
-A pool can be neither copied nor moved. Code that needs to hand a pool around, store it in a container, or share it
+A pool cannot be copied or moved. Code that needs to hand a pool around, store it in a container, or share it
 between several owners should allocate it with ``std::make_unique`` or ``std::make_shared``.
 
 Availability: CCCL 3.6.0
