@@ -28,9 +28,16 @@ _DATA_POINTER_ACCESSOR_CACHE: dict = {}
 def get_data_pointer(arr: DeviceArrayLike) -> int:
     # Perf: which branch below applies depends only on the array's type, so cache
     # it per type after the first call.
+
     accessor = _DATA_POINTER_ACCESSOR_CACHE.get(type(arr))
     if accessor is not None:
-        return accessor(arr)
+        try:
+            return accessor(arr)
+        except AttributeError:
+            # If a cached accessor fails for this instance, evict it and fall back to full
+            # re-selection, so one inconsistent instance can't permanently break
+            # every other instance of the same type.
+            _DATA_POINTER_ACCESSOR_CACHE.pop(type(arr), None)
 
     # TODO: these are fast paths for CuPy and PyTorch until
     # we have a more general solution.
