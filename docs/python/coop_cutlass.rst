@@ -893,6 +893,36 @@ producer or tensor adapter loses the intended unsigned element type, use
    values = cutlass_coop.ThreadData.from_register_tensor(fragment)
    cutlass_coop.store(cutlass_coop.this_block(), destination, values)
 
+.. _coop-cutlass-neighbors:
+
+Comparing neighboring values
+----------------------------
+
+``adjacent_difference`` subtracts the previous or next item from each item
+in a block's flattened, blocked sequence. ``discontinuity`` returns int32
+head flags, tail flags, or both. Both operations preserve their input and
+support the ten numeric payload dtypes. Every thread in the complete block
+participates, including in multidimensional blocks.
+
+Pass ``tile_predecessor_item`` or ``tile_successor_item`` to compare across
+tile boundaries. Adjacent Difference also accepts a block-uniform
+``valid_items`` count; its invalid suffix retains the original input.
+Right partial tiles cannot take a successor, and Discontinuity requires a
+full tile. See :doc:`neighbor operations <coop/neighbor-operations>` for
+the shared boundary and participation rules.
+
+Both functions accept explicit block ``TempStorage``. The example below
+reuses one descriptor between the operations; automatic trailing
+synchronization makes that reuse safe. The qualified functions also accept
+CuTe register tensors and immutable register vectors, returning fresh
+``ThreadData``. Custom arithmetic and flag callbacks are not supported.
+
+.. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_neighbors.py
+   :language: python
+   :start-after: docs: start cutlass-neighbors
+   :end-before: docs: end cutlass-neighbors
+   :dedent: 4
+
 .. _coop-cutlass-checking:
 
 Checking and tuning a kernel
