@@ -232,13 +232,18 @@ public:
     return __device_;
   }
 
-  //! @brief The round-robin ticket the next call to `next_stream()` draws. For tests only.
+  //! @brief The round-robin ticket the next call to `next_stream()` draws
+  //!
+  //! Exposed for the unit tests of the pool; not part of the API.
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __next_ticket() const noexcept
   {
     return ::cuda::__stream_pool_load_relaxed(&__next_);
   }
 
-  //! @brief Sets the round-robin ticket the next call to `next_stream()` draws. For tests only.
+  //! @brief Sets the round-robin ticket the next call to `next_stream()` draws
+  //!
+  //! Exposed for the unit tests of the pool; not part of the API. Must not be called concurrently with
+  //! `next_stream()`.
   //!
   //! @param[in] __ticket The ticket, must not exceed `__wrap_ticket()`
   _CCCL_HOST_API void __set_next_ticket(::cuda::std::size_t __ticket) const noexcept
@@ -246,7 +251,9 @@ public:
     ::cuda::__stream_pool_store_relaxed(&__next_, __ticket);
   }
 
-  //! @brief The ticket at which the round-robin counter is pulled back by that same amount. For tests only.
+  //! @brief The ticket at which the round-robin counter is pulled back by that same amount
+  //!
+  //! Exposed for the unit tests of the pool; not part of the API.
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __wrap_ticket() const noexcept
   {
     return __wrap_;
