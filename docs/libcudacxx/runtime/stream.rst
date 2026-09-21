@@ -79,8 +79,9 @@ managing their lifetime.
 
 - ``next_stream()``: returns the next stream in round-robin order
 - ``at(i)`` and ``operator[](i)``: return the stream in slot ``i % size()``
-- ``size()``, ``device()``, ``priority()``: the parameters given at construction; the constructors throw
-  ``std::invalid_argument`` for a size of zero
+- ``size()``, ``device()``, ``priority()``: the parameters given at construction
+
+The constructor throws ``std::invalid_argument`` if the pool has a size of zero.
 
 Every stream of the pool is created like a :cpp:struct:`cuda::stream`: non-blocking with respect to the legacy
 default stream, with the priority given at construction. These are the only creation parameters
