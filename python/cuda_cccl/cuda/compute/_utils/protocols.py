@@ -22,18 +22,12 @@ def is_device_array(obj: object) -> bool:
     return hasattr(obj, "__cuda_array_interface__")
 
 
-# Perf: which of the branches below works depends only on an array's type,
-# not its value, so the very first call for a given type determines it once
-# and every later call for that type skips straight to the right one --
-# avoiding, in particular, an unconditional (and for CuPy arrays always
-# failing) arr.data_ptr() attempt on every single call: raising and
-# catching AttributeError in CPython is not free (exception construction,
-# stack unwind), measured at several times the cost of a direct attribute
-# read. Same fallback order and behavior as before, just memoized per type.
 _DATA_POINTER_ACCESSOR_CACHE: dict = {}
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
+    # Perf: which branch below applies depends only on the array's type, so cache
+    # it per type after the first call.
     accessor = _DATA_POINTER_ACCESSOR_CACHE.get(type(arr))
     if accessor is not None:
         return accessor(arr)
