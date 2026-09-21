@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -220,6 +221,34 @@ public:
   _CCCL_API constexpr void imag(_Tp __im) volatile noexcept
   {
     __im_ = __im;
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr _Tp& get(complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr _Tp&& get(complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr const _Tp& get(const complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr const _Tp&& get(const complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
   }
 };
 
