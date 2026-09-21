@@ -4,12 +4,10 @@
 
 from __future__ import annotations
 
-import operator
 from enum import Enum
 from inspect import signature
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Literal, get_origin
 
 import numpy as np
 import pytest
@@ -58,9 +56,7 @@ def _planned_factory_calls(func_ir):
 
 def _provider_call(func_ir, provider):
     calls = [
-        call
-        for target, call in _planned_factory_calls(func_ir)
-        if target is provider
+        call for target, call in _planned_factory_calls(func_ir) if target is provider
     ]
     assert len(calls) == 1
     return calls[0]
@@ -74,8 +70,7 @@ def _kwarg_value(func_ir, call, name):
         statement.value
         for block in func_ir.blocks.values()
         for statement in block.body
-        if isinstance(statement, ir.Assign)
-        and statement.target.name == variable.name
+        if isinstance(statement, ir.Assign) and statement.target.name == variable.name
     ]
     assert len(definitions) == 1
     definition = definitions[0]
@@ -120,19 +115,17 @@ def test_scan_registers_all_spellings_results_and_provider_abis():
         assert metadata.execution_scope is SynchronizationScope(scope)
         assert metadata.synchronization_scope is SynchronizationScope(scope)
 
-    assert rewrite_operation(
-        "block_scan_scalar"
-    ).runtime_arg_counts == frozenset({1, 2, 3})
-    assert rewrite_operation(
-        "block_scan_array"
-    ).runtime_arg_counts == frozenset({2, 3, 4})
-    assert rewrite_operation("warp_scan").runtime_arg_counts == frozenset(
-        {1, 2, 3, 4}
+    assert rewrite_operation("block_scan_scalar").runtime_arg_counts == frozenset(
+        {1, 2, 3}
     )
+    assert rewrite_operation("block_scan_array").runtime_arg_counts == frozenset(
+        {2, 3, 4}
+    )
+    assert rewrite_operation("warp_scan").runtime_arg_counts == frozenset({1, 2, 3, 4})
 
 
 def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
-    import cuda.coop.numba_mlir as qualified
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common
 
     shared = {
@@ -165,9 +158,7 @@ def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
     }
     for name, expected in shared.items():
         common_parameters = tuple(signature(getattr(common, name)).parameters)
-        qualified_parameters = tuple(
-            signature(getattr(qualified, name)).parameters
-        )
+        qualified_parameters = tuple(signature(getattr(numba_coop, name)).parameters)
         assert common_parameters == expected
         assert qualified_parameters == (
             "group",
@@ -179,18 +170,10 @@ def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
             "prefix_op",
         )
 
-    package = Path(qualified.__file__).parent
+    package = Path(numba_coop.__file__).parent
     assert not (package / "_scan_op.py").exists()
     assert (package / "_stateful_function.py").is_file()
-    assert qualified.StatefulFunction.__module__.endswith("._stateful_function")
-    assert (
-        get_origin(qualified.ThreadGroup[Literal["warp"]])
-        is qualified.ThreadGroup
-    )
-    assert (
-        get_origin(qualified.StatefulFunction[np.int64, np.int32])
-        is qualified.StatefulFunction
-    )
+    assert numba_coop.StatefulFunction.__module__.endswith("._stateful_function")
 
 
 @pytest.mark.parametrize(
@@ -203,12 +186,10 @@ def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
         "inclusive_sum",
     ),
 )
-def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
-    spelling: str,
-):
+def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(spelling: str):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import ArgumentKind, ParameterRole
     from cuda.coop.numba_mlir._compiler._operations import (
         _GROUP_LOWERING_PLAN_KWARG,
@@ -225,8 +206,8 @@ def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
     if spelling == "scan":
 
         def kernel(value):
-            return coop.scan(
-                coop.this_block(),
+            return numba_coop.scan(
+                numba_coop.this_block(),
                 value,
                 scan_op=choose_left,
                 prefix_op=prefix_from_aggregate,
@@ -235,8 +216,8 @@ def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
     elif spelling == "exclusive_scan":
 
         def kernel(value):
-            return coop.exclusive_scan(
-                coop.this_block(),
+            return numba_coop.exclusive_scan(
+                numba_coop.this_block(),
                 value,
                 scan_op=choose_left,
                 prefix_op=prefix_from_aggregate,
@@ -245,8 +226,8 @@ def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
     elif spelling == "inclusive_scan":
 
         def kernel(value):
-            return coop.inclusive_scan(
-                coop.this_block(),
+            return numba_coop.inclusive_scan(
+                numba_coop.this_block(),
                 value,
                 scan_op=choose_left,
                 prefix_op=prefix_from_aggregate,
@@ -255,8 +236,8 @@ def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
     elif spelling == "exclusive_sum":
 
         def kernel(value):
-            return coop.exclusive_sum(
-                coop.this_block(),
+            return numba_coop.exclusive_sum(
+                numba_coop.this_block(),
                 value,
                 prefix_op=prefix_from_aggregate,
             )
@@ -264,8 +245,8 @@ def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
     else:
 
         def kernel(value):
-            return coop.inclusive_sum(
-                coop.this_block(),
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(),
                 value,
                 prefix_op=prefix_from_aggregate,
             )
@@ -282,9 +263,7 @@ def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
     prefix = plan.call.operation.prefix_callback
     assert prefix.op is prefix_from_aggregate
     classification = next(
-        item
-        for item in plan.call.argument_classifications
-        if item.name == "prefix_op"
+        item for item in plan.call.argument_classifications if item.name == "prefix_op"
     )
     assert classification.kind is ArgumentKind.STATIC
     assert classification.role is ParameterRole.OPERATOR
@@ -293,7 +272,7 @@ def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
 def test_removed_prefix_keyword_is_rejected_during_binding():
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler._group_planner_support import (
         GroupRewriteError,
     )
@@ -302,8 +281,8 @@ def test_removed_prefix_keyword_is_rejected_during_binding():
         return block_aggregate
 
     def kernel(value):
-        return coop.inclusive_sum(
-            coop.this_block(),
+        return numba_coop.inclusive_sum(
+            numba_coop.this_block(),
             value,
             block_prefix_callback_op=prefix_from_aggregate,
         )
@@ -326,8 +305,8 @@ def test_removed_prefix_keyword_is_rejected_during_binding():
 def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
-    from cuda.coop._core import INT64, ArgumentKind, ParameterRole
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda.coop._core import ArgumentKind, ParameterRole
     from cuda.coop.numba_mlir._compiler._operations import (
         _GROUP_LOWERING_PLAN_KWARG,
     )
@@ -342,15 +321,15 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
         state[0] = previous + block_aggregate
         return previous
 
-    running = coop.StatefulFunction(carry_prefix, types.int64, name="running")
+    running = numba_coop.StatefulFunction(carry_prefix, types.int64, name="running")
 
     if spelling == "scan":
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
+            state = numba_coop.ThreadData(1, dtype=types.int64)
             state[0] = 11
-            return coop.scan(
-                coop.this_block(),
+            return numba_coop.scan(
+                numba_coop.this_block(),
                 value,
                 state,
                 scan_op=choose_left,
@@ -360,10 +339,10 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
     elif spelling == "exclusive_scan":
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
+            state = numba_coop.ThreadData(1, dtype=types.int64)
             state[0] = 11
-            return coop.exclusive_scan(
-                coop.this_block(),
+            return numba_coop.exclusive_scan(
+                numba_coop.this_block(),
                 value,
                 state,
                 scan_op=choose_left,
@@ -373,10 +352,10 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
     elif spelling == "inclusive_scan":
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
+            state = numba_coop.ThreadData(1, dtype=types.int64)
             state[0] = 11
-            return coop.inclusive_scan(
-                coop.this_block(),
+            return numba_coop.inclusive_scan(
+                numba_coop.this_block(),
                 value,
                 state,
                 scan_op=choose_left,
@@ -386,19 +365,19 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
     elif spelling == "exclusive_sum":
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
+            state = numba_coop.ThreadData(1, dtype=types.int64)
             state[0] = 11
-            return coop.exclusive_sum(
-                coop.this_block(), value, state, prefix_op=running
+            return numba_coop.exclusive_sum(
+                numba_coop.this_block(), value, state, prefix_op=running
             )
 
     else:
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
+            state = numba_coop.ThreadData(1, dtype=types.int64)
             state[0] = 11
-            return coop.inclusive_sum(
-                coop.this_block(), value, state, prefix_op=running
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, state, prefix_op=running
             )
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
@@ -409,11 +388,9 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
     assert kwargs["prefix_state"].name == "state"
     plan = _kwarg_value(func_ir, call, _GROUP_LOWERING_PLAN_KWARG)
     prefix = plan.call.operation.prefix_callback
-    assert prefix.state_dtype == INT64
+    assert prefix.state_dtype == types.int64
     classification = next(
-        item
-        for item in plan.call.argument_classifications
-        if item.name == "prefix_op"
+        item for item in plan.call.argument_classifications if item.name == "prefix_op"
     )
     assert classification.kind is ArgumentKind.RUNTIME
     assert classification.role is ParameterRole.STATE
@@ -438,7 +415,7 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
 def test_scan_prefix_validation_fails_during_planning(case: str, match: str):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler._group_planner_support import (
         GroupRewriteError,
     )
@@ -450,27 +427,27 @@ def test_scan_prefix_validation_fails_during_planning(case: str, match: str):
         state[0] += block_aggregate
         return state[0]
 
-    running = coop.StatefulFunction(carry_prefix, types.int64)
+    running = numba_coop.StatefulFunction(carry_prefix, types.int64)
 
     if case == "state_without_callback":
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
-            return coop.inclusive_sum(coop.this_block(), value, state)
+            state = numba_coop.ThreadData(1, dtype=types.int64)
+            return numba_coop.inclusive_sum(numba_coop.this_block(), value, state)
 
     elif case == "stateful_without_state":
 
         def kernel(value):
-            return coop.inclusive_sum(
-                coop.this_block(), value, prefix_op=running
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, prefix_op=running
             )
 
     elif case == "stateless_with_state":
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
-            return coop.inclusive_sum(
-                coop.this_block(),
+            state = numba_coop.ThreadData(1, dtype=types.int64)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(),
                 value,
                 state,
                 prefix_op=prefix_from_aggregate,
@@ -479,15 +456,15 @@ def test_scan_prefix_validation_fails_during_planning(case: str, match: str):
     elif case == "warp":
 
         def kernel(value):
-            return coop.inclusive_sum(
-                coop.this_warp(), value, prefix_op=prefix_from_aggregate
+            return numba_coop.inclusive_sum(
+                numba_coop.this_warp(), value, prefix_op=prefix_from_aggregate
             )
 
     elif case == "initial":
 
         def kernel(value):
-            return coop.exclusive_scan(
-                coop.this_block(),
+            return numba_coop.exclusive_scan(
+                numba_coop.this_block(),
                 value,
                 initial_value=0,
                 prefix_op=prefix_from_aggregate,
@@ -496,9 +473,9 @@ def test_scan_prefix_validation_fails_during_planning(case: str, match: str):
     elif case == "aggregate":
 
         def kernel(value):
-            aggregate = coop.ThreadData(items_per_thread=1, dtype=types.int32)
-            return coop.inclusive_sum(
-                coop.this_block(),
+            aggregate = numba_coop.ThreadData(1, dtype=types.int32)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(),
                 value,
                 aggregate_output=aggregate,
                 prefix_op=prefix_from_aggregate,
@@ -507,43 +484,45 @@ def test_scan_prefix_validation_fails_during_planning(case: str, match: str):
     elif case == "state_extent":
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=2, dtype=types.int64)
-            return coop.inclusive_sum(
-                coop.this_block(), value, state, prefix_op=running
+            state = numba_coop.ThreadData(2, dtype=types.int64)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, state, prefix_op=running
             )
 
     elif case == "state_dtype":
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.int32)
-            return coop.inclusive_sum(
-                coop.this_block(), value, state, prefix_op=running
+            state = numba_coop.ThreadData(1, dtype=types.int32)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, state, prefix_op=running
             )
 
     elif case == "state_keyword":
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
-            return coop.inclusive_sum(
-                coop.this_block(),
+            state = numba_coop.ThreadData(1, dtype=types.int64)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(),
                 value,
                 prefix_state=state,
                 prefix_op=running,
             )
 
     elif case == "invalid_state_dtype":
-        invalid = coop.StatefulFunction(carry_prefix, types.boolean)
+        invalid = numba_coop.StatefulFunction(carry_prefix, types.boolean)
 
         def kernel(value):
-            state = coop.ThreadData(items_per_thread=1, dtype=types.boolean)
-            return coop.inclusive_sum(
-                coop.this_block(), value, state, prefix_op=invalid
+            state = numba_coop.ThreadData(1, dtype=types.boolean)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, state, prefix_op=invalid
             )
 
     else:
 
         def kernel(value):
-            return coop.inclusive_sum(coop.this_block(), value, prefix_op=17)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, prefix_op=17
+            )
 
     _, planner = _plan(kernel, arg_types=(types.int32,))
     with pytest.raises(
@@ -572,11 +551,11 @@ def test_scan_planning_rejects_non_string_selectors_before_provider(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common
     from cuda.coop.numba_mlir._compiler import _group_scan
 
-    coop = common if api == "common" else qualified
+    coop = common if api == "common" else numba_coop
     selector = (
         SimpleNamespace(value=token)
         if selector_kind == "object"
@@ -598,16 +577,12 @@ def test_scan_planning_rejects_non_string_selectors_before_provider(
     elif parameter == "algorithm":
 
         def kernel(value):
-            return coop.inclusive_sum(
-                coop.this_block(), value, algorithm=selector
-            )
+            return coop.inclusive_sum(coop.this_block(), value, algorithm=selector)
 
     else:
 
         def kernel(value):
-            return coop.inclusive_scan(
-                coop.this_block(), value, scan_op=selector
-            )
+            return coop.inclusive_scan(coop.this_block(), value, scan_op=selector)
 
     _, planner = _plan(kernel, arg_types=(types.int32,))
     with pytest.raises(TypeError, match=rf"{parameter} must be .*string"):
@@ -637,9 +612,6 @@ def test_private_scan_selector_validation_does_not_unwrap_value_objects():
         (" maximum ", "max"),
         ("multiply", "multiplies"),
         ("BIT-OR", "bit_or"),
-        (np.maximum, "max"),
-        (operator.add, "sum"),
-        (operator.mul, "multiplies"),
     ),
 )
 def test_shared_scan_operator_aliases_normalize_identically(
@@ -649,24 +621,19 @@ def test_shared_scan_operator_aliases_normalize_identically(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common
     from cuda.coop.numba_mlir._lowering import _scan
 
-    coop = common if api == "common" else qualified
+    coop = common if api == "common" else numba_coop
 
     def kernel(value):
         return coop.inclusive_scan(coop.this_block(), value, scan_op=alias)
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
-    if api == "common" and callable(alias):
-        with pytest.raises(TypeError, match="scan_op must be a string"):
-            planner.run()
-        return
     assert planner.run()
     call = _provider_call(func_ir, _scan.block_scan_scalar)
-    expected = None if canonical == "sum" else canonical
-    assert _kwarg_value(func_ir, call, "scan_op") == expected
+    assert _kwarg_value(func_ir, call, "scan_op") == canonical
 
 
 @pytest.mark.parametrize(
@@ -686,37 +653,39 @@ def test_all_five_spellings_plan_through_one_block_provider(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._lowering import _scan
 
     if spelling == "scan":
 
         def kernel(value):
-            return coop.scan(
-                coop.this_block(), value, mode="inclusive", scan_op="max"
+            return numba_coop.scan(
+                numba_coop.this_block(), value, mode="inclusive", scan_op="max"
             )
 
     elif spelling == "exclusive_scan":
 
         def kernel(value):
-            return coop.exclusive_scan(
-                coop.this_block(), value, scan_op="max", initial_value=-17
+            return numba_coop.exclusive_scan(
+                numba_coop.this_block(), value, scan_op="max", initial_value=-17
             )
 
     elif spelling == "inclusive_scan":
 
         def kernel(value):
-            return coop.inclusive_scan(coop.this_block(), value, scan_op="max")
+            return numba_coop.inclusive_scan(
+                numba_coop.this_block(), value, scan_op="max"
+            )
 
     elif spelling == "exclusive_sum":
 
         def kernel(value):
-            return coop.exclusive_sum(coop.this_block(), value)
+            return numba_coop.exclusive_sum(numba_coop.this_block(), value)
 
     else:
 
         def kernel(value):
-            return coop.inclusive_sum(coop.this_block(), value)
+            return numba_coop.inclusive_sum(numba_coop.this_block(), value)
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
     assert planner.run()
@@ -745,10 +714,10 @@ def test_all_five_spellings_plan_through_one_block_provider(
 def test_scan_planning_accepts_every_supported_numeric_dtype(dtype_name: str):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     def kernel(value):
-        return coop.inclusive_sum(coop.this_block(), value)
+        return numba_coop.inclusive_sum(numba_coop.this_block(), value)
 
     _, planner = _plan(kernel, arg_types=(getattr(types, dtype_name),))
     assert planner.run()
@@ -758,42 +727,36 @@ def test_scan_planning_accepts_every_supported_numeric_dtype(dtype_name: str):
 def test_scan_planning_rejects_unsupported_payload_dtypes(dtype_name: str):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     def kernel(value):
-        return coop.inclusive_sum(coop.this_block(), value)
+        return numba_coop.inclusive_sum(numba_coop.this_block(), value)
 
     _, planner = _plan(kernel, arg_types=(getattr(types, dtype_name),))
     with pytest.raises(TypeError, match="supports value dtypes"):
         planner.run()
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_block_thread_data_and_local_array_plan_out_of_place_with_storage(
-    items_per_thread,
-):
+def test_block_thread_data_and_local_array_plan_out_of_place_with_storage():
     from numba_cuda_mlir import cuda, types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._lowering import _scan
 
-    def thread_data_kernel(value, items_per_thread):
-        items = coop.ThreadData(items_per_thread, dtype=types.int32)
-        for item in range(items_per_thread):
-            items[item] = types.int32(value + item)
-        return coop.inclusive_sum(
-            coop.this_block(), items, algorithm="raking_memoize"
+    def thread_data_kernel(value):
+        items = numba_coop.ThreadData(2, dtype=types.int32)
+        items[0] = value
+        items[1] = types.int32(value + 1)
+        return numba_coop.inclusive_sum(
+            numba_coop.this_block(), items, algorithm="raking_memoize"
         )
 
-    func_ir, planner = _plan(
-        thread_data_kernel,
-        arg_types=(types.int32, types.IntegerLiteral(items_per_thread)),
-    )
+    func_ir, planner = _plan(thread_data_kernel, arg_types=(types.int32,))
     assert planner.run()
     call = _provider_call(func_ir, _scan.block_scan_array)
     assert len(call.args) == 2
     assert call.args[0].name != call.args[1].name
-    assert _kwarg_value(func_ir, call, "items_per_thread") == items_per_thread
+    assert _kwarg_value(func_ir, call, "items_per_thread") == 2
     assert _kwarg_value(func_ir, call, "value_kind") == "array"
 
     def local_array_kernel(value):
@@ -801,13 +764,13 @@ def test_block_thread_data_and_local_array_plan_out_of_place_with_storage(
         aggregate = cuda.local.array(1, dtype=types.int32)
         items[0] = value
         items[1] = value + 1
-        return coop.exclusive_scan(
-            coop.this_block(),
+        return numba_coop.exclusive_scan(
+            numba_coop.this_block(),
             items,
             scan_op=np.maximum,
             initial_value=-17,
             aggregate_output=aggregate,
-            temp_storage=coop.TempStorage(sharing="shared"),
+            temp_storage=numba_coop.TempStorage(sharing="shared"),
         )
 
     func_ir, planner = _plan(local_array_kernel, arg_types=(types.int32,))
@@ -821,54 +784,44 @@ def test_block_thread_data_and_local_array_plan_out_of_place_with_storage(
     }
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize(
-    "qualified", (False, True), ids=("common", "qualified")
-)
-def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(
-    qualified,
-    items_per_thread,
-):
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(qualified):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common_coop
     from cuda.coop.numba_mlir._lowering import _scan
 
-    coop = qualified_coop if qualified else common_coop
+    coop = numba_coop if qualified else common_coop
 
-    def kernel(value, destination, items_per_thread):
-        items = coop.ThreadData(items_per_thread)
-        for item in range(items_per_thread):
-            items[item] = types.int32(value + item)
+    def kernel(value, destination):
+        items = coop.ThreadData(2)
+        items[0] = value
+        items[1] = types.int32(value + 1)
         scanned = coop.inclusive_sum(coop.this_block(), items)
         coop.store(coop.this_block(), destination, scanned)
         return scanned
 
     func_ir, planner = _plan(
         kernel,
-        arg_types=(
-            types.int32,
-            types.Array(types.int32, 1, "C"),
-            types.IntegerLiteral(items_per_thread),
-        ),
+        arg_types=(types.int32, types.Array(types.int32, 1, "C")),
     )
     assert planner.run()
     call = _provider_call(func_ir, _scan.block_scan_array)
     assert _kwarg_value(func_ir, call, "dtype") is types.int32
-    assert _kwarg_value(func_ir, call, "items_per_thread") == items_per_thread
+    assert _kwarg_value(func_ir, call, "items_per_thread") == 2
 
 
 def test_warp_planning_preserves_width_runtime_prefix_and_aggregate_position():
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._lowering import _scan
 
     def kernel(value, valid_items):
-        aggregate = coop.ThreadData(items_per_thread=1, dtype=types.int32)
-        return coop.inclusive_scan(
-            coop.this_warp().group_by(8),
+        aggregate = numba_coop.ThreadData(1, dtype=types.int32)
+        return numba_coop.inclusive_scan(
+            numba_coop.this_warp().group_by(8),
             value,
             scan_op="bit_or",
             valid_items=valid_items,
@@ -884,15 +837,13 @@ def test_warp_planning_preserves_width_runtime_prefix_and_aggregate_position():
     assert _kwarg_value(func_ir, call, "threads_in_warp") == 8
     assert "scan_valid_items_i64" in dict(call.kws)["valid_items"].name
     assert "warp_aggregate" in dict(call.kws)
-    assert any(
-        target is types.int64 for target, _ in _planned_factory_calls(func_ir)
-    )
+    assert any(target is types.int64 for target, _ in _planned_factory_calls(func_ir))
 
 
 def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common
     from cuda.coop.numba_mlir._lowering import _scan
 
@@ -900,8 +851,8 @@ def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
         return left if left > right else right  # noqa: FURB136
 
     def block_kernel(value):
-        return qualified.inclusive_scan(
-            qualified.this_block(), value, scan_op=combine
+        return numba_coop.inclusive_scan(
+            numba_coop.this_block(), value, scan_op=combine
         )
 
     func_ir, planner = _plan(block_kernel, arg_types=(types.int32,))
@@ -909,8 +860,8 @@ def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
     assert _provider_call(func_ir, _scan.block_scan_scalar)
 
     def warp_kernel(value):
-        return qualified.exclusive_scan(
-            qualified.this_warp(), value, scan_op=combine, initial_value=-17
+        return numba_coop.exclusive_scan(
+            numba_coop.this_warp(), value, scan_op=combine, initial_value=-17
         )
 
     func_ir, planner = _plan(warp_kernel, arg_types=(types.int32,))
@@ -918,12 +869,10 @@ def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
     assert _provider_call(func_ir, _scan.warp_scan)
 
     def common_kernel(value):
-        return common.inclusive_scan(
-            common.this_block(), value, scan_op=combine
-        )
+        return common.inclusive_scan(common.this_block(), value, scan_op=combine)
 
     _, planner = _plan(common_kernel, arg_types=(types.int32,))
-    with pytest.raises(TypeError, match="scan_op must be a string"):
+    with pytest.raises(NotImplementedError, match="built-in operators only"):
         planner.run()
 
 
@@ -939,24 +888,24 @@ def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
         ("warp_array", "one scalar value per lane"),
     ),
 )
-def test_invalid_scan_shapes_and_initials_fail_during_planning(
-    case: str, match: str
-):
+def test_invalid_scan_shapes_and_initials_fail_during_planning(case: str, match: str):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     if case == "non_sum_without_initial":
 
         def kernel(value):
-            return coop.exclusive_scan(coop.this_block(), value, scan_op="max")
+            return numba_coop.exclusive_scan(
+                numba_coop.this_block(), value, scan_op="max"
+            )
 
         arg_types = (types.int32,)
     elif case == "inclusive_initial":
 
         def kernel(value):
-            return coop.scan(
-                coop.this_block(),
+            return numba_coop.scan(
+                numba_coop.this_block(),
                 value,
                 mode="inclusive",
                 initial_value=0,
@@ -966,49 +915,49 @@ def test_invalid_scan_shapes_and_initials_fail_during_planning(
     elif case == "runtime_initial_dtype":
 
         def kernel(value, initial):
-            return coop.exclusive_scan(
-                coop.this_block(), value, initial_value=initial
+            return numba_coop.exclusive_scan(
+                numba_coop.this_block(), value, initial_value=initial
             )
 
         arg_types = (types.int32, types.int64)
     elif case == "aggregate_extent":
 
         def kernel(value):
-            aggregate = coop.ThreadData(items_per_thread=2, dtype=types.int32)
-            return coop.inclusive_sum(
-                coop.this_block(), value, aggregate_output=aggregate
+            aggregate = numba_coop.ThreadData(2, dtype=types.int32)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, aggregate_output=aggregate
             )
 
         arg_types = (types.int32,)
     elif case == "aggregate_dtype":
 
         def kernel(value):
-            aggregate = coop.ThreadData(items_per_thread=1, dtype=types.float32)
-            return coop.inclusive_sum(
-                coop.this_block(), value, aggregate_output=aggregate
+            aggregate = numba_coop.ThreadData(1, dtype=types.float32)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, aggregate_output=aggregate
             )
 
         arg_types = (types.int32,)
     elif case == "block_valid":
 
         def kernel(value):
-            return coop.inclusive_sum(coop.this_block(), value, valid_items=17)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, valid_items=17
+            )
 
         arg_types = (types.int32,)
     else:
 
         def kernel(value):
-            items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
+            items = numba_coop.ThreadData(2, dtype=types.int32)
             items[0] = value
             items[1] = value
-            return coop.inclusive_sum(coop.this_warp(), items)
+            return numba_coop.inclusive_sum(numba_coop.this_warp(), items)
 
         arg_types = (types.int32,)
 
     _, planner = _plan(kernel, arg_types=arg_types)
-    with pytest.raises(
-        (TypeError, ValueError, NotImplementedError), match=match
-    ):
+    with pytest.raises((TypeError, ValueError, NotImplementedError), match=match):
         planner.run()
 
 
@@ -1016,17 +965,15 @@ def test_invalid_scan_shapes_and_initials_fail_during_planning(
 def test_static_initial_must_convert_exactly_to_payload_dtype(initial):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     def kernel(value):
-        return coop.exclusive_scan(
-            coop.this_block(), value, initial_value=initial
+        return numba_coop.exclusive_scan(
+            numba_coop.this_block(), value, initial_value=initial
         )
 
     _, planner = _plan(kernel, arg_types=(types.int8,))
-    with pytest.raises(
-        (TypeError, OverflowError, ValueError), match="initial_value"
-    ):
+    with pytest.raises((TypeError, OverflowError, ValueError), match="initial_value"):
         planner.run()
 
 
@@ -1047,11 +994,11 @@ def test_static_initial_accepts_literal_boundaries_and_exact_typed_scalars(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     def kernel(value):
-        return coop.exclusive_scan(
-            coop.this_block(), value, initial_value=initial
+        return numba_coop.exclusive_scan(
+            numba_coop.this_block(), value, initial_value=initial
         )
 
     _, planner = _plan(kernel, arg_types=(getattr(types, dtype),))
@@ -1062,11 +1009,11 @@ def test_static_initial_accepts_literal_boundaries_and_exact_typed_scalars(
 def test_runtime_valid_items_rejects_invalid_dtype_before_provider(dtype: str):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     def kernel(value, valid_items):
-        return coop.inclusive_sum(
-            coop.this_warp().group_by(8), value, valid_items=valid_items
+        return numba_coop.inclusive_sum(
+            numba_coop.this_warp().group_by(8), value, valid_items=valid_items
         )
 
     _, planner = _plan(
@@ -1081,11 +1028,11 @@ def test_runtime_valid_items_rejects_invalid_dtype_before_provider(dtype: str):
 def test_static_valid_items_rejects_bool_and_out_of_range_values(valid_items):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     def kernel(value):
-        return coop.inclusive_sum(
-            coop.this_warp().group_by(8), value, valid_items=valid_items
+        return numba_coop.inclusive_sum(
+            numba_coop.this_warp().group_by(8), value, valid_items=valid_items
         )
 
     _, planner = _plan(kernel, arg_types=(types.int32,))

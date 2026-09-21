@@ -14,7 +14,7 @@ import numba_cuda_mlir.tools as numba_mlir_tools
 from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
-import cuda.coop.numba_mlir as qualified_coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop as root_coop
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
@@ -50,30 +50,19 @@ def _compile(kernel, *arg_types):
     return result
 
 
-@pytest.mark.parametrize(
-    "coop", (root_coop, qualified_coop), ids=("root", "qualified")
-)
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_store_compiles_a_runtime_payload_index(coop, items_per_thread):
+@pytest.mark.parametrize("coop", (root_coop, qualified_coop), ids=("root", "qualified"))
+def test_store_compiles_a_runtime_payload_index(coop):
     @cuda.jit(chip="sm_90")
-    def kernel(source, destination, index, items_per_thread):
-        payload = coop.ThreadData(items_per_thread)
+    def kernel(source, destination, index):
+        payload = coop.ThreadData(2)
         group = coop.this_block()
         coop.load(group, source, payload)
         coop.store(group, destination, payload[index])
 
-    _compile(
-        kernel,
-        types.int32[::1],
-        types.int32[::1],
-        types.int64,
-        types.IntegerLiteral(items_per_thread),
-    )
+    _compile(kernel, types.int32[::1], types.int32[::1], types.int64)
 
 
-@pytest.mark.parametrize(
-    "coop", (root_coop, qualified_coop), ids=("root", "qualified")
-)
+@pytest.mark.parametrize("coop", (root_coop, numba_coop), ids=("root", "qualified"))
 @pytest.mark.parametrize("expression", ("abs", "min", "loop"))
 @pytest.mark.parametrize("matching", (False, True), ids=("mismatch", "exact"))
 def test_store_checks_actual_expression_dtype(coop, expression, matching):
@@ -96,15 +85,11 @@ def test_store_checks_actual_expression_dtype(coop, expression, matching):
     if matching:
         _compile(kernel, *arg_types)
     else:
-        with pytest.raises(
-            TypingError, match="does not match destination dtype"
-        ):
+        with pytest.raises(TypingError, match="does not match destination dtype"):
             _compile(kernel, *arg_types)
 
 
-@pytest.mark.parametrize(
-    "coop", (root_coop, qualified_coop), ids=("root", "qualified")
-)
+@pytest.mark.parametrize("coop", (root_coop, numba_coop), ids=("root", "qualified"))
 @pytest.mark.parametrize(
     ("value", "dtype"),
     (

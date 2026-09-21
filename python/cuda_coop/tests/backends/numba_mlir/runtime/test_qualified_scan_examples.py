@@ -110,7 +110,7 @@ def test_qualified_exclusive_sum_example():
         block = numba_coop.this_block()
         state = numba_coop.ThreadData(items_per_thread=1)
         state[0] = types.int64(0)
-        scratch = numba_coop.TempStorage(auto_sync=True)
+        scratch = numba_coop.TempStorage()
         for tile in range(3):
             index = tile * cuda.blockDim.x + cuda.threadIdx.x
             destination[index] = numba_coop.exclusive_sum(
