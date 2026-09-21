@@ -51,8 +51,8 @@ sorting the full tile. Blocks can compare neighboring items with
 with :doc:`Run Length Decode <coop/visualizations/run-length-decode>`.
 :doc:`Batched Warp Reduction <coop/visualizations/reduce-batched>` computes
 an independent reduction for each per-thread payload slot.
-The compiler integrations use CUB and CUDAX; see
-:ref:`backend coverage <coop-backends>` for the families each implements.
+Both compiler integrations implement these common operations using CUB and
+CUDAX; see :ref:`backend coverage <coop-backends>`.
 
 This overview introduces the shared API and execution model. Choose a
 programming guide to write kernels, or a developer guide to work on the
@@ -82,10 +82,10 @@ the :doc:`API reference <coop_api>`.
 Backend coverage
 ----------------
 
-The common API defines shared contracts for groups, dtypes, and result
-ownership. The table records which families each integration implements.
-Their qualified APIs add compiler-specific payloads and controls, described
-in the programming guides.
+The common API is the contract shared by Numba-CUDA-MLIR and CUTLASS. Both
+implement every common primitive below, with the documented groups, dtypes,
+and result rules. Their qualified APIs add compiler-specific payloads and
+controls, described in the programming guides.
 
 .. list-table:: Current primitive families
    :header-rows: 1
@@ -126,7 +126,7 @@ in the programming guides.
      - Available
    * - Batched Warp Reduction
      - Available
-     - Not implemented
+     - Available
 
 .. _block-prefix-callbacks:
 
@@ -156,8 +156,8 @@ across supported DSLs. Calls inside a kernel are compiler markers; they are not
 host-side implementations of those operations.
 
 The qualified namespaces, ``cuda.coop.numba_mlir`` and
-``cuda.coop.cutlass``, expose their implemented common operations and
-backend-specific extensions. A program using one compiler can use its qualified
+``cuda.coop.cutlass``, each include all common kernel operations and their
+backend's extensions. A program using one compiler can use its qualified
 namespace alone. CUTLASS-only code can use ``import cuda.coop.cutlass as coop``. Use
 ``numba_coop`` and ``cutlass_coop`` when a module contains both DSLs.
 Common and qualified calls can appear in the same kernel when they belong

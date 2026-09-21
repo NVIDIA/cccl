@@ -90,8 +90,7 @@ def run_length_decode(
         validation. A window starting beyond the stream contains zeros.
     temp_storage : TempStorage, optional
         Explicit block scratch, or omit for automatic allocation. Requested
-        alignment is a minimum. Synchronize before reuse with
-        ``auto_sync=False``.
+        alignment is a minimum. Synchronize before reuse with ``auto_sync=False``.
 
     Returns
     -------
@@ -99,6 +98,9 @@ def run_length_decode(
         Fresh payload with the run-value dtype and requested output extent.
         Neither input is modified. The decoded total must fit uint32; negative
         lengths, misplaced zero padding, and overflow trap before decoding.
+
+    See the :doc:`Run Length Decode visualization
+    <coop/visualizations/run-length-decode>` for windows and zero-filled tails.
     """
     return _decode(
         group,
@@ -154,8 +156,10 @@ def run_length_decode_into(
     cutlass.Uint32
         Full decoded size, available to every member. Empty input writes
         nothing. Insufficient capacity traps before any output write; elements
-        outside the decoded interval remain unchanged. The total must fit
-        uint32.
+        outside the decoded interval remain unchanged. The total must fit uint32.
+
+    See the :doc:`Run Length Decode visualization
+    <coop/visualizations/run-length-decode>` for bulk output and run ordering.
     """
     return _decode(
         group,
