@@ -115,7 +115,7 @@ Macros
    over ``__forceinline``. Generally, prefer ``_CCCL_HOST_API``, ``_CCCL_DEVICE_API``,
    ``_CCCL_HOST_DEVICE_API``, ``_CCCL_TILE_API``, or ``_CCCL_API`` for any function inside CCCL.
    The same applies to compiler and compilation-mode detection in preprocessor conditions:
-   use ``_CCCL_CUDA_COMPILATION()``, ``_CCCL_DEVICE_COMPILATION()``, and ``_CCCL_COMPILER(...)``
+   use ``_CCCL_CUDA_COMPILATION()``, ``_CCCL_DEVICE_COMPILATION()``, and ``_CCCL_CUDA_COMPILER(...)``
    instead of raw ``__CUDACC__``, ``__CUDA_ARCH__``, or ``__NVCOMPILER``.
    Examples and documentation must not use these macros and should support vendor
    attributes and keywords instead. Tests should only use macros if they are strictly required for the
