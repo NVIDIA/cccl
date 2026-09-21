@@ -33,7 +33,6 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__limits/numeric_limits.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -47,26 +46,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 #    define _CUDA_STREAM_POOL_ATOMIC(__op) __op
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
-_CCCL_HOST_API inline ::cuda::std::size_t
-__stream_pool_fetch_add_relaxed(::cuda::std::size_t* __ptr, ::cuda::std::size_t __val) noexcept
-{
-  return _CUDA_STREAM_POOL_ATOMIC(__atomic_fetch_add)(__ptr, __val, __ATOMIC_RELAXED);
-}
-
-_CCCL_HOST_API inline ::cuda::std::size_t
-__stream_pool_fetch_sub_relaxed(::cuda::std::size_t* __ptr, ::cuda::std::size_t __val) noexcept
-{
-  return _CUDA_STREAM_POOL_ATOMIC(__atomic_fetch_sub)(__ptr, __val, __ATOMIC_RELAXED);
-}
-
 _CCCL_HOST_API inline ::cuda::std::size_t __stream_pool_load_relaxed(const ::cuda::std::size_t* __ptr) noexcept
 {
   return _CUDA_STREAM_POOL_ATOMIC(__atomic_load_n)(__ptr, __ATOMIC_RELAXED);
 }
 
-_CCCL_HOST_API inline void __stream_pool_store_relaxed(::cuda::std::size_t* __ptr, ::cuda::std::size_t __val) noexcept
+//! Weak compare-exchange; on failure `__expected` holds the current value.
+_CCCL_HOST_API inline bool __stream_pool_advance(
+  ::cuda::std::size_t* __ptr, ::cuda::std::size_t& __expected, ::cuda::std::size_t __desired) noexcept
 {
-  _CUDA_STREAM_POOL_ATOMIC(__atomic_store_n)(__ptr, __val, __ATOMIC_RELAXED);
+  return _CUDA_STREAM_POOL_ATOMIC(
+    __atomic_compare_exchange_n)(__ptr, &__expected, __desired, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
 }
 
 _CCCL_HOST_API inline ::cudaStream_t __stream_pool_load_acquire(::cudaStream_t* __ptr) noexcept
@@ -150,7 +140,6 @@ public:
       : __device_{__device}
       , __priority_{__priority}
       , __size_{__size}
-      , __wrap_{__wrap_ticket_for(__size)}
       , __slots_{__size == 0 ? nullptr : new ::cudaStream_t[__size]()}
   {
     if (__size == 0)
@@ -197,17 +186,13 @@ public:
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref next_stream() const
   {
-    const ::cuda::std::size_t __ticket = ::cuda::__stream_pool_fetch_add_relaxed(&__next_, 1);
-    if (__ticket == __wrap_)
+    // Advance the position and wrap it at size() in one compare-exchange, retried if another caller advanced it
+    // in between. The position is always a valid slot, so the order is exact and nothing ever overflows.
+    ::cuda::std::size_t __slot = ::cuda::__stream_pool_load_relaxed(&__next_);
+    while (!::cuda::__stream_pool_advance(&__next_, __slot, __slot + 1 == __size_ ? 0 : __slot + 1))
     {
-      // Tickets are unique, so exactly one caller draws `__wrap_` and it alone pulls the counter back. Until
-      // its subtraction lands, other callers keep drawing `__wrap_ + 1`, `__wrap_ + 2`, ...: that is fine,
-      // `__wrap_` is a multiple of `size()`, so the modulo below maps those tickets to slots 1, 2, ..., exactly
-      // the slots that follow the wrap ticket. Once the subtraction lands the counter continues from the same
-      // slot sequence, so the round-robin order is exact and the counter never overflows.
-      ::cuda::__stream_pool_fetch_sub_relaxed(&__next_, __wrap_);
     }
-    return __stream_at(__ticket % __size_);
+    return __stream_at(__slot);
   }
 
   //! @brief Returns the stream in slot `__index % size()`
@@ -264,33 +249,6 @@ public:
     return __device_;
   }
 
-  //! @brief The round-robin ticket the next call to `next_stream()` draws
-  //!
-  //! Exposed for the unit tests of the pool; not part of the API.
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __next_ticket() const noexcept
-  {
-    return ::cuda::__stream_pool_load_relaxed(&__next_);
-  }
-
-  //! @brief Sets the round-robin ticket the next call to `next_stream()` draws
-  //!
-  //! Exposed for the unit tests of the pool; not part of the API. Must not be called concurrently with
-  //! `next_stream()`.
-  //!
-  //! @param[in] __ticket The ticket, must not exceed `__wrap_ticket()`
-  _CCCL_HOST_API void __set_next_ticket(::cuda::std::size_t __ticket) const noexcept
-  {
-    ::cuda::__stream_pool_store_relaxed(&__next_, __ticket);
-  }
-
-  //! @brief The ticket at which the round-robin counter is pulled back by that same amount
-  //!
-  //! Exposed for the unit tests of the pool; not part of the API.
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __wrap_ticket() const noexcept
-  {
-    return __wrap_;
-  }
-
   //! @brief The priority given to every stream in the pool
   //!
   //! @return The priority given at construction
@@ -344,16 +302,6 @@ private:
     __slots_ = nullptr;
   }
 
-  //! The largest multiple of `__size` not above half the counter range: far enough that the counter cannot
-  //! overflow before the caller drawing it has subtracted it, and a multiple of `__size` so the subtraction
-  //! preserves every ticket's slot.
-  [[nodiscard]] _CCCL_HOST_API static constexpr ::cuda::std::size_t
-  __wrap_ticket_for(::cuda::std::size_t __size) noexcept
-  {
-    constexpr ::cuda::std::size_t __half = ::cuda::std::numeric_limits<::cuda::std::size_t>::max() / 2;
-    return __size == 0 ? __half : __half - __half % __size;
-  }
-
   //! Creates one stream on the logical device of the pool.
   [[nodiscard]] _CCCL_HOST_API stream __create_stream() const
   {
@@ -368,13 +316,12 @@ private:
   const __logical_device_ref __device_;
   const int __priority_;
   const ::cuda::std::size_t __size_;
-  //! The round-robin ticket at which the counter is pulled back by `__wrap_`; see `next_stream()`.
-  const ::cuda::std::size_t __wrap_;
   //! `__size_` slots; an empty slot holds `nullptr`, a filled slot the stream that lives until the pool is destroyed.
   //! Only ever accessed through the atomic builtins at the top of this file, except in the constructor and
   //! `__destroy_slots()`, where no other thread can see the pool.
   ::cudaStream_t* __slots_;
-  //! The round-robin counter; only ever accessed through the relaxed atomic builtins at the top of this file.
+  //! The slot the next call to `next_stream()` returns, always below `__size_`; only ever accessed through the
+  //! atomic builtins at the top of this file.
   mutable ::cuda::std::size_t __next_{0};
 };
 
