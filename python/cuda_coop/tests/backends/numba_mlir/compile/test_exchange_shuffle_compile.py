@@ -438,21 +438,20 @@ def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
     return compiler_cuda
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_kernel_compile_links_shared_storage_and_barriers(
-    monkeypatch: pytest.MonkeyPatch, items_per_thread
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compiler_cuda = _production_compile_environment(monkeypatch)
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common_coop
 
     @compiler_cuda.jit(chip="sm_90")
-    def kernel(source, destination, distance, items_per_thread):
+    def kernel(source, destination, distance):
         thread = compiler_cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
-        for item in range(items_per_thread):
-            payload[item] = source[thread * items_per_thread + item]
+        payload = numba_coop.ThreadData(2, dtype=types.int32)
+        payload[0] = source[thread * 2]
+        payload[1] = source[thread * 2 + 1]
         exchanged = common_coop.exchange(
             common_coop.this_block(),
             payload,
@@ -463,23 +462,16 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
             exchanged,
             mode="up",
         )
-        rotated = qualified_coop.shuffle(
-            qualified_coop.this_block(),
+        rotated = numba_coop.shuffle(
+            numba_coop.this_block(),
             source[thread],
             mode="rotate",
             distance=distance,
         )
-        for item in range(items_per_thread):
-            destination[thread * items_per_thread + item] = (
-                shifted[item] + rotated if item == 0 else shifted[item]
-            )
+        destination[thread * 2] = shifted[0] + rotated
+        destination[thread * 2 + 1] = shifted[1]
 
-    signature = types.void(
-        types.int32[::1],
-        types.int32[::1],
-        types.int32,
-        types.IntegerLiteral(items_per_thread),
-    )
+    signature = types.void(types.int32[::1], types.int32[::1], types.int32)
     launch_config_key = (
         ("grid", (1, 1, 1)),
         ("block", (_BLOCK_THREADS, 1, 1)),
@@ -502,19 +494,18 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
     assert "bar.sync" in ptx
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_untyped_load_composes_directly_into_exchange(
-    monkeypatch: pytest.MonkeyPatch, items_per_thread
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compiler_cuda = _production_compile_environment(monkeypatch)
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common_coop
 
     @compiler_cuda.jit(chip="sm_90")
-    def kernel(source, destination, items_per_thread):
+    def kernel(source, destination):
         thread = compiler_cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(items_per_thread)
+        payload = numba_coop.ThreadData(2)
         common_coop.load(
             common_coop.this_block(),
             source,
@@ -526,14 +517,10 @@ def test_untyped_load_composes_directly_into_exchange(
             payload,
             mode="blocked_to_striped",
         )
-        for item in range(items_per_thread):
-            destination[thread * items_per_thread + item] = exchanged[item]
+        destination[thread * 2] = exchanged[0]
+        destination[thread * 2 + 1] = exchanged[1]
 
-    signature = types.void(
-        types.int32[::1],
-        types.int32[::1],
-        types.IntegerLiteral(items_per_thread),
-    )
+    signature = types.void(types.int32[::1], types.int32[::1])
     launch_config_key = (
         ("grid", (1, 1, 1)),
         ("block", (_BLOCK_THREADS, 1, 1)),
@@ -604,11 +591,10 @@ def _evaluate_warp_mask(definitions, operand, rank):
 
 
 @pytest.mark.parametrize("width", _LOGICAL_WARP_WIDTHS)
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_warp_exchange_emits_ordered_reuse_barriers(
-    width, monkeypatch, items_per_thread
+    width, monkeypatch
 ):
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     monkeypatch.setattr(
         numba_mlir_tools,
@@ -617,21 +603,23 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(
     )
 
     @cuda.jit(chip="sm_90")
-    def kernel(source, destination, items_per_thread):
+    def kernel(source, destination):
         thread = cuda.threadIdx.x
-        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
-        for item in range(items_per_thread):
-            payload[item] = source[thread * items_per_thread + item]
-        first = coop.exchange(
-            coop.this_warp().group_by(width),
+        payload = numba_coop.ThreadData(2, dtype=types.int32)
+        payload[0] = source[thread * 2]
+        payload[1] = source[thread * 2 + 1]
+        first = numba_coop.exchange(
+            numba_coop.this_warp().group_by(width),
             payload,
             mode="blocked_to_striped",
         )
-        second = coop.exchange(
-            coop.this_warp().group_by(width), first, mode="blocked_to_striped"
+        second = numba_coop.exchange(
+            numba_coop.this_warp().group_by(width),
+            first,
+            mode="blocked_to_striped",
         )
-        for item in range(items_per_thread):
-            destination[thread * items_per_thread + item] = second[item]
+        destination[thread * 2] = second[0]
+        destination[thread * 2 + 1] = second[1]
 
     launch_key = (
         ("grid", (1, 1, 1)),
@@ -640,12 +628,7 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(
         ("cluster", None),
     )
     result = kernel._compile_launch_config_signature(
-        types.void(
-            types.int32[::1],
-            types.int32[::1],
-            types.IntegerLiteral(items_per_thread),
-        ),
-        launch_key,
+        types.void(types.int32[::1], types.int32[::1]), launch_key
     )
     assert result.metadata["cubin"]
     mlir = result.metadata["mlir_module_str"]

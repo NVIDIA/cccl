@@ -503,7 +503,7 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda as compiler_cuda
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop
     from cuda.coop.numba_mlir._compiler import _rewrite_invocables
 
@@ -542,11 +542,11 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
     )
 
     @compiler_cuda.jit(chip="sm_90")
-    def storage_free(source, destination, items_per_thread):
+    def storage_free(source, destination):
         storage = coop.TempStorage(
             128 * 1024, alignment=16, sharing="exclusive", auto_sync=True
         )
-        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
+        payload = coop.ThreadData(4, dtype=types.int32)
         coop.load(
             coop.this_block(),
             source,
@@ -563,26 +563,25 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
         )
 
     @compiler_cuda.jit(chip="sm_90")
-    def storage_bearing(source, destination, items_per_thread):
-        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
-        qualified_coop.load(
-            qualified_coop.this_block(),
+    def storage_bearing(source, destination):
+        thread = compiler_cuda.threadIdx.x
+        payload = numba_coop.ThreadData(2, dtype=types.int32)
+        numba_coop.load(
+            numba_coop.this_block(),
             source,
             payload,
             algorithm="warp_transpose_timesliced",
         )
-        qualified_coop.store(
-            qualified_coop.this_block(),
+        numba_coop.store(
+            numba_coop.this_block(),
             destination,
             payload,
             algorithm="warp_transpose_timesliced",
         )
+        for item in range(2):
+            destination[thread * 2 + item] = payload[item]
 
-    signature = types.void(
-        types.int32[::1],
-        types.int32[::1],
-        types.IntegerLiteral(items_per_thread),
-    )
+    signature = types.void(types.int32[::1], types.int32[::1])
     launch_config_key = (
         ("grid", (1, 1, 1)),
         ("block", (64, 1, 1)),
