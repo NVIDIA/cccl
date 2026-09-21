@@ -32,9 +32,7 @@ def register_cutlass() -> None:
 
 def check_cutlass_surface(source: object, destination: object) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(
-        items_per_thread=2, dtype=np.int32, alignment=16
-    )
+    values = cutlass_coop.ThreadData(2, np.int32, alignment=16)
     assert_type(block, cutlass_coop.ThreadGroup[Literal["block"]])
     assert_type(values, cutlass_coop.ThreadData[np.int32])
     assert_type(values[0], np.int32)
@@ -52,7 +50,7 @@ def check_cutlass_surface(source: object, destination: object) -> None:
     cutlass_coop.store(block, destination, values, valid_items=31, offset=4)
     common_coop.load(common_coop.this_block(), source, values)
     common_coop.store(common_coop.this_block(), destination, values)
-    common_values = common_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    common_values = common_coop.ThreadData(2, np.int32)
     assert_type(cutlass_coop.load(block, source, common_values), None)
     assert_type(cutlass_coop.store(block, destination, common_values), None)
 
@@ -120,7 +118,7 @@ def check_cutlass_dynamic_memory_controls(
     signed: Int32, unsigned: Uint32
 ) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float64)
+    values = cutlass_coop.ThreadData(2, Float64)
     assert_type(
         cutlass_coop.load(
             block,
@@ -147,7 +145,7 @@ def check_cutlass_dynamic_memory_controls(
 
 def check_cutlass_warp_surface(source: object, destination: object) -> None:
     warp = cutlass_coop.this_warp()
-    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    values = cutlass_coop.ThreadData(2, np.int32)
     assert_type(warp, cutlass_coop.ThreadGroup[Literal["warp"]])
     assert_type(cutlass_coop.load(warp, source, values), None)
     assert_type(cutlass_coop.store(warp, destination, values), None)
@@ -173,7 +171,7 @@ def check_cutlass_warp_surface(source: object, destination: object) -> None:
 def check_cutlass_logical_warp_surface(
     source: object, destination: object
 ) -> None:
-    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    values = cutlass_coop.ThreadData(2, np.int32)
     for width in (1, 2, 4, 8, 16, 32):
         group = cutlass_coop.this_warp().group_by(width)
         assert_type(
@@ -231,7 +229,17 @@ def check_cutlass_hierarchy_surface() -> None:
 
 def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    values = cutlass_coop.ThreadData(2, np.int32)
+    assert_type(
+        cutlass_coop.reduce_batched(cutlass_coop.this_warp(), values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.reduce_batched(
+            cutlass_coop.this_warp().group_by(8), values, output_layout="blocked"
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
     assert_type(cutlass_coop.reduce(block, values), np.int32)
     assert_type(cutlass_coop.sum(block, values), np.int32)
     assert_type(cutlass_coop.reduce(block, scalar, binary_op="max"), Uint32)
@@ -271,9 +279,9 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
 def check_cutlass_scan_surface(scalar: Uint32) -> None:
     block = cutlass_coop.this_block()
     logical = cutlass_coop.this_warp().group_by(8)
-    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
-    aggregate = cutlass_coop.ThreadData(items_per_thread=1, dtype=Uint32)
-    common_aggregate = common_coop.ThreadData(items_per_thread=1, dtype=Uint32)
+    values = cutlass_coop.ThreadData(2, np.int32)
+    aggregate = cutlass_coop.ThreadData(1, Uint32)
+    common_aggregate = common_coop.ThreadData(1, Uint32)
     assert_type(
         cutlass_coop.exclusive_sum(
             block, scalar, aggregate_output=common_aggregate
@@ -373,8 +381,8 @@ def check_cutlass_scan_surface(scalar: Uint32) -> None:
 def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
     block = cutlass_coop.this_block()
     warp = cutlass_coop.this_warp()
-    numpy_values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
-    cute_values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float32)
+    numpy_values = cutlass_coop.ThreadData(2, np.int32)
+    cute_values = cutlass_coop.ThreadData(2, Float32)
     assert_type(
         cutlass_coop.exclusive_scan(block, Int32(4), initial_value=Int32(0)),
         Int32,
@@ -498,9 +506,9 @@ def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
 
 def check_cutlass_exchange_surface() -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float32)
-    ranks = cutlass_coop.ThreadData(items_per_thread=3, dtype=Int16)
-    flags = cutlass_coop.ThreadData(items_per_thread=3, dtype=Uint64)
+    values = cutlass_coop.ThreadData(3, np.float32)
+    ranks = cutlass_coop.ThreadData(3, Int16)
+    flags = cutlass_coop.ThreadData(3, Uint64)
     for mode in (
         "striped_to_blocked",
         "blocked_to_striped",
@@ -578,7 +586,7 @@ def check_cutlass_exchange_surface() -> None:
             block,
             values,
             mode="scatter_to_blocked",
-            ranks=cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int8),
+            ranks=cutlass_coop.ThreadData(3, np.int8),
         ),
         cutlass_coop.ThreadData[np.float32],
     )
@@ -586,7 +594,7 @@ def check_cutlass_exchange_surface() -> None:
 
 def check_cutlass_shuffle_surface(scalar: Uint32) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
+    values = cutlass_coop.ThreadData(3, np.int32)
     assert_type(
         cutlass_coop.shuffle(block, values), cutlass_coop.ThreadData[np.int32]
     )
@@ -637,8 +645,8 @@ def check_cutlass_merge_sort_surface() -> None:
     block = cutlass_coop.this_block()
     warp = cutlass_coop.this_warp()
     logical = warp.group_by(8)
-    keys = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
-    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float64)
+    keys = cutlass_coop.ThreadData(3, np.int32)
+    values = cutlass_coop.ThreadData(3, np.float64)
     storage = cutlass_coop.TempStorage(alignment=32)
     assert_type(
         cutlass_coop.merge_sort_keys(block, keys),
@@ -736,9 +744,9 @@ def check_cutlass_merge_sort_surface() -> None:
 
 def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
     block = cutlass_coop.this_block()
-    keys = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
-    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float64)
-    prefixes = cutlass_coop.ThreadData(items_per_thread=1, dtype=Int32)
+    keys = cutlass_coop.ThreadData(3, np.int32)
+    values = cutlass_coop.ThreadData(3, np.float64)
+    prefixes = cutlass_coop.ThreadData(1, Int32)
     storage = cutlass_coop.TempStorage(alignment=32)
     assert_type(
         cutlass_coop.radix_sort_keys(block, keys),
@@ -767,7 +775,7 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
     )
     assert_type(
         cutlass_coop.radix_sort_keys(
-            block, cutlass_coop.ThreadData(items_per_thread=2, dtype=Float64)
+            block, cutlass_coop.ThreadData(2, Float64)
         ),
         cutlass_coop.ThreadData[Float64],
     )
@@ -835,9 +843,7 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
             block,
             Int64(1),
             end_bit=8,
-            exclusive_digit_prefix=common_coop.ThreadData(
-                items_per_thread=4, dtype=np.int32
-            ),
+            exclusive_digit_prefix=common_coop.ThreadData(4, np.int32),
         ),
         Int32,
     )
@@ -857,8 +863,8 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
 
 def check_cutlass_topk_surface() -> None:
     block = cutlass_coop.this_block()
-    keys = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float32)
-    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=Int16)
+    keys = cutlass_coop.ThreadData(3, np.float32)
+    values = cutlass_coop.ThreadData(3, Int16)
     storage = cutlass_coop.TempStorage(alignment=32)
     assert_type(
         cutlass_coop.topk_min_keys(block, keys, k=7),
@@ -948,7 +954,7 @@ def check_cutlass_topk_surface() -> None:
 
 def check_cutlass_neighbors() -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
+    values = cutlass_coop.ThreadData(3, np.int32)
     storage = cutlass_coop.TempStorage(alignment=16)
     assert_type(
         cutlass_coop.adjacent_difference(
@@ -976,7 +982,7 @@ def check_cutlass_neighbors() -> None:
 
 def check_cutlass_histogram() -> None:
     block = cutlass_coop.this_block()
-    samples = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.uint8)
+    samples = cutlass_coop.ThreadData(3, np.uint8)
     storage = cutlass_coop.TempStorage(alignment=16)
     assert_type(
         cutlass_coop.histogram(
@@ -1020,8 +1026,8 @@ def check_cutlass_histogram() -> None:
 
 def check_cutlass_run_length_surface(destination: CutlassTensorSample) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Int32)
-    lengths = cutlass_coop.ThreadData(items_per_thread=2, dtype=Uint64)
+    values = cutlass_coop.ThreadData(2, Int32)
+    lengths = cutlass_coop.ThreadData(2, Uint64)
     storage = cutlass_coop.TempStorage()
     assert_type(
         cutlass_coop.run_length_decode(
