@@ -55,6 +55,8 @@ def reduce_batched(group, value, /, *, binary_op=None, output_layout="striped"):
         Fresh payload with the input dtype and ``ceil(B / W)`` slots per lane.
         Slots beyond the batch count are undefined.
 
+    Notes
+    -----
     See the :doc:`Batched Warp Reduction visualization
     <coop/visualizations/reduce-batched>` for lane and result ownership.
     """

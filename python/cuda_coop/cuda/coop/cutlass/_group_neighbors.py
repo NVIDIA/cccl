@@ -81,6 +81,8 @@ def adjacent_difference(
         Invalid suffix items and a boundary without an external neighbor
         retain their input values. Only built-in subtraction is supported.
 
+    Notes
+    -----
     See the :doc:`Adjacent Difference visualization
     <coop/visualizations/adjacent-difference>` for tile boundaries.
     """
@@ -119,6 +121,8 @@ def discontinuity(
         Fresh int32 heads or tails, or ``(heads, tails)``. Each result has the
         input extent and minimum alignment. The input remains unchanged.
 
+    Notes
+    -----
     See the :doc:`Discontinuity visualization
     <coop/visualizations/discontinuity>` for head and tail flags.
     """
