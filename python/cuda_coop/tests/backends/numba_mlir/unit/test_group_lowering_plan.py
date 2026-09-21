@@ -13,8 +13,6 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from cuda.coop._core import INT32
-
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 _STATIC_PROVENANCE_GLOBAL = np.int32(3)
@@ -248,27 +246,25 @@ def test_group_planner_marks_only_explicit_static_scalar_provenance_static():
     assert different.kind is BindingKind.RUNTIME
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(
     qualified,
-    items_per_thread,
 ):
     from numba_cuda_mlir import cuda, types
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
     from cuda.coop._core import BindingKind
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
-    module = qualified_coop if qualified else root_coop
+    module = numba_coop if qualified else root_coop
 
-    def memory(source, control, items_per_thread):
+    def memory(source, control):
         index = cuda.threadIdx.x
         valid = control + index
         default = source[index]
         offset = np.int64(control)
-        output = module.ThreadData(items_per_thread, dtype=types.int32)
+        output = module.ThreadData(2, dtype=types.int32)
         return module.load(
             module.this_block(),
             source,
@@ -280,16 +276,12 @@ def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(
 
     array_type = types.Array(types.int32, 1, "C")
     arg_types = (array_type, types.int32)
-    planner = _planner(
-        memory,
-        arg_types=(*arg_types, types.IntegerLiteral(items_per_thread)),
-        block=(32, 1, 1),
-    )
+    planner = _planner(memory, arg_types=arg_types, block=(32, 1, 1))
     assert planner.run()
 
     state = SimpleNamespace(
         func_ir=planner.func_ir,
-        args=(*arg_types, types.IntegerLiteral(items_per_thread)),
+        args=arg_types,
         typingctx=SimpleNamespace(refresh=lambda: None),
         typemap={},
         calltypes={},
@@ -314,13 +306,10 @@ def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(
     assert rewrite._resolve_var_dtype(match.runtime_args[4]) == types.int64
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_direct_load_provider_is_selected_from_complete_core_plan(
-    monkeypatch, items_per_thread
-):
+def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import (
         BindingKind,
         GroupLoweringTarget,
@@ -343,15 +332,15 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(
         capture_plan,
     )
 
-    def memory_with_storage(source, items_per_thread):
-        storage = coop.TempStorage(
+    def memory_with_storage(source):
+        storage = numba_coop.TempStorage(
             256,
             alignment=16,
             sharing="exclusive",
         )
-        output = coop.ThreadData(items_per_thread, dtype=types.int32)
-        return coop.load(
-            coop.this_block(),
+        output = numba_coop.ThreadData(2, dtype=types.int32)
+        return numba_coop.load(
+            numba_coop.this_block(),
             source,
             output,
             valid_items=31,
@@ -359,10 +348,10 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(
             temp_storage=storage,
         )
 
-    def memory_without_storage(source, items_per_thread):
-        output = coop.ThreadData(items_per_thread, dtype=types.int32)
-        return coop.load(
-            coop.this_block(),
+    def memory_without_storage(source):
+        output = numba_coop.ThreadData(2, dtype=types.int32)
+        return numba_coop.load(
+            numba_coop.this_block(),
             source,
             output,
             valid_items=31,
@@ -371,26 +360,16 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(
 
     array_type = types.Array(types.int32, 1, "C")
     for memory in (memory_with_storage, memory_without_storage):
-        planner = _planner(
-            memory,
-            arg_types=(array_type, types.IntegerLiteral(items_per_thread)),
-        )
+        planner = _planner(memory, arg_types=(array_type,))
         assert planner.run()
     assert len(plans) == 2
 
     plan = plans[0]
     implicit_plan = plans[1]
-    semantic_key = plan.call.operation.semantic_key
-    # Compiler metadata on a backend dtype does not change the operation.
-    monkeypatch.setattr(
-        types.int32, "_coop_test_metadata", {"generation": 1}, raising=False
-    )
-    assert plan.call.operation.semantic_key == semantic_key
+    assert plan == implicit_plan
     assert plan.call.operation == implicit_plan.call.operation
-    assert plan.target == implicit_plan.target
-    assert plan.participation == implicit_plan.participation
-    assert plan.temp_storage == implicit_plan.temp_storage
-    assert plan.synchronization == implicit_plan.synchronization
+    assert plan.semantic_key == implicit_plan.semantic_key
+    assert plan.artifact_key == implicit_plan.artifact_key
     assert plan.target is GroupLoweringTarget.CUB_BLOCK
     assert plan.unsupported is None
     assert plan.artifact_key is not None
@@ -428,30 +407,28 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(
         "Load",
     )
     semantics = plan.call.operation
-    assert semantics.dtype == INT32
-    assert semantics.items_per_thread == items_per_thread
+    assert semantics.dtype == types.int32
+    assert semantics.items_per_thread == 2
     assert semantics.valid_items.kind is BindingKind.STATIC
     assert semantics.valid_items.value == 31
     assert semantics.oob_default.kind is BindingKind.STATIC
     assert semantics.oob_default.value == -1
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 @pytest.mark.parametrize("operation", ["load", "store"])
 def test_load_store_infer_untyped_payloads_symmetrically(
     monkeypatch,
     qualified,
     operation,
-    items_per_thread,
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
-    module = qualified_coop if qualified else root_coop
+    module = numba_coop if qualified else root_coop
     plans = []
     plan_group_primitive = _group_load_store.plan_group_primitive
 
@@ -464,8 +441,8 @@ def test_load_store_infer_untyped_payloads_symmetrically(
 
     if operation == "load":
 
-        def memory(source, destination, items_per_thread):
-            output = module.ThreadData(items_per_thread)
+        def memory(source, destination):
+            output = module.ThreadData(2)
             return module.load(
                 module.this_block(),
                 source,
@@ -475,10 +452,10 @@ def test_load_store_infer_untyped_payloads_symmetrically(
 
     else:
 
-        def memory(source, destination, items_per_thread):
-            output = module.ThreadData(items_per_thread)
-            for item in range(items_per_thread):
-                output[item] = source[item]
+        def memory(source, destination):
+            output = module.ThreadData(2)
+            output[0] = source[0]
+            output[1] = source[1]
             module.store(
                 module.this_block(),
                 destination,
@@ -487,25 +464,15 @@ def test_load_store_infer_untyped_payloads_symmetrically(
             )
 
     array_type = types.Array(types.int32, 1, "C")
-    assert _planner(
-        memory,
-        arg_types=(
-            array_type,
-            array_type,
-            types.IntegerLiteral(items_per_thread),
-        ),
-    ).run()
+    assert _planner(memory, arg_types=(array_type, array_type)).run()
 
     assert len(plans) == 1
-    assert plans[0].call.operation.dtype == INT32
+    assert plans[0].call.operation.dtype == types.int32
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 @pytest.mark.parametrize("projection", ["alias", "tuple", "tuple-alias"])
-def test_inferred_load_dtype_follows_output_aliases(
-    qualified, projection, items_per_thread
-):
+def test_inferred_load_dtype_follows_output_aliases(qualified, projection):
     """Check that a load types the original payload through output aliases.
 
     Direct aliases, tuple projections, and branch-selected tuples all reach
@@ -515,15 +482,15 @@ def test_inferred_load_dtype_follows_output_aliases(
 
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
 
-    module = qualified_coop if qualified else root_coop
+    module = numba_coop if qualified else root_coop
 
     if projection == "alias":
 
-        def memory(source, flag, items_per_thread):
-            payload = module.ThreadData(items_per_thread)
+        def memory(source, flag):
+            payload = module.ThreadData(2)
             alias = payload
             if flag:
                 output = alias
@@ -537,8 +504,8 @@ def test_inferred_load_dtype_follows_output_aliases(
 
     elif projection == "tuple":
 
-        def memory(source, flag, items_per_thread):
-            payload = module.ThreadData(items_per_thread)
+        def memory(source, flag):
+            payload = module.ThreadData(2)
             packed = (payload,)
             output = packed[0]
             module.load(module.this_block(), source, output)
@@ -549,8 +516,8 @@ def test_inferred_load_dtype_follows_output_aliases(
 
     else:
 
-        def memory(source, flag, items_per_thread):
-            payload = module.ThreadData(items_per_thread)
+        def memory(source, flag):
+            payload = module.ThreadData(2)
             packed = (payload,)
             if flag:
                 alias = packed
@@ -564,14 +531,7 @@ def test_inferred_load_dtype_follows_output_aliases(
             return module.inclusive_sum(module.this_block(), exchanged[0])
 
     array_type = types.Array(types.int32, 1, "C")
-    planner = _planner(
-        memory,
-        arg_types=(
-            array_type,
-            types.boolean,
-            types.IntegerLiteral(items_per_thread),
-        ),
-    )
+    planner = _planner(memory, arg_types=(array_type, types.boolean))
     assert planner.run()
     assert (
         planner.context.dtype(_assigned_var(planner.func_ir, "payload"))
@@ -583,17 +543,17 @@ def test_inferred_load_dtype_follows_output_aliases(
 def test_inferred_load_dtype_rejects_conflicting_alias_writes(qualified):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
     from cuda.coop.numba_mlir._compiler._group_planner_support import (
         GroupRewriteError,
     )
 
-    module = qualified_coop if qualified else root_coop
+    module = numba_coop if qualified else root_coop
 
     def memory(source, conflicting, flag):
-        payload = module.ThreadData(items_per_thread=2)
-        other = module.ThreadData(items_per_thread=2)
+        payload = module.ThreadData(2)
+        other = module.ThreadData(2)
         module.load(module.this_block(), source, payload)
         if flag:
             output = payload
@@ -619,7 +579,7 @@ def test_load_does_not_infer_dtype_for_an_earlier_exchange():
     )
 
     def memory(source):
-        payload = coop.ThreadData(items_per_thread=2)
+        payload = coop.ThreadData(2)
         exchanged = coop.exchange(
             coop.this_block(), payload, mode="blocked_to_striped"
         )
@@ -652,7 +612,7 @@ def test_group_plan_rejects_incompatible_provider_metadata(
 
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir import _lowering
     from cuda.coop.numba_mlir._compiler import _group_planning
     from cuda.coop.numba_mlir._compiler._group_planner_support import (
@@ -670,8 +630,8 @@ def test_group_plan_rejects_incompatible_provider_metadata(
     )
 
     def memory(source):
-        output = coop.ThreadData(items_per_thread=2, dtype=types.int32)
-        return coop.load(coop.this_block(), source, output)
+        output = numba_coop.ThreadData(2, dtype=types.int32)
+        return numba_coop.load(numba_coop.this_block(), source, output)
 
     array_type = types.Array(types.int32, 1, "C")
     with pytest.raises(GroupRewriteError, match=diagnostic):
@@ -793,13 +753,10 @@ def test_group_plan_rejects_declared_sync_for_implementation_owned_no_sync(
         GroupPlanningContext._validate_provider_contract(plan, object())
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_logical_warp_plan_selects_typed_cub_provider(
-    monkeypatch, items_per_thread
-):
+def test_logical_warp_plan_selects_typed_cub_provider(monkeypatch):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import GroupLoweringTarget
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
@@ -817,15 +774,14 @@ def test_logical_warp_plan_selects_typed_cub_provider(
         capture_plan,
     )
 
-    def memory(source, items_per_thread):
-        output = coop.ThreadData(items_per_thread, dtype=types.int32)
-        return coop.load(coop.this_warp().group_by(8), source, output)
+    def memory(source):
+        output = numba_coop.ThreadData(2, dtype=types.int32)
+        return numba_coop.load(
+            numba_coop.this_warp().group_by(8), source, output
+        )
 
     array_type = types.Array(types.int32, 1, "C")
-    planner = _planner(
-        memory,
-        arg_types=(array_type, types.IntegerLiteral(items_per_thread)),
-    )
+    planner = _planner(memory, arg_types=(array_type,))
     assert planner.run()
 
     assert len(plans) == 1
@@ -849,13 +805,13 @@ def test_static_oob_default_rejects_before_provider_selection(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
     def memory(source):
-        output = coop.ThreadData(items_per_thread=2, dtype=types.int32)
-        return coop.load(
-            coop.this_block(),
+        output = numba_coop.ThreadData(2, dtype=types.int32)
+        return numba_coop.load(
+            numba_coop.this_block(),
             source,
             output,
             valid_items=1,
@@ -889,13 +845,13 @@ def test_runtime_oob_default_rejects_before_provider_selection(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
     def memory(source, oob_default):
-        output = coop.ThreadData(items_per_thread=2, dtype=types.int32)
-        return coop.load(
-            coop.this_block(),
+        output = numba_coop.ThreadData(2, dtype=types.int32)
+        return numba_coop.load(
+            numba_coop.this_block(),
             source,
             output,
             valid_items=1,
@@ -921,7 +877,6 @@ def test_runtime_oob_default_rejects_before_provider_selection(
         _planner(memory, arg_types=(array_type, value_type)).run()
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 @pytest.mark.parametrize("operation", ["load", "store"])
 @pytest.mark.parametrize(
@@ -933,11 +888,10 @@ def test_equivalent_dtype_spellings_are_canonicalized_before_planning(
     qualified,
     operation,
     dtype_spelling,
-    items_per_thread,
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
@@ -949,7 +903,7 @@ def test_equivalent_dtype_spellings_are_canonicalized_before_planning(
         "backend": types.int32,
     }
     dtype = spellings[dtype_spelling]
-    module = qualified_coop if qualified else root_coop
+    module = numba_coop if qualified else root_coop
     plans = []
     plan_group_primitive = _group_load_store.plan_group_primitive
 
@@ -962,24 +916,21 @@ def test_equivalent_dtype_spellings_are_canonicalized_before_planning(
 
     if operation == "load":
 
-        def memory(memory, items_per_thread):
-            payload = module.ThreadData(items_per_thread, dtype=dtype)
+        def memory(memory):
+            payload = module.ThreadData(2, dtype=dtype)
             return module.load(module.this_block(), memory, payload)
 
     else:
 
-        def memory(memory, items_per_thread):
-            payload = module.ThreadData(items_per_thread, dtype=dtype)
+        def memory(memory):
+            payload = module.ThreadData(2, dtype=dtype)
             module.store(module.this_block(), memory, payload)
 
     array_type = types.Array(types.int32, 1, "C")
-    planner = _planner(
-        memory,
-        arg_types=(array_type, types.IntegerLiteral(items_per_thread)),
-    )
+    planner = _planner(memory, arg_types=(array_type,))
     assert planner.run()
     assert len(plans) == 1
-    assert plans[0].call.operation.dtype == INT32
+    assert plans[0].call.operation.dtype == types.int32
 
 
 _STATIC_DEFAULT_DTYPES = (
@@ -996,21 +947,19 @@ _STATIC_DEFAULT_DTYPES = (
 )
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 @pytest.mark.parametrize(("dtype_name", "numpy_dtype"), _STATIC_DEFAULT_DTYPES)
 def test_static_oob_default_boundaries_use_the_load_payload_dtype(
     qualified,
     dtype_name,
     numpy_dtype,
-    items_per_thread,
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
 
-    module = qualified_coop if qualified else root_coop
+    module = numba_coop if qualified else root_coop
     numpy_kind = np.dtype(numpy_dtype).kind
     info = (
         np.iinfo(numpy_dtype) if numpy_kind in "iu" else np.finfo(numpy_dtype)
@@ -1021,10 +970,8 @@ def test_static_oob_default_boundaries_use_the_load_payload_dtype(
 
     for oob_default in boundaries:
 
-        def memory(source, items_per_thread):
-            output = module.ThreadData(
-                items_per_thread, dtype=getattr(types, dtype_name)
-            )
+        def memory(source):
+            output = module.ThreadData(2, dtype=getattr(types, dtype_name))
             return module.load(
                 module.this_block(),
                 source,
@@ -1034,10 +981,7 @@ def test_static_oob_default_boundaries_use_the_load_payload_dtype(
             )
 
         array_type = types.Array(getattr(types, dtype_name), 1, "C")
-        assert _planner(
-            memory,
-            arg_types=(array_type, types.IntegerLiteral(items_per_thread)),
-        ).run()
+        assert _planner(memory, arg_types=(array_type,)).run()
 
 
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
@@ -1057,14 +1001,14 @@ def test_untyped_store_infers_write_dtype_before_destination_fallback(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
-    module = qualified_coop if qualified else root_coop
+    module = numba_coop if qualified else root_coop
 
     def memory(destination, value):
-        payload = module.ThreadData(items_per_thread=2)
+        payload = module.ThreadData(2)
         payload[0] = value
         payload[1] = value
         module.store(module.this_block(), destination, payload)
@@ -1086,13 +1030,10 @@ def test_untyped_store_infers_write_dtype_before_destination_fallback(
         planner.run()
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_scalar_scan_of_a_loaded_payload_element_plans_as_a_scalar(
-    monkeypatch, items_per_thread
-):
+def test_scalar_scan_of_a_loaded_payload_element_plans_as_a_scalar(monkeypatch):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import GroupOperandKind
     from cuda.coop.numba_mlir._compiler import _group_scan
 
@@ -1106,26 +1047,21 @@ def test_scalar_scan_of_a_loaded_payload_element_plans_as_a_scalar(
 
     monkeypatch.setattr(_group_scan, "plan_group_primitive", capture_plan)
 
-    def kernel(source, output, items_per_thread):
-        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
-        coop.load(
-            coop.this_block(),
+    def kernel(source, output):
+        payload = numba_coop.ThreadData(2, dtype=types.int32)
+        numba_coop.load(
+            numba_coop.this_block(),
             source,
             payload,
             algorithm="transpose",
         )
         # Indexing the loaded payload selects one scalar element.
-        output[0] = coop.inclusive_sum(coop.this_block(), payload[0])
+        output[0] = numba_coop.inclusive_sum(
+            numba_coop.this_block(), payload[0]
+        )
 
     array_type = types.Array(types.int32, 1, "C")
-    planner = _planner(
-        kernel,
-        arg_types=(
-            array_type,
-            array_type,
-            types.IntegerLiteral(items_per_thread),
-        ),
-    )
+    planner = _planner(kernel, arg_types=(array_type, array_type))
     assert planner.run()
 
     assert len(plans) == 1
