@@ -170,12 +170,7 @@ void warp_exchange(c2h::device_vector<InputT>& in, c2h::device_vector<OutputT>& 
 
 struct blocked_to_striped
 {
-  template <typename InputT,
-            typename OutputT,
-            int LogicalWarpThreads,
-            int ItemsPerThread,
-            int ItemsPerThread,
-            cub::WarpExchangeAlgorithm Alg>
+  template <typename InputT, typename OutputT, int LogicalWarpThreads, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg>
   __device__ void operator()(InputT (&input)[ItemsPerThread],
                              OutputT (&output)[ItemsPerThread],
                              cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange)
@@ -186,12 +181,7 @@ struct blocked_to_striped
 
 struct striped_to_blocked
 {
-  template <typename InputT,
-            typename OutputT,
-            int LogicalWarpThreads,
-            int ItemsPerThread,
-            int ItemsPerThread,
-            cub::WarpExchangeAlgorithm Alg>
+  template <typename InputT, typename OutputT, int LogicalWarpThreads, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg>
   __device__ void operator()(InputT (&input)[ItemsPerThread],
                              OutputT (&output)[ItemsPerThread],
                              cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange)
