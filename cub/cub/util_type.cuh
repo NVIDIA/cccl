@@ -483,7 +483,7 @@ template <typename T> struct UnitWord<const volatile T> : UnitWord<T> {};
  * \brief Exposes a member alias \p Type that names the corresponding CUDA vector type if one exists.  Otherwise \p
  * Type refers to the CubVector structure itself, which will wrap the corresponding \p x, \p y, etc. vector fields.
  */
-template <typename T, int vec_elements>
+template <typename T, int VecElements>
 struct CubVector
 {
   static_assert(!sizeof(T), "CubVector can only have 1-4 elements");
