@@ -173,6 +173,9 @@ namespace cuda::experimental
 // whether it provides the type. ARM64 stays excluded, as in CCCL: no ARM64 toolchain
 // provides __float128 (aarch64 GCC does not even define __SIZEOF_FLOAT128__), and nvc++
 // there rejects the name outright - such hosts take the 128-bit long double path below.
+// GCC still provides the distinct IEC type _Float128 (including on x86, where
+// __fpmp_fp128 is __float128). fpmp2 converts to that spelling separately (see
+// fpmp.h) because GCC does not convert _Float128 to __fpmp_fp128 when they differ.
 */
 #ifndef _CCCL_FPMP_HAS_FLOAT128_TYPE
 #  if _CCCL_HAS_FLOAT128()
@@ -309,6 +312,19 @@ using __fpmp_fp128 = long double;
 #    error "_CCCL_FPMP_FP128_ENABLE=1 but this platform provides no 128-bit floating-point type"
 #  endif
 static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floating-point type");
+#endif
+
+// IEC 60559 _Float128. GCC often treats this as a distinct binary128 type from
+// __fpmp_fp128 (__float128 on x86, long double on aarch64 IEEE-128) with no
+// implicit conversion. Declared whenever the compiler exposes the type so fpmp2
+// can convert to it without going through __fpmp_fp128. When the two types are
+// already the same, the extra members are SFINAE'd out.
+#ifndef _CCCL_FPMP_HAS_IEC_FLOAT128
+#  if defined(__FLT128_MANT_DIG__)
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 1
+#  else
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 0
+#  endif
 #endif
 
 /*

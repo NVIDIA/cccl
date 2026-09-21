@@ -911,6 +911,26 @@ public:
   _CCCL_TEMPLATE(class _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up>)
   _CCCL_FPMP_FP128_API explicit operator __fpmp_fp128() const = delete;
+
+#  if _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
+  _CCCL_TEMPLATE(class _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up> _CCCL_AND(!::cuda::std::is_same_v<_Float128, __fpmp_fp128>))
+  _CCCL_FPMP_FP128_API constexpr _CCCL_FPMP_EXPLICIT fpmp2_stat(_Float128 __d) noexcept
+      : __stat_v_{static_cast<_FpType>(__d)}
+  {}
+  _CCCL_TEMPLATE(class _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up> _CCCL_AND(!::cuda::std::is_same_v<_Float128, __fpmp_fp128>))
+  [[nodiscard]] _CCCL_FPMP_FP128_API explicit operator _Float128() const noexcept
+  {
+    return static_cast<_Float128>(__stat_v_);
+  }
+  _CCCL_TEMPLATE(class _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up> _CCCL_AND(!::cuda::std::is_same_v<_Float128, __fpmp_fp128>))
+  _CCCL_FPMP_FP128_API _CCCL_FPMP_EXPLICIT fpmp2_stat(_Float128) = delete;
+  _CCCL_TEMPLATE(class _Up = _FpType)
+  _CCCL_REQUIRES(__fpmp2_is_fp32_v<_Up> _CCCL_AND(!::cuda::std::is_same_v<_Float128, __fpmp_fp128>))
+  _CCCL_FPMP_FP128_API explicit operator _Float128() const = delete;
+#  endif // _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 #endif // _CCCL_FPMP_FP128_ENABLE == 1
 
   //! @brief Construct from any standard integer type
