@@ -321,10 +321,10 @@ struct AgentPartition
 /**
  * \brief Concatenates up to ITEMS_PER_THREAD elements from input{1,2} into output array
  *
- * Reads data in a coalesced fashion [BLOCK_THREADS * item + tid] and
+ * Reads data in a coalesced fashion [BlockThreads * item + tid] and
  * stores the result in output[item].
  */
-template <int BLOCK_THREADS, bool IS_FULL_TILE, int ITEMS_PER_THREAD, class T, class It1, class It2>
+template <int BlockThreads, bool IS_FULL_TILE, int ITEMS_PER_THREAD, class T, class It1, class It2>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
 {
@@ -333,7 +333,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
-      const int idx = BLOCK_THREADS * item + threadIdx.x;
+      const int idx = BlockThreads * item + threadIdx.x;
       // It1 and It2 could have different value types. Convert after load.
       output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
     }
@@ -343,7 +343,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
-      const int idx = BLOCK_THREADS * item + threadIdx.x;
+      const int idx = BlockThreads * item + threadIdx.x;
       if (idx < count1 + count2)
       {
         output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -352,14 +352,14 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
   }
 }
 
-/// \brief Stores data in a coalesced fashion in[item] -> out[BLOCK_THREADS * item + tid]
-template <int BLOCK_THREADS, int ITEMS_PER_THREAD, class T, class It>
+/// \brief Stores data in a coalesced fashion in[item] -> out[BlockThreads * item + tid]
+template <int BlockThreads, int ITEMS_PER_THREAD, class T, class It>
 _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
-    const int idx = BLOCK_THREADS * item + threadIdx.x;
+    const int idx = BlockThreads * item + threadIdx.x;
     output[idx]   = input[item];
   }
 }

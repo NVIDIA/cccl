@@ -49,21 +49,21 @@ bool g_uniform_keys;
  * Simple kernel for performing a block-wide sorting over integers
  */
 template <typename Key,
-          int BLOCK_THREADS,
+          int BlockThreads,
           int ITEMS_PER_THREAD>
-__launch_bounds__(BLOCK_THREADS) __global__
+__launch_bounds__(BlockThreads) __global__
   void BlockSortKernel(Key* d_in, // Tile of input
                        Key* d_out, // Tile of output
                        clock_t* d_elapsed) // Elapsed cycle count of block scan
 {
-  static constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_SIZE = BlockThreads * ITEMS_PER_THREAD;
 
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  using BlockLoadT = BlockLoad<Key, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using BlockLoadT = BlockLoad<Key, BlockThreads, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
 
   // Specialize BlockRadixSort type for our thread block
-  using BlockRadixSortT = BlockRadixSort<Key, BLOCK_THREADS, ITEMS_PER_THREAD>;
+  using BlockRadixSortT = BlockRadixSort<Key, BlockThreads, ITEMS_PER_THREAD>;
 
   // Shared memory
   __shared__ union TempStorage
@@ -94,7 +94,7 @@ __launch_bounds__(BLOCK_THREADS) __global__
   const clock_t stop = clock();
 
   // Store output in striped fashion
-  StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
+  StoreDirectStriped<BlockThreads>(threadIdx.x, d_out + block_offset, items);
 
   // Store elapsed clocks
   if (threadIdx.x == 0)
@@ -133,10 +133,10 @@ void Initialize(Key* h_in, Key* h_reference, int num_items, int tile_size)
 /**
  * Test BlockScan
  */
-template <typename Key, int BLOCK_THREADS, int ITEMS_PER_THREAD>
+template <typename Key, int BlockThreads, int ITEMS_PER_THREAD>
 void Test()
 {
-  constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+  constexpr int TILE_SIZE = BlockThreads * ITEMS_PER_THREAD;
 
   // Allocate host arrays
   Key* h_in          = new Key[TILE_SIZE * g_grid_size];
@@ -167,7 +167,7 @@ void Test()
 
   // Kernel props
   int max_sm_occupancy;
-  CubDebugExit(MaxSmOccupancy(max_sm_occupancy, BlockSortKernel<Key, BLOCK_THREADS, ITEMS_PER_THREAD>, BLOCK_THREADS));
+  CubDebugExit(MaxSmOccupancy(max_sm_occupancy, BlockSortKernel<Key, BlockThreads, ITEMS_PER_THREAD>, BlockThreads));
 
   // Copy problem to device
   CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(Key) * TILE_SIZE * g_grid_size, cudaMemcpyHostToDevice));
@@ -177,13 +177,13 @@ void Test()
     TILE_SIZE * g_grid_size,
     g_timing_iterations,
     g_grid_size,
-    BLOCK_THREADS,
+    BlockThreads,
     ITEMS_PER_THREAD,
     max_sm_occupancy);
   fflush(stdout);
 
   // Run kernel once to prime caches and check result
-  BlockSortKernel<Key, BLOCK_THREADS, ITEMS_PER_THREAD><<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+  BlockSortKernel<Key, BlockThreads, ITEMS_PER_THREAD><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
   // Check for kernel errors and STDIO from the kernel, if any
   CubDebugExit(cudaPeekAtLastError());
@@ -206,7 +206,7 @@ void Test()
     timer.Start();
 
     // Run kernel
-    BlockSortKernel<Key, BLOCK_THREADS, ITEMS_PER_THREAD><<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+    BlockSortKernel<Key, BlockThreads, ITEMS_PER_THREAD><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
     timer.Stop();
     elapsed_millis += timer.ElapsedMillis();

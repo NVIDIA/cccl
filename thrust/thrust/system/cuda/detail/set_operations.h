@@ -176,16 +176,16 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
   return ::cuda::std::make_pair(index1, (diag - index1) + star);
 } // func balanced_path
 
-template <int _BLOCK_THREADS,
+template <int BlockThreads,
           int _ITEMS_PER_THREAD                   = 1,
           cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_LDG,
           cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
+  static constexpr int BLOCK_THREADS    = BlockThreads;
   static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD - 1;
+  static constexpr int ITEMS_PER_TILE   = BlockThreads * _ITEMS_PER_THREAD - 1;
 
   static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
   static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
