@@ -136,7 +136,7 @@ __get_driver_entry_point_no_init(const char* __name, int __major = 12, int __min
 
   void* __fn;
   ::CUdriverProcAddressQueryResult __result;
-  ::CUresult __status = __get_proc_addr_fn(
+  const ::CUresult __status = __get_proc_addr_fn(
     __name, &__fn, ::cuda::__driver::__make_version(__major, __minor), ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
   if (__status != ::CUDA_SUCCESS || __result != ::CU_GET_PROC_ADDRESS_SUCCESS)
   {
