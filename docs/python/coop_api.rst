@@ -15,9 +15,9 @@ Common API
 
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi``
-files are authoritative for overload and result typing. Implemented
-operations follow these common contracts; see
-:ref:`backend coverage <coop-backends>` for each integration.
+files are authoritative for overload and result typing. Both Numba-CUDA-MLIR
+and CUTLASS implement these common kernel operations with the documented
+contracts; see :ref:`backend coverage <coop-backends>`.
 The :ref:`calling conventions <coop-common-calling-conventions>` explain
 positional operands and keyword-only controls for both DSLs.
 
@@ -195,21 +195,6 @@ Numba-CUDA-MLIR's memory namespaces.
 
 .. currentmodule:: cuda.coop.numba_mlir
 
-Payloads and temporary storage
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: ThreadData
-
-.. autoclass:: TempStorage
-   :no-members:
-   :no-special-members:
-
-Memory operations
-^^^^^^^^^^^^^^^^^
-
-.. autofunction:: load
-.. autofunction:: store
-
 Reduction
 ^^^^^^^^^
 
@@ -280,8 +265,8 @@ CUTLASS-qualified API
 
 .. py:module:: cuda.coop.cutlass
 
-This module includes the implemented common operations, CuTe register
-conversions, and the extensions documented below:
+This module includes every common kernel operation, CuTe register conversions,
+and the extensions documented below:
 
 .. code-block:: python
 
