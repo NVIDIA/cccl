@@ -24,9 +24,9 @@ extern "C" {
 #undef assert
 #define assert(expr) ((void) 0)
 
-#if defined(_WIN32) && defined(__CUDA__) && defined(__clang__) && defined(__cplusplus)
-// The freestanding Windows host has no libc __assert_fail. Clang compiles
-// HostJIT code on Windows too, so its trap builtin needs no CRT symbol.
+#if defined(__CUDA__) && defined(__clang__) && defined(__cplusplus)
+// Keep host verification independent of libc in the freestanding environment.
+// Clang compiles HostJIT code on every platform and provides the trap builtin.
 __attribute__((host, noreturn)) inline void __assert_fail(const char*, const char*, unsigned, const char*) noexcept
 {
   __builtin_trap();
