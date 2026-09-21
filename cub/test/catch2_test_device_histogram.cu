@@ -95,7 +95,7 @@ __attribute__((optimize("no-tree-vectorize")))
 #  endif
 auto unwrap(array<half_t, N> a)
 {
-  const __half* const p = cast_if_half_pointer(a.data()); // cast to avoid ambiguous conversion from half_t -> __half
+  const __half* const p = unwrap(a.data()); // cast to avoid ambiguous conversion from half_t -> __half
   array<__half, N> r;
   for (size_t i = 0; i < N; i++)
   {
