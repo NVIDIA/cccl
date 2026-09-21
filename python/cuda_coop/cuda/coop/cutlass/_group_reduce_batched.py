@@ -32,6 +32,31 @@ def reduce_batched(group, value, /, *, binary_op=None, output_layout="striped"):
     The CUB provider exchanges register values within the participating warp.
     It requires no shared scratch allocation or storage-reuse barrier. Logical
     warps may call it independently, including from different branches.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete physical warp or logical warp of 1, 2, 4, 8, 16, or 32 lanes.
+        All members of the selected group participate.
+    value : ThreadData or CuTe register payload
+        One input per independent batch in each lane. All lanes use the same
+        positive batch count and numeric dtype. The input remains unchanged.
+    binary_op : str or recognized built-in alias, optional
+        Reduction operator, default addition. Bitwise operators require
+        integer inputs. Custom callbacks are not supported.
+    output_layout : {"striped", "blocked"}, optional
+        Result ownership, default striped. Striped slot ``i`` in lane ``t``
+        holds batch ``t + i * W``; blocked slot ``i`` holds batch
+        ``t * ceil(B / W) + i``. Read only indices below ``B``.
+
+    Returns
+    -------
+    ThreadData
+        Fresh payload with the input dtype and ``ceil(B / W)`` slots per lane.
+        Slots beyond the batch count are undefined.
+
+    See the :doc:`Batched Warp Reduction visualization
+    <coop/visualizations/reduce-batched>` for lane and result ownership.
     """
     if not isinstance(group, ThreadGroup):
         raise TypeError("cuda.coop.cutlass.reduce_batched group must be a ThreadGroup")

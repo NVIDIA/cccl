@@ -98,8 +98,9 @@ The qualified import selects the Numba-CUDA-MLIR API explicitly:
 
 Both imports can be used in the same program. This guide uses ``coop`` for
 common calls and ``numba_coop`` for qualified calls so the choice is visible.
-Use these aliases in programs that use only one API too, so each call
-identifies the API it uses.
+The qualified namespace includes every common kernel operation. An
+application using only Numba can import it as ``coop``; see the
+:ref:`namespace FAQ <coop-faq-qualified-only>`.
 
 The qualified API accepts Numba-specific payloads and adds controls to
 several operations. This table describes those extensions for
@@ -185,10 +186,10 @@ initial value is excluded from that aggregate. You could obtain a total
 with a separate common API reduction, but the qualified call is useful when
 you already need a scan and want its aggregate as well.
 
-The common API defines backend-independent contracts. You must still
-check that the selected backend implements the requested group, dtype, and
-operation. The kernels here also contain Numba launch and indexing code;
-porting the complete kernel to another DSL involves those parts too.
+Both backends implement the common operations with the documented group,
+dtype, and participation requirements. The kernels here also contain Numba
+launch and indexing code; porting a complete kernel to CuTe requires adapting
+those parts too.
 
 Registering the compiler backend
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

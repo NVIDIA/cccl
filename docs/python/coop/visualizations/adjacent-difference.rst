@@ -6,8 +6,9 @@
 Adjacent Difference
 ===================
 
-These primitives are currently implemented by Numba-CUDA-MLIR. CUTLASS
-does not yet implement them; see :ref:`backend coverage <coop-backends>`.
+Both Numba-CUDA-MLIR and CUTLASS implement Adjacent Difference. The
+:ref:`CuTe example <coop-cutlass-neighbors>` uses the same boundary and
+input-preservation rules as the Numba examples below.
 
 :func:`cuda.coop.adjacent_difference` subtracts a neighboring item from
 each item in a block tile. The result has the input's dtype, extent, and

@@ -15,9 +15,9 @@ Common API
 
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi``
-files are authoritative for overload and result typing. See
-:ref:`backend coverage <coop-backends>` for implemented families; a common
-entry point does not imply support in every compiler.
+files are authoritative for overload and result typing. Both Numba-CUDA-MLIR
+and CUTLASS implement these common kernel operations with the documented
+contracts; see :ref:`backend coverage <coop-backends>`.
 The :ref:`calling conventions <coop-common-calling-conventions>` explain
 positional operands and keyword-only controls for both DSLs.
 
@@ -176,8 +176,9 @@ Numba-CUDA-MLIR-qualified API
 
 .. py:module:: cuda.coop.numba_mlir
 
-Use this module for the extensions below. Shared parameters and behavior
-follow the :ref:`Common API <coop-common-api>`. The
+This module includes every common kernel operation and the Numba extensions
+below. Shared parameters and behavior follow the
+:ref:`Common API <coop-common-api>`. The
 :ref:`comparison table <coop-programming-api-choice>` in the
 :doc:`Numba-CUDA-MLIR Programming Guide <coop/programming_guide>` explains
 when to choose qualified calls. The
@@ -264,12 +265,12 @@ CUTLASS-qualified API
 
 .. py:module:: cuda.coop.cutlass
 
-Use this module for CuTe register conversions and the extensions documented
-below:
+This module includes every common kernel operation, CuTe register conversions,
+and the extensions documented below:
 
 .. code-block:: python
 
-   from cuda.coop import cutlass as cutlass_coop
+   import cuda.coop.cutlass as cutlass_coop
 
 Group construction, synchronization, Load/Store, and temporary storage follow
 the :ref:`Common API <coop-common-api>`. Qualified operations also accept CuTe
