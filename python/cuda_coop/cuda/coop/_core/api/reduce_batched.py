@@ -10,41 +10,30 @@ The Python body rejects host calls; the backend supplies the device operation.
 
 from __future__ import annotations
 
-from typing import Literal, TypeVar
+from typing import Any
 
-from cuda.coop._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
-    ReduceOperator,
-)
-
-from ..thread_group import CoopCompilerContextRequiredError
+from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
     _common_group_operation,
 )
 from ._payload import (
     ThreadDataLike,
+    _ReadableThreadDataLike,
 )
-from .thread_group import WarpGroup
-
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 
 @_common_group_operation(
     "reduce_batched", group_kinds=("warp", "threads_within_warp")
 )
 def reduce_batched(
-    group: WarpGroup,
-    value: CommonThreadDataLike[_ItemT],
+    group: ThreadGroup,
+    value: _ReadableThreadDataLike[Any],
     /,
     *,
-    binary_op: ReduceOperator | None = None,
-    output_layout: Literal["striped", "blocked"] = "striped",
-) -> ThreadDataLike[_ItemT]:
+    binary_op: Any = None,
+    output_layout: str = "striped",
+) -> ThreadDataLike[Any]:
     """Reduce each payload slot independently across the selected warp.
-
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
 
     Parameters
     ----------
@@ -78,24 +67,13 @@ def reduce_batched(
     Notes
     -----
     Each batch reduces independently; input slots are not combined with
-    one another. The Numba-CUDA-MLIR backend supports complete physical
-    warps and logical warps of 1, 2, 4, 8, or 16 threads. The compiler manages
-    scratch per warp; this operation has no ``temp_storage`` argument.
+    one another. Both backends support complete physical
+    warps and logical warps of 1, 2, 4, 8, 16, or 32 threads. The compiler manages
+    any provider storage; this operation has no ``temp_storage`` argument.
 
     Use :func:`cuda.coop.numba_mlir.reduce_batched` for a custom stateless
-    device operator. The CUB counterpart is ``cub::WarpReduceBatched``.
-
-    Examples
-    --------
-    Sum each feature independently across a warp with Numba-CUDA-MLIR. Each
-    warp reads its own 32 rows, and the first lanes store the feature sums.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_batched.py
-        :language: python
-        :start-after: # example-begin reduce-batched-features
-        :end-before: # example-end reduce-batched-features
-        :dedent: 4
+    device operator, or :func:`cuda.coop.cutlass.reduce_batched` for CuTe
+    register payloads. The CUB counterpart is ``cub::WarpReduceBatched``.
     """
 
     raise CoopCompilerContextRequiredError(
