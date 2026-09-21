@@ -149,17 +149,17 @@ struct AgentReduceByKey
   using ScanTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
 
   // Guarded inequality functor
-  template <typename _EqualityOpT>
+  template <typename OpT>
   struct GuardedInequalityWrapper
   {
     /// Wrapped equality operator
-    _EqualityOpT op;
+    OpT op;
 
     /// Items remaining
     int num_remaining;
 
     /// Constructor
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(_EqualityOpT op, int num_remaining)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(OpT op, int num_remaining)
         : op(op)
         , num_remaining(num_remaining)
     {}
