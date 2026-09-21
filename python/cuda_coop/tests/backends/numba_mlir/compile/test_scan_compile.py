@@ -38,9 +38,7 @@ class _RunningPrefixFunctor:
 
 
 @pytest.fixture(autouse=True)
-def _fixed_compiler_target(
-    monkeypatch: pytest.MonkeyPatch,
-) -> list[tuple[int, int]]:
+def _fixed_compiler_target(monkeypatch: pytest.MonkeyPatch) -> list[tuple[int, int]]:
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
         "the Numba-CUDA-MLIR compile stage must hide all CUDA devices"
     )
@@ -164,9 +162,7 @@ def test_block_scalar_array_algorithms_methods_and_aggregates_compile(
         for factory, kwargs, _method, _algorithm in cases
     ]
 
-    for item, (_factory, kwargs, method, algorithm_name) in zip(
-        collected, cases
-    ):
+    for item, (_factory, kwargs, method, algorithm_name) in zip(collected, cases):
         algorithm = item[0]
         source = _source(item)
         assert method in source
@@ -182,9 +178,7 @@ def test_block_scalar_array_algorithms_methods_and_aggregates_compile(
         if kwargs.get("value_kind") == "array":
             cpp_dtype = _types.numba_type_to_cpp(kwargs["dtype"])
             items_per_thread = kwargs["items_per_thread"]
-            array_cast = (
-                f"reinterpret_cast<{cpp_dtype} (*)[{items_per_thread}]>"
-            )
+            array_cast = f"reinterpret_cast<{cpp_dtype} (*)[{items_per_thread}]>"
             # Both the compiler-owned and caller-owned storage entry points
             # accept distinct input/output array pointers and reinterpret them
             # as CUB's fixed-size array references.
@@ -198,9 +192,7 @@ def test_block_scalar_array_algorithms_methods_and_aggregates_compile(
                 if method in line and "algorithm_t_" in line
             ]
             assert call_lines
-            assert all(
-                line.endswith(", *block_aggregate);") for line in call_lines
-            )
+            assert all(line.endswith(", *block_aggregate);") for line in call_lines)
 
     bundle = _compile_bundle(
         collected,
@@ -317,8 +309,8 @@ def test_physical_and_logical_warp_methods_prefixes_and_aggregates_compile(
         width = kwargs["threads_in_warp"]
         assert method in source
         assert (
-            f"cub::WarpScan<{_types.numba_type_to_cpp(kwargs['dtype'])}, "
-            f"{width}>" in source
+            f"cub::WarpScan<{_types.numba_type_to_cpp(kwargs['dtype'])}, {width}>"
+            in source
         )
         assert "TempStorage" in source
         assert "__shared__" in source
@@ -334,9 +326,7 @@ def test_physical_and_logical_warp_methods_prefixes_and_aggregates_compile(
                 if method in line and "algorithm_t_" in line
             ]
             assert call_lines
-            assert all(
-                line.endswith(", *warp_aggregate);") for line in call_lines
-            )
+            assert all(line.endswith(", *warp_aggregate);") for line in call_lines)
 
     runtime_prefix = _source(collected[-1])
     assert "::cuda::std::int64_t" in runtime_prefix
@@ -558,7 +548,7 @@ def test_block_prefix_callbacks_compile_for_scalar_array_and_algorithms(
 
 
 def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(device=True)
     def stateless_prefix(block_aggregate):
@@ -584,10 +574,10 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
     @cuda.jit(chip="sm_90")
     def kernel(source, destination, final_state):
         thread = cuda.threadIdx.x
-        state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
+        state = numba_coop.ThreadData(1, dtype=types.int64)
         state[0] = 11
-        destination[thread] = coop.exclusive_sum(
-            coop.this_block(),
+        destination[thread] = numba_coop.exclusive_sum(
+            numba_coop.this_block(),
             source[thread],
             state,
             prefix_op=running,
@@ -595,8 +585,8 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
         )
         state_int32 = cuda.local.array(1, dtype=types.int32)
         state_int32[0] = 5
-        destination[_BLOCK_THREADS + thread] = coop.exclusive_sum(
-            coop.this_block(),
+        destination[_BLOCK_THREADS + thread] = numba_coop.exclusive_sum(
+            numba_coop.this_block(),
             source[thread],
             state_int32,
             prefix_op=running_int32,
@@ -605,8 +595,8 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
         values = cuda.local.array(2, dtype=types.int32)
         values[0] = source[thread * 2]
         values[1] = source[thread * 2 + 1]
-        scanned = coop.inclusive_sum(
-            coop.this_block(),
+        scanned = numba_coop.inclusive_sum(
+            numba_coop.this_block(),
             values,
             prefix_op=stateless_prefix,
             algorithm="warp_scans",
@@ -643,16 +633,15 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
     assert "bar.sync" in ptx
 
 
-@pytest.mark.parametrize("auto_sync", [None, False, True])
-def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
-    auto_sync,
-) -> None:
-    import cuda.coop.numba_mlir as coop
+def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers() -> (
+    None
+):
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(device=True)
     def scan_with(storage, value):
-        return coop.inclusive_sum(
-            coop.this_block(), value, temp_storage=storage
+        return numba_coop.inclusive_sum(
+            numba_coop.this_block(), value, temp_storage=storage
         )
 
     @cuda.jit(chip="sm_90")
@@ -661,7 +650,7 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
         # the helper and becomes visible only after inlining. Acceptance must
         # not depend on an unrelated marker being present.
         thread = cuda.threadIdx.x
-        storage = coop.TempStorage(auto_sync=auto_sync)
+        storage = numba_coop.TempStorage()
         first = scan_with(storage, source[thread])
         destination[thread] = scan_with(storage, first)
 
@@ -678,29 +667,25 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
     )
 
     assert result.metadata["cubin"]
-    # Only explicit opt-in adds a trailing barrier to each inlined call.
-    assert result.metadata["mlir_module_str"].count("gpu.barrier") == (
-        2 if auto_sync is True else 0
-    )
+    # One trailing reuse barrier per inlined storage-consuming call.
+    assert result.metadata["mlir_module_str"].count("gpu.barrier") == 2
 
 
 def test_primitive_inside_standalone_scan_callback_has_clear_diagnostic():
     from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
-    import cuda.coop.numba_mlir as coop
-    from cuda.coop.numba_mlir._compiler._group_planner_support import (
-        GroupRewriteError,
-    )
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
 
     @cuda.jit(device=True)
     def primitive_prefix(aggregate):
-        return coop.inclusive_sum(coop.this_block(), aggregate)
+        return numba_coop.inclusive_sum(numba_coop.this_block(), aggregate)
 
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         thread = cuda.threadIdx.x
-        destination[thread] = coop.exclusive_sum(
-            coop.this_block(), source[thread], prefix_op=primitive_prefix
+        destination[thread] = numba_coop.exclusive_sum(
+            numba_coop.this_block(), source[thread], prefix_op=primitive_prefix
         )
 
     key = (

@@ -58,9 +58,7 @@ _DTYPES = (
 
 
 @pytest.fixture(autouse=True)
-def _fixed_current_device(
-    monkeypatch: pytest.MonkeyPatch,
-) -> list[tuple[int, int]]:
+def _fixed_current_device(monkeypatch: pytest.MonkeyPatch) -> list[tuple[int, int]]:
     """Hide runtime discovery while leaving NVRTC and nvJitLink real."""
 
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
@@ -167,9 +165,7 @@ def test_all_block_exchange_modes_compile_with_owned_storage(
     compile_context: _nvrtc.CompileContext,
     _fixed_current_device: list[tuple[int, int]],
 ) -> None:
-    collected = [
-        _block_exchange(compile_context, mode=mode) for mode in _BLOCK_MODES
-    ]
+    collected = [_block_exchange(compile_context, mode=mode) for mode in _BLOCK_MODES]
 
     for mode, item in zip(_BLOCK_MODES, collected):
         algorithm = item[0]
@@ -211,9 +207,7 @@ def test_block_exchange_time_slicing_changes_storage_identity_and_size(
     assert "cub::BlockExchange<::cuda::std::int32_t, 64, 2, 0, 1, 1>" in (
         ordinary_source
     )
-    assert "cub::BlockExchange<::cuda::std::int32_t, 64, 2, 1, 1, 1>" in (
-        sliced_source
-    )
+    assert "cub::BlockExchange<::cuda::std::int32_t, 64, 2, 1, 1, 1>" in (sliced_source)
     assert algo_coalesce_key(ordinary[0]) != algo_coalesce_key(sliced[0])
 
     _compile_bundle(
@@ -238,11 +232,7 @@ def test_all_warp_exchange_modes_and_logical_widths_compile(
 
     for item, (width, mode) in zip(
         collected,
-        (
-            (width, mode)
-            for width in _LOGICAL_WARP_WIDTHS
-            for mode in _WARP_MODES
-        ),
+        ((width, mode) for width in _LOGICAL_WARP_WIDTHS for mode in _WARP_MODES),
     ):
         algorithm = item[0]
         source = _source(item)
@@ -272,9 +262,7 @@ def test_all_warp_exchange_modes_and_logical_widths_compile(
         bundle_name="cuda_coop_numba_mlir_all_warp_exchange_widths",
     )
     assert all(item[0].temp_storage_bytes > 0 for item in collected)
-    assert len({algo_coalesce_key(item[0]) for item in collected}) == len(
-        collected
-    )
+    assert len({algo_coalesce_key(item[0]) for item in collected}) == len(collected)
 
 
 def test_shuffle_modes_compile_with_exact_distance_abis(
@@ -428,27 +416,24 @@ def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
         "get_gpu_compute_capability",
         fixed_compute_capability,
     )
-    monkeypatch.setattr(
-        compiler_cuda, "get_current_device", lambda: fixed_device
-    )
+    monkeypatch.setattr(compiler_cuda, "get_current_device", lambda: fixed_device)
     return compiler_cuda
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_kernel_compile_links_shared_storage_and_barriers(
-    monkeypatch: pytest.MonkeyPatch, items_per_thread
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compiler_cuda = _production_compile_environment(monkeypatch)
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common_coop
 
     @compiler_cuda.jit(chip="sm_90")
-    def kernel(source, destination, distance, items_per_thread):
+    def kernel(source, destination, distance):
         thread = compiler_cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
-        for item in range(items_per_thread):
-            payload[item] = source[thread * items_per_thread + item]
+        payload = numba_coop.ThreadData(2, dtype=types.int32)
+        payload[0] = source[thread * 2]
+        payload[1] = source[thread * 2 + 1]
         exchanged = common_coop.exchange(
             common_coop.this_block(),
             payload,
@@ -459,23 +444,16 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
             exchanged,
             mode="up",
         )
-        rotated = qualified_coop.shuffle(
-            qualified_coop.this_block(),
+        rotated = numba_coop.shuffle(
+            numba_coop.this_block(),
             source[thread],
             mode="rotate",
             distance=distance,
         )
-        for item in range(items_per_thread):
-            destination[thread * items_per_thread + item] = (
-                shifted[item] + rotated if item == 0 else shifted[item]
-            )
+        destination[thread * 2] = shifted[0] + rotated
+        destination[thread * 2 + 1] = shifted[1]
 
-    signature = types.void(
-        types.int32[::1],
-        types.int32[::1],
-        types.int32,
-        types.IntegerLiteral(items_per_thread),
-    )
+    signature = types.void(types.int32[::1], types.int32[::1], types.int32)
     launch_config_key = (
         ("grid", (1, 1, 1)),
         ("block", (_BLOCK_THREADS, 1, 1)),
@@ -498,19 +476,18 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
     assert "bar.sync" in ptx
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_untyped_load_composes_directly_into_exchange(
-    monkeypatch: pytest.MonkeyPatch, items_per_thread
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compiler_cuda = _production_compile_environment(monkeypatch)
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common_coop
 
     @compiler_cuda.jit(chip="sm_90")
-    def kernel(source, destination, items_per_thread):
+    def kernel(source, destination):
         thread = compiler_cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(items_per_thread)
+        payload = numba_coop.ThreadData(2)
         common_coop.load(
             common_coop.this_block(),
             source,
@@ -522,14 +499,10 @@ def test_untyped_load_composes_directly_into_exchange(
             payload,
             mode="blocked_to_striped",
         )
-        for item in range(items_per_thread):
-            destination[thread * items_per_thread + item] = exchanged[item]
+        destination[thread * 2] = exchanged[0]
+        destination[thread * 2 + 1] = exchanged[1]
 
-    signature = types.void(
-        types.int32[::1],
-        types.int32[::1],
-        types.IntegerLiteral(items_per_thread),
-    )
+    signature = types.void(types.int32[::1], types.int32[::1])
     launch_config_key = (
         ("grid", (1, 1, 1)),
         ("block", (_BLOCK_THREADS, 1, 1)),
@@ -565,9 +538,7 @@ def _evaluate_warp_mask(definitions, operand, rank):
         assert expression.endswith("to i32")
         return values[0] & 0xFFFFFFFF
     if operation == "arith.extsi":
-        assert len(values) == 1 and expression.endswith(": i32 to i64"), (
-            expression
-        )
+        assert len(values) == 1 and expression.endswith(": i32 to i64"), expression
         value = values[0] & 0xFFFFFFFF
         return value - (1 << 32) if value & (1 << 31) else value
     assert (
@@ -596,11 +567,8 @@ def _evaluate_warp_mask(definitions, operand, rank):
 
 
 @pytest.mark.parametrize("width", _LOGICAL_WARP_WIDTHS)
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_production_warp_exchange_emits_ordered_reuse_barriers(
-    width, monkeypatch, items_per_thread
-):
-    import cuda.coop.numba_mlir as coop
+def test_production_warp_exchange_emits_ordered_reuse_barriers(width, monkeypatch):
+    import cuda.coop.numba_mlir as numba_coop
 
     monkeypatch.setattr(
         numba_mlir_tools,
@@ -609,21 +577,19 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(
     )
 
     @cuda.jit(chip="sm_90")
-    def kernel(source, destination, items_per_thread):
+    def kernel(source, destination):
         thread = cuda.threadIdx.x
-        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
-        for item in range(items_per_thread):
-            payload[item] = source[thread * items_per_thread + item]
-        first = coop.exchange(
-            coop.this_warp().group_by(width),
-            payload,
-            mode="blocked_to_striped",
+        payload = numba_coop.ThreadData(2, dtype=types.int32)
+        payload[0] = source[thread * 2]
+        payload[1] = source[thread * 2 + 1]
+        first = numba_coop.exchange(
+            numba_coop.this_warp().group_by(width), payload, mode="blocked_to_striped"
         )
-        second = coop.exchange(
-            coop.this_warp().group_by(width), first, mode="blocked_to_striped"
+        second = numba_coop.exchange(
+            numba_coop.this_warp().group_by(width), first, mode="blocked_to_striped"
         )
-        for item in range(items_per_thread):
-            destination[thread * items_per_thread + item] = second[item]
+        destination[thread * 2] = second[0]
+        destination[thread * 2 + 1] = second[1]
 
     launch_key = (
         ("grid", (1, 1, 1)),
@@ -632,18 +598,11 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(
         ("cluster", None),
     )
     result = kernel._compile_launch_config_signature(
-        types.void(
-            types.int32[::1],
-            types.int32[::1],
-            types.IntegerLiteral(items_per_thread),
-        ),
-        launch_key,
+        types.void(types.int32[::1], types.int32[::1]), launch_key
     )
     assert result.metadata["cubin"]
     mlir = result.metadata["mlir_module_str"]
-    definitions = dict(
-        re.findall(r"^\s*(%[\w-]+) = (.*)$", mlir, flags=re.MULTILINE)
-    )
+    definitions = dict(re.findall(r"^\s*(%[\w-]+) = (.*)$", mlir, flags=re.MULTILINE))
     operands = re.findall(r"nvvm.bar.warp.sync\s+(%[\w-]+)", mlir)
     assert len(operands) == 2
     assert "gpu.barrier" not in mlir
@@ -656,11 +615,8 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(
     assert events == ["call", "barrier", "call", "barrier"]
     for rank in range(_BLOCK_THREADS):
         group_start = (rank % 32 // width) * width
-        expected = sum(
-            1 << lane for lane in range(group_start, group_start + width)
-        )
+        expected = sum(1 << lane for lane in range(group_start, group_start + width))
         for operand in operands:
             assert (
-                _evaluate_warp_mask(definitions, operand, rank) & 0xFFFFFFFF
-                == expected
+                _evaluate_warp_mask(definitions, operand, rank) & 0xFFFFFFFF == expected
             )

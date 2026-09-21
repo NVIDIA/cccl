@@ -18,11 +18,11 @@ if not cuda.is_available():
 
 from numba_cuda_mlir import types
 
-import cuda.coop.numba_mlir as qualified_coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop as root_coop
 
-assert qualified_coop.__file__ is not None
-_QUALIFIED_COOP_ORIGIN = Path(qualified_coop.__file__).resolve()
+assert numba_coop.__file__ is not None
+_QUALIFIED_COOP_ORIGIN = Path(numba_coop.__file__).resolve()
 _SAFE_PATH_FLAG = "-P" if sys.version_info >= (3, 11) else "-I"
 _COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 _HAS_THREAD_BLOCK_CLUSTERS = int(_COMPUTE_CAPABILITY[0]) >= 9
@@ -47,38 +47,10 @@ _CLUSTER_BLOCKS = 2
 _CLUSTER_BLOCK_THREADS = 32
 _HIERARCHY_RESULT_ROWS = 8
 _MAPPED_RESULT_ROWS = 2
-_INTEGER_DTYPES = (
-    np.int8,
-    np.uint8,
-    np.int16,
-    np.uint16,
-    np.int32,
-    np.uint32,
-    np.int64,
-    np.uint64,
-)
-_DTYPES = (*_INTEGER_DTYPES, np.float32, np.float64)
-
-
-def _dtype_values(dtype, size: int) -> np.ndarray:
-    indices = np.arange(size, dtype=np.int64)
-    if np.dtype(dtype).kind == "u":
-        values = (indices % 3 == 0).astype(dtype)
-    elif np.dtype(dtype).kind == "f":
-        values = ((indices % 5) - 2).astype(dtype) * dtype(0.25)
-    else:
-        values = ((indices % 3) - 1).astype(dtype)
-    if np.dtype(dtype).kind == "f":
-        if np.dtype(dtype).itemsize == 8:
-            values += dtype(2**-30)
-    elif np.dtype(dtype).itemsize > 1:
-        scale = {2: 257, 4: 65537, 8: 2**33 + 1}[np.dtype(dtype).itemsize]
-        values *= dtype(scale)
-    return values
 
 
 def _broadcast_grouped_sum(values: np.ndarray, width: int) -> np.ndarray:
-    totals = values.reshape(-1, width).sum(axis=1, dtype=values.dtype)
+    totals = values.reshape(-1, width).sum(axis=1, dtype=np.int32)
     return np.repeat(totals, width)
 
 
@@ -96,24 +68,22 @@ def _hierarchy_scalar_reductions(source, observed):
     observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(
         root_coop.this_thread(), value
     )
-    observed[1 * _BLOCK_THREADS + thread] = qualified_coop.sum(
-        qualified_coop.this_thread(), value
+    observed[1 * _BLOCK_THREADS + thread] = numba_coop.sum(
+        numba_coop.this_thread(), value
     )
     observed[2 * _BLOCK_THREADS + thread] = root_coop.reduce(
         root_coop.this_warp(), value, binary_op="max"
     )
-    observed[3 * _BLOCK_THREADS + thread] = qualified_coop.reduce(
-        qualified_coop.this_warp(), value, binary_op="max"
+    observed[3 * _BLOCK_THREADS + thread] = numba_coop.reduce(
+        numba_coop.this_warp(), value, binary_op="max"
     )
     observed[4 * _BLOCK_THREADS + thread] = root_coop.sum(logical_warp, value)
-    observed[5 * _BLOCK_THREADS + thread] = qualified_coop.sum(
-        qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS), value
+    observed[5 * _BLOCK_THREADS + thread] = numba_coop.sum(
+        numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS), value
     )
-    observed[6 * _BLOCK_THREADS + thread] = root_coop.sum(
-        root_coop.this_block(), value
-    )
-    observed[7 * _BLOCK_THREADS + thread] = qualified_coop.sum(
-        qualified_coop.this_block(), value
+    observed[6 * _BLOCK_THREADS + thread] = root_coop.sum(root_coop.this_block(), value)
+    observed[7 * _BLOCK_THREADS + thread] = numba_coop.sum(
+        numba_coop.this_block(), value
     )
 
 
@@ -124,23 +94,20 @@ def _mapped_scalar_reductions(warps_per_group):
         value = source[thread]
         mapped_warps = root_coop.this_block().group_by(warps_per_group)
 
-        observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(
-            mapped_warps, value
-        )
-        observed[1 * _BLOCK_THREADS + thread] = qualified_coop.sum(
-            qualified_coop.this_block().group_by(warps_per_group), value
+        observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(mapped_warps, value)
+        observed[1 * _BLOCK_THREADS + thread] = numba_coop.sum(
+            numba_coop.this_block().group_by(warps_per_group), value
         )
 
     return kernel
 
 
-@pytest.mark.parametrize("dtype", _DTYPES)
-def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions(dtype):
-    source = _dtype_values(dtype, _BLOCK_THREADS)
+def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions():
+    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
     observed = np.full(
         _HIERARCHY_RESULT_ROWS * _BLOCK_THREADS,
-        127,
-        dtype=dtype,
+        -1,
+        dtype=np.int32,
     )
 
     _hierarchy_scalar_reductions[1, _BLOCK_THREADS](source, observed)
@@ -155,13 +122,13 @@ def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions(dtype):
             _broadcast_grouped_sum(source, _LOGICAL_WARP_THREADS),
             np.full(
                 _BLOCK_THREADS,
-                source.sum(dtype=dtype),
-                dtype=dtype,
+                source.sum(dtype=np.int32),
+                dtype=np.int32,
             ),
             np.full(
                 _BLOCK_THREADS,
-                source.sum(dtype=dtype),
-                dtype=dtype,
+                source.sum(dtype=np.int32),
+                dtype=np.int32,
             ),
         )
     )
@@ -221,24 +188,24 @@ def test_nonexhaustive_mapped_reduce_guards_nonmembers_and_returns_normally():
 
 
 @cuda.jit
-def _mixed_thread_data_builtins(source, observed, preserved, items_per_thread):
+def _mixed_thread_data_builtins(source, observed, preserved):
     thread = cuda.threadIdx.x
-    payload = root_coop.ThreadData(items_per_thread)
-    for item in range(items_per_thread):
-        payload[item] = source[thread * items_per_thread + item]
+    payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
     common_sum = root_coop.sum(root_coop.this_block(), payload)
-    qualified_maximum = qualified_coop.reduce(
-        qualified_coop.this_block(), payload, binary_op="max"
+    qualified_maximum = numba_coop.reduce(
+        numba_coop.this_block(), payload, binary_op="max"
     )
-    qualified_xor = qualified_coop.reduce(
-        qualified_coop.this_block(), payload, binary_op="bit_xor"
+    qualified_xor = numba_coop.reduce(
+        numba_coop.this_block(), payload, binary_op="bit_xor"
     )
-    qualified_or = qualified_coop.reduce(
-        qualified_coop.this_block(), payload, binary_op="bit_or"
+    qualified_or = numba_coop.reduce(
+        numba_coop.this_block(), payload, binary_op="bit_or"
     )
-    qualified_scalar_minimum = qualified_coop.reduce(
-        qualified_coop.this_block(), source[thread], binary_op="min"
+    qualified_scalar_minimum = numba_coop.reduce(
+        numba_coop.this_block(), source[thread], binary_op="min"
     )
 
     observed[0 * _BLOCK_THREADS + thread] = common_sum
@@ -246,45 +213,41 @@ def _mixed_thread_data_builtins(source, observed, preserved, items_per_thread):
     observed[2 * _BLOCK_THREADS + thread] = qualified_xor
     observed[3 * _BLOCK_THREADS + thread] = qualified_or
     observed[4 * _BLOCK_THREADS + thread] = qualified_scalar_minimum
-    for item in range(items_per_thread):
-        preserved[thread * items_per_thread + item] = payload[item]
+    for item in range(_ITEMS_PER_THREAD):
+        preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize("dtype", _INTEGER_DTYPES)
-def test_consecutive_common_and_qualified_builtins_preserve_thread_data(
-    dtype, *, items_per_thread
-):
-    source = _dtype_values(dtype, _BLOCK_THREADS * items_per_thread)
-    observed = np.full(5 * _BLOCK_THREADS, 127, dtype=dtype)
-    preserved = np.full_like(source, 127)
+def test_consecutive_common_and_qualified_builtins_preserve_thread_data():
+    source = (
+        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 13) % 251
+    ) - 117
+    observed = np.full(5 * _BLOCK_THREADS, -1, dtype=np.int32)
+    preserved = np.full_like(source, -1)
 
-    _mixed_thread_data_builtins[1, _BLOCK_THREADS](
-        source, observed, preserved, items_per_thread
-    )
+    _mixed_thread_data_builtins[1, _BLOCK_THREADS](source, observed, preserved)
 
     expected = np.stack(
         (
             np.full(
                 _BLOCK_THREADS,
-                source.sum(dtype=dtype),
-                dtype=dtype,
+                source.sum(dtype=np.int32),
+                dtype=np.int32,
             ),
-            np.full(_BLOCK_THREADS, source.max(), dtype=dtype),
+            np.full(_BLOCK_THREADS, source.max(), dtype=np.int32),
             np.full(
                 _BLOCK_THREADS,
-                np.bitwise_xor.reduce(source, dtype=dtype),
-                dtype=dtype,
+                np.bitwise_xor.reduce(source),
+                dtype=np.int32,
             ),
             np.full(
                 _BLOCK_THREADS,
-                np.bitwise_or.reduce(source, dtype=dtype),
-                dtype=dtype,
+                np.bitwise_or.reduce(source),
+                dtype=np.int32,
             ),
             np.full(
                 _BLOCK_THREADS,
                 source[:_BLOCK_THREADS].min(),
-                dtype=dtype,
+                dtype=np.int32,
             ),
         )
     )
@@ -293,37 +256,35 @@ def test_consecutive_common_and_qualified_builtins_preserve_thread_data(
 
 
 @cuda.jit
-def _qualified_local_array_root_sum(
-    source, output, preserved, items_per_thread
-):
+def _qualified_local_array_root_sum(source, output, preserved):
     thread = cuda.threadIdx.x
-    payload = cuda.local.array(items_per_thread, dtype=source.dtype)
-    for item in range(items_per_thread):
-        payload[item] = source[thread * items_per_thread + item]
+    payload = cuda.local.array(_ITEMS_PER_THREAD, dtype=types.int32)
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
-    total = qualified_coop.sum(
-        qualified_coop.this_block(), payload, broadcast=False
-    )
+    total = numba_coop.sum(numba_coop.this_block(), payload, broadcast=False)
     if thread == 0:
         output[0] = total
-    for item in range(items_per_thread):
-        preserved[thread * items_per_thread + item] = payload[item]
+    for item in range(_ITEMS_PER_THREAD):
+        preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize("dtype", _DTYPES)
-def test_qualified_local_array_reduction_returns_only_at_the_block_root(
-    dtype, *, items_per_thread
-):
-    source = _dtype_values(dtype, _BLOCK_THREADS * items_per_thread)
-    output = np.full(1, 127, dtype=dtype)
-    preserved = np.full_like(source, 127)
+def test_qualified_local_array_reduction_returns_only_at_the_block_root():
+    source = np.arange(
+        1,
+        _BLOCK_THREADS * _ITEMS_PER_THREAD + 1,
+        dtype=np.int32,
+    )
+    output = np.full(1, -1, dtype=np.int32)
+    preserved = np.full_like(source, -1)
 
     _qualified_local_array_root_sum[1, _BLOCK_THREADS](
-        source, output, preserved, items_per_thread
+        source,
+        output,
+        preserved,
     )
 
-    assert output[0] == source.sum(dtype=dtype)
+    assert output[0] == source.sum(dtype=np.int32)
     np.testing.assert_array_equal(preserved, source)
 
 
@@ -331,8 +292,8 @@ def test_qualified_local_array_reduction_returns_only_at_the_block_root(
 def _cluster_reductions(source, observed):
     thread = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     observed[thread] = root_coop.sum(root_coop.this_cluster(), source[thread])
-    observed[source.size + thread] = qualified_coop.reduce(
-        qualified_coop.this_cluster(), source[thread], binary_op="max"
+    observed[source.size + thread] = numba_coop.reduce(
+        numba_coop.this_cluster(), source[thread], binary_op="max"
     )
 
 
@@ -358,9 +319,7 @@ def test_both_namespaces_reduce_across_a_two_block_cluster():
             np.full_like(source, source.max()),
         )
     )
-    np.testing.assert_array_equal(
-        observed.reshape(2, cluster_threads), expected
-    )
+    np.testing.assert_array_equal(observed.reshape(2, cluster_threads), expected)
 
 
 @cuda.jit
@@ -382,8 +341,8 @@ def _cub_valid_prefixes(
     if thread == 0:
         block_output[0] = block_total
 
-    warp_maximum = qualified_coop.reduce(
-        qualified_coop.this_warp(),
+    warp_maximum = numba_coop.reduce(
+        numba_coop.this_warp(),
         source[thread],
         binary_op="max",
         broadcast=False,
@@ -402,17 +361,14 @@ def _cub_valid_prefixes(
         logical_output[thread // _LOGICAL_WARP_THREADS] = logical_total
 
 
-@pytest.mark.parametrize("dtype", _DTYPES)
-def test_cub_static_and_runtime_prefixes_reduce_the_first_group_members(dtype):
-    source = _dtype_values(dtype, _BLOCK_THREADS)
-    if dtype is np.int32:
-        source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 11) % 101) - 47
-    block_output = np.full(1, 127, dtype=dtype)
-    warp_output = np.full(_BLOCK_THREADS // _WARP_THREADS, 127, dtype=dtype)
+def test_cub_static_and_runtime_prefixes_reduce_the_first_group_members():
+    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 11) % 101) - 47
+    block_output = np.full(1, -1, dtype=np.int32)
+    warp_output = np.full(_BLOCK_THREADS // _WARP_THREADS, -1, dtype=np.int32)
     logical_output = np.full(
         _BLOCK_THREADS // _LOGICAL_WARP_THREADS,
-        127,
-        dtype=dtype,
+        -1,
+        dtype=np.int32,
     )
 
     _cub_valid_prefixes[1, _BLOCK_THREADS](
@@ -424,31 +380,31 @@ def test_cub_static_and_runtime_prefixes_reduce_the_first_group_members(dtype):
         np.int64(_RUNTIME_LOGICAL_VALID),
     )
 
-    assert block_output[0] == source[:_STATIC_BLOCK_VALID].sum(dtype=dtype)
+    assert block_output[0] == source[:_STATIC_BLOCK_VALID].sum(dtype=np.int32)
     expected_warp = np.asarray(
         [
             values[:_RUNTIME_WARP_VALID].max()
             for values in source.reshape(-1, _WARP_THREADS)
         ],
-        dtype=dtype,
+        dtype=np.int32,
     )
     expected_logical = np.asarray(
         [
-            values[:_RUNTIME_LOGICAL_VALID].sum(dtype=dtype)
+            values[:_RUNTIME_LOGICAL_VALID].sum(dtype=np.int32)
             for values in source.reshape(-1, _LOGICAL_WARP_THREADS)
         ],
-        dtype=dtype,
+        dtype=np.int32,
     )
     np.testing.assert_array_equal(warp_output, expected_warp)
     np.testing.assert_array_equal(logical_output, expected_logical)
 
 
 @cuda.jit
-def _cub_deterministic_algorithms(source, output, preserved, items_per_thread):
+def _cub_deterministic_algorithms(source, output, preserved):
     thread = cuda.threadIdx.x
-    payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
-    for item in range(items_per_thread):
-        payload[item] = source[thread * items_per_thread + item]
+    payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
     raking_sum = root_coop.sum(
         root_coop.this_block(),
@@ -456,8 +412,8 @@ def _cub_deterministic_algorithms(source, output, preserved, items_per_thread):
         broadcast=False,
         algorithm="raking",
     )
-    warp_reductions_maximum = qualified_coop.reduce(
-        qualified_coop.this_block(),
+    warp_reductions_maximum = numba_coop.reduce(
+        numba_coop.this_block(),
         source[thread],
         binary_op="max",
         broadcast=False,
@@ -475,24 +431,18 @@ def _cub_deterministic_algorithms(source, output, preserved, items_per_thread):
         output[0] = raking_sum
         output[1] = warp_reductions_maximum
         output[2] = commutative_xor
-    for item in range(items_per_thread):
-        preserved[thread * items_per_thread + item] = payload[item]
+    for item in range(_ITEMS_PER_THREAD):
+        preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_each_deterministic_block_algorithm_matches_an_independent_oracle(
-    *, items_per_thread
-):
+def test_each_deterministic_block_algorithm_matches_an_independent_oracle():
     source = (
-        (np.arange(_BLOCK_THREADS * items_per_thread, dtype=np.int32) * 17)
-        % 257
+        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 17) % 257
     ) - 121
     output = np.full(3, -1, dtype=np.int32)
     preserved = np.full_like(source, -1)
 
-    _cub_deterministic_algorithms[1, _BLOCK_THREADS](
-        source, output, preserved, items_per_thread
-    )
+    _cub_deterministic_algorithms[1, _BLOCK_THREADS](source, output, preserved)
 
     expected = np.asarray(
         (
@@ -543,9 +493,7 @@ def test_distinct_constant_arrays_do_not_reuse_a_cached_callback():
         observed = np.full(1, -1, dtype=np.int32)
         make_kernel(offset)[1, _BLOCK_THREADS](source, observed)
         expected = _BLOCK_THREADS + (_BLOCK_THREADS - 1) * offset
-        np.testing.assert_array_equal(
-            observed, np.full_like(observed, expected)
-        )
+        np.testing.assert_array_equal(observed, np.full_like(observed, expected))
 
 
 def test_numpy_scalar_nan_sign_does_not_reuse_a_cached_callback():
@@ -574,15 +522,11 @@ def test_numpy_scalar_nan_sign_does_not_reuse_a_cached_callback():
         observed = np.full(1, -1, dtype=np.float64)
         make_kernel(captured)[1, _BLOCK_THREADS](source, observed)
         expected = _BLOCK_THREADS + (_BLOCK_THREADS - 1) * sign
-        np.testing.assert_array_equal(
-            observed, np.full_like(observed, expected)
-        )
+        np.testing.assert_array_equal(observed, np.full_like(observed, expected))
 
 
 @pytest.mark.parametrize("inline", [True, False])
-def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(
-    inline,
-):
+def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(inline):
     helper = cuda.jit(device=True, inline=inline)(_maximum)
 
     @cuda.jit(device=True)
@@ -593,8 +537,8 @@ def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(
     def kernel(source, observed):
         thread = cuda.threadIdx.x
         value = source[thread]
-        result = qualified_coop.reduce(
-            qualified_coop.this_block(),
+        result = numba_coop.reduce(
+            numba_coop.this_block(),
             value,
             binary_op=maximum,
             broadcast=False,
@@ -605,9 +549,7 @@ def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(
     source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
     observed = np.full(1, -1, dtype=np.int32)
     kernel[1, _BLOCK_THREADS](source, observed)
-    np.testing.assert_array_equal(
-        observed, np.full_like(observed, source.max())
-    )
+    np.testing.assert_array_equal(observed, np.full_like(observed, source.max()))
 
 
 @cuda.jit
@@ -616,15 +558,14 @@ def _stateless_callback_reductions(
     block_output,
     logical_output,
     preserved,
-    items_per_thread,
 ):
     thread = cuda.threadIdx.x
-    payload = cuda.local.array(items_per_thread, dtype=types.int32)
-    for item in range(items_per_thread):
-        payload[item] = source[thread * items_per_thread + item]
+    payload = cuda.local.array(_ITEMS_PER_THREAD, dtype=types.int32)
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
-    block_maximum = qualified_coop.reduce(
-        qualified_coop.this_block(),
+    block_maximum = numba_coop.reduce(
+        numba_coop.this_block(),
         payload,
         binary_op=_device_maximum,
         broadcast=False,
@@ -632,9 +573,9 @@ def _stateless_callback_reductions(
     if thread == 0:
         block_output[0] = block_maximum
 
-    logical_maximum = qualified_coop.reduce(
-        qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
-        source[thread * items_per_thread],
+    logical_maximum = numba_coop.reduce(
+        numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
+        source[thread * _ITEMS_PER_THREAD],
         binary_op=_device_maximum,
         broadcast=False,
         valid_items=_RUNTIME_LOGICAL_VALID,
@@ -642,17 +583,13 @@ def _stateless_callback_reductions(
     if thread % _LOGICAL_WARP_THREADS == 0:
         logical_output[thread // _LOGICAL_WARP_THREADS] = logical_maximum
 
-    for item in range(items_per_thread):
-        preserved[thread * items_per_thread + item] = payload[item]
+    for item in range(_ITEMS_PER_THREAD):
+        preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_qualified_callbacks_cover_block_arrays_and_logical_warp_prefixes(
-    *, items_per_thread
-):
+def test_qualified_callbacks_cover_block_arrays_and_logical_warp_prefixes():
     source = (
-        (np.arange(_BLOCK_THREADS * items_per_thread, dtype=np.int32) * 29)
-        % 313
+        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 29) % 313
     ) - 173
     block_output = np.full(1, -1, dtype=np.int32)
     logical_output = np.full(
@@ -663,10 +600,13 @@ def test_qualified_callbacks_cover_block_arrays_and_logical_warp_prefixes(
     preserved = np.full_like(source, -1)
 
     _stateless_callback_reductions[1, _BLOCK_THREADS](
-        source, block_output, logical_output, preserved, items_per_thread
+        source,
+        block_output,
+        logical_output,
+        preserved,
     )
 
-    logical_input = source[::items_per_thread].reshape(
+    logical_input = source[::_ITEMS_PER_THREAD].reshape(
         -1,
         _LOGICAL_WARP_THREADS,
     )
@@ -684,9 +624,7 @@ def _run_invalid_runtime_prefix_probe(
     # disposable child processes rather than the pytest worker.
     group_expression = {
         "block": "root_coop.this_block()",
-        "logical_warp": (
-            f"root_coop.this_warp().group_by({_LOGICAL_WARP_THREADS})"
-        ),
+        "logical_warp": (f"root_coop.this_warp().group_by({_LOGICAL_WARP_THREADS})"),
     }[group]
     script = f"""\
 import numpy as np

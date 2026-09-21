@@ -10,7 +10,7 @@ from typing import Any, Generic, Literal, Protocol, TypeVar
 import numpy as np
 from typing_extensions import assert_type
 
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop as common_coop
 
 _ItemT = TypeVar("_ItemT")
@@ -64,7 +64,7 @@ def _prefix_from_uint16_aggregate(block_aggregate: np.uint16) -> np.uint16:
 
 
 def _carry_int32_prefix(
-    state: coop.ThreadDataLike[np.int32],
+    state: numba_coop.ThreadDataLike[np.int32],
     block_aggregate: np.int32,
 ) -> np.int32:
     previous = state[0]
@@ -73,7 +73,7 @@ def _carry_int32_prefix(
 
 
 def _carry_uint16_prefix(
-    state: coop.ThreadDataLike[np.uint16],
+    state: numba_coop.ThreadDataLike[np.uint16],
     block_aggregate: np.uint16,
 ) -> np.uint16:
     previous = state[0]
@@ -82,7 +82,7 @@ def _carry_uint16_prefix(
 
 
 def _carry_int64_for_int32(
-    state: coop.ThreadDataLike[np.int64],
+    state: numba_coop.ThreadDataLike[np.int64],
     block_aggregate: np.int32,
 ) -> np.int32:
     previous = np.int32(state[0])
@@ -95,22 +95,22 @@ class _Int32PrefixFunctor:
         return block_aggregate
 
 
-_INT32_RUNNING_PREFIX = coop.StatefulFunction(
+_INT32_RUNNING_PREFIX = numba_coop.StatefulFunction(
     _carry_int32_prefix,
     np.int32,
     name="typing_int32_running_prefix",
 )
-_UINT16_RUNNING_PREFIX = coop.StatefulFunction(
+_UINT16_RUNNING_PREFIX = numba_coop.StatefulFunction(
     _carry_uint16_prefix,
     np.uint16,
     name="typing_uint16_running_prefix",
 )
-_INT64_STATE_INT32_PREFIX = coop.StatefulFunction(
+_INT64_STATE_INT32_PREFIX = numba_coop.StatefulFunction(
     _carry_int64_for_int32,
     np.int64,
 )
-_INT32_PREFIX_FUNCTOR: coop.StatefulFunction[np.int64, np.int32] = (
-    coop.StatefulFunction(
+_INT32_PREFIX_FUNCTOR: numba_coop.StatefulFunction[np.int64, np.int32] = (
+    numba_coop.StatefulFunction(
         _Int32PrefixFunctor,
         np.int64,
     )
@@ -118,44 +118,44 @@ _INT32_PREFIX_FUNCTOR: coop.StatefulFunction[np.int64, np.int32] = (
 
 assert_type(
     _INT32_RUNNING_PREFIX,
-    coop.StatefulFunction[np.int32, np.int32],
+    numba_coop.StatefulFunction[np.int32, np.int32],
 )
 assert_type(
     _INT64_STATE_INT32_PREFIX,
-    coop.StatefulFunction[np.int64, np.int32],
+    numba_coop.StatefulFunction[np.int64, np.int32],
 )
 
 
 def check_numba_scan_seeds(integer_seed: int, floating_seed: float) -> None:
-    block = coop.this_block()
-    warp = coop.this_warp()
-    values = coop.ThreadData(items_per_thread=2, dtype=np.uint16)
+    block = numba_coop.this_block()
+    warp = numba_coop.this_warp()
+    values = numba_coop.ThreadData(2, np.uint16)
     assert_type(
-        coop.exclusive_scan(block, values, initial_value=np.uint16(0)),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.exclusive_scan(block, values, initial_value=np.uint16(0)),
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.scan(
+        numba_coop.scan(
             warp, np.float64(4), mode="exclusive", initial_value=np.float64(0)
         ),
         np.float64,
     )
     assert_type(
-        coop.exclusive_scan(block, np.int32(4), initial_value=integer_seed),
+        numba_coop.exclusive_scan(block, np.int32(4), initial_value=integer_seed),
         np.int32,
     )
     assert_type(
-        coop.scan(
+        numba_coop.scan(
             block, np.float32(4), mode="exclusive", initial_value=floating_seed
         ),
         np.float32,
     )
     assert_type(
-        coop.exclusive_scan(warp, np.float32(4), initial_value=0.0),
+        numba_coop.exclusive_scan(warp, np.float32(4), initial_value=0.0),
         np.float32,
     )
     assert_type(
-        coop.exclusive_scan(
+        numba_coop.exclusive_scan(
             block,
             np.int32(4),
             scan_op=_select_left_int32,
@@ -173,33 +173,33 @@ def check_numba_surface(
 ) -> None:
     """Exercise Numba declarations through their public package."""
 
-    block = coop.this_block()
-    warp = coop.this_warp()
+    block = numba_coop.this_block()
+    warp = numba_coop.this_warp()
     logical_warp = warp.group_by(8)
     mapped_warps = block.group_by(2)
-    cluster = coop.this_cluster()
-    byte_values = coop.ThreadData(items_per_thread=1, dtype=np.int8)
-    values = coop.ThreadData(items_per_thread=2, dtype=np.uint16, alignment=16)
-    ranks = coop.ThreadData(items_per_thread=2, dtype=np.int32)
-    flags = coop.ThreadData(items_per_thread=2, dtype=np.uint8)
+    cluster = numba_coop.this_cluster()
+    byte_values = numba_coop.ThreadData(1, np.int8)
+    values = numba_coop.ThreadData(2, np.uint16, alignment=16)
+    ranks = numba_coop.ThreadData(2, np.int32)
+    flags = numba_coop.ThreadData(2, np.uint8)
     read_only_values = _ReadOnlyThreadData(np.uint16(1))
     read_only_ranks = _ReadOnlyThreadData(np.int32(0))
     read_only_flags = _ReadOnlyThreadData(np.uint8(1))
-    int32_aggregate = coop.ThreadData(items_per_thread=1, dtype=np.int32)
-    uint16_aggregate = coop.ThreadData(items_per_thread=1, dtype=np.uint16)
-    int32_prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.int32)
-    uint16_prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.uint16)
-    int64_prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.int64)
-    storage = coop.TempStorage(alignment=16, sharing="shared")
+    int32_aggregate = numba_coop.ThreadData(1, np.int32)
+    uint16_aggregate = numba_coop.ThreadData(1, np.uint16)
+    int32_prefix_state = numba_coop.ThreadData(1, np.int32)
+    uint16_prefix_state = numba_coop.ThreadData(1, np.uint16)
+    int64_prefix_state = numba_coop.ThreadData(1, np.int64)
+    storage = numba_coop.TempStorage(alignment=16, sharing="shared")
     common_storage = common_coop.TempStorage(sharing="shared")
 
-    assert_type(block, coop.ThreadGroup[Literal["block"]])
-    assert_type(warp, coop.ThreadGroup[Literal["warp"]])
+    assert_type(block, numba_coop.ThreadGroup[Literal["block"]])
+    assert_type(warp, numba_coop.ThreadGroup[Literal["warp"]])
     assert_type(
         logical_warp,
-        coop.ThreadGroup[Literal["threads_within_warp"]],
+        numba_coop.ThreadGroup[Literal["threads_within_warp"]],
     )
-    generic_group: coop.ThreadGroup = block
+    generic_group: numba_coop.ThreadGroup = block
     generic_group.rank()
     generic_group.count("warp")
     assert_type(generic_group.rank_as(np.uint32), np.uint32)
@@ -217,14 +217,14 @@ def check_numba_surface(
     assert_type(mapped_warps.rank("warp"), np.uint32 | np.uint64)
     assert_type(mapped_warps.count("block"), np.uint32 | np.uint64)
     assert_type(mapped_warps.is_member(), np.uint8)
-    assert_type(coop.this_grid().rank(), np.uint32 | np.uint64)
-    assert_type(byte_values, coop.ThreadDataLike[np.int8])
-    assert_type(values, coop.ThreadDataLike[np.uint16])
-    assert_type(storage, coop.TempStorage)
-    qualified_storage: coop.TempStorageLike = storage
-    assert_type(qualified_storage, coop.TempStorageLike)
+    assert_type(numba_coop.this_grid().rank(), np.uint32 | np.uint64)
+    assert_type(byte_values, numba_coop.ThreadDataLike[np.int8])
+    assert_type(values, numba_coop.ThreadDataLike[np.uint16])
+    assert_type(storage, numba_coop.TempStorage)
+    qualified_storage: numba_coop.TempStorageLike = storage
+    assert_type(qualified_storage, numba_coop.TempStorageLike)
     assert_type(
-        coop.load(
+        numba_coop.load(
             block,
             source,
             values,
@@ -234,11 +234,11 @@ def check_numba_surface(
         None,
     )
     assert_type(
-        coop.load(block, source, byte_values),
+        numba_coop.load(block, source, byte_values),
         None,
     )
     assert_type(
-        coop.load(
+        numba_coop.load(
             block,
             source,
             byte_values,
@@ -248,11 +248,11 @@ def check_numba_surface(
         None,
     )
     assert_type(
-        coop.load(block, source, values, algorithm="vectorize"),
+        numba_coop.load(block, source, values, algorithm="vectorize"),
         None,
     )
     assert_type(
-        coop.load(
+        numba_coop.load(
             block,
             source,
             values,
@@ -261,7 +261,7 @@ def check_numba_surface(
         None,
     )
     assert_type(
-        coop.store(
+        numba_coop.store(
             block,
             destination,
             values,
@@ -271,53 +271,53 @@ def check_numba_surface(
         None,
     )
     assert_type(
-        coop.exchange(block, values, mode="blocked_to_warp_striped"),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.exchange(block, values, mode="blocked_to_warp_striped"),
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.exchange(
+        numba_coop.exchange(
             block,
             values,
             mode="scatter_to_striped_flagged",
             ranks=ranks,
             valid_flags=flags,
         ),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.exchange(
+        numba_coop.exchange(
             logical_warp,
             values,
             mode="blocked_to_striped",
         ),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.shuffle(block, values, mode="down"),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.shuffle(block, values, mode="down"),
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.exchange(block, read_only_values, mode="blocked_to_striped"),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.exchange(block, read_only_values, mode="blocked_to_striped"),
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.exchange(
+        numba_coop.exchange(
             block,
             read_only_values,
             mode="scatter_to_striped_flagged",
             ranks=read_only_ranks,
             valid_flags=read_only_flags,
         ),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.shuffle(block, read_only_values, mode="up"),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.shuffle(block, read_only_values, mode="up"),
+        numba_coop.ThreadDataLike[np.uint16],
     )
-    assert_type(coop.shuffle(block, np.int32(4), mode="rotate"), np.int32)
-    assert_type(coop.store(block, destination, byte_values), None)
+    assert_type(numba_coop.shuffle(block, np.int32(4), mode="rotate"), np.int32)
+    assert_type(numba_coop.store(block, destination, byte_values), None)
     assert_type(
-        coop.load(
+        numba_coop.load(
             warp,
             source,
             values,
@@ -326,7 +326,7 @@ def check_numba_surface(
         None,
     )
     assert_type(
-        coop.store(
+        numba_coop.store(
             warp,
             destination,
             values,
@@ -335,7 +335,7 @@ def check_numba_surface(
         None,
     )
     assert_type(
-        coop.load(
+        numba_coop.load(
             logical_warp,
             source,
             values,
@@ -344,7 +344,7 @@ def check_numba_surface(
         None,
     )
     assert_type(
-        coop.store(
+        numba_coop.store(
             logical_warp,
             destination,
             values,
@@ -352,25 +352,25 @@ def check_numba_surface(
         ),
         None,
     )
-    assert_type(coop.sum(block, np.int32(4)), np.int32)
+    assert_type(numba_coop.sum(block, np.int32(4)), np.int32)
     assert_type(
-        coop.reduce(logical_warp, np.float32(4), binary_op="max"),
+        numba_coop.reduce(logical_warp, np.float32(4), binary_op="max"),
         np.float32,
     )
-    assert_type(coop.sum(mapped_warps, np.uint32(4)), np.uint32)
-    assert_type(coop.reduce(cluster, values, binary_op="min"), np.uint16)
+    assert_type(numba_coop.sum(mapped_warps, np.uint32(4)), np.uint32)
+    assert_type(numba_coop.reduce(cluster, values, binary_op="min"), np.uint16)
     assert_type(
-        coop.reduce(cluster, readonly_values, binary_op="min"),
+        numba_coop.reduce(cluster, readonly_values, binary_op="min"),
         np.uint16,
     )
-    assert_type(coop.sum(cluster, readonly_values), np.uint16)
-    assert_type(coop.reduce(cluster, values, binary_op=np.maximum), np.uint16)
+    assert_type(numba_coop.sum(cluster, readonly_values), np.uint16)
+    assert_type(numba_coop.reduce(cluster, values, binary_op=np.maximum), np.uint16)
     assert_type(
-        coop.reduce(mapped_warps, np.int32(4), binary_op=operator.add),
+        numba_coop.reduce(mapped_warps, np.int32(4), binary_op=operator.add),
         np.int32,
     )
     assert_type(
-        coop.reduce(
+        numba_coop.reduce(
             block,
             np.int32(4),
             binary_op="max",
@@ -380,23 +380,19 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.scan(block, values, scan_op=np.add),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.scan(block, values, scan_op=np.add),
+        numba_coop.ThreadDataLike[np.uint16],
     )
-    assert_type(coop.scan(block, np.int32(4), scan_op=np.add), np.int32)
-    assert_type(coop.scan(warp, np.int32(4), scan_op=np.add), np.int32)
+    assert_type(numba_coop.scan(block, np.int32(4), scan_op=np.add), np.int32)
+    assert_type(numba_coop.scan(warp, np.int32(4), scan_op=np.add), np.int32)
     assert_type(
-        coop.exclusive_scan(block, values, scan_op=np.add),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.exclusive_scan(block, values, scan_op=np.add),
+        numba_coop.ThreadDataLike[np.uint16],
     )
+    assert_type(numba_coop.exclusive_scan(block, np.int32(4), scan_op=np.add), np.int32)
+    assert_type(numba_coop.exclusive_scan(warp, np.int32(4), scan_op=np.add), np.int32)
     assert_type(
-        coop.exclusive_scan(block, np.int32(4), scan_op=np.add), np.int32
-    )
-    assert_type(
-        coop.exclusive_scan(warp, np.int32(4), scan_op=np.add), np.int32
-    )
-    assert_type(
-        coop.scan(
+        numba_coop.scan(
             block,
             np.int32(4),
             mode="inclusive",
@@ -407,7 +403,7 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.inclusive_sum(
+        numba_coop.inclusive_sum(
             block,
             np.int32(4),
             None,
@@ -416,7 +412,7 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.exclusive_scan(
+        numba_coop.exclusive_scan(
             warp,
             np.int32(4),
             scan_op=operator.mul,
@@ -427,7 +423,7 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.exclusive_scan(
+        numba_coop.exclusive_scan(
             block,
             np.int32(4),
             scan_op="max",
@@ -436,7 +432,7 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.inclusive_scan(
+        numba_coop.inclusive_scan(
             logical_warp,
             np.int32(4),
             scan_op=_select_left_int32,
@@ -444,25 +440,25 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.exclusive_sum(
+        numba_coop.exclusive_sum(
             block,
             values,
             algorithm="warp_scans",
             aggregate_output=uint16_aggregate,
         ),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.inclusive_sum(
+        numba_coop.inclusive_sum(
             block,
             readonly_values,
             algorithm="raking",
             temp_storage=common_storage,
         ),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.inclusive_sum(
+        numba_coop.inclusive_sum(
             logical_warp,
             np.int32(4),
             valid_items=np.int32(7),
@@ -471,7 +467,7 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.inclusive_sum(
+        numba_coop.inclusive_sum(
             block,
             np.int32(4),
             int64_prefix_state,
@@ -480,7 +476,7 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.exclusive_scan(
+        numba_coop.exclusive_scan(
             block,
             np.int32(4),
             scan_op=_select_left_int32,
@@ -489,16 +485,16 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.scan(
+        numba_coop.scan(
             block,
             values,
             mode="inclusive",
             prefix_op=_prefix_from_uint16_aggregate,
         ),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.exclusive_sum(
+        numba_coop.exclusive_sum(
             block,
             np.int32(4),
             int64_prefix_state,
@@ -507,7 +503,7 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.exclusive_sum(
+        numba_coop.exclusive_sum(
             block,
             np.int32(4),
             int32_prefix_state,
@@ -516,16 +512,16 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.inclusive_sum(
+        numba_coop.inclusive_sum(
             block,
             values,
             uint16_prefix_state,
             prefix_op=_UINT16_RUNNING_PREFIX,
         ),
-        coop.ThreadDataLike[np.uint16],
+        numba_coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.reduce(
+        numba_coop.reduce(
             block,
             np.int32(4),
             binary_op=np.maximum,
@@ -535,7 +531,7 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.reduce(
+        numba_coop.reduce(
             block,
             np.int32(4),
             binary_op=operator.add,
@@ -545,19 +541,19 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.sum(warp, np.int32(4), broadcast=False, valid_items=np.int32(7)),
+        numba_coop.sum(warp, np.int32(4), broadcast=False, valid_items=np.int32(7)),
         np.int32,
     )
     assert_type(
-        coop.sum(block, values, broadcast=False, algorithm="raking"),
+        numba_coop.sum(block, values, broadcast=False, algorithm="raking"),
         np.uint16,
     )
     assert_type(
-        coop.sum(block, readonly_values, broadcast=False, algorithm="raking"),
+        numba_coop.sum(block, readonly_values, broadcast=False, algorithm="raking"),
         np.uint16,
     )
     assert_type(
-        coop.reduce(
+        numba_coop.reduce(
             warp,
             np.int32(4),
             binary_op=_select_left_int32,
@@ -566,7 +562,7 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
-        coop.reduce(
+        numba_coop.reduce(
             block,
             values,
             binary_op=_select_left_uint16,
@@ -576,7 +572,7 @@ def check_numba_surface(
         np.uint16,
     )
     assert_type(
-        coop.reduce(
+        numba_coop.reduce(
             block,
             readonly_values,
             binary_op=_select_left_uint16,
@@ -586,7 +582,7 @@ def check_numba_surface(
         np.uint16,
     )
     assert_type(
-        coop.reduce(
+        numba_coop.reduce(
             block,
             np.int32(4),
             binary_op=_select_left_int32,
@@ -598,115 +594,123 @@ def check_numba_surface(
 
 
 def check_merge_sort_surface() -> None:
-    keys = coop.ThreadData(items_per_thread=3, dtype=np.int32)
-    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
+    keys = numba_coop.ThreadData(3, np.int32)
+    values = numba_coop.ThreadData(3, np.float64)
 
     def compare(left: np.int32, right: np.int32) -> np.bool_:
         return left > right
 
     assert_type(
-        coop.merge_sort_keys(coop.this_block(), keys, compare_op=compare),
-        coop.ThreadDataLike[np.int32],
+        numba_coop.merge_sort_keys(numba_coop.this_block(), keys, compare_op=compare),
+        numba_coop.ThreadDataLike[np.int32],
     )
     assert_type(
-        coop.merge_sort_pairs(
-            coop.this_warp().group_by(8),
+        numba_coop.merge_sort_pairs(
+            numba_coop.this_warp().group_by(8),
             keys,
             values,
             valid_items=23,
             oob_default=-1000,
             compare_op=compare,
         ),
-        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
+        tuple[
+            numba_coop.ThreadDataLike[np.int32], numba_coop.ThreadDataLike[np.float64]
+        ],
     )
 
 
 def check_radix_surface() -> None:
-    block = coop.this_block()
-    keys = coop.ThreadData(items_per_thread=3, dtype=np.int32)
-    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
+    block = numba_coop.this_block()
+    keys = numba_coop.ThreadData(3, np.int32)
+    values = numba_coop.ThreadData(3, np.float64)
     assert_type(
-        coop.radix_sort_keys(block, keys), coop.ThreadDataLike[np.int32]
+        numba_coop.radix_sort_keys(block, keys), numba_coop.ThreadDataLike[np.int32]
     )
     assert_type(
-        coop.radix_rank_keys(block, keys, radix_bits=4),
-        coop.ThreadDataLike[np.int32],
+        numba_coop.radix_rank(block, keys, radix_bits=4),
+        numba_coop.ThreadDataLike[np.int32],
     )
     assert_type(
-        coop.radix_sort_pairs(block, keys, values),
-        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
+        numba_coop.radix_sort_pairs(block, keys, values),
+        tuple[
+            numba_coop.ThreadDataLike[np.int32], numba_coop.ThreadDataLike[np.float64]
+        ],
     )
-    prefix = coop.ThreadData(items_per_thread=1, dtype=np.int32)
+    prefix = numba_coop.ThreadData(1, np.int32)
     assert_type(
-        coop.radix_rank_keys(block, keys, exclusive_digit_prefix=prefix),
-        coop.ThreadDataLike[np.int32],
+        numba_coop.radix_rank(block, keys, exclusive_digit_prefix=prefix),
+        numba_coop.ThreadDataLike[np.int32],
     )
     assert_type(
-        coop.radix_sort_keys(block, np.float64(1.5), blocked_to_striped=True),
+        numba_coop.radix_sort_keys(block, np.float64(1.5), blocked_to_striped=True),
         np.float64,
     )
 
 
 def check_topk_surface() -> None:
-    block = coop.this_block()
-    keys = coop.ThreadData(items_per_thread=3, dtype=np.int16)
-    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
+    block = numba_coop.this_block()
+    keys = numba_coop.ThreadData(3, np.int16)
+    values = numba_coop.ThreadData(3, np.float64)
     assert_type(
-        coop.topk_min_keys(block, keys, k=7), coop.ThreadDataLike[np.int16]
+        numba_coop.topk_min_keys(block, keys, k=7), numba_coop.ThreadDataLike[np.int16]
     )
     assert_type(
-        coop.topk_max_keys(block, keys, k=np.int64(7), valid_items=31),
-        coop.ThreadDataLike[np.int16],
+        numba_coop.topk_max_keys(block, keys, k=np.int64(7), valid_items=31),
+        numba_coop.ThreadDataLike[np.int16],
     )
     assert_type(
-        coop.topk_min_pairs(block, keys, values, k=7),
-        tuple[coop.ThreadDataLike[np.int16], coop.ThreadDataLike[np.float64]],
+        numba_coop.topk_min_pairs(block, keys, values, k=7),
+        tuple[
+            numba_coop.ThreadDataLike[np.int16], numba_coop.ThreadDataLike[np.float64]
+        ],
     )
     assert_type(
-        coop.topk_max_pairs(
-            block, keys, values, k=7, temp_storage=coop.TempStorage()
+        numba_coop.topk_max_pairs(
+            block, keys, values, k=7, temp_storage=numba_coop.TempStorage()
         ),
-        tuple[coop.ThreadDataLike[np.int16], coop.ThreadDataLike[np.float64]],
+        tuple[
+            numba_coop.ThreadDataLike[np.int16], numba_coop.ThreadDataLike[np.float64]
+        ],
     )
 
 
 def check_neighbor_results() -> None:
-    block = coop.this_block()
-    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
+    block = numba_coop.this_block()
+    values = numba_coop.ThreadData(3, np.float64)
     assert_type(
-        coop.adjacent_difference(block, values), coop.ThreadDataLike[np.float64]
+        numba_coop.adjacent_difference(block, values),
+        numba_coop.ThreadDataLike[np.float64],
     )
     assert_type(
-        coop.discontinuity(block, values), coop.ThreadDataLike[np.int32]
+        numba_coop.discontinuity(block, values), numba_coop.ThreadDataLike[np.int32]
     )
     assert_type(
-        coop.discontinuity(block, values, mode="heads_and_tails"),
-        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.int32]],
+        numba_coop.discontinuity(block, values, mode="heads_and_tails"),
+        tuple[numba_coop.ThreadDataLike[np.int32], numba_coop.ThreadDataLike[np.int32]],
     )
     assert_type(
-        coop.adjacent_difference(
-            block,
-            values,
-            difference_op=lambda current, neighbor: current - neighbor,
+        numba_coop.adjacent_difference(
+            block, values, difference_op=lambda current, neighbor: current - neighbor
         ),
-        coop.ThreadDataLike[np.float64],
+        numba_coop.ThreadDataLike[np.float64],
     )
     assert_type(
-        coop.discontinuity(
+        numba_coop.discontinuity(
             block, values, flag_op=lambda previous, current: previous < current
         ),
-        coop.ThreadDataLike[np.int32],
+        numba_coop.ThreadDataLike[np.int32],
     )
 
 
 def check_histogram_surface() -> None:
-    block = coop.this_block()
-    samples = coop.ThreadData(items_per_thread=3, dtype=np.uint8)
+    block = numba_coop.this_block()
+    samples = numba_coop.ThreadData(3, np.uint8)
     assert_type(
-        coop.histogram(block, samples, bins=33), coop.ThreadDataLike[np.int32]
+        numba_coop.histogram(block, samples, bins=33),
+        numba_coop.ThreadDataLike[np.int32],
     )
     assert_type(
-        coop.histogram(
+        numba_coop.histogram(
             block,
             samples,
             bins=65,
@@ -714,26 +718,26 @@ def check_histogram_surface() -> None:
             counter_dtype=np.uint64,
             algorithm="sort",
         ),
-        coop.ThreadDataLike[np.uint64],
+        numba_coop.ThreadDataLike[np.uint64],
     )
     assert_type(
-        coop.histogram(block, samples, bins=33, counter_dtype=int),
-        coop.ThreadDataLike[np.int32],
+        numba_coop.histogram(block, samples, bins=33, counter_dtype=int),
+        numba_coop.ThreadDataLike[np.int32],
     )
     assert_type(
-        coop.histogram(block, np.int64(3), bins=33),
-        coop.ThreadDataLike[np.int32],
+        numba_coop.histogram(block, np.int64(3), bins=33),
+        numba_coop.ThreadDataLike[np.int32],
     )
 
 
 def check_run_length_surface(destination: object, offsets: object) -> None:
-    block = coop.this_block()
-    values = coop.ThreadData(items_per_thread=2, dtype=np.float32)
-    lengths = coop.ThreadData(items_per_thread=2, dtype=np.uint64)
-    total = coop.ThreadData(items_per_thread=1, dtype=np.uint64)
-    relative = coop.ThreadData(items_per_thread=4, dtype=np.uint64)
+    block = numba_coop.this_block()
+    values = numba_coop.ThreadData(2, np.float32)
+    lengths = numba_coop.ThreadData(2, np.uint64)
+    total = numba_coop.ThreadData(1, np.uint64)
+    relative = numba_coop.ThreadData(4, np.uint64)
     assert_type(
-        coop.run_length_decode(
+        numba_coop.run_length_decode(
             block,
             values,
             lengths,
@@ -743,10 +747,10 @@ def check_run_length_surface(destination: object, offsets: object) -> None:
             total_decoded_size=total,
             relative_offsets=relative,
         ),
-        coop.ThreadDataLike[np.float32],
+        numba_coop.ThreadDataLike[np.float32],
     )
     assert_type(
-        coop.run_length_decode_into(
+        numba_coop.run_length_decode_into(
             block,
             values,
             lengths,
@@ -760,8 +764,8 @@ def check_run_length_surface(destination: object, offsets: object) -> None:
 
 
 def check_batched_reduction_typing() -> None:
-    warp = coop.this_warp()
-    values = coop.ThreadData(items_per_thread=3, dtype=np.float32)
+    warp = numba_coop.this_warp()
+    values = numba_coop.ThreadData(3, np.float32)
     assert_type(
-        coop.reduce_batched(warp, values), coop.ThreadDataLike[np.float32]
+        numba_coop.reduce_batched(warp, values), numba_coop.ThreadDataLike[np.float32]
     )

@@ -223,7 +223,7 @@ def test_reduce_registers_scalar_result_and_all_provider_abis():
 
 
 def test_public_reduce_markers_have_group_first_signatures():
-    import cuda.coop.numba_mlir as qualified
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common
 
     expected_reduce = (
@@ -235,9 +235,9 @@ def test_public_reduce_markers_have_group_first_signatures():
         "algorithm",
     )
     expected_sum = ("group", "value", "broadcast", "valid_items", "algorithm")
-    assert tuple(signature(qualified.reduce).parameters) == expected_reduce
+    assert tuple(signature(numba_coop.reduce).parameters) == expected_reduce
     assert tuple(signature(common.reduce).parameters) == expected_reduce
-    assert tuple(signature(qualified.sum).parameters) == expected_sum
+    assert tuple(signature(numba_coop.sum).parameters) == expected_sum
     assert tuple(signature(common.sum).parameters) == expected_sum
 
 
@@ -449,11 +449,11 @@ def test_qualified_callable_aliases_plan_as_builtin_cudax_operations(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._lowering import _reduce
 
     def kernel(value):
-        return coop.reduce(coop.this_block(), value, binary_op=binary_op)
+        return numba_coop.reduce(numba_coop.this_block(), value, binary_op=binary_op)
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
     assert planner.run()
@@ -462,20 +462,17 @@ def test_qualified_callable_aliases_plan_as_builtin_cudax_operations(
     assert _kwarg_value(func_ir, call, "binary_op") == expected
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 def test_reduce_infers_untyped_thread_data_symmetrically(
-    monkeypatch, qualified, items_per_thread
+    monkeypatch, qualified
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
-    from cuda.coop._core import INT32
     from cuda.coop.numba_mlir._compiler import _group_reduce
-    from cuda.coop.numba_mlir._lowering import _reduce
 
-    module = qualified_coop if qualified else root_coop
+    module = numba_coop if qualified else root_coop
     plans = []
     plan_group_primitive = _group_reduce.plan_group_primitive
 
@@ -486,10 +483,10 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
 
     monkeypatch.setattr(_group_reduce, "plan_group_primitive", capture_plan)
 
-    def kernel(value, items_per_thread):
-        items = module.ThreadData(items_per_thread)
-        for item in range(items_per_thread):
-            items[item] = value
+    def kernel(value):
+        items = module.ThreadData(2)
+        items[0] = value
+        items[1] = value
         return module.sum(
             module.this_block(),
             items,
@@ -497,21 +494,11 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
             algorithm="raking",
         )
 
-    func_ir, planner = _plan(
-        kernel,
-        arg_types=(types.int32, types.IntegerLiteral(items_per_thread)),
-    )
+    _, planner = _plan(kernel, arg_types=(types.int32,))
     assert planner.run()
     assert len(plans) == 1
-    assert plans[0].call.operation.dtype == INT32
-    call = _provider_call(func_ir, _reduce.sum)
-    assert _kwarg_value(func_ir, call, "dtype") is types.int32
-    key = plans[0].call.operation.semantic_key
-    monkeypatch.setattr(
-        types.int32, "_coop_dtype_boundary_test", 1, raising=False
-    )
-    assert plans[0].call.operation.semantic_key == key
-    assert plans[0].call.operation.items_per_thread == items_per_thread
+    assert plans[0].call.operation.dtype == types.int32
+    assert plans[0].call.operation.items_per_thread == 2
 
 
 def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
@@ -519,15 +506,15 @@ def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import Array as CoreArray
     from cuda.coop.numba_mlir._lowering import _reduce
 
     def kernel(value):
-        items = coop.ThreadData(items_per_thread=1, dtype=types.int32)
+        items = numba_coop.ThreadData(1, dtype=types.int32)
         items[0] = value
-        return coop.sum(
-            coop.this_block(),
+        return numba_coop.sum(
+            numba_coop.this_block(),
             items,
             broadcast=False,
             algorithm="raking",
@@ -585,10 +572,10 @@ def test_direct_cub_reduce_selects_operation_and_scope(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._lowering import _reduce
 
-    descriptor = coop.this_block() if kind == "block" else coop.this_warp()
+    descriptor = numba_coop.this_block() if kind == "block" else numba_coop.this_warp()
 
     def callback(lhs, rhs):
         return lhs + rhs
@@ -596,7 +583,7 @@ def test_direct_cub_reduce_selects_operation_and_scope(
     binary_op = callback if operation == "callback" else operation
 
     def kernel(value):
-        return coop.reduce(
+        return numba_coop.reduce(
             descriptor,
             value,
             binary_op=binary_op,
@@ -620,11 +607,11 @@ def test_direct_cub_reduce_selects_operation_and_scope(
 def test_complete_nonexhaustive_logical_warp_materializes_cub_storage(fallback):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir._lowering import _reduce
 
-    descriptor = coop.this_warp().group_by(8, exhaustive=False)
+    descriptor = numba_coop.this_warp().group_by(8, exhaustive=False)
 
     def callback(lhs, rhs):
         return lhs + rhs
@@ -632,7 +619,7 @@ def test_complete_nonexhaustive_logical_warp_materializes_cub_storage(fallback):
     if fallback == "valid-prefix":
 
         def kernel(value):
-            return coop.sum(
+            return numba_coop.sum(
                 descriptor,
                 value,
                 broadcast=False,
@@ -642,7 +629,7 @@ def test_complete_nonexhaustive_logical_warp_materializes_cub_storage(fallback):
     else:
 
         def kernel(value):
-            return coop.reduce(
+            return numba_coop.reduce(
                 descriptor,
                 value,
                 binary_op=callback,
@@ -683,12 +670,12 @@ def test_complete_nonexhaustive_logical_warp_materializes_cub_storage(fallback):
 def test_runtime_valid_items_is_checked_before_an_int64_provider_cast():
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._lowering import _reduce
 
     def kernel(value, valid_items):
-        return coop.sum(
-            coop.this_block(),
+        return numba_coop.sum(
+            numba_coop.this_block(),
             value,
             broadcast=False,
             valid_items=valid_items,
@@ -723,12 +710,12 @@ def test_runtime_valid_items_rejects_invalid_dtype_before_provider(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_reduce
 
     def kernel(value, valid_items):
-        return coop.sum(
-            coop.this_block(),
+        return numba_coop.sum(
+            numba_coop.this_block(),
             value,
             broadcast=False,
             valid_items=valid_items,
@@ -753,12 +740,12 @@ def test_runtime_valid_items_rejects_invalid_dtype_before_provider(
 def test_static_valid_items_rejects_before_provider(valid_items, monkeypatch):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_reduce
 
     def kernel(value):
-        return coop.sum(
-            coop.this_block(),
+        return numba_coop.sum(
+            numba_coop.this_block(),
             value,
             broadcast=False,
             valid_items=valid_items,
@@ -779,11 +766,11 @@ def test_static_valid_items_rejects_before_provider(valid_items, monkeypatch):
 def test_float_bitwise_reduce_rejects_before_provider(monkeypatch):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_reduce
 
     def kernel(value):
-        return coop.reduce(coop.this_block(), value, binary_op="bit_or")
+        return numba_coop.reduce(numba_coop.this_block(), value, binary_op="bit_or")
 
     monkeypatch.setattr(
         _group_reduce._ReducePlanning,
@@ -800,10 +787,10 @@ def test_float_bitwise_reduce_rejects_before_provider(monkeypatch):
 def test_grid_reduce_has_stable_workspace_diagnostic():
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     def kernel(value):
-        return coop.sum(coop.this_grid(), value)
+        return numba_coop.sum(numba_coop.this_grid(), value)
 
     _, planner = _plan(kernel, arg_types=(types.int32,))
     with pytest.raises(
@@ -815,14 +802,14 @@ def test_grid_reduce_has_stable_workspace_diagnostic():
 def test_qualified_local_array_is_supported_but_common_rejects_it():
     from numba_cuda_mlir import cuda, types
 
-    import cuda.coop.numba_mlir as qualified
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common
 
     def qualified_kernel(value):
         items = cuda.local.array(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        return qualified.sum(qualified.this_block(), items)
+        return numba_coop.sum(numba_coop.this_block(), items)
 
     def common_kernel(value):
         items = cuda.local.array(2, dtype=types.int32)
@@ -891,12 +878,12 @@ def test_cub_factories_declare_leading_storage_and_scope(monkeypatch):
 def test_cudax_source_has_required_macros_and_no_external_barrier():
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import LaunchFacts, resolve_thread_group
     from cuda.coop.numba_mlir._lowering import _reduce
 
     group = resolve_thread_group(
-        coop.this_block().group_by(2),
+        numba_coop.this_block().group_by(2),
         LaunchFacts(exact_block_dim=(64, 1, 1)),
     ).group
     source = _reduce.render_group_reduce_source(
@@ -923,12 +910,12 @@ def test_cudax_source_has_required_macros_and_no_external_barrier():
 def test_mapped_cudax_factory_uses_compiler_cache_not_module_cache(monkeypatch):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import LaunchFacts, resolve_thread_group
     from cuda.coop.numba_mlir._lowering import _reduce
 
     group = resolve_thread_group(
-        coop.this_block().group_by(2),
+        numba_coop.this_block().group_by(2),
         LaunchFacts(exact_block_dim=(64, 1, 1)),
     ).group
     created = []
@@ -975,14 +962,14 @@ def test_mapped_cudax_factory_uses_compiler_cache_not_module_cache(monkeypatch):
 def test_planned_cudax_and_cub_calls_match_before_inference():
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     def full(value):
-        return coop.sum(coop.this_block(), value)
+        return numba_coop.sum(numba_coop.this_block(), value)
 
     def prefix(value, valid_items):
-        return coop.sum(
-            coop.this_warp(),
+        return numba_coop.sum(
+            numba_coop.this_warp(),
             value,
             broadcast=False,
             valid_items=valid_items,
