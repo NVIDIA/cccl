@@ -15,8 +15,8 @@ Why are there common and backend-qualified namespaces?
 ------------------------------------------------------
 
 ``cuda.coop`` provides the common API for cooperative operations. A kernel
-compiler's backend implements those calls. Start with this namespace when
-its groups, ``ThreadData`` payloads, and built-in operators cover your needs.
+compiler's backend implements those calls. Use this namespace for code that
+shares group, ``ThreadData``, and built-in operator contracts across compilers.
 Register the compiler your kernel uses on the host:
 
 .. code-block:: python
@@ -54,14 +54,13 @@ families each backend currently implements.
 Can I use only a qualified namespace?
 -------------------------------------
 
-Yes. A qualified namespace includes the supported common operations and
-its backend extensions. Import the one your kernel compiler uses:
+Yes. Import the qualified namespace for your kernel compiler:
 
 .. code-block:: python
 
    from numba_cuda_mlir import cuda
 
-   import cuda.coop.numba_mlir as numba_coop
+   import cuda.coop.numba_mlir as coop
 
 For CuTe kernels:
 
@@ -69,12 +68,17 @@ For CuTe kernels:
 
    from cutlass import cute
 
-   import cuda.coop.cutlass as cutlass_coop
+   import cuda.coop.cutlass as coop
 
-Each import registers its backend. The documentation uses ``numba_coop``
-and ``cutlass_coop`` so readers can distinguish qualified calls from the
-common ``coop`` namespace. An application may choose another alias,
-including ``coop``, without changing the API.
+Each import registers its backend, so these examples need no separate
+``register`` call. The host ``cuda.coop.register`` helper belongs to the
+common namespace; qualified imports perform that registration directly.
+
+Use ``numba_coop`` and ``cutlass_coop`` when a module contains both DSLs,
+and call each API from its own compiler's kernels. Examples and shared
+helpers may also use the common ``coop`` API alongside a qualified import.
+The documentation uses the longer aliases to make those comparisons clear;
+a single-backend application can use ``coop`` throughout.
 
 Keep the alias on a dotted import. Bare ``import cuda.coop.numba_mlir``
 assigns the top-level package to ``cuda`` in that scope, replacing the name

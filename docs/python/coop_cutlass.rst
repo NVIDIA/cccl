@@ -32,12 +32,23 @@ compiler integration works. For Numba kernels, see the
 Choosing the common or qualified API
 ------------------------------------
 
-Start with ``from cuda import coop`` for the common API. Use
-``import cuda.coop.cutlass as cutlass_coop`` when you need the extra controls in the
-table below, such as scatter ranks for Exchange or a Scan aggregate.
-Both imports call the same implementation inside a CuTe kernel.
-Use ``coop`` for common calls and ``cutlass_coop`` for qualified calls,
-including in programs that use only one of those APIs.
+For CUTLASS-only code, use the qualified namespace directly:
+
+.. code-block:: python
+
+   import cuda.coop.cutlass as coop
+
+This import registers the CUTLASS integration. Use ordinary Load/Store and
+CuTe register conversions through this one import, without a separate
+``coop.register(...)`` call.
+
+The common namespace, ``from cuda import coop``, is useful for code shared
+across compilers. Examples that compare common and qualified calls use
+``coop`` for the common API and ``cutlass_coop`` for the CUTLASS API. An
+application can use either API on its own.
+
+The host ``cuda.coop.register`` helper belongs to the common namespace;
+qualified imports perform that registration directly.
 
 .. list-table:: Common and CUTLASS-qualified APIs
    :header-rows: 1
@@ -113,6 +124,14 @@ Mixing kernels from both compilers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CUTLASS and Numba-CUDA-MLIR kernels can run in the same process. Use the
+aliases ``numba_coop`` and ``cutlass_coop`` in a module containing both:
+
+.. code-block:: python
+
+   import cuda.coop.numba_mlir as numba_coop
+   import cuda.coop.cutlass as cutlass_coop
+
+Call each qualified API from its own compiler's kernels. Use the
 selected device's primary CUDA context before allocating memory or launching
 kernels with either runtime. Numba-CUDA-MLIR requires this context; it rejects
 a context created independently by another runtime.
@@ -147,7 +166,7 @@ not load CUTLASS or initialize CUDA bindings.
 Activation and example
 ----------------------
 
-Register CUTLASS on the host before compiling:
+To use the common API, register CUTLASS on the host before compiling:
 
 .. code-block:: python
 
