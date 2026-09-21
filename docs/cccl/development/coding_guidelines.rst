@@ -12,6 +12,8 @@ General
 
 #. Use the latest C++ features available.
    The repository supports C++17 but many newer library features are available through backports.
+   Exception: the headers under ``libcudacxx/include/nv/`` must keep compiling as C++11 for
+   downstream consumers.
 #. All user-defined names for entities should use ``snake_case``, except for template parameters, which
    use ``PascalCase``, and macros, which use ``ALL_CAPS``.
 #. Headers must use ``#pragma once`` over include guards, except for libcudacxx and cudax.
@@ -112,6 +114,9 @@ Macros
    headers. E.g., use ``_CCCL_HOST_DEVICE`` instead of ``__host__ __device__``, or ``_CCCL_FORCEINLINE``
    over ``__forceinline``. Generally, prefer ``_CCCL_HOST_API``, ``_CCCL_DEVICE_API``,
    ``_CCCL_HOST_DEVICE_API``, ``_CCCL_TILE_API``, or ``_CCCL_API`` for any function inside CCCL.
+   The same applies to compiler and compilation-mode detection in preprocessor conditions:
+   use ``_CCCL_CUDA_COMPILATION()``, ``_CCCL_DEVICE_COMPILATION()``, and ``_CCCL_CUDA_COMPILER(...)``
+   instead of raw ``__CUDACC__``, ``__CUDA_ARCH__``, or ``__NVCOMPILER``.
    Examples and documentation must not use these macros and should support vendor
    attributes and keywords instead. Tests should only use macros if they are strictly required for the
    test to work. For instance, ``_CCCL_HOST_DEVICE`` may be required for tests targeting non-CUDA
@@ -195,6 +200,8 @@ CUB and Thrust
 #. Any entity inside the namespace ``cub`` or ``thrust``, including all nested namespaces,
    unless any namespace is named ``detail``, or the entity is prefixed with ``__``,
    is considered part of the public API.
+   This exemption does not apply if a ``detail`` entity is re-exposed through a public
+   alias or base class outside ``detail`` later; such re-exposed entities remain part of the public API.
 #. Non-public entities, except macros, should be put inside a ``detail`` namespace (preferred)
    or prefixed with ``__``.
    Non-public macros should be prefixed with ``_``.

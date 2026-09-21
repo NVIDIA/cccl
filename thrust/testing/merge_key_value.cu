@@ -61,7 +61,7 @@ void TestMergeKeyValue(size_t n)
   const auto h_end = call_merge<T, CompareOp>(h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), h_result.begin());
   const auto d_end = call_merge<T, CompareOp>(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
   REQUIRE(h_end == h_result.end());
   REQUIRE(d_end == d_result.end());
 }

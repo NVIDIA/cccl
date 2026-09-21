@@ -19,7 +19,7 @@ void TestExclusiveScanByKeySimple()
 
   const Iterator iter = thrust::exclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin());
 
-  ASSERT_EQUAL_QUIET(iter, output.end());
+  REQUIRE((iter == output.end()));
 
   Vector ref{0, 0, 2, 5, 0, 0, 6};
   REQUIRE(output == ref);
@@ -346,7 +346,7 @@ void _TestScanByKeyWithLargeTypes()
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin(), FixedVector<T, N>(0));
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin(), FixedVector<T, N>(0));
 
-  ASSERT_EQUAL_QUIET(h_output, d_output);
+  REQUIRE((h_output == d_output));
 }
 
 void TestScanByKeyWithLargeTypes()

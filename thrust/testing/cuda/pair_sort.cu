@@ -43,7 +43,7 @@ void TestPairStableSortDevice(ExecutionPolicy exec)
   // sort on the host
   thrust::stable_sort(h_pairs.begin(), h_pairs.end());
 
-  ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
+  REQUIRE((h_pairs == d_pairs));
 };
 
 void TestPairStableSortDeviceSeq()
