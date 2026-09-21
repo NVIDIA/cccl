@@ -108,17 +108,27 @@ Its public entry points live in `cuda/coop/_core/api/`; the private `_core`
 package also contains shared implementation. A common spelling does not
 guarantee that every backend supports the operation.
 
-Import the qualified namespace for compiler-specific features. These imports
-also register the corresponding integration:
+For CUTLASS-only code, use the qualified namespace directly:
+
+```python
+import cuda.coop.cutlass as coop
+```
+
+This also registers the integration; a separate `register` call is unnecessary.
+The host `cuda.coop.register` helper belongs to the common namespace.
+
+For a module containing both DSLs, use distinct qualified aliases:
 
 ```python
 import cuda.coop.numba_mlir as numba_coop
 import cuda.coop.cutlass as cutlass_coop
 ```
 
-Use `coop` for the common API, `numba_coop` for Numba-CUDA-MLIR extensions, and
-`cutlass_coop` for CUTLASS extensions. Aliasing the qualified imports also avoids
-rebinding `cuda`, which Numba examples use for `cuda.jit`.
+Each import registers its backend. Call `numba_coop` from Numba kernels and
+`cutlass_coop` from CuTe kernels. Examples comparing the APIs use `coop` for
+common calls and the longer aliases for qualified calls; application code
+need not import both namespaces for one backend. Aliasing dotted imports also
+avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 
 Both qualified APIs retain shared signatures, string selectors, and inference
 rules. Numba-CUDA-MLIR adds local-array payloads, memory namespaces, and device
