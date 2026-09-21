@@ -56,7 +56,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 //! @brief Gets the cuGetProcAddress function pointer.
 [[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
 {
-  constexpr const char* __fn_name = "cuGetProcAddress_v2";
+  constexpr auto __fn_name = "cuGetProcAddress_v2";
 
 #    if _CCCL_OS(WINDOWS)
   static const auto __driver_library = ::LoadLibraryExA("nvcuda.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -70,8 +70,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
     ::cuda::__throw_cuda_error<::cudaErrorInitializationError>("Failed to get cuGetProcAddress from nvcuda.dll");
   }
 #    else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
-  constexpr const char* __driver_library_name = _CCCL_OS(ANDROID) ? "libcuda.so" : "libcuda.so.1";
-  static const auto __driver_library          = ::dlopen(__driver_library_name, RTLD_NOW);
+  constexpr auto __driver_library_name = _CCCL_OS(ANDROID) ? "libcuda.so" : "libcuda.so.1";
+  static const auto __driver_library   = ::dlopen(__driver_library_name, RTLD_NOW);
   if (__driver_library == nullptr)
   {
     ::cuda::__throw_cuda_error<::cudaErrorUnknown>("Failed to load libcuda.so.1");

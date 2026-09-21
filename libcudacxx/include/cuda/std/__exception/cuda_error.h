@@ -109,7 +109,7 @@ public:
   [[noreturn]] friend _CCCL_HOST_API void
   __throw_cuda_error(const char* __msg, const char* __api, const ::cuda::std::source_location& __loc)
   {
-    const char* __error_str{};
+    [[maybe_unused]] const char* __error_str{};
     if constexpr (_Error == /*::cudaErrorInvalidValue*/ 1)
     {
       __error_str = "invalid value";
