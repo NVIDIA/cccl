@@ -83,6 +83,19 @@ arithmetic/comparison intrinsics require SM80 while CCCL supports sm75+: gate th
 intrinsics (`__bfloat162float`/`__float2bfloat16_rn`; for `__nv_bfloat162`,
 `__bfloat1622float2`/`__float22bfloat162_rn`). Candidate for a pre-commit grep.
 
+## build.narrow-arithmetic-then-widen (important, C++/CUDA code computing a size/count/capacity/offset, including test files)
+
+<!-- provenance:
+  #7705→#9736 fixed_capacity_map tests computed capacity via static_cast<size_t>(num_keys * 2), multiplying in int before widening, breaking a clang-tidy CI check (pair auto-inferred as #9719→#9736)
+-->
+
+When a diff computes a size, count, capacity, or offset by adding or multiplying two operands and
+widening the RESULT afterward — explicitly with a cast or implicitly through a wider
+destination type, a wider function parameter, or return type — flag it as a
+code smell: the operation executes in the narrower type and can silently overflow before the
+result is widened. The author should either widen an operand before the operation
+or, if the narrow result is intended, narrow the destination type so no widening occurs.
+
 ## correctness.pdl-restrict-aliasing (critical, CUDA kernels that call `_CCCL_PDL_GRID_DEPENDENCY_SYNC()` / `cudaGridDependencySynchronize()`)
 
 <!-- provenance: manually added -->
