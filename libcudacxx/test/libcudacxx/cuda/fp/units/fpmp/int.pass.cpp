@@ -180,8 +180,11 @@ TEST_HOST_DEVICE_FUNC void test()
 // conversion members are host functions there anyway.
 void run_iec_float128()
 {
-  const _Float128 q = static_cast<_Float128>(1.25);
+  // 1 + 2^-80 is exact in binary128 and in fp64mp2 (~104 bits), but not in
+  // double. A conversion that kept only hi would round-trip to 1.
+  const _Float128 q = static_cast<_Float128>(1) + static_cast<_Float128>(0x1p-80);
   const cudax::fp64mp2 x(q);
+  assert(x.lo() != 0);
   assert(static_cast<_Float128>(x) == q);
   const cudax::fp64mp2 y = x / cudax::fp64mp2(static_cast<_Float128>(1));
   assert(static_cast<_Float128>(y) == q);

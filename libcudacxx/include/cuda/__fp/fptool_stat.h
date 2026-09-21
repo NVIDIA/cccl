@@ -916,7 +916,7 @@ public:
   _CCCL_TEMPLATE(class _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up> _CCCL_AND(!::cuda::std::is_same_v<_Float128, __fpmp_fp128>))
   _CCCL_FPMP_FP128_API constexpr _CCCL_FPMP_EXPLICIT fpmp2_stat(_Float128 __d) noexcept
-      : __stat_v_{static_cast<_FpType>(__d)}
+      : __stat_v_(__d)
   {}
   _CCCL_TEMPLATE(class _Up = _FpType)
   _CCCL_REQUIRES(__fpmp2_is_fp64_v<_Up> _CCCL_AND(!::cuda::std::is_same_v<_Float128, __fpmp_fp128>))
