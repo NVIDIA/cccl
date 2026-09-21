@@ -66,8 +66,7 @@ def histogram(
 ) -> ThreadDataLike[numpy.int32] | ThreadDataLike[_Counter]:
     """Return fresh striped bin counts, preserving the input samples.
 
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
+    Implemented by both Numba-CUDA-MLIR and CUTLASS.
 
     Parameters
     ----------

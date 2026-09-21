@@ -197,7 +197,11 @@ sharing and the :doc:`CUTLASS Programming Guide <../coop_cutlass>` for the
 block operations that accept descriptors and their reuse rules.
 
 Numba's restrictions on combining cooperative backing with user static or
-dynamic shared arrays are specific to that backend.
+dynamic shared arrays are specific to that backend. Both backends also accept
+explicit block scratch for Adjacent Difference, Discontinuity, and Histogram.
+Numba additionally supports both Run Length Decode forms. CUTLASS does not yet
+implement those forms or Batched Warp Reduction; see :ref:`backend operation
+support <coop-backend-operation-support>`.
 
 Warp operations reject explicit descriptors. When a Warp operation uses CUB,
 the compiler allocates any scratch that CUB requires.
@@ -374,9 +378,9 @@ missing or incompatible backend at setup time. The switch
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` disables only automatic probing;
 explicit registration and qualified imports still work.
 
-Check the operation's launch shape, dtype, and participation requirements.
-Check backend coverage for the common operation; qualified extensions follow
-their compiler's guide. In a process using both DSLs, keep Numba values
+Check the selected backend's :ref:`coverage <coop-backends>`, launch shape,
+dtypes, and participation requirements. An API name alone does not establish
+support for that compiler. In a process using both DSLs, keep Numba values
 inside Numba kernels and CuTe values inside CuTe kernels.
 
 For provider compilation errors, verify the toolkit and matching CCCL
