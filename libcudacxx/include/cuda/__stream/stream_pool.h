@@ -25,11 +25,9 @@
 
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__device/logical_device_ref.h>
-#  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/relaxed_capture_scope.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__atomic/order.h>
 #  include <cuda/std/__atomic/platform.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -37,15 +35,12 @@
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__limits/numeric_limits.h>
 
-#  include <mutex>
-#  include <vector>
-
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-// Relaxed atomics on the round-robin counter of a stream_pool through the compiler builtins, so that the header does
-// not pull in <atomic>. MSVC gets the same builtins from cuda/std/__atomic/platform.h, in namespace cuda::std.
+// Atomics on the round-robin counter and the slots of a stream_pool through the compiler builtins, so that the header
+// does not pull in <atomic>. MSVC gets the same builtins from cuda/std/__atomic/platform.h, in namespace cuda::std.
 #  if _CCCL_COMPILER(MSVC)
 #    define _CUDA_STREAM_POOL_ATOMIC(__op) ::cuda::std::__op
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
@@ -74,6 +69,19 @@ _CCCL_HOST_API inline void __stream_pool_store_relaxed(::cuda::std::size_t* __pt
   _CUDA_STREAM_POOL_ATOMIC(__atomic_store_n)(__ptr, __val, __ATOMIC_RELAXED);
 }
 
+_CCCL_HOST_API inline ::cudaStream_t __stream_pool_load_acquire(::cudaStream_t* __ptr) noexcept
+{
+  return _CUDA_STREAM_POOL_ATOMIC(__atomic_load_n)(__ptr, __ATOMIC_ACQUIRE);
+}
+
+//! Publishes `__desired` into an empty slot. On failure `__expected` holds the handle another thread published.
+_CCCL_HOST_API inline bool
+__stream_pool_publish(::cudaStream_t* __ptr, ::cudaStream_t& __expected, ::cudaStream_t __desired) noexcept
+{
+  return _CUDA_STREAM_POOL_ATOMIC(
+    __atomic_compare_exchange_n)(__ptr, &__expected, __desired, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+}
+
 #  undef _CUDA_STREAM_POOL_ATOMIC
 
 //! @brief When the streams of a `stream_pool` are created
@@ -95,8 +103,9 @@ enum class stream_pool_creation
 //!
 //! Whether the streams are created in the constructor or on the first request for their slot is chosen at
 //! construction with a `stream_pool_creation` value. With `stream_pool_creation::eager`, the default, every stream
-//! is created in the constructor and the getters take no lock at all. With `stream_pool_creation::lazy`, the getters
-//! take a mutex to create a stream the first time its slot is requested. All getters can be called concurrently from
+//! is created in the constructor. With `stream_pool_creation::lazy`, a stream is created by the first request for
+//! its slot; two threads racing for the same empty slot both create a stream, one publishes it and the other
+//! destroys its own. The getters never block: they are lock-free in both modes and can be called concurrently from
 //! several threads.
 class stream_pool
 {
@@ -140,30 +149,37 @@ public:
     int __priority              = stream::default_priority)
       : __device_{__device}
       , __priority_{__priority}
-      , __mode_{__mode}
+      , __size_{__size}
       , __wrap_{__wrap_ticket_for(__size)}
+      , __slots_{__size == 0 ? nullptr : new ::cudaStream_t[__size]()}
   {
     if (__size == 0)
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::stream_pool requires at least one stream");
     }
-    __streams_.reserve(__size);
-    if (__mode_ == stream_pool_creation::lazy)
+    if (__mode == stream_pool_creation::eager)
     {
-      for (::cuda::std::size_t __i = 0; __i < __size; ++__i)
+      _CCCL_TRY
       {
-        __streams_.emplace_back(no_init);
+        // Makes the stream creation capture-safe; a no-op when the calling thread is not capturing.
+        const __relaxed_capture_scope __relaxed{};
+        for (::cuda::std::size_t __i = 0; __i < __size; ++__i)
+        {
+          // No other thread can see the pool yet, so a plain store suffices.
+          __slots_[__i] = __create_stream().release();
+        }
+      }
+      _CCCL_CATCH_ALL
+      {
+        __destroy_slots();
+        _CCCL_RETHROW;
       }
     }
-    else
-    {
-      // Makes the stream creation capture-safe; a no-op when the calling thread is not capturing.
-      const __relaxed_capture_scope __relaxed{};
-      for (::cuda::std::size_t __i = 0; __i < __size; ++__i)
-      {
-        __streams_.emplace_back(__create_stream());
-      }
-    }
+  }
+
+  _CCCL_HOST_API ~stream_pool()
+  {
+    __destroy_slots();
   }
 
   stream_pool(const stream_pool&)            = delete;
@@ -191,7 +207,7 @@ public:
       // slot sequence, so the round-robin order is exact and the counter never overflows.
       ::cuda::__stream_pool_fetch_sub_relaxed(&__next_, __wrap_);
     }
-    return __stream_at(__ticket % __streams_.size());
+    return __stream_at(__ticket % __size_);
   }
 
   //! @brief Returns the stream in slot `__index % size()`
@@ -206,7 +222,7 @@ public:
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref at(::cuda::std::size_t __index) const
   {
-    return __stream_at(__index % __streams_.size());
+    return __stream_at(__index % __size_);
   }
 
   //! @brief Returns the stream in slot `__index % size()`, same as `at(__index)`
@@ -229,7 +245,7 @@ public:
   //! @return The size given at construction
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t size() const noexcept
   {
-    return __streams_.size();
+    return __size_;
   }
 
   //! @brief The device the streams are created on
@@ -284,23 +300,48 @@ public:
   }
 
 private:
-  //! Returns the stream of slot `__i`. An eager pool never changes its streams after construction, so no
-  //! lock is needed to read one. A lazy pool takes the mutex and creates the stream on the first request.
+  //! Returns the stream of slot `__i`, creating it if the slot is still empty. A slot changes exactly once, from
+  //! empty to a stream that lives until the pool is destroyed, so a filled slot is read with a single acquire load.
+  //! An empty slot is filled optimistically: the caller creates a stream and publishes it with a compare-exchange;
+  //! if another thread published first, the caller destroys its own stream and returns the published one.
   [[nodiscard]] _CCCL_HOST_API stream_ref __stream_at(::cuda::std::size_t __i) const
   {
-    if (__mode_ == stream_pool_creation::eager)
+    ::cudaStream_t __published = ::cuda::__stream_pool_load_acquire(&__slots_[__i]);
+    if (__published != nullptr)
     {
-      return __streams_[__i];
+      return stream_ref{__published};
     }
-    const ::std::lock_guard<::std::mutex> __lock{__mutex_};
-    stream& __slot = __streams_[__i];
-    if (__slot.get() == ::cuda::__invalid_stream())
+
+    // Makes the stream creation, and its destruction if the publication loses, capture-safe; a no-op when the
+    // calling thread is not capturing.
+    const __relaxed_capture_scope __relaxed{};
+    stream __fresh = __create_stream();
+    if (::cuda::__stream_pool_publish(&__slots_[__i], __published, __fresh.get()))
     {
-      // Makes the stream creation capture-safe; a no-op when the calling thread is not capturing.
-      const __relaxed_capture_scope __relaxed{};
-      __slot = __create_stream();
+      return stream_ref{__fresh.release()};
     }
-    return __slot;
+    // Lost the race: `__fresh` is destroyed here, `__published` is what the winner stored.
+    return stream_ref{__published};
+  }
+
+  //! Destroys every published stream and frees the slots. Called from the destructor, and from the constructor
+  //! when eager creation fails part-way.
+  _CCCL_HOST_API void __destroy_slots() noexcept
+  {
+    if (__slots_ == nullptr)
+    {
+      return;
+    }
+    for (::cuda::std::size_t __i = 0; __i < __size_; ++__i)
+    {
+      if (__slots_[__i] != nullptr)
+      {
+        // Adopting the handle into a `stream` destroys it.
+        const stream __owner = stream::from_native_handle(__slots_[__i]);
+      }
+    }
+    delete[] __slots_;
+    __slots_ = nullptr;
   }
 
   //! The largest multiple of `__size` not above half the counter range: far enough that the counter cannot
@@ -326,13 +367,13 @@ private:
 
   const __logical_device_ref __device_;
   const int __priority_;
-  const stream_pool_creation __mode_;
+  const ::cuda::std::size_t __size_;
   //! The round-robin ticket at which the counter is pulled back by `__wrap_`; see `next_stream()`.
   const ::cuda::std::size_t __wrap_;
-  //! Guards the creation of streams in a lazy pool. Unused in an eager pool.
-  mutable ::std::mutex __mutex_{};
-  //! The slots, `size()` of them; a slot without a stream holds `__invalid_stream()`.
-  mutable ::std::vector<stream> __streams_{};
+  //! `__size_` slots; an empty slot holds `nullptr`, a filled slot the stream that lives until the pool is destroyed.
+  //! Only ever accessed through the atomic builtins at the top of this file, except in the constructor and
+  //! `__destroy_slots()`, where no other thread can see the pool.
+  ::cudaStream_t* __slots_;
   //! The round-robin counter; only ever accessed through the relaxed atomic builtins at the top of this file.
   mutable ::cuda::std::size_t __next_{0};
 };

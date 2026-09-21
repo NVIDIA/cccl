@@ -90,12 +90,11 @@ Both getters return a :cpp:class:`cuda::stream_ref` that stays valid for the lif
 destroyed with the pool, so the work submitted to them must be synchronized before the pool goes away; the pool does
 not do it. When the streams are created is chosen with a ``cuda::stream_pool_creation`` value passed after the size:
 
-- ``stream_pool_creation::eager``, the default: every stream is created in the constructor, and the getters take no
-  lock at all.
-- ``stream_pool_creation::lazy``: a stream is created the first time its slot is requested, and the getters take a
-  mutex to do so.
+- ``stream_pool_creation::eager``, the default: every stream is created in the constructor.
+- ``stream_pool_creation::lazy``: a stream is created by the first request for its slot. Two threads racing for the
+  same empty slot both create a stream; one publishes it and the other destroys its own.
 
-All getters can be called concurrently from several threads.
+The getters never block: they are lock-free in both modes and can be called concurrently from several threads.
 
 A pool can be neither copied nor moved. Code that needs to hand a pool around, store it in a container, or share it
 between several owners should allocate it with ``std::make_unique`` or ``std::make_shared``.
