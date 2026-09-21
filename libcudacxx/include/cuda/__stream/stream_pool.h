@@ -147,9 +147,11 @@ public:
     const ::cuda::std::size_t __ticket = __next_.fetch_add(1, ::std::memory_order_relaxed);
     if (__ticket == __wrap_)
     {
-      // Tickets are unique, so exactly one caller draws `__wrap_` and pulls the counter back. `__wrap_` is a
-      // multiple of `size()`, so every ticket drawn before or after the subtraction keeps its slot: the
-      // round-robin order is exact and the counter never overflows.
+      // Tickets are unique, so exactly one caller draws `__wrap_` and it alone pulls the counter back. Until
+      // its subtraction lands, other callers keep drawing `__wrap_ + 1`, `__wrap_ + 2`, ...: that is fine,
+      // `__wrap_` is a multiple of `size()`, so the modulo below maps those tickets to slots 1, 2, ..., exactly
+      // the slots that follow the wrap ticket. Once the subtraction lands the counter continues from the same
+      // slot sequence, so the round-robin order is exact and the counter never overflows.
       __next_.fetch_sub(__wrap_, ::std::memory_order_relaxed);
     }
     return __stream_at(__ticket % __streams_.size());
