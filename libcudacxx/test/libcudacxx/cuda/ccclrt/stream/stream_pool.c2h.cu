@@ -94,7 +94,7 @@ C2H_CCCLRT_TEST("Stream pool type properties", "[stream][stream_pool]")
                                   int>);
 
   STATIC_REQUIRE(
-    cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>().get_stream()), cuda::stream_ref>);
+    cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>().next_stream()), cuda::stream_ref>);
 }
 
 C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
@@ -125,7 +125,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(pool.size() == 4);
     REQUIRE(::test::count_driver_stack() == 0);
 
-    const cuda::stream_ref s0 = pool.get_stream();
+    const cuda::stream_ref s0 = pool.next_stream();
     REQUIRE(s0.get() != nullptr);
     REQUIRE(pool.get_stream(0) == s0);
     REQUIRE(pool.get_stream(4) == s0);
@@ -157,8 +157,8 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
       // Eager creation, the default, creates the streams, and with them the primary context.
       const cuda::stream_pool eager_pool{other, 2};
       REQUIRE(cuda::__driver::__isPrimaryCtxActive(handle));
-      REQUIRE(eager_pool.get_stream().device() == other);
-      REQUIRE(lazy_pool.get_stream().device() == other);
+      REQUIRE(eager_pool.next_stream().device() == other);
+      REQUIRE(lazy_pool.next_stream().device() == other);
     }
   }
 
@@ -169,7 +169,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(pool.device() == device);
     REQUIRE(pool.priority() == cuda::stream::default_priority);
 
-    const cuda::stream_ref s0 = pool.get_stream();
+    const cuda::stream_ref s0 = pool.next_stream();
     REQUIRE(pool.get_stream(0) == s0);
   }
 
@@ -177,18 +177,18 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
   {
     const cuda::stream_pool pool{device, 3};
 
-    const cuda::stream_ref s0 = pool.get_stream();
-    const cuda::stream_ref s1 = pool.get_stream();
-    const cuda::stream_ref s2 = pool.get_stream();
+    const cuda::stream_ref s0 = pool.next_stream();
+    const cuda::stream_ref s1 = pool.next_stream();
+    const cuda::stream_ref s2 = pool.next_stream();
 
     REQUIRE(s0 != s1);
     REQUIRE(s1 != s2);
     REQUIRE(s0 != s2);
 
-    REQUIRE(pool.get_stream() == s0);
-    REQUIRE(pool.get_stream() == s1);
-    REQUIRE(pool.get_stream() == s2);
-    REQUIRE(pool.get_stream() == s0);
+    REQUIRE(pool.next_stream() == s0);
+    REQUIRE(pool.next_stream() == s1);
+    REQUIRE(pool.next_stream() == s2);
+    REQUIRE(pool.next_stream() == s0);
   }
 
   SECTION("Indexed access wraps around and does not advance the round-robin position")
@@ -200,17 +200,17 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(pool.get_stream(7) == s1);
 
     // Round-robin still starts at slot 0 and reaches slot 1 second.
-    const cuda::stream_ref first = pool.get_stream();
+    const cuda::stream_ref first = pool.next_stream();
     REQUIRE(first != s1);
-    REQUIRE(pool.get_stream() == s1);
+    REQUIRE(pool.next_stream() == s1);
     REQUIRE(pool.get_stream(0) == first);
   }
 
   SECTION("A pool of one stream always returns that stream")
   {
     const cuda::stream_pool pool{device, 1};
-    const cuda::stream_ref only = pool.get_stream();
-    REQUIRE(pool.get_stream() == only);
+    const cuda::stream_ref only = pool.next_stream();
+    REQUIRE(pool.next_stream() == only);
     REQUIRE(pool.get_stream(0) == only);
     REQUIRE(pool.get_stream(17) == only);
   }
@@ -221,7 +221,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
     for (cuda::std::size_t i = 0; i < 2 * pool.size(); ++i)
     {
-      const cuda::stream_ref str = pool.get_stream();
+      const cuda::stream_ref str = pool.next_stream();
       REQUIRE(str.device() == device);
       REQUIRE(str.__logical_device() == cuda::__logical_device_ref{device});
 
@@ -235,7 +235,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
   SECTION("Streams are non-blocking")
   {
     const cuda::stream_pool pool{device, 2};
-    const cuda::stream_ref str = pool.get_stream();
+    const cuda::stream_ref str = pool.next_stream();
 
     unsigned int flags{};
     {
@@ -261,8 +261,8 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
       const auto priority = cuda::stream::default_priority - 1;
       const cuda::stream_pool pool{device, 2, cuda::stream_pool_creation::lazy, priority};
       REQUIRE(pool.priority() == priority);
-      REQUIRE(pool.get_stream().priority() == priority);
-      REQUIRE(pool.get_stream().priority() == priority);
+      REQUIRE(pool.next_stream().priority() == priority);
+      REQUIRE(pool.next_stream().priority() == priority);
     }
     else
     {
@@ -278,7 +278,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
       const cuda::stream_pool pool{second, 2};
       REQUIRE(pool.device() == second);
 
-      const cuda::stream_ref str = pool.get_stream();
+      const cuda::stream_ref str = pool.next_stream();
       REQUIRE(str.device() == second);
 
       ::test::pinned<int> value(0);
@@ -313,7 +313,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     for (cuda::std::size_t i = 0; i < all.size(); ++i)
     {
       REQUIRE(pool.get_stream(i) == all[i]);
-      REQUIRE(pool.get_stream() == all[i]);
+      REQUIRE(pool.next_stream() == all[i]);
     }
   }
 
@@ -329,7 +329,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
       const cuda::stream_ref str = pool.get_stream(i);
       REQUIRE(str.get() != nullptr);
       REQUIRE(str.device() == device);
-      REQUIRE(pool.get_stream() == str);
+      REQUIRE(pool.next_stream() == str);
     }
   }
 
@@ -339,9 +339,9 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     ::test::pinned<int> value0(0);
     ::test::pinned<int> value1(0);
     ::test::pinned<int> value2(0);
-    ::test::launch_kernel_single_thread(pool.get_stream(), ::test::assign_42{}, value0.get());
-    ::test::launch_kernel_single_thread(pool.get_stream(), ::test::assign_42{}, value1.get());
-    ::test::launch_kernel_single_thread(pool.get_stream(), ::test::assign_42{}, value2.get());
+    ::test::launch_kernel_single_thread(pool.next_stream(), ::test::assign_42{}, value0.get());
+    ::test::launch_kernel_single_thread(pool.next_stream(), ::test::assign_42{}, value1.get());
+    ::test::launch_kernel_single_thread(pool.next_stream(), ::test::assign_42{}, value2.get());
 
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
@@ -358,7 +358,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     const cuda::__ensure_current_context guard(device);
 
     const auto before = ::test::count_driver_stack();
-    (void) pool.get_stream();
+    (void) pool.next_stream();
     (void) pool.get_stream(1);
     REQUIRE(::test::count_driver_stack() == before);
   }
@@ -381,7 +381,7 @@ C2H_CCCLRT_TEST("Stream pool is usable from several threads", "[stream][stream_p
       picks[t].reserve(picks_per_thread);
       for (int i = 0; i < picks_per_thread; ++i)
       {
-        picks[t].push_back(pool.get_stream().get());
+        picks[t].push_back(pool.next_stream().get());
       }
     });
   }
@@ -460,7 +460,7 @@ C2H_CCCLRT_TEST("Eager stream pool is usable from several threads", "[stream][st
       picks[t].reserve(picks_per_thread);
       for (int i = 0; i < picks_per_thread; ++i)
       {
-        picks[t].push_back(pool.get_stream().get());
+        picks[t].push_back(pool.next_stream().get());
       }
     });
   }
@@ -491,8 +491,8 @@ C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captur
     REQUIRE(begin_capture(capturing.get(), c.mode) == ::CUDA_SUCCESS);
 
     // First requests: the streams of the pool are created while this thread captures.
-    const cuda::stream_ref s0 = pool.get_stream();
-    const cuda::stream_ref s1 = pool.get_stream();
+    const cuda::stream_ref s0 = pool.next_stream();
+    const cuda::stream_ref s1 = pool.next_stream();
     REQUIRE(s0 != s1);
     REQUIRE(s0 != capturing);
     REQUIRE(s1 != capturing);
@@ -532,7 +532,7 @@ C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captur
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 
-    (void) pool.get_stream();
+    (void) pool.next_stream();
 
     // Exchanging the mode reports the mode this thread is in: it must be global again.
     ::CUstreamCaptureMode mode = ::CU_STREAM_CAPTURE_MODE_GLOBAL;
@@ -585,7 +585,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
 
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
-      const cuda::stream_ref str = pool.get_stream();
+      const cuda::stream_ref str = pool.next_stream();
       REQUIRE(str.device() == device);
       REQUIRE(str.__logical_device().kind() == cuda::__logical_device_ref::kinds::green_context);
       REQUIRE(str.__logical_device().green_context() == ldev.green_context());
@@ -614,7 +614,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
     const cuda::__logical_device_ref ldev{device};
     const cuda::stream_pool pool{ldev, 2};
 
-    const cuda::stream_ref str = pool.get_stream();
+    const cuda::stream_ref str = pool.next_stream();
     REQUIRE(str.device() == device);
     REQUIRE(cuda::__driver::__streamGetCtx(str.get()) == device.__primary_context());
   }
@@ -626,7 +626,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 
-    const cuda::stream_ref str = pool.get_stream();
+    const cuda::stream_ref str = pool.next_stream();
     REQUIRE(str.__logical_device().green_context() == ldev.green_context());
 
     ::CUgraph graph = nullptr;

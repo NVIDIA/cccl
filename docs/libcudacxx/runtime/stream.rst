@@ -77,7 +77,7 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 device or green context. It is meant for code that wants to spread independent work over a few streams without
 managing their lifetime.
 
-- ``get_stream()``: returns the next stream in round-robin order
+- ``next_stream()``: returns the next stream in round-robin order
 - ``get_stream(i)``: returns the stream in slot ``i % size()``
 - ``size()``, ``device()``, ``priority()``: the parameters given at construction; the constructors throw
   ``std::invalid_argument`` for a size of zero
@@ -109,7 +109,7 @@ Availability: CCCL 3.6.0
 
      for (int i = 0; i < 64; ++i) {
        // Cycles through the 16 streams
-       cuda::stream_ref s = pool.get_stream();
+       cuda::stream_ref s = pool.next_stream();
        // Pass to a stream-ordered API
      }
 
