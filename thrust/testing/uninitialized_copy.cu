@@ -1,11 +1,9 @@
-#include <thrust/copy.h>
+#include <thrust/count.h>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/uninitialized_copy.h>
 
 #include <nv/target>
-
-#include <cstring>
 
 #include <unittest/unittest.h>
 
@@ -123,21 +121,25 @@ struct CopyConstructTest
   bool copy_constructed_on_device{false};
 };
 
-// Reading *ptr through a device_reference (e.g. `v[0]`) round-trips the value through
-// get_value(), which materializes it via a host-side return-by-value chain. Unless the
-// compiler elides every one of those returns (not guaranteed), that chain itself invokes T's
-// copy constructor on the host, clobbering the very flags this test observes. Bypass all of
-// that by copying the raw bytes, which never calls a constructor.
-template <typename T>
-T read_raw(thrust::device_ptr<T> ptr)
+// Reading a CopyConstructTest back to the host (e.g. via `v[0]`) can itself invoke its copy
+// constructor on the host, clobbering the very flags being observed. Avoid that by checking the
+// flags in place with count_if: the predicate runs wherever the elements live (on the device for
+// the CUDA backend), and only a plain size_t count crosses back to the host.
+struct is_copy_constructed_on_device
 {
-  const auto* byte_ptr = reinterpret_cast<const unsigned char*>(thrust::raw_pointer_cast(ptr));
-  thrust::host_vector<unsigned char> bytes(sizeof(T));
-  thrust::copy(thrust::device_pointer_cast(byte_ptr), thrust::device_pointer_cast(byte_ptr) + sizeof(T), bytes.begin());
-  T result;
-  std::memcpy(reinterpret_cast<unsigned char*>(&result), bytes.data(), sizeof(T));
-  return result;
-}
+  _CCCL_HOST_DEVICE bool operator()(const CopyConstructTest& t) const
+  {
+    return t.copy_constructed_on_device;
+  }
+};
+
+struct is_copy_constructed_on_host
+{
+  _CCCL_HOST_DEVICE bool operator()(const CopyConstructTest& t) const
+  {
+    return t.copy_constructed_on_host;
+  }
+};
 
 // Only the CUDA backend runs "device" work as actual device code; the OMP/TBB/CPP backends
 // execute their device_system algorithms on the host, so CopyConstructTest's copy constructor
@@ -154,16 +156,17 @@ struct TestUninitializedCopyNonPODDevice
 
     thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
 
-    const T x = read_raw(v2.data());
+    const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+    const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
     if constexpr (device_system_is_cuda)
     {
-      REQUIRE(x.copy_constructed_on_device);
-      REQUIRE_FALSE(x.copy_constructed_on_host);
+      REQUIRE(n_device == v2.size());
+      REQUIRE(n_host == 0u);
     }
     else
     {
-      REQUIRE_FALSE(x.copy_constructed_on_device);
-      REQUIRE(x.copy_constructed_on_host);
+      REQUIRE(n_device == 0u);
+      REQUIRE(n_host == v2.size());
     }
   }
 };
@@ -183,16 +186,17 @@ struct TestUninitializedCopyNNonPODDevice
 
     thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
 
-    const T x = read_raw(v2.data());
+    const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+    const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
     if constexpr (device_system_is_cuda)
     {
-      REQUIRE(x.copy_constructed_on_device);
-      REQUIRE_FALSE(x.copy_constructed_on_host);
+      REQUIRE(n_device == v2.size());
+      REQUIRE(n_host == 0u);
     }
     else
     {
-      REQUIRE_FALSE(x.copy_constructed_on_device);
-      REQUIRE(x.copy_constructed_on_host);
+      REQUIRE(n_device == 0u);
+      REQUIRE(n_host == v2.size());
     }
   }
 };
