@@ -416,6 +416,21 @@ a unit test with a problem size larger than 2^32 is required. Not affected: impl
 a generic offset type at the device-layer API but dispatch with a fixed 64-bit offset (e.g. lookahead
 scan, transform).
 
+## api.generic-param-replaces-concrete-type (important, public CUB/Thrust API overloads accepting a stream/config parameter)
+
+<!-- provenance:
+  #6204→#7915 (backport #8011) DeviceTransform Env=env<> default replaced the cudaStream_t stream parameter, breaking non-copyable types implicitly convertible to cudaStream_t
+-->
+
+When a diff replaces a concrete parameter type (e.g. `cudaStream_t stream`) with a generic templated
+parameter (e.g. `Env env`), consider all possible call-site conventions the old parameter supported:
+arguments could have been only implicitly convertible to the old type (e.g., a user stream wrapper
+with `operator cudaStream_t()`), or non-copyable. A by-value template parameter binds to the
+argument's own deduced type, not a potentially converted type from the old argument, so a non-copyable
+stream-like type that used to convert-then-copy now fails to compile. Either require an explicit
+non-template overload taking the old type, or turn the template parameter into a const reference
+(e.g. `const Env& env`).
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
