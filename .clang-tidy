@@ -383,4 +383,9 @@ CheckOptions:
   performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
   performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
   bugprone-exception-escape.CheckMain: false
+  # Note std::move, not ::std::move or ::cuda::std::move. This intentionally matches both
+  # cuda::std::move as well as std::move because the former is defined as the latter if we
+  # have the builtin.
+  cppcoreguidelines-rvalue-reference-param-not-moved.MoveFunction: 'std::move'
+  cppcoreguidelines-rvalue-reference-param-not-moved.AllowPartialMove: true
 ...

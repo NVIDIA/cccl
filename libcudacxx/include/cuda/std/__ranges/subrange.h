@@ -403,7 +403,9 @@ template <size_t _Index,
           subrange_kind _Kind,
           enable_if_t<_Index<2, int>>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-_CCCL_API constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
+// The standard specifies begin() and end() calls on the named parameter.
+_CCCL_API constexpr auto
+get(subrange<_Iter, _Sent, _Kind>&& __subrange) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 {
   if constexpr (_Index == 0)
   {

@@ -183,14 +183,19 @@ public:
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_convert_from_optional_rvalue_reference<_Up> _CCCL_AND is_convertible_v<_Up, _Tp&>)
-  _CCCL_API constexpr optional(optional<_Up>&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
+  // Forward the contained value without transferring ownership of the optional.
+  _CCCL_API constexpr optional(
+    optional<_Up>&& __u) noexcept( // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(
           __u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u.value()))) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__can_convert_from_optional_rvalue_reference<_Up> _CCCL_AND(!is_convertible_v<_Up, _Tp&>))
-  _CCCL_API explicit constexpr optional(optional<_Up>&& __u) noexcept(
+  // Forward the contained value without transferring ownership of the optional.
+  _CCCL_API explicit constexpr optional(
+    optional<_Up>&& __u) noexcept( // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(
           __u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u.value()))) : nullptr)

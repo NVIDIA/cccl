@@ -36,7 +36,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! a pointer or a reference to the full `__basic_any` object.
 //!
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto __basic_any_from(_Interface<_Super>&& __self) noexcept
+// The cast returns a reference to the complete object without moving it.
+[[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto
+__basic_any_from(_Interface<_Super>&& __self) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   -> __basic_any<_Super>&&
 {
   return static_cast<__basic_any<_Super>&&>(__self);
