@@ -1308,7 +1308,7 @@ struct dispatch_impl
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
   ::cuda::compute_capability cc;
-  ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee;
+  ::cuda::std::optional<::cuda::execution::experimental::runs_on> runs_on_guarantee;
 
   template <typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -2037,7 +2037,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   int end_bit,
   bool can_overwrite_source_buffer,
   cudaStream_t stream,
-  ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee,
+  ::cuda::std::optional<::cuda::execution::experimental::runs_on> runs_on_guarantee,
   DecomposerT decomposer                 = {},
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},

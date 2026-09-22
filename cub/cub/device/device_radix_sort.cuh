@@ -182,7 +182,7 @@ private:
   // inside the dispatch function, but this will not work with CCCL.C, which needs to pass a stateful policy selector.
 
   template <typename EnvT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static ::cuda::std::optional<::cuda::execution::runs_on>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static ::cuda::std::optional<::cuda::execution::experimental::runs_on>
   __guaranteed_runs_on(const EnvT& __env)
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::__get_runs_on_t>,
@@ -209,9 +209,9 @@ private:
     int end_bit,
     bool is_overwrite_okay,
     cudaStream_t stream,
-    DecomposerT decomposer                                              = {},
-    TuningEnvT                                                          = {},
-    ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee = {})
+    DecomposerT decomposer                                                            = {},
+    TuningEnvT                                                                        = {},
+    ::cuda::std::optional<::cuda::execution::experimental::runs_on> runs_on_guarantee = {})
   {
     using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
     using policy_selector_t =
@@ -245,9 +245,9 @@ private:
     NumItemsT num_items,
     DecomposerT decomposer,
     cudaStream_t stream,
-    ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee = {},
-    TuningEnvT tuning_env                                               = {},
-    int begin_bit                                                       = 0,
+    ::cuda::std::optional<::cuda::execution::experimental::runs_on> runs_on_guarantee = {},
+    TuningEnvT tuning_env                                                             = {},
+    int begin_bit                                                                     = 0,
     int end_bit            = detail::radix::traits_t<KeyT>::default_end_bit(DecomposerT{}),
     bool is_overwrite_okay = true)
   {
@@ -293,9 +293,9 @@ private:
     NumItemsT num_items,
     DecomposerT decomposer,
     cudaStream_t stream,
-    ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee = {},
-    TuningEnvT tuning_env                                               = {},
-    int begin_bit                                                       = 0,
+    ::cuda::std::optional<::cuda::execution::experimental::runs_on> runs_on_guarantee = {},
+    TuningEnvT tuning_env                                                             = {},
+    int begin_bit                                                                     = 0,
     int end_bit = detail::radix::traits_t<KeyT>::default_end_bit(DecomposerT{}))
   {
     // We cast away const-ness, but will *not* write to these arrays. ``DispatchRadixSort::Dispatch`` will allocate

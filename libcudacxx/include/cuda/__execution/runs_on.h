@@ -32,6 +32,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
+namespace experimental
+{
 struct device_description
 {
   ::cuda::std::optional<::cuda::std::uint32_t> __max_sms_{};
@@ -93,6 +95,7 @@ struct __get_runs_on_t
 };
 
 _CCCL_GLOBAL_CONSTANT auto __get_runs_on = __get_runs_on_t{};
+} // namespace experimental
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION
 
