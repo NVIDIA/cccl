@@ -434,7 +434,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const ReducePolicy active_policy = policy_selector(cc);
 
-  _CUB_LOG_DISPATCH("DeviceReduceDeterministic", cc, active_policy);
+  detail::log_dispatch("DeviceReduceDeterministic", cc, active_policy);
 
   using deterministic_add_t  = deterministic_sum_t<AccumT>;
   using input_unwrapped_it_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;

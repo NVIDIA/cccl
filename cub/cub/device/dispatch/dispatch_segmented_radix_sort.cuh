@@ -969,7 +969,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
   const SegmentedRadixSortPolicy active_policy = policy_selector_t{}(cc);
 
-  _CUB_LOG_DISPATCH("DeviceSegmentedRadixSort", cc, active_policy);
+  detail::log_dispatch("DeviceSegmentedRadixSort", cc, active_policy);
 
   return invoke_passes(
     d_temp_storage,

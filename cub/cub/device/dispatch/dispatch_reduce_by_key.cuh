@@ -728,7 +728,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    _CUB_LOG_DISPATCH("DeviceReduceByKey", cc, policy_getter());
+    detail::log_dispatch("DeviceReduceByKey", cc, policy_getter());
 
     const auto [threads_per_block, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
       decltype(policy_getter),

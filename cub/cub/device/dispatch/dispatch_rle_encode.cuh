@@ -446,7 +446,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
     return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-      _CUB_LOG_DISPATCH("DeviceRunLengthEncode::Encode", cc, policy_getter());
+      detail::log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
 
       if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == RleAlgorithm::lookahead)
       {

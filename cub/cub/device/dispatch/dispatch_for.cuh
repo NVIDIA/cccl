@@ -144,7 +144,7 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     constexpr ForPolicy active_policy = policy_getter();
 
-    _CUB_LOG_DISPATCH("DeviceFor", cc, active_policy);
+    detail::log_dispatch("DeviceFor", cc, active_policy);
 
     if constexpr (active_policy.threads_per_block > 0)
     {

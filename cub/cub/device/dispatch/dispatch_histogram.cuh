@@ -199,7 +199,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   const HistogramPolicy active_policy = policy_selector(cc);
 
-  _CUB_LOG_DISPATCH("DeviceHistogram", cc, active_policy);
+  detail::log_dispatch("DeviceHistogram", cc, active_policy);
 
   const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
   auto sweep_kernel      = [&] {

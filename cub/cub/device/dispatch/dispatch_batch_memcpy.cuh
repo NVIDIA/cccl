@@ -315,7 +315,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
   const BatchedCopyPolicy active_policy = policy_selector(cc);
 
-  _CUB_LOG_DISPATCH("DeviceBatchMemcpy", cc, active_policy);
+  detail::log_dispatch("DeviceBatchMemcpy", cc, active_policy);
 
   enum : uint32_t
   {

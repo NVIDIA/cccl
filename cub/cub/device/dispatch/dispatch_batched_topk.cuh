@@ -1075,7 +1075,7 @@ _CCCL_HOST_API cudaError_t dispatch_select(
 
   return detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
     constexpr topk_policy active_policy = policy_getter();
-    _CUB_LOG_DISPATCH("DeviceBatchedTopK", cc, active_policy);
+    detail::log_dispatch("DeviceBatchedTopK", cc, active_policy);
     if constexpr (active_policy.backend == topk_algorithm::baseline)
     {
       // Computed from the template parameters, not a captured function-scope constant: MSVC rejects the latter as

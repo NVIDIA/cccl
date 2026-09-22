@@ -557,7 +557,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     const ::cuda::std::size_t vsmem_per_block = vsmem_helper_impl<typename vsmem_adapted_agents::agent_t>::vsmem_per_block;
 #endif
 
-    _CUB_LOG_DISPATCH("DeviceSelect (unique by key)", cc, active_policy);
+    detail::log_dispatch("DeviceSelect (unique by key)", cc, active_policy);
 
     const auto threads_per_block = active_policy.threads_per_block;
     const auto items_per_thread  = active_policy.items_per_thread;

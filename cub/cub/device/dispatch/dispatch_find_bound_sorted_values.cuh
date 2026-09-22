@@ -128,7 +128,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const auto active_policy = policy_selector(cc);
 
-  _CUB_LOG_DISPATCH("DeviceFind (bound sorted values)", cc, active_policy);
+  detail::log_dispatch("DeviceFind (bound sorted values)", cc, active_policy);
 
   const Offset tile_size = static_cast<Offset>(active_policy.threads_per_block) * active_policy.items_per_thread;
   if (range_count > cuda::std::numeric_limits<Offset>::max() - values_count)

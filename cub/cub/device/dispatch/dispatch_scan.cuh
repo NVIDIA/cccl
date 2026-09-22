@@ -1463,7 +1463,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    _CUB_LOG_DISPATCH("DeviceScan", cc, policy_getter());
+    detail::log_dispatch("DeviceScan", cc, policy_getter());
 
     return invoke(
       policy_getter,

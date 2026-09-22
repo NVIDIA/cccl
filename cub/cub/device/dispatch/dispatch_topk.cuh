@@ -486,7 +486,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
-    _CUB_LOG_DISPATCH("DeviceTopK", cc, active_policy);
+    detail::log_dispatch("DeviceTopK", cc, active_policy);
     using key_in_t                  = it_value_t<KeyInputIteratorT>;
     using value_in_t                = it_value_t<ValueInputIteratorT>;
     static constexpr bool keys_only = ::cuda::std::is_same_v<value_in_t, NullType>;

@@ -1004,7 +1004,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         "A run-to-run deterministic reduction must not use a non-deterministic reduce_algorithm");
     }
 
-    _CUB_LOG_DISPATCH("DeviceReduce", cc, active_policy);
+    detail::log_dispatch("DeviceReduce", cc, active_policy);
 
     if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
     {

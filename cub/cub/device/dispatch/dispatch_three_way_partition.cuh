@@ -512,7 +512,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const ThreeWayPartitionPolicy active_policy = policy_selector(cc);
 
-  _CUB_LOG_DISPATCH("DevicePartition (three way)", cc, active_policy);
+  detail::log_dispatch("DevicePartition (three way)", cc, active_policy);
 
   static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
   static constexpr int init_kernel_threads               = 256;

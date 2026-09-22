@@ -1170,7 +1170,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    _CUB_LOG_DISPATCH("DeviceSelectIf", cc, policy_getter());
+    detail::log_dispatch("DeviceSelectIf", cc, policy_getter());
 
     return dispatch_policy<SelectionOpt, decltype(policy_getter)>(
       policy_getter,

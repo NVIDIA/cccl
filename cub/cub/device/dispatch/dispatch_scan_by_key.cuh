@@ -622,7 +622,7 @@ struct dispatch_scan_by_key
 
     const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-    _CUB_LOG_DISPATCH("DeviceScanByKey", cc, active_policy);
+    detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
     return dispatch_scan_by_key<
              KeysInputIteratorT,
@@ -719,7 +719,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-  _CUB_LOG_DISPATCH("DeviceScanByKey", cc, active_policy);
+  detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
   // Get device ordinal
   int device_ordinal;

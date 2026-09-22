@@ -115,7 +115,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const FindIfPolicy active_policy = policy_selector(cc);
 
-  _CUB_LOG_DISPATCH("DeviceFind", cc, active_policy);
+  detail::log_dispatch("DeviceFind", cc, active_policy);
 
   const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));

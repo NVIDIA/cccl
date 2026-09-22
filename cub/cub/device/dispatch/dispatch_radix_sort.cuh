@@ -2180,7 +2180,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  _CUB_LOG_DISPATCH("DeviceRadixSort", cc, policy_selector(cc));
+  detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
 
   dispatch_impl<KeyT, ValueT, OffsetT, DecomposerT, KernelSource, KernelLauncherFactory> impl{
     d_temp_storage,

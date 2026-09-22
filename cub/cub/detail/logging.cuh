@@ -82,12 +82,26 @@ _CCCL_HOST_DEVICE_API inline void log([[maybe_unused]] const char* fmt, ...) noe
 #endif // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
 }
 
+//! Logs the tuning policy used to dispatch onto algorithm `device_alg` at compute capability `cc`. When
+//! `CUB_DEBUG_LOG` is defined, always prints via `_CubLog` (works from host and device code, e.g. under CDP).
+//! Otherwise, prints via `log_always` when logging is enabled via the CCCL_EXPERIMENTAL_LOGGING env variable
+//! (host code only).
 template <typename Policy>
 _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
                                         [[maybe_unused]] ::cuda::compute_capability cc,
                                         [[maybe_unused]] const Policy& active_policy) noexcept
 {
-#if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
+#ifdef CUB_DEBUG_LOG
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching %s on compute capability %d.%d with tuning: %s\n",
+                         device_alg,
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#elif _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
                  if (logging_enabled())
                  {
@@ -100,22 +114,7 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
                               ss.str().c_str());
                  }
                }))
-#endif // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
+#endif // !CUB_DEBUG_LOG && _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
 }
 } // namespace detail
 CUB_NAMESPACE_END
-
-#ifdef CUB_DEBUG_LOG
-#  define _CUB_LOG_DISPATCH(device_alg, cc, active_policy)                                             \
-    NV_IF_TARGET(NV_IS_HOST, ({                                                                        \
-                   ::std::stringstream ss;                                                             \
-                   ss << (active_policy);                                                              \
-                   _CubLog("Dispatching " device_alg " on compute capability %d.%d with tuning: %s\n", \
-                           (cc).major_cap(),                                                           \
-                           (cc).minor_cap(),                                                           \
-                           ss.str().c_str());                                                          \
-                 }))
-#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-#  define _CUB_LOG_DISPATCH(device_alg, cc, active_policy) \
-    CUB_NS_QUALIFIER::detail::log_dispatch(device_alg, cc, active_policy)
-#endif // !CUB_DEBUG_LOG

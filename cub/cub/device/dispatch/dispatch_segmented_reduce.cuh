@@ -559,7 +559,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const SegmentedReducePolicy active_policy = policy_selector(cc);
-  _CUB_LOG_DISPATCH("DeviceSegmentedReduce (variable size)", cc, active_policy);
+  detail::log_dispatch("DeviceSegmentedReduce (variable size)", cc, active_policy);
 
   // Compute segments_per_block based on max_segment_size hint
   int segments_per_block = 1;
@@ -772,7 +772,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   }
 
   const SegmentedReducePolicy active_policy = policy_selector(cc);
-  _CUB_LOG_DISPATCH("DeviceSegmentedReduce (fixed size)", cc, active_policy);
+  detail::log_dispatch("DeviceSegmentedReduce (fixed size)", cc, active_policy);
 
   const auto tile_size = active_policy.large_reduce.threads_per_block * active_policy.large_reduce.items_per_thread;
 

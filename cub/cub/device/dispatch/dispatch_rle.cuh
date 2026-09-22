@@ -696,7 +696,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   const RleNonTrivialRunsPolicy active_policy = policy_selector(cc);
-  _CUB_LOG_DISPATCH("DeviceRle", cc, active_policy);
+  detail::log_dispatch("DeviceRle", cc, active_policy);
 
   const int threads_per_block = active_policy.lookback.threads_per_block;
   const int items_per_thread  = active_policy.lookback.items_per_thread;

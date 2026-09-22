@@ -81,7 +81,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   const ReduceByKeyPolicy policy = policy_selector(cc);
 
-  _CUB_LOG_DISPATCH("DeviceReduce (by key, streaming)", cc, policy);
+  detail::log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
 
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
