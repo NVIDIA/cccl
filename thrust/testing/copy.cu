@@ -18,13 +18,7 @@
 
 #include <unittest/unittest.h>
 
-#if _CCCL_COMPILER(GCC, >=, 11)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
-void TestCopyFromConstIterator()
+TEST_CASE("TestCopyFromConstIterator", "[copy]")
 {
   using T = int;
 
@@ -38,19 +32,18 @@ void TestCopyFromConstIterator()
   const thrust::host_vector<T>::iterator h_result = thrust::copy(begin, end, h.begin());
 
   const thrust::host_vector<T> href{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(h, href);
-  ASSERT_EQUAL_QUIET(h_result, h.end());
+  REQUIRE(h == href);
+  REQUIRE(h_result == h.end());
 
   // copy to device_vector
   thrust::device_vector<T> d(5, (T) 10);
   const thrust::device_vector<T>::iterator d_result = thrust::copy(begin, end, d.begin());
   const thrust::device_vector<T> dref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(d, dref);
-  ASSERT_EQUAL_QUIET(d_result, d.end());
+  REQUIRE(d == dref);
+  REQUIRE(d_result == d.end());
 }
-DECLARE_UNITTEST(TestCopyFromConstIterator);
 
-void TestCopyToDiscardIterator()
+TEST_CASE("TestCopyToDiscardIterator", "[copy]")
 {
   using T = int;
 
@@ -67,12 +60,11 @@ void TestCopyToDiscardIterator()
   const thrust::discard_iterator<> d_result =
     thrust::copy(d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
-DECLARE_UNITTEST(TestCopyToDiscardIterator);
 
-void TestCopyToDiscardIteratorZipped()
+TEST_CASE("TestCopyToDiscardIteratorZipped", "[copy]")
 {
   using T = int;
 
@@ -101,12 +93,11 @@ void TestCopyToDiscardIteratorZipped()
     thrust::make_zip_iterator(d_input.end(), d_input.end()),
     thrust::make_zip_iterator(thrust::make_discard_iterator(), d_output.begin()));
 
-  ASSERT_EQUAL(h_output, h_input);
-  ASSERT_EQUAL(d_output, d_input);
-  ASSERT_EQUAL_QUIET(reference, cuda::std::get<0>(h_result.get_iterator_tuple()));
-  ASSERT_EQUAL_QUIET(reference, cuda::std::get<0>(d_result.get_iterator_tuple()));
+  REQUIRE(h_output == h_input);
+  REQUIRE(d_output == d_input);
+  REQUIRE(reference == cuda::std::get<0>(h_result.get_iterator_tuple()));
+  REQUIRE(reference == cuda::std::get<0>(d_result.get_iterator_tuple()));
 }
-DECLARE_UNITTEST(TestCopyToDiscardIteratorZipped);
 
 template <class Vector>
 void TestCopyMatchingTypes()
@@ -119,16 +110,16 @@ void TestCopyMatchingTypes()
   thrust::host_vector<T> h(5, (T) 10);
   const typename thrust::host_vector<T>::iterator h_result = thrust::copy(v.begin(), v.end(), h.begin());
   const thrust::host_vector<T> href{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(h, href);
-  ASSERT_EQUAL_QUIET(h_result, h.end());
+  REQUIRE(h == href);
+  REQUIRE(h_result == h.end());
 
   // copy to device_vector
   thrust::device_vector<T> d(5, (T) 10);
   const typename thrust::device_vector<T>::iterator d_result = thrust::copy(v.begin(), v.end(), d.begin());
 
   const thrust::device_vector<T> dref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(d, dref);
-  ASSERT_EQUAL_QUIET(d_result, d.end());
+  REQUIRE(d == dref);
+  REQUIRE(d_result == d.end());
 }
 DECLARE_VECTOR_UNITTEST(TestCopyMatchingTypes);
 
@@ -144,21 +135,21 @@ void TestCopyMixedTypes()
   thrust::host_vector<float> h(5, (float) 10);
   const typename thrust::host_vector<float>::iterator h_result = thrust::copy(v.begin(), v.end(), h.begin());
   const thrust::host_vector<float> href{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(h, href);
-  ASSERT_EQUAL_QUIET(h_result, h.end());
+  REQUIRE(h == href);
+  REQUIRE(h_result == h.end());
 
   // copy to device_vector with different type
   thrust::device_vector<float> d(5, (float) 10);
   const typename thrust::device_vector<float>::iterator d_result = thrust::copy(v.begin(), v.end(), d.begin());
   const thrust::device_vector<float> dref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(d, dref);
-  ASSERT_EQUAL_QUIET(d_result, d.end());
+  REQUIRE(d == dref);
+  REQUIRE(d_result == d.end());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyMixedTypes);
 
 _CCCL_DIAG_POP
 
-void TestCopyVectorBool()
+TEST_CASE("TestCopyVectorBool", "[copy]")
 {
   std::vector<bool> v{true, false, true};
 
@@ -169,12 +160,11 @@ void TestCopyVectorBool()
   thrust::copy(v.begin(), v.end(), d.begin());
 
   const thrust::host_vector<bool> href{true, false, true};
-  ASSERT_EQUAL(h, href);
+  REQUIRE(h == href);
 
   const thrust::device_vector<bool> dref{true, false, true};
-  ASSERT_EQUAL(d, dref);
+  REQUIRE(d == dref);
 }
-DECLARE_UNITTEST(TestCopyVectorBool);
 
 template <class Vector>
 void TestCopyListTo()
@@ -189,25 +179,25 @@ void TestCopyListTo()
   const typename Vector::iterator v_result = thrust::copy(l.begin(), l.end(), v.begin());
 
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
-  ASSERT_EQUAL_QUIET(v_result, v.end());
+  REQUIRE(v == ref);
+  REQUIRE(v_result == v.end());
 
   l.clear();
 
   thrust::copy(v.begin(), v.end(), std::back_insert_iterator<std::list<T>>(l));
 
-  ASSERT_EQUAL(l.size(), 5lu);
+  REQUIRE(l.size() == 5lu);
 
   typename std::list<T>::const_iterator iter = l.begin();
-  ASSERT_EQUAL(*iter, T(0));
+  REQUIRE(*iter == T(0));
   iter++;
-  ASSERT_EQUAL(*iter, T(1));
+  REQUIRE(*iter == T(1));
   iter++;
-  ASSERT_EQUAL(*iter, T(2));
+  REQUIRE(*iter == T(2));
   iter++;
-  ASSERT_EQUAL(*iter, T(3));
+  REQUIRE(*iter == T(3));
   iter++;
-  ASSERT_EQUAL(*iter, T(4));
+  REQUIRE(*iter == T(4));
   iter++;
 }
 DECLARE_VECTOR_UNITTEST(TestCopyListTo);
@@ -251,8 +241,8 @@ void TestCopyIfSimple()
   const typename Vector::iterator dest_end = thrust::copy_if(v.begin(), v.end(), dest.begin(), is_true<T>());
 
   Vector ref{1, 2, 3, 4};
-  ASSERT_EQUAL(ref, dest);
-  ASSERT_EQUAL_QUIET(dest.end(), dest_end);
+  REQUIRE(ref == dest);
+  REQUIRE(dest.end() == dest_end);
 }
 DECLARE_VECTOR_UNITTEST(TestCopyIfSimple);
 
@@ -275,7 +265,7 @@ void TestCopyIf(const size_t n)
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIf);
@@ -300,7 +290,7 @@ void TestCopyIfIntegral(const size_t n)
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 
   // test with Predicate that returns a non-bool
@@ -314,7 +304,7 @@ void TestCopyIfIntegral(const size_t n)
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIfIntegral);
@@ -341,7 +331,7 @@ void TestCopyIfSequence(const size_t n)
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 
   // test with Predicate that returns a non-bool
@@ -355,7 +345,7 @@ void TestCopyIfSequence(const size_t n)
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIfSequence);
@@ -373,8 +363,8 @@ void TestCopyIfStencilSimple()
   const typename Vector::iterator dest_end = thrust::copy_if(v.begin(), v.end(), s.begin(), dest.begin(), is_true<T>());
 
   Vector ref{0, 1, 3};
-  ASSERT_EQUAL(ref, dest);
-  ASSERT_EQUAL_QUIET(dest.end(), dest_end);
+  REQUIRE(ref == dest);
+  REQUIRE(dest.end() == dest_end);
 }
 DECLARE_VECTOR_UNITTEST(TestCopyIfStencilSimple);
 
@@ -402,7 +392,7 @@ void TestCopyIfStencil(const size_t n)
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIfStencil);
@@ -454,7 +444,7 @@ struct always_true
 };
 } // namespace
 
-void TestCopyIfNonTrivial()
+TEST_CASE("TestCopyIfNonTrivial", "[copy]")
 {
   // Attempting to copy an object_with_non_trivial_ctor into uninitialized
   // memory will fail:
@@ -474,8 +464,8 @@ void TestCopyIfNonTrivial()
     initialized    = source;
     *uninitialized = source;
 
-    ASSERT_EQUAL(42, initialized.field);
-    ASSERT_NOT_EQUAL(42, uninitialized->field);
+    REQUIRE(42 == initialized.field);
+    REQUIRE(42 != uninitialized->field);
   }
 
   // This test ensures that we use placement new instead of assigning
@@ -492,10 +482,9 @@ void TestCopyIfNonTrivial()
     const int ia = ha.field;
     const int ib = hb.field;
 
-    ASSERT_EQUAL(ia, ib);
+    REQUIRE(ia == ib);
   }
 }
-DECLARE_UNITTEST(TestCopyIfNonTrivial);
 
 template <typename Vector>
 void TestCopyCountingIterator()
@@ -508,10 +497,10 @@ void TestCopyCountingIterator()
 
   thrust::copy(iter, iter + 4, vec.begin());
 
-  ASSERT_EQUAL(vec[0], 1);
-  ASSERT_EQUAL(vec[1], 2);
-  ASSERT_EQUAL(vec[2], 3);
-  ASSERT_EQUAL(vec[3], 4);
+  REQUIRE(vec[0] == 1);
+  REQUIRE(vec[1] == 2);
+  REQUIRE(vec[2] == 3);
+  REQUIRE(vec[3] == 4);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyCountingIterator);
 
@@ -539,8 +528,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestCopyZipIterator()
                thrust::make_zip_iterator(v1.end(), v2.end()),
                thrust::make_zip_iterator(v3.begin(), v4.begin()));
 
-  ASSERT_EQUAL(v1, v3);
-  ASSERT_EQUAL(v2, v4);
+  REQUIRE(v1 == v3);
+  REQUIRE(v2 == v4);
 };
 DECLARE_VECTOR_UNITTEST(TestCopyZipIterator);
 
@@ -558,8 +547,8 @@ void TestCopyConstantIteratorToZipIterator()
 
   Vector ref1{4, 4, 4};
   Vector ref2{7, 7, 7};
-  ASSERT_EQUAL(v1, ref1);
-  ASSERT_EQUAL(v2, ref2);
+  REQUIRE(v1 == ref1);
+  REQUIRE(v2 == ref2);
 };
 DECLARE_VECTOR_UNITTEST(TestCopyConstantIteratorToZipIterator);
 
@@ -570,16 +559,15 @@ OutputIterator copy(my_system& system, InputIterator, InputIterator, OutputItera
   return result;
 }
 
-void TestCopyDispatchExplicit()
+TEST_CASE("TestCopyDispatchExplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::copy(sys, vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCopyDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator copy(my_tag, InputIterator, InputIterator, OutputIterator result)
@@ -588,15 +576,14 @@ OutputIterator copy(my_tag, InputIterator, InputIterator, OutputIterator result)
   return result;
 }
 
-void TestCopyDispatchImplicit()
+TEST_CASE("TestCopyDispatchImplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::copy(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestCopyDispatchImplicit);
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 OutputIterator copy_if(my_system& system, InputIterator, InputIterator, OutputIterator result, Predicate)
@@ -605,16 +592,15 @@ OutputIterator copy_if(my_system& system, InputIterator, InputIterator, OutputIt
   return result;
 }
 
-void TestCopyIfDispatchExplicit()
+TEST_CASE("TestCopyIfDispatchExplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::copy_if(sys, vec.begin(), vec.end(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCopyIfDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 OutputIterator copy_if(my_tag, InputIterator, InputIterator, OutputIterator result, Predicate)
@@ -623,16 +609,15 @@ OutputIterator copy_if(my_tag, InputIterator, InputIterator, OutputIterator resu
   return result;
 }
 
-void TestCopyIfDispatchImplicit()
+TEST_CASE("TestCopyIfDispatchImplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::copy_if(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestCopyIfDispatchImplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator
@@ -642,16 +627,15 @@ copy_if(my_system& system, InputIterator1, InputIterator1, InputIterator2, Outpu
   return result;
 }
 
-void TestCopyIfStencilDispatchExplicit()
+TEST_CASE("TestCopyIfStencilDispatchExplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::copy_if(sys, vec.begin(), vec.end(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCopyIfStencilDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator copy_if(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator result, Predicate)
@@ -660,7 +644,7 @@ OutputIterator copy_if(my_tag, InputIterator1, InputIterator1, InputIterator2, O
   return result;
 }
 
-void TestCopyIfStencilDispatchImplicit()
+TEST_CASE("TestCopyIfStencilDispatchImplicit", "[copy]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -671,9 +655,8 @@ void TestCopyIfStencilDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestCopyIfStencilDispatchImplicit);
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
 
@@ -755,7 +738,7 @@ void TestCopyWithBigIndexesHelper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(0);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   const thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                               = false;
@@ -767,16 +750,15 @@ void TestCopyWithBigIndexesHelper(int magnitude)
   const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
-  ASSERT_EQUAL(has_executed_h, true);
+  REQUIRE(has_executed_h);
 }
 
-void TestCopyWithBigIndexes()
+TEST_CASE("TestCopyWithBigIndexes", "[copy]")
 {
   TestCopyWithBigIndexesHelper(30);
   TestCopyWithBigIndexesHelper(31);
   TestCopyWithBigIndexesHelper(32);
   TestCopyWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestCopyWithBigIndexes);
 
 #endif

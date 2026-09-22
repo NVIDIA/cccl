@@ -14,16 +14,15 @@ set_difference(my_system& system, InputIterator1, InputIterator1, InputIterator2
   return result;
 }
 
-void TestSetDifferenceDispatchExplicit()
+TEST_CASE("TestSetDifferenceDispatchExplicit", "[set_difference]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_difference(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetDifferenceDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -33,7 +32,7 @@ set_difference(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIter
   return result;
 }
 
-void TestSetDifferenceDispatchImplicit()
+TEST_CASE("TestSetDifferenceDispatchImplicit", "[set_difference]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -44,9 +43,8 @@ void TestSetDifferenceDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetDifferenceDispatchImplicit);
 
 template <typename Vector>
 void TestSetDifferenceSimple()
@@ -59,8 +57,8 @@ void TestSetDifferenceSimple()
 
   const Iterator end = thrust::set_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetDifferenceSimple);
 
@@ -96,7 +94,7 @@ void TestSetDifference(const size_t n)
     d_end = thrust::set_difference(d_a.begin(), d_a.end(), d_b.begin(), d_b.begin() + size, d_result.begin());
     d_result.resize(d_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestSetDifference);
@@ -125,7 +123,7 @@ void TestSetDifferenceEquivalentRanges(const size_t n)
 
   d_result.resize(d_end - d_result.begin());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetDifferenceEquivalentRanges);
 
@@ -164,7 +162,7 @@ void TestSetDifferenceMultiset(const size_t n)
 
   d_result.resize(d_end - d_result.begin());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetDifferenceMultiset);
 
@@ -176,19 +174,18 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
   const thrust::counting_iterator<long long> begin(0);
   const thrust::counting_iterator<long long> end        = begin + (1ll << magnitude);
   const thrust::counting_iterator<long long> end_longer = end + 1;
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   thrust::device_vector<long long> result;
   result.resize(1);
   thrust::set_difference(thrust::device, begin, end_longer, begin, end, result.begin());
 
-  thrust::host_vector<long long> expected;
-  expected.push_back(*end);
+  thrust::host_vector<long long> expected{*end};
 
-  ASSERT_EQUAL(result, expected);
+  REQUIRE(result == expected);
 }
 
-void TestSetDifferenceWithBigIndexes()
+TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_difference]")
 {
 #  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestSetDifferenceWithBigIndexesHelper(30);
@@ -197,6 +194,5 @@ void TestSetDifferenceWithBigIndexes()
   TestSetDifferenceWithBigIndexesHelper(33);
 #  endif
 }
-DECLARE_UNITTEST(TestSetDifferenceWithBigIndexes);
 
 #endif

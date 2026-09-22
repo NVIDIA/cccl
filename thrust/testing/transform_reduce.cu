@@ -13,16 +13,15 @@ transform_reduce(my_system& system, InputIterator, InputIterator, UnaryFunction,
   return init;
 }
 
-void TestTransformReduceDispatchExplicit()
+TEST_CASE("TestTransformReduceDispatchExplicit", "[transform_reduce]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::transform_reduce(sys, vec.begin(), vec.begin(), 0, 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformReduceDispatchExplicit);
 
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
 OutputType transform_reduce(my_tag, InputIterator first, InputIterator, UnaryFunction, OutputType init, BinaryFunction)
@@ -31,15 +30,14 @@ OutputType transform_reduce(my_tag, InputIterator first, InputIterator, UnaryFun
   return init;
 }
 
-void TestTransformReduceDispatchImplicit()
+TEST_CASE("TestTransformReduceDispatchImplicit", "[transform_reduce]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::transform_reduce(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0, 0, 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTransformReduceDispatchImplicit);
 
 template <class Vector>
 void TestTransformReduceSimple()
@@ -52,7 +50,7 @@ void TestTransformReduceSimple()
   const T result =
     thrust::transform_reduce(data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>());
 
-  ASSERT_EQUAL(result, 8);
+  REQUIRE(result == 8);
 }
 DECLARE_VECTOR_UNITTEST(TestTransformReduceSimple);
 
@@ -101,6 +99,6 @@ void TestTransformReduceCountingIterator()
   const T result =
     thrust::transform_reduce(first, first + 3, ::cuda::std::negate<short>(), 0, ::cuda::std::plus<short>());
 
-  ASSERT_EQUAL(result, -6);
+  REQUIRE(result == -6);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformReduceCountingIterator);

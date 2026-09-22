@@ -25,14 +25,13 @@ void _TestStableSortByKeyWithLargeKeysAndValues()
   thrust::stable_sort_by_key(h_keys.begin(), h_keys.end(), h_vals.begin());
   thrust::stable_sort_by_key(d_keys.begin(), d_keys.end(), d_vals.begin());
 
-  ASSERT_EQUAL_QUIET(h_keys, d_keys);
-  ASSERT_EQUAL_QUIET(h_vals, d_vals);
+  REQUIRE((h_keys == d_keys));
+  REQUIRE((h_vals == d_vals));
 }
 
-void TestStableSortByKeyWithLargeKeysAndValues()
+TEST_CASE("TestStableSortByKeyWithLargeKeysAndValues", "[stable_sort_by_key_large_keys_and_values]")
 {
   _TestStableSortByKeyWithLargeKeysAndValues<4>();
   _TestStableSortByKeyWithLargeKeysAndValues<8>();
   _TestStableSortByKeyWithLargeKeysAndValues<16>();
 }
-DECLARE_UNITTEST(TestStableSortByKeyWithLargeKeysAndValues);

@@ -1,3 +1,4 @@
+#include <thrust/complex.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
@@ -10,16 +11,15 @@ void sequence(my_system& system, ForwardIterator, ForwardIterator)
   system.validate_dispatch();
 }
 
-void TestSequenceDispatchExplicit()
+TEST_CASE("TestSequenceDispatchExplicit", "[sequence]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::sequence(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSequenceDispatchExplicit);
 
 template <typename ForwardIterator>
 void sequence(my_tag, ForwardIterator first, ForwardIterator)
@@ -27,15 +27,14 @@ void sequence(my_tag, ForwardIterator first, ForwardIterator)
   *first = 13;
 }
 
-void TestSequenceDispatchImplicit()
+TEST_CASE("TestSequenceDispatchImplicit", "[sequence]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::sequence(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSequenceDispatchImplicit);
 
 template <class Vector>
 void TestSequenceSimple()
@@ -46,17 +45,17 @@ void TestSequenceSimple()
   thrust::sequence(v.begin(), v.end());
 
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::sequence(v.begin(), v.end(), value_type{10});
 
   ref = {10, 11, 12, 13, 14};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::sequence(v.begin(), v.end(), value_type{10}, value_type{2});
 
   ref = {10, 12, 14, 16, 18};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestSequenceSimple);
 
@@ -69,22 +68,22 @@ void TestSequence(size_t n)
   thrust::sequence(h_data.begin(), h_data.end());
   thrust::sequence(d_data.begin(), d_data.end());
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::sequence(h_data.begin(), h_data.end(), T(10));
   thrust::sequence(d_data.begin(), d_data.end(), T(10));
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::sequence(h_data.begin(), h_data.end(), T(10), T(2));
   thrust::sequence(d_data.begin(), d_data.end(), T(10), T(2));
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::sequence(h_data.begin(), h_data.end(), T(10), T(2));
   thrust::sequence(d_data.begin(), d_data.end(), T(10), T(2));
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 DECLARE_VARIABLE_UNITTEST(TestSequence);
 
@@ -103,12 +102,11 @@ void TestSequenceToDiscardIterator(size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestSequenceToDiscardIterator);
 
-void TestSequenceComplex()
+TEST_CASE("TestSequenceComplex", "[sequence]")
 {
   thrust::device_vector<thrust::complex<double>> m(64);
   thrust::sequence(m.begin(), m.end());
 }
-DECLARE_UNITTEST(TestSequenceComplex);
 
 // A class that does not accept conversion from size_t but can be multiplied by a scalar
 struct Vector
@@ -143,7 +141,7 @@ _CCCL_HOST_DEVICE Vector operator*(const Vector b, const std::size_t a)
   return Vector{static_cast<int>(a) * b.x, static_cast<int>(a) * b.y};
 }
 
-void TestSequenceNoSizeTConversion()
+TEST_CASE("TestSequenceNoSizeTConversion", "[sequence]")
 {
   thrust::device_vector<Vector> m(64);
   thrust::sequence(m.begin(), m.end(), ::Vector{0, 0}, ::Vector{1, 2});
@@ -151,8 +149,7 @@ void TestSequenceNoSizeTConversion()
   for (std::size_t i = 0; i < m.size(); ++i)
   {
     const ::Vector v = m[i];
-    ASSERT_EQUAL(static_cast<std::size_t>(v.x), i);
-    ASSERT_EQUAL(static_cast<std::size_t>(v.y), 2 * i);
+    REQUIRE(static_cast<std::size_t>(v.x) == i);
+    REQUIRE(static_cast<std::size_t>(v.y) == 2 * i);
   }
 }
-DECLARE_UNITTEST(TestSequenceNoSizeTConversion);

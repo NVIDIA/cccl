@@ -45,10 +45,10 @@ void TestScanDevice(ExecutionPolicy exec, const size_t n)
   inclusive_scan_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), (T) 11, ::cuda::std::plus<T>{});
 
@@ -56,30 +56,30 @@ void TestScanDevice(ExecutionPolicy exec, const size_t n)
     exec, d_input.begin(), d_input.end(), d_output.begin(), (T) 11, ::cuda::std::plus<T>{});
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
 
   exclusive_scan_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), (T) 11);
 
   exclusive_scan_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin(), (T) 11);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   // in-place scans
   h_output = h_input;
@@ -90,10 +90,10 @@ void TestScanDevice(ExecutionPolicy exec, const size_t n)
   inclusive_scan_kernel<<<1, 1>>>(exec, d_output.begin(), d_output.end(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   h_output = h_input;
   d_output = d_input;
@@ -103,10 +103,10 @@ void TestScanDevice(ExecutionPolicy exec, const size_t n)
   exclusive_scan_kernel<<<1, 1>>>(exec, d_output.begin(), d_output.end(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 }
 
 template <typename T>
@@ -130,7 +130,7 @@ struct TestScanDeviceDevice
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanDeviceDevice, IntegralTypes);
 #endif
 
-void TestScanCudaStreams()
+TEST_CASE("TestScanCudaStreams", "[scan]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -151,27 +151,27 @@ void TestScanCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // exclusive scan
   iter = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 0);
   cudaStreamSynchronize(s);
 
   result = {0, 1, 4, 2, 6};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // exclusive scan with init
   iter = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3);
   cudaStreamSynchronize(s);
 
   result = {3, 4, 7, 5, 9};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // inclusive scan with op
   iter =
@@ -179,9 +179,9 @@ void TestScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {1, 4, 2, 6, 1};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // inclusive scan with init and op
   iter = thrust::inclusive_scan(
@@ -189,9 +189,9 @@ void TestScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {4, 7, 5, 9, 4};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // exclusive scan with init and op
   iter = thrust::exclusive_scan(
@@ -199,9 +199,9 @@ void TestScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {3, 4, 7, 5, 9};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // inplace inclusive scan
   input = input_copy;
@@ -209,8 +209,8 @@ void TestScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {1, 4, 2, 6, 1};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 
   // inplace exclusive scan with init
   input = input_copy;
@@ -218,8 +218,8 @@ void TestScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {3, 4, 7, 5, 9};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 
   // inplace exclusive scan with implicit init=0
   input = input_copy;
@@ -227,12 +227,11 @@ void TestScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {0, 1, 4, 2, 6};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScanCudaStreams);
 
 template <typename T>
 struct const_ref_plus_mod3
@@ -249,7 +248,7 @@ struct const_ref_plus_mod3
   }
 };
 
-static void TestInclusiveScanWithConstAccumulator()
+TEST_CASE("TestInclusiveScanWithConstAccumulator", "[scan]")
 {
   // add numbers modulo 3 with external lookup table
   thrust::device_vector<int> data{0, 1, 2, 1, 2, 0, 1};
@@ -260,6 +259,5 @@ static void TestInclusiveScanWithConstAccumulator()
     data.begin(), data.end(), data.begin(), const_ref_plus_mod3<int>(thrust::raw_pointer_cast(&table[0])));
 
   const thrust::device_vector<int> ref{0, 1, 0, 1, 0, 0, 1};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 }
-DECLARE_UNITTEST(TestInclusiveScanWithConstAccumulator);

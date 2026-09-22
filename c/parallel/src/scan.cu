@@ -64,6 +64,22 @@ enum class InitKind
   NoInit,
 };
 
+// Whether the NVRTC in use compiles the packed `__nv_bfloat162` intrinsics (`__hadd2`, `__hmul2`, `__hmin2`, `__hmax2`)
+// to a `trap` instruction. Since CUDA 12.3, cuda_bf16.h compiled by NVRTC only declares its functions and NVRTC takes
+// the definitions from its precompiled builtins library; the aarch64 builds of NVRTC 12.3 through 12.9 emit a trap
+// instead of those definitions for every target below sm_100 (NVIDIA/cccl#11448). NVRTC 13 is not affected, and below
+// 12.3 the header includes the definitions itself.
+static bool nvrtc_miscompiles_bf16_simd_intrinsics()
+{
+#if _CCCL_HOST_ARCH(ARM64)
+  int major = 0;
+  int minor = 0;
+  return nvrtcVersion(&major, &minor) == NVRTC_SUCCESS && major == 12;
+#else
+  return false;
+#endif // _CCCL_HOST_ARCH(ARM64)
+}
+
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_type_info init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
@@ -377,6 +393,18 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
     op_src, // 4
     policy_selector_expr, // 5
     policy_sel_str.view()); // 6
+
+  // Scan hands CUB the bare well-known operator (e.g. `cuda::std::plus<__nv_bfloat16>`), so `cub::ThreadReduce` inside
+  // `BlockScan` takes its SIMD path for bfloat16 and calls the packed intrinsics NVRTC miscompiles (see above). Making
+  // cuda_bf16.h include its own definitions sidesteps the NVRTC builtins. Under NVRTC those definitions have external
+  // linkage, so exactly one translation unit per link may carry this define. It is therefore placed in the kernel
+  // source rather than in the NVRTC arguments: the arguments are reused for the tile state probe and for operators
+  // and iterators supplied as C++ source (e.g. zip iterators), which are compiled into separate TUs and linked with
+  // this one. The other algorithms wrap the operator in a JIT template type and never reach CUB's bfloat16 SIMD path.
+  if (scan::nvrtc_miscompiles_bf16_simd_intrinsics())
+  {
+    final_src.insert(0, "#define __FORCE_INCLUDE_CUDA_BF16_HPP_FROM_BF16_H__\n");
+  }
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);

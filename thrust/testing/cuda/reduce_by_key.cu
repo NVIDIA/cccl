@@ -180,24 +180,24 @@ void TestReduceByKeyDevice(ExecutionPolicy exec)
     exec, keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin(), new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 20);
-  ASSERT_EQUAL(output_keys[3], 21);
-  ASSERT_EQUAL(output_keys[4], 37);
+  REQUIRE(new_last.first - output_keys.begin() == 5);
+  REQUIRE(new_last.second - output_values.begin() == 5);
+  REQUIRE(output_keys[0] == 11);
+  REQUIRE(output_keys[1] == 21);
+  REQUIRE(output_keys[2] == 20);
+  REQUIRE(output_keys[3] == 21);
+  REQUIRE(output_keys[4] == 37);
 
-  ASSERT_EQUAL(output_values[0], 1);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 3);
-  ASSERT_EQUAL(output_values[3], 15);
-  ASSERT_EQUAL(output_values[4], 15);
+  REQUIRE(output_values[0] == 1);
+  REQUIRE(output_values[1] == 2);
+  REQUIRE(output_values[2] == 3);
+  REQUIRE(output_values[3] == 15);
+  REQUIRE(output_values[4] == 15);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -214,20 +214,20 @@ void TestReduceByKeyDevice(ExecutionPolicy exec)
     new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 37);
+  REQUIRE(new_last.first - output_keys.begin() == 3);
+  REQUIRE(new_last.second - output_values.begin() == 3);
+  REQUIRE(output_keys[0] == 11);
+  REQUIRE(output_keys[1] == 21);
+  REQUIRE(output_keys[2] == 37);
 
-  ASSERT_EQUAL(output_values[0], 1);
-  ASSERT_EQUAL(output_values[1], 20);
-  ASSERT_EQUAL(output_values[2], 15);
+  REQUIRE(output_values[0] == 1);
+  REQUIRE(output_values[1] == 20);
+  REQUIRE(output_values[2] == 15);
 
   // test BinaryFunction
   initialize_keys(keys);
@@ -245,43 +245,40 @@ void TestReduceByKeyDevice(ExecutionPolicy exec)
     new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 20);
-  ASSERT_EQUAL(output_keys[3], 21);
-  ASSERT_EQUAL(output_keys[4], 37);
+  REQUIRE(new_last.first - output_keys.begin() == 5);
+  REQUIRE(new_last.second - output_values.begin() == 5);
+  REQUIRE(output_keys[0] == 11);
+  REQUIRE(output_keys[1] == 21);
+  REQUIRE(output_keys[2] == 20);
+  REQUIRE(output_keys[3] == 21);
+  REQUIRE(output_keys[4] == 37);
 
-  ASSERT_EQUAL(output_values[0], 1);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 3);
-  ASSERT_EQUAL(output_values[3], 15);
-  ASSERT_EQUAL(output_values[4], 15);
+  REQUIRE(output_values[0] == 1);
+  REQUIRE(output_values[1] == 2);
+  REQUIRE(output_values[2] == 3);
+  REQUIRE(output_values[3] == 15);
+  REQUIRE(output_values[4] == 15);
 }
 
-void TestReduceByKeyDeviceSeq()
+TEST_CASE("TestReduceByKeyDeviceSeq", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceSeq);
 
-void TestReduceByKeyDeviceDevice()
+TEST_CASE("TestReduceByKeyDeviceDevice", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceDevice);
 
-void TestReduceByKeyDeviceNoSync()
+TEST_CASE("TestReduceByKeyDeviceNoSync", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -310,19 +307,19 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
   new_last = thrust::reduce_by_key(
     streampolicy, keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin());
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 20);
-  ASSERT_EQUAL(output_keys[3], 21);
-  ASSERT_EQUAL(output_keys[4], 37);
+  REQUIRE(new_last.first - output_keys.begin() == 5);
+  REQUIRE(new_last.second - output_values.begin() == 5);
+  REQUIRE(output_keys[0] == 11);
+  REQUIRE(output_keys[1] == 21);
+  REQUIRE(output_keys[2] == 20);
+  REQUIRE(output_keys[3] == 21);
+  REQUIRE(output_keys[4] == 37);
 
-  ASSERT_EQUAL(output_values[0], 1);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 3);
-  ASSERT_EQUAL(output_values[3], 15);
-  ASSERT_EQUAL(output_values[4], 15);
+  REQUIRE(output_values[0] == 1);
+  REQUIRE(output_values[1] == 2);
+  REQUIRE(output_values[2] == 3);
+  REQUIRE(output_values[3] == 15);
+  REQUIRE(output_values[4] == 15);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -337,15 +334,15 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
     output_values.begin(),
     is_equal_div_10_reduce<T>());
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 37);
+  REQUIRE(new_last.first - output_keys.begin() == 3);
+  REQUIRE(new_last.second - output_values.begin() == 3);
+  REQUIRE(output_keys[0] == 11);
+  REQUIRE(output_keys[1] == 21);
+  REQUIRE(output_keys[2] == 37);
 
-  ASSERT_EQUAL(output_values[0], 1);
-  ASSERT_EQUAL(output_values[1], 20);
-  ASSERT_EQUAL(output_values[2], 15);
+  REQUIRE(output_values[0] == 1);
+  REQUIRE(output_values[1] == 20);
+  REQUIRE(output_values[2] == 15);
 
   // test BinaryFunction
   initialize_keys(keys);
@@ -361,34 +358,32 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
     ::cuda::std::equal_to<T>(),
     ::cuda::std::plus<T>());
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 20);
-  ASSERT_EQUAL(output_keys[3], 21);
-  ASSERT_EQUAL(output_keys[4], 37);
+  REQUIRE(new_last.first - output_keys.begin() == 5);
+  REQUIRE(new_last.second - output_values.begin() == 5);
+  REQUIRE(output_keys[0] == 11);
+  REQUIRE(output_keys[1] == 21);
+  REQUIRE(output_keys[2] == 20);
+  REQUIRE(output_keys[3] == 21);
+  REQUIRE(output_keys[4] == 37);
 
-  ASSERT_EQUAL(output_values[0], 1);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 3);
-  ASSERT_EQUAL(output_values[3], 15);
-  ASSERT_EQUAL(output_values[4], 15);
+  REQUIRE(output_values[0] == 1);
+  REQUIRE(output_values[1] == 2);
+  REQUIRE(output_values[2] == 3);
+  REQUIRE(output_values[3] == 15);
+  REQUIRE(output_values[4] == 15);
 
   cudaStreamDestroy(s);
 }
 
-void TestReduceByKeyCudaStreamsSync()
+TEST_CASE("TestReduceByKeyCudaStreamsSync", "[reduce_by_key]")
 {
   TestReduceByKeyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsSync);
 
-void TestReduceByKeyCudaStreamsNoSync()
+TEST_CASE("TestReduceByKeyCudaStreamsNoSync", "[reduce_by_key]")
 {
   TestReduceByKeyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsNoSync);
 
 // Maps indices to key ids
 class div_op
@@ -430,7 +425,7 @@ public:
 void TestReduceByKeyWithBigIndexesHelper(int magnitude)
 {
   const std::int64_t key_size_magnitude = 8;
-  ASSERT_EQUAL(true, key_size_magnitude < magnitude);
+  REQUIRE(key_size_magnitude < magnitude);
 
   const std::int64_t num_items       = 1ll << magnitude;
   const std::int64_t num_unique_keys = 1ll << key_size_magnitude;
@@ -444,7 +439,7 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
 
   const counting_it count_begin(0ll);
   const counting_it count_end = count_begin + num_items;
-  ASSERT_EQUAL(static_cast<std::int64_t>(::cuda::std::distance(count_begin, count_end)), num_items);
+  REQUIRE(static_cast<std::int64_t>(::cuda::std::distance(count_begin, count_end)) == num_items);
 
   const transform_key_it keys_begin(count_begin, div_op{key_size});
   const transform_key_it keys_end(count_end, div_op{key_size});
@@ -463,18 +458,18 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
   //  result:       3       6     = sum(range(key_size)) + key_size * key_id
   thrust::reduce_by_key(keys_begin, keys_end, values_begin, output_keys.begin(), output_values.begin());
 
-  ASSERT_EQUAL(true, thrust::equal(output_keys.begin(), output_keys.end(), count_begin));
+  REQUIRE(thrust::equal(output_keys.begin(), output_keys.end(), count_begin));
 
   thrust::host_vector<std::int64_t> result = output_values;
 
   const std::int64_t sum = (key_size - 1) * key_size / 2;
   for (std::int64_t key_id = 0; key_id < num_unique_keys; key_id++)
   {
-    ASSERT_EQUAL(result[key_id], sum + key_id * key_size);
+    REQUIRE(result[key_id] == sum + key_id * key_size);
   }
 }
 
-void TestReduceByKeyWithBigIndexes()
+TEST_CASE("TestReduceByKeyWithBigIndexes", "[reduce_by_key]")
 {
   TestReduceByKeyWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -483,9 +478,8 @@ void TestReduceByKeyWithBigIndexes()
   TestReduceByKeyWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestReduceByKeyWithBigIndexes);
 
-void TestReduceByKeyWithCustomEqualityOp()
+TEST_CASE("TestReduceByKeyWithCustomEqualityOp", "[reduce_by_key]")
 {
   using key_vector_t = thrust::device_vector<cuda::std::int32_t>;
   using val_vector_t = thrust::device_vector<cuda::std::int32_t>;
@@ -512,24 +506,22 @@ void TestReduceByKeyWithCustomEqualityOp()
   // Verify that the number of unique keys is correct
   const auto num_unique_out     = cuda::std::distance(unique_out.begin(), unique_out_end);
   const auto num_aggregates_out = cuda::std::distance(aggregates_out.begin(), aggregates_out_end);
-  ASSERT_EQUAL(num_unique_out, num_items);
-  ASSERT_EQUAL(num_aggregates_out, num_items);
+  REQUIRE(num_unique_out == num_items);
+  REQUIRE(num_aggregates_out == num_items);
 
   // Verify that the equality operator was never invoked on out-of-bounds items
-  ASSERT_EQUAL(error_counter[0], cuda::std::uint32_t{0});
+  REQUIRE(error_counter[0] == cuda::std::uint32_t{0});
 
   // Verify that unique keys are correct
   const bool all_keys_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), keys);
-  ASSERT_EQUAL(all_keys_correct, true);
+  REQUIRE(all_keys_correct);
 
   // Verify that the aggregates are correct
   const bool all_values_correct = thrust::equal(aggregates_out.cbegin(), aggregates_out.cend(), values);
-  ASSERT_EQUAL(all_values_correct, true);
+  REQUIRE(all_values_correct);
 }
 
-DECLARE_UNITTEST(TestReduceByKeyWithCustomEqualityOp);
-
-void TestReduceByKeyWithDifferentAccumulatorT()
+TEST_CASE("TestReduceByKeyWithDifferentAccumulatorT", "[reduce_by_key]")
 {
   using key_t          = cuda::std::uint32_t;
   using val_t          = cuda::std::uint8_t;
@@ -558,20 +550,18 @@ void TestReduceByKeyWithDifferentAccumulatorT()
   // Verify that the number of unique keys is correct
   auto num_unique_out     = cuda::std::distance(unique_out.begin(), unique_out_end);
   auto num_aggregates_out = cuda::std::distance(aggregates_out.begin(), aggregates_out_end);
-  ASSERT_EQUAL(num_unique_out, expected_num_uniques);
-  ASSERT_EQUAL(num_aggregates_out, expected_num_uniques);
+  REQUIRE(num_unique_out == expected_num_uniques);
+  REQUIRE(num_aggregates_out == expected_num_uniques);
 
   // Verify that the equality operator was never invoked on out-of-bounds items
-  ASSERT_EQUAL(error_counter[0], cuda::std::uint32_t{0});
+  REQUIRE(error_counter[0] == cuda::std::uint32_t{0});
 
   // Verify that the unique key is correct
-  ASSERT_EQUAL(unique_out[0], unique_key);
+  REQUIRE(unique_out[0] == unique_key);
 
   // // Verify that the aggregate is correct
   constexpr auto mod_val            = 0x01 << cuda::std::numeric_limits<val_t>::digits;
   constexpr auto sum                = ((num_items * (num_items - 1)) / 2);
   constexpr auto expected_aggregate = static_cast<val_t>(sum % mod_val);
-  ASSERT_EQUAL(aggregates_out[0], expected_aggregate);
+  REQUIRE(aggregates_out[0] == expected_aggregate);
 }
-
-DECLARE_UNITTEST(TestReduceByKeyWithDifferentAccumulatorT);

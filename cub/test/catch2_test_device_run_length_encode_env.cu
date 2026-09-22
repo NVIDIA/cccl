@@ -13,7 +13,6 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 
 #include <cuda/__execution/tune.h>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/stream>
 
@@ -21,6 +20,7 @@ struct stream_registry_factory_t;
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRunLengthEncode::Encode, run_length_encode_env);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivial_runs_env);
@@ -185,7 +185,7 @@ CUB_TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_e
   auto d_num_runs_out = c2h::device_vector<int>(1);
   const int num_items = static_cast<int>(d_in.size());
 
-  const cuda::stream custom_stream{cuda::devices[0]};
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -227,7 +227,7 @@ CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_
   auto d_num_runs_out = c2h::device_vector<int>(1);
   const int num_items = static_cast<int>(d_in.size());
 
-  const cuda::stream custom_stream{cuda::devices[0]};
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(

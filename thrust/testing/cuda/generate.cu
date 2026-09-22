@@ -40,10 +40,10 @@ void TestGenerateDevice(ExecutionPolicy exec, const size_t n)
   generate_kernel<<<1, 1>>>(exec, d_result.begin(), d_result.end(), f);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
 template <typename T>
@@ -61,7 +61,7 @@ void TestGenerateDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGenerateDeviceDevice);
 #endif
 
-void TestGenerateCudaStreams()
+TEST_CASE("TestGenerateCudaStreams", "[generate]")
 {
   thrust::device_vector<int> result(5);
 
@@ -75,15 +75,14 @@ void TestGenerateCudaStreams()
   thrust::generate(thrust::cuda::par.on(s), result.begin(), result.end(), f);
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(result[0], value);
-  ASSERT_EQUAL(result[1], value);
-  ASSERT_EQUAL(result[2], value);
-  ASSERT_EQUAL(result[3], value);
-  ASSERT_EQUAL(result[4], value);
+  REQUIRE(result[0] == value);
+  REQUIRE(result[1] == value);
+  REQUIRE(result[2] == value);
+  REQUIRE(result[3] == value);
+  REQUIRE(result[4] == value);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGenerateCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Size, typename Function>
@@ -106,10 +105,10 @@ void TestGenerateNDevice(ExecutionPolicy exec, const size_t n)
   generate_n_kernel<<<1, 1>>>(exec, d_result.begin(), d_result.size(), f);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
 template <typename T>
@@ -127,7 +126,7 @@ void TestGenerateNDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGenerateNDeviceDevice);
 #endif
 
-void TestGenerateNCudaStreams()
+TEST_CASE("TestGenerateNCudaStreams", "[generate]")
 {
   thrust::device_vector<int> result(5);
 
@@ -141,12 +140,11 @@ void TestGenerateNCudaStreams()
   thrust::generate_n(thrust::cuda::par.on(s), result.begin(), result.size(), f);
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(result[0], value);
-  ASSERT_EQUAL(result[1], value);
-  ASSERT_EQUAL(result[2], value);
-  ASSERT_EQUAL(result[3], value);
-  ASSERT_EQUAL(result[4], value);
+  REQUIRE(result[0] == value);
+  REQUIRE(result[1] == value);
+  REQUIRE(result[2] == value);
+  REQUIRE(result[3] == value);
+  REQUIRE(result[4] == value);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGenerateNCudaStreams);

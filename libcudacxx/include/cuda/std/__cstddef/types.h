@@ -26,7 +26,15 @@
 #  include <cstddef> // IWYU pragma: export
 #else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
 #  if !defined(offsetof)
-#    define offsetof(type, member) (::size_t) ((char*) &(((type*) 0)->member) - (char*) 0)
+#    if _CCCL_HAS_BUILTIN(__builtin_offsetof) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
+#      define offsetof(_TYPE, _MEMBER) __builtin_offsetof(_TYPE, _MEMBER)
+#    elif _CCCL_COMPILER(NVRTC, >=, 12, 3)
+#      define offsetof(_TYPE, _MEMBER) ((::size_t) __INTADDR__(__builtin_addressof(((_TYPE*) 0)->_MEMBER)))
+#    elif _CCCL_COMPILER(NVRTC)
+#      define offsetof(_TYPE, _MEMBER) ((::size_t) __INTADDR__(&((_TYPE*) 0)->_MEMBER))
+#    else // non-constexpr fallback
+#      define offsetof(_TYPE, _MEMBER) (::size_t) ((char*) &(((_TYPE*) 0)->_MEMBER) - (char*) 0)
+#    endif
 #  endif // !offsetof
 #endif // _CCCL_FREESTANDING()
 

@@ -70,7 +70,7 @@ void TestShuffleSimpleBase()
   thrust::sort(shuffled.begin(), shuffled.end());
   // Check all of our data is present
   // This only tests for strange conditions like duplicated elements
-  ASSERT_EQUAL(shuffled, data);
+  REQUIRE(shuffled == data);
 }
 template <typename Vector>
 void TestShuffleSimple()
@@ -94,7 +94,7 @@ void TestShuffleCopySimpleBase()
   ShuffleCopyFunc{}(data.begin(), data.end(), shuffled.begin(), g);
   g.seed(2);
   ShuffleFunc{}(data.begin(), data.end(), g);
-  ASSERT_EQUAL(shuffled, data);
+  REQUIRE(shuffled == data);
 }
 template <typename Vector>
 void TestShuffleCopySimple()
@@ -118,7 +118,7 @@ void TestShuffleCudaStdPhilox()
   thrust::shuffle(shuffled.begin(), shuffled.end(), g);
   thrust::sort(shuffled.begin(), shuffled.end());
 
-  ASSERT_EQUAL(shuffled, data);
+  REQUIRE(shuffled == data);
 }
 DECLARE_VECTOR_UNITTEST(TestShuffleCudaStdPhilox);
 
@@ -134,7 +134,7 @@ void TestShuffleCopyCudaStdPhilox()
   g.seed(2);
   thrust::shuffle(in_place.begin(), in_place.end(), g);
 
-  ASSERT_EQUAL(shuffled, in_place);
+  REQUIRE(shuffled == in_place);
 }
 DECLARE_VECTOR_UNITTEST(TestShuffleCopyCudaStdPhilox);
 
@@ -152,7 +152,7 @@ void TestHostDeviceIdenticalBase(size_t m)
   ShuffleFunc{}(host_result.begin(), host_result.end(), host_g);
   ShuffleFunc{}(device_result.begin(), device_result.end(), device_g);
 
-  ASSERT_EQUAL(device_result, host_result);
+  REQUIRE(device_result == host_result);
 }
 template <typename T>
 void TestHostDeviceIdentical(size_t m)
@@ -178,7 +178,7 @@ void TestFunctionIsBijectionBase(size_t m)
   {
     return;
   }
-  ASSERT_LEQUAL(total_length, (std::max) (m * 2, size_t(256))); // Check the rounded up size is at most double the input
+  REQUIRE(total_length <= (std::max) (m * 2, size_t(256))); // Check the rounded up size is at most double the input
 
   auto device_result_it = thrust::make_transform_iterator(thrust::make_counting_iterator(T(0)), device_f);
 
@@ -191,7 +191,7 @@ void TestFunctionIsBijectionBase(size_t m)
                   unpermuted.begin());
 
   // Check every index is in the result, if any are missing then the function was not a bijection over [0,m)
-  ASSERT_EQUAL(true, thrust::equal(unpermuted.begin(), unpermuted.end(), thrust::make_counting_iterator(T(0))));
+  REQUIRE(thrust::equal(unpermuted.begin(), unpermuted.end(), thrust::make_counting_iterator(T(0))));
 }
 template <typename T>
 void TestFunctionIsBijection(size_t m)
@@ -206,25 +206,24 @@ void TestFunctionIsBijectionIterator(size_t m)
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijection);
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijectionIterator);
 
-void TestFeistelBijectionLength()
+TEST_CASE("TestFeistelBijectionLength", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
   uint64_t m = 345;
   thrust::detail::feistel_bijection f(m, g);
-  ASSERT_EQUAL(f.size(), uint64_t(512));
+  REQUIRE(f.size() == uint64_t(512));
 
   m = 256;
   f = thrust::detail::feistel_bijection(m, g);
-  ASSERT_EQUAL(f.size(), uint64_t(256));
+  REQUIRE(f.size() == uint64_t(256));
 
   m = 1;
   f = thrust::detail::feistel_bijection(m, g);
-  ASSERT_EQUAL(f.size(), uint64_t(256));
+  REQUIRE(f.size() == uint64_t(256));
 }
-DECLARE_UNITTEST(TestFeistelBijectionLength);
 
-void TestShuffleIteratorConstructibleFromBijection()
+TEST_CASE("TestShuffleIteratorConstructibleFromBijection", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -238,12 +237,11 @@ void TestShuffleIteratorConstructibleFromBijection()
   g.seed(0xD5);
   const thrust::shuffle_iterator<uint64_t> it3(f.size(), g);
 
-  ASSERT_EQUAL(true, thrust::equal(thrust::device, it, it + f.size(), it2));
-  ASSERT_EQUAL(true, thrust::equal(thrust::device, it, it + f.size(), it3));
+  REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it2));
+  REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it3));
 }
-DECLARE_UNITTEST(TestShuffleIteratorConstructibleFromBijection);
 
-void TestShuffleAndPermutationIterator()
+TEST_CASE("TestShuffleAndPermutationIterator", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -257,22 +255,20 @@ void TestShuffleAndPermutationIterator()
   thrust::device_vector<uint64_t> premute_vec(32);
   thrust::gather(it, it + 32, data.begin(), premute_vec.begin());
 
-  ASSERT_EQUAL(true, thrust::equal(permute_it, permute_it + 32, premute_vec.begin()));
+  REQUIRE(thrust::equal(permute_it, permute_it + 32, premute_vec.begin()));
 }
-DECLARE_UNITTEST(TestShuffleAndPermutationIterator);
 
-void TestShuffleIteratorStateless()
+TEST_CASE("TestShuffleIteratorStateless", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
   auto it = thrust::make_shuffle_iterator(32, g);
 
-  ASSERT_EQUAL(*it, *it);
-  ASSERT_EQUAL(*(it + 1), *(it + 1));
+  REQUIRE(*it == *it);
+  REQUIRE(*(it + 1) == *(it + 1));
   ++it;
-  ASSERT_EQUAL(*(it - 1), *(it - 1));
+  REQUIRE(*(it - 1) == *(it - 1));
 }
-DECLARE_UNITTEST(TestShuffleIteratorStateless);
 
 double inverse_erf(double x)
 {
@@ -323,7 +319,7 @@ void TestShuffleKeyPositionBase()
 
   const double alpha = 0.05;
   const double zcrit = inverse_erf(1.0 - alpha / (2.0 * n)) * cuda::std::sqrt(2.0);
-  ASSERT_LESS(zmax, zcrit);
+  REQUIRE(zmax < zcrit);
 }
 template <typename Vector>
 void TestShuffleKeyPosition()
@@ -380,7 +376,7 @@ void TestShuffleUniformPermutationBase()
     permutation_counts[tmp]++;
   }
 
-  ASSERT_EQUAL(permutation_counts.size(), total_permutations);
+  REQUIRE(permutation_counts.size() == total_permutations);
 
   double chi_squared          = 0.0;
   const double expected_count = static_cast<double>(num_samples) / static_cast<double>(total_permutations);
@@ -390,7 +386,7 @@ void TestShuffleUniformPermutationBase()
   }
   // 119 degrees of freedom, 95% confidence
   const double critical_value = 145.461;
-  ASSERT_LESS(chi_squared, critical_value);
+  REQUIRE(chi_squared < critical_value);
 }
 template <typename Vector>
 void TestShuffleUniformPermutation()

@@ -28,10 +28,10 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename, bool x>
+template <typename, bool X>
 struct depend_on_instantiation
 {
-  static constexpr bool value = x;
+  static constexpr bool value = X;
 };
 
 //! Deprecated [Since 3.0]
