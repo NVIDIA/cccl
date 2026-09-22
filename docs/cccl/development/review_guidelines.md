@@ -240,7 +240,7 @@ recommended.
 When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
 at the kernel launcher, open the full dispatch function (or equivalent) and enumerate EVERY kernel
 launch it makes. All kernels should be launched using PDL, otherwise the performance gain is marginal.
-Replacing calls to `cudaMemcpy` by kernels launched using PDL should be strongly considered and
+Replacing calls to `cudaMemset` by kernels launched using PDL should be strongly considered and
 pointed out as suggestions.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
