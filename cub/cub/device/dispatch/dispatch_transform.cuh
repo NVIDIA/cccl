@@ -275,12 +275,23 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
     num_items, policy.async_copy, config->items_per_thread, config->sm_count, config->max_occupancy);
   const int tile_size = threads_per_block * ipt;
 
-  const int achieved_bytes_in_flight = config->max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration();
-  detail::log("Transform: items per thread: %d, bytes in flight: %d (target: %d)%s\n",
-              ipt,
-              achieved_bytes_in_flight,
-              policy.min_bytes_in_flight,
-              ipt != config->items_per_thread ? ", reduced to spread load evenly" : "");
+#if _CCCL_HOSTED()
+  char reduced_note[64] = "";
+  if (ipt != config->items_per_thread)
+  {
+    ::std::snprintf(
+      reduced_note, sizeof(reduced_note), ", reduced from %d to spread load evenly", config->items_per_thread);
+  }
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+  const char* reduced_note = "";
+#endif // !_CCCL_HOSTED()
+  detail::log(
+    "DeviceTransform: with occupancy %d, picked %d items per thread, achieving %d bytes in flight (target: %d)%s\n",
+    config->max_occupancy,
+    ipt,
+    config->max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration(),
+    policy.min_bytes_in_flight,
+    reduced_note);
 
   const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
