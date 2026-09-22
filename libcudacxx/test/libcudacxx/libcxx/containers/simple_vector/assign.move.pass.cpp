@@ -10,9 +10,6 @@
 // UNSUPPORTED: force-tile
 // error: dynamic allocations are not supported in tile mode
 
-// Self assignment post-conditions are tested.
-// ADDITIONAL_COMPILE_OPTIONS_HOST: -Wno-self-move
-
 #include <cuda/__container/simple_vector.h>
 #include <cuda/std/__new_>
 #include <cuda/std/cassert>
@@ -189,7 +186,8 @@ TEST_HOST_DEVICE_FUNC void test_self_move_assignment()
     construct_values(vec);
     DestroyCounted* original = vec.data();
 
-    vec = cuda::std::move(vec);
+    cuda::__simple_vector<DestroyCounted>& self = vec;
+    vec                                         = cuda::std::move(self);
 
     assert(vec.size() == 3);
     assert(vec.data() == original);
