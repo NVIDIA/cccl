@@ -699,11 +699,11 @@ struct Uninitialized
 /**
  * \brief A key identifier paired with a corresponding value
  */
-template <typename _Key, typename _Value>
+template <typename KeyT, typename ValueT>
 struct KeyValuePair
 {
-  using Key   = _Key; ///< Key data type
-  using Value = _Value; ///< Value data type
+  using Key   = KeyT; ///< Key data type
+  using Value = ValueT; ///< Value data type
 
   Key key; ///< Item key
   Value value; ///< Item value
@@ -833,7 +833,7 @@ namespace detail
 struct is_primitive_impl;
 
 // case for Kind = NOT_A_NUMBER, or Primitive = false
-template <Category Kind, bool Primitive, typename _UnsignedBits, typename T>
+template <Category Kind, bool Primitive, typename UnsignedBitsT, typename T>
 struct BaseTraits
 {
 private:
@@ -842,15 +842,15 @@ private:
   static constexpr bool is_primitive = Primitive;
 };
 
-template <typename _UnsignedBits, typename T>
-struct BaseTraits<UNSIGNED_INTEGER, true, _UnsignedBits, T>
+template <typename UnsignedBitsT, typename T>
+struct BaseTraits<UNSIGNED_INTEGER, true, UnsignedBitsT, T>
 {
-  static_assert(sizeof(_UnsignedBits) == sizeof(T),
+  static_assert(sizeof(UnsignedBitsT) == sizeof(T),
                 "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
 
-  using UnsignedBits                       = _UnsignedBits;
+  using UnsignedBits                       = UnsignedBitsT;
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
 
@@ -889,15 +889,15 @@ private:
   static constexpr bool is_primitive = true;
 };
 
-template <typename _UnsignedBits, typename T>
-struct BaseTraits<SIGNED_INTEGER, true, _UnsignedBits, T>
+template <typename UnsignedBitsT, typename T>
+struct BaseTraits<SIGNED_INTEGER, true, UnsignedBitsT, T>
 {
-  static_assert(sizeof(_UnsignedBits) == sizeof(T),
+  static_assert(sizeof(UnsignedBitsT) == sizeof(T),
                 "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
 
-  using UnsignedBits = _UnsignedBits;
+  using UnsignedBits = UnsignedBitsT;
 
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = HIGH_BIT;
@@ -934,17 +934,17 @@ private:
   static constexpr bool is_primitive = true;
 };
 
-template <typename _UnsignedBits, typename T>
-struct BaseTraits<FLOATING_POINT, true, _UnsignedBits, T>
+template <typename UnsignedBitsT, typename T>
+struct BaseTraits<FLOATING_POINT, true, UnsignedBitsT, T>
 {
-  static_assert(sizeof(_UnsignedBits) == sizeof(T),
+  static_assert(sizeof(UnsignedBitsT) == sizeof(T),
                 "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
   static_assert(::cuda::is_floating_point<T>::value, "Please also specialize cuda::is_floating_point for T");
   static_assert(::cuda::is_floating_point_v<T>, "Please also specialize cuda::is_floating_point_v for T");
 
-  using UnsignedBits = _UnsignedBits;
+  using UnsignedBits = UnsignedBitsT;
 
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(-1);
@@ -984,8 +984,8 @@ private:
 
 //! Use this class as base when specializing \ref NumericTraits for primitive signed/unsigned integers or floating-point
 //! types.
-template <Category Kind, bool Primitive, typename _UnsignedBits, typename T>
-using BaseTraits = detail::BaseTraits<Kind, Primitive, _UnsignedBits, T>;
+template <Category Kind, bool Primitive, typename UnsignedBitsT, typename T>
+using BaseTraits = detail::BaseTraits<Kind, Primitive, UnsignedBitsT, T>;
 
 //! Numeric type traits for radix sort key operations, decoupled lookback and tuning. You can specialize this template
 //! for your own types if:

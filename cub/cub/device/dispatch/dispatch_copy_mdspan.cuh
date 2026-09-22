@@ -53,9 +53,9 @@ struct copy_mdspan_t
   }
 };
 
-template <class _MDSpanIn, class _MDSpanOut>
+template <class MDSpanIn, class MDSpanOut>
 [[nodiscard]] _CCCL_HOST_API ::cudaError_t
-__copy_mdspan_bytes(::cuda::stream_ref __stream, _MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out)
+__copy_mdspan_bytes(::cuda::stream_ref __stream, MDSpanIn&& __mdspan_in, MDSpanOut&& __mdspan_out)
 {
   _CCCL_TRY
   {
@@ -80,9 +80,9 @@ __copy_mdspan_bytes(::cuda::stream_ref __stream, _MDSpanIn&& __mdspan_in, _MDSpa
   return ::cudaSuccess;
 }
 
-template <class _MDSpanIn, class _MDSpanOut, class _Env>
+template <class MDSpanIn, class MDSpanOut, class Env>
 [[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
-__transform_copy(_MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out, const _Env& __env)
+__transform_copy(MDSpanIn&& __mdspan_in, MDSpanOut&& __mdspan_out, const Env& __env)
 {
   return CUB_NS_QUALIFIER::DeviceTransform::__transform_internal(
     ::cuda::std::make_tuple(__mdspan_in.data_handle()),
@@ -93,26 +93,26 @@ __transform_copy(_MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out, const _Env&
     __env);
 }
 
-template <typename T_In,
-          typename E_In,
-          typename L_In,
-          typename A_In,
-          typename T_Out,
-          typename E_Out,
-          typename L_Out,
-          typename A_Out,
+template <typename TIn,
+          typename EIn,
+          typename LIn,
+          typename AIn,
+          typename TOut,
+          typename EOut,
+          typename LOut,
+          typename AOut,
           typename EnvT = ::cuda::std::execution::env<>>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
-     ::cuda::std::mdspan<T_Out, E_Out, L_Out, A_Out> mdspan_out,
+copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
+     ::cuda::std::mdspan<TOut, EOut, LOut, AOut> mdspan_out,
      const EnvT& env = {})
 {
   if (mdspan_in.is_exhaustive() && mdspan_out.is_exhaustive()
       && detail::have_same_strides(mdspan_in.mapping(), mdspan_out.mapping()))
   {
     // NOLINTBEGIN(bugprone-branch-clone)
-    if constexpr (::cuda::std::same_as<T_In, T_Out>
-                  && ::cuda::__detail::__can_mdspan_copy_bytes<T_In, E_In, L_In, T_Out, E_Out, L_Out>
+    if constexpr (::cuda::std::same_as<TIn, TOut>
+                  && ::cuda::__detail::__can_mdspan_copy_bytes<TIn, EIn, LIn, TOut, EOut, LOut>
                   && ::cuda::std::__is_callable_v<::cuda::get_stream_t, const EnvT&>)
     {
       NV_IF_TARGET(
@@ -146,7 +146,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
   // TODO (fbusato): add ForEachInLayout when mdspan_in and mdspan_out have compatible layouts
   // Compatible layouts could use more efficient iteration patterns
   return cub::DeviceFor::__for_each_in_extents(
-    ::cuda::std::layout_right::mapping<E_In>{mdspan_in.extents()}, copy_mdspan_t{mdspan_in, mdspan_out}, env);
+    ::cuda::std::layout_right::mapping<EIn>{mdspan_in.extents()}, copy_mdspan_t{mdspan_in, mdspan_out}, env);
 }
 } // namespace detail::copy_mdspan
 

@@ -49,8 +49,8 @@ struct Transforms
     }
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LoadModifier, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       /// Level iterator wrapper type
       // Wrap the native input pointer with CacheModifiedInputIterator
@@ -298,8 +298,8 @@ struct Transforms
     {}
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LoadModifier, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       if (valid)
       {

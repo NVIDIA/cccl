@@ -76,8 +76,8 @@ namespace detail::batched_topk
 // The selection direction is compile-time only: callers pass `::cuda::args::constant<Dir>`, which maps to a
 // value-less static_discrete_param. Because the direction is fixed at compile time and carries no runtime value, it
 // can never disagree with its only supported option, so dispatch can never silently degrade to a no-op.
-template <detail::topk::select Dir, typename _Tp>
-[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::args::constant<Dir, _Tp>)
+template <detail::topk::select Dir, typename Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::args::constant<Dir, Tp>)
 {
   return params::static_discrete_param<detail::topk::select, Dir>{};
 }

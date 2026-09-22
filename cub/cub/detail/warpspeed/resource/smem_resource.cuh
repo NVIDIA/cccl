@@ -25,11 +25,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
-template <typename _Tp>
+template <typename Tp>
 struct SmemResource : SmemResourceRaw
 {
   template <int StageCount>
-  _CCCL_HOST_DEVICE_API SmemResource(SyncHandler& syncHandler, _Tp (&smemBuffer)[StageCount])
+  _CCCL_HOST_DEVICE_API SmemResource(SyncHandler& syncHandler, Tp (&smemBuffer)[StageCount])
       : SmemResourceRaw(syncHandler, smemBuffer, sizeof(smemBuffer[0]), sizeof(smemBuffer[0]), StageCount)
   {}
 
@@ -38,17 +38,17 @@ struct SmemResource : SmemResourceRaw
       : SmemResourceRaw(makeSmemResourceRaw(syncHandler, smemAllocator, stages, elems))
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API SmemStage<_Tp> nextStage() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API SmemStage<Tp> nextStage() noexcept
   {
-    return SmemStage<_Tp>(*this);
+    return SmemStage<Tp>(*this);
   }
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr SmemResourceRaw
   makeSmemResourceRaw(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
   {
-    const int align       = alignof(_Tp);
-    const int sizeBytes   = ::cuda::std::to_underlying(elems) * sizeof(_Tp);
+    const int align       = alignof(Tp);
+    const int sizeBytes   = ::cuda::std::to_underlying(elems) * sizeof(Tp);
     const int strideBytes = sizeBytes;
 
     void* ptrBase = smemAllocator.alloc(::cuda::std::to_underlying(stages) * strideBytes, align);

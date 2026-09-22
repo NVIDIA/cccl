@@ -384,12 +384,12 @@ struct WarpReduceShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _Tp, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(_Tp input, ReductionOp reduction_op, int last_lane, int offset)
+  template <typename Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE Tp ReduceStep(Tp input, ReductionOp reduction_op, int last_lane, int offset)
   {
-    _Tp output = input;
+    Tp output = input;
 
-    _Tp temp = ShuffleDown<LogicalWarpThreads>(output, offset, last_lane, member_mask);
+    Tp temp = ShuffleDown<LogicalWarpThreads>(output, offset, last_lane, member_mask);
 
     // Perform reduction op if valid
     if (offset + lane_id <= last_lane)

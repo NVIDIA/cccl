@@ -210,7 +210,7 @@ template <typename KeyT,
           int NumThreads,
           int ItemsPerThread,
           typename SynchronizationPolicy,
-          bool _Unroll = true>
+          bool Unroll = true>
 class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
@@ -455,7 +455,7 @@ public:
     }
     else
     {
-      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
+      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
 
       // each thread has sorted keys
       // merge sort keys in shared memory
@@ -893,7 +893,7 @@ private:
         max_key = compare_op(max_key, oob_default) ? oob_default : max_key;
       }
 
-      _CCCL_PRAGMA_UNROLL(_Unroll ? ItemsPerThread : 1)
+      _CCCL_PRAGMA_UNROLL(Unroll ? ItemsPerThread : 1)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
         if (ItemsPerThread * linear_tid + item < valid_items)
@@ -906,7 +906,7 @@ private:
         }
       }
 
-      detail::stable_odd_even_sort<_Unroll>(keys, items, compare_op);
+      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
     }
 
     MergeRounds<true>(keys, items, compare_op, valid_items);
@@ -993,7 +993,7 @@ private:
       const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
       const int keys1_count_loc = keys1_end - keys1_beg_loc;
       const int keys2_count_loc = keys2_end - keys2_beg_loc;
-      detail::serial_merge<_Unroll>(
+      detail::serial_merge<Unroll>(
         &temp_storage.keys_shared[0],
         keys1_beg_loc,
         keys2_beg_loc,
@@ -1100,15 +1100,15 @@ template <typename KeyT,
           typename ValueT = NullType,
           int BlockDimY   = 1,
           int BlockDimZ   = 1,
-          bool _Unroll    = true>
+          bool Unroll     = true>
 class BlockMergeSort
     : public BlockMergeSortStrategy<
         KeyT,
         ValueT,
         BlockDimX * BlockDimY * BlockDimZ,
         ItemsPerThread,
-        BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, _Unroll>,
-        _Unroll>
+        BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, Unroll>,
+        Unroll>
 {
 private:
   // The thread block size in threads
@@ -1116,7 +1116,7 @@ private:
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;
 
   using BlockMergeSortStrategyT =
-    BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort, _Unroll>;
+    BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort, Unroll>;
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()
