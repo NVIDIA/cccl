@@ -55,7 +55,7 @@ static_assert(::cuda::std::is_constructible_v<cudax::__fpmp_fp128, cudax::fp64mp
 // spelling; when the types coincide these asserts still hold via __fpmp_fp128.
 static_assert(::cuda::std::is_constructible_v<cudax::fp64mp2, _Float128>, "");
 static_assert(::cuda::std::is_constructible_v<_Float128, cudax::fp64mp2>, "");
-#  endif
+#  endif // _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 
 // fp32mp2 carries ~48 bits, fewer than a double, so quad is not its interchange
 // type: both directions are deliberately deleted, like the 128-bit integers above.
@@ -66,7 +66,7 @@ static_assert(!::cuda::std::is_constructible_v<cudax::__fpmp_fp128, ffloat>, "")
 #  if _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 static_assert(!::cuda::std::is_constructible_v<ffloat, _Float128>, "");
 static_assert(!::cuda::std::is_constructible_v<_Float128, ffloat>, "");
-#  endif
+#  endif // _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 // The double image stays reachable, spelled out.
 static_assert(::cuda::std::is_constructible_v<cudax::__fpmp_fp128, double>, "");
 #endif // _CCCL_FPMP_FP128_ENABLE == 1
@@ -189,14 +189,14 @@ void run_iec_float128()
   const cudax::fp64mp2 y = x / cudax::fp64mp2(static_cast<_Float128>(1));
   assert(static_cast<_Float128>(y) == q);
 }
-#endif
+#endif // _CCCL_FPMP_FP128_ENABLE == 1 && _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 
 int main(int, char**)
 {
   test();
 #if _CCCL_FPMP_FP128_ENABLE == 1 && _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
   NV_IF_TARGET(NV_IS_HOST, (run_iec_float128();))
-#endif
+#endif // _CCCL_FPMP_FP128_ENABLE == 1 && _CCCL_FPMP_HAS_IEC_FLOAT128 == 1
 
   return 0;
 }
