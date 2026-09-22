@@ -11,7 +11,6 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
@@ -20,6 +19,7 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -256,25 +256,21 @@ CUB_TEST("DeviceSelect::Flagged works with user provided memory and environment"
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
   SECTION("DeviceSelect::Flagged works with cudaStream_t")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_flagged(stream.get());
   }
 
   SECTION("DeviceSelect::Flagged works with cuda::stream")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_flagged(stream);
   }
 
   SECTION("DeviceSelect::Flagged works with cuda::stream_ref")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     const cuda::stream_ref stream_ref{stream};
     test_flagged(stream_ref);
   }
@@ -293,8 +289,8 @@ CUB_TEST("DeviceSelect::Flagged works with user provided memory and environment"
 
   SECTION("DeviceSelect::Flagged works with cuda::execution::gpu with stream")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    const cuda::stream stream = c2h::make_current_device_stream();
+    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_flagged(policy);
   }
 }

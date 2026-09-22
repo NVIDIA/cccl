@@ -50,20 +50,18 @@ void TestMinElementDevice(ExecutionPolicy exec)
   REQUIRE(h_max - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 }
 
-void TestMinElementDeviceSeq()
+TEST_CASE("TestMinElementDeviceSeq", "[min_element]")
 {
   TestMinElementDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMinElementDeviceSeq);
 
-void TestMinElementDeviceDevice()
+TEST_CASE("TestMinElementDeviceDevice", "[min_element]")
 {
   TestMinElementDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMinElementDeviceDevice);
 #endif
 
-void TestMinElementCudaStreams()
+TEST_CASE("TestMinElementCudaStreams", "[min_element]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -89,9 +87,8 @@ void TestMinElementCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestMinElementCudaStreams);
 
-void TestMinElementDevicePointer()
+TEST_CASE("TestMinElementDevicePointer", "[min_element]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -109,4 +106,3 @@ void TestMinElementDevicePointer()
   REQUIRE(thrust::min_element(thrust::device, raw_ptr, raw_ptr + n) - raw_ptr == 2);
   REQUIRE(thrust::min_element(thrust::device, raw_ptr, raw_ptr + n, ::cuda::std::greater<T>()) - raw_ptr == 1);
 }
-DECLARE_UNITTEST(TestMinElementDevicePointer);

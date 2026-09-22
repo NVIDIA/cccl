@@ -10,7 +10,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::transform_output_iterator from cuda::std
-void TestTransformOutputIteratorTraits()
+TEST_CASE("TestTransformOutputIteratorTraits", "[transform_output_iterator]")
 {
   using func    = ::cuda::std::negate<int>;
   using base_it = thrust::host_vector<int>::iterator;
@@ -37,7 +37,6 @@ void TestTransformOutputIteratorTraits()
   static_assert(!cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTransformOutputIteratorTraits);
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformOutputIterator()

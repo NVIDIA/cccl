@@ -30,7 +30,7 @@ unique_by_key(my_system& system, ForwardIterator1 keys_first, ForwardIterator1, 
   return cuda::std::make_pair(keys_first, values_first);
 }
 
-void TestUniqueByKeyDispatchExplicit()
+TEST_CASE("TestUniqueByKeyDispatchExplicit", "[unique_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -39,7 +39,6 @@ void TestUniqueByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueByKeyDispatchExplicit);
 
 template <typename ForwardIterator1, typename ForwardIterator2>
 cuda::std::pair<ForwardIterator1, ForwardIterator2>
@@ -49,7 +48,7 @@ unique_by_key(my_tag, ForwardIterator1 keys_first, ForwardIterator1, ForwardIter
   return cuda::std::make_pair(keys_first, values_first);
 }
 
-void TestUniqueByKeyDispatchImplicit()
+TEST_CASE("TestUniqueByKeyDispatchImplicit", "[unique_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -58,7 +57,6 @@ void TestUniqueByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUniqueByKeyDispatchImplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
 cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
@@ -73,7 +71,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestUniqueByKeyCopyDispatchExplicit()
+TEST_CASE("TestUniqueByKeyCopyDispatchExplicit", "[unique_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -82,7 +80,6 @@ void TestUniqueByKeyCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueByKeyCopyDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
 cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
@@ -92,7 +89,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestUniqueByKeyCopyDispatchImplicit()
+TEST_CASE("TestUniqueByKeyCopyDispatchImplicit", "[unique_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -105,7 +102,6 @@ void TestUniqueByKeyCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUniqueByKeyCopyDispatchImplicit);
 
 template <typename T>
 struct is_equal_div_10_unique
@@ -347,8 +343,8 @@ struct TestUniqueCopyByKeyToDiscardIterator
       thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)),
       thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
-    ASSERT_EQUAL_QUIET(reference1, h_result1);
-    ASSERT_EQUAL_QUIET(reference1, d_result1);
+    REQUIRE(reference1 == h_result1);
+    REQUIRE(reference1 == d_result1);
 
     // mask values output
     const cuda::std::pair<typename thrust::host_vector<K>::iterator, thrust::discard_iterator<>> h_result2 =
@@ -368,8 +364,8 @@ struct TestUniqueCopyByKeyToDiscardIterator
                            thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
     REQUIRE(h_keys_output == d_keys_output);
-    ASSERT_EQUAL_QUIET(h_reference2, h_result2);
-    ASSERT_EQUAL_QUIET(d_reference2, d_result2);
+    REQUIRE(h_reference2 == h_result2);
+    REQUIRE(d_reference2 == d_result2);
 
     // mask keys output
     const cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<V>::iterator> h_result3 =
@@ -389,8 +385,8 @@ struct TestUniqueCopyByKeyToDiscardIterator
                            d_vals_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys));
 
     REQUIRE(h_vals_output == d_vals_output);
-    ASSERT_EQUAL_QUIET(h_reference3, h_result3);
-    ASSERT_EQUAL_QUIET(d_reference3, d_result3);
+    REQUIRE(h_reference3 == h_result3);
+    REQUIRE(d_reference3 == d_result3);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyToDiscardIterator, IntegralTypes);
@@ -482,7 +478,7 @@ struct Entry
 };
 } // namespace
 
-void TestKeysWithoutEqualityOperator()
+TEST_CASE("TestKeysWithoutEqualityOperator", "[unique_by_key]")
 {
   using Key = cuda::std::pair<std::int32_t, Entry>;
 
@@ -515,5 +511,4 @@ void TestKeysWithoutEqualityOperator()
   REQUIRE(unique_data_h[1].a == 3);
   REQUIRE(unique_data_h[1].b == 3);
 }
-DECLARE_UNITTEST(TestKeysWithoutEqualityOperator);
 #endif // !defined(__GNUC__) || __GNUC__ != 6

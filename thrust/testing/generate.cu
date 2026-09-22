@@ -47,7 +47,7 @@ void generate(my_system& system, ForwardIterator /*first*/, ForwardIterator, Gen
   system.validate_dispatch();
 }
 
-void TestGenerateDispatchExplicit()
+TEST_CASE("TestGenerateDispatchExplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -56,7 +56,6 @@ void TestGenerateDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGenerateDispatchExplicit);
 
 template <typename ForwardIterator, typename Generator>
 void generate(my_tag, ForwardIterator first, ForwardIterator, Generator)
@@ -64,7 +63,7 @@ void generate(my_tag, ForwardIterator first, ForwardIterator, Generator)
   *first = 13;
 }
 
-void TestGenerateDispatchImplicit()
+TEST_CASE("TestGenerateDispatchImplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -72,7 +71,6 @@ void TestGenerateDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGenerateDispatchImplicit);
 
 template <typename T>
 void TestGenerate(const size_t n)
@@ -131,7 +129,7 @@ ForwardIterator generate_n(my_system& system, ForwardIterator first, Size, Gener
   return first;
 }
 
-void TestGenerateNDispatchExplicit()
+TEST_CASE("TestGenerateNDispatchExplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -140,7 +138,6 @@ void TestGenerateNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGenerateNDispatchExplicit);
 
 template <typename ForwardIterator, typename Size, typename Generator>
 ForwardIterator generate_n(my_tag, ForwardIterator first, Size, Generator)
@@ -149,7 +146,7 @@ ForwardIterator generate_n(my_tag, ForwardIterator first, Size, Generator)
   return first;
 }
 
-void TestGenerateNDispatchImplicit()
+TEST_CASE("TestGenerateNDispatchImplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -157,7 +154,6 @@ void TestGenerateNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGenerateNDispatchImplicit);
 
 template <typename T>
 void TestGenerateNToDiscardIterator(const size_t n)
@@ -173,8 +169,8 @@ void TestGenerateNToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE((reference == h_result));
+  REQUIRE((reference == d_result));
 }
 DECLARE_VARIABLE_UNITTEST(TestGenerateNToDiscardIterator);
 
@@ -197,7 +193,7 @@ void TestGenerateZipIterator()
 };
 DECLARE_VECTOR_UNITTEST(TestGenerateZipIterator);
 
-void TestGenerateTuple()
+TEST_CASE("TestGenerateTuple", "[generate]")
 {
   using T     = int;
   using Tuple = cuda::std::tuple<T, T>;
@@ -208,8 +204,7 @@ void TestGenerateTuple()
   thrust::generate(h.begin(), h.end(), return_value<Tuple>(Tuple(4, 7)));
   thrust::generate(d.begin(), d.end(), return_value<Tuple>(Tuple(4, 7)));
 
-  ASSERT_EQUAL_QUIET(h, d);
-};
-DECLARE_UNITTEST(TestGenerateTuple);
+  REQUIRE((h == d));
+}
 
 _CCCL_DIAG_POP

@@ -38,7 +38,7 @@ void TestForEachSimple()
 
   Vector ref{0, 0, 1, 1, 1, 0, 1};
   REQUIRE(output == ref);
-  ASSERT_EQUAL_QUIET(result, input.end());
+  REQUIRE((result == input.end()));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachSimple);
 
@@ -49,7 +49,7 @@ InputIterator for_each(my_system& system, InputIterator first, InputIterator, Fu
   return first;
 }
 
-void TestForEachDispatchExplicit()
+TEST_CASE("TestForEachDispatchExplicit", "[for_each]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -58,7 +58,6 @@ void TestForEachDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestForEachDispatchExplicit);
 
 template <typename InputIterator, typename Function>
 InputIterator for_each(my_tag, InputIterator first, InputIterator, Function)
@@ -67,7 +66,7 @@ InputIterator for_each(my_tag, InputIterator first, InputIterator, Function)
   return first;
 }
 
-void TestForEachDispatchImplicit()
+TEST_CASE("TestForEachDispatchImplicit", "[for_each]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -75,7 +74,6 @@ void TestForEachDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestForEachDispatchImplicit);
 
 template <class Vector>
 void TestForEachNSimple()
@@ -92,7 +90,7 @@ void TestForEachNSimple()
 
   Vector ref{0, 0, 1, 1, 1, 0, 1};
   REQUIRE(output == ref);
-  ASSERT_EQUAL_QUIET(result, input.end());
+  REQUIRE((result == input.end()));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachNSimple);
 
@@ -103,7 +101,7 @@ InputIterator for_each_n(my_system& system, InputIterator first, Size, Function)
   return first;
 }
 
-void TestForEachNDispatchExplicit()
+TEST_CASE("TestForEachNDispatchExplicit", "[for_each]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -112,7 +110,6 @@ void TestForEachNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestForEachNDispatchExplicit);
 
 template <typename InputIterator, typename Size, typename Function>
 InputIterator for_each_n(my_tag, InputIterator first, Size, Function)
@@ -121,7 +118,7 @@ InputIterator for_each_n(my_tag, InputIterator first, Size, Function)
   return first;
 }
 
-void TestForEachNDispatchImplicit()
+TEST_CASE("TestForEachNDispatchImplicit", "[for_each]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -129,9 +126,8 @@ void TestForEachNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestForEachNDispatchImplicit);
 
-void TestForEachSimpleAnySystem()
+TEST_CASE("TestForEachSimpleAnySystem", "[for_each]")
 {
   thrust::device_vector<int> output(7, 0);
 
@@ -143,11 +139,10 @@ void TestForEachSimpleAnySystem()
 
   const thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
   REQUIRE(output == ref);
-  ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
+  REQUIRE((result == thrust::make_counting_iterator(5)));
 }
-DECLARE_UNITTEST(TestForEachSimpleAnySystem);
 
-void TestForEachNSimpleAnySystem()
+TEST_CASE("TestForEachNSimpleAnySystem", "[for_each]")
 {
   thrust::device_vector<int> output(7, 0);
 
@@ -158,9 +153,8 @@ void TestForEachNSimpleAnySystem()
 
   const thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
   REQUIRE(output == ref);
-  ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
+  REQUIRE((result == thrust::make_counting_iterator(5)));
 }
-DECLARE_UNITTEST(TestForEachNSimpleAnySystem);
 
 template <typename T>
 void TestForEach(const size_t n)
@@ -189,8 +183,8 @@ void TestForEach(const size_t n)
   const typename thrust::device_vector<T>::iterator d_result = thrust::for_each(d_input.begin(), d_input.end(), d_f);
 
   REQUIRE(h_output == d_output);
-  ASSERT_EQUAL_QUIET(h_result, h_input.end());
-  ASSERT_EQUAL_QUIET(d_result, d_input.end());
+  REQUIRE((h_result == h_input.end()));
+  REQUIRE((d_result == d_input.end()));
 }
 DECLARE_VARIABLE_UNITTEST(TestForEach);
 
@@ -221,8 +215,8 @@ void TestForEachN(const size_t n)
   const typename thrust::device_vector<T>::iterator d_result = thrust::for_each_n(d_input.begin(), d_input.size(), d_f);
 
   REQUIRE(h_output == d_output);
-  ASSERT_EQUAL_QUIET(h_result, h_input.end());
-  ASSERT_EQUAL_QUIET(d_result, d_input.end());
+  REQUIRE((h_result == h_input.end()));
+  REQUIRE((d_result == d_input.end()));
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachN);
 
@@ -260,10 +254,10 @@ void _TestForEachWithLargeTypes()
   thrust::for_each(h_data.begin(), h_data.end(), func);
   thrust::for_each(d_data.begin(), d_data.end(), func);
 
-  ASSERT_EQUAL_QUIET(h_data, d_data);
+  REQUIRE((h_data == d_data));
 }
 
-void TestForEachWithLargeTypes()
+TEST_CASE("TestForEachWithLargeTypes", "[for_each]")
 {
   _TestForEachWithLargeTypes<int, 1>();
   _TestForEachWithLargeTypes<int, 2>();
@@ -280,7 +274,6 @@ void TestForEachWithLargeTypes()
   // XXX parallel_for doesn't support large types
   //    _TestForEachWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
-DECLARE_UNITTEST(TestForEachWithLargeTypes);
 
 template <typename T, unsigned int N>
 void _TestForEachNWithLargeTypes()
@@ -301,10 +294,10 @@ void _TestForEachNWithLargeTypes()
   thrust::for_each_n(h_data.begin(), h_data.size(), func);
   thrust::for_each_n(d_data.begin(), d_data.size(), func);
 
-  ASSERT_EQUAL_QUIET(h_data, d_data);
+  REQUIRE((h_data == d_data));
 }
 
-void TestForEachNWithLargeTypes()
+TEST_CASE("TestForEachNWithLargeTypes", "[for_each]")
 {
   _TestForEachNWithLargeTypes<int, 1>();
   _TestForEachNWithLargeTypes<int, 2>();
@@ -321,7 +314,6 @@ void TestForEachNWithLargeTypes()
   // XXX parallel_for doesn't support large types
   //    _TestForEachNWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
-DECLARE_UNITTEST(TestForEachNWithLargeTypes);
 
 _CCCL_DIAG_POP
 
@@ -358,11 +350,10 @@ void TestForEachWithBigIndexesHelper(int magnitude)
   REQUIRE(has_executed_h);
 }
 
-void TestForEachWithBigIndexes()
+TEST_CASE("TestForEachWithBigIndexes", "[for_each]")
 {
   TestForEachWithBigIndexesHelper(30);
   TestForEachWithBigIndexesHelper(31);
   TestForEachWithBigIndexesHelper(32);
   TestForEachWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestForEachWithBigIndexes);

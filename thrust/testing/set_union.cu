@@ -15,7 +15,7 @@ set_union(my_system& system, InputIterator1, InputIterator1, InputIterator2, Inp
   return result;
 }
 
-void TestSetUnionDispatchExplicit()
+TEST_CASE("TestSetUnionDispatchExplicit", "[set_union]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -24,7 +24,6 @@ void TestSetUnionDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetUnionDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator set_union(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIterator2, OutputIterator result)
@@ -33,7 +32,7 @@ OutputIterator set_union(my_tag, InputIterator1, InputIterator1, InputIterator2,
   return result;
 }
 
-void TestSetUnionDispatchImplicit()
+TEST_CASE("TestSetUnionDispatchImplicit", "[set_union]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -46,7 +45,6 @@ void TestSetUnionDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetUnionDispatchImplicit);
 
 template <typename Vector>
 void TestSetUnionSimple()
@@ -60,7 +58,7 @@ void TestSetUnionSimple()
 
   const Iterator end = thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetUnionSimple);
@@ -77,7 +75,7 @@ void TestSetUnionWithEquivalentElementsSimple()
 
   const Iterator end = thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetUnionWithEquivalentElementsSimple);
@@ -146,7 +144,7 @@ void TestSetUnionToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(h_reference.size());
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionToDiscardIterator);

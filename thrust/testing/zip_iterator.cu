@@ -10,7 +10,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::zip_iterator from cuda::std
-void TestZipIteratorTraits()
+TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
 {
   using base_it = thrust::host_vector<int>::iterator;
 
@@ -121,7 +121,6 @@ void TestZipIteratorTraits()
     static_assert(!cuda::std::contiguous_iterator<it>);
   }
 }
-DECLARE_UNITTEST(TestZipIteratorTraits);
 
 template <typename T>
 struct TestZipIteratorConstructionFromIterators
@@ -176,15 +175,15 @@ struct TestZipIteratorManipulation
     // test construction from tuple
     const ZipIterator iter0 = thrust::make_zip_iterator(t);
     REQUIRE(iter0 == ZipIterator{t});
-    ASSERT_EQUAL_QUIET(v0.begin(), cuda::std::get<0>(iter0.get_iterator_tuple()));
-    ASSERT_EQUAL_QUIET(v1.begin(), cuda::std::get<1>(iter0.get_iterator_tuple()));
+    REQUIRE((v0.begin() == cuda::std::get<0>(iter0.get_iterator_tuple())));
+    REQUIRE((v1.begin() == cuda::std::get<1>(iter0.get_iterator_tuple())));
     static_assert(cuda::std::is_same_v<decltype(thrust::zip_iterator{t}), ZipIterator>); // CTAD
 
     // test construction from pack
     const ZipIterator iter0_pack = thrust::make_zip_iterator(v0.begin(), v1.begin());
     REQUIRE((iter0_pack == ZipIterator{v0.begin(), v1.begin()}));
-    ASSERT_EQUAL_QUIET(v0.begin(), cuda::std::get<0>(iter0_pack.get_iterator_tuple()));
-    ASSERT_EQUAL_QUIET(v1.begin(), cuda::std::get<1>(iter0_pack.get_iterator_tuple()));
+    REQUIRE((v0.begin() == cuda::std::get<0>(iter0_pack.get_iterator_tuple())));
+    REQUIRE((v1.begin() == cuda::std::get<1>(iter0_pack.get_iterator_tuple())));
     static_assert(cuda::std::is_same_v<decltype(thrust::zip_iterator{v0.begin(), v1.begin()}), ZipIterator>); // CTAD
 
     // test dereference
@@ -206,28 +205,28 @@ struct TestZipIteratorManipulation
 
     // test advance
     ZipIterator iter4 = iter0 + 1;
-    ASSERT_EQUAL_QUIET(v0.begin() + 1, cuda::std::get<0>(iter4.get_iterator_tuple()));
-    ASSERT_EQUAL_QUIET(v1.begin() + 1, cuda::std::get<1>(iter4.get_iterator_tuple()));
+    REQUIRE((v0.begin() + 1 == cuda::std::get<0>(iter4.get_iterator_tuple())));
+    REQUIRE((v1.begin() + 1 == cuda::std::get<1>(iter4.get_iterator_tuple())));
 
     // test pre-increment
     ++iter4;
-    ASSERT_EQUAL_QUIET(v0.begin() + 2, cuda::std::get<0>(iter4.get_iterator_tuple()));
-    ASSERT_EQUAL_QUIET(v1.begin() + 2, cuda::std::get<1>(iter4.get_iterator_tuple()));
+    REQUIRE((v0.begin() + 2 == cuda::std::get<0>(iter4.get_iterator_tuple())));
+    REQUIRE((v1.begin() + 2 == cuda::std::get<1>(iter4.get_iterator_tuple())));
 
     // test post-increment
     iter4++;
-    ASSERT_EQUAL_QUIET(v0.begin() + 3, cuda::std::get<0>(iter4.get_iterator_tuple()));
-    ASSERT_EQUAL_QUIET(v1.begin() + 3, cuda::std::get<1>(iter4.get_iterator_tuple()));
+    REQUIRE((v0.begin() + 3 == cuda::std::get<0>(iter4.get_iterator_tuple())));
+    REQUIRE((v1.begin() + 3 == cuda::std::get<1>(iter4.get_iterator_tuple())));
 
     // test pre-decrement
     --iter4;
-    ASSERT_EQUAL_QUIET(v0.begin() + 2, cuda::std::get<0>(iter4.get_iterator_tuple()));
-    ASSERT_EQUAL_QUIET(v1.begin() + 2, cuda::std::get<1>(iter4.get_iterator_tuple()));
+    REQUIRE((v0.begin() + 2 == cuda::std::get<0>(iter4.get_iterator_tuple())));
+    REQUIRE((v1.begin() + 2 == cuda::std::get<1>(iter4.get_iterator_tuple())));
 
     // test post-decrement
     iter4--;
-    ASSERT_EQUAL_QUIET(v0.begin() + 1, cuda::std::get<0>(iter4.get_iterator_tuple()));
-    ASSERT_EQUAL_QUIET(v1.begin() + 1, cuda::std::get<1>(iter4.get_iterator_tuple()));
+    REQUIRE((v0.begin() + 1 == cuda::std::get<0>(iter4.get_iterator_tuple())));
+    REQUIRE((v1.begin() + 1 == cuda::std::get<1>(iter4.get_iterator_tuple())));
 
     // test difference
     REQUIRE(1 == iter4 - iter0);
@@ -263,7 +262,7 @@ struct TestZipIteratorReference
     reference_type1 ref1(*h_variable.begin(), *h_variable.cbegin());
     zip_iterator_reference_type1 test1(*h_variable.begin(), *h_variable.cbegin());
 
-    ASSERT_EQUAL_QUIET(ref1, test1);
+    REQUIRE((ref1 == test1));
     REQUIRE(cuda::std::get<0>(ref1) == cuda::std::get<0>(test1));
     REQUIRE(cuda::std::get<1>(ref1) == cuda::std::get<1>(test1));
 
@@ -282,7 +281,7 @@ struct TestZipIteratorReference
     reference_type2 ref2(*d_variable.begin(), *d_variable.cbegin());
     zip_iterator_reference_type2 test2(*d_variable.begin(), *d_variable.cbegin());
 
-    ASSERT_EQUAL_QUIET(ref2, test2);
+    REQUIRE((ref2 == test2));
     REQUIRE(cuda::std::get<0>(ref2) == cuda::std::get<0>(test2));
     REQUIRE(cuda::std::get<1>(ref2) == cuda::std::get<1>(test2));
   } // end operator()()
@@ -369,7 +368,7 @@ struct TestZipIteratorTransform
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorTransform, ThirtyTwoBitTypes);
 
-void TestZipIteratorCopyAoSToSoA()
+TEST_CASE("TestZipIteratorCopyAoSToSoA", "[zip_iterator]")
 {
   const size_t n = 1;
 
@@ -391,32 +390,31 @@ void TestZipIteratorCopyAoSToSoA()
   const host_structure_of_arrays h_soa = thrust::make_zip_iterator(h_field0.begin(), h_field1.begin());
 
   thrust::copy(h_aos.begin(), h_aos.end(), h_soa);
-  ASSERT_EQUAL_QUIET(cuda::std::make_tuple(7, 13), h_soa[0]);
+  REQUIRE((cuda::std::make_tuple(7, 13) == h_soa[0]));
 
   // host to device
   thrust::device_vector<int> d_field0(n), d_field1(n);
   const device_structure_of_arrays d_soa = thrust::make_zip_iterator(d_field0.begin(), d_field1.begin());
 
   thrust::copy(h_aos.begin(), h_aos.end(), d_soa);
-  ASSERT_EQUAL_QUIET(cuda::std::make_tuple(7, 13), d_soa[0]);
+  REQUIRE((cuda::std::make_tuple(7, 13) == d_soa[0]));
 
   // device to device
   thrust::fill(d_field0.begin(), d_field0.end(), 0);
   thrust::fill(d_field1.begin(), d_field1.end(), 0);
 
   thrust::copy(d_aos.begin(), d_aos.end(), d_soa);
-  ASSERT_EQUAL_QUIET(cuda::std::make_tuple(7, 13), d_soa[0]);
+  REQUIRE((cuda::std::make_tuple(7, 13) == d_soa[0]));
 
   // device to host
   thrust::fill(h_field0.begin(), h_field0.end(), 0);
   thrust::fill(h_field1.begin(), h_field1.end(), 0);
 
   thrust::copy(d_aos.begin(), d_aos.end(), h_soa);
-  ASSERT_EQUAL_QUIET(cuda::std::make_tuple(7, 13), h_soa[0]);
+  REQUIRE((cuda::std::make_tuple(7, 13) == h_soa[0]));
 }
-DECLARE_UNITTEST(TestZipIteratorCopyAoSToSoA);
 
-void TestZipIteratorCopySoAToAoS()
+TEST_CASE("TestZipIteratorCopySoAToAoS", "[zip_iterator]")
 {
   const size_t n = 1;
 
@@ -443,31 +441,30 @@ void TestZipIteratorCopySoAToAoS()
   thrust::fill(h_aos.begin(), h_aos.end(), cuda::std::make_tuple(0, 0));
 
   thrust::copy(h_soa, h_soa + n, h_aos.begin());
-  ASSERT_EQUAL_QUIET(7, cuda::std::get<0>(h_soa[0]));
-  ASSERT_EQUAL_QUIET(13, cuda::std::get<1>(h_soa[0]));
+  REQUIRE((7 == cuda::std::get<0>(h_soa[0])));
+  REQUIRE((13 == cuda::std::get<1>(h_soa[0])));
 
   // host to device
   thrust::fill(d_aos.begin(), d_aos.end(), cuda::std::make_tuple(0, 0));
 
   thrust::copy(h_soa, h_soa + n, d_aos.begin());
-  ASSERT_EQUAL_QUIET(7, cuda::std::get<0>(d_soa[0]));
-  ASSERT_EQUAL_QUIET(13, cuda::std::get<1>(d_soa[0]));
+  REQUIRE((7 == cuda::std::get<0>(d_soa[0])));
+  REQUIRE((13 == cuda::std::get<1>(d_soa[0])));
 
   // device to device
   thrust::fill(d_aos.begin(), d_aos.end(), cuda::std::make_tuple(0, 0));
 
   thrust::copy(d_soa, d_soa + n, d_aos.begin());
-  ASSERT_EQUAL_QUIET(7, cuda::std::get<0>(d_soa[0]));
-  ASSERT_EQUAL_QUIET(13, cuda::std::get<1>(d_soa[0]));
+  REQUIRE((7 == cuda::std::get<0>(d_soa[0])));
+  REQUIRE((13 == cuda::std::get<1>(d_soa[0])));
 
   // device to host
   thrust::fill(h_aos.begin(), h_aos.end(), cuda::std::make_tuple(0, 0));
 
   thrust::copy(d_soa, d_soa + n, h_aos.begin());
-  ASSERT_EQUAL_QUIET(7, cuda::std::get<0>(h_soa[0]));
-  ASSERT_EQUAL_QUIET(13, cuda::std::get<1>(h_soa[0]));
-};
-DECLARE_UNITTEST(TestZipIteratorCopySoAToAoS);
+  REQUIRE((7 == cuda::std::get<0>(h_soa[0])));
+  REQUIRE((13 == cuda::std::get<1>(h_soa[0])));
+}
 
 template <typename T>
 void TestZipIteratorDereferenceToValueType(const T& t)
@@ -488,10 +485,10 @@ void TestZipIteratorDereferenceToValueType(const T& t)
   auto c = cuda::std::tuple<T>(b);
   static_assert(cuda::std::is_same_v<cuda::std::tuple<T>, decltype(c)>);
 
-  ASSERT_EQUAL_QUIET(c, cuda::std::make_tuple(t));
+  REQUIRE((c == cuda::std::make_tuple(t)));
 }
 
-void TestZipIteratorDereferenceToValue()
+TEST_CASE("TestZipIteratorDereferenceToValue", "[zip_iterator]")
 {
   TestZipIteratorDereferenceToValueType(1);
   TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(1));
@@ -499,9 +496,8 @@ void TestZipIteratorDereferenceToValue()
   TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(1, cuda::std::make_tuple(1, 1)));
   TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(cuda::std::make_tuple(1), cuda::std::make_tuple(1, 1)));
 }
-DECLARE_UNITTEST(TestZipIteratorDereferenceToValue);
 
-void TestZipIteratorNestedCopy()
+TEST_CASE("TestZipIteratorNestedCopy", "[zip_iterator]")
 {
   using T = int;
 
@@ -513,7 +509,7 @@ void TestZipIteratorNestedCopy()
 
     const decltype(b) b_expected(b.size(), cuda::std::make_tuple(cuda::std::make_tuple(1)));
 
-    ASSERT_EQUAL_QUIET(b, b_expected);
+    REQUIRE((b == b_expected));
   }
 
   {
@@ -528,7 +524,7 @@ void TestZipIteratorNestedCopy()
     const decltype(b) b_expected(
       b.size(), cuda::std::make_tuple(cuda::std::make_tuple(1, 1), cuda::std::make_tuple(1, 1)));
 
-    ASSERT_EQUAL_QUIET(b, b_expected);
+    REQUIRE((b == b_expected));
   }
 
   {
@@ -546,13 +542,12 @@ void TestZipIteratorNestedCopy()
                             cuda::std::make_tuple(1, 1),
                             cuda::std::make_tuple(1, 1)));
 
-    ASSERT_EQUAL_QUIET(b, b_expected);
+    REQUIRE((b == b_expected));
   }
 }
-DECLARE_UNITTEST(TestZipIteratorNestedCopy);
 
 // See https://github.com/NVIDIA/cccl/issues/9773
-void TestZipIteratorComparison()
+TEST_CASE("TestZipIteratorComparison", "[zip_iterator]")
 {
   using T = int;
 
@@ -564,13 +559,12 @@ void TestZipIteratorComparison()
       cuda::std::is_convertible_v<thrust::detail::tuple_of_iterator_references<int&, int&>, cuda::std::tuple<int, int>>);
     auto iter = thrust::make_zip_iterator(a.data(), b.data());
     auto pos  = thrust::find(iter, iter + 6, cuda::std::tuple{4, 2});
-    ASSERT_EQUAL_QUIET(pos, iter + 1);
+    REQUIRE((pos == iter + 1));
   }
 
   {
     auto iter = thrust::make_zip_iterator(a.begin(), b.begin());
     auto pos  = thrust::find(iter, iter + 6, cuda::std::tuple{4, 2});
-    ASSERT_EQUAL_QUIET(pos, iter + 1);
+    REQUIRE((pos == iter + 1));
   }
 }
-DECLARE_UNITTEST(TestZipIteratorComparison);

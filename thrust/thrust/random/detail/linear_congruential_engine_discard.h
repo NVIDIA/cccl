@@ -21,31 +21,31 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random::detail
 {
-template <typename UIntType, UIntType a, unsigned long long c, UIntType m>
+template <typename UIntType, UIntType A, unsigned long long C, UIntType M>
 struct linear_congruential_engine_discard_implementation
 {
   _CCCL_HOST_DEVICE static void discard(UIntType& state, unsigned long long z)
   {
     for (; z > 0; --z)
     {
-      state = detail::mod<UIntType, a, c, m>(state);
+      state = detail::mod<UIntType, A, C, M>(state);
     }
   }
 }; // end linear_congruential_engine_discard
 
 // specialize for small integers and c == 0
 // XXX figure out a robust implementation of this for any unsigned integer type later
-template <std::uint32_t a, std::uint32_t m>
-struct linear_congruential_engine_discard_implementation<std::uint32_t, a, 0, m>
+template <std::uint32_t A, std::uint32_t M>
+struct linear_congruential_engine_discard_implementation<std::uint32_t, A, 0, M>
 {
   _CCCL_HOST_DEVICE static void discard(std::uint32_t& state, unsigned long long z)
   {
-    const std::uint32_t modulus = m;
+    const std::uint32_t modulus = M;
 
     // XXX we need to use unsigned long long here or we will encounter overflow in the
     //     multiplies below
     //     figure out a robust implementation of this later
-    unsigned long long multiplier      = a;
+    unsigned long long multiplier      = A;
     unsigned long long multiplier_to_z = 1;
 
     // see http://en.wikipedia.org/wiki/Modular_exponentiation

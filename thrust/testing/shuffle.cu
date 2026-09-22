@@ -178,7 +178,7 @@ void TestFunctionIsBijectionBase(size_t m)
   {
     return;
   }
-  ASSERT_LEQUAL(total_length, (std::max) (m * 2, size_t(256))); // Check the rounded up size is at most double the input
+  REQUIRE(total_length <= (std::max) (m * 2, size_t(256))); // Check the rounded up size is at most double the input
 
   auto device_result_it = thrust::make_transform_iterator(thrust::make_counting_iterator(T(0)), device_f);
 
@@ -206,7 +206,7 @@ void TestFunctionIsBijectionIterator(size_t m)
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijection);
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijectionIterator);
 
-void TestFeistelBijectionLength()
+TEST_CASE("TestFeistelBijectionLength", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -222,9 +222,8 @@ void TestFeistelBijectionLength()
   f = thrust::detail::feistel_bijection(m, g);
   REQUIRE(f.size() == uint64_t(256));
 }
-DECLARE_UNITTEST(TestFeistelBijectionLength);
 
-void TestShuffleIteratorConstructibleFromBijection()
+TEST_CASE("TestShuffleIteratorConstructibleFromBijection", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -241,9 +240,8 @@ void TestShuffleIteratorConstructibleFromBijection()
   REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it2));
   REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it3));
 }
-DECLARE_UNITTEST(TestShuffleIteratorConstructibleFromBijection);
 
-void TestShuffleAndPermutationIterator()
+TEST_CASE("TestShuffleAndPermutationIterator", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -259,9 +257,8 @@ void TestShuffleAndPermutationIterator()
 
   REQUIRE(thrust::equal(permute_it, permute_it + 32, premute_vec.begin()));
 }
-DECLARE_UNITTEST(TestShuffleAndPermutationIterator);
 
-void TestShuffleIteratorStateless()
+TEST_CASE("TestShuffleIteratorStateless", "[shuffle]")
 {
   thrust::default_random_engine g(0xD5);
 
@@ -272,7 +269,6 @@ void TestShuffleIteratorStateless()
   ++it;
   REQUIRE(*(it - 1) == *(it - 1));
 }
-DECLARE_UNITTEST(TestShuffleIteratorStateless);
 
 double inverse_erf(double x)
 {
@@ -323,7 +319,7 @@ void TestShuffleKeyPositionBase()
 
   const double alpha = 0.05;
   const double zcrit = inverse_erf(1.0 - alpha / (2.0 * n)) * cuda::std::sqrt(2.0);
-  ASSERT_LESS(zmax, zcrit);
+  REQUIRE(zmax < zcrit);
 }
 template <typename Vector>
 void TestShuffleKeyPosition()
@@ -390,7 +386,7 @@ void TestShuffleUniformPermutationBase()
   }
   // 119 degrees of freedom, 95% confidence
   const double critical_value = 145.461;
-  ASSERT_LESS(chi_squared, critical_value);
+  REQUIRE(chi_squared < critical_value);
 }
 template <typename Vector>
 void TestShuffleUniformPermutation()

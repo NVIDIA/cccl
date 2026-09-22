@@ -116,20 +116,18 @@ void TestScanByKeyDevice(ExecutionPolicy exec)
   REQUIRE(d_keys == h_output);
 }
 
-void TestScanByKeyDeviceSeq()
+TEST_CASE("TestScanByKeyDeviceSeq", "[scan_by_key]")
 {
   TestScanByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScanByKeyDeviceSeq);
 
-void TestScanByKeyDeviceDevice()
+TEST_CASE("TestScanByKeyDeviceDevice", "[scan_by_key]")
 {
   TestScanByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScanByKeyDeviceDevice);
 #endif
 
-void TestInclusiveScanByKeyCudaStreams()
+TEST_CASE("TestInclusiveScanByKeyCudaStreams", "[scan_by_key]")
 {
   using Vector   = thrust::device_vector<int>;
   using T        = Vector::value_type;
@@ -147,7 +145,7 @@ void TestInclusiveScanByKeyCudaStreams()
     thrust::inclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL_QUIET(iter, output.end());
+  REQUIRE(iter == output.end());
 
   Vector ref{1, 2, 5, 9, 5, 6, 13};
   REQUIRE(output == ref);
@@ -174,9 +172,8 @@ void TestInclusiveScanByKeyCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestInclusiveScanByKeyCudaStreams);
 
-void TestExclusiveScanByKeyCudaStreams()
+TEST_CASE("TestExclusiveScanByKeyCudaStreams", "[scan_by_key]")
 {
   using Vector   = thrust::device_vector<int>;
   using T        = Vector::value_type;
@@ -194,7 +191,7 @@ void TestExclusiveScanByKeyCudaStreams()
     thrust::exclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL_QUIET(iter, output.end());
+  REQUIRE(iter == output.end());
 
   Vector ref{0, 0, 2, 5, 0, 0, 6};
   REQUIRE(output == ref);
@@ -226,4 +223,3 @@ void TestExclusiveScanByKeyCudaStreams()
   ref = {10, 10, 12, 15, 10, 10, 16};
   REQUIRE(output == ref);
 }
-DECLARE_UNITTEST(TestExclusiveScanByKeyCudaStreams);

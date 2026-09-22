@@ -19,24 +19,24 @@ void TestIsPartitionedSimple()
   Vector v{1, 1, 1, 0};
 
   // empty partition
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin(), ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(v.begin(), v.begin(), ::cuda::std::identity{}));
 
   // one element true partition
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin() + 1, ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(v.begin(), v.begin() + 1, ::cuda::std::identity{}));
 
   // just true partition
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin() + 2, ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(v.begin(), v.begin() + 2, ::cuda::std::identity{}));
 
   // both true & false partitions
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.end(), ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(v.begin(), v.end(), ::cuda::std::identity{}));
 
   // one element false partition
-  ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin() + 3, v.end(), ::cuda::std::identity{}));
+  REQUIRE(thrust::is_partitioned(v.begin() + 3, v.end(), ::cuda::std::identity{}));
 
   v = {1, 0, 1, 1};
 
   // not partitioned
-  ASSERT_EQUAL_QUIET(false, thrust::is_partitioned(v.begin(), v.end(), ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::is_partitioned(v.begin(), v.end(), ::cuda::std::identity{}));
 }
 DECLARE_VECTOR_UNITTEST(TestIsPartitionedSimple);
 
@@ -67,7 +67,7 @@ bool is_partitioned(my_system& system, InputIterator /*first*/, InputIterator, P
   return false;
 }
 
-void TestIsPartitionedDispatchExplicit()
+TEST_CASE("TestIsPartitionedDispatchExplicit", "[is_partitioned]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -76,7 +76,6 @@ void TestIsPartitionedDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestIsPartitionedDispatchExplicit);
 
 template <typename InputIterator, typename Predicate>
 bool is_partitioned(my_tag, InputIterator first, InputIterator, Predicate)
@@ -85,7 +84,7 @@ bool is_partitioned(my_tag, InputIterator first, InputIterator, Predicate)
   return false;
 }
 
-void TestIsPartitionedDispatchImplicit()
+TEST_CASE("TestIsPartitionedDispatchImplicit", "[is_partitioned]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -93,4 +92,3 @@ void TestIsPartitionedDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestIsPartitionedDispatchImplicit);

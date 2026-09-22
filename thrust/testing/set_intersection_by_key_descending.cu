@@ -26,8 +26,8 @@ void TestSetIntersectionByKeyDescendingSimple()
     result_val.begin(),
     ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }
