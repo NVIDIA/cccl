@@ -185,11 +185,11 @@ private:
   [[nodiscard]] CUB_RUNTIME_FUNCTION static ::cuda::std::optional<::cuda::execution::experimental::runs_on>
   __guaranteed_runs_on(const EnvT& __env)
   {
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::__get_runs_on_t>,
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::experimental::__get_runs_on_t>,
                   "runs_on should be used inside guarantee to have an effect.");
     const auto __guarantees =
       ::cuda::__call_or(::cuda::execution::__get_guarantees, ::cuda::std::execution::env<>{}, __env);
-    return ::cuda::__call_or(::cuda::execution::__get_runs_on, ::cuda::std::nullopt, __guarantees);
+    return ::cuda::__call_or(::cuda::execution::experimental::__get_runs_on, ::cuda::std::nullopt, __guarantees);
   }
 
   // Refactor this once we have a host code JIT compiler.
