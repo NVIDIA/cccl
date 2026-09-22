@@ -14,7 +14,7 @@ ForwardIterator unique(my_system& system, ForwardIterator first, ForwardIterator
   return first;
 }
 
-void TestUniqueDispatchExplicit()
+TEST_CASE("TestUniqueDispatchExplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -23,7 +23,6 @@ void TestUniqueDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueDispatchExplicit);
 
 template <typename ForwardIterator>
 ForwardIterator unique(my_tag, ForwardIterator first, ForwardIterator)
@@ -32,7 +31,7 @@ ForwardIterator unique(my_tag, ForwardIterator first, ForwardIterator)
   return first;
 }
 
-void TestUniqueDispatchImplicit()
+TEST_CASE("TestUniqueDispatchImplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -40,7 +39,6 @@ void TestUniqueDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUniqueDispatchImplicit);
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator unique_copy(my_system& system, InputIterator, InputIterator, OutputIterator result)
@@ -49,7 +47,7 @@ OutputIterator unique_copy(my_system& system, InputIterator, InputIterator, Outp
   return result;
 }
 
-void TestUniqueCopyDispatchExplicit()
+TEST_CASE("TestUniqueCopyDispatchExplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -58,7 +56,6 @@ void TestUniqueCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueCopyDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator unique_copy(my_tag, InputIterator, InputIterator, OutputIterator result)
@@ -67,7 +64,7 @@ OutputIterator unique_copy(my_tag, InputIterator, InputIterator, OutputIterator 
   return result;
 }
 
-void TestUniqueCopyDispatchImplicit()
+TEST_CASE("TestUniqueCopyDispatchImplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -76,7 +73,6 @@ void TestUniqueCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUniqueCopyDispatchImplicit);
 
 template <typename ForwardIterator>
 typename ::cuda::std::iterator_traits<ForwardIterator>::difference_type
@@ -86,7 +82,7 @@ unique_count(my_system& system, ForwardIterator, ForwardIterator)
   return 0;
 }
 
-void TestUniqueCountDispatchExplicit()
+TEST_CASE("TestUniqueCountDispatchExplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -95,7 +91,6 @@ void TestUniqueCountDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueCountDispatchExplicit);
 
 template <typename ForwardIterator>
 typename ::cuda::std::iterator_traits<ForwardIterator>::difference_type
@@ -104,7 +99,7 @@ unique_count(my_tag, ForwardIterator, ForwardIterator)
   return 13;
 }
 
-void TestUniqueCountDispatchImplicit()
+TEST_CASE("TestUniqueCountDispatchImplicit", "[unique]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -112,7 +107,6 @@ void TestUniqueCountDispatchImplicit()
 
   REQUIRE(13 == result);
 }
-DECLARE_UNITTEST(TestUniqueCountDispatchImplicit);
 
 template <typename T>
 struct is_equal_div_10_unique

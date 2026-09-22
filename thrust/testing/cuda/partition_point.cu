@@ -38,20 +38,18 @@ void TestPartitionPointDevice(ExecutionPolicy exec)
   REQUIRE(ref - v.begin() == (iterator) result[0] - v.begin());
 }
 
-void TestPartitionPointDeviceSeq()
+TEST_CASE("TestPartitionPointDeviceSeq", "[partition_point]")
 {
   TestPartitionPointDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionPointDeviceSeq);
 
-void TestPartitionPointDeviceDevice()
+TEST_CASE("TestPartitionPointDeviceDevice", "[partition_point]")
 {
   TestPartitionPointDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionPointDeviceDevice);
 #endif
 
-void TestPartitionPointCudaStreams()
+TEST_CASE("TestPartitionPointCudaStreams", "[partition_point]")
 {
   using Vector   = thrust::device_vector<int>;
   using T        = Vector::value_type;
@@ -79,4 +77,3 @@ void TestPartitionPointCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestPartitionPointCudaStreams);
