@@ -270,6 +270,21 @@ between `<cuda/std/__cccl/prologue.h>`/`epilogue.h` (libcudacxx, cudax) are safe
 (CUB, Thrust, tests, examples), require the macro-safe spelling `(std::numeric_limits<T>::max)()`
 and prefer other member names. Candidate for a pre-commit grep.
 
+## perf.benchmark-exec-tag-sync-without-sync-call (important, nvbench benchmark harness `state.exec(...)` calls)
+
+<!-- provenance:
+  #3114→#5350 merge_sort keys benchmark switched no_batch→sync while adding PDL although the exec lambda never synchronizes;
+  reverted as an unnecessary workaround
+-->
+
+When a diff makes an nvbench `state.exec(...)` call use `nvbench::exec_tag::sync` (which tells
+nvbench that the benchmark region will perform CUDA synchronization itself), or changes the lambda
+body of a call already using such a tag, verify the lambda actually performs any explicit CUDA
+synchronization (like `launch.get_stream().sync()`, `cudaStreamSynchronize`). Parallel algorithms in
+Thrust and `cuda::std::` synchronize internally, except under `thrust::cuda::par_nosync`. Without a
+sync, the measured time silently excludes some or all of the kernel's execution. If the lambda does
+not sync, `exec_tag::no_batch` or `exec_tag::timer` is likely what was intended.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
