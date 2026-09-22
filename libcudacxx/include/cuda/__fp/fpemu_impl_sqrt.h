@@ -304,7 +304,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpac
   // ---- finite positive : fixed-point reciprocal-sqrt root -------------
   int32_t __exp_z   = ((__exp_x - 0x3FF) >> 1) + 0x3FE;
   int32_t __odd     = __exp_x & 1; // exponent parity
-  uint64_t __mant_x = __x.mantissa >> EXTRA_BITS; // 53-bit significand, implicit bit at 52
+  uint64_t __mant_x = __x.mantissa >> _CCCL_FPEMU_EXTRA_BITS; // 53-bit significand, implicit bit at 52
 
   uint32_t __mant32_x = (uint32_t) (__mant_x >> 21);
   uint32_t __rcp32    = __internal_fp64emu_sqrt_recip_sqrt32((uint32_t) __odd, __mant32_x);

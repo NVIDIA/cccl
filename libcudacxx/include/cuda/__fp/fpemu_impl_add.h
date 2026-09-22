@@ -203,13 +203,13 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_high_dadd(__fpbits64
     if constexpr (_Acc == fpemu_accuracy::low)
     {
       // Zero out lower 32 bits of mantissa (LA)
-      __man_c_32x2.x[0] = __man_c_32x2.x[1] << (31 - EXTRA_BITS);
-      __man_c_32x2.x[1] = __man_c_32x2.x[1] >> (EXTRA_BITS + 1);
+      __man_c_32x2.x[0] = __man_c_32x2.x[1] << (31 - _CCCL_FPEMU_EXTRA_BITS);
+      __man_c_32x2.x[1] = __man_c_32x2.x[1] >> (_CCCL_FPEMU_EXTRA_BITS + 1);
     }
     else
     {
       // Shift mantissa to the right with directed rounding (HA)
-      __man_c_32x2 = __shr_64_rnd<_Rm>(__man_c_32x2, EXTRA_BITS + 1, __is_sign_c);
+      __man_c_32x2 = __shr_64_rnd<_Rm>(__man_c_32x2, _CCCL_FPEMU_EXTRA_BITS + 1, __is_sign_c);
     }
   }
   else
@@ -570,7 +570,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_low_dadd(__fpbits64 
 //! All three accuracy levels are the legacy kernels with their prologue/epilogue
 //! replaced by the universal unpack/pack, then combined here. Because the
 //! universal unpack/pack already do everything the legacy prologues/epilogues
-//! did (extract, set implicit bit, shift to the EXTRA_BITS scale, normalize,
+//! did (extract, set implicit bit, shift to the _CCCL_FPEMU_EXTRA_BITS scale, normalize,
 //! round, repack), the per-accuracy bodies collapse to just their distinct core
 //! arithmetic:
 //!   - high: integer add with sticky-jam alignment -> correctly
@@ -594,10 +594,10 @@ __internal_fp64emu_dadd_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
     // ---- Lean 64-bit integer add core (accurate + def share this) ----
     // The legacy high-accuracy (`high_dadd`) and mid-accuracy (`mid_dadd`) kernels
     // are the same 64-bit uint32x2 add; their prologue/epilogue (extract,
-    // implicit-bit, <<EXTRA_BITS, 2's-comp / round, pack) are exactly what
+    // implicit-bit, <<_CCCL_FPEMU_EXTRA_BITS, 2's-comp / round, pack) are exactly what
     // the universal unpack/pack now provide. The universal unpack delivers
     // a normalized significand with the implicit bit at position 61
-    // (== 52 + EXTRA_BITS) and inf/nan in the exponent band -- the same
+    // (== 52 + _CCCL_FPEMU_EXTRA_BITS) and inf/nan in the exponent band -- the same
     // internal scale both legacy cores used -- so nothing else changes.
     //
     // The ONLY method-dependent step is the alignment shift, which is the

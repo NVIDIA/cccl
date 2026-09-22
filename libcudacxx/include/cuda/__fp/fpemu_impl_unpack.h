@@ -45,8 +45,8 @@
 //! lean unpack/pack and do not use these routines.
 //!
 //! They depend only on the primitives/constants in fpemu_impl.h
-//! (bit_cast, __round, __fp64_ovfl_sat, ::cuda::std::countl_zero, the FP64_* masks,
-//! EXTRA_BITS, BIAS, ...).
+//! (bit_cast, __round, __fp64_ovfl_sat, ::cuda::std::countl_zero, the _CCCL_FPEMU_* masks,
+//! _CCCL_FPEMU_EXTRA_BITS, __fpemu_bias, ...).
 
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/std/__bit/countl.h>
@@ -76,7 +76,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_unpack(__fp
   int32_t __exponent = static_cast<int32_t>(__a32.x[1] >> 20);
 
   // Normalize denormals: leading-zero count of the magnitude (clamped so a
-  // normal stays at shift == EXTRA_BITS, and a true zero maps to the zero band).
+  // normal stays at shift == _CCCL_FPEMU_EXTRA_BITS, and a true zero maps to the zero band).
   uint64_t __abs_a = ::cuda::std::bit_cast<uint64_t>(__a32);
   int __nzeros     = ::cuda::std::countl_zero(__abs_a);
   if (__nzeros < 11)
@@ -103,7 +103,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_unpack(__fp
     __exponent = 12 - __nzeros; // denormal / zero
   }
 
-  int __shift    = EXTRA_BITS + __nzeros - 11;
+  int __shift    = _CCCL_FPEMU_EXTRA_BITS + __nzeros - 11;
   uint64_t __a64 = ::cuda::std::bit_cast<uint64_t>(__a32);
 
   __a_unpacked.exponent = static_cast<uint32_t>(__exponent);

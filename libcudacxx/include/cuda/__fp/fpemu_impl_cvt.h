@@ -634,7 +634,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_double_to_f
 // True unpacked -> integer conversions. Operate directly on the fully-accurate
 // unpacked fields (no operand pack): the full unpack already normalized
 // denormals (implicit bit at 61) and encoded inf/nan in the exponent band, so
-// the 53-bit significand is mantissa>>EXTRA_BITS and the exponent is the same
+// the 53-bit significand is mantissa>>_CCCL_FPEMU_EXTRA_BITS and the exponent is the same
 // IEEE-biased value the packed converters consume. The shift/round/saturate
 // cores (shr_jam64 + round_to_*) are shared with the packed path, so results
 // match bit-for-bit (incl. NaN->indefinite and inf/overflow saturation).
@@ -655,7 +655,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __internal_fp64emu_fpbits64_unpacked_to_in
   {
     return __sign ? (int32_t) 0x80000000 : (int32_t) 0x7FFFFFFF;
   }
-  uint64_t __sig       = __x.mantissa >> EXTRA_BITS; // 53-bit significand (implicit at 52), 0 for zero
+  uint64_t __sig       = __x.mantissa >> _CCCL_FPEMU_EXTRA_BITS; // 53-bit significand (implicit at 52), 0 for zero
   int32_t __shift_dist = 0x427 - __exp;
   if (__shift_dist > 0)
   {
@@ -676,7 +676,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __internal_fp64emu_fpbits64_unpacked_to_u
   {
     return __sign ? 0u : 0xFFFFFFFFu;
   }
-  uint64_t __sig       = __x.mantissa >> EXTRA_BITS;
+  uint64_t __sig       = __x.mantissa >> _CCCL_FPEMU_EXTRA_BITS;
   int32_t __shift_dist = 0x427 - __exp;
   if (__shift_dist > 0)
   {
@@ -698,7 +698,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int64_t __internal_fp64emu_fpbits64_unpacked_to_ll
   {
     return __sign ? (int64_t) 0x8000000000000000ULL : (int64_t) 0x7FFFFFFFFFFFFFFFULL;
   }
-  uint64_t __sig       = __x.mantissa >> EXTRA_BITS;
+  uint64_t __sig       = __x.mantissa >> _CCCL_FPEMU_EXTRA_BITS;
   int32_t __shift_dist = 0x433 - __exp;
   uint64_t __sig_int;
   uint64_t __sig_extra;
@@ -737,7 +737,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __internal_fp64emu_fpbits64_unpacked_to_u
   {
     return __sign ? 0ULL : 0xFFFFFFFFFFFFFFFFULL;
   }
-  uint64_t __sig       = __x.mantissa >> EXTRA_BITS;
+  uint64_t __sig       = __x.mantissa >> _CCCL_FPEMU_EXTRA_BITS;
   int32_t __shift_dist = 0x433 - __exp;
   uint64_t __sig_int;
   uint64_t __sig_extra;

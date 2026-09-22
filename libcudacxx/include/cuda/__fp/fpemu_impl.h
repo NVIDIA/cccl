@@ -291,8 +291,9 @@ enum struct __fpemu_rounding
 // 2.0f in fp32
 #define _CCCL_FP32_TWO 0x40000000
 
-// Number of extra bits for precise multiplication of the mantissas
-#define _CCCL_FP64_EXTRA_BITS 9
+// Number of guard bits carried below the 53-bit significand in the unpacked mantissa field, which
+// places that significand at bits 61..9. Fixed by the representation, not configurable.
+#define _CCCL_FPEMU_EXTRA_BITS 9
 
 // The value to shift high part of fp64 mantissa to get the exponent
 #define _CCCL_FP64_HI_MANT_SHIFT (_CCCL_FP32_TOTAL_BITS - _CCCL_FP64_EXP_BITS - _CCCL_FP64_SIGN_BITS) // 20
@@ -310,14 +311,14 @@ enum struct __fpemu_rounding
 #define _CCCL_FP64_MANT_MUL_CARRY_BIT \
   (((_CCCL_FP64_MANT_BITS * 2) - _CCCL_FP64_TOTAL_BITS) - _CCCL_FP32_TOTAL_BITS) // 8
 
-/* Total length of the internal representation of the mantissa  */
-// constexpr uint64_t bitwidth = (MANTISSA_WIDTH + EXTRA_BITS);
+/* Total length of the internal representation of the mantissa is
+   __fpemu_mantissa_width + _CCCL_FPEMU_EXTRA_BITS  */
 /* Exponent bias is 2^(11-1) -1 */
 /* fp64 mantissa is 52 */
 inline constexpr uint64_t __fpemu_mantissa_width = 52;
 inline constexpr uint64_t __fpemu_exponent_mask  = _CCCL_FPEMU_EXP_64;
 inline constexpr uint64_t __fpemu_mantissa_mask  = _CCCL_FPEMU_MANT_64;
-inline constexpr uint32_t __fpemu_extra_bits     = 9;
+inline constexpr uint32_t __fpemu_extra_bits     = _CCCL_FPEMU_EXTRA_BITS;
 inline constexpr uint32_t __fpemu_bias           = 1023;
 inline constexpr uint32_t __fpemu_inf_zero       = 0x00007ff0 - __fpemu_bias - 2048 - 1 + 0xC; // - 128
 
@@ -1358,10 +1359,6 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __round(__uint32x2 __man, const int __s
 
 #ifndef _CCCL_FP64EMU_UNPACKED_OUTPUT_INF
 #  define _CCCL_FP64EMU_UNPACKED_OUTPUT_INF 0
-#endif
-
-#ifndef EXTRA_BITS
-#  define EXTRA_BITS 9
 #endif
 
 // ============================================================================

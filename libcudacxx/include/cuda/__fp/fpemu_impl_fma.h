@@ -109,7 +109,7 @@ __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b
   int __mul_nzeros          = __mantissa_ab32.hi.x[1] < 0x08000000;
   int32_t __exponent_ab_new = __exponent_ab - __mul_nzeros + 1;
   // Shift mantissa_ab
-  __mantissa_ab = __mantissa_ab << (11 - EXTRA_BITS + __mul_nzeros);
+  __mantissa_ab = __mantissa_ab << (11 - _CCCL_FPEMU_EXTRA_BITS + __mul_nzeros);
   // Compute mantissa_c - the mantissa of c
   __fpemu_uint128 __mantissa_c = __c.mantissa;
   // Compute mantissa_r - the result of the product of a and b and c
