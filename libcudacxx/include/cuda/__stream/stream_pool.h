@@ -205,7 +205,7 @@ public:
     while (!__advance(&__next_, __slot, __slot + 1 == __size_ ? 0 : __slot + 1))
     {
     }
-    return __stream_at(__slot);
+    return at(__slot);
   }
 
   //! @brief Returns the stream in slot `__index % size()`
@@ -221,7 +221,28 @@ public:
   [[nodiscard]] _CCCL_HOST_API stream_ref at(::cuda::std::size_t __index) const
   {
     _CCCL_ASSERT(__size_ != 0, "cuda::stream_pool::at called on a moved-from pool");
-    return __stream_at(__index % __size_);
+    ::cudaStream_t* const __slot = &__slots_[__index % __size_];
+
+    // A slot changes exactly once, from empty to a stream that lives until the pool is destroyed, so a filled slot
+    // is read with a single acquire load.
+    ::cudaStream_t __published = __load_acquire(__slot);
+    if (__published != nullptr)
+    {
+      return stream_ref{__published};
+    }
+
+    // An empty slot is filled optimistically: create a stream and publish it with a compare-exchange; if another
+    // thread published first, destroy the fresh stream and return the published one. The relaxed capture scope
+    // makes the creation, and the destruction if the publication loses, capture-safe; it is a no-op when the calling
+    // thread is not capturing.
+    const __relaxed_capture_scope __relaxed{};
+    stream __fresh = __create_stream();
+    if (__publish(__slot, __published, __fresh.get()))
+    {
+      return stream_ref{__fresh.release()};
+    }
+    // Lost the race: `__fresh` is destroyed here, `__published` is what the winner stored.
+    return stream_ref{__published};
   }
 
   //! @brief Returns the stream in slot `__index % size()`, same as `at(__index)`
@@ -319,38 +340,6 @@ private:
   {
     return _CUDA_STREAM_POOL_ATOMIC(
       __atomic_compare_exchange_n)(__ptr, &__expected, __desired, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
-  }
-
-  //! @brief Returns the stream of slot `__i`, creating it if the slot is still empty
-  //!
-  //! A slot changes exactly once, from empty to a stream that lives until the pool is destroyed, so a filled slot
-  //! is read with a single acquire load. An empty slot is filled optimistically: the caller creates a stream and
-  //! publishes it with a compare-exchange; if another thread published first, the caller destroys its own stream
-  //! and returns the published one.
-  //!
-  //! @param[in] __i Slot index, must be below `size()`
-  //!
-  //! @return A reference to the stream of the slot
-  //!
-  //! @throws cuda_error if the stream has to be created and the creation fails
-  [[nodiscard]] _CCCL_HOST_API stream_ref __stream_at(::cuda::std::size_t __i) const
-  {
-    ::cudaStream_t __published = __load_acquire(&__slots_[__i]);
-    if (__published != nullptr)
-    {
-      return stream_ref{__published};
-    }
-
-    // Makes the stream creation, and its destruction if the publication loses, capture-safe; a no-op when the
-    // calling thread is not capturing.
-    const __relaxed_capture_scope __relaxed{};
-    stream __fresh = __create_stream();
-    if (__publish(&__slots_[__i], __published, __fresh.get()))
-    {
-      return stream_ref{__fresh.release()};
-    }
-    // Lost the race: `__fresh` is destroyed here, `__published` is what the winner stored.
-    return stream_ref{__published};
   }
 
   //! @brief Destroys every published stream and frees the slots
