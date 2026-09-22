@@ -158,9 +158,7 @@ class multicast_logical_endpoint
 
 public:
   //! @brief Creates an empty logical endpoint owner.
-  _CCCL_HOST_API multicast_logical_endpoint() noexcept
-      : __base()
-  {}
+  _CCCL_HOST_API multicast_logical_endpoint() noexcept {}
 
   multicast_logical_endpoint(multicast_logical_endpoint&&) noexcept            = default;
   multicast_logical_endpoint& operator=(multicast_logical_endpoint&&) noexcept = default;
@@ -184,7 +182,6 @@ public:
   //! @param[in] __bytes The endpoint size in bytes.
   _CCCL_HOST_API multicast_logical_endpoint(
     logical_endpoint_id __id, const multicast_logical_endpoint_spec& __spec, ::cuda::std::uint64_t __bytes)
-      : __base()
   {
     this->__create_endpoint(__id, __spec.__as_prop(__bytes));
   }
@@ -200,7 +197,6 @@ public:
     ::cuda::std::uint32_t __index,
     const multicast_logical_endpoint_spec& __spec,
     ::cuda::std::uint64_t __bytes)
-      : __base()
   {
     const auto __id = __range.at(__index);
     this->__create_endpoint(__id, __spec.__as_prop(__bytes));

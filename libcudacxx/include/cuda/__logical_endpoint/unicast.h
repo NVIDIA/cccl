@@ -154,9 +154,7 @@ class unicast_logical_endpoint
 
 public:
   //! @brief Creates an empty logical endpoint owner.
-  _CCCL_HOST_API unicast_logical_endpoint() noexcept
-      : __base()
-  {}
+  _CCCL_HOST_API unicast_logical_endpoint() noexcept {}
 
   unicast_logical_endpoint(unicast_logical_endpoint&&) noexcept            = default;
   unicast_logical_endpoint& operator=(unicast_logical_endpoint&&) noexcept = default;
@@ -180,7 +178,6 @@ public:
   //! @param[in] __bytes The endpoint size in bytes.
   _CCCL_HOST_API unicast_logical_endpoint(
     logical_endpoint_id __id, const unicast_logical_endpoint_spec& __spec, ::cuda::std::uint64_t __bytes)
-      : __base()
   {
     this->__create_endpoint(__id, __spec.__as_prop(__bytes));
   }
@@ -196,7 +193,6 @@ public:
     ::cuda::std::uint32_t __index,
     const unicast_logical_endpoint_spec& __spec,
     ::cuda::std::uint64_t __bytes)
-      : __base()
   {
     const auto __id = __range.at(__index);
     this->__create_endpoint(__id, __spec.__as_prop(__bytes));
