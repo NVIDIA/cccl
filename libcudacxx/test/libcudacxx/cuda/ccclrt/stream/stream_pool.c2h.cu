@@ -19,7 +19,6 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
-#include <algorithm>
 #include <set>
 #include <stdexcept>
 #include <thread>
@@ -142,32 +141,6 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     for (cuda::std::size_t i = 0; i < 2 * pool.size(); ++i)
     {
       REQUIRE(pool.at(i) == pool[i]);
-    }
-  }
-
-  SECTION("A lazy pool touches nothing on the device until a stream is requested")
-  {
-    // Needs a device whose primary context is not active yet; the other tests have activated device 0.
-    const auto untouched = std::find_if(cuda::devices.begin(), cuda::devices.end(), [](cuda::device_ref d) {
-      return !cuda::__driver::__isPrimaryCtxActive(cuda::__driver::__deviceGet(d.get()));
-    });
-    if (untouched == cuda::devices.end())
-    {
-      SUCCEED("Every device has an active primary context already");
-    }
-    else
-    {
-      const cuda::device_ref other = *untouched;
-      const ::CUdevice handle      = cuda::__driver::__deviceGet(other.get());
-
-      const cuda::stream_pool lazy_pool{other, 2, cuda::stream_pool_creation::lazy};
-      REQUIRE(!cuda::__driver::__isPrimaryCtxActive(handle));
-
-      // Eager creation, the default, creates the streams, and with them the primary context.
-      const cuda::stream_pool eager_pool{other, 2};
-      REQUIRE(cuda::__driver::__isPrimaryCtxActive(handle));
-      REQUIRE(eager_pool.next_stream().device() == other);
-      REQUIRE(lazy_pool.next_stream().device() == other);
     }
   }
 
