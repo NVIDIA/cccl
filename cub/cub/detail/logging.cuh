@@ -82,10 +82,6 @@ _CCCL_HOST_DEVICE_API inline void log([[maybe_unused]] const char* fmt, ...) noe
 #endif // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
 }
 
-//! Logs the tuning policy used to dispatch onto algorithm `device_alg` at compute capability `cc`. When
-//! `CUB_DEBUG_LOG` is defined, always prints via `_CubLog` (works from host and device code, e.g. under CDP).
-//! Otherwise, prints via `log_always` when logging is enabled via the CCCL_EXPERIMENTAL_LOGGING env variable
-//! (host code only).
 template <typename Policy>
 _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
                                         [[maybe_unused]] ::cuda::compute_capability cc,
