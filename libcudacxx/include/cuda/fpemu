@@ -22,5 +22,7 @@
 #endif // no system header
 
 #include <cuda/__fp/fpemu.h>
+// cuda::std::numeric_limits<> specializations for the fpemu types.
+#include <cuda/__fp/fpemu_limits.h>
 
 #endif // _CUDA_FPEMU

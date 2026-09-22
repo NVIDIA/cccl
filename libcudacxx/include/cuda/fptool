@@ -28,6 +28,8 @@
 
 // fp_custom: a drop-in `double` with a configurable exponent and mantissa size.
 #include <cuda/__fp/fptool_custom.h>
+// cuda::std::numeric_limits<> specialization for fp_custom.
+#include <cuda/__fp/fptool_limits.h>
 // fpmp2_stat: a drop-in fpmp2 that counts the arithmetic it performs.
 #include <cuda/__fp/fptool_stat.h>
 // Math functions for fpmp2_stat (exp, log, pow, sin, cos, ...). These rest on
