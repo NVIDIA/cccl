@@ -25,6 +25,7 @@
 
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__device/logical_device_ref.h>
+#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__stream/relaxed_capture_scope.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -356,8 +357,7 @@ private:
     {
       if (__slots_[__i] != nullptr)
       {
-        // Adopting the handle into a `stream` destroys it.
-        const stream __owner = stream::from_native_handle(__slots_[__i]);
+        _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__streamDestroyNoThrow, "Failed to destroy stream", __slots_[__i]);
       }
     }
     delete[] __slots_;
