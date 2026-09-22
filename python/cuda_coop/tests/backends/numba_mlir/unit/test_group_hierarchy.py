@@ -487,9 +487,11 @@ def test_mapped_warp_queries_and_membership_do_not_construct_barrier_group(
     assert "group_warp_rank < grouped_warp_count ? 1u : 0u" in membership.source
     assert membership.return_type is types.uint8
     for source in (rank.source, count.source, membership.source):
-        assert "::cuda::experimental::this_block group_parent{hierarchy};" in source
+        assert (
+            "::cuda::experimental::coop::this_block group_parent{hierarchy};" in source
+        )
         assert "barrier_synchronizer" not in source
-        assert "::cuda::experimental::generic_group group{" not in source
+        assert "::cuda::experimental::coop::generic_group group{" not in source
 
 
 @pytest.mark.parametrize("operation", ("sync", "sync_aligned"))
