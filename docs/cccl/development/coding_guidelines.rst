@@ -117,9 +117,7 @@ Macros
    The same applies to compiler and compilation-mode detection in preprocessor conditions:
    use ``_CCCL_CUDA_COMPILATION()``, ``_CCCL_DEVICE_COMPILATION()``, and ``_CCCL_CUDA_COMPILER(...)``
    instead of raw ``__CUDACC__``, ``__CUDA_ARCH__``, or ``__NVCOMPILER``, and ``_CCCL_COMPILER(...)``
-   instead of raw ``__GNUC__``, ``__clang__``, or ``_MSC_VER``. Beware legacy spellings like
-   ``defined(_CCCL_COMPILER_GCC)`` or ``_CCCL_GCC_VERSION``: these macros no longer exist and
-   silently evaluate to ``0`` in ``#if`` conditions.
+   instead of raw ``__GNUC__``, ``__clang__``, or ``_MSC_VER``.
    Examples and documentation must not use these macros and should support vendor
    attributes and keywords instead. Tests should only use macros if they are strictly required for the
    test to work. For instance, ``_CCCL_HOST_DEVICE`` may be required for tests targeting non-CUDA
