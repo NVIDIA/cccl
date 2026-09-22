@@ -22,7 +22,7 @@ void _TestReduceWithLargeTypes()
   REQUIRE(h_result == d_result);
 }
 
-void TestReduceWithLargeTypes()
+TEST_CASE("TestReduceWithLargeTypes", "[reduce_large]")
 {
   _TestReduceWithLargeTypes<int, 4>();
   _TestReduceWithLargeTypes<int, 8>();
@@ -35,4 +35,3 @@ void TestReduceWithLargeTypes()
   //  _TestReduceWithLargeTypes<int,  256>();
   //  _TestReduceWithLargeTypes<int,  512>();
 }
-DECLARE_UNITTEST(TestReduceWithLargeTypes);

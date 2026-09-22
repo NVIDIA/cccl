@@ -29,10 +29,9 @@ void _TestStableSortByKeyWithLargeKeysAndValues()
   REQUIRE((h_vals == d_vals));
 }
 
-void TestStableSortByKeyWithLargeKeysAndValues()
+TEST_CASE("TestStableSortByKeyWithLargeKeysAndValues", "[stable_sort_by_key_large_keys_and_values]")
 {
   _TestStableSortByKeyWithLargeKeysAndValues<4>();
   _TestStableSortByKeyWithLargeKeysAndValues<8>();
   _TestStableSortByKeyWithLargeKeysAndValues<16>();
 }
-DECLARE_UNITTEST(TestStableSortByKeyWithLargeKeysAndValues);

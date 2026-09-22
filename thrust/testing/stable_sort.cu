@@ -10,7 +10,7 @@ void stable_sort(my_system& system, RandomAccessIterator, RandomAccessIterator)
   system.validate_dispatch();
 }
 
-void TestStableSortDispatchExplicit()
+TEST_CASE("TestStableSortDispatchExplicit", "[stable_sort]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -19,7 +19,6 @@ void TestStableSortDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStableSortDispatchExplicit);
 
 template <typename RandomAccessIterator>
 void stable_sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
@@ -27,7 +26,7 @@ void stable_sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
   *first = 13;
 }
 
-void TestStableSortDispatchImplicit()
+TEST_CASE("TestStableSortDispatchImplicit", "[stable_sort]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -35,7 +34,6 @@ void TestStableSortDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStableSortDispatchImplicit);
 
 template <typename T>
 struct less_div_10

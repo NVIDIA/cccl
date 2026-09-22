@@ -228,17 +228,15 @@ void TestPool()
   REQUIRE(upstream.id_to_deallocate == 0u);
 }
 
-void TestUnsynchronizedPool()
+TEST_CASE("TestUnsynchronizedPool", "[mr_pool]")
 {
   TestPool<thrust::mr::unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestUnsynchronizedPool);
 
-void TestSynchronizedPool()
+TEST_CASE("TestSynchronizedPool", "[mr_pool]")
 {
   TestPool<thrust::mr::synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestSynchronizedPool);
 
 template <template <typename> class PoolTemplate>
 void TestPoolCachingOversized()
@@ -337,17 +335,15 @@ void TestPoolCachingOversized()
   }
 }
 
-void TestUnsynchronizedPoolCachingOversized()
+TEST_CASE("TestUnsynchronizedPoolCachingOversized", "[mr_pool]")
 {
   TestPoolCachingOversized<thrust::mr::unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestUnsynchronizedPoolCachingOversized);
 
-void TestSynchronizedPoolCachingOversized()
+TEST_CASE("TestSynchronizedPoolCachingOversized", "[mr_pool]")
 {
   TestPoolCachingOversized<thrust::mr::synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestSynchronizedPoolCachingOversized);
 
 template <template <typename> class PoolTemplate>
 void TestGlobalPool()
@@ -357,14 +353,12 @@ void TestGlobalPool()
   REQUIRE(thrust::mr::get_global_resource<Pool>() != nullptr);
 }
 
-void TestUnsynchronizedGlobalPool()
+TEST_CASE("TestUnsynchronizedGlobalPool", "[mr_pool]")
 {
   TestGlobalPool<thrust::mr::unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestUnsynchronizedGlobalPool);
 
-void TestSynchronizedGlobalPool()
+TEST_CASE("TestSynchronizedGlobalPool", "[mr_pool]")
 {
   TestGlobalPool<thrust::mr::synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestSynchronizedGlobalPool);

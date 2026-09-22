@@ -215,19 +215,6 @@ using BuiltinNumericTypes = unittest::type_list<
            4096, 4097, 5030, 7791, 10000, 10027, 12345, 16384, 17354, 26255, 32768, 43718, 65533, 65536)
 // clang-format on
 
-// Macro to create a single unittest
-#define DECLARE_UNITTEST(TEST)                    \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__)) \
-  {                                               \
-    TEST();                                       \
-  }
-
-#define DECLARE_UNITTEST_WITH_NAME(TEST, NAME)    \
-  TEST_CASE(#NAME, THRUST_PP_STRINGIZE(__FILE__)) \
-  {                                               \
-    TEST();                                       \
-  }
-
 // Bridges a function-template test `template <class T> void VTEST()` into a functor so it can be driven by
 // unittest::detail::for_each_type over a type list.
 #define _THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, TYPE_LIST)       \

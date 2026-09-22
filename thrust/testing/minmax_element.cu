@@ -72,7 +72,7 @@ minmax_element(my_system& system, ForwardIterator first, ForwardIterator)
   return cuda::std::make_pair(first, first);
 }
 
-void TestMinMaxElementDispatchExplicit()
+TEST_CASE("TestMinMaxElementDispatchExplicit", "[minmax_element]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -81,7 +81,6 @@ void TestMinMaxElementDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMinMaxElementDispatchExplicit);
 
 template <typename ForwardIterator>
 cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(my_tag, ForwardIterator first, ForwardIterator)
@@ -90,7 +89,7 @@ cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(my_tag, Forward
   return cuda::std::make_pair(first, first);
 }
 
-void TestMinMaxElementDispatchImplicit()
+TEST_CASE("TestMinMaxElementDispatchImplicit", "[minmax_element]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -98,7 +97,6 @@ void TestMinMaxElementDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestMinMaxElementDispatchImplicit);
 
 void TestMinMaxElementWithBigIndexesHelper(int magnitude)
 {
@@ -116,7 +114,7 @@ void TestMinMaxElementWithBigIndexesHelper(int magnitude)
   REQUIRE(*result.first == (1ll << magnitude));
 }
 
-void TestMinMaxElementWithBigIndexes()
+TEST_CASE("TestMinMaxElementWithBigIndexes", "[minmax_element]")
 {
   TestMinMaxElementWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -125,12 +123,10 @@ void TestMinMaxElementWithBigIndexes()
   TestMinMaxElementWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestMinMaxElementWithBigIndexes);
 
-void TestMinElementCudaIterator()
+TEST_CASE("TestMinElementCudaIterator", "[minmax_element]")
 {
   auto result = thrust::minmax_element(thrust::device, cuda::counting_iterator{0}, cuda::counting_iterator{0} + 100);
   REQUIRE(*result.first == 0);
   REQUIRE(*result.second == 99);
 }
-DECLARE_UNITTEST(TestMinElementCudaIterator);

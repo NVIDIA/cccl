@@ -61,26 +61,22 @@ void TestOnStream(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestCudartStreamSync()
+TEST_CASE("TestCudartStreamSync", "[stream_wrapper]")
 {
   TestOnStream<stream_wrapper>(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCudartStreamSync);
 
-void TestCudartStreamNoSync()
+TEST_CASE("TestCudartStreamNoSync", "[stream_wrapper]")
 {
   TestOnStream<stream_wrapper>(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCudartStreamNoSync);
 
-void TestCudaStreamRefSync()
+TEST_CASE("TestCudaStreamRefSync", "[stream_wrapper]")
 {
   TestOnStream<stream_wrapper_ref>(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCudaStreamRefSync);
 
-void TestCudaStreamRefNoSync()
+TEST_CASE("TestCudaStreamRefNoSync", "[stream_wrapper]")
 {
   TestOnStream<stream_wrapper_ref>(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCudaStreamRefNoSync);

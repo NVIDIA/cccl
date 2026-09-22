@@ -26,7 +26,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_ke
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetSymmetricDifferenceByKeyDispatchExplicit()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchExplicit", "[set_symmetric_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -36,7 +36,6 @@ void TestSetSymmetricDifferenceByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -59,7 +58,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_ke
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetSymmetricDifferenceByKeyDispatchImplicit()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchImplicit", "[set_symmetric_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -75,7 +74,6 @@ void TestSetSymmetricDifferenceByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDispatchImplicit);
 
 template <typename Vector>
 void TestSetSymmetricDifferenceByKeySimple()

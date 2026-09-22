@@ -39,7 +39,7 @@ int reduce(my_system& system, InputIterator, InputIterator)
   return 13;
 }
 
-void TestReduceDispatchExplicit()
+TEST_CASE("TestReduceDispatchExplicit", "[reduce]")
 {
   thrust::device_vector<int> vec;
 
@@ -48,7 +48,6 @@ void TestReduceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReduceDispatchExplicit);
 
 template <typename InputIterator>
 int reduce(my_tag, InputIterator, InputIterator)
@@ -56,7 +55,7 @@ int reduce(my_tag, InputIterator, InputIterator)
   return 13;
 }
 
-void TestReduceDispatchImplicit()
+TEST_CASE("TestReduceDispatchImplicit", "[reduce]")
 {
   thrust::device_vector<int> vec;
 
@@ -64,7 +63,6 @@ void TestReduceDispatchImplicit()
 
   REQUIRE(13 == result);
 }
-DECLARE_UNITTEST(TestReduceDispatchImplicit);
 
 template <typename T>
 struct TestReduce
@@ -98,16 +96,14 @@ void TestReduceMixedTypes()
   // int -> float should use using plus<float> operator by default
   REQUIRE(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5) == 10.5);
 }
-void TestReduceMixedTypesHost()
+TEST_CASE("TestReduceMixedTypesHost", "[reduce]")
 {
   TestReduceMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
-DECLARE_UNITTEST(TestReduceMixedTypesHost);
-void TestReduceMixedTypesDevice()
+TEST_CASE("TestReduceMixedTypesDevice", "[reduce]")
 {
   TestReduceMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
-DECLARE_UNITTEST(TestReduceMixedTypesDevice);
 
 template <typename T>
 struct TestReduceWithOperator
@@ -189,7 +185,7 @@ void TestReduceWithBigIndexesHelper(int magnitude)
   REQUIRE(result == (1ll << magnitude));
 }
 
-void TestReduceWithBigIndexes()
+TEST_CASE("TestReduceWithBigIndexes", "[reduce]")
 {
   TestReduceWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -198,4 +194,3 @@ void TestReduceWithBigIndexes()
   TestReduceWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestReduceWithBigIndexes);

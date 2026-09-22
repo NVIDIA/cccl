@@ -78,7 +78,7 @@ int count(my_system& system, InputIterator, InputIterator, EqualityComparable x)
   return x;
 }
 
-void TestCountDispatchExplicit()
+TEST_CASE("TestCountDispatchExplicit", "[count]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -87,7 +87,6 @@ void TestCountDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCountDispatchExplicit);
 
 template <typename InputIterator, typename EqualityComparable>
 int count(my_tag, InputIterator /*first*/, InputIterator, EqualityComparable x)
@@ -95,7 +94,7 @@ int count(my_tag, InputIterator /*first*/, InputIterator, EqualityComparable x)
   return x;
 }
 
-void TestCountDispatchImplicit()
+TEST_CASE("TestCountDispatchImplicit", "[count]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -103,7 +102,6 @@ void TestCountDispatchImplicit()
 
   REQUIRE(13 == result);
 }
-DECLARE_UNITTEST(TestCountDispatchImplicit);
 
 void TestCountWithBigIndexesHelper(int magnitude)
 {
@@ -116,7 +114,7 @@ void TestCountWithBigIndexesHelper(int magnitude)
   REQUIRE(result == 1);
 }
 
-void TestCountWithBigIndexes()
+TEST_CASE("TestCountWithBigIndexes", "[count]")
 {
   TestCountWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -125,4 +123,3 @@ void TestCountWithBigIndexes()
   TestCountWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestCountWithBigIndexes);

@@ -23,7 +23,7 @@ static const std::size_t MinTestedAlignment   = 16;
 static const std::size_t MaxTestedAlignment   = 4 * 1024;
 static const std::size_t TestedAlignmentShift = 1;
 
-void TestNewDeleteResourceAlignedAllocation()
+TEST_CASE("TestNewDeleteResourceAlignedAllocation", "[mr_new]")
 {
   for (std::size_t size = MinTestedSize; size <= MaxTestedSize; size += TestedSizeStep)
   {
@@ -34,4 +34,3 @@ void TestNewDeleteResourceAlignedAllocation()
     }
   }
 }
-DECLARE_UNITTEST(TestNewDeleteResourceAlignedAllocation);

@@ -12,7 +12,7 @@
 
 #include <unittest/unittest.h>
 
-void TestCopyNFromConstIterator()
+TEST_CASE("TestCopyNFromConstIterator", "[copy_n]")
 {
   using T = int;
 
@@ -36,9 +36,8 @@ void TestCopyNFromConstIterator()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_UNITTEST(TestCopyNFromConstIterator);
 
-void TestCopyNToDiscardIterator()
+TEST_CASE("TestCopyNToDiscardIterator", "[copy_n]")
 {
   using T = int;
 
@@ -58,7 +57,6 @@ void TestCopyNToDiscardIterator()
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_UNITTEST(TestCopyNToDiscardIterator);
 
 template <class Vector>
 void TestCopyNMatchingTypes()
@@ -110,7 +108,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyNMixedTypes);
 
 _CCCL_DIAG_POP
 
-void TestCopyNVectorBool()
+TEST_CASE("TestCopyNVectorBool", "[copy_n]")
 {
   std::vector<bool> v{true, false, true};
 
@@ -128,7 +126,6 @@ void TestCopyNVectorBool()
 
   REQUIRE(d == dref);
 }
-DECLARE_UNITTEST(TestCopyNVectorBool);
 
 template <class Vector>
 void TestCopyNListTo()
@@ -227,7 +224,7 @@ OutputIterator copy_n(my_system& system, InputIterator, Size, OutputIterator res
   return result;
 }
 
-void TestCopyNDispatchExplicit()
+TEST_CASE("TestCopyNDispatchExplicit", "[copy_n]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -236,7 +233,6 @@ void TestCopyNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCopyNDispatchExplicit);
 
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(my_tag, InputIterator, Size, OutputIterator result)
@@ -245,7 +241,7 @@ OutputIterator copy_n(my_tag, InputIterator, Size, OutputIterator result)
   return result;
 }
 
-void TestCopyNDispatchImplicit()
+TEST_CASE("TestCopyNDispatchImplicit", "[copy_n]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -253,4 +249,3 @@ void TestCopyNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestCopyNDispatchImplicit);

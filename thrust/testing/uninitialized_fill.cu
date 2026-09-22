@@ -12,7 +12,7 @@ void uninitialized_fill(my_system& system, ForwardIterator, ForwardIterator, con
   system.validate_dispatch();
 }
 
-void TestUninitializedFillDispatchExplicit()
+TEST_CASE("TestUninitializedFillDispatchExplicit", "[uninitialized_fill]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -21,7 +21,6 @@ void TestUninitializedFillDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedFillDispatchExplicit);
 
 template <typename ForwardIterator, typename T>
 void uninitialized_fill(my_tag, ForwardIterator first, ForwardIterator, const T&)
@@ -29,7 +28,7 @@ void uninitialized_fill(my_tag, ForwardIterator first, ForwardIterator, const T&
   *first = 13;
 }
 
-void TestUninitializedFillDispatchImplicit()
+TEST_CASE("TestUninitializedFillDispatchImplicit", "[uninitialized_fill]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -37,7 +36,6 @@ void TestUninitializedFillDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUninitializedFillDispatchImplicit);
 
 template <class Vector>
 void TestUninitializedFillPOD()

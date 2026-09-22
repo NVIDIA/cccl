@@ -265,23 +265,20 @@ void TestReduceByKeyDevice(ExecutionPolicy exec)
   REQUIRE(output_values[4] == 15);
 }
 
-void TestReduceByKeyDeviceSeq()
+TEST_CASE("TestReduceByKeyDeviceSeq", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceSeq);
 
-void TestReduceByKeyDeviceDevice()
+TEST_CASE("TestReduceByKeyDeviceDevice", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceDevice);
 
-void TestReduceByKeyDeviceNoSync()
+TEST_CASE("TestReduceByKeyDeviceNoSync", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -378,17 +375,15 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestReduceByKeyCudaStreamsSync()
+TEST_CASE("TestReduceByKeyCudaStreamsSync", "[reduce_by_key]")
 {
   TestReduceByKeyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsSync);
 
-void TestReduceByKeyCudaStreamsNoSync()
+TEST_CASE("TestReduceByKeyCudaStreamsNoSync", "[reduce_by_key]")
 {
   TestReduceByKeyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsNoSync);
 
 // Maps indices to key ids
 class div_op
@@ -474,7 +469,7 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
   }
 }
 
-void TestReduceByKeyWithBigIndexes()
+TEST_CASE("TestReduceByKeyWithBigIndexes", "[reduce_by_key]")
 {
   TestReduceByKeyWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -483,9 +478,8 @@ void TestReduceByKeyWithBigIndexes()
   TestReduceByKeyWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestReduceByKeyWithBigIndexes);
 
-void TestReduceByKeyWithCustomEqualityOp()
+TEST_CASE("TestReduceByKeyWithCustomEqualityOp", "[reduce_by_key]")
 {
   using key_vector_t = thrust::device_vector<cuda::std::int32_t>;
   using val_vector_t = thrust::device_vector<cuda::std::int32_t>;
@@ -527,9 +521,7 @@ void TestReduceByKeyWithCustomEqualityOp()
   REQUIRE(all_values_correct);
 }
 
-DECLARE_UNITTEST(TestReduceByKeyWithCustomEqualityOp);
-
-void TestReduceByKeyWithDifferentAccumulatorT()
+TEST_CASE("TestReduceByKeyWithDifferentAccumulatorT", "[reduce_by_key]")
 {
   using key_t          = cuda::std::uint32_t;
   using val_t          = cuda::std::uint8_t;
@@ -573,5 +565,3 @@ void TestReduceByKeyWithDifferentAccumulatorT()
   constexpr auto expected_aggregate = static_cast<val_t>(sum % mod_val);
   REQUIRE(aggregates_out[0] == expected_aggregate);
 }
-
-DECLARE_UNITTEST(TestReduceByKeyWithDifferentAccumulatorT);

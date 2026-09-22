@@ -9,7 +9,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::permutation_iterator from cuda::std
-void TestPermutationIteratorTraits()
+TEST_CASE("TestPermutationIteratorTraits", "[permutation_iterator]")
 {
   using base_it = thrust::host_vector<int>::iterator;
 
@@ -34,7 +34,6 @@ void TestPermutationIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestPermutationIteratorTraits);
 
 template <class Vector>
 void TestPermutationIteratorSimple()
@@ -168,7 +167,7 @@ void TestPermutationIteratorReduce()
 };
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorReduce);
 
-void TestPermutationIteratorHostDeviceGather()
+TEST_CASE("TestPermutationIteratorHostDeviceGather", "[permutation_iterator]")
 {
   using T              = int;
   using HostVector     = thrust::host_vector<T>;
@@ -203,9 +202,8 @@ void TestPermutationIteratorHostDeviceGather()
   const HostVector href{4, 1, 6, 8};
   REQUIRE(h_output == href);
 }
-DECLARE_UNITTEST(TestPermutationIteratorHostDeviceGather);
 
-void TestPermutationIteratorHostDeviceScatter()
+TEST_CASE("TestPermutationIteratorHostDeviceScatter", "[permutation_iterator]")
 {
   using T              = int;
   using HostVector     = thrust::host_vector<T>;
@@ -240,7 +238,6 @@ void TestPermutationIteratorHostDeviceScatter()
   const HostVector href = dref;
   REQUIRE(h_output == href);
 }
-DECLARE_UNITTEST(TestPermutationIteratorHostDeviceScatter);
 
 template <typename Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestPermutationIteratorWithCountingIterator()

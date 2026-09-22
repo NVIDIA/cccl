@@ -86,20 +86,18 @@ void TestReduceCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestReduceCudaStreamsSync()
+TEST_CASE("TestReduceCudaStreamsSync", "[reduce]")
 {
   TestReduceCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestReduceCudaStreamsSync);
 
-void TestReduceCudaStreamsNoSync()
+TEST_CASE("TestReduceCudaStreamsNoSync", "[reduce]")
 {
   TestReduceCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceCudaStreamsNoSync);
 
 #if defined(THRUST_RDC_ENABLED)
-void TestReduceLargeInput()
+TEST_CASE("TestReduceLargeInput", "[reduce]")
 {
   using T                 = unsigned long long;
   using OffsetT           = std::size_t;
@@ -114,5 +112,4 @@ void TestReduceLargeInput()
 
   REQUIRE(num_items == d_result[0]);
 }
-DECLARE_UNITTEST(TestReduceLargeInput);
 #endif

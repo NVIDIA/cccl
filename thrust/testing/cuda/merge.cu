@@ -60,20 +60,18 @@ void TestMergeDevice(ExecutionPolicy exec)
   }
 }
 
-void TestMergeDeviceSeq()
+TEST_CASE("TestMergeDeviceSeq", "[merge]")
 {
   TestMergeDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMergeDeviceSeq);
 
-void TestMergeDeviceDevice()
+TEST_CASE("TestMergeDeviceDevice", "[merge]")
 {
   TestMergeDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMergeDeviceDevice);
 #endif
 
-void TestMergeCudaStreams()
+TEST_CASE("TestMergeCudaStreams", "[merge]")
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -89,4 +87,3 @@ void TestMergeCudaStreams()
   REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {0, 0, 2, 3, 3, 4, 4});
 }
-DECLARE_UNITTEST(TestMergeCudaStreams);

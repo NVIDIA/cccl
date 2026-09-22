@@ -50,23 +50,20 @@ void TestMaxElementDevice(ExecutionPolicy exec)
   REQUIRE(h_min - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 }
 
-void TestMaxElementDeviceSeq()
+TEST_CASE("TestMaxElementDeviceSeq", "[max_element]")
 {
   TestMaxElementDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMaxElementDeviceSeq);
 
-void TestMaxElementDeviceDevice()
+TEST_CASE("TestMaxElementDeviceDevice", "[max_element]")
 {
   TestMaxElementDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMaxElementDeviceDevice);
 
-void TestMaxElementDeviceNoSync()
+TEST_CASE("TestMaxElementDeviceNoSync", "[max_element]")
 {
   TestMaxElementDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestMaxElementDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -97,19 +94,17 @@ void TestMaxElementCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestMaxElementCudaStreamsSync()
+TEST_CASE("TestMaxElementCudaStreamsSync", "[max_element]")
 {
   TestMaxElementCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestMaxElementCudaStreamsSync);
 
-void TestMaxElementCudaStreamsNoSync()
+TEST_CASE("TestMaxElementCudaStreamsNoSync", "[max_element]")
 {
   TestMaxElementCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestMaxElementCudaStreamsNoSync);
 
-void TestMaxElementDevicePointer()
+TEST_CASE("TestMaxElementDevicePointer", "[max_element]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -127,4 +122,3 @@ void TestMaxElementDevicePointer()
   REQUIRE(thrust::max_element(thrust::device, raw_ptr, raw_ptr + n) - raw_ptr == 1);
   REQUIRE(thrust::max_element(thrust::device, raw_ptr, raw_ptr + n, ::cuda::std::greater<T>()) - raw_ptr == 2);
 }
-DECLARE_UNITTEST(TestMaxElementDevicePointer);

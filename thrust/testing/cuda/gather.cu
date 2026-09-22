@@ -62,7 +62,7 @@ void TestGatherDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGatherDeviceDevice);
 #endif
 
-void TestGatherCudaStreams()
+TEST_CASE("TestGatherCudaStreams", "[gather]")
 {
   thrust::device_vector<int> map = {6, 2, 1, 7, 2}; // gather indices
   thrust::device_vector<int> src = {0, 1, 2, 3, 4, 5, 6, 7}; // source vector
@@ -79,7 +79,6 @@ void TestGatherCudaStreams()
   REQUIRE(dst == ref);
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGatherCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy,
@@ -181,7 +180,7 @@ void TestGatherIfDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGatherIfDeviceDevice);
 #endif
 
-void TestGatherIfCudaStreams()
+TEST_CASE("TestGatherIfCudaStreams", "[gather]")
 {
   thrust::device_vector<int> flg{0, 1, 0, 1, 0}; // predicate array
   thrust::device_vector<int> map{6, 2, 1, 7, 2}; // gather indices
@@ -199,4 +198,3 @@ void TestGatherIfCudaStreams()
   REQUIRE(dst == ref);
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGatherIfCudaStreams);
