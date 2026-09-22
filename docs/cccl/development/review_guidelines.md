@@ -126,10 +126,9 @@ via `cub::detail::ptx_compute_cap`. PDL may only be enabled if
 -->
 
 When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
-at the kernel launcher, flag any global memory access in the kernel's body (i.e., a load from or a
-store to a pointer passed at the kernel's interface) that happens before any call to
-`_CCCL_PDL_GRID_DEPENDENCY_SYNC` — the previous kernel may still be writing that memory — unless the
-access has a comment explaining why a PDL sync can come later.
+at the kernel launcher, flag any global-memory access in the kernel's body that happens before any
+call to `_CCCL_PDL_GRID_DEPENDENCY_SYNC` — the previous kernel's writes may not be visible yet —
+unless the access has a comment explaining why a PDL sync can come later.
 
 ## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
 
