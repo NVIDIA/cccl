@@ -46,12 +46,23 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 #    define _CUDA_STREAM_POOL_ATOMIC(__op) __op
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
+//! @brief Relaxed atomic load of a round-robin position
+//!
+//! @param[in] __ptr The position to read
+//!
+//! @return The value stored at `__ptr`
 _CCCL_HOST_API inline ::cuda::std::size_t __stream_pool_load_relaxed(const ::cuda::std::size_t* __ptr) noexcept
 {
   return _CUDA_STREAM_POOL_ATOMIC(__atomic_load_n)(__ptr, __ATOMIC_RELAXED);
 }
 
-//! Weak compare-exchange; on failure `__expected` holds the current value.
+//! @brief Weak relaxed compare-exchange advancing a round-robin position
+//!
+//! @param[in,out] __ptr The position to advance
+//! @param[in,out] __expected The value `__ptr` is expected to hold; on failure, set to the value it holds
+//! @param[in] __desired The value to store if `__ptr` holds `__expected`
+//!
+//! @return `true` if `__desired` was stored, `false` otherwise, including spuriously
 _CCCL_HOST_API inline bool __stream_pool_advance(
   ::cuda::std::size_t* __ptr, ::cuda::std::size_t& __expected, ::cuda::std::size_t __desired) noexcept
 {
@@ -59,12 +70,24 @@ _CCCL_HOST_API inline bool __stream_pool_advance(
     __atomic_compare_exchange_n)(__ptr, &__expected, __desired, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
 }
 
+//! @brief Acquire atomic load of a slot
+//!
+//! @param[in] __ptr The slot to read
+//!
+//! @return The stream stored in the slot, `nullptr` if the slot is empty
 _CCCL_HOST_API inline ::cudaStream_t __stream_pool_load_acquire(::cudaStream_t* __ptr) noexcept
 {
   return _CUDA_STREAM_POOL_ATOMIC(__atomic_load_n)(__ptr, __ATOMIC_ACQUIRE);
 }
 
-//! Publishes `__desired` into an empty slot. On failure `__expected` holds the handle another thread published.
+//! @brief Strong compare-exchange publishing a stream into an empty slot
+//!
+//! @param[in,out] __ptr The slot to fill
+//! @param[in,out] __expected The value the slot is expected to hold, `nullptr` for an empty slot; on failure, set to
+//! the stream another thread published
+//! @param[in] __desired The stream to publish
+//!
+//! @return `true` if `__desired` was published, `false` if the slot already held a stream
 _CCCL_HOST_API inline bool
 __stream_pool_publish(::cudaStream_t* __ptr, ::cudaStream_t& __expected, ::cudaStream_t __desired) noexcept
 {
@@ -260,10 +283,18 @@ public:
   }
 
 private:
-  //! Returns the stream of slot `__i`, creating it if the slot is still empty. A slot changes exactly once, from
-  //! empty to a stream that lives until the pool is destroyed, so a filled slot is read with a single acquire load.
-  //! An empty slot is filled optimistically: the caller creates a stream and publishes it with a compare-exchange;
-  //! if another thread published first, the caller destroys its own stream and returns the published one.
+  //! @brief Returns the stream of slot `__i`, creating it if the slot is still empty
+  //!
+  //! A slot changes exactly once, from empty to a stream that lives until the pool is destroyed, so a filled slot
+  //! is read with a single acquire load. An empty slot is filled optimistically: the caller creates a stream and
+  //! publishes it with a compare-exchange; if another thread published first, the caller destroys its own stream
+  //! and returns the published one.
+  //!
+  //! @param[in] __i Slot index, must be below `size()`
+  //!
+  //! @return A reference to the stream of the slot
+  //!
+  //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref __stream_at(::cuda::std::size_t __i) const
   {
     ::cudaStream_t __published = ::cuda::__stream_pool_load_acquire(&__slots_[__i]);
@@ -284,8 +315,9 @@ private:
     return stream_ref{__published};
   }
 
-  //! Destroys every published stream and frees the slots. Called from the destructor, and from the constructor
-  //! when eager creation fails part-way.
+  //! @brief Destroys every published stream and frees the slots
+  //!
+  //! Called from the destructor, and from the constructor when eager creation fails part-way.
   _CCCL_HOST_API void __destroy_slots() noexcept
   {
     if (__slots_ == nullptr)
@@ -304,7 +336,11 @@ private:
     __slots_ = nullptr;
   }
 
-  //! Creates one stream on the logical device of the pool.
+  //! @brief Creates one stream on the logical device of the pool
+  //!
+  //! @return The new stream, non-blocking and with the priority of the pool
+  //!
+  //! @throws cuda_error if the stream creation fails
   [[nodiscard]] _CCCL_HOST_API stream __create_stream() const
   {
 #  if _CCCL_CTK_AT_LEAST(12, 5)
