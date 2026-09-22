@@ -41,13 +41,13 @@ struct typelist;
 
 struct sm52
 {
-  static constexpr int ver      = 520;
-  static constexpr int warpSize = 32;
+  static constexpr int ver       = 520;
+  static constexpr int warp_size = 32;
 };
 struct sm60
 {
-  static constexpr int ver      = 600;
-  static constexpr int warpSize = 32;
+  static constexpr int ver       = 600;
+  static constexpr int warp_size = 32;
 };
 
 // list of sm, checked from left to right order
