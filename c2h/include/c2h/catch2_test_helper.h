@@ -233,9 +233,11 @@ class QuietMatchExpr : public Catch::ITransientExpression
   MatcherT const& m_matcher;
 
 public:
-  constexpr QuietMatchExpr(ArgT&& arg, MatcherT const& matcher)
+  // ArgT can be a reference type, so the stored reference must use forward.
+  constexpr QuietMatchExpr(ArgT&& arg, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+                           MatcherT const& matcher)
       : ITransientExpression{true, matcher.match(arg)}
-      , m_arg(CATCH_FORWARD(arg))
+      , m_arg(cuda::std::forward<ArgT>(arg))
       , m_matcher(matcher)
   {}
 

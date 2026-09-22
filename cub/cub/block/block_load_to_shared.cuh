@@ -413,7 +413,8 @@ public:
 
   //! @brief Wait for previously committed copies to arrive. Prepare for next
   //! calls to @c CopyAsync() .
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Wait(CommitToken&&)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  Wait(CommitToken&&) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::committed, "Commit() must be called before Wait()");

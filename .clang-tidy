@@ -71,7 +71,6 @@ Checks:
   - '-cppcoreguidelines-avoid-const-or-ref-data-members'
   # Device code requires printf() and friends
   - '-cppcoreguidelines-pro-type-vararg'
-  - '-cppcoreguidelines-rvalue-reference-param-not-moved'
   - '-cppcoreguidelines-virtual-class-destructor'
   - '-cppcoreguidelines-pro-type-member-init'
   - '-cppcoreguidelines-pro-type-union-access'
@@ -392,4 +391,7 @@ CheckOptions:
   performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
   performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
   bugprone-exception-escape.CheckMain: false
+  # Note std::move, not ::std::move or ::cuda::std::move. This intentionally matches both
+  # cuda::std::move as well as std::move because the former is defined as the latter if we
+  # have the builtin.
 ...

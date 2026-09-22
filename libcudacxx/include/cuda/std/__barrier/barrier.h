@@ -96,7 +96,9 @@ public:
     }
     return __old_phase;
   }
-  _CCCL_HOST_DEVICE_API void wait(arrival_token&& __old_phase) const
+  // The standard requires an rvalue reference; this token is a bool.
+  _CCCL_HOST_DEVICE_API void
+  wait(arrival_token&& __old_phase) const // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     __phase.wait(__old_phase, memory_order_acquire);
   }
