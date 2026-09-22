@@ -320,12 +320,12 @@ private:
   }
 
   /// ExchangeValues (specialized for keys-only sort)
-  template <bool IS_BLOCKED>
+  template <bool IsBlocked>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
     ValueT (& /*values*/)[ItemsPerThread],
     int (& /*ranks*/)[ItemsPerThread],
     ::cuda::std::true_type /*is_keys_only*/,
-    ::cuda::std::bool_constant<IS_BLOCKED> /*is_blocked*/)
+    ::cuda::std::bool_constant<IsBlocked> /*is_blocked*/)
   {}
 
   /**
@@ -353,14 +353,14 @@ private:
    *   Callable object responsible for decomposing a key into a tuple of references to its
    *   constituent arithmetic types
    */
-  template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
+  template <bool DESCENDING, bool KeysOnly, class DecomposerT = detail::identity_decomposer_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlocked(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
     int begin_bit,
     int end_bit,
     ::cuda::std::bool_constant<DESCENDING> is_descending,
-    ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
+    ::cuda::std::bool_constant<KeysOnly> is_keys_only,
     DecomposerT decomposer = {})
   {
     bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
@@ -432,14 +432,14 @@ public:
    * @param is_keys_only
    *   Tag whether is keys-only sort
    */
-  template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
+  template <bool DESCENDING, bool KeysOnly, class DecomposerT = detail::identity_decomposer_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
     int begin_bit,
     int end_bit,
     ::cuda::std::bool_constant<DESCENDING> is_descending,
-    ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
+    ::cuda::std::bool_constant<KeysOnly> is_keys_only,
     DecomposerT decomposer = {})
   {
     bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
