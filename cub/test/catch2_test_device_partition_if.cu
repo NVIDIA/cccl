@@ -11,7 +11,6 @@
 
 #include <cuda/__execution/tune.h>
 #include <cuda/cmath>
-#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/execution>
@@ -23,6 +22,7 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
@@ -130,14 +130,14 @@ CUB_TEST("DevicePartition::If does not change input", "[device][partition_if]", 
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
 
   partition_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
 
@@ -154,7 +154,7 @@ CUB_TEST("DevicePartition::If is stable", "[device][partition_if]", CUB_SMALL)
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -233,32 +233,28 @@ CUB_TEST(
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
   SECTION("DevicePartition::If works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_partition_if(stream.get());
   }
 
   SECTION("DevicePartition::If works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_partition_if(stream);
   }
 
   SECTION("DevicePartition::If works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream = c2h::make_current_device_stream();
+    const cuda::stream_ref stream_ref{stream};
     test_partition_if(stream_ref);
   }
 
   SECTION("DevicePartition::If works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_partition_if(env);
   }
 
@@ -270,8 +266,8 @@ CUB_TEST(
 
   SECTION("DevicePartition::If works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    const cuda::stream stream = c2h::make_current_device_stream();
+    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_partition_if(policy);
   }
 }
@@ -287,7 +283,7 @@ CUB_TEST("DevicePartition::If works with iterators", "[device][partition_if]", C
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -316,7 +312,7 @@ CUB_TEST("DevicePartition::If works with pointers", "[device][partition_if]", CU
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -366,7 +362,7 @@ CUB_TEST("DevicePartition::If works with a different output type", "[device][par
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);

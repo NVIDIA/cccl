@@ -7,16 +7,8 @@
 
 #include <unittest/unittest.h>
 
-// There is an unfortunate miscompilation of the gcc-12/gcc-13 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 12)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else // _CCCL_COMPILER(GCC, <, 12)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
 // ensure that we properly support thrust::transform_input_output_iterator from cuda::std
-void TestTransformInputOutputIteratorTraits()
+TEST_CASE("TestTransformInputOutputIteratorTraits", "[transform_input_output_iterator]")
 {
   using input_func  = ::cuda::std::negate<int>;
   using output_func = thrust::square<int>;
@@ -43,7 +35,6 @@ void TestTransformInputOutputIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTransformInputOutputIteratorTraits);
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
@@ -62,6 +53,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
   thrust::sequence(input.begin(), input.end(), 1);
 
   // construct transform_iterator
+  // NOLINTNEXTLINE(misc-const-correctness)
   thrust::transform_input_output_iterator<InputFunction, OutputFunction, Iterator> transform_iter(
     squared.begin(), InputFunction(), OutputFunction());
 
@@ -70,14 +62,14 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
 
   Vector gold_squared{1, 4, 9, 16};
 
-  ASSERT_EQUAL(squared, gold_squared);
+  REQUIRE(squared == gold_squared);
 
   // negated value read from transform_iter
   thrust::copy_n(transform_iter, squared.size(), negated.begin());
 
   Vector gold_negated{-1, -4, -9, -16};
 
-  ASSERT_EQUAL(negated, gold_negated);
+  REQUIRE(negated == gold_negated);
 }
 DECLARE_VECTOR_UNITTEST(TestTransformInputOutputIterator);
 
@@ -103,7 +95,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformInputOutputIterator()
 
   Vector gold_negated{-1, -2, -3, -4};
 
-  ASSERT_EQUAL(negated, gold_negated);
+  REQUIRE(negated == gold_negated);
 
   // squared value written by transform iterator
   thrust::copy(negated.begin(),
@@ -112,7 +104,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformInputOutputIterator()
 
   Vector gold_squared{1, 4, 9, 16};
 
-  ASSERT_EQUAL(squared, gold_squared);
+  REQUIRE(squared == gold_squared);
 }
 DECLARE_VECTOR_UNITTEST(TestMakeTransformInputOutputIterator);
 
@@ -138,7 +130,7 @@ struct TestTransformInputOutputIteratorScan
       d_data.end(),
       thrust::make_transform_input_output_iterator(d_result.begin(), thrust::square<T>(), ::cuda::std::negate<T>()));
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
-VariableUnitTest<TestTransformInputOutputIteratorScan, IntegralTypes> TestTransformInputOutputIteratorScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformInputOutputIteratorScan, IntegralTypes);

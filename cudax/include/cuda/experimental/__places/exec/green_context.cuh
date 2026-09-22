@@ -29,8 +29,8 @@
 #include <cuda/experimental/__places/exec/cuda_context.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 // Used only for unit tests, not in the actual implementation
 #ifdef UNITTESTED_FILE

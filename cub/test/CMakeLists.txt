@@ -336,7 +336,6 @@ function(
         cccl.c2h
     )
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
-    target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
 
     if ("${test_target}" MATCHES "nvtx_in_usercode")
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
@@ -575,3 +574,4 @@ endforeach() # Source file
 
 add_subdirectory(cmake)
 add_subdirectory(cubin-check)
+add_subdirectory(logging)

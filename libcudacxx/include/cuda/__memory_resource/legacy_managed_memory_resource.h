@@ -78,8 +78,8 @@ public:
                   "Invalid alignment passed to legacy_managed_memory_resource::allocate_sync.");
     }
 
-    ::cuda::__ensure_current_context __guard(__device_);
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocManaged(__bytes, __flags_);
+    const ::cuda::__ensure_current_context __guard(__device_);
+    const ::CUdeviceptr __ptr = ::cuda::__driver::__mallocManaged(__bytes, __flags_);
     return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
@@ -95,9 +95,9 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to legacy_managed_memory_resource::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(::cuda::__driver::__freeNoThrow,
-                          "legacy_managed_memory_resource::deallocate_sync failed",
-                          reinterpret_cast<::CUdeviceptr>(__ptr));
+    _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__freeNoThrow,
+                            "legacy_managed_memory_resource::deallocate_sync failed",
+                            reinterpret_cast<::CUdeviceptr>(__ptr));
   }
 
   //! @brief Equality comparison with another \c managed_memory_resource.

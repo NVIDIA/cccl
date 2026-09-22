@@ -95,7 +95,7 @@ struct DeviceRunLengthEncode
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
-  //! - For the *i*\ :sup:`th` run encountered, the first key of the run and
+  //! - For the *i*\ :sup:`th` run encountered, the last key of the run and
   //!   its length are written to ``d_unique_out[i]`` and ``d_counts_out[i]``, respectively.
   //! - The total number of runs encountered is written to ``d_num_runs_out``.
   //! - The ``==`` equality operator is used to determine whether values are equivalent
@@ -250,7 +250,7 @@ struct DeviceRunLengthEncode
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - For the *i*\ :sup:`th` run encountered, the first key of the run and
+  //! - For the *i*\ :sup:`th` run encountered, the last key of the run and
   //!   its length are written to ``d_unique_out[i]`` and ``d_counts_out[i]``, respectively.
   //! - The total number of runs encountered is written to ``d_num_runs_out``.
   //! - The ``==`` equality operator is used to determine whether values are equivalent

@@ -45,8 +45,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Sort inputs distributed over a communicator in place.
@@ -91,9 +90,9 @@ _CCCL_TEMPLATE(class _Policy,
                class _SizeTRange,
                class _BinaryOp = ::cuda::std::less<>)
 _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::ranges::forward_range<_EnvRange>
-                 _CCCL_AND ::cuda::experimental::__detail::__range_of_random_access_iterators<_InputIterRange>
+                 _CCCL_AND ::cuda::experimental::mgmn::__detail::__range_of_random_access_iterators<_InputIterRange>
                    _CCCL_AND ::cuda::std::ranges::forward_range<_SizeTRange>)
-void sort(const __result_policy_base<_Policy>& __policy,
+void sort(const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
           _CommRange&& __comms,
           _EnvRange&& __envs,
           _InputIterRange&& __input_iters,
@@ -112,18 +111,18 @@ void sort(const __result_policy_base<_Policy>& __policy,
     return;
   }
 
-  _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::sort");
+  _CCCL_NVTX_RANGE_SCOPE("cuda::mgmn::sort");
 
   using _Tp =
     ::cuda::std::iter_value_t<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_InputIterRange>>>;
 
-  ::cuda::experimental::__detail::__hss_sort::_HSSSorter<_Tp, _Env, ::cuda::std::remove_cvref_t<_BinaryOp>>::__execute(
-    __policy,
-    ::cuda::std::forward<_CommRange>(__comms),
-    ::cuda::std::forward<_EnvRange>(__envs),
-    ::cuda::std::forward<_InputIterRange>(__input_iters),
-    ::cuda::std::forward<_SizeTRange>(__num_items_range),
-    ::cuda::std::move(__cmp));
+  ::cuda::experimental::mgmn::__detail::__hss_sort::_HSSSorter<_Tp, _Env, ::cuda::std::remove_cvref_t<_BinaryOp>>::
+    __execute(__policy,
+              ::cuda::std::forward<_CommRange>(__comms),
+              ::cuda::std::forward<_EnvRange>(__envs),
+              ::cuda::std::forward<_InputIterRange>(__input_iters),
+              ::cuda::std::forward<_SizeTRange>(__num_items_range),
+              ::cuda::std::move(__cmp));
 }
 
 //! @brief Sort a single input over one communicator in place.
@@ -161,14 +160,14 @@ void sort(const __result_policy_base<_Policy>& __policy,
 _CCCL_TEMPLATE(
   class _Policy, class _Comm, class _Env, class _InputIt, class _SizeT, class _BinaryOp = ::cuda::std::less<>)
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::random_access_iterator<_InputIt>)
-void sort(const __result_policy_base<_Policy>& __policy,
+void sort(const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
           _Comm&& __comm,
           _Env&& __env,
           _InputIt __input_iter,
           _SizeT __num_items,
           _BinaryOp __cmp = {})
 {
-  ::cuda::experimental::sort(
+  ::cuda::experimental::mgmn::sort(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
@@ -178,7 +177,7 @@ void sort(const __result_policy_base<_Policy>& __policy,
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

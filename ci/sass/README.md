@@ -26,7 +26,7 @@ run. Like every other skip tag, it blocks the merge until it is removed.
 ## Scripts
 
 - `ci/sass/sass_diff.sh`: adds a worktree for each ref, builds the selected
-  benchmark targets in both, dumps the disassembly with `cuobjdump -sass`, and
+  benchmark targets in both, dumps their CUDA object files with `cuobjdump -sass`, and
   calls `compare_sass.py`. Runs inside the devcontainer. The builds go through
   `ci/build_common.sh`, so they get the same sccache, memory-monitor and timeout
   handling as every other CI build.
@@ -36,7 +36,11 @@ run. Like every other skip tag, it blocks the merge until it is removed.
   changed, so that the job fails.
 - `ci/sass/render_report.py`: turns `report.json` into the markdown fragment for
   the PR comment: the changed targets, an excerpt of the diff of each, and the
-  instructions for requesting a benchmark run.
+  instructions for requesting a benchmark run. With `--analysis` it also shows
+  the triage described below.
+- `ci/sass/sass_triage_prompt.md`, `ci/sass/sass_triage_config.toml` and
+  `ci/sass/model-output.schema.json`: the prompt, the sandbox and the output
+  contract of the triage. Only `sass-diff.yml` uses them.
 - `ci/sass/parse_matrix.py`: parses the `sass:` section of `ci/matrix.yaml` and
   emits a dispatch matrix. Runs on the GitHub Actions runner, before any
   container starts.
@@ -108,6 +112,12 @@ python3 -m pytest ci/sass/
 
 ## What the comparison ignores
 
+The comparison uses the object files from each benchmark translation unit.
+This excludes kernels from linked libraries such as `nvbench_helper`.
+The CUB benchmark build generates `sass/<target>.objects` in the build directory,
+with one object path per line. Both worktrees use the current CUB benchmark
+`CMakeLists.txt` so older refs also generate these lists.
+
 `cuobjdump -sass` prints data that is not part of the generated code and that
 changes when unrelated code moves. The normalizer removes:
 
@@ -148,6 +158,57 @@ Only the diffs, the report and the metadata are uploaded. The disassembly
 itself is not: a run writes three complete copies of it, and over 82 targets
 and six architectures that reaches several GB. To read the SASS itself, run
 `sass_diff.sh` and open the local artifact directory, which keeps every file.
+
+## Triage of the differences
+
+In CI, a model reads `report.json` and the diffs and groups them by what
+changed. Each group is `benign` (the executed work is the same: register
+numbers, instruction order, offsets), `significant` (the executed work differs:
+the instruction mix, the control flow, the memory operations), or `unclear`. The
+comment shows them as ✅ Potentially Benign, ⚠️ Significant and ❓ Unclear.
+
+Each diff block carries the classification of its own target in the header, and
+the model's description inside the box, so the estimate sits beside the evidence
+for it. The classification also decides which targets keep a block: the comment
+holds 10, and the significant ones come first. Without the triage the comment
+shows the first 10 targets it walked, so a header change can hide every real
+difference behind the noise.
+
+The triage says what the diffs contain. It does not recommend an action and it
+does not predict a performance result. The author decides whether a benchmark
+run is necessary.
+
+`ci/sass/sass_triage_config.toml` gives the model read access to the result
+directory and nothing else: no network, no write access.
+
+The triage gates nothing, and no model output can stop the comparison result
+from reaching the pull request. The step is `continue-on-error`, so a model
+outage or a missing API key removes the classifications and leaves the rest of
+the comment as it is.
+
+`codex-action` holds the answer to `ci/sass/model-output.schema.json`, and
+`render_report.py` checks it again, because it reads a file and not a promise. A
+group with an unknown classification, an empty title or explanation, or a bad
+diff list becomes ❓ Unclear, and the block says why. So does a difference that
+the model left out of every group, and every difference when the whole file is
+unreadable. One bad group costs its own diffs and no others; the warnings go to
+the job log.
+
+The model writes the title and the explanation, and a diff holds whatever the
+compiler emitted. Thus the renderer treats that text as data: it removes the
+control characters, escapes the HTML and the inline markdown, and cuts it to
+length. The comment is also kept under the GitHub size limit, and a block that
+does not fit is dropped.
+
+Render an existing analysis by hand:
+
+```bash
+./ci/sass/render_report.py \
+  --report result/report.json \
+  --meta result/meta.json \
+  --analysis analysis.json \
+  --output result/summary.md
+```
 
 ## Configuration
 

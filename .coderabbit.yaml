@@ -67,27 +67,25 @@ reviews:
       instructions: |
         Focus on correctness, ABI/API stability, standard-library conformance, host/device availability,
         NVRTC compatibility, supported C++ standards, tests, and portability across supported CUDA toolchains.
-        For tests, use .agent/skills/cccl-test/SKILL.md as test context.
-        Avoid style comments unless the requirement is explicitly mentioned in
-        .agent/skills/cccl-style/SKILL.md.
+        For tests, use .agent/skills/cccl-test/SKILL.md as test context. Avoid style comments unless the
+        requirement is explicitly mentioned in the cccl-style skill or in the coding_guidelines.rst.
 
     - path: "cudax/**/*"
       instructions: |
         Focus on correctness, lifetime/resource ownership, stream ordering, host/device annotations, experimental
         API clarity, tests, and compatibility with the supported CUDA toolchains. Avoid style comments unless
-        the requirement is explicitly mentioned in .agent/skills/cccl-style/SKILL.md.
+        the requirement is explicitly mentioned in the cccl-style skill or in the coding_guidelines.rst.
 
     - path: "cub/**/*"
       instructions: |
         Focus on algorithm correctness, temporary-storage protocol, dispatch/policy selection, stream behavior,
         CUDA error handling, synchronization, memory access safety, performance regressions, and test coverage.
-        Prefer comments that catch real correctness, API, compile-time, or performance risks.
 
     - path: "thrust/**/*"
       instructions: |
         Use docs/thrust/developer/systems.rst for execution policy and backend dispatch context. Focus on
         correctness, API compatibility, dispatch behavior, synchronization, iterator/system interactions, and
-        regressions. Avoid architecture commentary unless it affects behavior or maintainability.
+        regressions.
 
     - path: "c/**/*"
       instructions: |
@@ -126,21 +124,23 @@ knowledge_base:
   code_guidelines:
     filePatterns:
       - "AGENTS.md"
-      - "CONTRIBUTING.md"
+      - ".agent/skills/cccl-review/SKILL.md"
       - ".agent/skills/cccl-style/SKILL.md"
       - ".agent/skills/cccl-style/references/common.md"
+      - ".agent/skills/cccl-style/references/cub.md"
       - ".agent/skills/cccl-style/references/libcudacxx.md"
       - ".agent/skills/cccl-test/SKILL.md"
       - ".agent/skills/cccl-test/references/common.md"
       - ".agent/skills/cccl-test/references/libcudacxx.md"
+      - "docs/contributors/index.rst"
       - "docs/cccl/config_macros.rst"
       - "docs/cccl/development/macro.rst"
       - "docs/cccl/development/visibility.rst"
       - "docs/cccl/development/testing.rst"
-      - "docs/libcudacxx/releases/versioning.rst"
+      - "docs/cccl/development/coding_guidelines.rst"
+      - "docs/cccl/development/review_guidelines.md"
       - "docs/cub/developer_overview.rst"
-      - "docs/cub/developer/device_scope.rst"
-      - "docs/cub/test_overview.rst"
+      - "docs/cub/developer/*.rst"
       - "docs/cub/benchmarking.rst"
       - "docs/thrust/developer/systems.rst"
       - "docs/python/compute/index.rst"

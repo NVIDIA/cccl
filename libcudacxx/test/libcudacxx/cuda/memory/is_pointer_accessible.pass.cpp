@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: nvrtc
 
 #include <cuda/__runtime/ensure_current_context.h>
@@ -14,255 +17,480 @@
 #include <cuda/memory>
 #include <cuda/memory_pool>
 #include <cuda/std/cassert>
-
-#include <cuda_runtime_api.h>
+#include <cuda/std/cstdlib>
+#include <cuda/stream>
 
 #include "test_macros.h"
 
-TEST_GLOBAL_VARIABLE int device_ptr1[]      = {1, 2, 3, 4};
-_CCCL_DEVICE __managed__ int managed_ptr1[] = {1, 2, 3, 4};
+using T                            = int;
+constexpr cuda::std::size_t N      = 2;
+constexpr cuda::std::size_t nbytes = sizeof(T) * N;
 
-int host_ptr1[] = {1, 2, 3, 4};
+T global_host[N];
+TEST_GLOBAL_VARIABLE T global_device[N];
+__managed__ T global_managed[N];
 
-template <typename Pointer>
 void test_accessible_pointer(
-  Pointer ptr, bool is_host_accessible, bool is_device_accessible, bool is_managed_memory, cuda::device_ref device)
+  const T* ptr, bool host_accessible, bool device_accessible, bool is_managed, cuda::device_ref device)
 {
-  assert(cuda::is_host_accessible(ptr) == is_host_accessible);
-  assert(cuda::__is_host_accessible_nothrow(ptr) == is_host_accessible);
-  assert(cuda::is_device_accessible(ptr, device) == is_device_accessible);
-  // assert(cuda::__is_device_accessible_nothrow(ptr, device) == is_device_accessible);
-  assert(cuda::is_managed(ptr) == is_managed_memory);
-  assert(cuda::__is_managed_nothrow(ptr) == is_managed_memory);
-  if constexpr (!cuda::std::is_same_v<Pointer, const void*> && !cuda::std::is_same_v<Pointer, void*>)
+  assert(cuda::is_host_accessible(ptr) == host_accessible);
+  assert(cuda::__is_host_accessible_nothrow(ptr) == host_accessible);
+  assert(cuda::is_device_accessible(ptr, device) == device_accessible);
+  // assert(cuda::__is_device_accessible_nothrow(ptr, device) == device_accessible);
+  assert(cuda::is_managed(ptr) == is_managed);
+  assert(cuda::__is_managed_nothrow(ptr) == is_managed);
+
+  // Skip ptr + 1 tests for nullptr.
+  if (ptr != nullptr)
   {
-    assert(cuda::is_host_accessible(ptr + 1) == is_host_accessible);
-    assert(cuda::__is_host_accessible_nothrow(ptr + 1) == is_host_accessible);
-    assert(cuda::is_device_accessible(ptr + 1, device) == is_device_accessible);
-    // assert(cuda::__is_device_accessible_nothrow(ptr + 1, device) == is_device_accessible);
-    assert(cuda::is_managed(ptr + 1) == is_managed_memory);
-    assert(cuda::__is_managed_nothrow(ptr + 1) == is_managed_memory);
+    const T* ptr_next = ptr + 1;
+    assert(cuda::is_host_accessible(ptr_next) == host_accessible);
+    assert(cuda::__is_host_accessible_nothrow(ptr_next) == host_accessible);
+    assert(cuda::is_device_accessible(ptr_next, device) == device_accessible);
+    // assert(cuda::__is_device_accessible_nothrow(ptr_next, device) == device_accessible);
+    assert(cuda::is_managed(ptr_next) == is_managed);
+    assert(cuda::__is_managed_nothrow(ptr_next) == is_managed);
   }
 }
 
-template <typename Pointer>
-void test_device_or_managed_memory(Pointer ptr, bool is_device_or_managed_memory)
+void test_device_or_managed_memory(const T* ptr, bool is_device_or_managed_memory)
 {
   assert(cuda::__is_device_or_managed_memory(ptr) == is_device_or_managed_memory);
-  if constexpr (!cuda::std::is_same_v<Pointer, const void*> && !cuda::std::is_same_v<Pointer, void*>)
+
+  // Skip ptr + 1 tests for nullptr.
+  if (ptr != nullptr)
   {
     assert(cuda::__is_device_or_managed_memory(ptr + 1) == is_device_or_managed_memory);
   }
 }
 
-bool test_basic()
+TEST_GLOBAL_VARIABLE T* kernel_malloced_buffer;
+
+__global__ void malloc_kernel()
+{
+  kernel_malloced_buffer = reinterpret_cast<T*>(cuda::std::malloc(nbytes));
+}
+
+__global__ void free_kernel()
+{
+  cuda::std::free(kernel_malloced_buffer);
+}
+
+void test_basic()
 {
   cuda::device_ref dev{0};
-  [[maybe_unused]] int host_ptr2[] = {1, 2, 3, 4};
-  [[maybe_unused]] auto host_ptr3  = new int[2];
-  [[maybe_unused]] int* host_ptr4  = nullptr;
-  assert(cudaMallocHost(&host_ptr4, sizeof(int) * 2) == cudaSuccess);
+  const auto always_ua    = cuda::device_attributes::unified_addressing(dev);
+  const auto has_mempools = cuda::device_attributes::memory_pools_supported(dev);
 
-  int* host_ptr5 = nullptr;
-  assert(cudaHostAlloc(&host_ptr5, sizeof(int) * 2, cudaHostAllocMapped) == cudaSuccess);
+  cuda::stream stream{dev};
 
-  int* device_ptr2 = nullptr;
-  assert(cudaMalloc(&device_ptr2, sizeof(int) * 2) == cudaSuccess);
+  cuda::__ensure_current_context{dev};
 
-  int* device_ptr3    = nullptr;
-  cudaStream_t stream = nullptr;
-  assert(cudaStreamCreate(&stream) == cudaSuccess);
-  assert(cudaMallocAsync(&device_ptr3, sizeof(int) * 2, stream) == cudaSuccess);
-
-  int* managed_ptr2 = nullptr;
-  assert(cudaMallocManaged(&managed_ptr2, sizeof(int) * 2) == cudaSuccess);
-
-  test_accessible_pointer((void*) nullptr, false, false, false, dev);
-  test_device_or_managed_memory((void*) nullptr, false);
-
-  test_accessible_pointer(host_ptr1, true, false, false, dev); // global host array
-  test_accessible_pointer(host_ptr2, true, false, false, dev); // local host array
-  test_accessible_pointer(host_ptr3, true, false, false, dev); // non-cuda malloc host memory
-  test_accessible_pointer(host_ptr4, true, true, false, dev); // pinned host memory
-  test_accessible_pointer(host_ptr5, true, true, false, dev); // mapped pinned host memory
-  test_device_or_managed_memory(host_ptr1, false);
-  test_device_or_managed_memory(host_ptr2, false);
-  test_device_or_managed_memory(host_ptr3, false);
-  test_device_or_managed_memory(host_ptr4, false);
-  test_device_or_managed_memory(host_ptr5, false);
-
-  test_accessible_pointer(device_ptr2, false, true, false, dev); // cudaMalloc device pointer
-  test_accessible_pointer(device_ptr3, false, true, false, dev); // cudaMallocAsync device pointer
-  test_device_or_managed_memory(device_ptr2, true);
-  test_device_or_managed_memory(device_ptr3, true);
-
-  void* device_ptr4 = nullptr;
-  assert(cudaGetSymbolAddress(&device_ptr4, device_ptr1) == cudaSuccess);
-  test_accessible_pointer(device_ptr4, false, true, false, dev); // cudaGetSymbolAddress device pointer
-  test_device_or_managed_memory(device_ptr4, true);
-
-  const int* const_device_ptr2 = device_ptr2;
-  test_accessible_pointer(const_device_ptr2, false, true, false, dev); // const device pointer
-  test_device_or_managed_memory(const_device_ptr2, true);
-
-  test_accessible_pointer(managed_ptr1, true, true, true, dev); // global managed memory
-  test_accessible_pointer(managed_ptr2, true, true, true, dev); // allocated managed memory
-  test_device_or_managed_memory(managed_ptr1, true);
-  test_device_or_managed_memory(managed_ptr2, true);
-  return true;
-}
-
-cudaMemPool_t
-create_memory_pool(cudaMemAllocationType alloc_type, cudaMemLocationType location_type, cuda::device_ref dev)
-{
-  cudaMemPoolProps pool_prop = {};
-  pool_prop.allocType        = alloc_type;
-  pool_prop.location.id      = dev.get();
-  pool_prop.location.type    = location_type;
-  cudaMemPool_t mem_pool     = nullptr;
-  assert(cudaMemPoolCreate(&mem_pool, &pool_prop) == cudaSuccess);
-
-  cudaMemAccessDesc access_desc = {};
-  access_desc.flags             = cudaMemAccessFlagsProtReadWrite;
-  access_desc.location.type     = location_type;
-  access_desc.location.id       = dev.get();
-  assert(cudaMemPoolSetAccess(mem_pool, &access_desc, 1) == cudaSuccess);
-  return mem_pool;
-}
-
-void* allocate_memory_from_pool(cudaMemPool_t mem_pool)
-{
-  int* ptr            = nullptr;
-  cudaStream_t stream = nullptr;
-  assert(cudaStreamCreate(&stream) == cudaSuccess);
-  assert(cudaMallocFromPoolAsync(&ptr, sizeof(int) * 2, mem_pool, stream) == cudaSuccess);
-  assert(cudaDeviceSynchronize() == cudaSuccess);
-  return ptr;
-}
-
-void test_memory_pool_impl(
-  cudaMemAllocationType alloc_type,
-  cudaMemLocationType location_type,
-  bool is_host_accessible,
-  bool is_device_accessible,
-  bool is_device_or_managed_memory,
-  bool is_managed_memory)
-{
-  cuda::device_ref dev{0};
-  cudaMemPool_t mem_pool = create_memory_pool(alloc_type, location_type, dev);
-  void* ptr              = allocate_memory_from_pool(mem_pool);
-
-  test_accessible_pointer(ptr, is_host_accessible, is_device_accessible, is_managed_memory, dev);
-  test_device_or_managed_memory(ptr, is_device_or_managed_memory);
-}
-
-bool test_memory_pool()
-{
-  if (cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED, 0))
+  // Test nullptr is not accessible from anywhere.
   {
-    test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeDevice, false, true, true, false);
+    T* buffer = nullptr;
+    test_accessible_pointer(buffer, false, false, false, dev);
+    test_device_or_managed_memory(buffer, false);
+  }
 
+  // Test global host buffer is accessible only from host.
+  {
+    T* buffer = global_host;
+    test_accessible_pointer(global_host, true, false, false, dev);
+    test_device_or_managed_memory(buffer, false);
+  }
+
+  // Test local host buffer is accessible only from host.
+  {
+    T buffer[N];
+    test_accessible_pointer(buffer, true, false, false, dev);
+    test_device_or_managed_memory(buffer, false);
+  }
+
+  // Test heap-allocated buffer is accessible only from host.
+  {
+    T* buffer = new T[N];
+    test_accessible_pointer(buffer, true, false, false, dev);
+    test_device_or_managed_memory(buffer, false);
+    delete[] buffer;
+  }
+
+  // Test heap-allocated and default-registered buffer is accessible from host and from device when unified addressing
+  // is allowed.
+  {
+    T* buffer = new T[N];
+    assert(cudaHostRegister(buffer, nbytes, cudaHostRegisterDefault) == cudaSuccess);
+    test_accessible_pointer(buffer, true, always_ua, false, dev);
+    test_device_or_managed_memory(buffer, false);
+    assert(cudaHostUnregister(buffer) == cudaSuccess);
+    delete[] buffer;
+  }
+
+  // Test heap-allocated and portable-registered buffer is accessible from host and from device when unified addressing
+  // is allowed.
+  {
+    T* buffer = new T[N];
+    assert(cudaHostRegister(buffer, nbytes, cudaHostRegisterPortable) == cudaSuccess);
+    test_accessible_pointer(buffer, true, always_ua, false, dev);
+    test_device_or_managed_memory(buffer, false);
+    assert(cudaHostUnregister(buffer) == cudaSuccess);
+    delete[] buffer;
+  }
+
+  // Test heap-allocated and mapped-registered buffer is accessible both from host and device.
+  {
+    T* buffer = new T[N];
+    assert(cudaHostRegister(buffer, nbytes, cudaHostRegisterMapped) == cudaSuccess);
+    test_accessible_pointer(buffer, true, true, false, dev);
+    test_device_or_managed_memory(buffer, false);
+    assert(cudaHostUnregister(buffer) == cudaSuccess);
+    delete[] buffer;
+  }
+
+  // Test heap-allocated and portable and mapped-registered buffer is accessible both from host and device.
+  {
+    T* buffer = new T[N];
+    assert(cudaHostRegister(buffer, nbytes, cudaHostRegisterPortable | cudaHostRegisterMapped) == cudaSuccess);
+    test_accessible_pointer(buffer, true, true, false, dev);
+    test_device_or_managed_memory(buffer, false);
+    assert(cudaHostUnregister(buffer) == cudaSuccess);
+    delete[] buffer;
+  }
+
+  // Test default-allocated pinned buffer is accessible from host and from device when unified addressing is allowed.
+  {
+    T* buffer;
+    assert(cudaHostAlloc(&buffer, nbytes, cudaHostAllocDefault) == cudaSuccess);
+    test_accessible_pointer(buffer, true, always_ua, false, dev);
+    test_device_or_managed_memory(buffer, false);
+    assert(cudaFreeHost(buffer) == cudaSuccess);
+  }
+
+  // Test portable-allocated pinned buffer is accessible  from host and from device when unified addressing is allowed.
+  {
+    T* buffer;
+    assert(cudaHostAlloc(&buffer, nbytes, cudaHostAllocPortable) == cudaSuccess);
+    test_accessible_pointer(buffer, true, always_ua, false, dev);
+    test_device_or_managed_memory(buffer, false);
+    assert(cudaFreeHost(buffer) == cudaSuccess);
+  }
+
+  // Test mapped-allocated pinned buffer is accessible from both host and device.
+  {
+    T* buffer;
+    assert(cudaHostAlloc(&buffer, nbytes, cudaHostAllocMapped) == cudaSuccess);
+    test_accessible_pointer(buffer, true, true, false, dev);
+    test_device_or_managed_memory(buffer, false);
+    assert(cudaFreeHost(buffer) == cudaSuccess);
+  }
+
+  // Test portable and mapped-allocated pinned buffer is accessible from both host and device.
+  {
+    T* buffer;
+    assert(cudaHostAlloc(&buffer, nbytes, cudaHostAllocPortable | cudaHostAllocMapped) == cudaSuccess);
+    test_accessible_pointer(buffer, true, true, false, dev);
+    test_device_or_managed_memory(buffer, false);
+    assert(cudaFreeHost(buffer) == cudaSuccess);
+  }
+
+  // Test device global buffer is accessible only from device.
+  {
+    T* buffer;
+    assert(cudaGetSymbolAddress((void**) &buffer, global_device) == cudaSuccess);
+    test_accessible_pointer(buffer, false, true, false, dev);
+    test_device_or_managed_memory(buffer, true);
+  }
+
+  // Test device global-allocated buffer is accessible only from device.
+  {
+    T* buffer;
+    assert(cudaMalloc(&buffer, nbytes) == cudaSuccess);
+    test_accessible_pointer(buffer, false, true, false, dev);
+    test_device_or_managed_memory(buffer, true);
+    assert(cudaFree(buffer) == cudaSuccess);
+  }
+
+  // Test device asynchronously and global-allocated buffer from the default pool is accessible only from device.
+  if (has_mempools)
+  {
+    T* buffer;
+    assert(cudaMallocAsync(&buffer, nbytes, stream.get()) == cudaSuccess);
+    test_accessible_pointer(buffer, false, true, false, dev);
+    test_device_or_managed_memory(buffer, true);
+    assert(cudaFreeAsync(buffer, stream.get()) == cudaSuccess);
+    stream.sync();
+  }
+
+  // Test device kernel-allocated buffer is accessible only from device.
+  {
+    // todo(dabayer): This seems to be failing as host-accessible and not device-accessible. Uncomment/remove once nvbug
+    //                6821064 is resolved.
+    // malloc_kernel<<<1, 1, 0, stream.get()>>>();
+    // stream.sync();
+
+    // T* buffer;
+    // assert(cudaMemcpyFromSymbol(&buffer, kernel_malloced_buffer, nbytes) == cudaSuccess);
+    // test_accessible_pointer(buffer, true, false, false, dev);
+    // test_device_or_managed_memory(buffer, false);
+
+    // free_kernel<<<1, 1, 0, stream.get()>>>();
+    // stream.sync();
+  }
+
+  // Test global managed buffer is accessible both host and device.
+  {
+    T* buffer = global_managed;
+    test_accessible_pointer(buffer, true, true, true, dev);
+    test_device_or_managed_memory(buffer, true);
+  }
+
+  // Test allocated managed buffer is accessible both host and device.
+  {
+    T* buffer;
+    assert(cudaMallocManaged(&buffer, nbytes) == cudaSuccess);
+    test_accessible_pointer(buffer, true, true, true, dev);
+    test_device_or_managed_memory(buffer, true);
+    assert(cudaFree(buffer) == cudaSuccess);
+  }
+}
+
+void test_memory_pool()
+{
+  cuda::device_ref dev{0};
+  cuda::stream stream{dev};
+
+  if (!cuda::device_attributes::memory_pools_supported(dev))
+  {
+    return;
+  }
+
+  // Test device-pinned memory pool.
+  {
+    cudaMemPoolProps mem_pool_props{};
+    mem_pool_props.allocType     = cudaMemAllocationTypePinned;
+    mem_pool_props.location.type = cudaMemLocationTypeDevice;
+    mem_pool_props.location.id   = dev.get();
+
+    cudaMemPool_t mem_pool;
+    assert(cudaMemPoolCreate(&mem_pool, &mem_pool_props) == cudaSuccess);
+
+    // Test pinned device buffer is accessible only from device.
+    T* buffer;
+    assert(cudaMallocFromPoolAsync(&buffer, nbytes, mem_pool, stream.get()) == cudaSuccess);
+    test_accessible_pointer(buffer, false, true, false, dev);
+    test_device_or_managed_memory(buffer, true);
+    assert(cudaFreeAsync(buffer, stream.get()) == cudaSuccess);
+    stream.sync();
+  }
+
+  // Test host-pinned memory pool.
 #if _CCCL_CTK_AT_LEAST(12, 2)
-    if (cuda::__is_host_memory_pool_supported())
-    {
-      test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeHost, true, false, false, false);
-    }
+  if (cuda::__is_host_memory_pool_supported())
+  {
+    cudaMemPoolProps mem_pool_props{};
+    mem_pool_props.allocType     = cudaMemAllocationTypePinned;
+    mem_pool_props.location.type = cudaMemLocationTypeHost;
+    // We need to set the pool size manually on Windows due to nvbug 6816728. Remove once it's resolved.
+#  if _CCCL_OS(WINDOWS)
+    mem_pool_props.maxSize = 4096;
+#  endif // _CCCL_OS(WINDOWS)
+
+    cudaMemPool_t mem_pool;
+    assert(cudaMemPoolCreate(&mem_pool, &mem_pool_props) == cudaSuccess);
+
+    T* buffer;
+    assert(cudaMallocFromPoolAsync(&buffer, nbytes, mem_pool, stream.get()) == cudaSuccess);
+
+    // Test the default-allocated host buffer is inaccessible from device.
+    test_accessible_pointer(buffer, true, false, false, dev);
+    test_device_or_managed_memory(buffer, false);
+
+    // Enable the access from device.
+    cudaMemAccessDesc mem_access_desc{};
+    mem_access_desc.location.type = cudaMemLocationTypeDevice;
+    mem_access_desc.location.id   = dev.get();
+    mem_access_desc.flags         = cudaMemAccessFlagsProtReadWrite;
+    assert(cudaMemPoolSetAccess(mem_pool, &mem_access_desc, 1) == cudaSuccess);
+
+    // Test the host buffer is accessible from device.
+    test_accessible_pointer(buffer, true, true, false, dev);
+    test_device_or_managed_memory(buffer, true);
+
+    assert(cudaFreeAsync(buffer, stream.get()) == cudaSuccess);
+    stream.sync();
+  }
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
+
+  // Test managed memory pool with host initial location.
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    // TODO(fbusato): check if this can be improved in future releases
-    if (cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_CONCURRENT_MANAGED_ACCESS, 0))
-    {
-      // TODO(fbusato): check if this can be improved in future releases
-      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeHost, true, true, true, true);
-      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeDevice, false, true, true, true);
-    }
+  if (cuda::device_attributes::concurrent_managed_access(dev))
+  {
+    cudaMemPoolProps mem_pool_props{};
+    mem_pool_props.allocType     = cudaMemAllocationTypeManaged;
+    mem_pool_props.location.type = cudaMemLocationTypeHost;
+
+    cudaMemPool_t mem_pool;
+    assert(cudaMemPoolCreate(&mem_pool, &mem_pool_props) == cudaSuccess);
+
+    T* buffer;
+    assert(cudaMallocFromPoolAsync(&buffer, nbytes, mem_pool, stream.get()) == cudaSuccess);
+
+    // Test the default-allocated managed buffer is accessible from both host and device.
+    test_accessible_pointer(buffer, true, true, true, dev);
+    test_device_or_managed_memory(buffer, true);
+
+    assert(cudaFreeAsync(buffer, stream.get()) == cudaSuccess);
+    stream.sync();
+  }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+  // Test managed memory pool with device initial location.
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  if (cuda::device_attributes::concurrent_managed_access(dev))
+  {
+    cudaMemPoolProps mem_pool_props{};
+    mem_pool_props.allocType     = cudaMemAllocationTypeManaged;
+    mem_pool_props.location.type = cudaMemLocationTypeDevice;
+    mem_pool_props.location.id   = dev.get();
+
+    cudaMemPool_t mem_pool;
+    assert(cudaMemPoolCreate(&mem_pool, &mem_pool_props) == cudaSuccess);
+
+    T* buffer;
+    assert(cudaMallocFromPoolAsync(&buffer, nbytes, mem_pool, stream.get()) == cudaSuccess);
+
+    // Test the default-allocated managed buffer is accessible from both host and device.
+    test_accessible_pointer(buffer, true, true, true, dev);
+    test_device_or_managed_memory(buffer, true);
+
+    assert(cudaFreeAsync(buffer, stream.get()) == cudaSuccess);
+    stream.sync();
   }
-  return true;
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 }
 
-bool test_multiple_devices()
+void test_multiple_devices()
 {
-  if (cuda::devices.size() < 2)
-  {
-    return true;
-  }
   cuda::device_ref dev0{0};
   cuda::device_ref dev1{1};
 
-  /// DEVICE 0 CONTEXT
-  int* device_ptr0 = nullptr;
-  assert(cudaMalloc(&device_ptr0, sizeof(int) * 2) == cudaSuccess);
+  const auto can_access = dev1.has_peer_access_to(dev0);
 
-  /// DEVICE 1 CONTEXT
-  cuda::__ensure_current_context ctx1(dev1);
-  assert(cuda::__is_device_or_managed_memory(device_ptr0) == true);
-  assert(cuda::is_device_accessible(device_ptr0, dev0) == true);
-  // assert(cuda::__is_device_accessible_nothrow(device_ptr0, dev0) == true);
-  assert(cuda::is_device_accessible(device_ptr0, dev1) == false);
-  // assert(cuda::__is_device_accessible_nothrow(device_ptr0, dev1) == false);
+  assert(cudaSetDevice(dev0.get()) == cudaSuccess);
 
-  int can_access_peer = 0;
-  assert(cudaDeviceCanAccessPeer(&can_access_peer, dev1.get(), dev0.get()) == cudaSuccess);
-  if (!can_access_peer)
+  T* dev0_buffer1;
+  T* dev0_buffer2;
   {
-    return true;
-  }
-  assert(cuda::__is_device_or_managed_memory(device_ptr0) == true);
-  assert(cuda::is_device_accessible(device_ptr0, dev1) == false);
-  // assert(cuda::__is_device_accessible_nothrow(device_ptr0, dev1) == false);
+    assert(cudaGetSymbolAddress((void**) &dev0_buffer1, global_device) == cudaSuccess);
+    test_accessible_pointer(dev0_buffer1, false, true, false, dev0);
+    test_device_or_managed_memory(dev0_buffer1, true);
 
-  assert(cudaDeviceEnablePeerAccess(dev0.get(), 0) == cudaSuccess);
-  assert(cuda::is_device_accessible(device_ptr0, dev0) == true);
-  // assert(cuda::__is_device_accessible_nothrow(device_ptr0, dev0) == true);
-  assert(cuda::is_device_accessible(device_ptr0, dev1) == true);
-  // assert(cuda::__is_device_accessible_nothrow(device_ptr0, dev1) == true);
-  assert(cudaDeviceDisablePeerAccess(dev0.get()) == cudaSuccess);
-  return true;
+    assert(cudaMalloc(&dev0_buffer2, nbytes) == cudaSuccess);
+    test_accessible_pointer(dev0_buffer2, false, true, false, dev0);
+    test_device_or_managed_memory(dev0_buffer2, true);
+  }
+
+  // Test that global allocated buffer on device 0 is by default not accessible on device 1.
+  {
+    assert(cudaSetDevice(dev1.get()) == cudaSuccess);
+
+    test_accessible_pointer(dev0_buffer1, false, false, false, dev1);
+    test_device_or_managed_memory(dev0_buffer1, true);
+
+    test_accessible_pointer(dev0_buffer2, false, false, false, dev1);
+    test_device_or_managed_memory(dev0_buffer2, true);
+
+    assert(cudaSetDevice(dev0.get()) == cudaSuccess);
+  }
+
+  // Test that global allocated buffer on device 0 is accessible on device 1 when peer access is enabled.
+  if (can_access)
+  {
+    assert(cudaSetDevice(dev1.get()) == cudaSuccess);
+    assert(cudaDeviceEnablePeerAccess(dev0.get(), 0) == cudaSuccess);
+
+    // todo(dabayer): It seems that __device__ variables can't be accessed even after the peer access has been enabled.
+    //                Uncomment/remove once nvbug 6820994 is resolved.
+    // test_accessible_pointer(dev0_buffer1, false, true, false, dev1);
+    // test_device_or_managed_memory(dev0_buffer1, true);
+
+    test_accessible_pointer(dev0_buffer2, false, true, false, dev1);
+    test_device_or_managed_memory(dev0_buffer2, true);
+
+    assert(cudaDeviceDisablePeerAccess(dev0.get()) == cudaSuccess);
+    assert(cudaSetDevice(dev0.get()) == cudaSuccess);
+  }
+
+  assert(cudaFree(dev0_buffer2) == cudaSuccess);
 }
 
-bool test_multiple_devices_from_pool()
+void test_multiple_devices_from_pool()
 {
-  if (cuda::devices.size() < 2)
-  {
-    return true;
-  }
   cuda::device_ref dev0{0};
   cuda::device_ref dev1{1};
 
-  cudaMemPool_t mem_pool = create_memory_pool(cudaMemAllocationTypePinned, cudaMemLocationTypeDevice, dev0);
-  void* ptr              = allocate_memory_from_pool(mem_pool);
+  const auto can_access = dev1.has_peer_access_to(dev0);
 
-  /// DEVICE 1 CONTEXT
-  cuda::__ensure_current_context ctx1(dev1);
-  int can_access_peer = 0;
-  assert(cudaDeviceCanAccessPeer(&can_access_peer, dev1.get(), dev0.get()) == cudaSuccess);
-  if (!can_access_peer)
+  cuda::stream stream{dev0};
+
+  if (!cuda::device_attributes::memory_pools_supported(dev0))
   {
-    return true;
+    return;
   }
-  assert(cuda::is_device_accessible(ptr, dev1) == false);
-  // assert(cuda::__is_device_accessible_nothrow(ptr, dev1) == false);
-  assert(cuda::__is_device_or_managed_memory(ptr) == true);
 
-  cudaMemAccessDesc access_desc = {};
-  access_desc.flags             = cudaMemAccessFlagsProtReadWrite;
-  access_desc.location.type     = cudaMemLocationTypeDevice;
-  access_desc.location.id       = dev1.get();
-  assert(cudaMemPoolSetAccess(mem_pool, &access_desc, 1) == cudaSuccess);
-  assert(cuda::is_device_accessible(ptr, dev0) == true);
-  // assert(cuda::__is_device_accessible_nothrow(ptr, dev0) == true);
-  assert(cuda::is_device_accessible(ptr, dev1) == true);
-  // assert(cuda::__is_device_accessible_nothrow(ptr, dev1) == true);
-  return true;
+  assert(cudaSetDevice(dev0.get()) == cudaSuccess);
+
+  // Test device-pinned memory pool.
+  cudaMemPoolProps mem_pool_props{};
+  mem_pool_props.allocType     = cudaMemAllocationTypePinned;
+  mem_pool_props.location.type = cudaMemLocationTypeDevice;
+  mem_pool_props.location.id   = dev0.get();
+
+  cudaMemPool_t mem_pool;
+  assert(cudaMemPoolCreate(&mem_pool, &mem_pool_props) == cudaSuccess);
+
+  // Test pinned device 0 buffer is accessible only from device 0.
+  T* dev0_buffer;
+  assert(cudaMallocFromPoolAsync(&dev0_buffer, nbytes, mem_pool, stream.get()) == cudaSuccess);
+
+  test_accessible_pointer(dev0_buffer, false, true, false, dev0);
+  test_accessible_pointer(dev0_buffer, false, false, false, dev1);
+  test_device_or_managed_memory(dev0_buffer, true);
+
+  if (can_access)
+  {
+    // Enable the access from device 1.
+    cudaMemAccessDesc mem_access_desc{};
+    mem_access_desc.location.type = cudaMemLocationTypeDevice;
+    mem_access_desc.location.id   = dev1.get();
+    mem_access_desc.flags         = cudaMemAccessFlagsProtReadWrite;
+    assert(cudaMemPoolSetAccess(mem_pool, &mem_access_desc, 1) == cudaSuccess);
+
+    // Test pinned device 0 buffer is now accessible from device 1.
+    test_accessible_pointer(dev0_buffer, false, true, false, dev0);
+    test_accessible_pointer(dev0_buffer, false, true, false, dev1);
+    test_device_or_managed_memory(dev0_buffer, true);
+  }
+
+  assert(cudaFreeAsync(dev0_buffer, stream.get()) == cudaSuccess);
+  stream.sync();
 }
 
 void test()
 {
-  assert(test_basic());
-  assert(test_multiple_devices());
-  assert(test_memory_pool());
-  assert(test_multiple_devices_from_pool());
+  test_basic();
+
+  if (cuda::devices.size() >= 2)
+  {
+    test_multiple_devices();
+  }
+
+  test_memory_pool();
+
+  if (cuda::devices.size() >= 2)
+  {
+    test_multiple_devices_from_pool();
+  }
 }
 
 int main(int, char**)

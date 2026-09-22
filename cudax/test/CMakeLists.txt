@@ -1,6 +1,19 @@
 cccl_get_c2h()
 cccl_get_cudatoolkit()
 
+# Since CMake 4.4, the CUDA::cufilt target is available, before that we need to find it manually.
+if ("${CMAKE_VERSION}" VERSION_GREATER_EQUAL "4.4")
+  set(cudax_cufilt_lib CUDA::cufilt)
+else()
+  find_library(
+    cudax_cufilt_lib
+    "cufilt"
+    PATHS "${CUDAToolkit_LIBRARY_DIR}"
+    REQUIRED
+    NO_DEFAULT_PATH
+  )
+endif()
+
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -99,17 +112,6 @@ cudax_add_catch2_test(test_target fill_bytes
     fill_bytes/fill_bytes_mdspan_example.cu
 )
 
-cudax_add_catch2_test(test_target copy
-    copy/copy.cu
-    copy/copy_edge_cases.cu
-    copy/copy_vectorize.cu
-    copy/copy_vectorize_5d.cu
-    copy/copy_llm.cu
-    copy/copy_nvmath.cu
-    copy/copy_nvmath_transpose.cu
-    copy/copy_shared_memory.cu
-)
-
 add_subdirectory(cuco)
 
 cudax_add_catch2_test(test_target green_context
@@ -133,110 +135,17 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
+add_subdirectory(coop)
 add_subdirectory(multi_gpu)
 
-cudax_add_catch2_test(test_target group.mapping.binary_partition
-    group/mapping/binary_partition.cu
-)
-cudax_add_catch2_test(test_target group.mapping.composite_mapping
-    group/mapping/composite_mapping.cu
-)
-cudax_add_catch2_test(test_target group.mapping.group_as
-    group/mapping/group_as.cu
-)
-cudax_add_catch2_test(test_target group.mapping.group_by
-    group/mapping/group_by.cu
-)
-cudax_add_catch2_test(test_target group.mapping.identity_mapping
-    group/mapping/identity_mapping.cu
-)
-cudax_add_catch2_test(test_target group.mapping.take
-    group/mapping/take.cu
-)
-cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
-    group/synchronizer/barrier_synchronizer.cu
-)
-cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
-    group/synchronizer/lane_synchronizer.cu
-)
-cudax_add_catch2_test(test_target group.synchronizer.level_synchronizer
-    group/synchronizer/level_synchronizer.cu
-)
-cudax_add_catch2_test(test_target group.cooperative_algorithm
-    group/cooperative_algorithm.cu
-)
-cudax_add_catch2_test(test_target group.group
-    group/group.cu
-)
-cudax_add_catch2_test(test_target group.virtual_group
-    group/virtual_group.cu
-)
-cudax_add_catch2_test(test_target group.group_view
-    group/group_view.cu
-)
-cudax_add_catch2_test(test_target group.make_this_group
-    group/make_this_group.cu
-)
-cudax_add_catch2_test(test_target group.implicit_hierarchy
-    group/implicit_hierarchy.cu
-)
-cudax_add_catch2_test(test_target group.segmented_algorithm
-    group/segmented_algorithm.cu
-)
-cudax_add_catch2_test(test_target group.this_group
-    group/this_group.cu
-)
-cudax_add_catch2_test(test_target group.invoke_one
-    group/invoke_one.cu
-)
-
-cudax_add_catch2_test(test_target coop.any_of.this_thread
-    coop/any_of/this_thread.cu
-)
-cudax_add_catch2_test(test_target coop.any_of.this_warp
-    coop/any_of/this_warp.cu
-)
-cudax_add_catch2_test(test_target coop.any_of.threads_within_warp
-    coop/any_of/threads_within_warp.cu
-)
-
-cudax_add_catch2_test(test_target coop.reduce.this_thread
-    coop/reduce/this_thread.cu
-)
-cudax_add_catch2_test(test_target coop.reduce.this_warp
-    coop/reduce/this_warp.cu
-)
-cudax_add_catch2_test(test_target coop.reduce.this_block
-    coop/reduce/this_block.cu
-)
-cudax_add_catch2_test(test_target coop.reduce.this_cluster
-    coop/reduce/this_cluster.cu
-)
-cudax_add_catch2_test(test_target coop.reduce.this_grid
-    coop/reduce/this_grid.cu
-)
-cudax_add_catch2_test(test_target coop.reduce.threads_within_warp
-    coop/reduce/threads_within_warp.cu
-)
-cudax_add_catch2_test(test_target coop.reduce.warps_within_block
-    coop/reduce/warps_within_block.cu
-)
-
-cudax_add_catch2_test(test_target coop.shuffle.threads_within_warp
-    coop/shuffle/threads_within_warp.cu
-)
-
-cudax_add_catch2_test(test_target coop.shuffle_down.threads_within_warp
-    coop/shuffle_down/threads_within_warp.cu
-)
-
-cudax_add_catch2_test(test_target coop.shuffle_up.threads_within_warp
-    coop/shuffle_up/threads_within_warp.cu
-)
-
-cudax_add_catch2_test(test_target coop.scratch
-    coop/scratch.cu
-)
+# Disable cudax::demangle testing on windows, due to:
+#   error LNK2038: mismatch detected for 'RuntimeLibrary': value 'MT_StaticRelease' doesn't match value
+#                  'MD_DynamicRelease' in catch2_runner.cu.obj
+# This is caused by catch2_runner.cu.obj using dynamic runtime and cu++filt.lib using static runtime.
+if (NOT WIN32)
+  cudax_add_catch2_test(test_target binutils.demangle binutils/demangle.cu)
+  target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
+endif()
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes

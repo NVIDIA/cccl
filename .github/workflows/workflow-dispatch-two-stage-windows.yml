@@ -52,6 +52,7 @@ jobs:
           runner:      ${{ fromJSON(inputs.producers)[0].runner }}
           cuda:        ${{ fromJSON(inputs.producers)[0].cuda }}
           host:        ${{ fromJSON(inputs.producers)[0].host }}
+          gpu_count:   ${{ fromJSON(inputs.producers)[0].gpu_count }}
 
   consumers:
     name: ${{ matrix.name }}
@@ -81,3 +82,4 @@ jobs:
           runner:      ${{ matrix.runner }}
           cuda:        ${{ matrix.cuda }}
           host:        ${{ matrix.host }}
+          gpu_count:   ${{ matrix.gpu_count }}

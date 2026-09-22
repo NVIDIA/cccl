@@ -45,7 +45,7 @@ void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(policy_selector<T, value_t, OffsetT>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceRadixSort::SortKeys,
       "SortKeys failed",
       d_buffer_1,

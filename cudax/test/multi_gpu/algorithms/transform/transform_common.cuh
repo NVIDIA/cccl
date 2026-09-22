@@ -11,10 +11,9 @@
 #ifndef CUDAX_TEST_MULTI_GPU_ALGORITHMS_TRANSFORM_TRANSFORM_COMMON_CUH
 #define CUDAX_TEST_MULTI_GPU_ALGORITHMS_TRANSFORM_TRANSFORM_COMMON_CUH
 
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
-
 #include <vector>
+
+#include <algorithm_common.h>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -41,25 +40,9 @@ struct custom_triple
   }
 };
 
-using custom_value = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
-using value_types  = c2h::type_list<cuda::std::int32_t, float, custom_value>;
-using operators    = c2h::type_list<custom_double, custom_triple>;
-
-template <typename T>
-T make_value(int i)
-{
-  return static_cast<T>(i);
-}
-
-template <>
-inline custom_value make_value<>(int i)
-{
-  custom_value ret{};
-
-  ret.key = static_cast<std::size_t>(i);
-  ret.val = static_cast<std::size_t>(i);
-  return ret;
-};
+// `transform` applies a unary operator, so it needs its own operator list rather than the binary
+// `operators` of `algorithm_common.h`.
+using operators = c2h::type_list<custom_double, custom_triple>;
 
 // `transform` is rank-local: rank `r` reads only the elements it owns, so its reference is its own
 // input with the operator applied element by element.

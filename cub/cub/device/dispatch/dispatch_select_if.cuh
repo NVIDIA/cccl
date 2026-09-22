@@ -22,6 +22,7 @@
 
 #include <cub/agent/agent_select_if.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
@@ -691,14 +692,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
         }
 
         // Log scan_init_kernel configuration
-        int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+        const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
-                init_grid_size,
-                INIT_KERNEL_THREADS,
-                (long long) stream);
-#endif
+        _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
         // Invoke scan_init_kernel to initialize tile descriptors
         error = CubDebug(
@@ -723,8 +719,13 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
           return cudaSuccess;
         }
 
-// Log select_if_kernel configuration
+        // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
+        constexpr bool cub_debug_log_select_if_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+        const bool cub_debug_log_select_if_kernel = detail::logging_enabled();
+#endif // !CUB_DEBUG_LOG
+        if (cub_debug_log_select_if_kernel)
         {
           // Get SM occupancy for select_if_kernel
           int range_select_sm_occupancy;
@@ -736,15 +737,17 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
             return error;
           }
 
-          _CubLog("Invoking select_if_kernel<<<%d, %d, 0, "
-                  "%lld>>>(), %d items per thread, %d SM occupancy\n",
-                  current_num_tiles,
-                  threads_per_block,
-                  (long long) stream,
-                  items_per_thread,
-                  range_select_sm_occupancy);
+          _CUB_LOG_KERNEL_LAUNCH(
+            "select_if_kernel",
+            current_num_tiles,
+            1,
+            1,
+            threads_per_block,
+            0,
+            stream,
+            ", SM occupancy: %d",
+            range_select_sm_occupancy);
         }
-#endif
 
         // Invoke select_if_kernel
         error = CubDebug(
@@ -848,7 +851,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
     cudaStream_t stream)
   {
     int ptx_version = 0;
-    if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
+    if (const cudaError_t error = CubDebug(PtxVersion(ptx_version)))
     {
       return error;
     }
@@ -980,10 +983,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
 
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog(
-      "Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif
+    _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
@@ -1006,6 +1006,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
     }
 
 #ifdef CUB_DEBUG_LOG
+    constexpr bool cub_debug_log_select_sweep_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+    const bool cub_debug_log_select_sweep_kernel = logging_enabled();
+#endif // !CUB_DEBUG_LOG
+    if (cub_debug_log_select_sweep_kernel)
     {
       int range_select_sm_occupancy;
       if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
@@ -1026,15 +1031,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
         return error;
       }
 
-      _CubLog("Invoking DeviceSelectSweepKernel<<<%d, %d, 0, "
-              "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              current_num_tiles,
-              threads_per_block,
-              (long long) stream,
-              items_per_thread,
-              range_select_sm_occupancy);
+      _CUB_LOG_KERNEL_LAUNCH(
+        "DeviceSelectSweepKernel",
+        current_num_tiles,
+        1,
+        1,
+        threads_per_block,
+        0,
+        stream,
+        ", SM occupancy: %d",
+        range_select_sm_occupancy);
     }
-#endif
 
     if (const auto error = CubDebug(
           launcher_factory(current_num_tiles, threads_per_block, 0, stream)
@@ -1111,18 +1118,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << PolicySelector{}(cc);
-                 _CubLog("Dispatching DeviceSelectIf to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+    detail::log_dispatch("DeviceSelectIf", cc, policy_getter());
+
     return dispatch_policy<SelectionOpt, decltype(policy_getter)>(
       policy_getter,
       d_temp_storage,

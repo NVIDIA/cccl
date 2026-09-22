@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
@@ -39,6 +40,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileStates);
+
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL ::cuda::std::size_t max_native_atomic_size() noexcept
 {
 #if _CCCL_CUDA_COMPILER(NVHPC)
@@ -64,8 +67,8 @@ struct tile_state_unaligned_t
 // some older nvcc versions do not evaluate next_power_of_two() at compile time when called inside an attribute, so we
 // have to force constant evaluation by assigning the result to a template parameter
 template <typename AccumT,
-          ::cuda::std::size_t _Alignment = ::cuda::next_power_of_two(sizeof(tile_state_unaligned_t<AccumT>))>
-struct alignas(_Alignment) tile_state_t : tile_state_unaligned_t<AccumT>
+          ::cuda::std::size_t Alignment = ::cuda::next_power_of_two(sizeof(tile_state_unaligned_t<AccumT>))>
+struct alignas(Alignment) tile_state_t : tile_state_unaligned_t<AccumT>
 {};
 
 #if __cccl_ptx_isa >= 860
@@ -126,7 +129,7 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
 }
 
 // warpLoadLookahead loads tmp states:
-//   idxTileCur + [0; 32 * numTileStatesPerThread[
+//   idxTileCur + [0; 32 * NumTileStatesPerThread[
 //
 // The states are loaded in laneId order and warp-strided:
 //
@@ -143,16 +146,17 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
 //
 // If the index idxTileCur + ii of the loaded state is equal to or exceeds idxTileNext, i.e., idxTileCur + ii >=
 // idxTileNext, then the state is not loaded from memory and set to empty.
-template <int numTileStatesPerThread, typename AccumT>
+template <int NumTileStatesPerThread, typename AccumT>
 _CCCL_DEVICE_API void warpLoadLookahead(
   int laneIdx,
-  tile_state_t<AccumT> (&outTileStates)[numTileStatesPerThread],
+  tile_state_t<AccumT> (&outTileStates)[NumTileStatesPerThread],
   tile_state_t<AccumT>* ptrTileStates,
   int idxTileCur,
   int idxTileNext,
   int num_tiles)
 {
-  for (int i = 0; i < numTileStatesPerThread; ++i)
+  _CCCL_IKET_RANGE_PUSH(LoadTileStates);
+  for (int i = 0; i < NumTileStatesPerThread; ++i)
   {
     const int idxTileLookahead = idxTileCur + 32 * i + laneIdx;
     if (idxTileLookahead < idxTileNext)
@@ -165,18 +169,19 @@ _CCCL_DEVICE_API void warpLoadLookahead(
       outTileStates[i].state = scan_state::empty;
     }
   }
+  _CCCL_IKET_RANGE_POP();
 }
 
 // warpIncrementalLookahead takes the latest known aggrExclusiveCtaPrev and its tile index, idxTilePrev (which's
 // aggregate is NOT included in aggrExclusiveCtaPrev), and computes the aggrExclusiveCta for the next tile of interest,
 // idxTileNext (where the returned value will NOT include the aggregate of idxTileNext).
 //
-// It does so by loading states in chunks of 32 * numTileStatesPerThread elements, starting from idxTilePrev + 1. From
+// It does so by loading states in chunks of 32 * NumTileStatesPerThread elements, starting from idxTilePrev + 1. From
 // the chunk of states, it tries to advance its knowledge of aggrExclusiveCta as much as possible. It loops until it can
 // calculate the value of aggrExclusiveCta from the preceding states.
 //
 // The function must be called from a single warp. All passed arguments must be warp-uniform.
-template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
+template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookahead(
   SpecialRegisters specialRegisters,
   tile_state_t<AccumT>* ptrTileStates,
@@ -199,10 +204,10 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 
   while (idxTileCur < idxTileNext)
   {
-    tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
+    tile_state_t<AccumT> regTmpStates[NumTileStatesPerThread];
     warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
 
-    for (int idx = 0; idx < numTileStatesPerThread; ++idx)
+    for (int idx = 0; idx < NumTileStatesPerThread; ++idx)
     {
       // Bitmask with 1 bits indicating which lane has a tile aggregate
       const ::cuda::std::uint32_t warp_has_aggregate_mask =
@@ -261,7 +266,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 // from there directly. Because every reduction begins at the same fixed tiles, no matter which tiles happened to finish
 // first, the order in which values are summed is always the same and the result is identical on every run.
 // idxTilePrev/aggrExclusiveCtaPrev are updated by reference to the last multiple of 32.
-template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
+template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookaheadStable(
   SpecialRegisters specialRegisters,
   tile_state_t<AccumT>* ptrTileStates,
@@ -284,10 +289,10 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 
   while (idxTileCur < idxTileNext)
   {
-    tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
+    tile_state_t<AccumT> regTmpStates[NumTileStatesPerThread];
     warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
 
-    for (int idx = 0; idx < numTileStatesPerThread; ++idx)
+    for (int idx = 0; idx < NumTileStatesPerThread; ++idx)
     {
       // Bitmask with 1 bits indicating which lane has a tile aggregate
       const ::cuda::std::uint32_t warp_has_aggregate_mask =

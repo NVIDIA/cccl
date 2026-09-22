@@ -6,10 +6,6 @@
 
 #include <unittest/unittest.h>
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <unittest/cuda/testframework.h>
-#endif
-
 struct basic_arithmetic_functor
 {
   template <typename T>
@@ -218,7 +214,7 @@ struct TestComplexArithmeticTransform
     ASSERT_ALMOST_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestComplexArithmeticTransform, FloatingPointTypes> TestComplexArithmeticTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComplexArithmeticTransform, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexPlaneTransform
@@ -237,7 +233,7 @@ struct TestComplexPlaneTransform
     ASSERT_ALMOST_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestComplexPlaneTransform, FloatingPointTypes> TestComplexPlaneTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComplexPlaneTransform, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexPowerTransform
@@ -264,7 +260,7 @@ struct TestComplexPowerTransform
     ASSERT_ALMOST_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestComplexPowerTransform, FloatingPointTypes> TestComplexPowerTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComplexPowerTransform, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexExponentialTransform
@@ -291,7 +287,7 @@ struct TestComplexExponentialTransform
     ASSERT_ALMOST_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestComplexExponentialTransform, FloatingPointTypes> TestComplexExponentialTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComplexExponentialTransform, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexTrigonometricTransform
@@ -354,4 +350,4 @@ struct TestComplexTrigonometricTransform
     ASSERT_ALMOST_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestComplexTrigonometricTransform, FloatingPointTypes> TestComplexTrigonometricTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComplexTrigonometricTransform, FloatingPointTypes);

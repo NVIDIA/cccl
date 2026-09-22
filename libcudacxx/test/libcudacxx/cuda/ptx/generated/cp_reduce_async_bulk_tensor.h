@@ -20,8 +20,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; //
-        // 1a.
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
@@ -29,8 +28,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                const void*,
                                const cuda::std::int32_t (&)[1],
                                const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1a.
+          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -38,8 +36,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[1],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1a.
+          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -47,8 +44,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[1],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1a.
+          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -56,8 +52,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[1],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1a.
+          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -65,8 +60,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[1],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1a.
+          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -75,7 +69,6 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const cuda::std::int32_t (&)[1],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
           // cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
-          // // 1a.
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -83,8 +76,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[1],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1a.
+          // cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -98,8 +90,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; //
-        // 1b.
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
@@ -107,8 +98,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                const void*,
                                const cuda::std::int32_t (&)[2],
                                const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1b.
+          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -116,8 +106,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[2],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1b.
+          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -125,8 +114,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[2],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1b.
+          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -134,8 +122,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[2],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1b.
+          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -143,8 +130,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[2],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1b.
+          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -153,7 +139,6 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const cuda::std::int32_t (&)[2],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
           // cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
-          // // 1b.
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -161,8 +146,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[2],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1b.
+          // cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -176,8 +160,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; //
-        // 1c.
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
@@ -185,8 +168,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                const void*,
                                const cuda::std::int32_t (&)[3],
                                const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1c.
+          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -194,8 +176,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[3],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1c.
+          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -203,8 +184,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[3],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1c.
+          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -212,8 +192,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[3],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1c.
+          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -221,8 +200,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[3],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1c.
+          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -231,7 +209,6 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const cuda::std::int32_t (&)[3],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
           // cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
-          // // 1c.
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -239,8 +216,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[3],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1c.
+          // cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -254,8 +230,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; //
-        // 1d.
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
@@ -263,8 +238,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                const void*,
                                const cuda::std::int32_t (&)[4],
                                const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1d.
+          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -272,8 +246,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[4],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1d.
+          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -281,8 +254,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[4],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1d.
+          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -290,8 +262,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[4],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1d.
+          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -299,8 +270,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[4],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1d.
+          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -309,7 +279,6 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const cuda::std::int32_t (&)[4],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
           // cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
-          // // 1d.
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -317,8 +286,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[4],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1d.
+          // cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -332,8 +300,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
-        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; //
-        // 1e.
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
@@ -341,8 +308,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                const void*,
                                const cuda::std::int32_t (&)[5],
                                const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1e.
+          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -350,8 +316,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[5],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1e.
+          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -359,8 +324,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[5],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1e.
+          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -368,8 +332,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[5],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1e.
+          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -377,8 +340,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[5],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1e.
+          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -387,7 +349,6 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const cuda::std::int32_t (&)[5],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
           // cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
-          // // 1e.
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -395,8 +356,7 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const void*,
                                    const cuda::std::int32_t (&)[5],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));
-          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords],
-          // [srcMem]; // 1e.
+          // cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.bulk_group [tensorMap, tensorCoords], [srcMem];
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
@@ -405,4 +365,2556 @@ __global__ void test_cp_reduce_async_bulk_tensor(void** fn_ptr)
                                    const cuda::std::int32_t (&)[5],
                                    const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor));));
 #endif // __cccl_ptx_isa >= 800
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.override::global_address.override::global_dim.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[1],
+                               const cuda::std::int32_t (&)[1],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[2],
+                               const cuda::std::int32_t (&)[1],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[2],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[3],
+                               const cuda::std::int32_t (&)[2],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[3],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[4],
+                               const cuda::std::int32_t (&)[3],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[4],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.override::global_address.bulk_group [tensorMap,
+        // gAddrToOverride, tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
+
+#if __cccl_ptx_isa >= 940
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_inc_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_dec_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_and_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_or_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107a,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_107f,
+    (
+        // cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.override::global_address.override::global_dim_stride.bulk_group
+        // [tensorMap, gAddrToOverride, tensorSizeToOverride, tensorLowerStrideToOverride, tensorUpperStrideToOverride,
+        // tensorCoords], [srcMem];
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_xor_op_t,
+                               const void*,
+                               const void*,
+                               const cuda::std::int16_t (&)[5],
+                               const cuda::std::int32_t (&)[4],
+                               const cuda::std::int16_t&,
+                               const cuda::std::int32_t (&)[5],
+                               const void*)>(cuda::ptx::cp_reduce_async_bulk_tensor_override));));
+
+#endif // __cccl_ptx_isa >= 940
 }

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__numeric/add_overflow.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -33,7 +34,7 @@ namespace cuda::experimental::cuco::detail
 __mod_mul(::cuda::std::uint64_t __n1, ::cuda::std::uint64_t __n2, ::cuda::std::uint64_t __m) noexcept
 {
 #if _CCCL_HAS_INT128()
-  auto __r = static_cast<__uint128_t>(__n1) * __n2;
+  const auto __r = static_cast<__uint128_t>(__n1) * __n2;
   return static_cast<::cuda::std::uint64_t>(__r % __m);
 #else
   // Fallback: Russian-peasant multiplication in modular arithmetic.
@@ -64,9 +65,9 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   {
     if (__e & 1)
     {
-      __r = detail::__mod_mul(__r, __b, __m);
+      __r = ::cuda::experimental::cuco::detail::__mod_mul(__r, __b, __m);
     }
-    __b = detail::__mod_mul(__b, __b, __m);
+    __b = ::cuda::experimental::cuco::detail::__mod_mul(__b, __b, __m);
   }
   return __r;
 }
@@ -78,7 +79,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __miller_rabin_test(
   ::cuda::std::uint64_t __n, ::cuda::std::uint64_t __a, ::cuda::std::uint64_t __d, ::cuda::std::uint32_t __s) noexcept
 {
-  ::cuda::std::uint64_t __x = detail::__mod_pow(__a % __n, __d, __n);
+  ::cuda::std::uint64_t __x = ::cuda::experimental::cuco::detail::__mod_pow(__a % __n, __d, __n);
   const auto __neg_one      = __n - 1;
   if (__x == 1 || __x == __neg_one)
   {
@@ -87,7 +88,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
   for (::cuda::std::uint32_t __i = 1; __i < __s; ++__i)
   {
-    __x = detail::__mod_mul(__x, __x, __n);
+    __x = ::cuda::experimental::cuco::detail::__mod_mul(__x, __x, __n);
     if (__x == __neg_one)
     {
       return true;
@@ -111,7 +112,7 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   // Trial division by small primes.
   constexpr ::cuda::std::uint64_t __small_primes[]{
     2ull, 3ull, 5ull, 7ull, 11ull, 13ull, 17ull, 19ull, 23ull, 29ull, 31ull, 37ull};
-  for (::cuda::std::uint64_t __p : __small_primes)
+  for (const ::cuda::std::uint64_t __p : __small_primes)
   {
     if (__n % __p == 0)
     {
@@ -130,9 +131,9 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
   // Deterministic witness bases for all `uint64_t` values.
   constexpr ::cuda::std::uint64_t __witnesses[]{2ull, 325ull, 9375ull, 28178ull, 450775ull, 9780504ull, 1795265022ull};
-  for (::cuda::std::uint64_t __a : __witnesses)
+  for (const ::cuda::std::uint64_t __a : __witnesses)
   {
-    if (!detail::__miller_rabin_test(__n, __a, __d, __s))
+    if (__a % __n != 0 && !::cuda::experimental::cuco::detail::__miller_rabin_test(__n, __a, __d, __s))
     {
       return false;
     }
@@ -141,12 +142,20 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
   return true;
 }
 
-//! @brief Returns the smallest prime `>= __n`.
+//! @brief Returns the smallest prime in `[__n, __upper_bound]`.
 //!
-//! For `__n <= 2`, returns 2. Otherwise searches odd numbers starting from
-//! `__n` (or `__n + 1` if `__n` is even).
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t __next_prime(::cuda::std::uint64_t __n) noexcept
+//! @param[in] __n Lower bound of the search range
+//! @param[in] __upper_bound Upper bound of the search range
+//!
+//! @return The smallest prime in the search range, or zero if none exists
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint64_t
+__next_prime(::cuda::std::uint64_t __n,
+             ::cuda::std::uint64_t __upper_bound = ::cuda::std::numeric_limits<::cuda::std::uint64_t>::max()) noexcept
 {
+  if (__upper_bound < 2 || __n > __upper_bound)
+  {
+    return 0;
+  }
   if (__n <= 2)
   {
     return 2;
@@ -154,17 +163,21 @@ __mod_pow(::cuda::std::uint64_t __b, ::cuda::std::uint64_t __e, ::cuda::std::uin
 
   __n |= 1; // make odd
 
-  while (!detail::__is_prime(__n))
+  while (__n <= __upper_bound)
   {
+    if (::cuda::experimental::cuco::detail::__is_prime(__n))
+    {
+      return __n;
+    }
     const auto __next = ::cuda::add_overflow(__n, ::cuda::std::uint64_t{2});
     if (__next.overflow)
     {
-      return __n;
+      return 0;
     }
     __n = __next.value;
   }
 
-  return __n;
+  return 0;
 }
 } // namespace cuda::experimental::cuco::detail
 

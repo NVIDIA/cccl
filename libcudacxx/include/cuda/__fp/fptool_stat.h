@@ -436,7 +436,7 @@ _CCCL_HOST_API inline void fpmp2_stat_reset_device_data(::cuda::stream_ref __str
   // record does not have to outlive the call.
   const fpmp2_stat_data __cleared = __fpmp2_stat_cleared_data();
   fpmp2_stat_data* __data_ptr     = ::cuda::get_device_address(__fpmp2_stat_device_data<>, __stream.device());
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemcpyAsync,
     "failed to clear the fpmp2_stat device record",
     __data_ptr,
@@ -458,7 +458,7 @@ _CCCL_HOST_API inline void fpmp2_stat_reset_device_data(::cuda::stream_ref __str
 {
   fpmp2_stat_data __dst{};
   const fpmp2_stat_data* __data_ptr = ::cuda::get_device_address(__fpmp2_stat_device_data<>, __stream.device());
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemcpyAsync,
     "failed to read the fpmp2_stat device record",
     &__dst,
@@ -1017,11 +1017,8 @@ public:
 
   // === arithmetic ===
 
-  //! @brief Renormalize the pair, which is not an instrumented operation
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2_stat renormalize(const fpmp2_stat& __x) noexcept
-  {
-    return __from_base(renormalize(__x.__stat_v_));
-  }
+  // renormalize mirrors the wrapped type: a plain free function at namespace scope, with
+  // the other standard-named ones further down this header.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2_stat operator+(const fpmp2_stat& __x, const fpmp2_stat& __y) noexcept
   {
@@ -1328,6 +1325,16 @@ inline constexpr bool __fpmp_is_fpmp2_stat_v<fpmp2_stat<_FpType, _TypeAcc>> = tr
 // === math free functions mirroring the fpmp2 ones ===
 // None of these are instrumented: they are composites, and counting the operations
 // inside them would drown the counters of the surrounding algorithm.
+// At namespace scope rather than hidden friends, as in <cuda/__fp/fpmp.h>, so that the
+// whole public surface can be called qualified and not only through ADL.
+
+//! @brief Renormalize the pair, which is not an instrumented operation
+template <class _FpType, fpmp2_accuracy _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2_stat<_FpType, _TypeAcc>
+renormalize(const fpmp2_stat<_FpType, _TypeAcc>& __x) noexcept
+{
+  return fpmp2_stat<_FpType, _TypeAcc>(renormalize(__x.as_fpmp2()));
+}
 
 //! @brief Square root
 template <class _FpType, fpmp2_accuracy _TypeAcc>
