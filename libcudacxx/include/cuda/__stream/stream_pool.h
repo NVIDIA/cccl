@@ -95,8 +95,10 @@ enum class stream_pool_creation
 //! construction with a `stream_pool_creation` value. With `stream_pool_creation::eager`, the default, every stream
 //! is created in the constructor. With `stream_pool_creation::lazy`, a stream is created by the first request for
 //! its slot; two threads racing for the same empty slot both create a stream, one publishes it and the other
-//! destroys its own. The getters never block: they are lock-free in both modes and can be called concurrently from
-//! several threads.
+//! destroys its own. The getters can be called concurrently from several threads. The pool takes no lock: its
+//! synchronization is lock-free, but not wait-free, since the round-robin advance retries a compare-exchange that
+//! only fails when another caller succeeded. The first request for an empty slot of a lazy pool pays the cost of
+//! the stream creation, a driver call.
 class stream_pool
 {
 public:
