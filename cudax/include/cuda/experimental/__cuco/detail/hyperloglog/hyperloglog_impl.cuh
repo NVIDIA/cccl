@@ -205,11 +205,18 @@ public:
     __vector_kernel_type __vector_kernel = nullptr;
 
     // Vectorized loads require contiguous input with no element conversion.
-    using __input_reference = ::cuda::std::iter_reference_t<_InputIt>;
-    constexpr bool __can_vectorize =
-      ::cuda::std::contiguous_iterator<_InputIt>
-      && (::cuda::std::is_same_v<__input_reference, __value_type&>
-          || ::cuda::std::is_same_v<__input_reference, const __value_type&>);
+    constexpr bool __can_vectorize = [] {
+      if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
+      {
+        using __input_reference = ::cuda::std::iter_reference_t<_InputIt>;
+        return ::cuda::std::is_same_v<__input_reference, __value_type&>
+            || ::cuda::std::is_same_v<__input_reference, const __value_type&>;
+      }
+      else
+      {
+        return false;
+      }
+    }();
     if constexpr (__can_vectorize)
     {
       const auto __ptr                  = ::cuda::std::to_address(__first);
