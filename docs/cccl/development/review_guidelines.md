@@ -119,6 +119,18 @@ When a kernel is launched with PDL enabled (either directly or via a launcher fa
 via `cub::detail::ptx_compute_cap`. PDL may only be enabled if
 `cc >= ::cuda::compute_capability{9, 0}` (see `dispatch_find.cuh`).
 
+## correctness.pdl-sync (critical, kernels launched with programmatic dependent launch)
+
+<!-- provenance:
+  #3114→#5456 (backports #5460, #5461) PDL grid-dependency sync in AgentMerge::consume_tile placed after the merge_partitions reads it was meant to guard, causing intermittent races/cudaErrorIllegalInstruction (issue #5297)
+-->
+
+When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
+at the kernel launcher, flag any global memory access in the kernel's body (i.e., a load from or a
+store to a pointer passed at the kernel's interface) that happens before any call to
+`_CCCL_PDL_GRID_DEPENDENCY_SYNC` — the previous kernel may still be writing that memory — unless the
+access has a comment explaining why a PDL sync can come later.
+
 ## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
 
 <!-- provenance:
@@ -218,6 +230,18 @@ usable during constant evaluation on every supported compiler, not merely that i
 runtime call. The break only surfaces when a caller uses the function during constant evaluation,
 which the unit tests may not exercise. Adding a test that evaluates the function at compile time is
 recommended.
+
+## perf.partial-pdl (important, kernels launched with programmatic dependent launch)
+
+<!-- provenance:
+  #3114→#3199 PDL enabled at Partition/Merge triple_chevron launches but not the sibling BlockSort launch
+-->
+
+When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
+at the kernel launcher, open the full dispatch function (or equivalent) and enumerate EVERY kernel
+launch it makes. All kernels should be launched using PDL, otherwise the performance gain is marginal.
+Replacing calls to `cudaMemset` by kernels launched using PDL should be strongly considered and
+pointed out as suggestions.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
