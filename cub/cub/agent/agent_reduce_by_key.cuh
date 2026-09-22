@@ -149,17 +149,16 @@ struct AgentReduceByKey
   using ScanTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
 
   // Guarded inequality functor
-  template <typename _EqualityOpT>
   struct GuardedInequalityWrapper
   {
     /// Wrapped equality operator
-    _EqualityOpT op;
+    EqualityOpT op;
 
     /// Items remaining
     int num_remaining;
 
     /// Constructor
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(_EqualityOpT op, int num_remaining)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(EqualityOpT op, int num_remaining)
         : op(op)
         , num_remaining(num_remaining)
     {}
@@ -553,7 +552,7 @@ struct AgentReduceByKey
     if (IsLastTile)
     {
       // Use custom flag operator to additionally flag the first out-of-bounds item
-      const GuardedInequalityWrapper<EqualityOpT> flag_op(equality_op, num_remaining);
+      const GuardedInequalityWrapper flag_op(equality_op, num_remaining);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
