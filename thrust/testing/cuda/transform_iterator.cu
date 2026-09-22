@@ -17,5 +17,7 @@ void TestTransformWithLambda()
   thrust::device_vector<int> B{1, 2, 3, 4, 5, 6, 7};
   REQUIRE(thrust::any_of(B.begin(), B.end(), l));
 }
-
-DECLARE_UNITTEST(TestTransformWithLambda);
+TEST_CASE("TestTransformWithLambda", "[transform_iterator]")
+{
+  TestTransformWithLambda();
+}

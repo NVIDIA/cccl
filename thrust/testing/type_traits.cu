@@ -17,7 +17,7 @@
 
 #include <unittest/unittest.h>
 
-void TestIsContiguousIterator()
+TEST_CASE("TestIsContiguousIterator", "[type_traits]")
 {
   using HostVector   = thrust::host_vector<int>;
   using DeviceVector = thrust::device_vector<int>;
@@ -51,7 +51,6 @@ void TestIsContiguousIterator()
   REQUIRE_FALSE(thrust::is_contiguous_iterator_v<TransformIterator>);
   REQUIRE_FALSE(thrust::is_contiguous_iterator_v<ZipIterator>);
 }
-DECLARE_UNITTEST(TestIsContiguousIterator);
 
 struct NonTriviallyCopyable
 {
@@ -62,7 +61,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(NonTriviallyCopyable);
 static_assert(!::cuda::std::is_trivially_copyable<NonTriviallyCopyable>::value);
 static_assert(thrust::is_trivially_relocatable<NonTriviallyCopyable>::value);
 
-void TestTriviallyRelocatable()
+TEST_CASE("TestTriviallyRelocatable", "[type_traits]")
 {
   static_assert(thrust::is_trivially_relocatable<int>::value);
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
@@ -99,5 +98,4 @@ void TestTriviallyRelocatable()
   static_assert(thrust::is_trivially_relocatable<::cuda::std::pair<NonTriviallyCopyable, int>>::value);
   static_assert(thrust::is_trivially_relocatable<cuda::std::tuple<NonTriviallyCopyable>>::value);
   static_assert(thrust::is_trivially_relocatable<::cuda::std::tuple<NonTriviallyCopyable>>::value);
-};
-DECLARE_UNITTEST(TestTriviallyRelocatable);
+}

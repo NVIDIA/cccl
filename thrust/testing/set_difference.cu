@@ -14,7 +14,7 @@ set_difference(my_system& system, InputIterator1, InputIterator1, InputIterator2
   return result;
 }
 
-void TestSetDifferenceDispatchExplicit()
+TEST_CASE("TestSetDifferenceDispatchExplicit", "[set_difference]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -23,7 +23,6 @@ void TestSetDifferenceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetDifferenceDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -33,7 +32,7 @@ set_difference(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIter
   return result;
 }
 
-void TestSetDifferenceDispatchImplicit()
+TEST_CASE("TestSetDifferenceDispatchImplicit", "[set_difference]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -46,7 +45,6 @@ void TestSetDifferenceDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetDifferenceDispatchImplicit);
 
 template <typename Vector>
 void TestSetDifferenceSimple()
@@ -59,7 +57,7 @@ void TestSetDifferenceSimple()
 
   const Iterator end = thrust::set_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetDifferenceSimple);
@@ -187,7 +185,7 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
   REQUIRE(result == expected);
 }
 
-void TestSetDifferenceWithBigIndexes()
+TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_difference]")
 {
 #  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestSetDifferenceWithBigIndexesHelper(30);
@@ -196,6 +194,5 @@ void TestSetDifferenceWithBigIndexes()
   TestSetDifferenceWithBigIndexesHelper(33);
 #  endif
 }
-DECLARE_UNITTEST(TestSetDifferenceWithBigIndexes);
 
 #endif

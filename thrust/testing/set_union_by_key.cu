@@ -26,7 +26,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetUnionByKeyDispatchExplicit()
+TEST_CASE("TestSetUnionByKeyDispatchExplicit", "[set_union_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -36,7 +36,6 @@ void TestSetUnionByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetUnionByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -59,7 +58,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetUnionByKeyDispatchImplicit()
+TEST_CASE("TestSetUnionByKeyDispatchImplicit", "[set_union_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -75,7 +74,6 @@ void TestSetUnionByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetUnionByKeyDispatchImplicit);
 
 template <typename Vector>
 void TestSetUnionByKeySimple()
@@ -98,8 +96,8 @@ void TestSetUnionByKeySimple()
     result_key.begin(),
     result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }

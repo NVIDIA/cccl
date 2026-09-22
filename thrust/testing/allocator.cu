@@ -36,7 +36,7 @@ void TestAllocatorCustomDefaultConstruct(size_t n)
   const thrust::device_vector<T> ref(n, 13);
   const thrust::device_vector<T, my_allocator_with_custom_construct1<T>> vec(n);
 
-  ASSERT_EQUAL_QUIET(ref, vec);
+  REQUIRE(ref == vec);
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomDefaultConstruct);
 
@@ -59,7 +59,7 @@ void TestAllocatorCustomCopyConstruct(size_t n)
   thrust::device_vector<T> copy_from(n, 7);
   const thrust::device_vector<T, my_allocator_with_custom_construct2<T>> vec(copy_from.begin(), copy_from.end());
 
-  ASSERT_EQUAL_QUIET(ref, vec);
+  REQUIRE(ref == vec);
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomCopyConstruct);
 
@@ -183,7 +183,7 @@ void TestAllocatorMinimal(size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorMinimal);
 
-void TestAllocatorTraitsRebind()
+TEST_CASE("TestAllocatorTraitsRebind", "[allocator]")
 {
   REQUIRE(::cuda::std::is_same<
           typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_traits<float>,
@@ -193,9 +193,8 @@ void TestAllocatorTraitsRebind()
     ::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
                          typename cuda::std::allocator_traits<my_minimal_allocator<float>>>::value);
 }
-DECLARE_UNITTEST(TestAllocatorTraitsRebind);
 
-void TestAllocatorTraitsRebindCpp11()
+TEST_CASE("TestAllocatorTraitsRebindCpp11", "[allocator]")
 {
   REQUIRE(::cuda::std::is_same<
           typename cuda::std::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_alloc<float>,
@@ -213,4 +212,3 @@ void TestAllocatorTraitsRebindCpp11()
     ::cuda::std::is_same<typename cuda::std::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
                          typename cuda::std::allocator_traits<my_minimal_allocator<float>>>::value);
 }
-DECLARE_UNITTEST(TestAllocatorTraitsRebindCpp11);

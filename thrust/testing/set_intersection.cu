@@ -15,7 +15,7 @@ OutputIterator set_intersection(
   return result;
 }
 
-void TestSetIntersectionDispatchExplicit()
+TEST_CASE("TestSetIntersectionDispatchExplicit", "[set_intersection]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -24,7 +24,6 @@ void TestSetIntersectionDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetIntersectionDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -34,7 +33,7 @@ set_intersection(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIt
   return result;
 }
 
-void TestSetIntersectionDispatchImplicit()
+TEST_CASE("TestSetIntersectionDispatchImplicit", "[set_intersection]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -47,7 +46,6 @@ void TestSetIntersectionDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetIntersectionDispatchImplicit);
 
 template <typename Vector>
 void TestSetIntersectionSimple()
@@ -61,7 +59,7 @@ void TestSetIntersectionSimple()
 
   const Iterator end = thrust::set_intersection(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetIntersectionSimple);
@@ -130,8 +128,8 @@ void TestSetIntersectionToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(h_reference.size());
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionToDiscardIterator);
 
@@ -228,7 +226,7 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 }
 _CCCL_DIAG_POP
 
-void TestSetDifferenceWithBigIndexes()
+TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_intersection]")
 {
 #  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestSetDifferenceWithBigIndexesHelper(30);
@@ -237,5 +235,4 @@ void TestSetDifferenceWithBigIndexes()
   TestSetDifferenceWithBigIndexesHelper(33);
 #  endif
 }
-DECLARE_UNITTEST(TestSetDifferenceWithBigIndexes);
 #endif

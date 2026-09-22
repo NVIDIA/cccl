@@ -24,7 +24,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetIntersectionByKeyDispatchExplicit()
+TEST_CASE("TestSetIntersectionByKeyDispatchExplicit", "[set_intersection_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -34,7 +34,6 @@ void TestSetIntersectionByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -55,7 +54,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetIntersectionByKeyDispatchImplicit()
+TEST_CASE("TestSetIntersectionByKeyDispatchImplicit", "[set_intersection_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -70,7 +69,6 @@ void TestSetIntersectionByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDispatchImplicit);
 
 template <typename Vector>
 void TestSetIntersectionByKeySimple()
@@ -86,8 +84,8 @@ void TestSetIntersectionByKeySimple()
   const cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
     a_key.begin(), a_key.end(), b_key.begin(), b_key.end(), a_val.begin(), result_key.begin(), result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }

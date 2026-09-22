@@ -96,7 +96,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortDeviceDevice,
                                           unittest::type_list<unittest::int8_t, unittest::int32_t>);
 #endif
 
-void TestSortCudaStreams()
+TEST_CASE("TestSortCudaStreams", "[sort]")
 {
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
@@ -110,9 +110,8 @@ void TestSortCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestSortCudaStreams);
 
-void TestComparisonSortCudaStreams()
+TEST_CASE("TestComparisonSortCudaStreams", "[sort]")
 {
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
@@ -126,7 +125,6 @@ void TestComparisonSortCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestComparisonSortCudaStreams);
 
 template <typename T>
 struct TestRadixSortDispatch
@@ -283,7 +281,7 @@ void TestSortWithMagnitude(int magnitude)
   }
 }
 
-void TestSortWithLargeNumberOfItems()
+TEST_CASE("TestSortWithLargeNumberOfItems", "[sort]")
 {
   TestSortWithMagnitude(30);
   // These still require 64-bit dispatches when magnitude < 32.
@@ -294,7 +292,6 @@ void TestSortWithLargeNumberOfItems()
   TestSortWithMagnitude(39);
 #endif
 }
-DECLARE_UNITTEST(TestSortWithLargeNumberOfItems);
 
 template <typename T>
 struct TestSortAscendingKey
@@ -309,7 +306,7 @@ struct TestSortAscendingKey
     std::sort(h_data.begin(), h_data.end(), ::cuda::std::less<T>{});
     thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::less<T>{});
 
-    ASSERT_EQUAL_QUIET(h_data, d_data);
+    REQUIRE((h_data == d_data));
   }
 };
 

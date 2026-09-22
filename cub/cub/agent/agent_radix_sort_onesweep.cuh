@@ -143,7 +143,7 @@ using AgentRadixSortOnesweepPolicy
 namespace detail::radix_sort
 {
 template <typename AgentRadixSortOnesweepPolicy,
-          bool IS_DESCENDING,
+          bool IsDescending,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -185,7 +185,7 @@ struct AgentRadixSortOnesweep
       ? AgentRadixSortOnesweepPolicy::STORE_ALGORITHM
       : RADIX_SORT_STORE_DIRECT;
 
-  using Twiddle = RadixSortTwiddle<IS_DESCENDING, KeyT>;
+  using Twiddle = RadixSortTwiddle<IsDescending, KeyT>;
 
   static_assert(RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
                   || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
@@ -275,7 +275,7 @@ struct AgentRadixSortOnesweep
   struct CountsCallback
   {
     using AgentT =
-      AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
+      AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy, IsDescending, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
     AgentT& agent;
     int (&bins)[BINS_PER_THREAD];
     bit_ordered_type (&keys)[ITEMS_PER_THREAD];
@@ -519,10 +519,10 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeysGlobalDirect()
   {
-    const int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
+    const int tile_items = FullTile ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
@@ -530,7 +530,7 @@ struct AgentRadixSortOnesweep
       const int idx              = threadIdx.x + u * BLOCK_THREADS;
       const bit_ordered_type key = s.keys_out[idx];
       OffsetT global_idx         = idx + s.global_offsets[Digit(key)];
-      if (FULL_TILE || idx < tile_items)
+      if (FullTile || idx < tile_items)
       {
         d_keys_out[global_idx] = Twiddle::Out(key, decomposer);
       }
@@ -538,10 +538,10 @@ struct AgentRadixSortOnesweep
     }
   }
 
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValuesGlobalDirect(int (&digits)[ITEMS_PER_THREAD])
   {
-    const int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
+    const int tile_items = FullTile ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
@@ -549,7 +549,7 @@ struct AgentRadixSortOnesweep
       const int idx      = threadIdx.x + u * BLOCK_THREADS;
       ValueT value       = s.values_out[idx];
       OffsetT global_idx = idx + s.global_offsets[digits[u]];
-      if (FULL_TILE || idx < tile_items)
+      if (FullTile || idx < tile_items)
       {
         d_values_out[global_idx] = value;
       }

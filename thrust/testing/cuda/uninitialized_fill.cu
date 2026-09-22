@@ -62,20 +62,18 @@ void TestUninitializedFillDevice(ExecutionPolicy exec)
   REQUIRE(v == ref);
 }
 
-void TestUninitializedFillDeviceSeq()
+TEST_CASE("TestUninitializedFillDeviceSeq", "[uninitialized_fill]")
 {
   TestUninitializedFillDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUninitializedFillDeviceSeq);
 
-void TestUninitializedFillDeviceDevice()
+TEST_CASE("TestUninitializedFillDeviceDevice", "[uninitialized_fill]")
 {
   TestUninitializedFillDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUninitializedFillDeviceDevice);
 #endif
 
-void TestUninitializedFillCudaStreams()
+TEST_CASE("TestUninitializedFillCudaStreams", "[uninitialized_fill]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -94,7 +92,6 @@ void TestUninitializedFillCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestUninitializedFillCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator1, typename Size, typename T, typename Iterator2>
@@ -124,7 +121,7 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
 
   Vector ref{0, sub, sub, sub, 4};
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.begin() + 4, iter);
+  REQUIRE(v.begin() + 4 == iter);
 
   sub = 8;
 
@@ -138,7 +135,7 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
 
   ref = {sub, sub, sub, 7, 4};
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.begin() + 3, iter);
+  REQUIRE(v.begin() + 3 == iter);
 
   sub = 9;
 
@@ -152,7 +149,7 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
 
   ref = {8, 8, sub, sub, 9};
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v.end() == iter);
 
   sub = 1;
 
@@ -167,23 +164,21 @@ void TestUninitializedFillNDevice(ExecutionPolicy exec)
   ref = Vector(5, sub);
 
   REQUIRE(v == ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  REQUIRE(v.end() == iter);
 }
 
-void TestUninitializedFillNDeviceSeq()
+TEST_CASE("TestUninitializedFillNDeviceSeq", "[uninitialized_fill]")
 {
   TestUninitializedFillNDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUninitializedFillNDeviceSeq);
 
-void TestUninitializedFillNDeviceDevice()
+TEST_CASE("TestUninitializedFillNDeviceDevice", "[uninitialized_fill]")
 {
   TestUninitializedFillNDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUninitializedFillNDeviceDevice);
 #endif
 
-void TestUninitializedFillNCudaStreams()
+TEST_CASE("TestUninitializedFillNCudaStreams", "[uninitialized_fill]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -202,4 +197,3 @@ void TestUninitializedFillNCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestUninitializedFillNCudaStreams);
