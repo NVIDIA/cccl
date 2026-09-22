@@ -27,7 +27,7 @@ struct ValidateEngine
   const typename Engine::result_type m_value_10000;
 }; // end ValidateEngine
 
-template <typename Engine, bool trivial_min = (Engine::min == 0)>
+template <typename Engine, bool TrivialMin = (Engine::min == 0)>
 struct ValidateEngineMin
 {
   _CCCL_HOST_DEVICE bool operator()() const
@@ -216,18 +216,18 @@ struct ValidateDistributionUnqual
   Distribution d0, d1;
 };
 
-template <typename Engine, std::uint64_t value_10000>
+template <typename Engine, std::uint64_t Value10000>
 void TestEngineValidation()
 {
   // test host
   thrust::host_vector<bool> h(1);
-  thrust::generate(h.begin(), h.end(), ValidateEngine<Engine>(value_10000));
+  thrust::generate(h.begin(), h.end(), ValidateEngine<Engine>(Value10000));
 
   REQUIRE(h[0]);
 
   // test device
   thrust::device_vector<bool> d(1);
-  thrust::generate(d.begin(), d.end(), ValidateEngine<Engine>(value_10000));
+  thrust::generate(d.begin(), d.end(), ValidateEngine<Engine>(Value10000));
 
   REQUIRE(d[0]);
 }
