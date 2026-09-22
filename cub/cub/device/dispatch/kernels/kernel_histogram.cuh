@@ -18,8 +18,10 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/__numeric/sub_overflow.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
@@ -117,6 +119,19 @@ struct Transforms
       ::cuda::std::is_integral<T>;
 #endif // !_CCCL_HAS_INT128()
 
+    template <typename T>
+    [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto subtract_as_unsigned(T lhs, T rhs) noexcept
+    {
+      if constexpr (::cuda::std::is_same_v<T, bool>)
+      {
+        return ::cuda::__sub_as_unsigned<uint8_t>(lhs, rhs);
+      }
+      else
+      {
+        return ::cuda::__sub_as_unsigned<::cuda::std::make_unsigned_t<T>>(lhs, rhs);
+      }
+    }
+
     union ScaleT
     {
       // Used when CommonT is not floating-point to avoid intermediate
@@ -149,8 +164,15 @@ struct Transforms
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
     {
       ScaleT result;
-      result.fraction.bins  = static_cast<IntArithmeticT>(num_levels - 1);
-      result.fraction.range = static_cast<IntArithmeticT>(max_level) - static_cast<IntArithmeticT>(min_level);
+      result.fraction.bins = static_cast<IntArithmeticT>(num_levels - 1);
+      if constexpr (is_integral_excl_int128<T>::value)
+      {
+        result.fraction.range = IntArithmeticT{subtract_as_unsigned(max_level, min_level)};
+      }
+      else
+      {
+        result.fraction.range = static_cast<IntArithmeticT>(max_level) - static_cast<IntArithmeticT>(min_level);
+      }
       return result;
     }
 
@@ -235,9 +257,8 @@ struct Transforms
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
-      return static_cast<int>(
-        ((static_cast<IntArithmeticT>(sample) - static_cast<IntArithmeticT>(min_level)) * scale.fraction.bins)
-        / scale.fraction.range);
+      const auto offset = subtract_as_unsigned(sample, min_level);
+      return static_cast<int>((IntArithmeticT{offset} * scale.fraction.bins) / scale.fraction.range);
     }
 
     template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>

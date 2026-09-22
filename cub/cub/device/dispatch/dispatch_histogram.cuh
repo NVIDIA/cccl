@@ -153,8 +153,9 @@ struct DeviceHistogramKernelSource
       {
         return true;
       }
-      const IntArithmeticT range =
-        static_cast<IntArithmeticT>(upper_level[channel]) - static_cast<IntArithmeticT>(lower_level[channel]);
+      const auto upper_level_cast = static_cast<IntArithmeticT>(upper_level[channel]);
+      const auto lower_level_cast = static_cast<IntArithmeticT>(lower_level[channel]);
+      const auto range            = static_cast<IntArithmeticT>(upper_level_cast - lower_level_cast);
       return range > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
     }
     else
