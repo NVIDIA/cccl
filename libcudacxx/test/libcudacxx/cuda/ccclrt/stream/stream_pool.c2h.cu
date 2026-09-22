@@ -66,8 +66,8 @@ C2H_CCCLRT_TEST("Stream pool type properties", "[stream][stream_pool]")
 {
   STATIC_REQUIRE(!cuda::std::is_copy_constructible_v<cuda::stream_pool>);
   STATIC_REQUIRE(!cuda::std::is_copy_assignable_v<cuda::stream_pool>);
-  STATIC_REQUIRE(!cuda::std::is_move_constructible_v<cuda::stream_pool>);
-  STATIC_REQUIRE(!cuda::std::is_move_assignable_v<cuda::stream_pool>);
+  STATIC_REQUIRE(cuda::std::is_nothrow_move_constructible_v<cuda::stream_pool>);
+  STATIC_REQUIRE(cuda::std::is_nothrow_move_assignable_v<cuda::stream_pool>);
 
   // A pool must never be created by accident from a device in an argument list, and the size is mandatory.
   STATIC_REQUIRE(!cuda::std::is_default_constructible_v<cuda::stream_pool>);
@@ -141,6 +141,61 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     for (cuda::std::size_t i = 0; i < 2 * pool.size(); ++i)
     {
       REQUIRE(pool.at(i) == pool[i]);
+    }
+  }
+
+  SECTION("A move takes over the streams and leaves an empty pool behind")
+  {
+    cuda::stream_pool source{device, 3};
+    const cudaStream_t first  = source.next_stream().get();
+    const cudaStream_t second = source.at(1).get();
+    const cudaStream_t third  = source.at(2).get();
+
+    cuda::stream_pool moved{std::move(source)};
+    REQUIRE(source.size() == 0);
+    REQUIRE(moved.size() == 3);
+    REQUIRE(moved.device() == device);
+    REQUIRE(moved.priority() == cuda::stream::default_priority);
+    // The streams are the same, and the round-robin position carries over: slot 0 was already handed out.
+    REQUIRE(moved.at(0).get() == first);
+    REQUIRE(moved.at(1).get() == second);
+    REQUIRE(moved.at(2).get() == third);
+    REQUIRE(moved.next_stream().get() == second);
+
+    // A stream_ref obtained before the move still runs work.
+    const cuda::stream_ref before_move{first};
+    ::test::pinned<int> value(0);
+    ::test::launch_kernel_single_thread(before_move, ::test::assign_42{}, value.get());
+    before_move.sync();
+    REQUIRE(*value == 42);
+
+    // Move assignment destroys the streams of the target and takes over those of the source.
+    cuda::stream_pool target{device, 1, cuda::stream_pool_creation::lazy};
+    target.next_stream().sync();
+    target = std::move(moved);
+    REQUIRE(moved.size() == 0);
+    REQUIRE(target.size() == 3);
+    REQUIRE(target.at(0).get() == first);
+    REQUIRE(target.at(2).get() == third);
+    target.at(2).sync();
+
+    // A moved-from pool can be assigned to again.
+    source = cuda::stream_pool{device, 2, cuda::stream_pool_creation::lazy};
+    REQUIRE(source.size() == 2);
+    REQUIRE(source.next_stream().device() == device);
+  }
+
+  SECTION("Pools can be stored by value in a container")
+  {
+    std::vector<cuda::stream_pool> pools;
+    for (int i = 1; i <= 4; ++i)
+    {
+      pools.emplace_back(device, static_cast<cuda::std::size_t>(i), cuda::stream_pool_creation::lazy);
+    }
+    for (int i = 1; i <= 4; ++i)
+    {
+      REQUIRE(pools[i - 1].size() == static_cast<cuda::std::size_t>(i));
+      REQUIRE(pools[i - 1].next_stream().device() == device);
     }
   }
 

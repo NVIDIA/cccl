@@ -33,6 +33,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__utility/exchange.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -111,8 +112,9 @@ enum class stream_pool_creation
 //! The pool owns its streams and destroys them with the pool. `next_stream()` hands out the streams in
 //! round-robin order; `at(i)` and `pool[i]` address slot `i % size()`. Both return a `cuda::stream_ref` that
 //! stays valid for the lifetime of the pool. Destroying the pool destroys the streams; it is the caller's
-//! responsibility to synchronize the work submitted to them first. The pool cannot be copied or moved. To
-//! hand it around or share it, allocate it with `std::make_unique` or `std::make_shared`.
+//! responsibility to synchronize the work submitted to them first. The pool can be moved but not copied. A move
+//! takes over the streams, which stay valid, as do the `cuda::stream_ref` handed out before the move; no thread may
+//! use either pool while it is moved. A moved-from pool has a size of zero and may only be assigned to or destroyed.
 //!
 //! Whether the streams are created in the constructor or on the first request for their slot is chosen at
 //! construction with a `stream_pool_creation` value. With `stream_pool_creation::eager`, the default, every stream
@@ -197,8 +199,46 @@ public:
   stream_pool(const stream_pool&)            = delete;
   stream_pool& operator=(const stream_pool&) = delete;
 
-  stream_pool(stream_pool&&)            = delete;
-  stream_pool& operator=(stream_pool&&) = delete;
+  //! @brief Move-constructs a pool, taking over the streams of `__other`
+  //!
+  //! The streams, and the `cuda::stream_ref` handed out by `__other` before the move, stay valid. The round-robin
+  //! position of `__other` is carried over. No thread may use `__other` during the move.
+  //!
+  //! @param[in,out] __other The pool to move from
+  //!
+  //! @post `__other` has a size of zero and may only be assigned to or destroyed
+  _CCCL_HOST_API stream_pool(stream_pool&& __other) noexcept
+      : __device_{__other.__device_}
+      , __priority_{__other.__priority_}
+      , __size_{::cuda::std::exchange(__other.__size_, ::cuda::std::size_t{0})}
+      , __slots_{::cuda::std::exchange(__other.__slots_, nullptr)}
+      , __next_{::cuda::std::exchange(__other.__next_, ::cuda::std::size_t{0})}
+  {}
+
+  //! @brief Move-assigns a pool, destroying the streams of this pool and taking over those of `__other`
+  //!
+  //! It is the caller's responsibility to synchronize the work submitted to the streams of this pool first. The
+  //! streams of `__other`, and the `cuda::stream_ref` it handed out before the move, stay valid. No thread may use
+  //! either pool during the move.
+  //!
+  //! @param[in,out] __other The pool to move from
+  //!
+  //! @return A reference to this pool
+  //!
+  //! @post `__other` has a size of zero and may only be assigned to or destroyed
+  _CCCL_HOST_API stream_pool& operator=(stream_pool&& __other) noexcept
+  {
+    if (this != &__other)
+    {
+      __destroy_slots();
+      __device_   = __other.__device_;
+      __priority_ = __other.__priority_;
+      __size_     = ::cuda::std::exchange(__other.__size_, ::cuda::std::size_t{0});
+      __slots_    = ::cuda::std::exchange(__other.__slots_, nullptr);
+      __next_     = ::cuda::std::exchange(__other.__next_, ::cuda::std::size_t{0});
+    }
+    return *this;
+  }
 
   //! @brief Returns the next stream in round-robin order
   //!
@@ -209,6 +249,7 @@ public:
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref next_stream() const
   {
+    _CCCL_ASSERT(__size_ != 0, "cuda::stream_pool::next_stream called on a moved-from pool");
     // Advance the position and wrap it at size() in one compare-exchange, retried if another caller advanced it
     // in between. The position is always a valid slot, so the order is exact and nothing ever overflows.
     ::cuda::std::size_t __slot = ::cuda::__stream_pool_load_relaxed(&__next_);
@@ -230,6 +271,7 @@ public:
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref at(::cuda::std::size_t __index) const
   {
+    _CCCL_ASSERT(__size_ != 0, "cuda::stream_pool::at called on a moved-from pool");
     return __stream_at(__index % __size_);
   }
 
@@ -250,7 +292,7 @@ public:
   //! Fixed at construction; every stream the pool ever hands out comes from one of these slots, whether or not
   //! its stream has been created yet.
   //!
-  //! @return The size given at construction
+  //! @return The size given at construction, zero for a moved-from pool
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t size() const noexcept
   {
     return __size_;
@@ -315,7 +357,8 @@ private:
 
   //! @brief Destroys every published stream and frees the slots
   //!
-  //! Called from the destructor, and from the constructor when eager creation fails part-way.
+  //! Called from the destructor, from the move assignment, and from the constructor when eager creation fails
+  //! part-way.
   _CCCL_HOST_API void __destroy_slots() noexcept
   {
     if (__slots_ == nullptr)
@@ -349,12 +392,13 @@ private:
 #  endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
   }
 
-  const __logical_device_ref __device_;
-  const int __priority_;
-  const ::cuda::std::size_t __size_;
+  __logical_device_ref __device_;
+  int __priority_;
+  //! Number of slots, zero only for a moved-from pool.
+  ::cuda::std::size_t __size_;
   //! `__size_` slots; an empty slot holds `nullptr`, a filled slot the stream that lives until the pool is destroyed.
-  //! Only ever accessed through the atomic builtins at the top of this file, except in the constructor and
-  //! `__destroy_slots()`, where no other thread can see the pool.
+  //! Only ever accessed through the atomic builtins at the top of this file, except in the constructors, the move
+  //! assignment and `__destroy_slots()`, where no other thread can see the pool.
   ::cudaStream_t* __slots_;
   //! The slot the next call to `next_stream()` returns, always below `__size_`; only ever accessed through the
   //! atomic builtins at the top of this file.
