@@ -269,8 +269,9 @@ workflows:
     - {project: 'packaging', jobs: ['install']}
     # NVBench Helper testing:
     - {project: 'nvbench_helper', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 't4'}
-    # c.parallel v2 (HostJIT-based)
-    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 't4'}
+    # c.parallel v2 (HostJIT-based).
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'gcc13', gpu: 't4'}
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'msvc', gpu: 'l4'}
     # Python against c.parallel v2 (HostJIT-based)
     - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
 
