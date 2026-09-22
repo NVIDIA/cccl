@@ -323,11 +323,19 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 // __FLT128_MANT_DIG__ alone does not answer the question: it describes the
 // format, and both GCC and Clang predefine it on x86 without accepting the
 // _Float128 *token* in C++. GCC 13 is the first release to spell the C23
-// interchange types in C++ (P1467), and Clang still rejects the name in C++ as
-// of 18, so the test is a version test rather than a macro test. Requiring GCC
-// also rules out NVRTC, NVHPC and MSVC, which CCCL classifies as separate
-// compilers. nvcc itself is fine either way: with a GCC 13 host it parses
-// _Float128 in both passes, which is what the aarch64 quad reductions need.
+// interchange types in C++ (P1467). Godbolt gcc 16.2 x86: sizeof(_Float128)==16
+// and is_same with both long double and __float128 is false, so the extra
+// members are not redundant on that host. Clang still does not implement
+// P1467R9 (https://clang.llvm.org/cxx_status.html); llvm/llvm-project#78503
+// only covers float16_t / bfloat16_t, and #80195 remains open for C23
+// _Float128. Godbolt x86-64 clang 23.1 (-std=c++17 and c++23) rejects the
+// token. armv8-a clang accepts it as an alias of long double (is_same true,
+// __STDCPP_FLOAT128_T__ unset): from 12 with -std=c++17, from 17 with
+// -std=c++23 (16 with c++23 does not). Extra members would SFINAE out there,
+// so this gate stays GCC. __STDCPP_FLOAT128_T__ is the portable on-ramp if a
+// later Clang/libstdc++/libc++ provides a distinct type. Requiring GCC also
+// rules out NVRTC, NVHPC and MSVC. nvcc with a GCC 13 host parses _Float128
+// in both passes, which is what the aarch64 quad reductions need.
 #ifndef _CCCL_FPMP_HAS_IEC_FLOAT128
 #  if defined(__FLT128_MANT_DIG__) && (_CCCL_COMPILER(GCC, >=, 13) || defined(__STDCPP_FLOAT128_T__))
 #    define _CCCL_FPMP_HAS_IEC_FLOAT128 1
