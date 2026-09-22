@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__container/simple_vector.h>
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
@@ -32,7 +33,6 @@
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__memory/construct_at.h>
-#  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/__type_traits/is_trivially_destructible.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -92,6 +92,11 @@ public:
 
 struct __default_device_memory_pool
 {
+  _CCCL_HOST_API __default_device_memory_pool() noexcept
+      : __once_{}
+      , __storage_{}
+  {}
+
   __once_flag __once_{};
 
   union __storage_t
@@ -124,14 +129,26 @@ struct __default_device_memory_pool
 
 static_assert(::cuda::std::is_trivially_destructible_v<device_memory_pool_ref>);
 
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::__simple_vector<__default_device_memory_pool>
+__make_default_device_memory_pools()
+{
+  const auto __count = ::cuda::__physical_devices_count();
+  ::cuda::__simple_vector<__default_device_memory_pool> __pools{__count, ::cuda::no_init};
+  for (::cuda::std::size_t __i = 0; __i < __count; ++__i)
+  {
+    ::cuda::std::__construct_at(__pools.data() + __i);
+  }
+  return __pools;
+}
+
 //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
 //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
 //! @returns The default memory pool of the specified device.
 [[nodiscard]] _CCCL_HOST_API inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
 {
-  static const ::cuda::std::unique_ptr<__default_device_memory_pool[]> __pools_{
-    ::new __default_device_memory_pool[::cuda::__physical_devices_count()]};
-  return __pools_[static_cast<::cuda::std::size_t>(__device.get())].__get(__device);
+  // Not `const`: `__simple_vector::data() const` returns a `const` pointer, but `__get` mutates cached pool state.
+  static auto __pools_ = ::cuda::__make_default_device_memory_pools();
+  return __pools_.data()[static_cast<::cuda::std::size_t>(__device.get())].__get(__device);
 }
 
 //! @rst
