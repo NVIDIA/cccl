@@ -59,10 +59,10 @@ void TestReverseIteratorDevicePtrArrow()
 {
   int storage[2]{};
   int* raw = storage;
-  thrust::device_ptr<int> base(raw + 1);
-  auto reverse = thrust::make_reverse_iterator(base);
+  const thrust::device_ptr<int> base(raw + 1);
+  const auto reverse = thrust::make_reverse_iterator(base);
 
-  REQUIRE(reverse.operator->().get() == raw);
+  REQUIRE(reverse.operator->() == raw);
 }
 DECLARE_UNITTEST(TestReverseIteratorDevicePtrArrow);
 
