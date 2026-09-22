@@ -273,7 +273,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
 
   const int ipt = spread_out_items_per_thread(
     num_items, policy.async_copy, config->items_per_thread, config->sm_count, config->max_occupancy);
-  const int tile_size     = threads_per_block * ipt;
+  const int tile_size = threads_per_block * ipt;
+
+  const int achieved_bytes_in_flight = config->max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration();
+  detail::log("Transform: items per thread: %d, bytes in flight: %d (target: %d)%s\n",
+              ipt,
+              achieved_bytes_in_flight,
+              policy.min_bytes_in_flight,
+              ipt != config->items_per_thread ? ", reduced to spread load evenly" : "");
+
   const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
 
