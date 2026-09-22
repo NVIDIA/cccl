@@ -331,17 +331,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   {
     constexpr int init_kernel_threads = 128;
     const auto init_grid_size         = ::cuda::ceil_div(num_tiles, init_kernel_threads);
-#  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
-            init_grid_size,
-            init_kernel_threads,
-            (long long) stream);
-#  else // CUB_DEBUG_LOG
-    log("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
-        init_grid_size,
-        init_kernel_threads,
-        (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("DeviceRleEncodeLookaheadInitKernel", init_grid_size, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* dependent_launch */ false)
             .doit(kernel_source.InitKernel(), tile_partial_states, static_cast<::cuda::std::int64_t>(num_tiles))))
@@ -359,19 +349,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   }
   {
     const int block_dim = num_total_threads(lookahead_policy);
-#  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
-            num_tiles,
-            block_dim,
-            dyn_smem_bytes,
-            (long long) stream);
-#  else // CUB_DEBUG_LOG
-    log("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
-        num_tiles,
-        block_dim,
-        dyn_smem_bytes,
-        (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("DeviceRleEncodeLookaheadKernel", num_tiles, block_dim, dyn_smem_bytes, stream, "");
     if (const auto error = CubDebug(
           launcher_factory(num_tiles,
                            block_dim,

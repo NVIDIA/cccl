@@ -303,24 +303,14 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
           ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
 
         // Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
-                "%d items per thread, %d SM occupancy\n",
-                num_current_segments,
-                policy.SegmentedReduce().ThreadsPerBlock(),
-                (long long) stream,
-                policy.SegmentedReduce().ItemsPerThread(),
-                segmented_reduce_config.sm_occupancy);
-#else // CUB_DEBUG_LOG
-        detail::log(
-          "Invoking SegmentedDeviceReduceKernel<<<%lld, %d, 0, %lld>>>(), "
-          "%d items per thread, %d SM occupancy\n",
-          (long long) num_current_segments,
+        _CUB_LOG_KERNEL_LAUNCH(
+          "SegmentedDeviceReduceKernel",
+          static_cast<int>(num_current_segments),
           policy.SegmentedReduce().ThreadsPerBlock(),
-          (long long) stream,
-          policy.SegmentedReduce().ItemsPerThread(),
+          0,
+          stream,
+          ", SM occupancy: %d",
           segmented_reduce_config.sm_occupancy);
-#endif // CUB_DEBUG_LOG
 
         // Invoke DeviceSegmentedReduceKernel
         launcher_factory(static_cast<::cuda::std::uint32_t>(num_current_segments),
@@ -617,23 +607,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     const auto num_current_segments = ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
 
     // Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
-            "%d items per thread, %d SM occupancy\n",
-            num_current_segments,
-            active_policy.large_reduce.threads_per_block,
-            (long long) stream,
-            active_policy.large_reduce.items_per_thread,
-            sm_occupancy);
-#else // CUB_DEBUG_LOG
-    log("Invoking SegmentedDeviceReduceKernel<<<%lld, %d, 0, %lld>>>(), "
-        "%d items per thread, %d SM occupancy\n",
-        (long long) num_current_segments,
-        active_policy.large_reduce.threads_per_block,
-        (long long) stream,
-        active_policy.large_reduce.items_per_thread,
-        sm_occupancy);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "SegmentedDeviceReduceKernel",
+      static_cast<int>(num_current_segments),
+      active_policy.large_reduce.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d",
+      sm_occupancy);
 
     // Invoke DeviceSegmentedReduceKernel
     const auto num_blocks =

@@ -388,12 +388,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     // Log init_kernel configuration
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, INIT_KERNEL_THREADS, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -440,26 +435,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread, %d SM occupancy\n",
-              start_tile,
-              scan_grid_size,
-              policy.Scan().ThreadsPerBlock(),
-              (long long) stream,
-              policy.Scan().ItemsPerThread(),
-              scan_sm_occupancy);
-#else // CUB_DEBUG_LOG
-      detail::log(
-        "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-        "per thread, %d SM occupancy\n",
-        start_tile,
+      _CUB_LOG_KERNEL_LAUNCH(
+        "scan_kernel",
         scan_grid_size,
         policy.Scan().ThreadsPerBlock(),
-        (long long) stream,
-        policy.Scan().ItemsPerThread(),
-        scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+        0,
+        stream,
+        ", SM occupancy: %d, epoch: %d",
+        scan_sm_occupancy,
+        start_tile);
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
@@ -615,17 +599,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       constexpr auto init_kernel_threads = 128;
       const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
 
-#  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
-              init_grid_size,
-              init_kernel_threads,
-              (long long) stream);
-#  else // CUB_DEBUG_LOG
-      detail::log("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
-                  init_grid_size,
-                  init_kernel_threads,
-                  (long long) stream);
-#  endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH("DeviceScanInitKernel", init_grid_size, init_kernel_threads, 0, stream, "");
 
       if (const auto error = CubDebug(
             launcher_factory(init_grid_size,
@@ -657,12 +631,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     {
       const int block_dim = detail::scan::num_total_threads(lookahead_policy);
 
-#  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
-#  else // CUB_DEBUG_LOG
-      detail::log(
-        "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
-#  endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH("DeviceScanKernel", grid_dim, block_dim, smem_size, stream, "");
 
       if (const auto error = CubDebug(
             launcher_factory(grid_dim, block_dim, smem_size, stream, /* dependent_launch */ ptx_version >= 900)
@@ -747,12 +716,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     constexpr int init_kernel_threads = 128;
     const int init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, init_kernel_threads, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -799,26 +763,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread, %d SM occupancy\n",
-              start_tile,
-              scan_grid_size,
-              active_policy.threads_per_block,
-              (long long) stream,
-              active_policy.items_per_thread,
-              scan_sm_occupancy);
-#else // CUB_DEBUG_LOG
-      detail::log(
-        "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-        "per thread, %d SM occupancy\n",
-        start_tile,
+      _CUB_LOG_KERNEL_LAUNCH(
+        "scan_kernel",
         scan_grid_size,
         active_policy.threads_per_block,
-        (long long) stream,
-        active_policy.items_per_thread,
-        scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+        0,
+        stream,
+        ", SM occupancy: %d, epoch: %d",
+        scan_sm_occupancy,
+        start_tile);
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
@@ -1033,11 +986,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   constexpr int init_kernel_threads = 128;
   const int init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#else // CUB_DEBUG_LOG
-  detail::log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, init_kernel_threads, 0, stream, "");
 
   // Invoke init_kernel to initialize tile descriptors
   if (const auto error = CubDebug(
@@ -1084,26 +1033,15 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
   {
     // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-            "per thread, %d SM occupancy\n",
-            start_tile,
-            scan_grid_size,
-            active_policy.threads_per_block,
-            (long long) stream,
-            active_policy.items_per_thread,
-            scan_sm_occupancy);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-      "per thread, %d SM occupancy\n",
-      start_tile,
+    _CUB_LOG_KERNEL_LAUNCH(
+      "scan_kernel",
       scan_grid_size,
       active_policy.threads_per_block,
-      (long long) stream,
-      active_policy.items_per_thread,
-      scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+      0,
+      stream,
+      ", SM occupancy: %d, epoch: %d",
+      scan_sm_occupancy,
+      start_tile);
 
     // Invoke scan_kernel
     if (const auto error = CubDebug(
@@ -1275,15 +1213,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     constexpr auto init_kernel_threads = 128;
     const auto init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
-            init_grid_size,
-            init_kernel_threads,
-            (long long) stream);
-#  else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("DeviceScanInitKernel", init_grid_size, init_kernel_threads, 0, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, dependent_launch)
@@ -1310,13 +1240,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   // Invoke scan kernel
   {
     const int block_dim = detail::scan::num_total_threads(lookahead_policy);
-#  ifdef CUB_DEBUG_LOG
-    _CubLog(
-      "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
-#  else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("DeviceScanKernel", scan_grid_dim, block_dim, smem_size, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(scan_grid_dim, block_dim, smem_size, stream, dependent_launch)
