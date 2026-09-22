@@ -98,13 +98,13 @@ template <class, class>
 struct has_sm_tuning_impl;
 
 // specializing for Tunig which needs 1 arg
-template <class SM, template <class, class> class Tuning, class _0>
-struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, _0>> : has_type_t<Tuning<SM, _0>>
+template <class SM, template <class, class> class Tuning, class Arg0>
+struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, Arg0>> : has_type_t<Tuning<SM, Arg0>>
 {};
 
 // specializing for Tunig which needs 2 args
-template <class SM, template <class, class, class> class Tuning, class _0, class _1>
-struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, _0, _1>> : has_type_t<Tuning<SM, _0, _1>>
+template <class SM, template <class, class, class> class Tuning, class Arg0, class Arg1>
+struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, Arg0, Arg1>> : has_type_t<Tuning<SM, Arg0, Arg1>>
 {};
 
 template <template <class> class P, class SM>
@@ -172,7 +172,7 @@ struct temp_storage_size<Agent, ::cuda::std::void_t<typename Agent::TempStorage>
   static constexpr ::cuda::std::size_t value = sizeof(typename Agent::TempStorage);
 };
 
-// check whether all Agents requires < MAX_SHMEM shared memory
+// check whether all Agents requires < MaxShmem shared memory
 // ---------------------------------------------------------------------------
 // if so, we can use simpler kernel for dispatch, which assumes that all
 // shared memory is on chip.
@@ -197,8 +197,8 @@ struct has_enough_shmem_impl<V, A, S, typelist<>>
   using type = ::cuda::std::conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
 };
 
-template <class Agent, size_t MAX_SHMEM>
-struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
+template <class Agent, size_t MaxShmem>
+struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MaxShmem, sm_list>
 {};
 
 /////////////////////////

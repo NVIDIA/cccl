@@ -177,19 +177,19 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
 } // func balanced_path
 
 template <int BlockThreads,
-          int ItemsPerThread                      = 1,
-          cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
-          cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_LDG,
-          cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
+          int ItemsPerThread                    = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
+          cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
   static constexpr int BLOCK_THREADS    = BlockThreads;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
   static constexpr int ITEMS_PER_TILE   = BlockThreads * ItemsPerThread - 1;
 
-  static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  static const cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
+  static const cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
+  static const cub::BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 }; // PtxPolicy
 
 template <class Arch, class T, class U>
@@ -242,7 +242,7 @@ template <class KeysIt1,
           class Size,
           class CompareOp,
           class SetOp,
-          class HAS_VALUES>
+          class HasValues>
 struct SetOpAgent
 {
   using key1_type   = thrust::detail::it_value_t<KeysIt1>;
@@ -351,11 +351,11 @@ struct SetOpAgent
     // Utility functions
     //---------------------------------------------------------------------
 
-    template <bool IS_FULL_TILE, class T, class It1, class It2>
+    template <bool IsFullTile, class T, class It1, class It2>
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
     {
-      if (IS_FULL_TILE)
+      if (IsFullTile)
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ++ITEM)
@@ -446,7 +446,7 @@ struct SetOpAgent
     // Tile operations
     //---------------------------------------------------------------------
 
-    template <bool IS_LAST_TILE>
+    template <bool IsLastTile>
     void _CCCL_DEVICE_API _CCCL_FORCEINLINE consume_tile(Size tile_idx)
     {
       const ::cuda::std::pair<Size, Size> partition_beg = partitions[tile_idx + 0];
@@ -465,7 +465,7 @@ struct SetOpAgent
       // load keys into shared memory for further processing
       key_type keys_loc[ITEMS_PER_THREAD];
 
-      gmem_to_reg<!IS_LAST_TILE>(keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
+      gmem_to_reg<!IsLastTile>(keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
 
       reg_to_shared(&storage.load_storage.keys_shared[0], keys_loc);
 
@@ -537,7 +537,7 @@ struct SetOpAgent
         if (threadIdx.x == 0)
         {
           // Update tile status if this is not the last tile
-          if (!IS_LAST_TILE)
+          if (!IsLastTile)
           {
             tile_state.SetInclusive(0, tile_output_count);
           }
@@ -564,10 +564,10 @@ struct SetOpAgent
               tile_output_prefix,
               tile_output_count);
 
-      if constexpr (HAS_VALUES::value)
+      if constexpr (HasValues::value)
       {
         value_type values_loc[ITEMS_PER_THREAD];
-        gmem_to_reg<!IS_LAST_TILE>(values_loc, values1_in + keys1_beg, values2_in + keys2_beg, num_keys1, num_keys2);
+        gmem_to_reg<!IsLastTile>(values_loc, values1_in + keys1_beg, values2_in + keys2_beg, num_keys1, num_keys2);
 
         __syncthreads();
 
@@ -597,7 +597,7 @@ struct SetOpAgent
                 tile_output_count);
       }
 
-      if (IS_LAST_TILE && threadIdx.x == 0)
+      if (IsLastTile && threadIdx.x == 0)
       {
         *output_count = static_cast<std::size_t>(tile_output_prefix) + tile_output_count;
       }
@@ -989,7 +989,7 @@ struct serial_set_union
   }
 }; // struct set_union
 
-template <class HAS_VALUES,
+template <class HasValues,
           class KeysIt1,
           class KeysIt2,
           class ValuesIt1,
@@ -1027,7 +1027,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   using core::detail::AgentPlan;
 
   using set_op_agent = AgentLauncher<
-    SetOpAgent<KeysIt1, KeysIt2, ValuesIt1, ValuesIt2, KeysOutputIt, ValuesOutputIt, Size, CompareOp, SetOp, HAS_VALUES>>;
+    SetOpAgent<KeysIt1, KeysIt2, ValuesIt1, ValuesIt2, KeysOutputIt, ValuesOutputIt, Size, CompareOp, SetOp, HasValues>>;
 
   using partition_agent = AgentLauncher<PartitionAgent<KeysIt1, KeysIt2, Size, CompareOp>>;
 
@@ -1094,7 +1094,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   return status;
 }
 
-template <typename HAS_VALUES,
+template <typename HasValues,
           typename Derived,
           typename KeysIt1,
           typename KeysIt2,
@@ -1133,7 +1133,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
   cudaError_t status;
   THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
     status,
-    doit_step<HAS_VALUES>,
+    doit_step<HasValues>,
     num_keys1,
     num_keys2,
     (nullptr,
@@ -1171,7 +1171,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
 
   THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
     status,
-    doit_step<HAS_VALUES>,
+    doit_step<HasValues>,
     num_keys1,
     num_keys2,
     (allocations[1],
