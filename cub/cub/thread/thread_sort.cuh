@@ -109,8 +109,8 @@ unstable_pairwise_sort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThrea
  * @brief Sorts data using odd-even sort method
  *
  * The sorting method is stable. Further details can be found in:
- * A. Nico Habermann. Parallel neighbor sort (or the glory of the induction
- * principle). Technical Report AD-759 248, Carnegie Mellon University, 1972.
+ * A. Nico Habermann. Parallel neighbor sort (or the glory of the induction principle). Technical Report AD-759 248,
+ * Carnegie Mellon University, 1972.
  *
  * @tparam KeyT
  *   Key type
@@ -145,6 +145,9 @@ StableOddEvenSort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThread], C
 //!
 //! The algorithm has \f$O(N \log^2 N)\f$ complexity and supports any positive number of items, including non-powers of
 //! two.
+//!
+//! @note The algorithm is particularly useful for order-statistic selection, such as median and top-k.
+//! The compiler can eliminate unnecessary operations when only a subset of the output is consumed.
 //!
 //! @tparam KeyT Key type.
 //! @tparam ValueT Value type. If @c cub::NullType is used, only keys are sorted.
