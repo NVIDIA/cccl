@@ -434,18 +434,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const ReducePolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceReduceDeterministic to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceReduceDeterministic", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceReduceDeterministic", cc, active_policy);
 
   using deterministic_add_t  = deterministic_sum_t<AccumT>;
   using input_unwrapped_it_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;

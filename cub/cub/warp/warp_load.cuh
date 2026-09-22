@@ -349,8 +349,8 @@ private:
       InternalLoadDirectBlockedVectorized<MODIFIER>(linear_tid, block_itr.ptr, items);
     }
 
-    template <typename _InputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(_InputIteratorT block_itr, InputT (&items)[ItemsPerThread])
+    template <typename InputIteratorT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread])
     {
       LoadDirectBlocked(linear_tid, block_itr, items);
     }

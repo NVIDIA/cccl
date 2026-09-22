@@ -16,8 +16,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
-template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE_API _Tp* optimizeSmemPtr(const _Tp* smemGeneric)
+template <typename Tp>
+[[nodiscard]] _CCCL_DEVICE_API Tp* optimizeSmemPtr(const Tp* smemGeneric)
 {
   // See https://nvbugspro.nvidia.com/bug/4907996
 
@@ -31,7 +31,7 @@ template <typename _Tp>
   //    optimization pass in NVVM that performs the following simplification:
   //    __cvta_generic_to_shared(__cvta_shared_to_generic(x))    => x.
   //    In our case, `x` is smem32, which is exactly what we want.
-  return reinterpret_cast<_Tp*>(__cvta_shared_to_generic(smem32));
+  return reinterpret_cast<Tp*>(__cvta_shared_to_generic(smem32));
 }
 } // namespace detail::warpspeed
 
