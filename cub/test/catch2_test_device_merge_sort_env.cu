@@ -936,34 +936,46 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy works with user provided memo
   REQUIRE(d_keys_out == expected_keys);
 }
 
-// callers of the former `cudaStream_t stream = nullptr` parameter may pass nullptr explicitly
-CUB_TEST_CASE("DeviceMergeSort::SortKeys two-phase overload accepts a null stream argument",
+// callers of the former `cudaStream_t stream = nullptr` parameter may pass nullptr or 0 explicitly
+CUB_TEST_CASE("DeviceMergeSort::SortKeys two-phase overload accepts null stream arguments",
               "[merge_sort][device]",
               CUB_SMALL)
 {
   auto d_keys          = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   const auto num_items = static_cast<int>(d_keys.size());
 
-  size_t temp_storage_bytes = 0;
-  REQUIRE(cudaSuccess
-          == cub::DeviceMergeSort::SortKeys(
-            nullptr, temp_storage_bytes, d_keys.data().get(), num_items, cuda::std::less<int>{}, nullptr));
+  auto sort_keys_on = [&](const auto& stream) {
+    size_t temp_storage_bytes = 0;
+    REQUIRE(cudaSuccess
+            == cub::DeviceMergeSort::SortKeys(
+              nullptr, temp_storage_bytes, d_keys.data().get(), num_items, cuda::std::less<int>{}, stream));
 
-  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    {
+      const stream_scope scope{cudaStream_t{}};
+      REQUIRE(
+        cudaSuccess
+        == cub::DeviceMergeSort::SortKeys(
+          thrust::raw_pointer_cast(temp_storage.data()),
+          temp_storage_bytes,
+          d_keys.data().get(),
+          num_items,
+          cuda::std::less<int>{},
+          stream));
+    }
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  };
+
+  SECTION("nullptr")
   {
-    const stream_scope scope{cudaStream_t{}};
-    REQUIRE(
-      cudaSuccess
-      == cub::DeviceMergeSort::SortKeys(
-        thrust::raw_pointer_cast(temp_storage.data()),
-        temp_storage_bytes,
-        d_keys.data().get(),
-        num_items,
-        cuda::std::less<int>{},
-        nullptr));
+    sort_keys_on(nullptr);
   }
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  SECTION("literal 0")
+  {
+    sort_keys_on(0);
+  }
 
   const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys == expected_keys);
