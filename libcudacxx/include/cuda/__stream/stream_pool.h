@@ -40,8 +40,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief When the streams of a `stream_pool` are created
-enum class stream_pool_creation
+//! @brief When the streams of a `__stream_pool` are created
+enum class __stream_pool_creation
 {
   //! Every stream is created in the constructor
   eager,
@@ -49,7 +49,7 @@ enum class stream_pool_creation
   lazy,
 };
 
-// Atomics on the round-robin counter and the slots of a stream_pool through the compiler builtins, so that the header
+// Atomics on the round-robin counter and the slots of a __stream_pool through the compiler builtins, so that the header
 // does not pull in <atomic>. MSVC gets the same builtins from cuda/std/__atomic/platform.h, in namespace cuda::std.
 #  if _CCCL_COMPILER(MSVC)
 #    define _CUDA_STREAM_POOL_ATOMIC(__op) ::cuda::std::__op
@@ -58,6 +58,8 @@ enum class stream_pool_creation
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
 //! @brief A fixed-size pool of non-blocking streams on one device or green context.
+//!
+//! The name is uglified while the design settles; the class ships in the CTK but is not part of the public API yet.
 //!
 //! The pool owns its streams and destroys them with the pool. `next_stream()` hands out the streams in
 //! round-robin order; `at(i)` and `pool[i]` address slot `i`, and `at(i)` throws `std::out_of_range` if there is
@@ -68,11 +70,11 @@ enum class stream_pool_creation
 //! use either pool while it is moved. A moved-from pool has a size of zero and may only be assigned to or destroyed.
 //!
 //! Whether the streams are created in the constructor or on the first request for their slot is chosen at
-//! construction with a `stream_pool_creation` value. With `stream_pool_creation::eager`, the default, every stream
-//! is created in the constructor. With `stream_pool_creation::lazy`, a stream is created by the first request for
+//! construction with a `__stream_pool_creation` value. With `__stream_pool_creation::eager`, the default, every stream
+//! is created in the constructor. With `__stream_pool_creation::lazy`, a stream is created by the first request for
 //! its slot; two threads racing for the same empty slot both create a stream, one publishes it and the other
 //! destroys its own. In both modes, the getters can be called concurrently from several threads.
-class stream_pool
+class __stream_pool
 {
 public:
   //! @brief Constructs a pool of streams on the primary context of a device
@@ -82,17 +84,17 @@ public:
   //!
   //! @param[in] __device The device the streams are created on
   //! @param[in] __size Number of streams in the pool, must be greater than zero
-  //! @param[in] __mode When the streams are created, defaults to `stream_pool_creation::eager`
+  //! @param[in] __mode When the streams are created, defaults to `__stream_pool_creation::eager`
   //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
   //!
   //! @throws std::invalid_argument if `__size` is zero
-  //! @throws cuda_error if `__mode` is `stream_pool_creation::eager` and a stream creation fails
-  _CCCL_HOST_API explicit stream_pool(
+  //! @throws cuda_error if `__mode` is `__stream_pool_creation::eager` and a stream creation fails
+  _CCCL_HOST_API explicit __stream_pool(
     device_ref __device,
     ::cuda::std::size_t __size,
-    stream_pool_creation __mode = stream_pool_creation::eager,
-    int __priority              = stream::default_priority)
-      : stream_pool{__logical_device_ref{__device}, __size, __mode, __priority}
+    __stream_pool_creation __mode = __stream_pool_creation::eager,
+    int __priority                = stream::default_priority)
+      : __stream_pool{__logical_device_ref{__device}, __size, __mode, __priority}
   {}
 
   //! @brief Constructs a pool of streams on a logical device, that is a device or a green context
@@ -102,16 +104,16 @@ public:
   //!
   //! @param[in] __device The logical device the streams are created on
   //! @param[in] __size Number of streams in the pool, must be greater than zero
-  //! @param[in] __mode When the streams are created, defaults to `stream_pool_creation::eager`
+  //! @param[in] __mode When the streams are created, defaults to `__stream_pool_creation::eager`
   //! @param[in] __priority Priority given to every stream, defaults to `stream::default_priority`
   //!
   //! @throws std::invalid_argument if `__size` is zero
-  //! @throws cuda_error if `__mode` is `stream_pool_creation::eager` and a stream creation fails
-  _CCCL_HOST_API explicit stream_pool(
+  //! @throws cuda_error if `__mode` is `__stream_pool_creation::eager` and a stream creation fails
+  _CCCL_HOST_API explicit __stream_pool(
     __logical_device_ref __device,
     ::cuda::std::size_t __size,
-    stream_pool_creation __mode = stream_pool_creation::eager,
-    int __priority              = stream::default_priority)
+    __stream_pool_creation __mode = __stream_pool_creation::eager,
+    int __priority                = stream::default_priority)
       : __device_{__device}
       , __priority_{__priority}
       , __size_{__size}
@@ -119,9 +121,9 @@ public:
   {
     if (__size == 0)
     {
-      _CCCL_THROW(::std::invalid_argument, "cuda::stream_pool requires at least one stream");
+      _CCCL_THROW(::std::invalid_argument, "cuda::__stream_pool requires at least one stream");
     }
-    if (__mode == stream_pool_creation::eager)
+    if (__mode == __stream_pool_creation::eager)
     {
       _CCCL_TRY
       {
@@ -141,13 +143,13 @@ public:
     }
   }
 
-  _CCCL_HOST_API ~stream_pool()
+  _CCCL_HOST_API ~__stream_pool()
   {
     __destroy_slots();
   }
 
-  stream_pool(const stream_pool&)            = delete;
-  stream_pool& operator=(const stream_pool&) = delete;
+  __stream_pool(const __stream_pool&)            = delete;
+  __stream_pool& operator=(const __stream_pool&) = delete;
 
   //! @brief Move-constructs a pool, taking over the streams of `__other`
   //!
@@ -157,7 +159,7 @@ public:
   //! @param[in,out] __other The pool to move from
   //!
   //! @post `__other` has a size of zero and may only be assigned to or destroyed
-  _CCCL_HOST_API stream_pool(stream_pool&& __other) noexcept
+  _CCCL_HOST_API __stream_pool(__stream_pool&& __other) noexcept
       : __device_{__other.__device_}
       , __priority_{__other.__priority_}
       , __size_{::cuda::std::exchange(__other.__size_, ::cuda::std::size_t{0})}
@@ -176,7 +178,7 @@ public:
   //! @return A reference to this pool
   //!
   //! @post `__other` has a size of zero and may only be assigned to or destroyed
-  _CCCL_HOST_API stream_pool& operator=(stream_pool&& __other) noexcept
+  _CCCL_HOST_API __stream_pool& operator=(__stream_pool&& __other) noexcept
   {
     if (this != &__other)
     {
@@ -199,7 +201,7 @@ public:
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref next_stream() const
   {
-    _CCCL_ASSERT(__size_ != 0, "cuda::stream_pool::next_stream called on a moved-from pool");
+    _CCCL_ASSERT(__size_ != 0, "cuda::__stream_pool::next_stream called on a moved-from pool");
     // Advance the position and wrap it at size() in one compare-exchange, retried if another caller advanced it
     // in between. The position is always a valid slot, so the order is exact and nothing ever overflows.
     ::cuda::std::size_t __slot = __load_relaxed(&__next_);
@@ -224,7 +226,7 @@ public:
   {
     if (__index >= __size_)
     {
-      _CCCL_THROW(::std::out_of_range, "cuda::stream_pool::at index out of range");
+      _CCCL_THROW(::std::out_of_range, "cuda::__stream_pool::at index out of range");
     }
     return (*this)[__index];
   }
@@ -241,7 +243,7 @@ public:
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref operator[](::cuda::std::size_t __index) const
   {
-    _CCCL_ASSERT(__index < __size_, "cuda::stream_pool index out of range");
+    _CCCL_ASSERT(__index < __size_, "cuda::__stream_pool index out of range");
     ::cudaStream_t* const __slot = &__slots_[__index];
 
     // A slot changes exactly once, from empty to a stream that lives until the pool is destroyed, so a filled slot

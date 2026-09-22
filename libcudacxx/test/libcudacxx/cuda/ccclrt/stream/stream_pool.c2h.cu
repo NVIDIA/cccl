@@ -64,39 +64,40 @@ constexpr capture_mode_case capture_modes[] = {
 
 C2H_CCCLRT_TEST("Stream pool type properties", "[stream][stream_pool]")
 {
-  STATIC_REQUIRE(!cuda::std::is_copy_constructible_v<cuda::stream_pool>);
-  STATIC_REQUIRE(!cuda::std::is_copy_assignable_v<cuda::stream_pool>);
-  STATIC_REQUIRE(cuda::std::is_nothrow_move_constructible_v<cuda::stream_pool>);
-  STATIC_REQUIRE(cuda::std::is_nothrow_move_assignable_v<cuda::stream_pool>);
+  STATIC_REQUIRE(!cuda::std::is_copy_constructible_v<cuda::__stream_pool>);
+  STATIC_REQUIRE(!cuda::std::is_copy_assignable_v<cuda::__stream_pool>);
+  STATIC_REQUIRE(cuda::std::is_nothrow_move_constructible_v<cuda::__stream_pool>);
+  STATIC_REQUIRE(cuda::std::is_nothrow_move_assignable_v<cuda::__stream_pool>);
 
   // A pool must never be created by accident from a device in an argument list, and the size is mandatory.
-  STATIC_REQUIRE(!cuda::std::is_default_constructible_v<cuda::stream_pool>);
-  STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::device_ref, cuda::stream_pool>);
-  STATIC_REQUIRE(!cuda::std::is_constructible_v<cuda::stream_pool, cuda::device_ref>);
-  STATIC_REQUIRE(!cuda::std::is_constructible_v<cuda::stream_pool, cuda::__logical_device_ref>);
-  STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::stream_pool, cuda::device_ref, cuda::std::size_t>);
-  STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::stream_pool, cuda::__logical_device_ref, cuda::std::size_t>);
-  STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::stream_pool, const cuda::__logical_device&, cuda::std::size_t>);
+  STATIC_REQUIRE(!cuda::std::is_default_constructible_v<cuda::__stream_pool>);
+  STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::device_ref, cuda::__stream_pool>);
+  STATIC_REQUIRE(!cuda::std::is_constructible_v<cuda::__stream_pool, cuda::device_ref>);
+  STATIC_REQUIRE(!cuda::std::is_constructible_v<cuda::__stream_pool, cuda::__logical_device_ref>);
+  STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::__stream_pool, cuda::device_ref, cuda::std::size_t>);
+  STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::__stream_pool, cuda::__logical_device_ref, cuda::std::size_t>);
+  STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::__stream_pool, const cuda::__logical_device&, cuda::std::size_t>);
 
   // The creation mode follows the size and the priority comes last; an int cannot slip into the mode slot.
   STATIC_REQUIRE(
-    cuda::std::is_constructible_v<cuda::stream_pool, cuda::device_ref, cuda::std::size_t, cuda::stream_pool_creation>);
+    cuda::std::
+      is_constructible_v<cuda::__stream_pool, cuda::device_ref, cuda::std::size_t, cuda::__stream_pool_creation>);
   STATIC_REQUIRE(
     cuda::std::
-      is_constructible_v<cuda::stream_pool, cuda::device_ref, cuda::std::size_t, cuda::stream_pool_creation, int>);
-  STATIC_REQUIRE(!cuda::std::is_constructible_v<cuda::stream_pool, cuda::device_ref, cuda::std::size_t, int>);
+      is_constructible_v<cuda::__stream_pool, cuda::device_ref, cuda::std::size_t, cuda::__stream_pool_creation, int>);
+  STATIC_REQUIRE(!cuda::std::is_constructible_v<cuda::__stream_pool, cuda::device_ref, cuda::std::size_t, int>);
   STATIC_REQUIRE(
-    cuda::std::is_constructible_v<cuda::stream_pool,
+    cuda::std::is_constructible_v<cuda::__stream_pool,
                                   cuda::__logical_device_ref,
                                   cuda::std::size_t,
-                                  cuda::stream_pool_creation,
+                                  cuda::__stream_pool_creation,
                                   int>);
 
   STATIC_REQUIRE(
-    cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>().next_stream()), cuda::stream_ref>);
+    cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::__stream_pool&>().next_stream()), cuda::stream_ref>);
   STATIC_REQUIRE(
-    cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>().at(0)), cuda::stream_ref>);
-  STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::stream_pool&>()[0]), cuda::stream_ref>);
+    cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::__stream_pool&>().at(0)), cuda::stream_ref>);
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::__stream_pool&>()[0]), cuda::stream_ref>);
 }
 
 C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
@@ -105,7 +106,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("The pool reports its size, device and priority")
   {
-    const cuda::stream_pool pool{device, 16};
+    const cuda::__stream_pool pool{device, 16};
     REQUIRE(pool.size() == 16);
     REQUIRE(pool.device() == device);
     REQUIRE(pool.priority() == cuda::stream::default_priority);
@@ -115,15 +116,15 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("A size of zero is rejected")
   {
-    REQUIRE_THROWS_AS((cuda::stream_pool{device, 0}), std::invalid_argument);
-    REQUIRE_THROWS_AS((cuda::stream_pool{device, 0, cuda::stream_pool_creation::lazy}), std::invalid_argument);
-    REQUIRE_THROWS_AS((cuda::stream_pool{device, 0, cuda::stream_pool_creation::eager}), std::invalid_argument);
-    REQUIRE_THROWS_AS((cuda::stream_pool{cuda::__logical_device_ref{device}, 0}), std::invalid_argument);
+    REQUIRE_THROWS_AS((cuda::__stream_pool{device, 0}), std::invalid_argument);
+    REQUIRE_THROWS_AS((cuda::__stream_pool{device, 0, cuda::__stream_pool_creation::lazy}), std::invalid_argument);
+    REQUIRE_THROWS_AS((cuda::__stream_pool{device, 0, cuda::__stream_pool_creation::eager}), std::invalid_argument);
+    REQUIRE_THROWS_AS((cuda::__stream_pool{cuda::__logical_device_ref{device}, 0}), std::invalid_argument);
   }
 
   SECTION("Requests for one slot always return the same stream")
   {
-    const cuda::stream_pool pool{device, 4};
+    const cuda::__stream_pool pool{device, 4};
     REQUIRE(pool.size() == 4);
     REQUIRE(::test::count_driver_stack() == 0);
 
@@ -146,12 +147,12 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("A move takes over the streams and leaves an empty pool behind")
   {
-    cuda::stream_pool source{device, 3};
+    cuda::__stream_pool source{device, 3};
     const cudaStream_t first  = source.next_stream().get();
     const cudaStream_t second = source.at(1).get();
     const cudaStream_t third  = source.at(2).get();
 
-    cuda::stream_pool moved{std::move(source)};
+    cuda::__stream_pool moved{std::move(source)};
     REQUIRE(source.size() == 0);
     REQUIRE_THROWS_AS(source.at(0), std::out_of_range);
     REQUIRE(moved.size() == 3);
@@ -171,7 +172,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(*value == 42);
 
     // Move assignment destroys the streams of the target and takes over those of the source.
-    cuda::stream_pool target{device, 1, cuda::stream_pool_creation::lazy};
+    cuda::__stream_pool target{device, 1, cuda::__stream_pool_creation::lazy};
     target.next_stream().sync();
     target = std::move(moved);
     REQUIRE(moved.size() == 0);
@@ -181,17 +182,17 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     target.at(2).sync();
 
     // A moved-from pool can be assigned to again.
-    source = cuda::stream_pool{device, 2, cuda::stream_pool_creation::lazy};
+    source = cuda::__stream_pool{device, 2, cuda::__stream_pool_creation::lazy};
     REQUIRE(source.size() == 2);
     REQUIRE(source.next_stream().device() == device);
   }
 
   SECTION("Pools can be stored by value in a container")
   {
-    std::vector<cuda::stream_pool> pools;
+    std::vector<cuda::__stream_pool> pools;
     for (int i = 1; i <= 4; ++i)
     {
-      pools.emplace_back(device, static_cast<cuda::std::size_t>(i), cuda::stream_pool_creation::lazy);
+      pools.emplace_back(device, static_cast<cuda::std::size_t>(i), cuda::__stream_pool_creation::lazy);
     }
     for (int i = 1; i <= 4; ++i)
     {
@@ -202,7 +203,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Lazy creation is opted into")
   {
-    const cuda::stream_pool pool{device, 3, cuda::stream_pool_creation::lazy};
+    const cuda::__stream_pool pool{device, 3, cuda::__stream_pool_creation::lazy};
     REQUIRE(pool.size() == 3);
     REQUIRE(pool.device() == device);
     REQUIRE(pool.priority() == cuda::stream::default_priority);
@@ -213,7 +214,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Round-robin hands out every slot once before repeating")
   {
-    const cuda::stream_pool pool{device, 3};
+    const cuda::__stream_pool pool{device, 3};
 
     const cuda::stream_ref s0 = pool.next_stream();
     const cuda::stream_ref s1 = pool.next_stream();
@@ -231,7 +232,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Indexed access does not advance the round-robin position")
   {
-    const cuda::stream_pool pool{device, 3};
+    const cuda::__stream_pool pool{device, 3};
 
     const cuda::stream_ref s1 = pool[1];
     REQUIRE(pool.at(1) == s1);
@@ -245,7 +246,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("A pool of one stream always returns that stream")
   {
-    const cuda::stream_pool pool{device, 1};
+    const cuda::__stream_pool pool{device, 1};
     const cuda::stream_ref only = pool.next_stream();
     REQUIRE(pool.next_stream() == only);
     REQUIRE(pool[0] == only);
@@ -254,7 +255,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Streams live on the requested device and run work")
   {
-    const cuda::stream_pool pool{device, 2};
+    const cuda::__stream_pool pool{device, 2};
 
     for (cuda::std::size_t i = 0; i < 2 * pool.size(); ++i)
     {
@@ -271,9 +272,9 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Every stream is non-blocking, whether created eagerly or lazily")
   {
-    for (const auto mode : {cuda::stream_pool_creation::eager, cuda::stream_pool_creation::lazy})
+    for (const auto mode : {cuda::__stream_pool_creation::eager, cuda::__stream_pool_creation::lazy})
     {
-      const cuda::stream_pool pool{device, 3, mode};
+      const cuda::__stream_pool pool{device, 3, mode};
       for (cuda::std::size_t i = 0; i < pool.size(); ++i)
       {
         unsigned int flags{};
@@ -300,7 +301,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     if (least_priority != greatest_priority)
     {
       const auto priority = cuda::stream::default_priority - 1;
-      const cuda::stream_pool pool{device, 2, cuda::stream_pool_creation::lazy, priority};
+      const cuda::__stream_pool pool{device, 2, cuda::__stream_pool_creation::lazy, priority};
       REQUIRE(pool.priority() == priority);
       REQUIRE(pool.next_stream().priority() == priority);
       REQUIRE(pool.next_stream().priority() == priority);
@@ -316,7 +317,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     if (cuda::devices.size() > 1)
     {
       const auto second = cuda::devices[1];
-      const cuda::stream_pool pool{second, 2};
+      const cuda::__stream_pool pool{second, 2};
       REQUIRE(pool.device() == second);
 
       const cuda::stream_ref str = pool.next_stream();
@@ -331,7 +332,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Every slot of a lazy pool yields a distinct, valid stream")
   {
-    const cuda::stream_pool pool{device, 4, cuda::stream_pool_creation::lazy};
+    const cuda::__stream_pool pool{device, 4, cuda::__stream_pool_creation::lazy};
 
     std::vector<cuda::stream_ref> all;
     all.reserve(pool.size());
@@ -361,7 +362,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Eager creation, the default, creates every slot in the constructor")
   {
-    const cuda::stream_pool pool{device, 3};
+    const cuda::__stream_pool pool{device, 3};
     REQUIRE(pool.size() == 3);
     REQUIRE(pool.device() == device);
     REQUIRE(pool.priority() == cuda::stream::default_priority);
@@ -377,7 +378,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Every slot can be synchronized by index before the pool goes away")
   {
-    const cuda::stream_pool pool{device, 3};
+    const cuda::__stream_pool pool{device, 3};
     ::test::pinned<int> value0(0);
     ::test::pinned<int> value1(0);
     ::test::pinned<int> value2(0);
@@ -396,7 +397,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
   SECTION("Getting a stream leaves the driver context stack unchanged")
   {
-    const cuda::stream_pool pool{device, 2};
+    const cuda::__stream_pool pool{device, 2};
     const cuda::__ensure_current_context guard(device);
 
     const auto before = ::test::count_driver_stack();
@@ -409,7 +410,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 C2H_CCCLRT_TEST("Stream pool is usable from several threads", "[stream][stream_pool]")
 {
   const auto device = cuda::devices[0];
-  const cuda::stream_pool pool{device, 4};
+  const cuda::__stream_pool pool{device, 4};
 
   constexpr int num_threads             = 8;
   static constexpr int picks_per_thread = 64;
@@ -457,7 +458,7 @@ C2H_CCCLRT_TEST("Concurrent first requests for one slot create a single stream",
   constexpr int num_rounds  = 16;
   for (int round = 0; round < num_rounds; ++round)
   {
-    const cuda::stream_pool pool{device, 2, cuda::stream_pool_creation::lazy};
+    const cuda::__stream_pool pool{device, 2, cuda::__stream_pool_creation::lazy};
     std::vector<cudaStream_t> seen(num_threads, nullptr);
     std::vector<std::thread> threads;
     threads.reserve(num_threads);
@@ -483,7 +484,7 @@ C2H_CCCLRT_TEST("Concurrent first requests for one slot create a single stream",
 C2H_CCCLRT_TEST("Eager stream pool is usable from several threads", "[stream][stream_pool]")
 {
   const auto device = cuda::devices[0];
-  const cuda::stream_pool pool{device, 4, cuda::stream_pool_creation::eager};
+  const cuda::__stream_pool pool{device, 4, cuda::__stream_pool_creation::eager};
   std::set<cudaStream_t> slots;
   for (cuda::std::size_t i = 0; i < pool.size(); ++i)
   {
@@ -528,7 +529,7 @@ C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captur
   {
     INFO("capture mode: " << c.name);
 
-    const cuda::stream_pool pool{device, 2, cuda::stream_pool_creation::lazy};
+    const cuda::__stream_pool pool{device, 2, cuda::__stream_pool_creation::lazy};
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), c.mode) == ::CUDA_SUCCESS);
 
@@ -556,7 +557,7 @@ C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captur
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 
-    const cuda::stream_pool pool{device, 2};
+    const cuda::__stream_pool pool{device, 2};
     REQUIRE(pool[0] != pool[1]);
 
     ::CUstreamCaptureMode mode = ::CU_STREAM_CAPTURE_MODE_GLOBAL;
@@ -570,7 +571,7 @@ C2H_CCCLRT_TEST("Stream pool creates its streams while the calling thread captur
 
   SECTION("The thread's capture mode is restored after the streams are created")
   {
-    const cuda::stream_pool pool{device, 1, cuda::stream_pool_creation::lazy};
+    const cuda::__stream_pool pool{device, 1, cuda::__stream_pool_creation::lazy};
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 
@@ -613,7 +614,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
   SECTION("The pool reports the green context and the device owning it")
   {
     auto ldev = ::make_logical_device(device);
-    const cuda::stream_pool pool{ldev, 2};
+    const cuda::__stream_pool pool{ldev, 2};
 
     REQUIRE(pool.device() == device);
     REQUIRE(pool.__logical_device() == static_cast<const cuda::__logical_device_ref&>(ldev));
@@ -623,7 +624,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
   SECTION("Streams are created on the green context and run work")
   {
     auto ldev = ::make_logical_device(device);
-    const cuda::stream_pool pool{ldev, 2};
+    const cuda::__stream_pool pool{ldev, 2};
 
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
@@ -650,7 +651,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
   SECTION("Eager creation creates every slot on the green context")
   {
     auto ldev = ::make_logical_device(device);
-    const cuda::stream_pool pool{ldev, 2, cuda::stream_pool_creation::eager};
+    const cuda::__stream_pool pool{ldev, 2, cuda::__stream_pool_creation::eager};
 
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
@@ -661,7 +662,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
   SECTION("A device-backed logical device gives streams on the primary context")
   {
     const cuda::__logical_device_ref ldev{device};
-    const cuda::stream_pool pool{ldev, 2};
+    const cuda::__stream_pool pool{ldev, 2};
 
     const cuda::stream_ref str = pool.next_stream();
     REQUIRE(str.device() == device);
@@ -671,7 +672,7 @@ C2H_CCCLRT_TEST("Stream pool on a green context", "[stream][stream_pool][logical
   SECTION("The streams are created on the green context while the calling thread captures")
   {
     auto ldev = ::make_logical_device(device);
-    const cuda::stream_pool pool{ldev, 1, cuda::stream_pool_creation::lazy};
+    const cuda::__stream_pool pool{ldev, 1, cuda::__stream_pool_creation::lazy};
     const cuda::stream capturing{device};
     REQUIRE(begin_capture(capturing.get(), ::CU_STREAM_CAPTURE_MODE_GLOBAL) == ::CUDA_SUCCESS);
 
