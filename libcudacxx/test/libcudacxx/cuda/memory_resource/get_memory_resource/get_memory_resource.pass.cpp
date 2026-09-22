@@ -56,6 +56,16 @@ struct test_resource
   int _val = 0;
 };
 
+struct advertised_resource
+    : test_resource
+    , cuda::mr::memory_resource_base<advertised_resource>
+{};
+
+static_assert(cuda::std::is_same_v<typename advertised_resource::property_keys,
+                                   cuda::execution::property_key_list<cuda::mr::get_memory_resource_t>>);
+static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<advertised_resource>,
+                                   cuda::execution::property_key_list<cuda::mr::get_memory_resource_t>>);
+
 TEST_HOST_DEVICE_FUNC void test()
 {
   test_resource invalid_resource{42};

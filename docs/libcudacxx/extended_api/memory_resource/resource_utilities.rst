@@ -53,6 +53,7 @@ execution environment.
 
 ``cuda::mr::memory_resource_base<Derived>`` is a CRTP helper that makes a resource queryable by
 ``cuda::mr::get_memory_resource`` when the resource is used as part of a composed execution environment.
+It also advertises ``cuda::mr::get_memory_resource_t`` through its nested ``property_keys`` type.
 
 It supports three cases:
 

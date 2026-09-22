@@ -32,6 +32,7 @@
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__fwd/hash.h>
 #  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstddef>
@@ -53,6 +54,9 @@ protected:
 
 public:
   using value_type = ::cudaStream_t;
+
+  //! @brief Advertises that @c stream_ref supports the @c cuda::get_stream query.
+  using property_keys = ::cuda::execution::property_key_list<::cuda::get_stream_t>;
 
   //! @brief Constructs a `stream_ref` of the "default" CUDA stream.
   //!

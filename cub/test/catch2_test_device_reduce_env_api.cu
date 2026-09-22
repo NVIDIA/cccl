@@ -11,11 +11,22 @@
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/execution>
 #include <cuda/std/__execution/env.h>
 #include <cuda/stream>
 
 #include "catch2_test_memory_resources.h"
 #include "cub_test_macros.h"
+
+struct custom_stream_env
+{
+  cuda::stream_ref stream;
+
+  cuda::stream_ref query(cuda::get_stream_t) const noexcept
+  {
+    return stream;
+  }
+};
 
 CUB_TEST("cub::DeviceReduce::Reduce accepts run_to_run determinism requirements", "[reduce][env]", CUB_SMALL)
 {
@@ -87,6 +98,36 @@ CUB_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]", CUB_SMALL)
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
+}
+
+CUB_TEST("cub::DeviceReduce::Reduce accepts a checked custom environment", "[reduce][env]", CUB_SMALL)
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4};
+  auto output = thrust::device_vector<int>(1);
+
+  const cuda::stream stream{cuda::devices[0]};
+  auto env = cuda::checked_env<cuda::get_stream_t>(custom_stream_env{cuda::stream_ref{stream}});
+
+  const auto error =
+    cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), cuda::std::plus<>{}, 0, env);
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 10);
+}
+
+CUB_TEST("cub::DeviceReduce::Reduce accepts a stream object", "[reduce][env]", CUB_SMALL)
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4};
+  auto output = thrust::device_vector<int>(1);
+
+  const cuda::stream stream{cuda::devices[0]};
+  const auto error =
+    cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), cuda::std::plus<>{}, 0, stream.get());
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 10);
 }
 
 CUB_TEST("cub::DeviceReduce::Sum accepts run_to_run determinism requirements", "[reduce][env]", CUB_SMALL)

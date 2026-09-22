@@ -55,6 +55,40 @@ struct custom_env
   }
 };
 
+struct contextual_env
+{
+  using property_keys = cuda::execution::property_key_list<cuda::execution::property_query<query3_t, int>>;
+
+  TEST_HOST_DEVICE_FUNC constexpr auto query(query3_t, int i) const noexcept
+  {
+    return i;
+  }
+};
+
+struct reserved_and_public_env
+{
+  using __property_keys = cuda::execution::property_key_list<query1_t>;
+  using property_keys   = cuda::execution::property_key_list<query2_t>;
+};
+
+struct invalid_reserved_env
+{
+  using __property_keys = int;
+  using property_keys   = cuda::execution::property_key_list<query2_t>;
+};
+
+struct invalid_public_env
+{
+  using __property_keys = cuda::execution::property_key_list<query1_t>;
+  using property_keys   = int;
+};
+
+struct unmarked_env
+{
+  using __property_keys = int;
+  using property_keys   = double;
+};
+
 struct derived_env : cuda::std::execution::env<>
 {
   using env::query;
@@ -74,8 +108,17 @@ TEST_HOST_DEVICE_FUNC constexpr bool is_trivial_aggregate()
 
 TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
+  using cuda::execution::property_key_list;
+  using cuda::execution::property_query;
+
+  static_assert(cuda::execution::is_property_key_list_v<property_key_list<>>);
+  static_assert(cuda::execution::is_property_key_list_v<property_key_list<query1_t, query2_t>>);
+  static_assert(!cuda::execution::is_property_key_list_v<property_query<query1_t>>);
+
   [[maybe_unused]] cuda::std::execution::env e1{};
   static_assert(cuda::std::is_same_v<decltype(e1), cuda::std::execution::env<>>);
+  static_assert(cuda::std::is_same_v<typename decltype(e1)::__property_keys, property_key_list<>>);
+  static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<decltype(e1)>, property_key_list<>>);
   static_assert(is_trivial_aggregate<cuda::std::execution::env<>>());
   static_assert(!cuda::std::execution::__queryable_with<cuda::std::execution::env<>, query1_t>);
   static_assert(sizeof(e1) == 1);
@@ -92,6 +135,8 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
                 float>);
   using expected_e2_t = cuda::std::execution::env<cuda::std::execution::prop<query1_t, int>>;
   static_assert(cuda::std::is_same_v<decltype(e2), expected_e2_t>);
+  static_assert(cuda::std::is_same_v<typename decltype(e2)::__property_keys, property_key_list<query1_t>>);
+  static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<decltype(e2)>, property_key_list<query1_t>>);
   static_assert(is_trivial_aggregate<expected_e2_t>());
   static_assert(cuda::std::is_same_v<decltype(e2.query(query1)), const int&>);
   static_assert(!cuda::std::execution::__queryable_with<expected_e2_t, query2_t>);
@@ -103,6 +148,9 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
   using expected_e3_t =
     cuda::std::execution::env<cuda::std::execution::prop<query1_t, int>, cuda::std::execution::prop<query2_t, double>>;
   static_assert(cuda::std::is_same_v<decltype(e3), expected_e3_t>);
+  static_assert(cuda::std::is_same_v<typename decltype(e3)::__property_keys, property_key_list<query1_t, query2_t>>);
+  static_assert(
+    cuda::std::is_same_v<cuda::execution::property_keys_t<decltype(e3)>, property_key_list<query1_t, query2_t>>);
   static_assert(is_trivial_aggregate<expected_e3_t>());
   static_assert(cuda::std::is_same_v<decltype(e3.query(query1)), const int&>);
   static_assert(cuda::std::is_same_v<decltype(e3.query(query2)), const double&>);
@@ -115,6 +163,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
   using expected_e4_t = cuda::std::execution::
     env<custom_env, cuda::std::execution::prop<query1_t, int>, cuda::std::execution::prop<query2_t, double>>;
   static_assert(cuda::std::is_same_v<decltype(e4), expected_e4_t>);
+  static_assert(cuda::std::is_same_v<typename decltype(e4)::__property_keys, property_key_list<query1_t, query2_t>>);
   static_assert(is_trivial_aggregate<expected_e4_t>());
   static_assert(cuda::std::is_same_v<decltype(e4.query(query1)), int>);
   static_assert(cuda::std::is_same_v<decltype(e4.query(query2)), const double&>);
@@ -128,6 +177,25 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
   // Test that env works with const references:
   cuda::std::execution::env<decltype(e2) const&> e5{e2};
   assert(e5.query(query1) == 42);
+
+  cuda::std::execution::env e6{contextual_env{}};
+  using contextual_query = property_query<query3_t, int>;
+  static_assert(cuda::std::is_same_v<typename decltype(e6)::__property_keys, property_key_list<contextual_query>>);
+  static_assert(
+    cuda::std::is_same_v<cuda::execution::property_keys_t<contextual_env>, property_key_list<contextual_query>>);
+  static_assert(
+    cuda::std::is_same_v<cuda::execution::property_keys_t<const contextual_env&>, property_key_list<contextual_query>>);
+  assert(e6.query(query3, 42) == 42);
+
+  static_assert(
+    cuda::std::is_same_v<cuda::execution::property_keys_t<reserved_and_public_env>, property_key_list<query1_t>>);
+  static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<const volatile reserved_and_public_env&&>,
+                                     property_key_list<query1_t>>);
+  static_assert(
+    cuda::std::is_same_v<cuda::execution::property_keys_t<invalid_reserved_env>, property_key_list<query2_t>>);
+  static_assert(
+    cuda::std::is_same_v<cuda::execution::property_keys_t<invalid_public_env>, property_key_list<query1_t>>);
+  static_assert(!cuda::std::execution::__detail::__has_property_keys<unmarked_env>);
 
   return true;
 }
