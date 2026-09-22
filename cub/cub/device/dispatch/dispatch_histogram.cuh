@@ -42,6 +42,7 @@
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/array>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
@@ -145,9 +146,14 @@ struct DeviceHistogramKernelSource
 
     if constexpr (::cuda::std::is_integral_v<CommonT>)
     {
-      using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
-      return static_cast<IntArithmeticT>(upper_level[channel] - lower_level[channel])
-           > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
+      if (::cuda::std::cmp_greater(num_bins, +::cuda::std::numeric_limits<CommonT>::max()))
+      {
+        return true;
+      }
+      using IntArithmeticT     = typename TransformsT::ScaleTransform::IntArithmeticT;
+      constexpr auto max_value = ::cuda::std::numeric_limits<IntArithmeticT>::max();
+      const auto diff          = static_cast<IntArithmeticT>(upper_level[channel] - lower_level[channel]);
+      return diff > (max_value / static_cast<IntArithmeticT>(num_bins));
     }
     else
     {
