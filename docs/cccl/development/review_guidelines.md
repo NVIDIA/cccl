@@ -187,6 +187,26 @@ the call. PR CI builds and runs with matched driver/CTK, so this only reproduces
 Flag dependencies fetched by branch name (`CPMAddPackage("gh:org/repo#main")`, `GIT_TAG
 main`); pin a commit or tag. Candidate for a pre-commit grep.
 
+## correctness.stale-refs-after-rename (important, renames, moves, or splits of files, symbols, or modules anywhere in the repo)
+
+<!-- provenance:
+  #3177→#3192 cuda.parallel module split left docs automodule pointing at emptied package;
+  #10012→#10042 docs flattening left stale path in a test comment and an empty api/thread toctree stub;
+  #1075→#1108,#1110 lit.cfg path not updated after symlink removal broke local lit runs;
+  #4537→#6516 NVTX macro rename left a stale #define in test_nvtx_disabled.cu, silently defanging a negative test;
+  #4795→#4814 cudax detail→__detail rename swept ~120 files but missed the second example copy at top-level examples/cudax/
+-->
+<!-- note:
+  A docs CI check failing on autodoc directives that yield no members (or on empty generated pages)
+  would cover the last clause mechanically; retire it once such a check exists.
+-->
+
+When a diff renames, moves, or splits a file, macro, symbol, or module, `git grep` for the old name:
+each remaining hit must be updated, or be classified as an unrelated entity that merely shares
+the name. Doc directives (`automodule::`/`toctree::`) can go stale without containing the old name and
+still build cleanly (autodoc renders emptied packages as blank pages) — verify the rendered docs, not
+just the grep.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
