@@ -111,24 +111,6 @@ enum class logical_endpoint_ipc_handle_type : ::cuda::std::underlying_type_t<::C
   fabric = ::CU_LOGICAL_ENDPOINT_IPC_HANDLE_TYPE_FABRIC
 };
 
-namespace __detail
-{
-_CCCL_HOST_API inline void __throw_logical_endpoint_bind_addr_error(
-  ::cudaError_t __status, logical_endpoint_ipc_handle_type __ipc, const void* __ptr)
-{
-  if (__status == ::cudaErrorInvalidValue && __ipc == logical_endpoint_ipc_handle_type::fabric
-      && ::cuda::__detail::__allocation_is_known_not_fabric_exportable(__ptr))
-  {
-    _CCCL_THROW(::cuda::cuda_error,
-                __status,
-                "Failed to bind a virtual address to a fabric logical endpoint. Fabric logical endpoints require "
-                "backing memory from a memory pool or allocation created with cudaMemHandleTypeFabric");
-  }
-
-  _CCCL_THROW(::cuda::cuda_error, __status, "Failed to bind a virtual address to a logical endpoint");
-}
-} // namespace __detail
-
 //! @brief CUDA logical endpoint size and binding limits.
 struct logical_endpoint_limits
 {
@@ -719,6 +701,11 @@ public:
   //!
   //! For fabric IPC endpoints, failures caused by non-fabric-exportable backing allocations are diagnosed with a
   //! targeted error message when the allocation metadata is available from the CUDA driver.
+  //!
+  //! @param[in] __device The device whose memory is being bound.
+  //! @param[in] __endpoint_offset The byte offset in the logical endpoint.
+  //! @param[in] __ptr The device pointer to bind.
+  //! @param[in] __bytes The number of bytes to bind.
   _CCCL_HOST_API void bind(::cuda::device_ref __device,
                            ::cuda::std::uint64_t __endpoint_offset,
                            void* __ptr,
@@ -732,7 +719,15 @@ public:
       this->native_handle(), ::cuda::__driver::__deviceGet(__device.get()), __endpoint_offset, __ptr, __bytes);
     if (__status != ::cudaSuccess)
     {
-      ::cuda::__detail::__throw_logical_endpoint_bind_addr_error(__status, __ipc_handle_type_, __ptr);
+      if (__status == ::cudaErrorInvalidValue && __ipc_handle_type_ == logical_endpoint_ipc_handle_type::fabric
+          && ::cuda::__detail::__allocation_is_known_not_fabric_exportable(__ptr))
+      {
+        _CCCL_THROW(::cuda::cuda_error,
+                    __status,
+                    "Failed to bind a virtual address to a fabric logical endpoint. Fabric logical endpoints require "
+                    "backing memory from a memory pool or allocation created with cudaMemHandleTypeFabric");
+      }
+      _CCCL_THROW(::cuda::cuda_error, __status, "Failed to bind a virtual address to a logical endpoint");
     }
   }
 
