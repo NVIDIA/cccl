@@ -776,7 +776,8 @@ public:
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    using is_byte_sample_t = ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
+    using is_byte_sample_t _CCCL_NODEBUG =
+      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
@@ -1503,7 +1504,8 @@ public:
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    using is_byte_sample_t = ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
+    using is_byte_sample_t _CCCL_NODEBUG =
+      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
@@ -2066,7 +2068,8 @@ public:
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    using is_byte_sample_t = ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
+    using is_byte_sample_t _CCCL_NODEBUG =
+      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
@@ -2530,7 +2533,8 @@ public:
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    using is_byte_sample_t = ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
+    using is_byte_sample_t _CCCL_NODEBUG =
+      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;

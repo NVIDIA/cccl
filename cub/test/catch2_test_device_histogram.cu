@@ -860,7 +860,9 @@ CUB_TEST("DeviceHistogram::Histogram* negative signed byte samples", "[histogram
 {
   constexpr int num_bins         = 4;
   constexpr int num_levels       = num_bins + 1;
-  const int8_t h_samples[]       = {-60, -1, 10, 63};
+  constexpr int8_t lower_level   = -60;
+  constexpr int8_t upper_level   = 64;
+  const int8_t h_samples[]       = {lower_level, -1, 10, 63};
   auto d_samples                 = c2h::device_vector<int8_t>(cs::begin(h_samples), cs::end(h_samples));
   const auto* const d_sample_ptr = thrust::raw_pointer_cast(d_samples.data());
   c2h::host_vector<int> h_expected{1, 1, 1, 1};
@@ -872,15 +874,15 @@ CUB_TEST("DeviceHistogram::Histogram* negative signed byte samples", "[histogram
       d_sample_ptr,
       thrust::raw_pointer_cast(d_histogram.data()),
       num_levels,
-      static_cast<int8_t>(-60),
-      static_cast<int8_t>(64),
+      lower_level,
+      upper_level,
       static_cast<int>(d_samples.size()));
     CHECK(d_histogram == h_expected);
   }
 
   SECTION("HistogramRange")
   {
-    const int h_levels[] = {-60, -30, 0, 30, 64};
+    const int h_levels[] = {lower_level, -30, 0, 30, upper_level};
     auto d_levels        = c2h::device_vector<int>(cs::begin(h_levels), cs::end(h_levels));
     auto d_histogram     = c2h::device_vector<int>(num_bins);
     histogram_range(
@@ -897,41 +899,45 @@ CUB_TEST("DeviceHistogram::Histogram* negative signed byte samples", "[histogram
 // bins through the SampleT round trip of privatized bin indices in StoreOutput.
 CUB_TEST("DeviceHistogram::Histogram* full 8-bit domain", "[histogram][device]", CUB_SMALL)
 {
-  c2h::host_vector<int8_t> h_all_samples(256);
-  for (int i = 0; i < 256; ++i)
+  constexpr int num_bins    = 256;
+  constexpr int num_levels  = num_bins + 1;
+  constexpr int lower_level = -128;
+  constexpr int upper_level = 128;
+
+  c2h::host_vector<int8_t> h_all_samples(num_bins);
+  for (int i = 0; i < num_bins; ++i)
   {
-    h_all_samples[i] = static_cast<int8_t>(i - 128);
+    h_all_samples[i] = static_cast<int8_t>(i + lower_level);
   }
   auto d_all_samples             = c2h::device_vector<int8_t>(h_all_samples.begin(), h_all_samples.end());
   const auto* const d_sample_ptr = thrust::raw_pointer_cast(d_all_samples.data());
-  c2h::host_vector<int> h_expected(256, 1);
+  c2h::host_vector<int> h_expected(num_bins, 1);
+  auto d_histogram = c2h::device_vector<int>(num_bins);
 
   SECTION("HistogramEven")
   {
-    auto d_histogram = c2h::device_vector<int>(256);
     histogram_even(
       d_sample_ptr,
       thrust::raw_pointer_cast(d_histogram.data()),
-      257,
-      -128,
-      128,
+      num_levels,
+      lower_level,
+      upper_level,
       static_cast<int>(d_all_samples.size()));
     CHECK(d_histogram == h_expected);
   }
 
   SECTION("HistogramRange")
   {
-    c2h::host_vector<int> h_levels(257);
-    for (int i = 0; i < 257; ++i)
+    c2h::host_vector<int> h_levels(num_levels);
+    for (int i = 0; i < num_levels; ++i)
     {
-      h_levels[i] = i - 128;
+      h_levels[i] = i + lower_level;
     }
-    auto d_levels    = c2h::device_vector<int>(h_levels.begin(), h_levels.end());
-    auto d_histogram = c2h::device_vector<int>(256);
+    auto d_levels = c2h::device_vector<int>(h_levels.begin(), h_levels.end());
     histogram_range(
       d_sample_ptr,
       thrust::raw_pointer_cast(d_histogram.data()),
-      257,
+      num_levels,
       thrust::raw_pointer_cast(d_levels.data()),
       static_cast<int>(d_all_samples.size()));
     CHECK(d_histogram == h_expected);
@@ -943,13 +949,13 @@ CUB_TEST("DeviceHistogram::Histogram* full 8-bit domain", "[histogram][device]",
 // were merged or dropped (and, for float-like types, could write out of bounds).
 CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[histogram][device]", CUB_SMALL)
 {
-  constexpr int num_bins   = 1 << 16;
+  constexpr int num_bins   = 65'536; // 2^16
   constexpr int num_levels = num_bins + 1;
 
   c2h::host_vector<int16_t> h_i16_samples(num_bins);
   for (int i = 0; i < num_bins; ++i)
   {
-    h_i16_samples[i] = static_cast<int16_t>(static_cast<int>(i) - 32768);
+    h_i16_samples[i] = static_cast<int16_t>(i - 32768);
   }
   auto d_samples                 = c2h::device_vector<int16_t>(h_i16_samples.begin(), h_i16_samples.end());
   const auto* const d_sample_ptr = thrust::raw_pointer_cast(d_samples.data());
@@ -988,40 +994,41 @@ CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[
   }
 
 #if TEST_HALF_T()
+  // fp16 mantissa is 10 bits, so it has 11 bits of effective precision. It means it can represent exactly 2^11
+  // integer values.
   SECTION("__half samples with more than 2048 bins")
   {
-    // Strictly increasing exactly representable half values: k/1024 below 2048, then every second
-    // integer step above, since half needs 11 significand bits and ulp doubles at 2.0.
-    constexpr int half_num_bins   = 3000;
-    constexpr int half_num_levels = half_num_bins + 1;
-    const auto exact_half         = [](int i) {
+    constexpr int fp16_num_bins   = 3000;
+    constexpr int fp16_num_levels = fp16_num_bins + 1;
+    const auto exact_fp16         = [](int i) {
+      // In [2048, 4096), the spacing between adjacent half values becomes 2.
       const int k = i < 2048 ? i : 2048 + (i - 2048) * 2;
-      return half_t(static_cast<float>(k) / 1024.0f);
+      return half_t{static_cast<float>(k) / 1024.0f};
     };
 
-    c2h::host_vector<half_t> h_half_levels(half_num_levels);
-    for (int i = 0; i < half_num_levels; ++i)
+    c2h::host_vector<half_t> h_fp16_levels(fp16_num_levels);
+    for (int i = 0; i < fp16_num_levels; ++i)
     {
-      h_half_levels[i] = exact_half(i);
+      h_fp16_levels[i] = exact_fp16(i);
     }
-    c2h::host_vector<half_t> h_half_samples(half_num_bins);
-    for (int i = 0; i < half_num_bins; ++i)
+    c2h::host_vector<half_t> h_fp16_samples(fp16_num_bins);
+    for (int i = 0; i < fp16_num_bins; ++i)
     {
-      h_half_samples[i] = exact_half(i);
+      h_fp16_samples[i] = exact_fp16(i);
     }
-    auto d_half_levels  = c2h::device_vector<half_t>(h_half_levels.begin(), h_half_levels.end());
-    auto d_half_samples = c2h::device_vector<half_t>(h_half_samples.begin(), h_half_samples.end());
+    auto d_fp16_levels  = c2h::device_vector<half_t>(h_fp16_levels.begin(), h_fp16_levels.end());
+    auto d_fp16_samples = c2h::device_vector<half_t>(h_fp16_samples.begin(), h_fp16_samples.end());
 
-    auto d_histogram = c2h::device_vector<int>(half_num_bins);
+    auto d_histogram = c2h::device_vector<int>(fp16_num_bins);
     histogram_range(
-      cast_if_half_pointer(thrust::raw_pointer_cast(d_half_samples.data())),
+      cast_if_half_pointer(thrust::raw_pointer_cast(d_fp16_samples.data())),
       thrust::raw_pointer_cast(d_histogram.data()),
-      half_num_levels,
-      cast_if_half_pointer(thrust::raw_pointer_cast(d_half_levels.data())),
-      half_num_bins);
+      fp16_num_levels,
+      cast_if_half_pointer(thrust::raw_pointer_cast(d_fp16_levels.data())),
+      fp16_num_bins);
 
-    c2h::host_vector<int> h_half_expected(half_num_bins, 1);
-    CHECK(d_histogram == h_half_expected);
+    c2h::host_vector<int> h_fp16_expected(fp16_num_bins, 1);
+    CHECK(d_histogram == h_fp16_expected);
   }
 #endif // TEST_HALF_T()
 }
