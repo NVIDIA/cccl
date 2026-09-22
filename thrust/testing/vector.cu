@@ -26,7 +26,7 @@ void TestVectorZeroSize()
 }
 DECLARE_VECTOR_UNITTEST(TestVectorZeroSize);
 
-void TestVectorBool()
+TEST_CASE("TestVectorBool", "[vector]")
 {
   const thrust::host_vector<bool> h{true, false, true};
   const thrust::device_vector<bool> d{true, false, true};
@@ -36,7 +36,6 @@ void TestVectorBool()
   REQUIRE(h == h_ref);
   REQUIRE(d == d_ref);
 }
-DECLARE_UNITTEST(TestVectorBool);
 
 template <class Vector>
 void TestVectorInitializerList()
@@ -529,7 +528,7 @@ void TestVectorEraseRange()
 }
 DECLARE_VECTOR_UNITTEST(TestVectorEraseRange);
 
-void TestVectorEquality()
+TEST_CASE("TestVectorEquality", "[vector]")
 {
   const thrust::host_vector<int> h_a{0, 1, 2};
   const thrust::host_vector<int> h_b{0, 1, 3};
@@ -625,9 +624,8 @@ void TestVectorEquality()
   REQUIRE_FALSE(s_c == h_b);
   REQUIRE_FALSE(h_c == s_b);
 }
-DECLARE_UNITTEST(TestVectorEquality);
 
-void TestVectorInequality()
+TEST_CASE("TestVectorInequality", "[vector]")
 {
   const thrust::host_vector<int> h_a{0, 1, 2};
   const thrust::host_vector<int> h_b{0, 1, 3};
@@ -723,7 +721,6 @@ void TestVectorInequality()
   REQUIRE(s_c != h_b);
   REQUIRE(h_c != s_b);
 }
-DECLARE_UNITTEST(TestVectorInequality);
 
 template <class Vector>
 void TestVectorResizing()
@@ -830,7 +827,7 @@ struct LargeStruct
   }
 };
 
-void TestVectorContainingLargeType()
+TEST_CASE("TestVectorContainingLargeType", "[vector]")
 {
   // Thrust issue #5
   // http://code.google.com/p/thrust/issues/detail?id=5
@@ -868,7 +865,6 @@ void TestVectorContainingLargeType()
 
   REQUIRE((dv3 == hv3));
 }
-DECLARE_UNITTEST(TestVectorContainingLargeType);
 
 template <typename Vector>
 void TestVectorReversed()
@@ -943,7 +939,7 @@ struct IntWithInit
   int value = 42;
 };
 
-void TestVectorDefaultInitCtor()
+TEST_CASE("TestVectorDefaultInitCtor", "[vector]")
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
@@ -966,9 +962,8 @@ void TestVectorDefaultInitCtor()
     }
   }
 }
-DECLARE_UNITTEST(TestVectorDefaultInitCtor);
 
-void TestVectorNoInitCtor()
+TEST_CASE("TestVectorNoInitCtor", "[vector]")
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
@@ -980,9 +975,8 @@ void TestVectorNoInitCtor()
   // thrust::host_vector<IntWithInit> hv(10, thrust::no_init);
   // thrust::device_vector<IntWithInit> dv(10, thrust::no_init);
 }
-DECLARE_UNITTEST(TestVectorNoInitCtor);
 
-void TestVectorDefaultInitResize()
+TEST_CASE("TestVectorDefaultInitResize", "[vector]")
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
@@ -1012,9 +1006,8 @@ void TestVectorDefaultInitResize()
     }
   }
 }
-DECLARE_UNITTEST(TestVectorDefaultInitResize);
 
-void TestVectorNoInitResize()
+TEST_CASE("TestVectorNoInitResize", "[vector]")
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
@@ -1030,4 +1023,3 @@ void TestVectorNoInitResize()
   // thrust::host_vector<IntWithInit>(5).resize(10, thrust::no_init);
   // thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
 }
-DECLARE_UNITTEST(TestVectorNoInitResize);
