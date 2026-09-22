@@ -93,21 +93,21 @@ GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT>& range_sizes, const s
   return new_offsets;
 }
 
-template <size_t n, typename... T>
-std::enable_if_t<n >= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
+template <size_t N, typename... T>
+std::enable_if_t<N >= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
 print_tuple(std::ostream&, const cuda::std::tuple<T...>&)
 {}
 
-template <size_t n, typename... T>
-std::enable_if_t<n + 1 <= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
+template <size_t N, typename... T>
+std::enable_if_t<N + 1 <= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
 print_tuple(std::ostream& os, const cuda::std::tuple<T...>& tup)
 {
-  if constexpr (n != 0)
+  if constexpr (N != 0)
   {
     os << ", ";
   }
-  os << cuda::std::get<n>(tup);
-  print_tuple<n + 1>(os, tup);
+  os << cuda::std::get<N>(tup);
+  print_tuple<N + 1>(os, tup);
 }
 
 struct Identity

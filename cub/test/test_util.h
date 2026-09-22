@@ -1463,10 +1463,10 @@ struct GpuTimer
   }
 };
 
-template <int ELEMENTS_PER_OBJECT_ = 128>
+template <int ElementsPerObjectParam = 128>
 struct HugeDataType
 {
-  static constexpr int ELEMENTS_PER_OBJECT = ELEMENTS_PER_OBJECT_;
+  static constexpr int ELEMENTS_PER_OBJECT = ElementsPerObjectParam;
 
   __device__ __host__ HugeDataType()
   {
@@ -1507,11 +1507,11 @@ struct HugeDataType
   int data[ELEMENTS_PER_OBJECT];
 };
 
-template <int ELEMENTS_PER_OBJECT>
+template <int ElementsPerObject>
 inline __device__ __host__ bool
-operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
+operator==(const HugeDataType<ElementsPerObject>& lhs, const HugeDataType<ElementsPerObject>& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] != rhs.data[i])
     {
@@ -1522,11 +1522,11 @@ operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEM
   return true;
 }
 
-template <int ELEMENTS_PER_OBJECT>
+template <int ElementsPerObject>
 inline __device__ __host__ bool
-operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
+operator<(const HugeDataType<ElementsPerObject>& lhs, const HugeDataType<ElementsPerObject>& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] < rhs.data[i])
     {
@@ -1537,10 +1537,10 @@ operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEME
   return false;
 }
 
-template <typename DataType, int ELEMENTS_PER_OBJECT>
-__device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const DataType& rhs)
+template <typename DataType, int ElementsPerObject>
+__device__ __host__ bool operator!=(const HugeDataType<ElementsPerObject>& lhs, const DataType& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] != rhs)
     {
@@ -1551,14 +1551,14 @@ __device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs
   return false;
 }
 
-template <int ELEMENTS_PER_OBJECT>
-std::ostream& operator<<(std::ostream& os, const HugeDataType<ELEMENTS_PER_OBJECT>& val)
+template <int ElementsPerObject>
+std::ostream& operator<<(std::ostream& os, const HugeDataType<ElementsPerObject>& val)
 {
   os << '(';
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     os << CoutCast(val.data[i]);
-    if (i < ELEMENTS_PER_OBJECT - 1)
+    if (i < ElementsPerObject - 1)
     {
       os << ',';
     }
