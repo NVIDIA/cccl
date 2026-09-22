@@ -41,13 +41,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
 #if _CCCL_HOST_COMPILATION()
-// Host seed: the libm symbol. The exception spec must match the platform's
-// <math.h> prototype exactly, otherwise this extern-"C" redeclaration conflicts
-// with ::fma when <cmath> is also in the TU (in C++17+ the exception spec is
-// part of the type, so a mismatch is an error, not just a warning):
+// Host seed: the libm symbol, declared at global scope. Inside
+// cuda::experimental it would be promoted with the rest of the component, and
+// because C language linkage makes it the same entity as ::fma, the namespace
+// would gain a scalar fma overload aliasing libm.
+//
+// The exception spec must match the platform's <math.h> prototype exactly,
+// otherwise this extern-"C" redeclaration conflicts with ::fma when <cmath> is
+// also in the TU (in C++17+ the exception spec is part of the type, so a
+// mismatch is an error, not just a warning):
 //   - glibc marks fma __THROW (noexcept), so the redeclaration must be noexcept.
 //   - MSVC's CRT/CUDA prototype carries no exception specification, so a
 //     noexcept redeclaration is a mismatched extern-"C" overload (C2382/C2733
@@ -59,6 +62,8 @@ extern "C" double fma(double __x, double __y, double __z) noexcept;
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 #endif // _CCCL_HOST_COMPILATION()
 
+namespace cuda::experimental
+{
 //! @brief Pure FMA core operating on the unpacked representation.
 //!
 //! Consumes/produces __fpbits64_unpacked exactly as produced by the universal

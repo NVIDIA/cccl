@@ -547,7 +547,7 @@ inline constexpr bool __fpmp2_is_lossless_int_v =
 */
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_internal_fabs(float __x) noexcept
 {
-  return fabsf(__x);
+  return ::fabsf(__x);
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __fpmp_internal_isnan(float __x) noexcept
 {
@@ -567,7 +567,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_add_rz(float __x, float __y) noexcept
                       {
                         return __sum;
                       }
-                      float __error = fmaf(-1.0f, __sum, __x) + __y;
+                      float __error = ::fmaf(-1.0f, __sum, __x) + __y;
                       if (__error == 0.0f)
                       {
                         return __sum;
@@ -593,7 +593,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_mul_rn(float __x, float __y) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_fma_rn(float __x, float __y, float __z) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fmaf_ieee_rn(__x, __y, __z);), (return fmaf(__x, __y, __z);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fmaf_ieee_rn(__x, __y, __z);), (return ::fmaf(__x, __y, __z);))
 }
 // On device the approximate SFU reciprocal / reciprocal square root are emitted as
 // inline asm rather than through __frcp_rn / __frsqrt_rn: they are the fastest option
@@ -617,7 +617,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_rsqrt_rn(float __x) noexcept
                       asm("rsqrt.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
                       return __r;
                     }),
-                    (return 1.0f / sqrtf(__x);))
+                    (return 1.0f / ::sqrtf(__x);))
 }
 // Fast single-precision base-2 exp / log mapped to the FP32 SFU approximation units
 // (ex2.approx / lg2.approx) on device and to the libm single-precision routines on the
@@ -649,7 +649,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(float __x) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(roundf(__x));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(::roundf(__x));))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(float __x) noexcept
 {
@@ -690,11 +690,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -710,11 +710,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -730,11 +730,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -750,11 +750,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ull2fp_rz(uint64_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -866,7 +866,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ll2fp_rz<double>(int64_t __x) noexcep
                       long double __exact = static_cast<long double>(__x);
                       if ((__x > 0 && __d > __exact) || (__x < 0 && __d < __exact))
                       {
-                        __d = nextafter(__d, 0.0);
+                        __d = ::nextafter(__d, 0.0);
                       }
                       return __d;
                     }))
@@ -879,7 +879,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ull2fp_rz<double>(uint64_t __x) noexc
                       long double __exact = static_cast<long double>(__x);
                       if (__d > __exact)
                       {
-                        __d = nextafter(__d, 0.0);
+                        __d = ::nextafter(__d, 0.0);
                       }
                       return __d;
                     }))
@@ -932,7 +932,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_floor(const _FpType __x) n
                         const int32_t __xi = ::__float2int_rd(__x);
                         return ::__int2float_rn(__xi);
                       }),
-                      (return floorf(__x);))
+                      (return ::floorf(__x);))
   }
   else
   {
@@ -955,7 +955,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
                         const int32_t __xi = ::__float2int_ru(__x);
                         return ::__int2float_rn(__xi);
                       }),
-                      (return ceilf(__x);))
+                      (return ::ceilf(__x);))
   }
   else
   {
