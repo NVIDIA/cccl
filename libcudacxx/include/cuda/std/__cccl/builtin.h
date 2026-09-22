@@ -122,14 +122,9 @@
 #endif // builtin_constant_p availability
 
 // NVCC doesn't recognize it in host/device code before 13.4
-#if defined(_CCCL_BUILTIN_CONSTANT_P)
-#  define _CCCL_BUILTIN_CONSTANT_P_HOST_DEVICE(...) _CCCL_BUILTIN_CONSTANT_P(__VA_ARGS__)
-#endif
-
-// exclude only NVCC, while keeping NVRTC, clang-cuda, host compilers
-#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 4)
-#  undef _CCCL_BUILTIN_CONSTANT_P_HOST_DEVICE
-#endif
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_CONSTANT_P
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
 
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) __builtin_expect(_EXPR, _VAL)
