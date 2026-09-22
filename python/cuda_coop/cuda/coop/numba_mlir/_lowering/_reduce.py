@@ -114,8 +114,8 @@ _CUDAX_INCLUDE_LINES = (
     "#include <cuda/std/cstdint>",
     "#include <cuda/std/functional>",
     "#include <cuda/std/type_traits>",
-    "#include <cuda/experimental/coop.cuh>",
-    "#include <cuda/experimental/group.cuh>",
+    "#include <cuda/experimental/coop/algorithm>",
+    "#include <cuda/experimental/coop/group>",
 )
 
 
