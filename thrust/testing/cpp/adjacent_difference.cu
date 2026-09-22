@@ -65,11 +65,10 @@ void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
   REQUIRE(all_differences_correct_h);
 }
 
-void TestAdjacentDifferenceWithBigIndexes()
+TEST_CASE("TestAdjacentDifferenceWithBigIndexes", "[adjacent_difference]")
 {
   TestAdjacentDifferenceWithBigIndexesHelper(30);
   TestAdjacentDifferenceWithBigIndexesHelper(31);
   TestAdjacentDifferenceWithBigIndexesHelper(32);
   TestAdjacentDifferenceWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestAdjacentDifferenceWithBigIndexes);

@@ -105,12 +105,18 @@ Macro(vector_type, operator_name, unittest::uint64_t)
   {                                                                                                    \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_UNARY_ARITHMETIC_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                    \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                                \
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalHost), "[functional]")                   \
+  {                                                                                                    \
+    Test##OperatorName##FunctionalHost();                                                              \
+  }                                                                                                    \
   void Test##OperatorName##FunctionalDevice()                                                          \
   {                                                                                                    \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_UNARY_ARITHMETIC_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                    \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalDevice), "[functional]")                 \
+  {                                                                                                    \
+    Test##OperatorName##FunctionalDevice();                                                            \
+  }
 
 // op(T) -> bool
 #define DECLARE_UNARY_LOGICAL_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                      \
@@ -118,12 +124,18 @@ Macro(vector_type, operator_name, unittest::uint64_t)
   {                                                                                                 \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_UNARY_LOGICAL_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                 \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                             \
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalHost), "[functional]")                \
+  {                                                                                                 \
+    Test##OperatorName##FunctionalHost();                                                           \
+  }                                                                                                 \
   void Test##OperatorName##FunctionalDevice()                                                       \
   {                                                                                                 \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_UNARY_LOGICAL_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                 \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalDevice), "[functional]")              \
+  {                                                                                                 \
+    Test##OperatorName##FunctionalDevice();                                                         \
+  }
 
 // op(T,T) -> T
 #define DECLARE_BINARY_ARITHMETIC_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                      \
@@ -131,12 +143,18 @@ Macro(vector_type, operator_name, unittest::uint64_t)
   {                                                                                                     \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                     \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                                 \
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalHost), "[functional]")                    \
+  {                                                                                                     \
+    Test##OperatorName##FunctionalHost();                                                               \
+  }                                                                                                     \
   void Test##OperatorName##FunctionalDevice()                                                           \
   {                                                                                                     \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                     \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalDevice), "[functional]")                  \
+  {                                                                                                     \
+    Test##OperatorName##FunctionalDevice();                                                             \
+  }
 
 // op(T,T) -> T (for integer T only)
 #define DECLARE_BINARY_INTEGER_ARITHMETIC_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                  \
@@ -144,12 +162,18 @@ Macro(vector_type, operator_name, unittest::uint64_t)
   {                                                                                                         \
     INSTANTIATE_INTEGER_TYPES(INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                         \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                                     \
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalHost), "[functional]")                        \
+  {                                                                                                         \
+    Test##OperatorName##FunctionalHost();                                                                   \
+  }                                                                                                         \
   void Test##OperatorName##FunctionalDevice()                                                               \
   {                                                                                                         \
     INSTANTIATE_INTEGER_TYPES(INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                         \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalDevice), "[functional]")                      \
+  {                                                                                                         \
+    Test##OperatorName##FunctionalDevice();                                                                 \
+  }
 
 // op(T,T) -> bool
 #define DECLARE_BINARY_LOGICAL_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                      \
@@ -157,12 +181,18 @@ Macro(vector_type, operator_name, unittest::uint64_t)
   {                                                                                                  \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_LOGICAL_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                  \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                              \
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalHost), "[functional]")                 \
+  {                                                                                                  \
+    Test##OperatorName##FunctionalHost();                                                            \
+  }                                                                                                  \
   void Test##OperatorName##FunctionalDevice()                                                        \
   {                                                                                                  \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_LOGICAL_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                  \
-  DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
+  TEST_CASE(THRUST_PP_STRINGIZE(Test##OperatorName##FunctionalDevice), "[functional]")               \
+  {                                                                                                  \
+    Test##OperatorName##FunctionalDevice();                                                          \
+  }
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4146) // warning C4146: unary minus operator applied to unsigned type, result still unsigned

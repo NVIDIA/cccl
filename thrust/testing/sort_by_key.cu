@@ -10,7 +10,7 @@ void sort_by_key(my_system& system, RandomAccessIterator1, RandomAccessIterator1
   system.validate_dispatch();
 }
 
-void TestSortByKeyDispatchExplicit()
+TEST_CASE("TestSortByKeyDispatchExplicit", "[sort_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -19,7 +19,6 @@ void TestSortByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSortByKeyDispatchExplicit);
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
 void sort_by_key(my_tag, RandomAccessIterator1 keys_first, RandomAccessIterator1, RandomAccessIterator2)
@@ -27,7 +26,7 @@ void sort_by_key(my_tag, RandomAccessIterator1 keys_first, RandomAccessIterator1
   *keys_first = 13;
 }
 
-void TestSortByKeyDispatchImplicit()
+TEST_CASE("TestSortByKeyDispatchImplicit", "[sort_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -36,7 +35,6 @@ void TestSortByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSortByKeyDispatchImplicit);
 
 template <class Vector>
 void InitializeSimpleKeyValueSortTest(
@@ -102,7 +100,7 @@ void TestSortDescendingKeyValue(const size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestSortDescendingKeyValue);
 
-void TestSortByKeyBool()
+TEST_CASE("TestSortByKeyBool", "[sort_by_key]")
 {
   const size_t n = 10027;
 
@@ -118,9 +116,8 @@ void TestSortByKeyBool()
   REQUIRE(h_keys == d_keys);
   REQUIRE(h_values == d_values);
 }
-DECLARE_UNITTEST(TestSortByKeyBool);
 
-void TestSortByKeyBoolDescending()
+TEST_CASE("TestSortByKeyBoolDescending", "[sort_by_key]")
 {
   const size_t n = 10027;
 
@@ -136,9 +133,8 @@ void TestSortByKeyBoolDescending()
   REQUIRE(h_keys == d_keys);
   REQUIRE(h_values == d_values);
 }
-DECLARE_UNITTEST(TestSortByKeyBoolDescending);
 
-void TestSortByKeyLongDouble()
+TEST_CASE("TestSortByKeyLongDouble", "[sort_by_key]")
 {
   thrust::host_vector<long double> h_keys          = {10.0L, 9.0L, 8.0L, 7.0L, 6.0L, 5.0L, 4.0L, 3.0L, 2.0L, 1.0L};
   thrust::host_vector<int> h_values                = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
@@ -149,4 +145,3 @@ void TestSortByKeyLongDouble()
   REQUIRE(thrust::is_sorted(h_keys.begin(), h_keys.end()));
   REQUIRE(h_values == h_values_expected);
 }
-DECLARE_UNITTEST(TestSortByKeyLongDouble);

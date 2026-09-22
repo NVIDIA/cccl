@@ -69,7 +69,7 @@ bool is_sorted(my_system& system, InputIterator /*first*/, InputIterator)
   return false;
 }
 
-void TestIsSortedDispatchExplicit()
+TEST_CASE("TestIsSortedDispatchExplicit", "[is_sorted]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -78,7 +78,6 @@ void TestIsSortedDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestIsSortedDispatchExplicit);
 
 template <typename InputIterator>
 bool is_sorted(my_tag, InputIterator first, InputIterator)
@@ -87,7 +86,7 @@ bool is_sorted(my_tag, InputIterator first, InputIterator)
   return false;
 }
 
-void TestIsSortedDispatchImplicit()
+TEST_CASE("TestIsSortedDispatchImplicit", "[is_sorted]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -95,4 +94,3 @@ void TestIsSortedDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestIsSortedDispatchImplicit);
