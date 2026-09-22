@@ -727,15 +727,12 @@ public:
 
   //! @brief Releases endpoint ownership without destroying the CUDA logical endpoint.
   //!
-  //! @return The endpoint ID and an optional retained ID range reservation.
+  //! @return The endpoint ID and an optional retained ID range reservation. The optional is engaged when the endpoint
+  //! owns or retains an ID reservation, and empty when the endpoint was created from a caller-managed ID.
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::pair<logical_endpoint_id, ::cuda::std::optional<logical_endpoint_id_range>>
   release() noexcept
   {
     _CCCL_ASSERT(__is_engaged(), "Cannot release an empty logical endpoint");
-    if (!__is_engaged())
-    {
-      return {::cuda::invalid_logical_endpoint_id, ::cuda::std::optional<logical_endpoint_id_range>{}};
-    }
 
     const auto __id           = this->id();
     __size_                   = 0;
@@ -745,11 +742,9 @@ public:
 
     if (__range_ref_)
     {
-      auto __id_range =
-        ::cuda::std::optional<logical_endpoint_id_range>{logical_endpoint_id_range{::cuda::std::move(__range_ref_)}};
-      return {__id, ::cuda::std::move(__id_range)};
+      return {__id, logical_endpoint_id_range{::cuda::std::move(__range_ref_)}};
     }
-    return {__id, ::cuda::std::optional<logical_endpoint_id_range>{}};
+    return {__id, ::cuda::std::nullopt};
   }
 
   //! @brief Returns the endpoint size captured at creation.
