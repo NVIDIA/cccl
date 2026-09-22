@@ -41,8 +41,8 @@ template <class _Tp>
 class __simple_vector
 {
 private:
-  size_t __size_;
-  _Tp* __begin_;
+  size_t __size_ = 0;
+  _Tp* __begin_  = nullptr;
 
   _CCCL_HOST_DEVICE_API static _Tp* __create(size_t __size)
   {
@@ -71,7 +71,7 @@ public:
   using iterator       = _Tp*;
   using const_iterator = const _Tp*;
 
-  _CCCL_HIDE_FROM_ABI __simple_vector()                                  = delete;
+  _CCCL_HIDE_FROM_ABI __simple_vector()                                  = default;
   _CCCL_HIDE_FROM_ABI __simple_vector(const __simple_vector&)            = delete;
   _CCCL_HIDE_FROM_ABI __simple_vector& operator=(const __simple_vector&) = delete;
 
@@ -114,40 +114,40 @@ public:
 
   //! @brief Returns the number of elements.
   //! @return The number of elements.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr size_type size() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_type size() const noexcept
   {
     return __size_;
   }
 
   //! @brief Returns whether the vector holds no elements.
   //! @return @c true if @c size() is zero, otherwise @c false.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr bool empty() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool empty() const noexcept
   {
     return __size_ == 0;
   }
 
   //! @brief Returns a pointer to the first element.
   //! @return A pointer to the first element, or @c nullptr if the vector is empty.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr _Tp* data() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp* data() noexcept
   {
     return __begin_;
   }
 
   //! @overload
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr const _Tp* data() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const _Tp* data() const noexcept
   {
     return __begin_;
   }
 
   //! @brief Returns an iterator to the first element. If the vector is empty, the returned iterator equals @c end().
   //! @return An iterator to the first element, or @c nullptr if the vector is empty.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr iterator begin() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr iterator begin() noexcept
   {
     return __begin_;
   }
 
   //! @overload
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr const_iterator begin() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator begin() const noexcept
   {
     return __begin_;
   }
@@ -155,13 +155,13 @@ public:
   //! @brief Returns an iterator to the element following the last element. This element acts as a placeholder;
   //! attempting to access it results in undefined behavior.
   //! @return An iterator past the last element, or @c nullptr if the vector is empty.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr iterator end() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr iterator end() noexcept
   {
     return __size_ == 0 ? nullptr : __begin_ + __size_;
   }
 
   //! @overload
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline constexpr const_iterator end() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator end() const noexcept
   {
     return __size_ == 0 ? nullptr : __begin_ + __size_;
   }
