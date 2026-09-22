@@ -54,6 +54,7 @@ from ._utils import sanitize_identifier
 from ._utils.protocols import (
     get_data_pointer,
     get_dtype,
+    get_size,
     is_contiguous,
     is_device_array,
 )
@@ -708,6 +709,15 @@ class _StatelessOp(OpAdapter):
 #    define some intrinsics to unpack a `void*` into typed arrays and
 #    invoke the transformed callable from step 2.  Much of this is
 #    implemented in _odr_helpers.py
+#
+#    The `void*` state buffer holds, for each captured array, a
+#    (pointer, length) pair (see `_pack_state_bytes`). Both fields are
+#    read from the buffer at call time rather than baked into the
+#    compiled code, and are refreshed on every call
+#    (`_JitOpState.to_bytes`). This means a single compiled op can be
+#    reused across calls even when a captured array's pointer and/or
+#    length changes, as long as its dtype stays the same (see the
+#    device-array branch of `_make_hashable` in _caching.py).
 
 
 def _detect_device_array_globals(func: Callable) -> List[Tuple[str, object]]:
@@ -879,6 +889,24 @@ def _extract_state(func: Callable):
     return state_names, state_arrays
 
 
+def _pack_state_bytes(state_arrays: List[DeviceArrayLike]) -> bytes:
+    """
+    Pack state arrays' (data pointer, length) pairs into bytes.
+
+    This is the runtime state buffer read by the generated wrapper (see
+    `_unpack_state_arrays` in _odr_helpers.py): for each array, an 8-byte
+    pointer followed by an 8-byte length, tightly packed with no padding.
+    Both fields are refreshed on every call (see `_JitOpState.to_bytes`),
+    so a single compiled op can be reused across calls even if a captured
+    array's pointer and/or length changes.
+    """
+    words = []
+    for arr in state_arrays:
+        words.append(get_data_pointer(arr))
+        words.append(get_size(arr))
+    return struct.pack(f"<{len(words)}Q", *words)
+
+
 def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     """
     Compile a stateful operator for use with CCCL algorithms.
@@ -904,7 +932,11 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Convert input types to Numba types
     numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)
 
-    # Create Numba array types for state arrays
+    # Create Numba array types for state arrays. These are shape-agnostic
+    # (ndim/layout only): the array's length is threaded through the
+    # runtime state buffer (see `_pack_state_bytes`) rather than being
+    # baked into the compiled code, so the same compiled op can be reused
+    # regardless of a captured array's length.
     state_array_types = [
         numba.types.Array(numba.from_dtype(get_dtype(s)), 1, "A") for s in state_arrays
     ]
@@ -931,15 +963,15 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Build full signature: output_type(state_arrays..., regular_args...)
     sig = numba_output_type(*state_array_types, *numba_input_types)
 
-    # Get state pointers - pointers to the device array data
-    state_ptrs = [get_data_pointer(arr) for arr in state_arrays]
-
-    # Get shape and itemsize from each state array
+    # Get itemsize/strides from each state array. These only depend on
+    # dtype (arrays are validated contiguous above), which is already part
+    # of the build cache key, so it's safe to bake them in as compile-time
+    # constants. The array's length is *not* included here: it's threaded
+    # through the runtime state buffer instead (see `_pack_state_bytes`).
     state_info = []
     for state_array in state_arrays:
         state_info.append(
             {
-                "shape": len(state_array),
                 "itemsize": get_dtype(state_array).itemsize,
                 "strides": get_dtype(state_array).itemsize,
             }
@@ -969,8 +1001,8 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
         )
         code = DeviceCode(op_bytes=ltoir, kind="ltoir")
 
-    # Pack all data pointers as bytes (sequentially)
-    state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
+    # Pack (pointer, length) pairs as bytes (sequentially)
+    state_bytes = _pack_state_bytes(state_arrays)
 
     # Return Op with STATEFUL kind and packed pointers
     return Op(
@@ -991,8 +1023,7 @@ class _JitOpState:
         return (tuple(self.names), tuple(get_dtype(s) for s in self.arrays))
 
     def to_bytes(self):
-        state_ptrs = [get_data_pointer(arr) for arr in self.arrays]
-        return struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
+        return _pack_state_bytes(self.arrays)
 
 
 class _StatefulOp(OpAdapter):

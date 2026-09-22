@@ -671,6 +671,72 @@ def test_stateful_transform_same_bytecode_different_sizes():
     np.testing.assert_array_equal(np.asarray([False, False, True]), d_out.get())
 
 
+def test_stateful_transform_no_recompile_when_captured_array_length_changes():
+    """
+    Regression test for gh-11407: a stateful op that captures a device
+    array in its closure should reuse the same compiled build when only the
+    captured array's *length* changes (dtype unchanged) -- not just when
+    its values change at fixed length.
+    """
+    from cuda.compute import op as op_module
+
+    d_in = cp.arange(5, dtype=cp.int64)
+    d_out = cp.empty(5, dtype=cp.int64)
+
+    def make_op(lut):
+        def op(x):
+            return lut[x]
+
+        return op
+
+    lut_short = cp.arange(5, dtype=cp.int64)
+    lut_long = cp.arange(50, dtype=cp.int64) * 2
+
+    op_adapter_short = op_module.make_op_adapter(make_op(lut_short))
+    op_adapter_long = op_module.make_op_adapter(make_op(lut_long))
+
+    build_short = make_unary_transform(d_in=d_in, d_out=d_out, op=op_adapter_short)
+    build_long = make_unary_transform(d_in=d_in, d_out=d_out, op=op_adapter_long)
+
+    # Same cache key (dtype-only) -> same cached build, no recompilation.
+    assert build_short is build_long
+
+    build_short(
+        d_in=d_in, d_out=d_out, op=op_adapter_short, num_items=len(d_in), stream=None
+    )
+    np.testing.assert_array_equal(d_out.get(), lut_short.get()[d_in.get()])
+
+    build_long(
+        d_in=d_in, d_out=d_out, op=op_adapter_long, num_items=len(d_in), stream=None
+    )
+    np.testing.assert_array_equal(d_out.get(), lut_long.get()[d_in.get()])
+
+
+def test_stateful_transform_recompiles_when_captured_array_dtype_changes():
+    """A captured array's *dtype* change must still trigger recompilation."""
+    from cuda.compute import op as op_module
+
+    d_in = cp.arange(5, dtype=cp.int64)
+    d_out = cp.empty(5, dtype=cp.int64)
+
+    def make_op(lut):
+        def op(x):
+            return lut[x]
+
+        return op
+
+    lut_int32 = cp.arange(5, dtype=cp.int32)
+    lut_int64 = cp.arange(5, dtype=cp.int64)
+
+    op_adapter_int32 = op_module.make_op_adapter(make_op(lut_int32))
+    op_adapter_int64 = op_module.make_op_adapter(make_op(lut_int64))
+
+    build_int32 = make_unary_transform(d_in=d_in, d_out=d_out, op=op_adapter_int32)
+    build_int64 = make_unary_transform(d_in=d_in, d_out=d_out, op=op_adapter_int64)
+
+    assert build_int32 is not build_int64
+
+
 def test_transform_caching_with_global_np_ufunc():
     # regression test for a case where if multiple, identically named,
     # ops referenced dotted globals like `np.<func>` those

@@ -1,5 +1,6 @@
 import numpy as np
 
+from cuda.compute import ProxyArray
 from cuda.compute._caching import CachableFunction, _make_hashable
 
 global_x = 1
@@ -184,6 +185,39 @@ def test_func_caching_with_global_np_ufunc():
     func2 = make_func2()
 
     assert CachableFunction(func1) != CachableFunction(func2)
+
+
+def test_make_hashable_device_array_keys_on_dtype_only():
+    # Regression test for gh-11407: a device array's build-cache key must
+    # depend only on dtype, not on the identity/shape of the referenced
+    # array. Shape is threaded through the runtime state buffer (not
+    # baked into the compiled code), so distinct arrays of the same dtype
+    # must produce the same key.
+    a = ProxyArray(np.int64)
+    b = ProxyArray(np.int64)
+    assert a is not b
+    assert _make_hashable(a) == _make_hashable(b)
+
+    c = ProxyArray(np.int32)
+    assert _make_hashable(a) != _make_hashable(c)
+
+
+def test_func_caching_with_device_array_closure_ignores_shape():
+    # gh-11407: closures capturing a device array must compare equal
+    # across distinct array objects of the same dtype, so the algorithm
+    # build cache hits instead of rebuilding every call.
+    def factory(lut):
+        def op(x):
+            return lut[x]
+
+        return op
+
+    f1 = CachableFunction(factory(ProxyArray(np.int64)))
+    f2 = CachableFunction(factory(ProxyArray(np.int64)))
+    assert f1 == f2
+
+    f3 = CachableFunction(factory(ProxyArray(np.int32)))
+    assert f1 != f3
 
 
 def test_func_caching_with_aliased_np_ufunc():

@@ -21,7 +21,7 @@ try:
 except ImportError:
     from cuda.core.experimental._utils.cuda_utils import CUDAError
 
-from ._utils.protocols import get_dtype, get_shape, is_device_array
+from ._utils.protocols import get_dtype, is_device_array
 from .struct import _Struct
 
 # Registry thet maps type -> key function for extracting cache key
@@ -191,11 +191,13 @@ def _make_hashable(value):
     if hasattr(value, "py_func") and callable(value.py_func):
         return CachableFunction(value.py_func)
     elif is_device_array(value):
-        # Ops with device arrays in globals/closures will be handled
-        # by stateful op machinery, which enables updating the state
-        # (pointers). Thus, we only cache on the dtype and shape of
-        # the referenced array, but not its pointer.
-        return (get_dtype(value), get_shape(value))
+        # Ops with device arrays in globals/closures are handled by
+        # stateful op machinery, which threads both the array's pointer
+        # and its shape through the runtime state buffer (see
+        # `_pack_state_bytes` / `_unpack_state_arrays`) rather than baking
+        # either into the compiled code. So we only need to cache on the
+        # dtype of the referenced array, not its pointer or shape.
+        return (get_dtype(value),)
     elif isinstance(value, (np.number, np.bool_)):
         return ("numpy.scalar", value.dtype.str, value.tobytes())
     elif isinstance(value, (bool, int, float)):

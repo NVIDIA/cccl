@@ -72,7 +72,7 @@ class _ArgSpec:
         self.mode = mode
 
 
-def _build_numba_array_struct(context, builder, array_type, data_ptr, info):
+def _build_numba_array_struct(context, builder, array_type, data_ptr, shape_val, info):
     """Build a numba array struct from a data pointer and array info.
 
     Args:
@@ -80,7 +80,10 @@ def _build_numba_array_struct(context, builder, array_type, data_ptr, info):
         builder: LLVM IR builder
         array_type: Numba Array type for the array
         data_ptr: LLVM value for the data pointer
-        info: Dict with 'shape', 'itemsize', 'strides' for the array
+        shape_val: LLVM i64 value for the array's length (read from the
+            runtime state buffer, not a compile-time constant, so a single
+            compiled op can be reused across arrays of different length)
+        info: Dict with 'itemsize', 'strides' for the array
 
     Returns:
         LLVM value representing the array struct
@@ -93,7 +96,7 @@ def _build_numba_array_struct(context, builder, array_type, data_ptr, info):
     populate_array(
         out_ary,
         data=data_ptr,
-        shape=[ir.Constant(ir.IntType(64), info["shape"])],
+        shape=[shape_val],
         strides=[ir.Constant(ir.IntType(64), info["strides"])],
         itemsize=info["itemsize"],
         meminfo=None,
@@ -103,12 +106,13 @@ def _build_numba_array_struct(context, builder, array_type, data_ptr, info):
 
 
 def _unpack_state_arrays(context, builder, packed_ptr, type_info_pairs):
-    """Unpack packed data pointers into numba array structs.
+    """Unpack packed (data pointer, shape) pairs into numba array structs.
 
     Args:
         context: Numba codegen context
         builder: LLVM IR builder
-        packed_ptr: void* pointing to an array of data pointers
+        packed_ptr: void* pointing to an array of (pointer, shape) pairs,
+            each occupying two consecutive 8-byte words
         type_info_pairs: List of (array_type, info) tuples
 
     Returns:
@@ -116,21 +120,27 @@ def _unpack_state_arrays(context, builder, packed_ptr, type_info_pairs):
     """
     import llvmlite.ir as ir
 
-    # Cast void* to pointer-to-pointer (array of pointers)
-    ptr_type = ir.IntType(64).as_pointer()
-    base_ptr = builder.bitcast(packed_ptr, ptr_type.as_pointer())
+    i64 = ir.IntType(64)
+    # Treat the packed buffer as an array of i64 words: for each state
+    # array, word 2*j is the data pointer and word 2*j+1 is its length.
+    # Both are read from the runtime state (rather than baked in as
+    # compile-time constants), so the array's pointer *and* length can be
+    # updated on every call without recompiling.
+    base_ptr = builder.bitcast(packed_ptr, i64.as_pointer())
 
     result = []
     for j, (array_type, info) in enumerate(type_info_pairs):
-        # Load j-th pointer from the array and cast to correct type
-        elem_ptr = builder.gep(base_ptr, [ir.Constant(ir.IntType(32), j)])
-        dtype_llvm = context.get_value_type(array_type.dtype)
-        typed_ptr_ptr = builder.bitcast(elem_ptr, dtype_llvm.as_pointer().as_pointer())
-        data_ptr = builder.load(typed_ptr_ptr)
+        ptr_word = builder.gep(base_ptr, [ir.Constant(ir.IntType(32), 2 * j)])
+        shape_word = builder.gep(base_ptr, [ir.Constant(ir.IntType(32), 2 * j + 1)])
 
-        # Build array struct from pointer
+        dtype_llvm = context.get_value_type(array_type.dtype)
+        typed_ptr_word = builder.bitcast(ptr_word, dtype_llvm.as_pointer().as_pointer())
+        data_ptr = builder.load(typed_ptr_word)
+        shape_val = builder.load(shape_word)
+
+        # Build array struct from pointer and shape
         array_val = _build_numba_array_struct(
-            context, builder, array_type, data_ptr, info
+            context, builder, array_type, data_ptr, shape_val, info
         )
         result.append(array_val)
 
@@ -304,7 +314,8 @@ def create_stateful_op_void_ptr_wrapper(
         op: The user's callable operator
         sig: The signature of the operator (state_array1, state_array2, ..., regular_arg1, regular_arg2, ...) -> return_type
         state_array_types: List/tuple of numba Array types for the state parameters
-        state_info: List/tuple of dicts with 'shape', 'itemsize', 'strides' for each state array
+        state_info: List/tuple of dicts with 'itemsize', 'strides' for each state array
+            (the array's length is read from the runtime state, not from this dict)
 
     Returns:
         Tuple of (wrapper_func, wrapper_sig)
