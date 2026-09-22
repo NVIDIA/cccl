@@ -131,6 +131,94 @@ use `cuda::is_trivially_copyable(_v)` instead, which supports more cases. The ve
 `__half`/`__nv_bfloat16` non-trivial special members, so the standard trait reports false for them
 (and aggregates of them) even though they are functionally copyable. Candidate for a pre-commit grep.
 
+## api.internal-symbol-exposure (important, new implementation-detail types/functions)
+
+<!-- provenance:
+  #2591→#3209 CUB launcher factories and kernel-source getters added outside detail (pair auto-inferred from issue #2448)
+-->
+
+Flag any entity added to a public namespace which can be recognized as intended to be internal by its
+spelling (e.g. snake_case in CUB, or prefixed with `__` in libcu++/cudax) or usage pattern (e.g. used
+as utility for other functions, not documented, etc.). The entity should be marked internal as
+appropriate.
+
+## abi.missing-hide-from-abi (critical, inline functions in public headers whose behavior depends on the build configuration)
+
+<!-- provenance:
+  #2591→#3209 CUB kernel-source getters returned kernel pointers without _CCCL_HIDE_FROM_ABI;
+  #5255→#5272 driver_api.h promoted into the public libcudacxx tree carrying plain-inline functions without _CCCL_HOST_API
+-->
+
+Flag an inline function in a public header whose result can differ between two copies of CCCL linked
+into one binary (e.g., built against different CUDA toolkits or CCCL versions) — especially functions
+returning kernel or function pointers — unless it is marked `_CCCL_HIDE_FROM_ABI` (or an attribute macro
+that includes it, like `_CCCL_HOST_API`). With default visibility the linker keeps ONE definition
+across all copies, so the losing copy's callers get the other build's result (e.g. a wrong kernel
+pointer) — no build error, just wrong behavior at run time.
+
+## correctness.cuda-driver-symbol-version-guard (critical, code calling CUDA Driver API symbols)
+
+<!-- provenance:
+  #2192→#5971 cudaGetDriverEntryPointByVersion gated only by a build-time CUDART_VERSION check, breaking when built against CTK>=12.5 but run against an older CUDA runtime (pair auto-inferred from issue #5970);
+  #5976→#6895 (backport #6896) cuGetProcAddress switch reintroduced the same break by bootstrapping via the unversioned cudaGetDriverEntryPoint
+-->
+
+<!-- note:
+  The Runtime API half of the historical incidents is no longer relevant to CCCL: cudart is statically
+  linked everywhere (c/parallel pins CUDA_RUNTIME_LIBRARY STATIC; #7221 fixed the one shared-cudart
+  mix), and the driver bootstrap in cuda/__driver/driver_api.h now dlopens libcuda directly instead of
+  going through cudart.
+-->
+
+When a diff gates a call to a CUDA Driver API symbol introduced in a specific CUDA version behind a
+build-time-only check (`_CCCL_CTK_AT_LEAST(...)`), flag it: `libcuda.so`/`nvcuda.dll` comes from the
+installed display driver, which is independent of — and often older than — the CTK the binary was
+built against, so the symbol can be absent at run time regardless of any build-time guard. Resolve
+driver entry points through the versioned `cuGetProcAddress` bootstrap in
+`cuda/__driver/driver_api.h` (which reports availability), or verify `cudaDriverGetVersion` before
+the call. PR CI builds and runs with matched driver/CTK, so this only reproduces in the field.
+
+## infra.pin-deps (important, CMake/CI/submodules)
+
+<!-- provenance:
+  #534 nvbench `#main` →#582
+-->
+
+Flag dependencies fetched by branch name (`CPMAddPackage("gh:org/repo#main")`, `GIT_TAG
+main`); pin a commit or tag. Candidate for a pre-commit grep.
+
+## correctness.stale-refs-after-rename (important, renames, moves, or splits of files, symbols, or modules anywhere in the repo)
+
+<!-- provenance:
+  #3177→#3192 cuda.parallel module split left docs automodule pointing at emptied package;
+  #10012→#10042 docs flattening left stale path in a test comment and an empty api/thread toctree stub;
+  #1075→#1108,#1110 lit.cfg path not updated after symlink removal broke local lit runs;
+  #4537→#6516 NVTX macro rename left a stale #define in test_nvtx_disabled.cu, silently defanging a negative test;
+  #4795→#4814 cudax detail→__detail rename swept ~120 files but missed the second example copy at top-level examples/cudax/
+-->
+<!-- note:
+  A docs CI check failing on autodoc directives that yield no members (or on empty generated pages)
+  would cover the last clause mechanically; retire it once such a check exists.
+-->
+
+When a diff renames, moves, or splits a file, macro, symbol, or module, `git grep` for the old name:
+each remaining hit must be updated, or be classified as an unrelated entity that merely shares
+the name. Doc directives (`automodule::`/`toctree::`) can go stale without containing the old name and
+still build cleanly (autodoc renders emptied packages as blank pages) — verify the rendered docs, not
+just the grep.
+
+## correctness.workaround-breaks-constexpr (important, constexpr-marked)
+
+<!-- provenance:
+  #5939→#7059 `auto __tmp = mapping(); return __tmp.is_exhaustive();` workaround for a clang [[nodiscard]] warning made mdspan's is_exhaustive unusable in constexpr context on some compilers; propagated to is_unique/is_strided/stride in #6703
+-->
+
+When a diff introduces any workaround inside a `constexpr` function, verify the function is still
+usable during constant evaluation on every supported compiler, not merely that it compiles as a
+runtime call. The break only surfaces when a caller uses the function during constant evaluation,
+which the unit tests may not exercise. Adding a test that evaluates the function at compile time is
+recommended.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:

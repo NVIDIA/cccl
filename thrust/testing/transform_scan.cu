@@ -19,7 +19,7 @@ OutputIterator transform_inclusive_scan(
   return result;
 }
 
-void TestTransformInclusiveScanDispatchExplicit()
+TEST_CASE("TestTransformInclusiveScanDispatchExplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -28,7 +28,6 @@ void TestTransformInclusiveScanDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_inclusive_scan(
@@ -38,7 +37,7 @@ OutputIterator transform_inclusive_scan(
   return result;
 }
 
-void TestTransformInclusiveScanInitDispatchExplicit()
+TEST_CASE("TestTransformInclusiveScanInitDispatchExplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -47,7 +46,6 @@ void TestTransformInclusiveScanInitDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanInitDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename AssociativeOperator>
 OutputIterator transform_inclusive_scan(
@@ -57,7 +55,7 @@ OutputIterator transform_inclusive_scan(
   return result;
 }
 
-void TestTransformInclusiveScanDispatchImplicit()
+TEST_CASE("TestTransformInclusiveScanDispatchImplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -66,7 +64,6 @@ void TestTransformInclusiveScanDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanDispatchImplicit);
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(
@@ -76,7 +73,7 @@ OutputIterator transform_exclusive_scan(
   return result;
 }
 
-void TestTransformExclusiveScanDispatchExplicit()
+TEST_CASE("TestTransformExclusiveScanDispatchExplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -85,7 +82,6 @@ void TestTransformExclusiveScanDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformExclusiveScanDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(
@@ -95,7 +91,7 @@ OutputIterator transform_exclusive_scan(
   return result;
 }
 
-void TestTransformExclusiveScanDispatchImplicit()
+TEST_CASE("TestTransformExclusiveScanDispatchImplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -104,7 +100,6 @@ void TestTransformExclusiveScanDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTransformExclusiveScanDispatchImplicit);
 
 template <class Vector>
 void TestTransformScanSimple()
@@ -216,7 +211,7 @@ struct negate
   }
 };
 
-void TestTransformInclusiveScanDifferentTypes()
+TEST_CASE("TestTransformInclusiveScanDifferentTypes", "[transform_scan]")
 {
   typename thrust::host_vector<int>::iterator h_iter;
 
@@ -243,7 +238,6 @@ void TestTransformInclusiveScanDifferentTypes()
   REQUIRE(d_input == input_copy);
   REQUIRE(d_output == result);
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanDifferentTypes);
 
 template <typename T>
 struct TestTransformScan
@@ -436,7 +430,7 @@ struct TransformInt
 };
 
 // Test edge cases for parallel transform_scan with non-additive operations
-void TestTransformScanEdgeCases()
+TEST_CASE("TestTransformScanEdgeCases", "[transform_scan]")
 {
   // Test 1: Large array with transform_inclusive_scan, multiplies, and init
   {
@@ -539,4 +533,3 @@ void TestTransformScanEdgeCases()
     REQUIRE(d_output == expected);
   }
 }
-DECLARE_UNITTEST(TestTransformScanEdgeCases);

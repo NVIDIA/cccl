@@ -728,18 +728,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << policy_getter();
-                   _CubLog("Dispatching DeviceReduceByKey to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    log_dispatch("DeviceReduceByKey", cc, policy_getter());
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    detail::log_dispatch("DeviceReduceByKey", cc, policy_getter());
 
     const auto [threads_per_block, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
       decltype(policy_getter),
