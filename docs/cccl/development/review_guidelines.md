@@ -178,6 +178,15 @@ driver entry points through the versioned `cuGetProcAddress` bootstrap in
 `cuda/__driver/driver_api.h` (which reports availability), or verify `cudaDriverGetVersion` before
 the call. PR CI builds and runs with matched driver/CTK, so this only reproduces in the field.
 
+## infra.pin-deps (important, CMake/CI/submodules)
+
+<!-- provenance:
+  #534 nvbench `#main` →#582
+-->
+
+Flag dependencies fetched by branch name (`CPMAddPackage("gh:org/repo#main")`, `GIT_TAG
+main`); pin a commit or tag. Candidate for a pre-commit grep.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
