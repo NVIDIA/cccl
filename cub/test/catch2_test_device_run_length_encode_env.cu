@@ -12,8 +12,10 @@ struct stream_registry_factory_t;
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/policy.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
+#include <cuda/std/cstdint>
 #include <cuda/stream>
 
 #include <sstream>
@@ -308,6 +310,311 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned", "[run_length_enco
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if TEST_LAUNCH == 0
+
+// The two-phase overloads take the same environment as the single-phase ones but never allocate, so they do not go
+// through the launch wrappers and would run identically in every TEST_LAUNCH variant. Test them with host launch only.
+
+// Runs the two-phase overload wrapped by two_phase once per supported kind of environment: queries the temporary
+// storage size, executes with user provided storage, and checks that every kernel is launched on the stream carried
+// by the environment (or on the default stream if the environment carries none).
+template <class TwoPhaseFn>
+void test_two_phase_env_kinds(size_t expected_temp_storage_bytes, TwoPhaseFn two_phase)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const cuda::stream_ref default_stream{cudaStream_t{}};
+
+  auto run = [&](const auto& env, cuda::stream_ref expected_stream) {
+    size_t temp_storage_bytes = 0;
+    REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, env));
+    REQUIRE(temp_storage_bytes == expected_temp_storage_bytes);
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    {
+      // stream_registry_factory_t fails the test if a kernel is launched on any other stream
+      const stream_scope scope{expected_stream.get()};
+      REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, env));
+    }
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    expected_stream.sync();
+  };
+
+  SECTION("default environment")
+  {
+    run(stdexec::env<>{}, default_stream);
+  }
+
+  SECTION("cudaStream_t")
+  {
+    run(stream.get(), cuda::stream_ref{stream});
+  }
+
+  SECTION("cuda::stream")
+  {
+    run(stream, cuda::stream_ref{stream});
+  }
+
+  SECTION("cuda::stream_ref")
+  {
+    run(cuda::stream_ref{stream}, cuda::stream_ref{stream});
+  }
+
+  SECTION("environment with stream")
+  {
+    run(stdexec::env{cuda::stream_ref{stream}}, cuda::stream_ref{stream});
+  }
+
+  SECTION("cuda::execution::gpu")
+  {
+    run(cuda::execution::gpu, default_stream);
+  }
+
+  SECTION("cuda::execution::gpu with stream")
+  {
+    run(cuda::execution::gpu.with(cuda::get_stream, cuda::stream_ref{stream}), cuda::stream_ref{stream});
+  }
+}
+
+CUB_TEST_CASE("DeviceRunLengthEncode::Encode works with user provided memory and environment",
+              "[run_length_encode][device]",
+              CUB_SMALL)
+{
+  auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_unique_out   = c2h::device_vector<int>(8);
+  auto d_counts_out   = c2h::device_vector<int>(8);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+  const int num_items = static_cast<int>(d_in.size());
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRunLengthEncode::Encode(
+      nullptr,
+      expected_bytes,
+      d_in.begin(),
+      d_unique_out.begin(),
+      d_counts_out.begin(),
+      d_num_runs_out.begin(),
+      num_items));
+
+  test_two_phase_env_kinds(expected_bytes, [&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+    return cub::DeviceRunLengthEncode::Encode(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in.begin(),
+      d_unique_out.begin(),
+      d_counts_out.begin(),
+      d_num_runs_out.begin(),
+      num_items,
+      env);
+  });
+
+  const c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
+  const c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
+  const c2h::device_vector<int> expected_num_runs{5};
+
+  REQUIRE(d_num_runs_out == expected_num_runs);
+  d_unique_out.resize(d_num_runs_out[0]);
+  d_counts_out.resize(d_num_runs_out[0]);
+  REQUIRE(d_unique_out == expected_unique);
+  REQUIRE(d_counts_out == expected_counts);
+}
+
+CUB_TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns works with user provided memory and environment",
+              "[run_length_encode][device]",
+              CUB_SMALL)
+{
+  auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_offsets_out  = c2h::device_vector<int>(8);
+  auto d_lengths_out  = c2h::device_vector<int>(8);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+  const int num_items = static_cast<int>(d_in.size());
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRunLengthEncode::NonTrivialRuns(
+      nullptr,
+      expected_bytes,
+      d_in.begin(),
+      d_offsets_out.begin(),
+      d_lengths_out.begin(),
+      d_num_runs_out.begin(),
+      num_items));
+
+  test_two_phase_env_kinds(expected_bytes, [&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+    return cub::DeviceRunLengthEncode::NonTrivialRuns(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in.begin(),
+      d_offsets_out.begin(),
+      d_lengths_out.begin(),
+      d_num_runs_out.begin(),
+      num_items,
+      env);
+  });
+
+  const c2h::device_vector<int> expected_offsets{1, 4};
+  const c2h::device_vector<int> expected_lengths{2, 3};
+  const c2h::device_vector<int> expected_num_runs{2};
+
+  REQUIRE(d_num_runs_out == expected_num_runs);
+  d_offsets_out.resize(d_num_runs_out[0]);
+  d_lengths_out.resize(d_num_runs_out[0]);
+  REQUIRE(d_offsets_out == expected_offsets);
+  REQUIRE(d_lengths_out == expected_lengths);
+}
+
+// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr or a literal 0 for the stream exist. Both must keep compiling and keep running on the default stream.
+CUB_TEST_CASE("DeviceRunLengthEncode two-phase overloads accept legacy null stream arguments",
+              "[run_length_encode][device]",
+              CUB_SMALL)
+{
+  auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_unique_out   = c2h::device_vector<int>(8);
+  auto d_counts_out   = c2h::device_vector<int>(8);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+  const int num_items = static_cast<int>(d_in.size());
+
+  auto encode_on = [&](const auto& stream) {
+    size_t temp_storage_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceRunLengthEncode::Encode(
+        nullptr,
+        temp_storage_bytes,
+        d_in.begin(),
+        d_unique_out.begin(),
+        d_counts_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        stream));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    const stream_scope scope{cudaStream_t{}};
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceRunLengthEncode::Encode(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_storage_bytes,
+        d_in.begin(),
+        d_unique_out.begin(),
+        d_counts_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        stream));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  };
+
+  SECTION("nullptr")
+  {
+    encode_on(nullptr);
+  }
+
+  SECTION("literal 0")
+  {
+    encode_on(0);
+  }
+
+  const c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
+  const c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
+  const c2h::device_vector<int> expected_num_runs{5};
+
+  REQUIRE(d_num_runs_out == expected_num_runs);
+  d_unique_out.resize(d_num_runs_out[0]);
+  d_counts_out.resize(d_num_runs_out[0]);
+  REQUIRE(d_unique_out == expected_unique);
+  REQUIRE(d_counts_out == expected_counts);
+}
+
+// Runs the two-phase overload wrapped by two_phase with the given environment: queries the temporary storage size
+// and executes with user provided storage.
+template <class TwoPhaseFn, class EnvT>
+void run_two_phase(TwoPhaseFn two_phase, const EnvT& env)
+{
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, env));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, env));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+CUB_TEST("DeviceRunLengthEncode::Encode can be tuned with user provided memory",
+         "[run_length_encode][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_unique_out   = c2h::device_vector<int>(1);
+  auto d_counts_out   = c2h::device_vector<int>(1);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+
+  run_two_phase(
+    [&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRunLengthEncode::Encode(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_unique_out.begin(),
+        d_counts_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        env);
+    },
+    cuda::execution::tune(rle_encode_tuning<target_block_size>{}));
+
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_unique_out[0] == 42);
+  REQUIRE(d_counts_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can be tuned with user provided memory",
+         "[run_length_encode][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  constexpr int num_items                  = 256;
+
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+  const block_size_extracting_constant_iterator d_in(42, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto d_offsets_out  = c2h::device_vector<int>(1);
+  auto d_lengths_out  = c2h::device_vector<int>(1);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+
+  run_two_phase(
+    [&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRunLengthEncode::NonTrivialRuns(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_offsets_out.begin(),
+        d_lengths_out.begin(),
+        d_num_runs_out.begin(),
+        num_items,
+        env);
+    },
+    cuda::execution::tune(rle_non_trivial_runs_tuning<target_block_size>{}));
+
+  REQUIRE(d_num_runs_out[0] == 1);
+  REQUIRE(d_offsets_out[0] == 0);
+  REQUIRE(d_lengths_out[0] == num_items);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH == 0
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test RleEncodePolicy properties", "[run_length_encode][device]", CUB_SMALL)
