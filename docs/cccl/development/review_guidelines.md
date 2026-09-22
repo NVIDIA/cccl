@@ -207,6 +207,18 @@ the name. Doc directives (`automodule::`/`toctree::`) can go stale without conta
 still build cleanly (autodoc renders emptied packages as blank pages) — verify the rendered docs, not
 just the grep.
 
+## correctness.workaround-breaks-constexpr (important, constexpr-marked functions in cuda::std)
+
+<!-- provenance:
+  #5939→#7059 `auto __tmp = mapping(); return __tmp.is_exhaustive();` workaround for a clang [[nodiscard]] warning made mdspan's is_exhaustive unusable in constexpr context on some compilers; propagated to is_unique/is_strided/stride in #6703
+-->
+
+When a diff introduces any workaround inside a `constexpr` function, verify the function is still
+usable during constant evaluation on every supported compiler, not merely that it compiles as a
+runtime call. The break only surfaces when a caller uses the function during constant evaluation,
+which the unit tests may not exercise. Adding a test that evaluates the function at compile time is
+recommended.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
