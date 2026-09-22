@@ -277,7 +277,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
 
 #if _CCCL_HOSTED()
   char reduced_note[64] = "";
-  if (ipt != config->items_per_thread)
+  if (ipt != config->items_per_thread && detail::logging_enabled())
   {
     ::std::snprintf(
       reduced_note, sizeof(reduced_note), ", reduced from %d to spread load evenly", config->items_per_thread);
