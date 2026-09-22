@@ -320,8 +320,8 @@ inline bool operator<(const error_code& lhs, const error_code& rhs);
 #if _CCCL_HOSTED()
 /*! Effects: <tt>os << ec.category().name() << ':' << ec.value()</tt>.
  */
-template <typename charT, typename traits>
-std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const error_code& ec);
+template <typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const error_code& ec);
 #endif // _CCCL_HOSTED()
 
 // [19.5.3] class error_condition

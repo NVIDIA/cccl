@@ -55,9 +55,9 @@ struct copy_mdspan_t
   }
 };
 
-template <class _MDSpanIn, class _MDSpanOut, class _Env>
+template <class MDSpanIn, class MDSpanOut, class Env>
 [[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
-__transform_copy(_MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out, const _Env& __env)
+__transform_copy(MDSpanIn&& __mdspan_in, MDSpanOut&& __mdspan_out, const Env& __env)
 {
   return DeviceTransform::__transform_internal(
     ::cuda::std::make_tuple(__mdspan_in.data_handle()),
@@ -68,32 +68,32 @@ __transform_copy(_MDSpanIn&& __mdspan_in, _MDSpanOut&& __mdspan_out, const _Env&
     __env);
 }
 
-template <class _MDSpanIn, class _MDSpanOut, class _Env>
+template <class MDSpanIn, class MDSpanOut, class Env>
 [[nodiscard]] CUB_RUNTIME_FUNCTION ::cudaError_t
-__copy_with_cub(_MDSpanIn __mdspan_in, _MDSpanOut __mdspan_out, const _Env& __env)
+__copy_with_cub(MDSpanIn __mdspan_in, MDSpanOut __mdspan_out, const Env& __env)
 {
   if (__mdspan_in.is_exhaustive() && __mdspan_out.is_exhaustive()
       && cub::detail::have_same_strides(__mdspan_in.mapping(), __mdspan_out.mapping()))
   {
     return cub::detail::copy_mdspan::__transform_copy(__mdspan_in, __mdspan_out, __env);
   }
-  using extents_t = typename _MDSpanIn::extents_type;
+  using extents_t = typename MDSpanIn::extents_type;
   const ::cuda::std::layout_right::mapping<extents_t> mapping{__mdspan_in.extents()};
   return DeviceFor::__for_each_in_extents(mapping, copy_mdspan_t{__mdspan_in, __mdspan_out}, __env);
 }
 
-template <typename T_In,
-          typename E_In,
-          typename L_In,
-          typename A_In,
-          typename T_Out,
-          typename E_Out,
-          typename L_Out,
-          typename A_Out,
+template <typename TIn,
+          typename EIn,
+          typename LIn,
+          typename AIn,
+          typename TOut,
+          typename EOut,
+          typename LOut,
+          typename AOut,
           typename EnvT = ::cuda::std::execution::env<>>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
-     ::cuda::std::mdspan<T_Out, E_Out, L_Out, A_Out> mdspan_out,
+copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
+     ::cuda::std::mdspan<TOut, EOut, LOut, AOut> mdspan_out,
      const EnvT& env = {})
 {
   // In a similar way of Thrust assign_value(), get_value(), iter_swap(), we need to ensure that  __global__ template
@@ -102,8 +102,8 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
   // 881631.
   struct copy_on_host_t
   {
-    ::cuda::std::mdspan<T_In, E_In, L_In, A_In> input;
-    ::cuda::std::mdspan<T_Out, E_Out, L_Out, A_Out> output;
+    ::cuda::std::mdspan<TIn, EIn, LIn, AIn> input;
+    ::cuda::std::mdspan<TOut, EOut, LOut, AOut> output;
     const EnvT& environment;
 
     _CCCL_HOST ::cudaError_t operator()() const
@@ -119,10 +119,10 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
         {
           return ::cudaSuccess;
         }
-        using mdspan_in_t    = ::cuda::device_mdspan<T_In, E_In, L_In, A_In>;
-        using mdspan_out_t   = ::cuda::device_mdspan<T_Out, E_Out, L_Out, A_Out>;
-        using accessor_in_t  = ::cuda::device_accessor<A_In>;
-        using accessor_out_t = ::cuda::device_accessor<A_Out>;
+        using mdspan_in_t    = ::cuda::device_mdspan<TIn, EIn, LIn, AIn>;
+        using mdspan_out_t   = ::cuda::device_mdspan<TOut, EOut, LOut, AOut>;
+        using accessor_in_t  = ::cuda::device_accessor<AIn>;
+        using accessor_out_t = ::cuda::device_accessor<AOut>;
         const mdspan_in_t mdspan_in{input.data_handle(), input.mapping(), accessor_in_t{input.accessor()}};
         const mdspan_out_t mdspan_out{output.data_handle(), output.mapping(), accessor_out_t{output.accessor()}};
         const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, environment);

@@ -69,20 +69,18 @@ void TestAllOfDevice(ExecutionPolicy exec)
   REQUIRE_FALSE(result[0]);
 }
 
-void TestAllOfDeviceSeq()
+TEST_CASE("TestAllOfDeviceSeq", "[logical]")
 {
   TestAllOfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestAllOfDeviceSeq);
 
-void TestAllOfDeviceDevice()
+TEST_CASE("TestAllOfDeviceDevice", "[logical]")
 {
   TestAllOfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestAllOfDeviceDevice);
 #endif
 
-void TestAllOfCudaStreams()
+TEST_CASE("TestAllOfCudaStreams", "[logical]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -105,7 +103,6 @@ void TestAllOfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestAllOfCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Function, typename Iterator2>
@@ -173,20 +170,18 @@ void TestAnyOfDevice(ExecutionPolicy exec)
   REQUIRE_FALSE(result[0]);
 }
 
-void TestAnyOfDeviceSeq()
+TEST_CASE("TestAnyOfDeviceSeq", "[logical]")
 {
   TestAnyOfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestAnyOfDeviceSeq);
 
-void TestAnyOfDeviceDevice()
+TEST_CASE("TestAnyOfDeviceDevice", "[logical]")
 {
   TestAnyOfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestAnyOfDeviceDevice);
 #endif
 
-void TestAnyOfCudaStreams()
+TEST_CASE("TestAnyOfCudaStreams", "[logical]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -209,7 +204,6 @@ void TestAnyOfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestAnyOfCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Function, typename Iterator2>
@@ -277,20 +271,18 @@ void TestNoneOfDevice(ExecutionPolicy exec)
   REQUIRE(result[0]);
 }
 
-void TestNoneOfDeviceSeq()
+TEST_CASE("TestNoneOfDeviceSeq", "[logical]")
 {
   TestNoneOfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestNoneOfDeviceSeq);
 
-void TestNoneOfDeviceDevice()
+TEST_CASE("TestNoneOfDeviceDevice", "[logical]")
 {
   TestNoneOfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestNoneOfDeviceDevice);
 #endif
 
-void TestNoneOfCudaStreams()
+TEST_CASE("TestNoneOfCudaStreams", "[logical]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -313,4 +305,3 @@ void TestNoneOfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestNoneOfCudaStreams);

@@ -19,7 +19,7 @@ _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 
 #include <unittest/unittest.h>
 
-void TestReadingStridedIterator()
+TEST_CASE("TestReadingStridedIterator", "[strided_iterator]")
 {
   thrust::host_vector<int> v(21);
   std::iota(v.begin(), v.end(), -4);
@@ -36,7 +36,6 @@ void TestReadingStridedIterator()
   iter -= 10;
   REQUIRE(*iter == -4);
 }
-DECLARE_UNITTEST(TestReadingStridedIterator);
 
 template <typename Vector>
 void TestWritingStridedIterator()
@@ -90,6 +89,9 @@ void TestWritingStridedIteratorToStructMember()
     REQUIRE(arr == reference);
   }
 }
-DECLARE_UNITTEST(TestWritingStridedIteratorToStructMember);
+TEST_CASE("TestWritingStridedIteratorToStructMember", "[strided_iterator]")
+{
+  TestWritingStridedIteratorToStructMember();
+}
 
 _CCCL_DIAG_POP
