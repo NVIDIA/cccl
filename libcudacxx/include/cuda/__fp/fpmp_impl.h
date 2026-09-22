@@ -316,11 +316,20 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 
 // IEC 60559 _Float128. GCC often treats this as a distinct binary128 type from
 // __fpmp_fp128 (__float128 on x86, long double on aarch64 IEEE-128) with no
-// implicit conversion. Declared whenever the compiler exposes the type so fpmp2
-// can convert to it without going through __fpmp_fp128. When the two types are
+// implicit conversion. Declared when the compiler offers the type so fpmp2 can
+// convert to it without going through __fpmp_fp128; when the two types are
 // already the same, the extra members are SFINAE'd out.
+//
+// __FLT128_MANT_DIG__ alone does not answer the question: it describes the
+// format, and both GCC and Clang predefine it on x86 without accepting the
+// _Float128 *token* in C++. GCC 13 is the first release to spell the C23
+// interchange types in C++ (P1467), and Clang still rejects the name in C++ as
+// of 18, so the test is a version test rather than a macro test. Requiring GCC
+// also rules out NVRTC, NVHPC and MSVC, which CCCL classifies as separate
+// compilers. nvcc itself is fine either way: with a GCC 13 host it parses
+// _Float128 in both passes, which is what the aarch64 quad reductions need.
 #ifndef _CCCL_FPMP_HAS_IEC_FLOAT128
-#  if defined(__FLT128_MANT_DIG__)
+#  if defined(__FLT128_MANT_DIG__) && (_CCCL_COMPILER(GCC, >=, 13) || defined(__STDCPP_FLOAT128_T__))
 #    define _CCCL_FPMP_HAS_IEC_FLOAT128 1
 #  else
 #    define _CCCL_FPMP_HAS_IEC_FLOAT128 0
