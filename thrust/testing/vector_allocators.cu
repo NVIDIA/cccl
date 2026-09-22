@@ -161,17 +161,15 @@ void TestVectorAllocatorConstructors()
   REQUIRE(Alloc::last_allocated == 2);
 }
 
-void TestVectorAllocatorConstructorsHost()
+TEST_CASE("TestVectorAllocatorConstructorsHost", "[vector_allocators]")
 {
   TestVectorAllocatorConstructors<host_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorConstructorsHost);
 
-void TestVectorAllocatorConstructorsDevice()
+TEST_CASE("TestVectorAllocatorConstructorsDevice", "[vector_allocators]")
 {
   TestVectorAllocatorConstructors<device_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorConstructorsDevice);
 
 template <typename Vector>
 void TestVectorAllocatorPropagateOnCopyAssignment()
@@ -192,17 +190,15 @@ void TestVectorAllocatorPropagateOnCopyAssignment()
   REQUIRE(Alloc::last_deallocated == 2);
 }
 
-void TestVectorAllocatorPropagateOnCopyAssignmentHost()
+TEST_CASE("TestVectorAllocatorPropagateOnCopyAssignmentHost", "[vector_allocators]")
 {
   TestVectorAllocatorPropagateOnCopyAssignment<host_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnCopyAssignmentHost);
 
-void TestVectorAllocatorPropagateOnCopyAssignmentDevice()
+TEST_CASE("TestVectorAllocatorPropagateOnCopyAssignmentDevice", "[vector_allocators]")
 {
   TestVectorAllocatorPropagateOnCopyAssignment<device_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnCopyAssignmentDevice);
 
 template <typename Vector>
 void TestVectorAllocatorPropagateOnMoveAssignment()
@@ -227,17 +223,15 @@ void TestVectorAllocatorPropagateOnMoveAssignment()
   REQUIRE(Alloc::last_deallocated == 1);
 }
 
-void TestVectorAllocatorPropagateOnMoveAssignmentHost()
+TEST_CASE("TestVectorAllocatorPropagateOnMoveAssignmentHost", "[vector_allocators]")
 {
   TestVectorAllocatorPropagateOnMoveAssignment<host_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnMoveAssignmentHost);
 
-void TestVectorAllocatorPropagateOnMoveAssignmentDevice()
+TEST_CASE("TestVectorAllocatorPropagateOnMoveAssignmentDevice", "[vector_allocators]")
 {
   TestVectorAllocatorPropagateOnMoveAssignment<device_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnMoveAssignmentDevice);
 
 template <typename Vector>
 void TestVectorAllocatorPropagateOnSwap()
@@ -263,14 +257,12 @@ void TestVectorAllocatorPropagateOnSwap()
                              "but compare non-equal"));
 }
 
-void TestVectorAllocatorPropagateOnSwapHost()
+TEST_CASE("TestVectorAllocatorPropagateOnSwapHost", "[vector_allocators]")
 {
   TestVectorAllocatorPropagateOnSwap<host_vector_nsp>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnSwapHost);
 
-void TestVectorAllocatorPropagateOnSwapDevice()
+TEST_CASE("TestVectorAllocatorPropagateOnSwapDevice", "[vector_allocators]")
 {
   TestVectorAllocatorPropagateOnSwap<device_vector_nsp>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnSwapDevice);

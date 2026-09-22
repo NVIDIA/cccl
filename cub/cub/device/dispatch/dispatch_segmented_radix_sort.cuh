@@ -969,18 +969,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
   const SegmentedRadixSortPolicy active_policy = policy_selector_t{}(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceSegmentedRadixSort to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceSegmentedRadixSort", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceSegmentedRadixSort", cc, active_policy);
 
   return invoke_passes(
     d_temp_storage,
