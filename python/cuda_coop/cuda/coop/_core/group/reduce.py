@@ -245,7 +245,7 @@ def _plan_cudax_reduce(
         )
     implementation = CudaxCallDescription(
         primitive="reduce",
-        header="cuda/experimental/coop.cuh",
+        header="cuda/experimental/coop/algorithm",
         namespace="cuda::experimental::coop",
         overload="broadcasted" if operation.broadcast else "root_only",
         parameters=tuple(

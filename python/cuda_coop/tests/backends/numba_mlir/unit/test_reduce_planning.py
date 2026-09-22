@@ -860,7 +860,7 @@ def test_cudax_source_has_required_macros_and_no_external_barrier():
         "#include"
     )
     assert source.index("_CUDAX_DISABLE_CG_INTEROP") < source.index("#include")
-    assert "::cuda::experimental::generic_group group{" in source
+    assert "::cuda::experimental::coop::generic_group group{" in source
     assert "reinterpret_cast<::cuda::std::int32_t (*)[1]>" in source
     assert "value_or" in source
     assert "group.sync" not in source

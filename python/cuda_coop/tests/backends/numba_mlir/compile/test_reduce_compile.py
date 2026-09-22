@@ -240,20 +240,20 @@ def test_cudax_hierarchy_reduce_compiles_without_external_storage(
         assert f"(*)[{items_per_thread}]>(raw_items)" in source
 
     if group_kind == "logical_warp":
-        assert "::cuda::experimental::this_warp group_parent" in source
-        assert "::cuda::experimental::group_by<8, true>" in source
-        assert "::cuda::experimental::lane_synchronizer" in source
+        assert "::cuda::experimental::coop::this_warp group_parent" in source
+        assert "::cuda::experimental::coop::group_by<8, true>" in source
+        assert "::cuda::experimental::coop::lane_synchronizer" in source
     elif group_kind in ("mapped_warp", "mapped_warps"):
         count = 1 if group_kind == "mapped_warp" else 2
-        assert "::cuda::experimental::this_block group_parent" in source
-        assert f"::cuda::experimental::group_by<{count}, true>" in source
-        assert "::cuda::experimental::barrier_synchronizer" in source
+        assert "::cuda::experimental::coop::this_block group_parent" in source
+        assert f"::cuda::experimental::coop::group_by<{count}, true>" in source
+        assert "::cuda::experimental::coop::barrier_synchronizer" in source
         # This shared state belongs to construction of the mapped CUDAX group;
         # it is not a provider TempStorage operand or a rewrite-owned barrier.
         assert "group_barriers_storage" in source
     elif group_kind == "cluster":
         assert "::cuda::cluster_dims<2>()" in source
-        assert "::cuda::experimental::this_cluster group" in source
+        assert "::cuda::experimental::coop::this_cluster group" in source
     else:
         assert "group_barriers_storage" not in source
 

@@ -159,7 +159,7 @@ class _ReducePlanning:
         if (
             plan.target is GroupLoweringTarget.CUDAX_GROUP
             and provenance.library == "CUDAX"
-            and provenance.header == "cuda/experimental/coop.cuh"
+            and provenance.header == "cuda/experimental/coop/algorithm"
         ):
             from .._lowering import _reduce
 
