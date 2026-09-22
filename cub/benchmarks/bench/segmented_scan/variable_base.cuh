@@ -7,6 +7,8 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/reduce.h>
 #include <thrust/scan.h>
@@ -36,21 +38,13 @@ struct pareto_weight
   }
 };
 
-inline void shuffle_weights(thrust::device_vector<double>& weights, seed_type shuffle_seed)
-{
-  ::cuda::std::philox4x32 rng(shuffle_seed);
-  thrust::shuffle(weights.begin(), weights.end(), rng);
-}
-
 template <typename OffsetT>
 struct cumulative_to_offset
 {
   const double* cumulative_weights;
   double inverse_weight_sum;
-  ::cuda::std::int64_t variable_budget;
   OffsetT elements;
   OffsetT num_segments;
-  OffsetT minimum_segment_size;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API OffsetT operator()(OffsetT index) const noexcept
   {
@@ -63,9 +57,8 @@ struct cumulative_to_offset
       return elements;
     }
 
-    const auto scaled_offset   = static_cast<double>(variable_budget) * cumulative_weights[index] * inverse_weight_sum;
-    const auto variable_offset = ::cuda::std::floor(scaled_offset + 0.5);
-    return index * minimum_segment_size + static_cast<OffsetT>(variable_offset);
+    const auto scaled_offset = static_cast<double>(elements) * cumulative_weights[index] * inverse_weight_sum;
+    return static_cast<OffsetT>(::cuda::std::floor(scaled_offset + 0.5));
   }
 };
 
@@ -73,31 +66,26 @@ template <typename OffsetT>
 [[nodiscard]] thrust::device_vector<OffsetT>
 generate_pareto_segment_offsets(OffsetT elements, OffsetT num_segments, double alpha, seed_type shuffle_seed)
 {
-  auto weights = thrust::device_vector<double>(num_segments, thrust::no_init);
-  thrust::tabulate(
-    weights.begin(), weights.end(), pareto_weight{static_cast<::cuda::std::uint64_t>(num_segments), alpha});
-  shuffle_weights(weights, shuffle_seed);
-
-  const auto weight_sum = thrust::reduce(weights.begin(), weights.end(), 0.0);
-
   auto cumulative_weights = thrust::device_vector<double>(num_segments + 1, thrust::no_init);
-  thrust::exclusive_scan(weights.begin(), weights.end(), cumulative_weights.begin());
+  const auto weights       = thrust::make_transform_iterator(
+    thrust::make_counting_iterator(::cuda::std::uint64_t{0}),
+    pareto_weight{static_cast<::cuda::std::uint64_t>(num_segments), alpha});
+  ::cuda::std::philox4x32 rng(shuffle_seed);
+  thrust::shuffle_copy(weights, weights + num_segments, cumulative_weights.begin(), rng);
+
+  const auto weight_sum = thrust::reduce(cumulative_weights.begin(), cumulative_weights.end() - 1, 0.0);
+  thrust::exclusive_scan(cumulative_weights.begin(), cumulative_weights.end() - 1, cumulative_weights.begin());
   thrust::fill_n(cumulative_weights.end() - 1, 1, weight_sum);
 
-  constexpr OffsetT minimum_segment_size{1};
-  const auto minimum_total   = static_cast<::cuda::std::int64_t>(num_segments);
-  const auto variable_budget = static_cast<::cuda::std::int64_t>(elements) - minimum_total;
-  auto offsets               = thrust::device_vector<OffsetT>(num_segments + 1, thrust::no_init);
+  auto offsets = thrust::device_vector<OffsetT>(num_segments + 1, thrust::no_init);
   thrust::tabulate(
     offsets.begin(),
     offsets.end(),
     cumulative_to_offset<OffsetT>{
       thrust::raw_pointer_cast(cumulative_weights.data()),
       1.0 / weight_sum,
-      variable_budget,
       elements,
-      num_segments,
-      minimum_segment_size});
+      num_segments});
 
   return offsets;
 }
