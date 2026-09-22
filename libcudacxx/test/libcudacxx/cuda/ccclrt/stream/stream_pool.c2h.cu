@@ -130,18 +130,18 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     const cuda::stream_ref s0 = pool.next_stream();
     REQUIRE(s0.get() != nullptr);
     REQUIRE(pool[0] == s0);
-    REQUIRE(pool[4] == s0);
 
     const cuda::stream_ref s2 = pool[2];
     REQUIRE(s2 != s0);
     REQUIRE(pool[2] == s2);
     REQUIRE(pool[0] == s0);
 
-    // at() is the same accessor, spelled out
-    for (cuda::std::size_t i = 0; i < 2 * pool.size(); ++i)
+    // at() is the same accessor, with a range check
+    for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
       REQUIRE(pool.at(i) == pool[i]);
     }
+    REQUIRE_THROWS_AS(pool.at(pool.size()), std::out_of_range);
   }
 
   SECTION("A move takes over the streams and leaves an empty pool behind")
@@ -153,6 +153,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
 
     cuda::stream_pool moved{std::move(source)};
     REQUIRE(source.size() == 0);
+    REQUIRE_THROWS_AS(source.at(0), std::out_of_range);
     REQUIRE(moved.size() == 3);
     REQUIRE(moved.device() == device);
     REQUIRE(moved.priority() == cuda::stream::default_priority);
@@ -228,13 +229,12 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     REQUIRE(pool.next_stream() == s0);
   }
 
-  SECTION("Indexed access wraps around and does not advance the round-robin position")
+  SECTION("Indexed access does not advance the round-robin position")
   {
     const cuda::stream_pool pool{device, 3};
 
     const cuda::stream_ref s1 = pool[1];
-    REQUIRE(pool[4] == s1);
-    REQUIRE(pool[7] == s1);
+    REQUIRE(pool.at(1) == s1);
 
     // Round-robin still starts at slot 0 and reaches slot 1 second.
     const cuda::stream_ref first = pool.next_stream();
@@ -249,7 +249,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     const cuda::stream_ref only = pool.next_stream();
     REQUIRE(pool.next_stream() == only);
     REQUIRE(pool[0] == only);
-    REQUIRE(pool[17] == only);
+    REQUIRE(pool.at(0) == only);
   }
 
   SECTION("Streams live on the requested device and run work")

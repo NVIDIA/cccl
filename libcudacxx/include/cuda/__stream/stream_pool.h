@@ -60,7 +60,8 @@ enum class stream_pool_creation
 //! @brief A fixed-size pool of non-blocking streams on one device or green context.
 //!
 //! The pool owns its streams and destroys them with the pool. `next_stream()` hands out the streams in
-//! round-robin order; `at(i)` and `pool[i]` address slot `i % size()`. Both return a `cuda::stream_ref` that
+//! round-robin order; `at(i)` and `pool[i]` address slot `i`, and `at(i)` throws `std::out_of_range` if there is
+//! no such slot. All three return a `cuda::stream_ref` that
 //! stays valid for the lifetime of the pool. Destroying the pool destroys the streams; it is the caller's
 //! responsibility to synchronize the work submitted to them first. The pool can be moved but not copied. A move
 //! takes over the streams, which stay valid, as do the `cuda::stream_ref` handed out before the move; no thread may
@@ -205,23 +206,43 @@ public:
     while (!__advance(&__next_, __slot, __slot + 1 == __size_ ? 0 : __slot + 1))
     {
     }
-    return at(__slot);
+    return (*this)[__slot];
   }
 
-  //! @brief Returns the stream in slot `__index % size()`
+  //! @brief Returns the stream in slot `__index`, checking that the slot exists
   //!
   //! In a lazy pool, creates the stream if its slot is requested for the first time. Requesting a slot does
   //! not advance the round-robin position.
   //!
-  //! @param[in] __index Slot index, wraps around `size()`
+  //! @param[in] __index Slot index, must be below `size()`
+  //!
+  //! @return A reference to a stream owned by the pool
+  //!
+  //! @throws std::out_of_range if `__index` is not below `size()`, which is always the case for a moved-from pool
+  //! @throws cuda_error if the stream has to be created and the creation fails
+  [[nodiscard]] _CCCL_HOST_API stream_ref at(::cuda::std::size_t __index) const
+  {
+    if (__index >= __size_)
+    {
+      _CCCL_THROW(::std::out_of_range, "cuda::stream_pool::at index out of range");
+    }
+    return (*this)[__index];
+  }
+
+  //! @brief Returns the stream in slot `__index`
+  //!
+  //! In a lazy pool, creates the stream if its slot is requested for the first time. Requesting a slot does
+  //! not advance the round-robin position.
+  //!
+  //! @param[in] __index Slot index, must be below `size()`
   //!
   //! @return A reference to a stream owned by the pool
   //!
   //! @throws cuda_error if the stream has to be created and the creation fails
-  [[nodiscard]] _CCCL_HOST_API stream_ref at(::cuda::std::size_t __index) const
+  [[nodiscard]] _CCCL_HOST_API stream_ref operator[](::cuda::std::size_t __index) const
   {
-    _CCCL_ASSERT(__size_ != 0, "cuda::stream_pool::at called on a moved-from pool");
-    ::cudaStream_t* const __slot = &__slots_[__index % __size_];
+    _CCCL_ASSERT(__index < __size_, "cuda::stream_pool index out of range");
+    ::cudaStream_t* const __slot = &__slots_[__index];
 
     // A slot changes exactly once, from empty to a stream that lives until the pool is destroyed, so a filled slot
     // is read with a single acquire load.
@@ -243,18 +264,6 @@ public:
     }
     // Lost the race: `__fresh` is destroyed here, `__published` is what the winner stored.
     return stream_ref{__published};
-  }
-
-  //! @brief Returns the stream in slot `__index % size()`, same as `at(__index)`
-  //!
-  //! @param[in] __index Slot index, wraps around `size()`
-  //!
-  //! @return A reference to a stream owned by the pool
-  //!
-  //! @throws cuda_error if the stream has to be created and the creation fails
-  [[nodiscard]] _CCCL_HOST_API stream_ref operator[](::cuda::std::size_t __index) const
-  {
-    return at(__index);
   }
 
   //! @brief Number of streams in the pool

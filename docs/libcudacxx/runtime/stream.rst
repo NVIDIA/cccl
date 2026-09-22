@@ -78,7 +78,8 @@ device or green context. It is meant for code that wants to spread independent w
 managing their lifetime.
 
 - ``next_stream()``: returns the next stream in round-robin order
-- ``at(i)`` and ``operator[](i)``: return the stream in slot ``i % size()``
+- ``operator[](i)``: returns the stream in slot ``i``, which must be below ``size()``
+- ``at(i)``: the same, but throws ``std::out_of_range`` if slot ``i`` does not exist
 - ``size()``, ``device()``, ``priority()``: the parameters given at construction
 
 The constructor throws ``std::invalid_argument`` if the pool has a size of zero.
