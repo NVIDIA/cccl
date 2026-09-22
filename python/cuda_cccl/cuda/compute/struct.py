@@ -44,7 +44,7 @@ def gpu_struct(
             field_dict = {}
         else:
             field_dict = {
-                name: field_info[0] for name, field_info in field_dict.fields.items()
+                name: field_dict.fields[name][0] for name in field_dict.names
             }
 
     # Handle annotated class (decorator usage)
