@@ -10,8 +10,8 @@ fi
 
 devcontainer-utils-post-create-command;
 # Install latest sccache client
-# devcontainer-utils-install-sccache --version rapids;
-devcontainer-utils-install-sccache --repo trxcllnt/sccache --version latest;
+devcontainer-utils-install-sccache --version rapids;
+# devcontainer-utils-install-sccache --repo trxcllnt/sccache --version latest;
 devcontainer-utils-init-git;
 devcontainer-utils-post-attach-command;
 

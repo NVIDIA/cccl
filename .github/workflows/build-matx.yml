@@ -131,6 +131,7 @@ jobs:
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
             --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL" \
+            --env "SCCACHE_DIST_AUTH_TYPE=token" \
             --env "SCCACHE_DIST_AUTH_TOKEN" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh

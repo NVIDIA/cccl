@@ -234,8 +234,11 @@ runs:
 
           export SCCACHE_DIST_AUTH_TOKEN;
 
-          extra_launch_args+=(--env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL")
-          extra_launch_args+=(--env "SCCACHE_DIST_AUTH_TOKEN")
+          extra_launch_args+=(
+            --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL"
+            --env "SCCACHE_DIST_AUTH_TYPE=token"
+            --env "SCCACHE_DIST_AUTH_TOKEN"
+          )
 
           echo -e "\e[1;34mUsing the build cluster at ${SCCACHE_DIST_URL}\e[0m"
         fi
