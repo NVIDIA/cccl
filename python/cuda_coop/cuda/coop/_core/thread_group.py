@@ -353,9 +353,9 @@ class ThreadGroup:
     see :ref:`thread groups <coop-thread-groups>` and
     :ref:`participation requirements <coop-participation>`.
 
-    The Numba-CUDA-MLIR implementation uses the C++ ``cuda::experimental``
+    The Numba-CUDA-MLIR implementation uses the C++ ``cuda::experimental::coop``
     group types from the :github:`group header
-    <cudax/include/cuda/experimental/group.cuh>` and the
+    <cudax/include/cuda/experimental/coop/group>` and the
     :ref:`CUDA C++ hierarchy queries <cccl-runtime-hierarchy-queries>`.
 
     Examples
