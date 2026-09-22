@@ -24,6 +24,8 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__mdspan/__copy/simplify_paired.h>
+#  include <cuda/__mdspan/__copy/tensor_query.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -41,8 +43,7 @@
 #  include <cuda/std/__type_traits/remove_cv.h>
 
 #  include <cuda/experimental/__copy_bytes/memcpy_batch_tiles.cuh>
-#  include <cuda/experimental/__copy_bytes/simplify_paired.cuh>
-#  include <cuda/experimental/__copy_bytes/tensor_query.cuh>
+#  include <cuda/experimental/__copy_bytes/types.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -112,7 +113,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   {
     _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: destination mdspan must be sufficiently aligned");
   }
-  if (cudax::__has_interleaved_stride_order(__dst))
+  if (::cuda::__has_interleaved_stride_order(__dst))
   {
     _CCCL_THROW(::std::invalid_argument,
                 "cudax::copy_bytes: destination mdspan must not have interleaved stride order");
@@ -137,12 +138,12 @@ _CCCL_HOST_API void __copy_bytes_impl(
   {
     using __extent_t = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, typename _ExtentsOut::index_type>;
     using __stride_t =
-      ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_LayoutPolicyIn, decltype(__src.mapping())>,
-                                 cudax::__mdspan_stride_t<_LayoutPolicyOut, decltype(__dst.mapping())>>;
+      ::cuda::std::common_type_t<::cuda::__mdspan_stride_t<_LayoutPolicyIn, decltype(__src.mapping())>,
+                                 ::cuda::__mdspan_stride_t<_LayoutPolicyOut, decltype(__dst.mapping())>>;
     constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
-    const auto __src_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__src);
-    const auto __dst_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__dst);
-    if (!cudax::__same_extents(__src_raw, __dst_raw))
+    const auto __src_raw      = ::cuda::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__src);
+    const auto __dst_raw      = ::cuda::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__dst);
+    if (!::cuda::__same_extents(__src_raw, __dst_raw))
     {
       _CCCL_THROW(::std::invalid_argument,
                   "cudax::copy_bytes: mdspans must have the same extents (after removing singleton dimensions)");
@@ -150,14 +151,14 @@ _CCCL_HOST_API void __copy_bytes_impl(
 
     auto __src_simplified = __src_raw;
     auto __dst_simplified = __dst_raw;
-    cudax::__sort_by_stride_paired(__src_simplified, __dst_simplified);
-    cudax::__flip_negative_strides_paired(__src_simplified, __dst_simplified);
-    cudax::__coalesce_paired(__src_simplified, __dst_simplified);
+    ::cuda::__sort_by_stride_paired(__src_simplified, __dst_simplified);
+    ::cuda::__flip_negative_strides_paired(__src_simplified, __dst_simplified);
+    ::cuda::__coalesce_paired(__src_simplified, __dst_simplified);
 
     const bool __both_stride1    = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
     const __extent_t __tile_size = __both_stride1 ? __src_simplified.__extents[0] : __extent_t{1};
-    const auto __src_iter        = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
-    const auto __dst_iter        = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
+    const auto __src_iter        = (__tile_size > 1) ? __src_simplified : ::cuda::__reverse_modes(__src_raw);
+    const auto __dst_iter        = (__tile_size > 1) ? __dst_simplified : ::cuda::__reverse_modes(__dst_raw);
 
     const auto __num_tiles  = __tensor_size / __tile_size;
     const auto __copy_bytes = __tile_size * sizeof(_TpIn);

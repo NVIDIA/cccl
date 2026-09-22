@@ -44,7 +44,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_load_order_dispatch(
   }
   else
   {
-    switch (__atomic_order_to_int(__order))
+    switch (::cuda::std::__atomic_order_to_int(__order))
     {
       case __ATOMIC_RELAXED:
         return __backend.__with_transformed_order(
@@ -73,7 +73,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_store_order_dispatch(
   }
   else
   {
-    switch (__atomic_order_to_int(__order))
+    switch (::cuda::std::__atomic_order_to_int(__order))
     {
       case __ATOMIC_RELAXED:
         return __backend.__with_transformed_order(
@@ -100,7 +100,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_rmw_order_dispatch(
   }
   else
   {
-    switch (__atomic_order_to_int(__order))
+    switch (::cuda::std::__atomic_order_to_int(__order))
     {
       case __ATOMIC_RELAXED:
         return __backend.__with_transformed_order(
@@ -189,8 +189,8 @@ template <class _Backend, class _Fn, class _Sco, class... _Args>
   }
   else
   {
-    const int __failure_order = __atomic_failure_order_to_int(__failure);
-    switch (__atomic_order_to_int(__success))
+    const int __failure_order = ::cuda::std::__atomic_failure_order_to_int(__failure);
+    switch (::cuda::std::__atomic_order_to_int(__success))
     {
       case __ATOMIC_RELAXED:
         return __cuda_atomic_compare_exchange_failure_order_dispatch<__cuda_atomic_order_relaxed>(
@@ -249,7 +249,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_load_dispatch(
   }
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_load<_Backend, __proxy_pointee> __bound_load{__backend, __ptr_proxy, __dst_proxy};
-  __cuda_atomic_load_order_dispatch(
+  ::cuda::std::__cuda_atomic_load_order_dispatch(
     __backend, __bound_load, __order, __scope, __proxy_tag{}, __cuda_atomic_mmio_disable{});
 }
 
@@ -296,7 +296,7 @@ __cuda_atomic_store_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory
   }
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_store<_Backend, __proxy_pointee> __bound_store{__backend, __ptr_proxy, *__val_proxy};
-  __cuda_atomic_store_order_dispatch(
+  ::cuda::std::__cuda_atomic_store_order_dispatch(
     __backend, __bound_store, __order, __scope, __proxy_tag{}, __cuda_atomic_mmio_disable{});
 }
 
@@ -346,7 +346,7 @@ template <class _Backend, class _Type, class _Cas, class _Sco>
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_compare_exchange<_Backend, __proxy_pointee> __bound_compare_swap{
     __backend, __ptr_proxy, __exp_proxy, *__exp_proxy, *__des_proxy};
-  return __cuda_atomic_compare_exchange_order_dispatch(
+  return ::cuda::std::__cuda_atomic_compare_exchange_order_dispatch(
     __backend, __bound_compare_swap, __success, __failure, __scope, _Cas{}, __proxy_tag{});
 }
 
@@ -385,7 +385,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
   }
 #endif // _CCCL_CUDA_COMPILATION()
   __cuda_atomic_bind_exchange<_Backend, __proxy_pointee> __bound_swap{__backend, __ptr_proxy, __old_proxy, *__new_proxy};
-  __cuda_atomic_exchange_order_dispatch(__backend, __bound_swap, __order, __scope, __proxy_tag{});
+  ::cuda::std::__cuda_atomic_exchange_order_dispatch(__backend, __bound_swap, __order, __scope, __proxy_tag{});
 }
 
 template <class _Backend, class _Type, class _Up, class _Sco>

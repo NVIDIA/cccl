@@ -109,13 +109,13 @@ template <class T, class Config>
 __device__ void test_type(const Config& config)
 {
   const cudax::this_warp warp{config};
-  test_group<T>(cudax::group{cuda::gpu_thread, warp, cudax::identity_mapping{}, cudax::lane_synchronizer{}});
-  test_group<T>(cudax::group{cuda::gpu_thread, warp, cudax::group_by<4>{}, cudax::lane_synchronizer{}});
-  test_group<T>(cudax::group{cuda::gpu_thread, warp, cudax::group_by{1}, cudax::lane_synchronizer{}});
-  test_group<T>(
-    cudax::group{cuda::gpu_thread, warp, cudax::group_by{3, cudax::non_exhaustive}, cudax::lane_synchronizer{}});
-  test_group<T>(
-    cudax::group{cuda::gpu_thread, warp, cudax::binary_partition{CustomBinaryPartition{}}, cudax::lane_synchronizer{}});
+  test_group<T>(cudax::generic_group{cuda::gpu_thread, warp, cudax::identity_mapping{}, cudax::lane_synchronizer{}});
+  test_group<T>(cudax::generic_group{cuda::gpu_thread, warp, cudax::group_by<4>{}, cudax::lane_synchronizer{}});
+  test_group<T>(cudax::generic_group{cuda::gpu_thread, warp, cudax::group_by{1}, cudax::lane_synchronizer{}});
+  test_group<T>(cudax::generic_group{
+    cuda::gpu_thread, warp, cudax::group_by{3, cudax::non_exhaustive}, cudax::lane_synchronizer{}});
+  test_group<T>(cudax::generic_group{
+    cuda::gpu_thread, warp, cudax::binary_partition{CustomBinaryPartition{}}, cudax::lane_synchronizer{}});
 }
 
 struct TestKernel

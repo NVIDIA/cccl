@@ -47,12 +47,6 @@
 
 #include <nv/target>
 
-#if _CCCL_COMPILER(NVRTC)
-#  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type*) 0)->member))
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
-#  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)
-#endif // _CCCL_COMPILER(NVRTC)
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
@@ -94,8 +88,7 @@ public:
   _CCCL_HOST_DEVICE_API barrier(::cuda::std::ptrdiff_t __expected,
                                 ::cuda::std::__empty_completion __completion = ::cuda::std::__empty_completion())
   {
-    static_assert(_LIBCUDACXX_OFFSET_IS_ZERO(barrier<thread_scope_block>, __barrier),
-                  "fatal error: bad barrier layout");
+    static_assert(offsetof(barrier<thread_scope_block>, __barrier) == 0, "fatal error: bad barrier layout");
     init(this, __expected, __completion);
   }
 

@@ -43,6 +43,21 @@ Checks:
   - 'cert-*'
   - '-cert-str34-c'
   - '-cert-err33-c'
+  - 'portability-*'
+  - '-portability-template-virtual-member-function'
+  - 'google-*'
+  # There are probably instances where this is useful, but a lot of these come from
+  # libcu++ where the types must explicitly match the CUDA intrinsics.
+  - '-google-runtime-int'
+  - '-google-explicit-constructor'
+  - '-google-runtime-operator'
+  - '-google-build-using-namespace'
+  - '-google-runtime-float'
+  # Same as misc-anonymous-namespace-in-header
+  - '-google-build-namespaces'
+  # readability-* as a whole is not enabled yet; only turn on the specific sub-checks we have
+  # vetted so far.
+  - 'readability-identifier-naming'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
@@ -318,10 +333,10 @@ CheckOptions:
   # readability-identifier-naming.LocalVariableCase: 'lower_case'
   # # We want to allow constexpr auto MY_VAL1
   # readability-identifier-naming.LocalVariableIgnoredRegexp: '[A-Z_0-9]+'
-  # readability-identifier-naming.MacroDefinitionCase: 'UPPER_CASE'
-  # # We want to allow MY_MACRO_PRIVATE_1_
-  # readability-identifier-naming.MacroDefinitionIgnoredRegexp: '[A-Z_0-9]+'
-  # readability-identifier-naming.NamespaceCase: 'lower_case'
+  readability-identifier-naming.MacroDefinitionCase: 'UPPER_CASE'
+  readability-identifier-naming.MacroDefinitionIgnoredRegexp: '_[A-Z_].*|__cccl_lib_.*|__cccl_ptx_isa.*'
+  readability-identifier-naming.NamespaceCase: 'lower_case'
+  readability-identifier-naming.NamespaceIgnoredRegexp: '__.*'
   # readability-identifier-naming.PrivateMemberCase: 'lower_case'
   # readability-identifier-naming.PrivateMemberSuffix: '_'
   # readability-identifier-naming.PrivateMethodCase: 'lower_case'

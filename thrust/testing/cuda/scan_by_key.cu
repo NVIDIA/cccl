@@ -56,25 +56,25 @@ void TestScanByKeyDevice(ExecutionPolicy exec)
   inclusive_scan_by_key_kernel<<<1, 1>>>(exec, d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin());
   exclusive_scan_by_key_kernel<<<1, 1>>>(exec, d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin(), 11);
   exclusive_scan_by_key_kernel<<<1, 1>>>(exec, d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin(), 11);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   // in-place scans: in/out values aliasing
   h_output = h_vals;
@@ -83,9 +83,9 @@ void TestScanByKeyDevice(ExecutionPolicy exec)
   inclusive_scan_by_key_kernel<<<1, 1>>>(exec, d_keys.begin(), d_keys.end(), d_output.begin(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   h_output = h_vals;
   d_output = d_vals;
@@ -93,27 +93,27 @@ void TestScanByKeyDevice(ExecutionPolicy exec)
   exclusive_scan_by_key_kernel<<<1, 1>>>(exec, d_keys.begin(), d_keys.end(), d_output.begin(), d_output.begin(), 11);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   // in-place scans: keys/values aliasing
   thrust::inclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin());
   inclusive_scan_by_key_kernel<<<1, 1>>>(exec, d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
-  ASSERT_EQUAL(d_keys, h_output);
+  REQUIRE(d_keys == h_output);
 
   d_keys = h_keys;
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin(), 11);
   exclusive_scan_by_key_kernel<<<1, 1>>>(exec, d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys.begin(), 11);
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
-  ASSERT_EQUAL(d_keys, h_output);
+  REQUIRE(d_keys == h_output);
 }
 
 void TestScanByKeyDeviceSeq()
@@ -147,10 +147,10 @@ void TestInclusiveScanByKeyCudaStreams()
     thrust::inclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL_QUIET(iter, output.end());
+  REQUIRE(iter == output.end());
 
   Vector ref{1, 2, 5, 9, 5, 6, 13};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   thrust::inclusive_scan_by_key(
     thrust::cuda::par.on(s),
@@ -163,14 +163,14 @@ void TestInclusiveScanByKeyCudaStreams()
   cudaStreamSynchronize(s);
 
   ref = {1, 2, 6, 24, 5, 6, 42};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   thrust::inclusive_scan_by_key(
     thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin(), ::cuda::std::equal_to<T>());
   cudaStreamSynchronize(s);
 
   ref = {1, 2, 5, 9, 5, 6, 13};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   cudaStreamDestroy(s);
 }
@@ -194,16 +194,16 @@ void TestExclusiveScanByKeyCudaStreams()
     thrust::exclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL_QUIET(iter, output.end());
+  REQUIRE(iter == output.end());
 
   Vector ref{0, 0, 2, 5, 0, 0, 6};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   thrust::exclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin(), T(10));
   cudaStreamSynchronize(s);
 
   ref = {10, 10, 12, 15, 10, 10, 16};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   thrust::exclusive_scan_by_key(
     thrust::cuda::par.on(s),
@@ -217,13 +217,13 @@ void TestExclusiveScanByKeyCudaStreams()
   cudaStreamSynchronize(s);
 
   ref = {10, 10, 20, 60, 10, 10, 60};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   thrust::exclusive_scan_by_key(
     thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), ::cuda::std::equal_to<T>());
   cudaStreamSynchronize(s);
 
   ref = {10, 10, 12, 15, 10, 10, 16};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_UNITTEST(TestExclusiveScanByKeyCudaStreams);
