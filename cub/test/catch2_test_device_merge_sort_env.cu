@@ -13,13 +13,13 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 
 #include <cuda/__execution/tune.h>
-#include <cuda/devices>
 #include <cuda/stream>
 
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::SortPairs, device_merge_sort_pairs);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::SortKeys, device_merge_sort_keys);
@@ -394,7 +394,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy uses custom stream", "[merge_sort][
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_keys_out = c2h::device_vector<int>(7);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -424,7 +424,7 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_keys_out = c2h::device_vector<int>(7);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(

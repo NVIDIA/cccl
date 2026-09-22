@@ -14,11 +14,11 @@ void TestMaxElementSimple()
 
   Vector data{3, 5, 1, 2, 5, 1};
 
-  ASSERT_EQUAL(*thrust::max_element(data.begin(), data.end()), 5);
-  ASSERT_EQUAL(thrust::max_element(data.begin(), data.end()) - data.begin(), 1);
+  REQUIRE(*thrust::max_element(data.begin(), data.end()) == 5);
+  REQUIRE(thrust::max_element(data.begin(), data.end()) - data.begin() == 1);
 
-  ASSERT_EQUAL(*thrust::max_element(data.begin(), data.end(), ::cuda::std::greater<T>()), 1);
-  ASSERT_EQUAL(thrust::max_element(data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin(), 2);
+  REQUIRE(*thrust::max_element(data.begin(), data.end(), ::cuda::std::greater<T>()) == 1);
+  REQUIRE(thrust::max_element(data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin() == 2);
 }
 DECLARE_VECTOR_UNITTEST(TestMaxElementSimple);
 
@@ -29,13 +29,13 @@ void TestMaxElementWithTransform()
 
   Vector data{3, 5, 1, 2, 5, 1};
 
-  ASSERT_EQUAL(*thrust::max_element(thrust::make_transform_iterator(data.begin(), ::cuda::std::negate<T>()),
-                                    thrust::make_transform_iterator(data.end(), ::cuda::std::negate<T>())),
-               -1);
-  ASSERT_EQUAL(*thrust::max_element(thrust::make_transform_iterator(data.begin(), ::cuda::std::negate<T>()),
-                                    thrust::make_transform_iterator(data.end(), ::cuda::std::negate<T>()),
-                                    ::cuda::std::greater<T>()),
-               -5);
+  REQUIRE(*thrust::max_element(thrust::make_transform_iterator(data.begin(), ::cuda::std::negate<T>()),
+                               thrust::make_transform_iterator(data.end(), ::cuda::std::negate<T>()))
+          == -1);
+  REQUIRE(*thrust::max_element(thrust::make_transform_iterator(data.begin(), ::cuda::std::negate<T>()),
+                               thrust::make_transform_iterator(data.end(), ::cuda::std::negate<T>()),
+                               ::cuda::std::greater<T>())
+          == -5);
 }
 DECLARE_VECTOR_UNITTEST(TestMaxElementWithTransform);
 
@@ -48,14 +48,14 @@ void TestMaxElement(const size_t n)
   const typename thrust::host_vector<T>::iterator h_max   = thrust::max_element(h_data.begin(), h_data.end());
   const typename thrust::device_vector<T>::iterator d_max = thrust::max_element(d_data.begin(), d_data.end());
 
-  ASSERT_EQUAL(h_max - h_data.begin(), d_max - d_data.begin());
+  REQUIRE(h_max - h_data.begin() == d_max - d_data.begin());
 
   const typename thrust::host_vector<T>::iterator h_min =
     thrust::max_element(h_data.begin(), h_data.end(), ::cuda::std::greater<T>());
   const typename thrust::device_vector<T>::iterator d_min =
     thrust::max_element(d_data.begin(), d_data.end(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL(h_min - h_data.begin(), d_min - d_data.begin());
+  REQUIRE(h_min - h_data.begin() == d_min - d_data.begin());
 }
 DECLARE_VARIABLE_UNITTEST(TestMaxElement);
 
@@ -66,16 +66,15 @@ ForwardIterator max_element(my_system& system, ForwardIterator first, ForwardIte
   return first;
 }
 
-void TestMaxElementDispatchExplicit()
+TEST_CASE("TestMaxElementDispatchExplicit", "[max_element]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::max_element(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMaxElementDispatchExplicit);
 
 template <typename ForwardIterator>
 ForwardIterator max_element(my_tag, ForwardIterator first, ForwardIterator)
@@ -84,26 +83,25 @@ ForwardIterator max_element(my_tag, ForwardIterator first, ForwardIterator)
   return first;
 }
 
-void TestMaxElementDispatchImplicit()
+TEST_CASE("TestMaxElementDispatchImplicit", "[max_element]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::max_element(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestMaxElementDispatchImplicit);
 
 void TestMaxElementWithBigIndexesHelper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
-  ASSERT_EQUAL(*thrust::max_element(thrust::device, begin, end), (1ll << magnitude));
+  REQUIRE(*thrust::max_element(thrust::device, begin, end) == (1ll << magnitude));
 }
 
-void TestMaxElementWithBigIndexes()
+TEST_CASE("TestMaxElementWithBigIndexes", "[max_element]")
 {
   TestMaxElementWithBigIndexesHelper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
@@ -112,11 +110,9 @@ void TestMaxElementWithBigIndexes()
   TestMaxElementWithBigIndexesHelper(33);
 #endif
 }
-DECLARE_UNITTEST(TestMaxElementWithBigIndexes);
 
-void TestMaxElementCudaIterator()
+TEST_CASE("TestMaxElementCudaIterator", "[max_element]")
 {
   auto pos = thrust::max_element(thrust::device, cuda::counting_iterator{0}, cuda::counting_iterator{0} + 100);
-  ASSERT_EQUAL(*pos, 99);
+  REQUIRE(*pos == 99);
 }
-DECLARE_UNITTEST(TestMaxElementCudaIterator);

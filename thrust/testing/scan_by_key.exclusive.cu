@@ -19,15 +19,15 @@ void TestExclusiveScanByKeySimple()
 
   const Iterator iter = thrust::exclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin());
 
-  ASSERT_EQUAL_QUIET(iter, output.end());
+  REQUIRE((iter == output.end()));
 
   Vector ref{0, 0, 2, 5, 0, 0, 6};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   thrust::exclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin(), T(10));
 
   ref = {10, 10, 12, 15, 10, 10, 16};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   thrust::exclusive_scan_by_key(
     keys.begin(),
@@ -39,13 +39,13 @@ void TestExclusiveScanByKeySimple()
     ::cuda::std::multiplies<T>());
 
   ref = {10, 10, 20, 60, 10, 10, 60};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   thrust::exclusive_scan_by_key(
     keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), ::cuda::std::equal_to<T>());
 
   ref = {10, 10, 12, 15, 10, 10, 16};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestExclusiveScanByKeySimple);
 
@@ -57,16 +57,15 @@ exclusive_scan_by_key(my_system& system, InputIterator1, InputIterator1, InputIt
   return result;
 }
 
-void TestExclusiveScanByKeyDispatchExplicit()
+TEST_CASE("TestExclusiveScanByKeyDispatchExplicit", "[scan_by_key.exclusive]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::exclusive_scan_by_key(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestExclusiveScanByKeyDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator exclusive_scan_by_key(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator result)
@@ -75,7 +74,7 @@ OutputIterator exclusive_scan_by_key(my_tag, InputIterator1, InputIterator1, Inp
   return result;
 }
 
-void TestExclusiveScanByKeyDispatchImplicit()
+TEST_CASE("TestExclusiveScanByKeyDispatchImplicit", "[scan_by_key.exclusive]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -85,9 +84,8 @@ void TestExclusiveScanByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestExclusiveScanByKeyDispatchImplicit);
 
 struct head_flag_predicate
 {
@@ -111,7 +109,7 @@ void TestScanByKeyHeadFlags()
     keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), head_flag_predicate(), ::cuda::std::plus<T>());
 
   Vector ref{10, 10, 12, 15, 10, 10, 16};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestScanByKeyHeadFlags);
 
@@ -125,7 +123,7 @@ void TestScanByKeyReusedKeys()
   thrust::exclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin(), typename Vector::value_type(10));
 
   Vector ref{10, 10, 12, 15, 10, 10, 16};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestScanByKeyReusedKeys);
 
@@ -157,12 +155,12 @@ void TestExclusiveScanByKey(const size_t n)
   // without init
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin());
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin());
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   // with init
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin(), (T) 11);
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin(), (T) 11);
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestExclusiveScanByKey);
 
@@ -193,16 +191,16 @@ void TestExclusiveScanByKeyInPlace(const size_t n)
   thrust::device_vector<T> d_output = d_vals;
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_output.begin(), h_output.begin(), (T) 11);
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_output.begin(), d_output.begin(), (T) 11);
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 
   // in-place scans: in/out keys aliasing
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_keys.begin(), (T) 11);
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys.begin(), (T) 11);
-  ASSERT_EQUAL(d_keys, h_keys);
+  REQUIRE(d_keys == h_keys);
 }
 DECLARE_VARIABLE_UNITTEST(TestExclusiveScanByKeyInPlace);
 
-void TestScanByKeyMixedTypes()
+TEST_CASE("TestScanByKeyMixedTypes", "[scan_by_key.exclusive]")
 {
   const unsigned int n = 113;
 
@@ -233,21 +231,20 @@ void TestScanByKeyMixedTypes()
   // mixed vals/output types
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_float_output.begin(), (float) 3.5);
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_float_output.begin(), (float) 3.5);
-  ASSERT_EQUAL(d_float_output, h_float_output);
+  REQUIRE(d_float_output == h_float_output);
 
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_float_output.begin(), (int) 3);
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_float_output.begin(), (int) 3);
-  ASSERT_EQUAL(d_float_output, h_float_output);
+  REQUIRE(d_float_output == h_float_output);
 
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_int_output.begin(), (int) 3);
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_int_output.begin(), (int) 3);
-  ASSERT_EQUAL(d_int_output, h_int_output);
+  REQUIRE(d_int_output == h_int_output);
 
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_int_output.begin(), (float) 3.5);
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_int_output.begin(), (float) 3.5);
-  ASSERT_EQUAL(d_int_output, h_int_output);
+  REQUIRE(d_int_output == h_int_output);
 }
-DECLARE_UNITTEST(TestScanByKeyMixedTypes);
 
 template <typename T>
 void TestScanByKeyDiscardOutput(std::size_t n)
@@ -283,7 +280,7 @@ void TestScanByKeyDiscardOutput(std::size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestScanByKeyDiscardOutput);
 
-void TestScanByKeyLargeInput()
+TEST_CASE("TestScanByKeyLargeInput", "[scan_by_key.exclusive]")
 {
   const unsigned int N = 1 << 20;
 
@@ -314,10 +311,9 @@ void TestScanByKeyLargeInput()
 
     thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.begin() + n, h_vals.begin(), h_output.begin());
     thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.begin() + n, d_vals.begin(), d_output.begin());
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
   }
 }
-DECLARE_UNITTEST(TestScanByKeyLargeInput);
 
 template <typename T, unsigned int N>
 void _TestScanByKeyWithLargeTypes()
@@ -346,10 +342,10 @@ void _TestScanByKeyWithLargeTypes()
   thrust::exclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin(), FixedVector<T, N>(0));
   thrust::exclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin(), FixedVector<T, N>(0));
 
-  ASSERT_EQUAL_QUIET(h_output, d_output);
+  REQUIRE((h_output == d_output));
 }
 
-void TestScanByKeyWithLargeTypes()
+TEST_CASE("TestScanByKeyWithLargeTypes", "[scan_by_key.exclusive]")
 {
   _TestScanByKeyWithLargeTypes<int, 1>();
   _TestScanByKeyWithLargeTypes<int, 2>();
@@ -367,4 +363,3 @@ void TestScanByKeyWithLargeTypes()
   //_TestScanByKeyWithLargeTypes<int,  512>();
   //_TestScanByKeyWithLargeTypes<int, 1024>();
 }
-DECLARE_UNITTEST(TestScanByKeyWithLargeTypes);

@@ -28,10 +28,10 @@ void TestMergeByKeySimple()
     result_key.begin(),
     result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), ends.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), ends.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  REQUIRE(result_key.end() == ends.first);
+  REQUIRE(result_val.end() == ends.second);
+  REQUIRE(ref_key == result_key);
+  REQUIRE(ref_val == result_val);
 }
 DECLARE_VECTOR_UNITTEST(TestMergeByKeySimple);
 
@@ -56,7 +56,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestMergeByKeyDispatchExplicit()
+TEST_CASE("TestMergeByKeyDispatchExplicit", "[merge_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -64,9 +64,8 @@ void TestMergeByKeyDispatchExplicit()
   thrust::merge_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMergeByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -89,23 +88,6 @@ cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestMergeByKeyDispatchImplicit()
-{
-  thrust::device_vector<int> vec(1);
-
-  thrust::merge_by_key(
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()));
-
-  ASSERT_EQUAL(13, vec.front());
-}
-
 template <typename T, typename CompareOp, typename... Args>
 auto call_merge_by_key(Args&&... args) -> decltype(thrust::merge_by_key(std::forward<Args>(args)...))
 {
@@ -122,7 +104,22 @@ auto call_merge_by_key(Args&&... args) -> decltype(thrust::merge_by_key(std::for
   _CCCL_UNREACHABLE();
 }
 
-DECLARE_UNITTEST(TestMergeByKeyDispatchImplicit);
+TEST_CASE("TestMergeByKeyDispatchImplicit", "[merge_by_key]")
+{
+  thrust::device_vector<int> vec(1);
+
+  thrust::merge_by_key(
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()));
+
+  REQUIRE(13 == vec.front());
+}
 
 template <typename T, typename CompareOp = void>
 void TestMergeByKey(size_t n)
@@ -192,12 +189,12 @@ void TestMergeByKey(size_t n)
     d_result_keys.erase(d_end.first, d_result_keys.end());
     d_result_vals.erase(d_end.second, d_result_vals.end());
 
-    ASSERT_EQUAL(h_result_keys, d_result_keys);
-    ASSERT_EQUAL(h_result_vals, d_result_vals);
-    ASSERT_EQUAL(true, h_end.first == h_result_keys.end());
-    ASSERT_EQUAL(true, h_end.second == h_result_vals.end());
-    ASSERT_EQUAL(true, d_end.first == d_result_keys.end());
-    ASSERT_EQUAL(true, d_end.second == d_result_vals.end());
+    REQUIRE(h_result_keys == d_result_keys);
+    REQUIRE(h_result_vals == d_result_vals);
+    REQUIRE(h_end.first == h_result_keys.end());
+    REQUIRE(h_end.second == h_result_vals.end());
+    REQUIRE(d_end.first == d_result_keys.end());
+    REQUIRE(d_end.second == d_result_vals.end());
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeByKey);
@@ -244,10 +241,10 @@ void TestMergeByKeyToDiscardIterator(size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result.first);
-  ASSERT_EQUAL_QUIET(reference, h_result.second);
-  ASSERT_EQUAL_QUIET(reference, d_result.first);
-  ASSERT_EQUAL_QUIET(reference, d_result.second);
+  REQUIRE(reference == h_result.first);
+  REQUIRE(reference == h_result.second);
+  REQUIRE(reference == d_result.first);
+  REQUIRE(reference == d_result.second);
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeByKeyToDiscardIterator);
 
@@ -276,7 +273,7 @@ struct offset_transform
 
 // Tests the use of thrust::merge_by_key similar to cuDF in
 // https://github.com/rapidsai/cudf/blob/branch-24.08/cpp/src/lists/dremel.cu#L413
-void TestMergeByKeyFromCuDFDremel()
+TEST_CASE("TestMergeByKeyFromCuDFDremel", "[merge_by_key]")
 {
   // TODO(bgruber): I have no idea what this code is actually computing, but I tried to replicate the types/iterators
   constexpr std::ptrdiff_t empties_size = 123;
@@ -317,7 +314,6 @@ void TestMergeByKeyFromCuDFDremel()
   thrust::device_vector<std::uint8_t> reference_def_level(max_vals_size);
   thrust::fill(reference_def_level.begin(), reference_def_level.begin() + empties_size, 13 + 10);
 
-  ASSERT_EQUAL(reference_rep_level, rep_level);
-  ASSERT_EQUAL(reference_def_level, def_level);
+  REQUIRE(reference_rep_level == rep_level);
+  REQUIRE(reference_def_level == def_level);
 }
-DECLARE_UNITTEST(TestMergeByKeyFromCuDFDremel);

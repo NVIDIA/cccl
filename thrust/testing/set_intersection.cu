@@ -15,16 +15,15 @@ OutputIterator set_intersection(
   return result;
 }
 
-void TestSetIntersectionDispatchExplicit()
+TEST_CASE("TestSetIntersectionDispatchExplicit", "[set_intersection]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_intersection(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetIntersectionDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -34,7 +33,7 @@ set_intersection(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIt
   return result;
 }
 
-void TestSetIntersectionDispatchImplicit()
+TEST_CASE("TestSetIntersectionDispatchImplicit", "[set_intersection]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -45,9 +44,8 @@ void TestSetIntersectionDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetIntersectionDispatchImplicit);
 
 template <typename Vector>
 void TestSetIntersectionSimple()
@@ -61,8 +59,8 @@ void TestSetIntersectionSimple()
 
   const Iterator end = thrust::set_intersection(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetIntersectionSimple);
 
@@ -98,7 +96,7 @@ void TestSetIntersection(const size_t n)
     d_end = thrust::set_intersection(d_a.begin(), d_a.end(), d_b.begin(), d_b.begin() + size, d_result.begin());
     d_result.resize(d_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersection);
@@ -130,8 +128,8 @@ void TestSetIntersectionToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(h_reference.size());
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionToDiscardIterator);
 
@@ -159,7 +157,7 @@ void TestSetIntersectionEquivalentRanges(const size_t n)
 
   d_result.resize(d_end - d_result.begin());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionEquivalentRanges);
 
@@ -198,20 +196,24 @@ void TestSetIntersectionMultiset(const size_t n)
 
   d_result.resize(d_end - d_result.begin());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionMultiset);
 
 // FIXME: disabled on Windows, because it causes a failure on the internal CI system in one specific configuration.
 // That failure will be tracked in a new NVBug, this is disabled to unblock submitting all the other changes.
 #if !_CCCL_COMPILER(MSVC)
+// gcc >= 11 emits a bogus -Werror=stringop-overflow for the host_vector::push_back below ("writing 8 or more bytes into
+// a region of size 0") when it inlines the vector growth at -O3.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wstringop-overflow")
 void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin1(0);
   const thrust::counting_iterator<long long> begin2 = begin1 + (1ll << magnitude);
   const thrust::counting_iterator<long long> end1   = begin2 + 1;
   const thrust::counting_iterator<long long> end2   = begin2 + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin2, end1), 1);
+  REQUIRE(::cuda::std::distance(begin2, end1) == 1);
 
   thrust::device_vector<long long> result;
   result.resize(1);
@@ -220,10 +222,11 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
   thrust::host_vector<long long> expected;
   expected.push_back(*begin2);
 
-  ASSERT_EQUAL(result, expected);
+  REQUIRE(result == expected);
 }
+_CCCL_DIAG_POP
 
-void TestSetDifferenceWithBigIndexes()
+TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_intersection]")
 {
 #  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestSetDifferenceWithBigIndexesHelper(30);
@@ -232,5 +235,4 @@ void TestSetDifferenceWithBigIndexes()
   TestSetDifferenceWithBigIndexesHelper(33);
 #  endif
 }
-DECLARE_UNITTEST(TestSetDifferenceWithBigIndexes);
 #endif

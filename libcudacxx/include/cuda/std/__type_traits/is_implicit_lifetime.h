@@ -1,0 +1,57 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_IMPLICIT_LIFETIME_H
+#define _CUDA_STD___TYPE_TRAITS_IS_IMPLICIT_LIFETIME_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if defined(_CCCL_BUILTIN_IS_IMPLICIT_LIFETIME)
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_NO_SPECIALIZATIONS
+  is_implicit_lifetime : bool_constant<_CCCL_BUILTIN_IS_IMPLICIT_LIFETIME(_Tp)>
+{};
+
+template <class _Tp>
+_CCCL_NO_SPECIALIZATIONS inline constexpr bool is_implicit_lifetime_v = _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME(_Tp);
+
+#else // ^^^ _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME ^^^ / vvv !_CCCL_BUILTIN_IS_IMPLICIT_LIFETIME vvv
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_NO_SPECIALIZATIONS is_implicit_lifetime
+{
+  static_assert(__always_false_v<_Tp>, "cuda::std::is_implicit_lifetime requires compiler support");
+};
+
+template <class _Tp>
+_CCCL_NO_SPECIALIZATIONS inline constexpr bool is_implicit_lifetime_v = is_implicit_lifetime<_Tp>::value;
+
+#endif // ^^^ !_CCCL_BUILTIN_IS_IMPLICIT_LIFETIME ^^^
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_IMPLICIT_LIFETIME_H

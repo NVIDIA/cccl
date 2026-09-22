@@ -29,10 +29,10 @@ void TestFindDevice(ExecutionPolicy exec)
   find_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), int(0), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+  REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 
   for (size_t i = 1; i < n; i *= 2)
   {
@@ -43,24 +43,22 @@ void TestFindDevice(ExecutionPolicy exec)
     find_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), sample, d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
 
-    ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
   }
 }
 
-void TestFindDeviceSeq()
+TEST_CASE("TestFindDeviceSeq", "[find]")
 {
   TestFindDevice(thrust::seq);
-};
-DECLARE_UNITTEST(TestFindDeviceSeq);
+}
 
-void TestFindDeviceDevice()
+TEST_CASE("TestFindDeviceDevice", "[find]")
 {
   TestFindDevice(thrust::device);
-};
-DECLARE_UNITTEST(TestFindDeviceDevice);
+}
 
 template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename Iterator2>
 __global__ void find_if_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predicate pred, Iterator2 result)
@@ -87,10 +85,10 @@ void TestFindIfDevice(ExecutionPolicy exec)
   find_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 == 0, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+  REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 
   for (size_t i = 1; i < n; i *= 2)
   {
@@ -101,24 +99,22 @@ void TestFindIfDevice(ExecutionPolicy exec)
     find_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 == sample, d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
 
-    ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
   }
 }
 
-void TestFindIfDeviceSeq()
+TEST_CASE("TestFindIfDeviceSeq", "[find]")
 {
   TestFindIfDevice(thrust::seq);
-};
-DECLARE_UNITTEST(TestFindIfDeviceSeq);
+}
 
-void TestFindIfDeviceDevice()
+TEST_CASE("TestFindIfDeviceDevice", "[find]")
 {
   TestFindIfDevice(thrust::device);
-};
-DECLARE_UNITTEST(TestFindIfDeviceDevice);
+}
 
 template <typename ExecutionPolicy, typename Iterator, typename Predicate, typename Iterator2>
 __global__ void find_if_not_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predicate pred, Iterator2 result)
@@ -144,10 +140,10 @@ void TestFindIfNotDevice(ExecutionPolicy exec)
   find_if_not_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 != 0, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+  REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
 
   for (size_t i = 1; i < n; i *= 2)
   {
@@ -158,40 +154,37 @@ void TestFindIfNotDevice(ExecutionPolicy exec)
     find_if_not_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), _1 != sample, d_result.begin());
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
 
-    ASSERT_EQUAL(h_iter - h_data.begin(), (iter_type) d_result[0] - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == (iter_type) d_result[0] - d_data.begin());
   }
 }
 
-void TestFindIfNotDeviceSeq()
+TEST_CASE("TestFindIfNotDeviceSeq", "[find]")
 {
   TestFindIfNotDevice(thrust::seq);
-};
-DECLARE_UNITTEST(TestFindIfNotDeviceSeq);
+}
 
-void TestFindIfNotDeviceDevice()
+TEST_CASE("TestFindIfNotDeviceDevice", "[find]")
 {
   TestFindIfNotDevice(thrust::device);
-};
-DECLARE_UNITTEST(TestFindIfNotDeviceDevice);
+}
 #endif
 
-void TestFindCudaStreams()
+TEST_CASE("TestFindCudaStreams", "[find]")
 {
   thrust::device_vector<int> vec{1, 2, 3, 3, 5};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 0) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 1) - vec.begin(), 0);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 2) - vec.begin(), 1);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 3) - vec.begin(), 2);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 4) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 5) - vec.begin(), 4);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 0) - vec.begin() == 5);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 1) - vec.begin() == 0);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 2) - vec.begin() == 1);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 3) - vec.begin() == 2);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 4) - vec.begin() == 5);
+  REQUIRE(thrust::find(thrust::cuda::par.on(s), vec.begin(), vec.end(), 5) - vec.begin() == 4);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestFindCudaStreams);

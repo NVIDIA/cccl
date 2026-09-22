@@ -81,18 +81,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   const ReduceByKeyPolicy policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << policy;
-                 _CubLog("Dispatching streaming reduce by key to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
 
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
@@ -156,11 +145,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     }
 
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#else // CUB_DEBUG_LOG
-    log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -181,19 +166,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       return cudaSuccess;
     }
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
-            num_current_tiles,
-            threads_per_block,
-            (long long) stream,
-            items_per_thread);
-#else // CUB_DEBUG_LOG
-    log("Invoking reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
-        num_current_tiles,
-        threads_per_block,
-        (long long) stream,
-        items_per_thread);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("reduce_by_key_kernel", num_current_tiles, 1, 1, threads_per_block, 0, stream, "");
     auto reduce_by_key_kernel = KernelSource::template reduce_by_key_kernel<
       PolicySelector,
       KeysInputIteratorT,

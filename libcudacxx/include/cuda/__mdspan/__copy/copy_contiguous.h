@@ -196,13 +196,13 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
   const auto __bytes_in_flight  = ::cuda::__bytes_in_flight();
   const auto __elems_per_thread = ::cuda::__elem_per_thread(static_cast<int>(sizeof(_TpIn)), __bytes_in_flight);
   const auto __tile_size_rt     = __block_size * __elems_per_thread;
+  [[maybe_unused]] constexpr auto __arch_limits = ::cuda::__common_arch_traits(::cuda::arch_id::sm_90);
 
   ::cuda::__dispatch_tile_size(__tile_size_rt, [&](auto __tile_constant) {
     constexpr int __tile_size    = decltype(__tile_constant)::value;
     const auto __inner_size      = __src.__extents[0];
     const auto __outer_size      = ::cuda::__total_size(__src) / __inner_size;
     const auto __num_inner_tiles = ::cuda::ceil_div(__inner_size, __tile_size);
-    constexpr auto __arch_limits = ::cuda::__common_arch_traits(::cuda::arch_id::sm_90);
     _CCCL_ASSERT(__num_inner_tiles <= _ExtentT(__arch_limits.max_grid_dim_x),
                  "grid x-dimension exceeds the maximum grid size");
     _CCCL_ASSERT(__outer_size <= _ExtentT(__arch_limits.max_grid_dim_y),

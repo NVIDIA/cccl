@@ -32,72 +32,72 @@ void TestScanSimple()
   // inclusive scan
   iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin());
   result = {1, 4, 2, 6, 1};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // exclusive scan
   iter   = thrust::exclusive_scan(input.begin(), input.end(), output.begin(), T(0));
   result = {0, 1, 4, 2, 6};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // exclusive scan with init
   iter   = thrust::exclusive_scan(input.begin(), input.end(), output.begin(), T(3));
   result = {3, 4, 7, 5, 9};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // inclusive scan with op
   iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), ::cuda::std::plus<T>());
   result = {1, 4, 2, 6, 1};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // inclusive scan with init and op
   iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(-1), ::cuda::std::multiplies<T>());
   result = {-1, -3, 6, 24, -120};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // exclusive scan with init and op
   iter   = thrust::exclusive_scan(input.begin(), input.end(), output.begin(), T(3), ::cuda::std::plus<T>());
   result = {3, 4, 7, 5, 9};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // inplace inclusive scan
   input  = input_copy;
   iter   = thrust::inclusive_scan(input.begin(), input.end(), input.begin());
   result = {1, 4, 2, 6, 1};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 
   // inplace inclusive scan with init and op
   input  = input_copy;
   iter   = thrust::inclusive_scan(input.begin(), input.end(), input.begin(), T(3), ::cuda::std::plus<T>());
   result = {4, 7, 5, 9, 4};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 
   // inplace exclusive scan with init
   input  = input_copy;
   iter   = thrust::exclusive_scan(input.begin(), input.end(), input.begin(), T(3));
   result = {3, 4, 7, 5, 9};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 
   // inplace exclusive scan with implicit init=0
   input  = input_copy;
   iter   = thrust::exclusive_scan(input.begin(), input.end(), input.begin());
   result = {0, 1, 4, 2, 6};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 }
 DECLARE_VECTOR_UNITTEST(TestScanSimple);
 
@@ -108,16 +108,15 @@ OutputIterator inclusive_scan(my_system& system, InputIterator, InputIterator, O
   return result;
 }
 
-void TestInclusiveScanDispatchExplicit()
+TEST_CASE("TestInclusiveScanDispatchExplicit", "[scan]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestInclusiveScanDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator inclusive_scan(my_tag, InputIterator, InputIterator, OutputIterator result)
@@ -126,16 +125,15 @@ OutputIterator inclusive_scan(my_tag, InputIterator, InputIterator, OutputIterat
   return result;
 }
 
-void TestInclusiveScanDispatchImplicit()
+TEST_CASE("TestInclusiveScanDispatchImplicit", "[scan]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::inclusive_scan(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestInclusiveScanDispatchImplicit);
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator exclusive_scan(my_system& system, InputIterator, InputIterator, OutputIterator result)
@@ -144,16 +142,15 @@ OutputIterator exclusive_scan(my_system& system, InputIterator, InputIterator, O
   return result;
 }
 
-void TestExclusiveScanDispatchExplicit()
+TEST_CASE("TestExclusiveScanDispatchExplicit", "[scan]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::exclusive_scan(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestExclusiveScanDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator exclusive_scan(my_tag, InputIterator, InputIterator, OutputIterator result)
@@ -162,18 +159,17 @@ OutputIterator exclusive_scan(my_tag, InputIterator, InputIterator, OutputIterat
   return result;
 }
 
-void TestExclusiveScanDispatchImplicit()
+TEST_CASE("TestExclusiveScanDispatchImplicit", "[scan]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::exclusive_scan(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestExclusiveScanDispatchImplicit);
 
-void TestInclusiveScan32()
+TEST_CASE("TestInclusiveScan32", "[scan]")
 {
   using T        = int;
   const size_t n = 32;
@@ -187,11 +183,10 @@ void TestInclusiveScan32()
   thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
   thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
 
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 }
-DECLARE_UNITTEST(TestInclusiveScan32);
 
-void TestExclusiveScan32()
+TEST_CASE("TestExclusiveScan32", "[scan]")
 {
   using T        = int;
   const size_t n = 32;
@@ -206,9 +201,8 @@ void TestExclusiveScan32()
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), init);
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), init);
 
-  ASSERT_EQUAL(d_output, h_output);
+  REQUIRE(d_output == h_output);
 }
-DECLARE_UNITTEST(TestExclusiveScan32);
 
 template <class IntVector, class FloatVector>
 void TestScanMixedTypes()
@@ -221,57 +215,55 @@ void TestScanMixedTypes()
 
   // float -> int should use plus<void> operator and float accumulator by default
   thrust::inclusive_scan(float_input.begin(), float_input.end(), int_output.begin());
-  ASSERT_EQUAL(int_output[0], 1); // in: 1.5 accum: 1.5f out: 1
-  ASSERT_EQUAL(int_output[1], 4); // in: 2.5 accum: 4.0f out: 4
-  ASSERT_EQUAL(int_output[2], 7); // in: 3.5 accum: 7.5f out: 7
-  ASSERT_EQUAL(int_output[3], 12); // in: 4.5 accum: 12.f out: 12
+  REQUIRE(int_output[0] == 1); // in: 1.5 accum: 1.5f out: 1
+  REQUIRE(int_output[1] == 4); // in: 2.5 accum: 4.0f out: 4
+  REQUIRE(int_output[2] == 7); // in: 3.5 accum: 7.5f out: 7
+  REQUIRE(int_output[3] == 12); // in: 4.5 accum: 12.f out: 12
 
   // float -> float with plus<int> operator (float accumulator)
   thrust::inclusive_scan(float_input.begin(), float_input.end(), float_output.begin(), ::cuda::std::plus<int>());
-  ASSERT_EQUAL(float_output[0], 1.5f); // in: 1.5 accum: 1.5f out: 1.5f
-  ASSERT_EQUAL(float_output[1], 3.0f); // in: 2.5 accum: 3.0f out: 3.0f
-  ASSERT_EQUAL(float_output[2], 6.0f); // in: 3.5 accum: 6.0f out: 6.0f
-  ASSERT_EQUAL(float_output[3], 10.0f); // in: 4.5 accum: 10.f out: 10.f
+  REQUIRE(float_output[0] == 1.5f); // in: 1.5 accum: 1.5f out: 1.5f
+  REQUIRE(float_output[1] == 3.0f); // in: 2.5 accum: 3.0f out: 3.0f
+  REQUIRE(float_output[2] == 6.0f); // in: 3.5 accum: 6.0f out: 6.0f
+  REQUIRE(float_output[3] == 10.0f); // in: 4.5 accum: 10.f out: 10.f
 
   // float -> int should use plus<void> operator and float accumulator by default
   thrust::exclusive_scan(float_input.begin(), float_input.end(), int_output.begin());
-  ASSERT_EQUAL(int_output[0], 0); // out: 0.0f  in: 1.5 accum: 1.5f
-  ASSERT_EQUAL(int_output[1], 1); // out: 1.5f  in: 2.5 accum: 4.0f
-  ASSERT_EQUAL(int_output[2], 4); // out: 4.0f  in: 3.5 accum: 7.5f
-  ASSERT_EQUAL(int_output[3], 7); // out: 7.5f  in: 4.5 accum: 12.f
+  REQUIRE(int_output[0] == 0); // out: 0.0f  in: 1.5 accum: 1.5f
+  REQUIRE(int_output[1] == 1); // out: 1.5f  in: 2.5 accum: 4.0f
+  REQUIRE(int_output[2] == 4); // out: 4.0f  in: 3.5 accum: 7.5f
+  REQUIRE(int_output[3] == 7); // out: 7.5f  in: 4.5 accum: 12.f
 
   // float -> int should use plus<> operator and float accumulator by default
   thrust::exclusive_scan(float_input.begin(), float_input.end(), int_output.begin(), (float) 5.5);
-  ASSERT_EQUAL(int_output[0], 5); // out: 5.5f  in: 1.5 accum: 7.0f
-  ASSERT_EQUAL(int_output[1], 7); // out: 7.0f  in: 2.5 accum: 9.5f
-  ASSERT_EQUAL(int_output[2], 9); // out: 9.5f  in: 3.5 accum: 13.0f
-  ASSERT_EQUAL(int_output[3], 13); // out: 13.f  in: 4.5 accum: 17.4f
+  REQUIRE(int_output[0] == 5); // out: 5.5f  in: 1.5 accum: 7.0f
+  REQUIRE(int_output[1] == 7); // out: 7.0f  in: 2.5 accum: 9.5f
+  REQUIRE(int_output[2] == 9); // out: 9.5f  in: 3.5 accum: 13.0f
+  REQUIRE(int_output[3] == 13); // out: 13.f  in: 4.5 accum: 17.4f
 
   // int -> float should use using plus<> operator and int accumulator by default
   thrust::inclusive_scan(int_input.begin(), int_input.end(), float_output.begin());
-  ASSERT_EQUAL(float_output[0], 1.f); // in: 1 accum: 1  out: 1
-  ASSERT_EQUAL(float_output[1], 3.f); // in: 2 accum: 3  out: 3
-  ASSERT_EQUAL(float_output[2], 6.f); // in: 3 accum: 6  out: 6
-  ASSERT_EQUAL(float_output[3], 10.f); // in: 4 accum: 10 out: 10
+  REQUIRE(float_output[0] == 1.f); // in: 1 accum: 1  out: 1
+  REQUIRE(float_output[1] == 3.f); // in: 2 accum: 3  out: 3
+  REQUIRE(float_output[2] == 6.f); // in: 3 accum: 6  out: 6
+  REQUIRE(float_output[3] == 10.f); // in: 4 accum: 10 out: 10
 
   // int -> float + float init_value should use using plus<> operator and
   // float accumulator by default
   thrust::exclusive_scan(int_input.begin(), int_input.end(), float_output.begin(), (float) 5.5);
-  ASSERT_EQUAL(float_output[0], 5.5f); // out: 5.5f  in: 1 accum: 6.5f
-  ASSERT_EQUAL(float_output[1], 6.5f); // out: 6.0f  in: 2 accum: 8.5f
-  ASSERT_EQUAL(float_output[2], 8.5f); // out: 8.0f  in: 3 accum: 11.5f
-  ASSERT_EQUAL(float_output[3], 11.5f); // out: 11.f  in: 4 accum: 15.5f
+  REQUIRE(float_output[0] == 5.5f); // out: 5.5f  in: 1 accum: 6.5f
+  REQUIRE(float_output[1] == 6.5f); // out: 6.0f  in: 2 accum: 8.5f
+  REQUIRE(float_output[2] == 8.5f); // out: 8.0f  in: 3 accum: 11.5f
+  REQUIRE(float_output[3] == 11.5f); // out: 11.f  in: 4 accum: 15.5f
 }
-void TestScanMixedTypesHost()
+TEST_CASE("TestScanMixedTypesHost", "[scan]")
 {
   TestScanMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
-DECLARE_UNITTEST(TestScanMixedTypesHost);
-void TestScanMixedTypesDevice()
+TEST_CASE("TestScanMixedTypesDevice", "[scan]")
 {
   TestScanMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
-DECLARE_UNITTEST(TestScanMixedTypesDevice);
 
 template <typename T>
 struct TestScanWithOperator
@@ -286,11 +278,11 @@ struct TestScanWithOperator
 
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), cuda::maximum<T>{});
     thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), cuda::maximum<T>{});
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
 
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), T(13), cuda::maximum<T>{});
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), T(13), cuda::maximum<T>{});
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanWithOperator, SignedIntegralTypes);
@@ -311,8 +303,8 @@ struct TestScanWithOperatorToDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), cuda::maximum<T>{});
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE((reference == h_result));
+    REQUIRE((reference == d_result));
 
     h_result = thrust::exclusive_scan(
       h_input.begin(), h_input.end(), thrust::make_discard_iterator(), T(13), cuda::maximum<T>{});
@@ -320,8 +312,8 @@ struct TestScanWithOperatorToDiscardIterator
     d_result = thrust::exclusive_scan(
       d_input.begin(), d_input.end(), thrust::make_discard_iterator(), T(13), cuda::maximum<T>{});
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE((reference == h_result));
+    REQUIRE((reference == d_result));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanWithOperatorToDiscardIterator,
@@ -340,28 +332,28 @@ struct TestScan
 
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
     thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
 
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
 
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), (T) 11);
     thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), (T) 11);
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
 
     // in-place scans
     h_output = h_input;
     d_output = d_input;
     thrust::inclusive_scan(h_output.begin(), h_output.end(), h_output.begin());
     thrust::inclusive_scan(d_output.begin(), d_output.end(), d_output.begin());
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
 
     h_output = h_input;
     d_output = d_input;
     thrust::exclusive_scan(h_output.begin(), h_output.end(), h_output.begin());
     thrust::exclusive_scan(d_output.begin(), d_output.end(), d_output.begin());
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScan, IntegralTypes);
@@ -382,15 +374,15 @@ struct TestScanToDiscardIterator
 
     const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE((reference == h_result));
+    REQUIRE((reference == d_result));
 
     h_result = thrust::exclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), (T) 11);
 
     d_result = thrust::exclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), (T) 11);
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE((reference == h_result));
+    REQUIRE((reference == d_result));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanToDiscardIterator,
@@ -415,25 +407,28 @@ void TestScanMixedTypes()
   // mixed input/output types
   thrust::inclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin());
   thrust::inclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin());
-  ASSERT_EQUAL(d_float_output, h_float_output);
+  REQUIRE(d_float_output == h_float_output);
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin(), (float) 3.5);
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), (float) 3.5);
-  ASSERT_EQUAL(d_float_output, h_float_output);
+  REQUIRE(d_float_output == h_float_output);
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin(), (int) 3);
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), (int) 3);
-  ASSERT_EQUAL(d_float_output, h_float_output);
+  REQUIRE(d_float_output == h_float_output);
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), (int) 3);
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), (int) 3);
-  ASSERT_EQUAL(d_int_output, h_int_output);
+  REQUIRE(d_int_output == h_int_output);
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), (float) 3.5);
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), (float) 3.5);
-  ASSERT_EQUAL(d_int_output, h_int_output);
+  REQUIRE(d_int_output == h_int_output);
 }
-DECLARE_UNITTEST(TestScanMixedTypes);
+TEST_CASE("TestScanMixedTypes", "[scan]")
+{
+  TestScanMixedTypes();
+}
 
 template <typename T, unsigned int N>
 void _TestScanWithLargeTypes()
@@ -454,15 +449,15 @@ void _TestScanWithLargeTypes()
   thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
   thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin());
 
-  ASSERT_EQUAL_QUIET(h_output, d_output);
+  REQUIRE((h_output == d_output));
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), FixedVector<T, N>(0));
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), FixedVector<T, N>(0));
 
-  ASSERT_EQUAL_QUIET(h_output, d_output);
+  REQUIRE((h_output == d_output));
 }
 
-void TestScanWithLargeTypes()
+TEST_CASE("TestScanWithLargeTypes", "[scan]")
 {
   _TestScanWithLargeTypes<int, 1>();
 
@@ -471,7 +466,6 @@ void TestScanWithLargeTypes()
   _TestScanWithLargeTypes<int, 64>();
 #endif
 }
-DECLARE_UNITTEST(TestScanWithLargeTypes);
 
 template <typename T>
 struct plus_mod3
@@ -498,7 +492,7 @@ void TestInclusiveScanWithIndirection()
   Vector table{0, 1, 2, 0, 1, 2};
   thrust::inclusive_scan(data.begin(), data.end(), data.begin(), plus_mod3<T>(thrust::raw_pointer_cast(&table[0])));
 
-  ASSERT_EQUAL(data, (Vector{0, 1, 0, 1, 0, 0, 1}));
+  REQUIRE(data == (Vector{0, 1, 0, 1, 0, 0, 1}));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestInclusiveScanWithIndirection);
 
@@ -528,7 +522,7 @@ void TestInclusiveScanWithConstAccumulator()
   thrust::inclusive_scan(
     data.begin(), data.end(), data.begin(), const_ref_plus_mod3<T>(thrust::raw_pointer_cast(&table[0])));
 
-  ASSERT_EQUAL(data, (Vector{0, 1, 0, 1, 0, 0, 1}));
+  REQUIRE(data == (Vector{0, 1, 0, 1, 0, 0, 1}));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestInclusiveScanWithConstAccumulator);
 
@@ -602,7 +596,7 @@ void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
   const cuda::constant_iterator<long long> begin(1);
   const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1); // NOLINT(misc-const-correctness)
   *has_executed                         = false;
@@ -614,10 +608,10 @@ void TestInclusiveScanWithBigIndexesHelper(int magnitude)
   const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
-  ASSERT_EQUAL(has_executed_h, true);
+  REQUIRE(has_executed_h);
 }
 
-void TestInclusiveScanWithBigIndexes()
+TEST_CASE("TestInclusiveScanWithBigIndexes", "[scan]")
 {
   TestInclusiveScanWithBigIndexesHelper(30);
   TestInclusiveScanWithBigIndexesHelper(31);
@@ -627,13 +621,11 @@ void TestInclusiveScanWithBigIndexes()
 #endif
 }
 
-DECLARE_UNITTEST(TestInclusiveScanWithBigIndexes);
-
 void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 {
   const cuda::constant_iterator<long long> begin(1);
   const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1); // NOLINT(misc-const-correctness)
   *has_executed                         = false;
@@ -645,10 +637,10 @@ void TestExclusiveScanWithBigIndexesHelper(int magnitude)
   const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
-  ASSERT_EQUAL(has_executed_h, true);
+  REQUIRE(has_executed_h);
 }
 
-void TestExclusiveScanWithBigIndexes()
+TEST_CASE("TestExclusiveScanWithBigIndexes", "[scan]")
 {
   TestExclusiveScanWithBigIndexesHelper(30);
   TestExclusiveScanWithBigIndexesHelper(31);
@@ -657,8 +649,6 @@ void TestExclusiveScanWithBigIndexes()
   TestExclusiveScanWithBigIndexesHelper(33);
 #endif
 }
-
-DECLARE_UNITTEST(TestExclusiveScanWithBigIndexes);
 
 struct Int
 {
@@ -686,20 +676,19 @@ struct Int
   }
 };
 
-void TestScanWithUserDefinedTypeAndInit()
+TEST_CASE("TestScanWithUserDefinedTypeAndInit", "[scan]")
 {
   {
     thrust::device_vector<Int> vec(5, Int{1});
     thrust::exclusive_scan(thrust::device, vec.cbegin(), vec.cend(), vec.begin(), Int{100}, ::cuda::std::plus<Int>());
-    ASSERT_EQUAL(vec, (thrust::device_vector<Int>{Int{100}, Int{101}, Int{102}, Int{103}, Int{104}}));
+    REQUIRE(vec == (thrust::device_vector<Int>{Int{100}, Int{101}, Int{102}, Int{103}, Int{104}}));
   }
   {
     thrust::device_vector<Int> vec(5, Int{1});
     thrust::inclusive_scan(thrust::device, vec.cbegin(), vec.cend(), vec.begin(), Int{100}, ::cuda::std::plus<Int>());
-    ASSERT_EQUAL(vec, (thrust::device_vector<Int>{Int{101}, Int{102}, Int{103}, Int{104}, Int{105}}));
+    REQUIRE(vec == (thrust::device_vector<Int>{Int{101}, Int{102}, Int{103}, Int{104}, Int{105}}));
   }
 }
-DECLARE_UNITTEST(TestScanWithUserDefinedTypeAndInit);
 
 // Represents a permutation as a tuple of integers, see also: https://en.wikipedia.org/wiki/Permutation
 // We need a distinct type (instead of an alias) for operator<< to be found via ADL
@@ -742,7 +731,7 @@ struct composition_op_t
   }
 };
 
-void TestInclusiveScanWithNonCommutativeOp()
+TEST_CASE("TestInclusiveScanWithNonCommutativeOp", "[scan]")
 {
   const thrust::device_vector<permutation_t> input = {
     {3, 2, 0, 1, 4},
@@ -759,9 +748,9 @@ void TestInclusiveScanWithNonCommutativeOp()
   constexpr auto identity = permutation_t{0, 1, 2, 3, 4};
 
   thrust::inclusive_scan(input.begin(), input.end(), output.begin(), composition_op_t{});
-  ASSERT_EQUAL(
-    output,
-    (thrust::device_vector<permutation_t>{
+  REQUIRE(
+    output
+    == (thrust::device_vector<permutation_t>{
       {3, 2, 0, 1, 4},
       {1, 0, 2, 4, 3},
       {2, 3, 1, 0, 4},
@@ -774,9 +763,9 @@ void TestInclusiveScanWithNonCommutativeOp()
       {4, 0, 3, 2, 1}}));
 
   thrust::exclusive_scan(input.begin(), input.end(), output.begin(), identity, composition_op_t{});
-  ASSERT_EQUAL(
-    output,
-    (thrust::device_vector<permutation_t>{
+  REQUIRE(
+    output
+    == (thrust::device_vector<permutation_t>{
       {0, 1, 2, 3, 4},
       {3, 2, 0, 1, 4},
       {1, 0, 2, 4, 3},
@@ -788,7 +777,6 @@ void TestInclusiveScanWithNonCommutativeOp()
       {0, 1, 4, 2, 3},
       {4, 0, 2, 1, 3}}));
 }
-DECLARE_UNITTEST(TestInclusiveScanWithNonCommutativeOp);
 
 struct checking_identity
 {
@@ -802,14 +790,14 @@ struct checking_identity
   }
 };
 
-void TestInclusiveScanForInvalidValues()
+TEST_CASE("TestInclusiveScanForInvalidValues", "[scan]")
 {
   using value_t = unsigned;
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   // for the CUDA backend, only the lookahead implementation does not call the scan operator on out-of-bounds data
   cuda::compute_capability cc;
-  ASSERT_EQUAL(cub::detail::ptx_compute_cap(cc), cudaSuccess);
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
   using policy_selector_t = cub::detail::scan::
     policy_selector_from_types<const value_t*, value_t*, value_t, unsigned long long, checking_identity>;
   if (policy_selector_t{}(cc).algorithm == cub::ScanAlgorithm::lookahead)
@@ -821,18 +809,17 @@ void TestInclusiveScanForInvalidValues()
       thrust::device_vector<value_t> output(n, thrust::no_init);
 
       thrust::inclusive_scan(input.begin(), input.end(), output.begin(), checking_identity{});
-      ASSERT_EQUAL(input, output);
+      REQUIRE(input == output);
 
       thrust::exclusive_scan(
         input.begin(), input.end(), output.begin(), checking_identity::sentinel, checking_identity{});
-      ASSERT_EQUAL(input, output);
+      REQUIRE(input == output);
     }
   }
 }
-DECLARE_UNITTEST(TestInclusiveScanForInvalidValues);
 
 // Adapted from issue: https://github.com/NVIDIA/cccl/issues/6317
-void TestScanBug6317()
+TEST_CASE("TestScanBug6317", "[scan]")
 {
   using T     = unsigned int;
   const int n = 1729;
@@ -840,23 +827,22 @@ void TestScanBug6317()
     thrust::device_vector<T> s = unittest::random_integers<T>(n);
     thrust::device_vector<T> d(n);
     const auto r = thrust::inclusive_scan(s.cbegin(), s.cend(), d.begin(), ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d.end() == r), true);
+    REQUIRE(d.end() == r);
     std::partial_sum(s.cbegin(), s.cend(), s.begin(), std::multiplies<>{});
-    ASSERT_EQUAL(s, d);
+    REQUIRE(s == d);
   }
   {
     thrust::device_vector<T> s = unittest::random_integers<T>(n);
     thrust::device_vector<T> d(n);
     const auto r = thrust::exclusive_scan(s.cbegin(), s.cend(), d.begin(), 42, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d.end() == r), true);
+    REQUIRE(d.end() == r);
     thrust::exclusive_scan(s.cbegin(), s.cend(), s.begin(), 42, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL(s, d);
+    REQUIRE(s == d);
   }
 }
-DECLARE_UNITTEST(TestScanBug6317);
 
 // Test edge cases for parallel scan with non-additive operations
-void TestScanEdgeCases()
+TEST_CASE("TestScanEdgeCases", "[scan]")
 {
   // Test 1: Large array with inclusive_scan, multiplies, and init
   // Tests Step 1 fix with many threads
@@ -868,14 +854,14 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     // Verify with host scan
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 2, ::cuda::std::multiplies<>{});
 
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
   }
 
   // Test 2: Boundary exactly at parallel_scan_threshold (1024)
@@ -887,13 +873,13 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 10, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 10, ::cuda::std::multiplies<>{});
 
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
   }
 
   // Test 3: Below threshold (1023) should use serial path
@@ -905,13 +891,13 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
     thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
 
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
   }
 
   // Test 4: Very small array (edge case for block distribution)
@@ -920,10 +906,10 @@ void TestScanEdgeCases()
     thrust::device_vector<int> d_output(2);
 
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     const thrust::device_vector<int> expected = {6, 42};
-    ASSERT_EQUAL(d_output, expected);
+    REQUIRE(d_output == expected);
   }
 
   // Test 5: exclusive_scan with large array and multiplies
@@ -935,13 +921,13 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
 
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
   }
 
   // Test 6: exclusive_scan at boundary (1024 elements)
@@ -953,13 +939,13 @@ void TestScanEdgeCases()
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
     thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 3, ::cuda::std::multiplies<>{});
 
-    ASSERT_EQUAL(d_output, h_output);
+    REQUIRE(d_output == h_output);
   }
 
   // Test 7: exclusive_scan with very small array
@@ -968,10 +954,9 @@ void TestScanEdgeCases()
     thrust::device_vector<int> d_output(2);
 
     auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
-    ASSERT_EQUAL((d_output.end() == r), true);
+    REQUIRE(d_output.end() == r);
 
     const thrust::device_vector<int> expected = {3, 6};
-    ASSERT_EQUAL(d_output, expected);
+    REQUIRE(d_output == expected);
   }
 }
-DECLARE_UNITTEST(TestScanEdgeCases);

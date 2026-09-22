@@ -72,47 +72,44 @@ void TestUniqueDevice(ExecutionPolicy exec)
   unique_kernel<<<1, 1>>>(exec, data.begin(), data.end(), new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last - data.begin(), 7);
+  REQUIRE(new_last - data.begin() == 7);
   data.erase(new_last, data.end());
   Vector ref{11, 12, 20, 29, 21, 31, 37}; // should we consider calculating ref from std::algorithm if exists?
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   unique_kernel<<<1, 1>>>(exec, data.begin(), new_last, div_n_equality_op<T>{10}, new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last - data.begin(), 3);
+  REQUIRE(new_last - data.begin() == 3);
   data.erase(new_last, data.end());
   ref = {11, 20, 31};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 }
 
-void TestUniqueDeviceSeq()
+TEST_CASE("TestUniqueDeviceSeq", "[unique]")
 {
   TestUniqueDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueDeviceSeq);
 
-void TestUniqueDeviceDevice()
+TEST_CASE("TestUniqueDeviceDevice", "[unique]")
 {
   TestUniqueDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueDeviceDevice);
 
-void TestUniqueDeviceNoSync()
+TEST_CASE("TestUniqueDeviceNoSync", "[unique]")
 {
   TestUniqueDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -134,33 +131,31 @@ void TestUniqueCudaStreams(ExecutionPolicy policy)
   new_last = thrust::unique(streampolicy, data.begin(), data.end());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(new_last - data.begin(), 7);
+  REQUIRE(new_last - data.begin() == 7);
   data.erase(new_last, data.end());
   Vector ref{11, 12, 20, 29, 21, 31, 37};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   new_last = thrust::unique(streampolicy, data.begin(), new_last, div_n_equality_op<T>{10});
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(new_last - data.begin(), 3);
+  REQUIRE(new_last - data.begin() == 3);
   data.erase(new_last, data.end());
   ref = {11, 20, 31};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   cudaStreamDestroy(s);
 }
 
-void TestUniqueCudaStreamsSync()
+TEST_CASE("TestUniqueCudaStreamsSync", "[unique]")
 {
   TestUniqueCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueCudaStreamsSync);
 
-void TestUniqueCudaStreamsNoSync()
+TEST_CASE("TestUniqueCudaStreamsNoSync", "[unique]")
 {
   TestUniqueCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCudaStreamsNoSync);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Iterator3>
@@ -193,48 +188,45 @@ void TestUniqueCopyDevice(ExecutionPolicy exec)
   unique_copy_kernel<<<1, 1>>>(exec, data.begin(), data.end(), output.begin(), new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last - output.begin(), 7);
+  REQUIRE(new_last - output.begin() == 7);
   output.erase(new_last, output.end());
   Vector ref{11, 12, 20, 29, 21, 31, 37};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   unique_copy_kernel<<<1, 1>>>(
     exec, output.begin(), new_last, data.begin(), div_n_equality_op<T>{10}, new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last - data.begin(), 3);
+  REQUIRE(new_last - data.begin() == 3);
   data.erase(new_last, data.end());
   ref = {11, 20, 31};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 }
 
-void TestUniqueCopyDeviceSeq()
+TEST_CASE("TestUniqueCopyDeviceSeq", "[unique]")
 {
   TestUniqueCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueCopyDeviceSeq);
 
-void TestUniqueCopyDeviceDevice()
+TEST_CASE("TestUniqueCopyDeviceDevice", "[unique]")
 {
   TestUniqueCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueCopyDeviceDevice);
 
-void TestUniqueCopyDeviceNoSync()
+TEST_CASE("TestUniqueCopyDeviceNoSync", "[unique]")
 {
   TestUniqueCopyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCopyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -258,33 +250,31 @@ void TestUniqueCopyCudaStreams(ExecutionPolicy policy)
   new_last = thrust::unique_copy(streampolicy, data.begin(), data.end(), output.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(new_last - output.begin(), 7);
+  REQUIRE(new_last - output.begin() == 7);
   output.erase(new_last, output.end());
   Vector ref{11, 12, 20, 29, 21, 31, 37};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   new_last = thrust::unique_copy(streampolicy, output.begin(), new_last, data.begin(), div_n_equality_op<T>{10});
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(new_last - data.begin(), 3);
+  REQUIRE(new_last - data.begin() == 3);
   data.erase(new_last, data.end());
   ref = {11, 20, 31};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   cudaStreamDestroy(s);
 }
 
-void TestUniqueCopyCudaStreamsSync()
+TEST_CASE("TestUniqueCopyCudaStreamsSync", "[unique]")
 {
   TestUniqueCopyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueCopyCudaStreamsSync);
 
-void TestUniqueCopyCudaStreamsNoSync()
+TEST_CASE("TestUniqueCopyCudaStreamsNoSync", "[unique]")
 {
   TestUniqueCopyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCopyCudaStreamsNoSync);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2>
@@ -313,37 +303,34 @@ void TestUniqueCountDevice(ExecutionPolicy exec)
   unique_count_kernel<<<1, 1>>>(exec, data.begin(), data.end(), output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(output[0], 7);
+  REQUIRE(output[0] == 7);
 
   unique_count_kernel<<<1, 1>>>(exec, data.begin(), data.end(), div_n_equality_op<T>{10}, output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(output[0], 3);
+  REQUIRE(output[0] == 3);
 }
 
-void TestUniqueCountDeviceSeq()
+TEST_CASE("TestUniqueCountDeviceSeq", "[unique]")
 {
   TestUniqueCountDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueCountDeviceSeq);
 
-void TestUniqueCountDeviceDevice()
+TEST_CASE("TestUniqueCountDeviceDevice", "[unique]")
 {
   TestUniqueCountDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueCountDeviceDevice);
 
-void TestUniqueCountDeviceNoSync()
+TEST_CASE("TestUniqueCountDeviceNoSync", "[unique]")
 {
   TestUniqueCountDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCountDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -362,27 +349,25 @@ void TestUniqueCountCudaStreams(ExecutionPolicy policy)
   int result = thrust::unique_count(streampolicy, data.begin(), data.end());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(result, 7);
+  REQUIRE(result == 7);
 
   result = thrust::unique_count(streampolicy, data.begin(), data.end(), div_n_equality_op<T>{10});
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(result, 3);
+  REQUIRE(result == 3);
 
   cudaStreamDestroy(s);
 }
 
-void TestUniqueCountCudaStreamsSync()
+TEST_CASE("TestUniqueCountCudaStreamsSync", "[unique]")
 {
   TestUniqueCountCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueCountCudaStreamsSync);
 
-void TestUniqueCountCudaStreamsNoSync()
+TEST_CASE("TestUniqueCountCudaStreamsNoSync", "[unique]")
 {
   TestUniqueCountCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCountCudaStreamsNoSync);
 
 void TestUniqueWithMagnitude(int magnitude)
 {
@@ -396,7 +381,7 @@ void TestUniqueWithMagnitude(int magnitude)
   const offset_t num_items = offset_t{1ull} << magnitude;
   const thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + num_items;
-  ASSERT_EQUAL(static_cast<offset_t>(cuda::std::distance(begin, end)), num_items);
+  REQUIRE(static_cast<offset_t>(cuda::std::distance(begin, end)) == num_items);
 
   const offset_t expected_num_unique = ::cuda::ceil_div(num_items, offset_t{10});
   thrust::device_vector<offset_t> unique_out(expected_num_unique);
@@ -404,31 +389,32 @@ void TestUniqueWithMagnitude(int magnitude)
 
   // Ensure number of selected items are correct
   const offset_t num_selected_out = static_cast<offset_t>(cuda::std::distance(unique_out.begin(), unique_out_end));
-  ASSERT_EQUAL(num_selected_out, expected_num_unique);
+  REQUIRE(num_selected_out == expected_num_unique);
   unique_out.resize(expected_num_unique);
 
   // Ensure selected items are correct
   auto expected_out_it = thrust::make_transform_iterator(begin, multiply_n<offset_t>{run_length_of_equal_items});
   const bool all_results_correct = thrust::equal(unique_out.begin(), unique_out.end(), expected_out_it);
-  ASSERT_EQUAL(all_results_correct, true);
+  REQUIRE(all_results_correct);
 }
 
-void TestUniqueWithLargeNumberOfItems()
-try
+TEST_CASE("TestUniqueWithLargeNumberOfItems", "[unique]")
 {
-  for (const int mag : {30, 31, 32, 33})
+  try
   {
-    TestUniqueWithMagnitude(mag);
+    for (const int mag : {30, 31, 32, 33})
+    {
+      TestUniqueWithMagnitude(mag);
+    }
+  }
+  catch (std::bad_alloc&)
+  {
+    // if we run out of memory, just skip the test
+    return;
   }
 }
-catch (std::bad_alloc&)
-{
-  // if we run out of memory, just skip the test
-  return;
-}
-DECLARE_UNITTEST(TestUniqueWithLargeNumberOfItems);
 
-void TestUniqueWithCustomEqualityOp()
+TEST_CASE("TestUniqueWithCustomEqualityOp", "[unique]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -444,13 +430,11 @@ void TestUniqueWithCustomEqualityOp()
     data, data + num_items, unique_out.begin(), check_valid_item_op{error_counter_ptr, num_items - 1});
 
   auto num_selected_out = cuda::std::distance(unique_out.begin(), unique_out_end);
-  ASSERT_EQUAL(num_selected_out, num_items);
-  ASSERT_EQUAL(error_counter[0], ::cuda::std::uint32_t{0});
+  REQUIRE(num_selected_out == num_items);
+  REQUIRE(error_counter[0] == ::cuda::std::uint32_t{0});
   const bool all_results_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), data);
-  ASSERT_EQUAL(all_results_correct, true);
+  REQUIRE(all_results_correct);
 }
-
-DECLARE_UNITTEST(TestUniqueWithCustomEqualityOp);
 
 template <typename F>
 struct NonConstAdapter
@@ -467,12 +451,10 @@ struct NonConstAdapter
   }
 };
 
-void TestUniqueWithCustomEqualityOpMutable()
+TEST_CASE("TestUniqueWithCustomEqualityOpMutable", "[unique]")
 {
   using Vector = thrust::device_vector<int>;
 
   thrust::device_vector<int> in = {1, 1, 2, 3, 4, 4, 5};
   thrust::unique(thrust::cuda::par, in.begin(), in.end(), NonConstAdapter(cuda::std::equal_to<>{}));
 }
-
-DECLARE_UNITTEST(TestUniqueWithCustomEqualityOpMutable);

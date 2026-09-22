@@ -10,16 +10,15 @@ void stable_sort(my_system& system, RandomAccessIterator, RandomAccessIterator)
   system.validate_dispatch();
 }
 
-void TestStableSortDispatchExplicit()
+TEST_CASE("TestStableSortDispatchExplicit", "[stable_sort]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::stable_sort(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStableSortDispatchExplicit);
 
 template <typename RandomAccessIterator>
 void stable_sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
@@ -27,15 +26,14 @@ void stable_sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
   *first = 13;
 }
 
-void TestStableSortDispatchImplicit()
+TEST_CASE("TestStableSortDispatchImplicit", "[stable_sort]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::stable_sort(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStableSortDispatchImplicit);
 
 template <typename T>
 struct less_div_10
@@ -68,7 +66,7 @@ void TestStableSortSimple()
 
   thrust::stable_sort(unsorted_keys.begin(), unsorted_keys.end(), less_div_10<T>());
 
-  ASSERT_EQUAL(unsorted_keys, sorted_keys);
+  REQUIRE(unsorted_keys == sorted_keys);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStableSortSimple);
 
@@ -83,7 +81,7 @@ struct TestStableSort
     thrust::stable_sort(h_data.begin(), h_data.end(), less_div_10<T>());
     thrust::stable_sort(d_data.begin(), d_data.end(), less_div_10<T>());
 
-    ASSERT_EQUAL(h_data, d_data);
+    REQUIRE(h_data == d_data);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStableSort, SignedIntegralTypes);
@@ -99,7 +97,7 @@ struct TestStableSortSemantics
     thrust::stable_sort(h_data.begin(), h_data.end(), less_div_10<T>());
     thrust::stable_sort(d_data.begin(), d_data.end(), less_div_10<T>());
 
-    ASSERT_EQUAL(h_data, d_data);
+    REQUIRE(h_data == d_data);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStableSortSemantics,
@@ -132,6 +130,6 @@ void TestStableSortWithIndirection()
   thrust::stable_sort(data.begin(), data.end(), comp_mod3<T>(thrust::raw_pointer_cast(&table[0])));
 
   Vector ref{3, 3, 0, 1, 1, 5, 2};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStableSortWithIndirection);

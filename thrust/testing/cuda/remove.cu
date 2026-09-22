@@ -89,29 +89,27 @@ void TestRemoveDevice(ExecutionPolicy exec)
 
   remove_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), 0, d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_result[0] - d_data.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_data.resize(h_size);
   d_data.resize(d_size);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 
-void TestRemoveDeviceSeq()
+TEST_CASE("TestRemoveDeviceSeq", "[remove]")
 {
   TestRemoveDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveDeviceSeq);
 
-void TestRemoveDeviceDevice()
+TEST_CASE("TestRemoveDeviceDevice", "[remove]")
 {
   TestRemoveDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveIfDevice(ExecutionPolicy exec)
@@ -127,29 +125,27 @@ void TestRemoveIfDevice(ExecutionPolicy exec)
 
   remove_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), is_true<int>(), d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_result[0] - d_data.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_data.resize(h_size);
   d_data.resize(d_size);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 
-void TestRemoveIfDeviceSeq()
+TEST_CASE("TestRemoveIfDeviceSeq", "[remove]")
 {
   TestRemoveIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveIfDeviceSeq);
 
-void TestRemoveIfDeviceDevice()
+TEST_CASE("TestRemoveIfDeviceDevice", "[remove]")
 {
   TestRemoveIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveIfDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveIfStencilDevice(ExecutionPolicy exec)
@@ -168,29 +164,27 @@ void TestRemoveIfStencilDevice(ExecutionPolicy exec)
 
   remove_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_stencil.begin(), is_true<int>(), d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_result[0] - d_data.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_data.resize(h_size);
   d_data.resize(d_size);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 
-void TestRemoveIfStencilDeviceSeq()
+TEST_CASE("TestRemoveIfStencilDeviceSeq", "[remove]")
 {
   TestRemoveIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveIfStencilDeviceSeq);
 
-void TestRemoveIfStencilDeviceDevice()
+TEST_CASE("TestRemoveIfStencilDeviceDevice", "[remove]")
 {
   TestRemoveIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveIfStencilDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveCopyDevice(ExecutionPolicy exec)
@@ -209,29 +203,27 @@ void TestRemoveCopyDevice(ExecutionPolicy exec)
 
   remove_copy_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin(), 0, d_new_end.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_new_end[0] - d_result.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_result.resize(h_size);
   d_result.resize(d_size);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
-void TestRemoveCopyDeviceSeq()
+TEST_CASE("TestRemoveCopyDeviceSeq", "[remove]")
 {
   TestRemoveCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveCopyDeviceSeq);
 
-void TestRemoveCopyDeviceDevice()
+TEST_CASE("TestRemoveCopyDeviceDevice", "[remove]")
 {
   TestRemoveCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveCopyDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveCopyIfDevice(ExecutionPolicy exec)
@@ -252,29 +244,27 @@ void TestRemoveCopyIfDevice(ExecutionPolicy exec)
   remove_copy_if_kernel<<<1, 1>>>(
     exec, d_data.begin(), d_data.end(), d_result.begin(), is_true<int>(), d_new_end.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_new_end[0] - d_result.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_result.resize(h_size);
   d_result.resize(d_size);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
-void TestRemoveCopyIfDeviceSeq()
+TEST_CASE("TestRemoveCopyIfDeviceSeq", "[remove]")
 {
   TestRemoveCopyIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfDeviceSeq);
 
-void TestRemoveCopyIfDeviceDevice()
+TEST_CASE("TestRemoveCopyIfDeviceDevice", "[remove]")
 {
   TestRemoveCopyIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveCopyIfStencilDevice(ExecutionPolicy exec)
@@ -299,32 +289,30 @@ void TestRemoveCopyIfStencilDevice(ExecutionPolicy exec)
   remove_copy_if_kernel<<<1, 1>>>(
     exec, d_data.begin(), d_data.end(), d_stencil.begin(), d_result.begin(), is_true<int>(), d_new_end.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   size_t d_size = (iterator) d_new_end[0] - d_result.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_result.resize(h_size);
   d_result.resize(d_size);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
-void TestRemoveCopyIfStencilDeviceSeq()
+TEST_CASE("TestRemoveCopyIfStencilDeviceSeq", "[remove]")
 {
   TestRemoveCopyIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilDeviceSeq);
 
-void TestRemoveCopyIfStencilDeviceDevice()
+TEST_CASE("TestRemoveCopyIfStencilDeviceDevice", "[remove]")
 {
   TestRemoveCopyIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilDeviceDevice);
 #endif
 
-void TestRemoveCudaStreams()
+TEST_CASE("TestRemoveCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -336,17 +324,16 @@ void TestRemoveCudaStreams()
 
   const Vector::iterator end = thrust::remove(thrust::cuda::par.on(s), data.begin(), data.end(), (T) 2);
 
-  ASSERT_EQUAL(end - data.begin(), 3);
+  REQUIRE(end - data.begin() == 3);
   data.erase(end, data.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveCudaStreams);
 
-void TestRemoveCopyCudaStreams()
+TEST_CASE("TestRemoveCopyCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -361,17 +348,16 @@ void TestRemoveCopyCudaStreams()
   const Vector::iterator end =
     thrust::remove_copy(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), (T) 2);
 
-  ASSERT_EQUAL(end - result.begin(), 3);
+  REQUIRE(end - result.begin() == 3);
   result.erase(end, result.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveCopyCudaStreams);
 
-void TestRemoveIfCudaStreams()
+TEST_CASE("TestRemoveIfCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -383,17 +369,16 @@ void TestRemoveIfCudaStreams()
 
   const Vector::iterator end = thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), is_even<T>());
 
-  ASSERT_EQUAL(end - data.begin(), 3);
+  REQUIRE(end - data.begin() == 3);
   data.erase(end, data.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveIfCudaStreams);
 
-void TestRemoveIfStencilCudaStreams()
+TEST_CASE("TestRemoveIfStencilCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -408,17 +393,16 @@ void TestRemoveIfStencilCudaStreams()
   const Vector::iterator end =
     thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), stencil.begin(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(end - data.begin(), 3);
+  REQUIRE(end - data.begin() == 3);
   data.erase(end, data.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveIfStencilCudaStreams);
 
-void TestRemoveCopyIfCudaStreams()
+TEST_CASE("TestRemoveCopyIfCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -433,17 +417,16 @@ void TestRemoveCopyIfCudaStreams()
   const Vector::iterator end =
     thrust::remove_copy_if(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), is_even<T>());
 
-  ASSERT_EQUAL(end - result.begin(), 3);
+  REQUIRE(end - result.begin() == 3);
   result.erase(end, result.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfCudaStreams);
 
-void TestRemoveCopyIfStencilCudaStreams()
+TEST_CASE("TestRemoveCopyIfStencilCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -460,12 +443,11 @@ void TestRemoveCopyIfStencilCudaStreams()
   const Vector::iterator end = thrust::remove_copy_if(
     thrust::cuda::par.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(end - result.begin(), 3);
+  REQUIRE(end - result.begin() == 3);
   result.erase(end, result.end());
 
   const Vector ref{1, 1, 3};
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilCudaStreams);

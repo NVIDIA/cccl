@@ -34,21 +34,20 @@ void _TestStableSortByKeyWithLargeValues()
   thrust::stable_sort_by_key(h_keys.begin(), h_keys.end(), h_vals.begin());
   thrust::stable_sort_by_key(d_keys.begin(), d_keys.end(), d_vals.begin());
 
-  ASSERT_EQUAL_QUIET(h_keys, d_keys);
-  ASSERT_EQUAL_QUIET(h_vals, d_vals);
+  REQUIRE((h_keys == d_keys));
+  REQUIRE((h_vals == d_vals));
 
   // so cuda::stable_merge_sort_by_key() is called
   thrust::stable_sort_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), greater_div_10<unsigned int>());
   thrust::stable_sort_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), greater_div_10<unsigned int>());
 
-  ASSERT_EQUAL_QUIET(h_keys, d_keys);
-  ASSERT_EQUAL_QUIET(h_vals, d_vals);
+  REQUIRE((h_keys == d_keys));
+  REQUIRE((h_vals == d_vals));
 }
 
-void TestStableSortByKeyWithLargeValues()
+TEST_CASE("TestStableSortByKeyWithLargeValues", "[stable_sort_by_key_large_values]")
 {
   _TestStableSortByKeyWithLargeValues<4>();
   _TestStableSortByKeyWithLargeValues<8>();
   _TestStableSortByKeyWithLargeValues<16>();
 }
-DECLARE_UNITTEST(TestStableSortByKeyWithLargeValues);

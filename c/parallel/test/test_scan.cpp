@@ -356,6 +356,39 @@ C2H_TEST("Scan works with integral types with well-known operations", "[scan][we
   }
 }
 
+#if _CCCL_HAS_NVBF16()
+// Regression test for NVIDIA/cccl#11448: the well-known plus operation on bfloat16 takes CUB's SIMD thread
+// reduction, whose packed bfloat16 intrinsics NVRTC 12.x miscompiles on aarch64 hosts unless scan makes cuda_bf16.h
+// provide its own definitions.
+struct Scan_BFloat16_WellKnown_Fixture_Tag;
+C2H_TEST("Scan works with bfloat16 with well-known operations", "[scan][well_known]")
+{
+  using T = __nv_bfloat16;
+
+  // Keep every prefix sum below 256: bfloat16 has only 8 significand bits, so larger integers are not exact.
+  const std::size_t num_items = GENERATE(10, 42, 200);
+  const bool inclusive        = GENERATE(false, true);
+  const cccl_op_t op          = make_well_known_binary_operation();
+  const std::vector<T> input(num_items, T{1});
+  const std::vector<T> output(num_items, T{0});
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+  value_t<T> init{T{0}};
+
+  auto& build_cache    = get_cache<Scan_BFloat16_WellKnown_Fixture_Tag>();
+  const auto& test_key = make_scan_key<T>(inclusive, cccl_init_kind_t::CCCL_VALUE_INIT);
+
+  scan(input_ptr, output_ptr, num_items, op, init, inclusive, build_cache, test_key);
+
+  const std::vector<T> result(output_ptr);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    const float expected = static_cast<float>(inclusive ? i + 1 : i);
+    REQUIRE(float{result[i]} == expected);
+  }
+}
+#endif // _CCCL_HAS_NVBF16()
+
 struct InclusiveScan_IntegralTypes_Fixture_Tag;
 C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
 {

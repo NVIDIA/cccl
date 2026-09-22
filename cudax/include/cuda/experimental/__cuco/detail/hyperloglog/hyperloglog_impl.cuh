@@ -370,10 +370,9 @@ public:
       _CCCL_THROW(::std::invalid_argument, "Cannot merge estimators with different sketch sizes");
     }
 
-    constexpr auto __block_size = 1024;
     ::cuda::launch(
       __stream,
-      ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<__block_size>()),
+      ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<1024>()),
       ::cuda::experimental::cuco::__hyperloglog_ns::__merge<__hyperloglog_impl<_Tp, _OtherScope, _Policy>,
                                                             __hyperloglog_impl>,
       __other,

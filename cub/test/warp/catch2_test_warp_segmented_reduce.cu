@@ -11,18 +11,18 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
+template <int LogicalWarpThreads, int TotalWarps, typename T, typename ActionT>
 __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
 {
-  using warp_reduce_t = cub::WarpReduce<T, LOGICAL_WARP_THREADS>;
+  using warp_reduce_t = cub::WarpReduce<T, LogicalWarpThreads>;
   using storage_t     = typename warp_reduce_t::TempStorage;
 
-  __shared__ storage_t storage[TOTAL_WARPS];
+  __shared__ storage_t storage[TotalWarps];
 
   const int tid = static_cast<int>(threadIdx.x);
 
   // Get warp index
-  const int warp_id = tid / LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LogicalWarpThreads;
 
   // Load data
   T thread_data = in[tid];
@@ -41,10 +41,10 @@ template <typename T>
 struct warp_seg_sum_tail_t
 {
   uint8_t* d_flags;
-  template <int LOGICAL_WARP_THREADS>
-  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LOGICAL_WARP_THREADS>& warp_reduce, T& thread_data) const
+  template <int LogicalWarpThreads>
+  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LogicalWarpThreads>& warp_reduce, T& thread_data) const
   {
-    const bool has_agg = (linear_tid % LOGICAL_WARP_THREADS == 0) || ((linear_tid == 0) ? 0 : d_flags[linear_tid - 1]);
+    const bool has_agg = (linear_tid % LogicalWarpThreads == 0) || ((linear_tid == 0) ? 0 : d_flags[linear_tid - 1]);
     auto result        = warp_reduce.TailSegmentedSum(thread_data, d_flags[linear_tid]);
     return has_agg ? result : thread_data;
   }
@@ -57,10 +57,10 @@ template <typename T>
 struct warp_seg_sum_head_t
 {
   uint8_t* d_flags;
-  template <int LOGICAL_WARP_THREADS>
-  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LOGICAL_WARP_THREADS>& warp_reduce, T& thread_data) const
+  template <int LogicalWarpThreads>
+  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LogicalWarpThreads>& warp_reduce, T& thread_data) const
   {
-    const bool has_agg = ((linear_tid % LOGICAL_WARP_THREADS == 0) || d_flags[linear_tid]);
+    const bool has_agg = ((linear_tid % LogicalWarpThreads == 0) || d_flags[linear_tid]);
     auto result        = warp_reduce.HeadSegmentedSum(thread_data, d_flags[linear_tid]);
     return (has_agg) ? result : thread_data;
   }
@@ -74,10 +74,10 @@ struct warp_seg_reduce_tail_t
 {
   uint8_t* d_flags;
   ReductionOpT reduction_op;
-  template <int LOGICAL_WARP_THREADS>
-  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LOGICAL_WARP_THREADS>& warp_reduce, T& thread_data) const
+  template <int LogicalWarpThreads>
+  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LogicalWarpThreads>& warp_reduce, T& thread_data) const
   {
-    const bool has_agg = (linear_tid % LOGICAL_WARP_THREADS == 0) || ((linear_tid == 0) ? 0 : d_flags[linear_tid - 1]);
+    const bool has_agg = (linear_tid % LogicalWarpThreads == 0) || ((linear_tid == 0) ? 0 : d_flags[linear_tid - 1]);
     auto result        = warp_reduce.TailSegmentedReduce(thread_data, d_flags[linear_tid], reduction_op);
     return has_agg ? result : thread_data;
   }
@@ -91,10 +91,10 @@ struct warp_seg_reduce_head_t
 {
   uint8_t* d_flags;
   ReductionOpT reduction_op;
-  template <int LOGICAL_WARP_THREADS>
-  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LOGICAL_WARP_THREADS>& warp_reduce, T& thread_data) const
+  template <int LogicalWarpThreads>
+  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LogicalWarpThreads>& warp_reduce, T& thread_data) const
   {
-    const bool has_agg = ((linear_tid % LOGICAL_WARP_THREADS == 0) || d_flags[linear_tid]);
+    const bool has_agg = ((linear_tid % LogicalWarpThreads == 0) || d_flags[linear_tid]);
     auto result        = warp_reduce.HeadSegmentedReduce(thread_data, d_flags[linear_tid], reduction_op);
     return (has_agg) ? result : thread_data;
   }
@@ -103,10 +103,10 @@ struct warp_seg_reduce_head_t
 /**
  * @brief Dispatch helper function
  */
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
+template <int LogicalWarpThreads, int TotalWarps, typename T, typename ActionT>
 void warp_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
 {
-  warp_reduce_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT><<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+  warp_reduce_kernel<LogicalWarpThreads, TotalWarps, T, ActionT><<<1, LogicalWarpThreads * TotalWarps>>>(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
@@ -234,13 +234,13 @@ using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 9, 7, 1>;
 
 using segmented_modes = c2h::enum_type_list<reduce_mode, reduce_mode::head_flags, reduce_mode::tail_flags>;
 
-template <int logical_warp_threads>
+template <int LogicalWarpThreads>
 struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
-  static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
+  static constexpr bool is_arch_warp  = (LogicalWarpThreads == cub::detail::warp_threads);
+  static constexpr bool is_pow_of_two = ((LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
 public:
