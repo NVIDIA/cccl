@@ -119,6 +119,18 @@ When a kernel is launched with PDL enabled (either directly or via a launcher fa
 via `cub::detail::ptx_compute_cap`. PDL may only be enabled if
 `cc >= ::cuda::compute_capability{9, 0}` (see `dispatch_find.cuh`).
 
+## correctness.pdl-sync (critical, kernels launched with programmatic dependent launch)
+
+<!-- provenance:
+  #3114→#5456 (backports #5460, #5461) PDL grid-dependency sync in AgentMerge::consume_tile placed after the merge_partitions reads it was meant to guard, causing intermittent races/cudaErrorIllegalInstruction (issue #5297)
+-->
+
+When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
+at the kernel launcher, flag any global memory access in the kernel's body (i.e., a load from or a
+store to a pointer passed at the kernel's interface) that happens before any call to
+`_CCCL_PDL_GRID_DEPENDENCY_SYNC` — the previous kernel may still be writing that memory — unless the
+access has a comment explaining why a PDL sync can come later.
+
 ## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
 
 <!-- provenance:
@@ -130,6 +142,148 @@ value-type parameter;
 use `cuda::is_trivially_copyable(_v)` instead, which supports more cases. The vendor headers give
 `__half`/`__nv_bfloat16` non-trivial special members, so the standard trait reports false for them
 (and aggregates of them) even though they are functionally copyable. Candidate for a pre-commit grep.
+
+## api.internal-symbol-exposure (important, new implementation-detail types/functions)
+
+<!-- provenance:
+  #2591→#3209 CUB launcher factories and kernel-source getters added outside detail (pair auto-inferred from issue #2448)
+-->
+
+Flag any entity added to a public namespace which can be recognized as intended to be internal by its
+spelling (e.g. snake_case in CUB, or prefixed with `__` in libcu++/cudax) or usage pattern (e.g. used
+as utility for other functions, not documented, etc.). The entity should be marked internal as
+appropriate.
+
+## abi.missing-hide-from-abi (critical, inline functions in public headers whose behavior depends on the build configuration)
+
+<!-- provenance:
+  #2591→#3209 CUB kernel-source getters returned kernel pointers without _CCCL_HIDE_FROM_ABI;
+  #5255→#5272 driver_api.h promoted into the public libcudacxx tree carrying plain-inline functions without _CCCL_HOST_API
+-->
+
+Flag an inline function in a public header whose result can differ between two copies of CCCL linked
+into one binary (e.g., built against different CUDA toolkits or CCCL versions) — especially functions
+returning kernel or function pointers — unless it is marked `_CCCL_HIDE_FROM_ABI` (or an attribute macro
+that includes it, like `_CCCL_HOST_API`). With default visibility the linker keeps ONE definition
+across all copies, so the losing copy's callers get the other build's result (e.g. a wrong kernel
+pointer) — no build error, just wrong behavior at run time.
+
+## correctness.cuda-driver-symbol-version-guard (critical, code calling CUDA Driver API symbols)
+
+<!-- provenance:
+  #2192→#5971 cudaGetDriverEntryPointByVersion gated only by a build-time CUDART_VERSION check, breaking when built against CTK>=12.5 but run against an older CUDA runtime (pair auto-inferred from issue #5970);
+  #5976→#6895 (backport #6896) cuGetProcAddress switch reintroduced the same break by bootstrapping via the unversioned cudaGetDriverEntryPoint
+-->
+
+<!-- note:
+  The Runtime API half of the historical incidents is no longer relevant to CCCL: cudart is statically
+  linked everywhere (c/parallel pins CUDA_RUNTIME_LIBRARY STATIC; #7221 fixed the one shared-cudart
+  mix), and the driver bootstrap in cuda/__driver/driver_api.h now dlopens libcuda directly instead of
+  going through cudart.
+-->
+
+When a diff gates a call to a CUDA Driver API symbol introduced in a specific CUDA version behind a
+build-time-only check (`_CCCL_CTK_AT_LEAST(...)`), flag it: `libcuda.so`/`nvcuda.dll` comes from the
+installed display driver, which is independent of — and often older than — the CTK the binary was
+built against, so the symbol can be absent at run time regardless of any build-time guard. Resolve
+driver entry points through the versioned `cuGetProcAddress` bootstrap in
+`cuda/__driver/driver_api.h` (which reports availability), or verify `cudaDriverGetVersion` before
+the call. PR CI builds and runs with matched driver/CTK, so this only reproduces in the field.
+
+## infra.pin-deps (important, CMake/CI/submodules)
+
+<!-- provenance:
+  #534 nvbench `#main` →#582
+-->
+
+Flag dependencies fetched by branch name (`CPMAddPackage("gh:org/repo#main")`, `GIT_TAG
+main`); pin a commit or tag. Candidate for a pre-commit grep.
+
+## correctness.stale-refs-after-rename (important, renames, moves, or splits of files, symbols, or modules anywhere in the repo)
+
+<!-- provenance:
+  #3177→#3192 cuda.parallel module split left docs automodule pointing at emptied package;
+  #10012→#10042 docs flattening left stale path in a test comment and an empty api/thread toctree stub;
+  #1075→#1108,#1110 lit.cfg path not updated after symlink removal broke local lit runs;
+  #4537→#6516 NVTX macro rename left a stale #define in test_nvtx_disabled.cu, silently defanging a negative test;
+  #4795→#4814 cudax detail→__detail rename swept ~120 files but missed the second example copy at top-level examples/cudax/
+-->
+<!-- note:
+  A docs CI check failing on autodoc directives that yield no members (or on empty generated pages)
+  would cover the last clause mechanically; retire it once such a check exists.
+-->
+
+When a diff renames, moves, or splits a file, macro, symbol, or module, `git grep` for the old name:
+each remaining hit must be updated, or be classified as an unrelated entity that merely shares
+the name. Doc directives (`automodule::`/`toctree::`) can go stale without containing the old name and
+still build cleanly (autodoc renders emptied packages as blank pages) — verify the rendered docs, not
+just the grep.
+
+## correctness.workaround-breaks-constexpr (important, constexpr-marked)
+
+<!-- provenance:
+  #5939→#7059 `auto __tmp = mapping(); return __tmp.is_exhaustive();` workaround for a clang [[nodiscard]] warning made mdspan's is_exhaustive unusable in constexpr context on some compilers; propagated to is_unique/is_strided/stride in #6703
+-->
+
+When a diff introduces any workaround inside a `constexpr` function, verify the function is still
+usable during constant evaluation on every supported compiler, not merely that it compiles as a
+runtime call. The break only surfaces when a caller uses the function during constant evaluation,
+which the unit tests may not exercise. Adding a test that evaluates the function at compile time is
+recommended.
+
+## perf.partial-pdl (important, kernels launched with programmatic dependent launch)
+
+<!-- provenance:
+  #3114→#3199 PDL enabled at Partition/Merge triple_chevron launches but not the sibling BlockSort launch
+-->
+
+When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
+at the kernel launcher, open the full dispatch function (or equivalent) and enumerate EVERY kernel
+launch it makes. All kernels should be launched using PDL, otherwise the performance gain is marginal.
+Replacing calls to `cudaMemset` by kernels launched using PDL should be strongly considered and
+pointed out as suggestions.
+
+## api.type-replacement (critical, public types in thrust/libcudacxx/cub)
+
+<!-- provenance:
+  #262→#1249 (backport #1292) pair trivial copyability;
+  #454→#1286,#1425,#1497 complex reverted three times;
+  #6393→#6403 variant modularization dropped monostate include from the umbrella header
+-->
+
+When a diff reimplements, re-derives, or aliases any public type (`thrust::pair`/`tuple`/`complex`,
+iterators, …), verify every observable property of the old type is preserved: trivial copyability and
+layout (downstream code `memcpy`s them), size/alignment, implicit conversions and promotions, overload
+resolution, and numerical behavior.
+
+## build.windows-min-max-macro (important, C++ code calling `.max()`/`.min()` or naming a new member/trait `max`/`min`)
+
+<!-- provenance:
+  #8875→#9246 argument-annotation trait member named max, computed via unparenthesized numeric_limits<T>::max(), a preprocessor argument-count error under <windows.h>'s max/min macros;
+  renamed to highest/lowest and parenthesized
+-->
+
+Flag an unparenthesized call to a function literally named `max`/`min` (e.g.
+`std::numeric_limits<T>::max()`), and any new member or trait named `max`/`min`. On Windows,
+`<windows.h>` defines `max`/`min` as function-like macros, breaking such code. Headers sandwiched
+between `<cuda/std/__cccl/prologue.h>`/`epilogue.h` (libcudacxx, cudax) are safe; everywhere else
+(CUB, Thrust, tests, examples), require the macro-safe spelling `(std::numeric_limits<T>::max)()`
+and prefer other member names. Candidate for a pre-commit grep.
+
+## perf.benchmark-exec-tag-sync-without-sync-call (important, nvbench benchmark harness `state.exec(...)` calls)
+
+<!-- provenance:
+  #3114→#5350 merge_sort keys benchmark switched no_batch→sync while adding PDL although the exec lambda never synchronizes;
+  reverted as an unnecessary workaround
+-->
+
+When a diff makes an nvbench `state.exec(...)` call use `nvbench::exec_tag::sync` (which tells
+nvbench that the benchmark region will perform CUDA synchronization itself), or changes the lambda
+body of a call already using such a tag, verify the lambda actually performs any explicit CUDA
+synchronization (like `launch.get_stream().sync()`, `cudaStreamSynchronize`). Parallel algorithms in
+Thrust and `cuda::std::` synchronize internally, except under `thrust::cuda::par_nosync`. Without a
+sync, the measured time silently excludes some or all of the kernel's execution. If the lambda does
+not sync, `exec_tag::no_batch` or `exec_tag::timer` is likely what was intended.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 

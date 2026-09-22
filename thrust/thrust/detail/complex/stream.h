@@ -9,19 +9,19 @@
 #include <thrust/complex.h>
 
 THRUST_NAMESPACE_BEGIN
-template <typename ValueType, class charT, class traits>
-std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const complex<ValueType>& z)
+template <typename ValueType, class CharT, class Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const complex<ValueType>& z)
 {
   os << '(' << z.real() << ',' << z.imag() << ')';
   return os;
 }
 
-template <typename ValueType, typename charT, class traits>
-std::basic_istream<charT, traits>& operator>>(std::basic_istream<charT, traits>& is, complex<ValueType>& z)
+template <typename ValueType, typename CharT, class Traits>
+std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, complex<ValueType>& z)
 {
   ValueType re, im;
 
-  charT ch;
+  CharT ch;
   is >> ch;
 
   if (ch == '(')

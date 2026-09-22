@@ -33,7 +33,7 @@ OutputIterator gather(my_system& system, InputIterator, InputIterator, RandomAcc
   return result;
 }
 
-void TestGatherDispatchExplicit()
+TEST_CASE("TestGatherDispatchExplicit", "[gather]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -42,7 +42,6 @@ void TestGatherDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGatherDispatchExplicit);
 
 template <typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
 OutputIterator gather(my_tag, InputIterator, InputIterator, RandomAccessIterator, OutputIterator result)
@@ -51,7 +50,7 @@ OutputIterator gather(my_tag, InputIterator, InputIterator, RandomAccessIterator
   return result;
 }
 
-void TestGatherDispatchImplicit()
+TEST_CASE("TestGatherDispatchImplicit", "[gather]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -62,7 +61,6 @@ void TestGatherDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGatherDispatchImplicit);
 
 template <typename T>
 void TestGather(const size_t n)
@@ -163,7 +161,7 @@ OutputIterator gather_if(
   return result;
 }
 
-void TestGatherIfDispatchExplicit()
+TEST_CASE("TestGatherIfDispatchExplicit", "[gather]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -172,7 +170,6 @@ void TestGatherIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGatherIfDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator, typename OutputIterator>
 OutputIterator gather_if(
@@ -187,7 +184,7 @@ OutputIterator gather_if(
   return result;
 }
 
-void TestGatherIfDispatchImplicit()
+TEST_CASE("TestGatherIfDispatchImplicit", "[gather]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -200,7 +197,6 @@ void TestGatherIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGatherIfDispatchImplicit);
 
 template <typename T>
 void TestGatherIf(const size_t n)
