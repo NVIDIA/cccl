@@ -206,19 +206,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking DeviceAdjacentDifferenceInitKernel"
-                "<<<%d, %d, 0, %lld>>>()\n",
-                init_grid_size,
-                init_block_size,
-                reinterpret_cast<long long>(stream));
-#else // CUB_DEBUG_LOG
-        detail::log("Invoking DeviceAdjacentDifferenceInitKernel"
-                    "<<<%d, %d, 0, %lld>>>()\n",
-                    init_grid_size,
-                    init_block_size,
-                    reinterpret_cast<long long>(stream));
-#endif // CUB_DEBUG_LOG
+        _CUB_LOG_KERNEL_LAUNCH(
+          "DeviceAdjacentDifferenceInitKernel", init_grid_size, 1, 1, init_block_size, 0, stream, "");
 
         error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
@@ -241,19 +230,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
         }
       }
 
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceAdjacentDifferenceDifferenceKernel"
-              "<<<%d, %d, 0, %lld>>>()\n",
-              num_tiles,
-              AdjacentDifferencePolicyT::BLOCK_THREADS,
-              reinterpret_cast<long long>(stream));
-#else // CUB_DEBUG_LOG
-      detail::log("Invoking DeviceAdjacentDifferenceDifferenceKernel"
-                  "<<<%d, %d, 0, %lld>>>()\n",
-                  num_tiles,
-                  AdjacentDifferencePolicyT::BLOCK_THREADS,
-                  reinterpret_cast<long long>(stream));
-#endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH(
+        "DeviceAdjacentDifferenceDifferenceKernel",
+        num_tiles,
+        1,
+        1,
+        AdjacentDifferencePolicyT::BLOCK_THREADS,
+        0,
+        stream,
+        "");
 
       using KernelPolicySelector = detail::adjacent_difference::policy_selector_from_hub<PolicyHub>;
       error                      = CubDebug(
@@ -407,19 +392,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
     const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceAdjacentDifferenceInitKernel"
-            "<<<%d, %d, 0, %lld>>>()\n",
-            init_grid_size,
-            init_block_size,
-            reinterpret_cast<long long>(stream));
-#else // CUB_DEBUG_LOG
-    log("Invoking DeviceAdjacentDifferenceInitKernel"
-        "<<<%d, %d, 0, %lld>>>()\n",
-        init_grid_size,
-        init_block_size,
-        reinterpret_cast<long long>(stream));
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("DeviceAdjacentDifferenceInitKernel", init_grid_size, 1, 1, init_block_size, 0, stream, "");
 
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
@@ -439,19 +412,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
   }
 
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeviceAdjacentDifferenceDifferenceKernel"
-          "<<<%d, %d, 0, %lld>>>()\n",
-          num_tiles,
-          active_policy.threads_per_block,
-          reinterpret_cast<long long>(stream));
-#else // CUB_DEBUG_LOG
-  log("Invoking DeviceAdjacentDifferenceDifferenceKernel"
-      "<<<%d, %d, 0, %lld>>>()\n",
-      num_tiles,
-      active_policy.threads_per_block,
-      reinterpret_cast<long long>(stream));
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH(
+    "DeviceAdjacentDifferenceDifferenceKernel", num_tiles, 1, 1, active_policy.threads_per_block, 0, stream, "");
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, active_policy.threads_per_block, 0, stream)
