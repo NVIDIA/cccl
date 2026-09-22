@@ -351,6 +351,19 @@ No exception may escape a `noexcept` function on any code path — an escaping e
 warning. Pay attention to throwing reached through helpers: `_CCCL_TRY_CUDA_API`, `_CCCL_THROW`, or
 callees documented `@throws`.
 
+## correctness.header-kernel-odr-template-hack (critical, `__global__` kernels and free functions defined in headers)
+
+<!-- provenance:
+  #2641→#2656 templatized CUDASTF's callback_completion_kernel to dodge a multiple-definition linker error, risking runtime launch errors
+-->
+
+Flag a `__global__` function (or any function) defined in a header that is turned into a template
+(especially with an unused/default-only parameter like `template <int = 0>`) purely to work around a
+"multiple definition" / ODR linker error — a template is not a safe substitute for `inline` here:
+identically instantiated template kernels in multiple TUs can still misbehave at launch time. The
+correct fix is `inline` for ordinary functions and `static` or an unnamed namespace for `__global__`
+kernels.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
