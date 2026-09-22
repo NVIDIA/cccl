@@ -298,6 +298,19 @@ change for downstream users; narrowing is only acceptable as a bug or conformanc
 accepted inputs produced wrong results or violated the documented contract), and must be called out in
 the PR description.
 
+## correctness.raii-move-no-disarm (critical, RAII/resource-owning/scope-guard types with move construction)
+
+<!-- provenance:
+  #5975→#10565 cudax scope_exit's move constructor was = default, copying the active flag without deactivating the moved-from source;
+  both objects ran the cleanup action on destruction
+-->
+
+When a diff adds or defaults a move constructor for a type whose destructor conditionally runs an
+action or releases a resource (an "active"/"engaged"/"owns" flag, a handle nulled on release), verify
+the move disarms the moved-from source — resets its flag or nulls its handle, not merely copies it.
+`= default` is a red flag: it member-wise copies the flag, so both objects fire the cleanup on
+destruction. Require a test that moves the object and confirms the action fires exactly once.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
