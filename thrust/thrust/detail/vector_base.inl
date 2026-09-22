@@ -588,6 +588,64 @@ void vector_base<T, Alloc>::push_back(const value_type& x)
 } // end vector_base::push_back()
 
 template <typename T, typename Alloc>
+template <typename... Args>
+typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::emplace_back(Args&&... args)
+{
+  if (capacity() - size() >= 1)
+  {
+    m_storage.emplace_construct_one(end(), ::cuda::std::forward<Args>(args)...);
+    m_size += 1;
+  }
+  else
+  {
+    const size_type old_size = size();
+
+    // compute the new capacity after the allocation
+    size_type new_capacity = old_size + ::cuda::std::max(old_size, size_type{1});
+
+    // allocate exponentially larger new storage
+    new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
+
+    // do not exceed maximum storage
+    new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
+
+    // create new storage
+    storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
+
+    // record how many constructors we invoke in the try block below
+    iterator new_end = new_storage.begin();
+
+    try
+    {
+      // construct copy all elements into the newly allocated storage
+      new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
+
+      // emplace construct the new element at the end
+      new_storage.emplace_construct_one(new_end, ::cuda::std::forward<Args>(args)...);
+
+      new_end += 1;
+    } // end try
+    catch (...)
+    {
+      // something went wrong, so destroy & deallocate the new storage
+      new_storage.destroy(new_storage.begin(), new_end);
+      new_storage.deallocate();
+
+      // rethrow
+      throw;
+    } // end catch
+
+    // call destructors on the elements in the old storage
+    m_storage.destroy(begin(), end());
+
+    // record the vector's new state
+    m_storage.swap(new_storage);
+    m_size = old_size + 1;
+  }
+  return back();
+} // end vector_base::emplace_back()
+
+template <typename T, typename Alloc>
 void vector_base<T, Alloc>::pop_back()
 {
   const iterator e     = end();

@@ -589,6 +589,13 @@ public:
    */
   void push_back(const value_type& x);
 
+  /*! This method construct an element in-place to the end of this vector_base.
+   *  \param args the argument(s) passed to the constructor.
+   *  \return A reference to the newly constructed element.
+   */
+  template <typename... Args>
+  reference emplace_back(Args&&... args);
+
   /*! This method erases the last element of this vector, invalidating
    *  all iterators and references to it.
    *
