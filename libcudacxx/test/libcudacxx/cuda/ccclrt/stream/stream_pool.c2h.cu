@@ -279,6 +279,7 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     const cuda::stream_pool pool{device, 4, cuda::stream_pool_creation::lazy};
 
     std::vector<cuda::stream_ref> all;
+    all.reserve(pool.size());
     for (cuda::std::size_t i = 0; i < pool.size(); ++i)
     {
       all.push_back(pool[i]);
