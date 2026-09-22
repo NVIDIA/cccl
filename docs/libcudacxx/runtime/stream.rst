@@ -94,8 +94,7 @@ not do it. When the streams are created is chosen with a ``cuda::stream_pool_cre
 - ``stream_pool_creation::lazy``: a stream is created by the first request for its slot. Two threads racing for the
   same empty slot both create a stream; one publishes it and the other destroys its own.
 
-The getters can be called concurrently from several threads. The pool takes no lock: its synchronization is
-lock-free, but not wait-free, including stream creation for lazily populated pools.
+In both modes, the getters can be called concurrently from several threads.
 
 A pool can be moved but not copied. A move takes over the streams, which stay valid, as do the
 :cpp:class:`cuda::stream_ref` handed out before the move; no thread may use either pool while it is moved. A
