@@ -243,6 +243,19 @@ launch it makes. All kernels should be launched using PDL, otherwise the perform
 Replacing calls to `cudaMemset` by kernels launched using PDL should be strongly considered and
 pointed out as suggestions.
 
+## api.type-replacement (critical, public types in thrust/libcudacxx/cub)
+
+<!-- provenance:
+  #262→#1249 (backport #1292) pair trivial copyability;
+  #454→#1286,#1425,#1497 complex reverted three times;
+  #6393→#6403 variant modularization dropped monostate include from the umbrella header
+-->
+
+When a diff reimplements, re-derives, or aliases any public type (`thrust::pair`/`tuple`/`complex`,
+iterators, …), verify every observable property of the old type is preserved: trivial copyability and
+layout (downstream code `memcpy`s them), size/alignment, implicit conversions and promotions, overload
+resolution, and numerical behavior.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
