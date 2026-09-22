@@ -27,7 +27,9 @@
 
 .PARAMETER OnlyCudaMajor
     Optional. Restricts the build to a single CUDA major version (`12` or `13`).
-    When set, only that version is built and the *merge* step is skipped.
+    When set, only that version is built and both the *merge* and the
+    delvewheel *repair* steps are skipped, so the wheel still depends on the
+    system msvcp140.dll (see Repair-CudaCcclWheel).
 
 .PARAMETER Cuda13Image
     Optional. The Docker image name used for a nested build of the CUDA 13
@@ -350,8 +352,8 @@ function Repair-CudaCcclWheel {
     # wheel. Without it only the .pyd files are analysed, the repair succeeds,
     # and msvcp140.dll is still imported from the system.
     # --namespace-pkg cuda: never create cuda/__init__.py (shared namespace
-    # with cuda-bindings and cuda-core); the loader patch lands in
-    # cuda/compute/__init__.py instead.
+    # with cuda-bindings and cuda-core); the loader patch lands in each direct
+    # subpackage instead (cuda/compute/__init__.py and cuda/cccl/__init__.py).
     $delvewheelArgs = @(
         '-m', 'delvewheel', 'repair', $wheel,
         '-w', $repairedDir,
@@ -457,11 +459,13 @@ if ($DoMerge) {
     }
 }
 
-# dbghelp.dll is deliberately not bundled by the repair above and comes from
-# C:\Windows\System32, whose copy is often much older than the one Visual
-# Studio ships. We use a single symbol from it, UnDecorateSymbolName (via
-# nvrtcGetTypeName). If c.parallel JIT compilation ever misbehaves in the wild
-# on Windows, an out-of-date dbghelp.dll is a possible culprit.
+# dbghelp.dll is never bundled: delvewheel treats it as a Windows system DLL,
+# and the --exclude above states that intent explicitly since delvewheel is not
+# pinned. It comes from C:\Windows\System32, whose copy is often much older
+# than the one Visual Studio ships. We use a single symbol from it,
+# UnDecorateSymbolName (via nvrtcGetTypeName). If c.parallel JIT compilation
+# ever misbehaves in the wild on Windows, an out-of-date dbghelp.dll is a
+# possible culprit.
 
 # Optionally upload the wheel artifact.
 if ($env:GITHUB_ACTIONS -and -not $SkipUpload) {

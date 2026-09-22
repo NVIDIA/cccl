@@ -64,9 +64,10 @@ Windows needs one more thing. ``python:3.14-slim`` still ships glibc and libstdc
 because every C/C++ Python extension links against them; Server Core ships neither of
 the Windows equivalents, since ``msvcp140.dll`` and ``vcruntime140*.dll`` come from the
 MSVC redistributable rather than from Windows itself. The cuda-cccl wheel itself does not
-depend on that because we run ``delvewheel repair`` (the Windows counterpart of the
-``auditwheel`` step on Linux) so the wheel carries its own ``msvcp140.dll``. However,
-the CuPy wheel on PyPI does (`cupy/cupy#10316
+depend on the redistributable: ``delvewheel repair`` (the Windows counterpart of the
+``auditwheel`` step on Linux) bundles ``msvcp140.dll`` into the wheel, and the
+``vcruntime140*.dll`` it also links against are provided by the Python interpreter.
+However, the CuPy wheel on PyPI does (`cupy/cupy#10316
 <https://github.com/cupy/cupy/issues/10316>`_), so the examples payload installs a
 redistributable before running anything. Once CuPy bundles its own runtime, that install
 can go too.
