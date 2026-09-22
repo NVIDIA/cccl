@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#include <cub/util_debug.cuh> // for _CubLog
+#include <cub/util_debug.cuh>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -105,10 +105,7 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
 } // namespace detail
 CUB_NAMESPACE_END
 
-//! Logs the tuning policy used to dispatch onto algorithm `device_alg` at compute capability `cc`. `device_alg`
-//! must be a string literal, e.g. `_CUB_LOG_DISPATCH("DeviceReduce", cc, active_policy);`
 #ifdef CUB_DEBUG_LOG
-// TODO(bgruber): Remove along with _CubLog in CCCL 4.0
 #  define _CUB_LOG_DISPATCH(device_alg, cc, active_policy)                                             \
     NV_IF_TARGET(NV_IS_HOST, ({                                                                        \
                    ::std::stringstream ss;                                                             \
