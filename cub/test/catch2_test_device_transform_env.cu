@@ -5,13 +5,13 @@
 
 #include <cub/device/device_transform.cuh>
 
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/stream>
 
 #include <sstream>
 
 #include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 
 using namespace thrust::placeholders;
 
@@ -67,7 +67,7 @@ template <typename F>
 void check_graph_nodes_with_different_streams(F call_cub_api)
 {
   // create stream and begin capture
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   // REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
   REQUIRE(cudaStreamBeginCapture(stream.get(), cudaStreamCaptureModeGlobal) == cudaSuccess);
 
@@ -284,7 +284,7 @@ CUB_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce]
 {
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
-  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream = c2h::make_current_device_stream();
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::tune(my_policy_selector{})};
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));

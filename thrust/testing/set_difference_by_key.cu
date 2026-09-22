@@ -26,7 +26,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetDifferenceByKeyDispatchExplicit()
+TEST_CASE("TestSetDifferenceByKeyDispatchExplicit", "[set_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -36,7 +36,6 @@ void TestSetDifferenceByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -59,7 +58,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetDifferenceByKeyDispatchImplicit()
+TEST_CASE("TestSetDifferenceByKeyDispatchImplicit", "[set_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -75,7 +74,6 @@ void TestSetDifferenceByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDispatchImplicit);
 
 template <typename Vector>
 void TestSetDifferenceByKeySimple()

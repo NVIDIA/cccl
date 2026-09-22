@@ -343,6 +343,23 @@ def get_device_name(device):
     return name.replace("NVIDIA ", "")
 
 
+def export_jsonlists(algname):
+    """The jsonlists for `algname`, ready to be handed to another process."""
+    return {"benches": json_benches(algname), "device": device_json(algname)}
+
+
+def prime_jsonlists(algname, jsonlists):
+    """Seed the caches from `export_jsonlists`, launching no benchmark binary.
+
+    Both lists are read by running the base binary, which creates a CUDA context
+    on the device. A process that only needs cached scores would otherwise pay
+    that on a GPU that is busy benchmarking for someone else.
+    """
+    cache = JsonCache()
+    cache.bench_cache[algname] = jsonlists["benches"]
+    cache.device_cache[algname] = jsonlists["device"]
+
+
 def get_gpu_name(algname):
     override = get_gpu_name_override()
     if override is not None:
@@ -850,6 +867,29 @@ class Bench:
         self.execution_seconds = result.elapsed
         runs_cache.push_run(self, result.code, result.elapsed)
         return bench_cache.push_bench_centers(self, result, estimator)
+
+    def is_score_cached(self, ct_workload_point, rt_values):
+        """Whether the score can be derived from stored results alone.
+
+        A hit means `score` touches neither the compiler nor the GPU, so callers
+        can skip building the variant. Mirrors the falsy check in `run`, which
+        treats an empty result as a miss.
+        """
+        bench_cache = BenchCache()
+
+        if not bench_cache.pull_bench_centers(self, ct_workload_point, rt_values):
+            return False
+
+        if self.is_base():
+            # baseline's score is always 1.0
+            return True
+
+        # variant's center is not enough, need base to know the score
+        return bool(
+            bench_cache.pull_bench_centers(
+                self.get_base(), ct_workload_point, rt_values
+            )
+        )
 
     def speedup(self, ct_workload_point, rt_values, base_estimator, variant_estimator):
         if self.is_base():

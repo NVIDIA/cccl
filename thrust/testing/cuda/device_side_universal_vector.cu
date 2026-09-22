@@ -69,8 +69,11 @@ void TestDeviceAccess()
   cudaFree(in_ptr);
   cudaFree(out_ptr);
 }
-DECLARE_UNITTEST_WITH_NAME((TestDeviceAccess<thrust::universal_vector<int>, thrust::universal_vector<bool>>),
-                           TestUniversalVectorDeviceAccess);
-DECLARE_UNITTEST_WITH_NAME(
-  (TestDeviceAccess<thrust::universal_host_pinned_vector<int>, thrust::universal_host_pinned_vector<bool>>),
-  TestUniversalHPVectorDeviceAccess);
+TEST_CASE("TestUniversalVectorDeviceAccess", "[device_side_universal_vector]")
+{
+  TestDeviceAccess<thrust::universal_vector<int>, thrust::universal_vector<bool>>();
+}
+TEST_CASE("TestUniversalHPVectorDeviceAccess", "[device_side_universal_vector]")
+{
+  TestDeviceAccess<thrust::universal_host_pinned_vector<int>, thrust::universal_host_pinned_vector<bool>>();
+}
