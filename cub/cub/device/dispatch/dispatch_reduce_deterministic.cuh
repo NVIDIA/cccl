@@ -115,7 +115,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
   // Log single_reduce_sweep_kernel configuration
   _CUB_LOG_KERNEL_LAUNCH(
-    "DeterministicDeviceReduceSingleTileKernel", 1, active_policy.single_tile.threads_per_block, 0, stream, "");
+    "DeterministicDeviceReduceSingleTileKernel", 1, 1, 1, active_policy.single_tile.threads_per_block, 0, stream, "");
 
   // Invoke single_reduce_sweep_kernel
   if (const auto error = CubDebug(
@@ -270,6 +270,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     _CUB_LOG_KERNEL_LAUNCH(
       "DeterministicDeviceReduceKernel",
       current_grid_size,
+      1,
+      1,
       active_policy.multi_tile.threads_per_block,
       0,
       stream,
@@ -315,7 +317,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
   // Log single_reduce_sweep_kernel configuration
   _CUB_LOG_KERNEL_LAUNCH(
-    "DeterministicDeviceReduceSingleTileKernel", 1, active_policy.single_tile.threads_per_block, 0, stream, "");
+    "DeterministicDeviceReduceSingleTileKernel", 1, 1, 1, active_policy.single_tile.threads_per_block, 0, stream, "");
 
   // Invoke DeterministicDeviceReduceSingleTileKernel/DeterministicDeviceReduceDeferredSingleTileKernel
   const auto second_pass_error = [&] {

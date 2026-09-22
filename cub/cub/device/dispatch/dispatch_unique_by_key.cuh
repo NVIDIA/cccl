@@ -279,7 +279,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     num_tiles                = ::cuda::std::max(1, num_tiles);
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
-    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, INIT_KERNEL_THREADS, 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -329,7 +329,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
         return error;
       }
 
-      _CUB_LOG_KERNEL_LAUNCH_3D(
+      _CUB_LOG_KERNEL_LAUNCH(
         "unique_by_key_kernel",
         scan_grid_size.x,
         scan_grid_size.y,
@@ -586,7 +586,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     num_tiles                                = ::cuda::std::max(1, num_tiles);
     const int init_grid_size                 = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, init_kernel_threads, 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -634,7 +634,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       {
         return error;
       }
-      _CUB_LOG_KERNEL_LAUNCH_3D(
+      _CUB_LOG_KERNEL_LAUNCH(
         "unique_by_key_kernel",
         scan_grid_size.x,
         scan_grid_size.y,

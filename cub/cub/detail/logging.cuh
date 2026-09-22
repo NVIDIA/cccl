@@ -105,39 +105,8 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
 } // namespace detail
 CUB_NAMESPACE_END
 
-//! Logs a kernel launch (1D grid only). `kernel_name` must be a string literal. `fmt` is a string literal suffix
-//! (may be `""`) appended to the standard "Invoking <kernel><<<grid, block, smem, stream>>>()" message, followed by
-//! its corresponding printf-style args, e.g.:
-//! `_CUB_LOG_KERNEL_LAUNCH("foo_kernel", grid_dim, block_dim, 0, stream, ", current bit: %d", current_bit);`
-//!
-//! Two logging mechanisms are supported:
-//! - If `CUB_DEBUG_LOG` is defined, always prints via `_CubLog` (works from host and device code, e.g. under CDP).
-//! - Otherwise, prints via `cub::detail::log` when logging is enabled via the CCCL_EXPERIMENTAL_LOGGING env
-//!   variable (host code only).
 #ifdef CUB_DEBUG_LOG
-// TODO(bgruber): Remove along with _CubLog in CCCL 4.0
-#  define _CUB_LOG_KERNEL_LAUNCH(kernel_name, grid_dim, block_dim, smem_bytes, stream, fmt, ...) \
-    _CubLog("Invoking " kernel_name "<<<%d, %d, %zu, %lld>>>()" fmt "\n",                        \
-            grid_dim,                                                                            \
-            block_dim,                                                                           \
-            static_cast<size_t>(smem_bytes),                                                     \
-            reinterpret_cast<long long>(stream),                                                 \
-            ##__VA_ARGS__)
-#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-#  define _CUB_LOG_KERNEL_LAUNCH(kernel_name, grid_dim, block_dim, smem_bytes, stream, fmt, ...) \
-    CUB_NS_QUALIFIER::detail::log(                                                               \
-      "Invoking " kernel_name "<<<%d, %d, %zu, %lld>>>()" fmt "\n",                              \
-      grid_dim,                                                                                  \
-      block_dim,                                                                                 \
-      static_cast<size_t>(smem_bytes),                                                           \
-      reinterpret_cast<long long>(stream),                                                       \
-      ##__VA_ARGS__)
-#endif // !CUB_DEBUG_LOG
-
-//! Same as `_CUB_LOG_KERNEL_LAUNCH`, but for kernels launched with a 3D grid.
-#ifdef CUB_DEBUG_LOG
-// TODO(bgruber): Remove along with _CubLog in CCCL 4.0
-#  define _CUB_LOG_KERNEL_LAUNCH_3D(                                                          \
+#  define _CUB_LOG_KERNEL_LAUNCH(                                                             \
     kernel_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim, smem_bytes, stream, fmt, ...) \
     _CubLog("Invoking " kernel_name "<<<{%d, %d, %d}, %d, %zu, %lld>>>()" fmt "\n",           \
             grid_dim_x,                                                                       \
@@ -148,7 +117,7 @@ CUB_NAMESPACE_END
             reinterpret_cast<long long>(stream),                                              \
             ##__VA_ARGS__)
 #else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-#  define _CUB_LOG_KERNEL_LAUNCH_3D(                                                          \
+#  define _CUB_LOG_KERNEL_LAUNCH(                                                             \
     kernel_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim, smem_bytes, stream, fmt, ...) \
     CUB_NS_QUALIFIER::detail::log(                                                            \
       "Invoking " kernel_name "<<<{%d, %d, %d}, %d, %zu, %lld>>>()" fmt "\n",                 \

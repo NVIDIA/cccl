@@ -206,7 +206,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
-        _CUB_LOG_KERNEL_LAUNCH("DeviceAdjacentDifferenceInitKernel", init_grid_size, init_block_size, 0, stream, "");
+        _CUB_LOG_KERNEL_LAUNCH(
+          "DeviceAdjacentDifferenceInitKernel", init_grid_size, 1, 1, init_block_size, 0, stream, "");
 
         error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
@@ -230,7 +231,14 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
       }
 
       _CUB_LOG_KERNEL_LAUNCH(
-        "DeviceAdjacentDifferenceDifferenceKernel", num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream, "");
+        "DeviceAdjacentDifferenceDifferenceKernel",
+        num_tiles,
+        1,
+        1,
+        AdjacentDifferencePolicyT::BLOCK_THREADS,
+        0,
+        stream,
+        "");
 
       using KernelPolicySelector = detail::adjacent_difference::policy_selector_from_hub<PolicyHub>;
       error                      = CubDebug(
@@ -395,7 +403,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
     const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
-    _CUB_LOG_KERNEL_LAUNCH("DeviceAdjacentDifferenceInitKernel", init_grid_size, init_block_size, 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH("DeviceAdjacentDifferenceInitKernel", init_grid_size, 1, 1, init_block_size, 0, stream, "");
 
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
@@ -416,7 +424,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   _CUB_LOG_KERNEL_LAUNCH(
-    "DeviceAdjacentDifferenceDifferenceKernel", num_tiles, active_policy.threads_per_block, 0, stream, "");
+    "DeviceAdjacentDifferenceDifferenceKernel", num_tiles, 1, 1, active_policy.threads_per_block, 0, stream, "");
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, active_policy.threads_per_block, 0, stream)

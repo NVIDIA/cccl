@@ -328,7 +328,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   // Log DeviceHistogramInitKernel configuration
   _CUB_LOG_KERNEL_LAUNCH(
-    "DeviceHistogramInitKernel", histogram_init_grid_dims, histogram_init_threads_per_block, 0, stream, "");
+    "DeviceHistogramInitKernel", histogram_init_grid_dims, 1, 1, histogram_init_threads_per_block, 0, stream, "");
 
   // Invoke histogram_init_kernel
   if (const auto error = CubDebug(
@@ -349,7 +349,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Log histogram_sweep_kernel configuration
-  _CUB_LOG_KERNEL_LAUNCH_3D(
+  _CUB_LOG_KERNEL_LAUNCH(
     "histogram_sweep_kernel",
     sweep_grid_dims.x,
     sweep_grid_dims.y,

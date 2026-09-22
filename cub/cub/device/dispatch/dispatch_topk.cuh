@@ -605,7 +605,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const auto topk_grid_size            = (::cuda::std::min) (main_kernel_max_occupancy, num_tiles);
 
     _CUB_LOG_KERNEL_LAUNCH(
-      "topk_kernel", topk_grid_size, threads_per_block, 0, stream, ", SM occupancy: %d", main_kernel_blocks_per_sm);
+      "topk_kernel", topk_grid_size, 1, 1, threads_per_block, 0, stream, ", SM occupancy: %d", main_kernel_blocks_per_sm);
 
     // Initialize address variables
     counter_t* counter = static_cast<counter_t*>(allocations[0]);

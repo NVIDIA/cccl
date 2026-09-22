@@ -82,7 +82,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
     const local_segment_index_t blocks_in_grid = large_segments;
 
     _CUB_LOG_KERNEL_LAUNCH(
-      "DeviceSegmentedSortKernelLarge", static_cast<int>(blocks_in_grid), large_threads_per_block, 0, stream, "");
+      "DeviceSegmentedSortKernelLarge", static_cast<int>(blocks_in_grid), 1, 1, large_threads_per_block, 0, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(blocks_in_grid, large_threads_per_block, 0, stream)
@@ -128,6 +128,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
     _CUB_LOG_KERNEL_LAUNCH(
       "DeviceSegmentedSortKernelSmall",
       static_cast<int>(small_and_medium_blocks_in_grid),
+      1,
+      1,
       small_threads_per_block,
       0,
       stream,
@@ -938,6 +940,8 @@ private:
     _CUB_LOG_KERNEL_LAUNCH(
       "DeviceSegmentedSortFallbackKernel",
       blocks_in_grid,
+      1,
+      1,
       threads_in_block,
       0,
       stream,
@@ -1196,6 +1200,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
   _CUB_LOG_KERNEL_LAUNCH(
     "DeviceSegmentedSortFallbackKernel",
     blocks_in_grid,
+    1,
+    1,
     threads_in_block,
     0,
     stream,

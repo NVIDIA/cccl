@@ -228,7 +228,8 @@ struct dispatch_three_way_partition_if
       // Log three_way_partition_init_kernel configuration
       const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-      _CUB_LOG_KERNEL_LAUNCH("three_way_partition_init_kernel", init_grid_size, INIT_KERNEL_THREADS, 0, stream, "");
+      _CUB_LOG_KERNEL_LAUNCH(
+        "three_way_partition_init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
       // Invoke three_way_partition_init_kernel to initialize tile descriptors
       if (const auto error = CubDebug(
@@ -278,6 +279,8 @@ struct dispatch_three_way_partition_if
         _CUB_LOG_KERNEL_LAUNCH(
           "three_way_partition_kernel",
           current_num_tiles,
+          1,
+          1,
           threads_per_block,
           0,
           stream,
@@ -574,7 +577,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     // Log three_way_partition_init_kernel configuration
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
 
-    _CUB_LOG_KERNEL_LAUNCH("three_way_partition_init_kernel", init_grid_size, init_kernel_threads, 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH("three_way_partition_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
     // Invoke three_way_partition_init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -624,6 +627,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       _CUB_LOG_KERNEL_LAUNCH(
         "three_way_partition_kernel",
         current_num_tiles,
+        1,
+        1,
         threads_per_block,
         0,
         stream,

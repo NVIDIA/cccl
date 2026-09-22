@@ -51,7 +51,14 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPol
   const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
   _CUB_LOG_KERNEL_LAUNCH(
-    "detail::for_each::dynamic_kernel", static_cast<int>(num_tiles), static_cast<int>(threads_per_block), 0, stream, "");
+    "detail::for_each::dynamic_kernel",
+    static_cast<int>(num_tiles),
+    1,
+    1,
+    static_cast<int>(threads_per_block),
+    0,
+    stream,
+    "");
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
@@ -80,7 +87,14 @@ invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPoli
   const auto num_tiles        = ::cuda::ceil_div(num_items, tile_size);
 
   _CUB_LOG_KERNEL_LAUNCH(
-    "detail::for_each::static_kernel", static_cast<int>(num_tiles), static_cast<int>(threads_per_block), 0, stream, "");
+    "detail::for_each::static_kernel",
+    static_cast<int>(num_tiles),
+    1,
+    1,
+    static_cast<int>(threads_per_block),
+    0,
+    stream,
+    "");
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(

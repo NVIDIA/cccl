@@ -444,7 +444,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       // Log init_kernel configuration
       const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 
-      _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, init_kernel_threads, 0, stream, "");
+      _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
       error = CubDebug(
@@ -469,7 +469,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Log device_rle_sweep_kernel configuration
-      _CUB_LOG_KERNEL_LAUNCH("device_rle_sweep_kernel", num_current_tiles, threads_per_block, 0, stream, "");
+      _CUB_LOG_KERNEL_LAUNCH("device_rle_sweep_kernel", num_current_tiles, 1, 1, threads_per_block, 0, stream, "");
 
       // Invoke device_rle_sweep_kernel
       if constexpr (use_streaming_invocation)
@@ -740,7 +740,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
-    _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, init_kernel_threads, 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -758,7 +758,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return cudaSuccess;
     }
-    _CUB_LOG_KERNEL_LAUNCH("device_rle_sweep_kernel", num_current_tiles, threads_per_block, 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH("device_rle_sweep_kernel", num_current_tiles, 1, 1, threads_per_block, 0, stream, "");
 
     auto streaming_context = [&] {
       if constexpr (use_streaming_invocation)

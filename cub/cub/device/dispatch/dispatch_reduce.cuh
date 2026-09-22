@@ -304,7 +304,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     }
 
     // Log single_reduce_sweep_kernel configuration
-    _CUB_LOG_KERNEL_LAUNCH("DeviceReduceSingleTileKernel", 1, policy.SingleTile().ThreadsPerBlock(), 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeviceReduceSingleTileKernel", 1, 1, 1, policy.SingleTile().ThreadsPerBlock(), 0, stream, "");
 
     // Invoke single_reduce_sweep_kernel
     launcher_factory(1, policy.SingleTile().ThreadsPerBlock(), 0, stream)
@@ -399,6 +400,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     _CUB_LOG_KERNEL_LAUNCH(
       "DeviceReduceKernel",
       reduce_grid_size,
+      1,
+      1,
       active_policy.Reduce().ThreadsPerBlock(),
       0,
       stream,
@@ -423,7 +426,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
 
     // Log single_reduce_sweep_kernel configuration
     _CUB_LOG_KERNEL_LAUNCH(
-      "DeviceReduceSingleTileKernel", 1, active_policy.SingleTile().ThreadsPerBlock(), 0, stream, "");
+      "DeviceReduceSingleTileKernel", 1, 1, 1, active_policy.SingleTile().ThreadsPerBlock(), 0, stream, "");
 
     // Invoke DeviceReduceSingleTileKernel
     launcher_factory(1, active_policy.SingleTile().ThreadsPerBlock(), 0, stream)
@@ -754,6 +757,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   _CUB_LOG_KERNEL_LAUNCH(
     "DeviceReduceKernel",
     reduce_grid_size,
+    1,
+    1,
     active_policy.multi_tile.threads_per_block,
     0,
     stream,
@@ -801,7 +806,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   {
     // Log single_reduce_sweep_kernel configuration
     _CUB_LOG_KERNEL_LAUNCH(
-      "DeviceReduceSingleTileKernel", 1, active_policy.single_tile.threads_per_block, 0, stream, "");
+      "DeviceReduceSingleTileKernel", 1, 1, 1, active_policy.single_tile.threads_per_block, 0, stream, "");
 
     // Invoke DeviceReduceSingleTileKernel/DeviceReduceDeferredSingleTileKernel
     if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
@@ -982,7 +987,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
         // Log single_reduce_sweep_kernel configuration
         _CUB_LOG_KERNEL_LAUNCH(
-          "DeviceReduceSingleTileKernel", 1, active_policy.single_tile.threads_per_block, 0, stream, "");
+          "DeviceReduceSingleTileKernel", 1, 1, 1, active_policy.single_tile.threads_per_block, 0, stream, "");
 
         // Invoke single_reduce_sweep_kernel
         if (const auto error = CubDebug(

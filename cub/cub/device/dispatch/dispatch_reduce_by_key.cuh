@@ -447,7 +447,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       // Log init_kernel configuration
       const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
-      _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, INIT_KERNEL_THREADS, 0, stream, "");
+      _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
       // Invoke init_kernel to initialize tile descriptors
       error = CubDebug(
@@ -501,6 +501,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
         _CUB_LOG_KERNEL_LAUNCH(
           "reduce_by_key_kernel",
           scan_grid_size,
+          1,
+          1,
           threads_per_block,
           0,
           stream,
@@ -771,7 +773,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, init_kernel_threads));
-    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, init_kernel_threads, 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
             .doit(detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -834,6 +836,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       _CUB_LOG_KERNEL_LAUNCH(
         "reduce_by_key_kernel",
         scan_grid_size,
+        1,
+        1,
         threads_per_block,
         0,
         stream,

@@ -306,6 +306,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
         _CUB_LOG_KERNEL_LAUNCH(
           "SegmentedDeviceReduceKernel",
           static_cast<int>(num_current_segments),
+          1,
+          1,
           policy.SegmentedReduce().ThreadsPerBlock(),
           0,
           stream,
@@ -610,6 +612,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     _CUB_LOG_KERNEL_LAUNCH(
       "SegmentedDeviceReduceKernel",
       static_cast<int>(num_current_segments),
+      1,
+      1,
       active_policy.large_reduce.threads_per_block,
       0,
       stream,

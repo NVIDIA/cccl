@@ -276,6 +276,8 @@ private:
     _CUB_LOG_KERNEL_LAUNCH(
       "single_tile_kernel",
       1,
+      1,
+      1,
       policy.threads_per_block,
       0,
       stream,
@@ -340,6 +342,8 @@ public:
     _CUB_LOG_KERNEL_LAUNCH(
       "upsweep_kernel",
       pass_config.even_share.grid_size,
+      1,
+      1,
       pass_config.upsweep_config.threads_per_block,
       0,
       stream,
@@ -375,7 +379,7 @@ public:
     }
 
     // Log scan_kernel configuration
-    _CUB_LOG_KERNEL_LAUNCH("scan_kernel", 1, pass_config.scan_config.threads_per_block, 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH("scan_kernel", 1, 1, 1, pass_config.scan_config.threads_per_block, 0, stream, "");
 
     // Invoke scan_kernel
     launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
@@ -397,6 +401,8 @@ public:
     _CUB_LOG_KERNEL_LAUNCH(
       "downsweep_kernel",
       pass_config.even_share.grid_size,
+      1,
+      1,
       pass_config.downsweep_config.threads_per_block,
       0,
       stream,
@@ -625,6 +631,8 @@ private:
     _CUB_LOG_KERNEL_LAUNCH(
       "histogram_kernel",
       histo_blocks_per_sm * num_sms,
+      1,
+      1,
       HISTO_BLOCK_THREADS,
       0,
       stream,
@@ -639,6 +647,8 @@ private:
     _CUB_LOG_KERNEL_LAUNCH(
       "exclusive_sum_kernel",
       num_passes,
+      1,
+      1,
       SCAN_BLOCK_THREADS,
       0,
       stream,
@@ -653,7 +663,8 @@ private:
       const int init_startup_blocks =
         static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
-      _CUB_LOG_KERNEL_LAUNCH("init_bins_and_counters_kernel", init_startup_blocks, init_startup_threads, 0, stream, "");
+      _CUB_LOG_KERNEL_LAUNCH(
+        "init_bins_and_counters_kernel", init_startup_blocks, 1, 1, init_startup_threads, 0, stream, "");
 
       if (const auto error = CubDebug(
             launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
@@ -729,6 +740,8 @@ private:
         _CUB_LOG_KERNEL_LAUNCH(
           "onesweep_kernel",
           num_blocks,
+          1,
+          1,
           ONESWEEP_BLOCK_THREADS,
           0,
           stream,
@@ -1308,6 +1321,8 @@ struct dispatch_impl
     _CUB_LOG_KERNEL_LAUNCH(
       "single_tile_kernel",
       1,
+      1,
+      1,
       policy.threads_per_block,
       0,
       stream,
@@ -1419,6 +1434,8 @@ struct dispatch_impl
     _CUB_LOG_KERNEL_LAUNCH(
       "upsweep_kernel",
       pass_config.even_share.grid_size,
+      1,
+      1,
       pass_config.upsweep_config.threads_per_block,
       0,
       stream,
@@ -1458,7 +1475,7 @@ struct dispatch_impl
     }
 
     // Log scan_kernel configuration
-    _CUB_LOG_KERNEL_LAUNCH("scan_kernel", 1, pass_config.scan_config.threads_per_block, 0, stream, "");
+    _CUB_LOG_KERNEL_LAUNCH("scan_kernel", 1, 1, 1, pass_config.scan_config.threads_per_block, 0, stream, "");
 
     // Invoke scan_kernel
     if (const auto error = CubDebug(launcher_factory(1, pass_config.scan_config.threads_per_block, 0, stream)
@@ -1483,6 +1500,8 @@ struct dispatch_impl
     _CUB_LOG_KERNEL_LAUNCH(
       "downsweep_kernel",
       pass_config.even_share.grid_size,
+      1,
+      1,
       pass_config.downsweep_config.threads_per_block,
       0,
       stream,
@@ -1771,6 +1790,8 @@ struct dispatch_impl
     _CUB_LOG_KERNEL_LAUNCH(
       "histogram_kernel",
       histo_blocks_per_sm * num_sms,
+      1,
+      1,
       histo_block_threads,
       0,
       stream,
@@ -1785,6 +1806,8 @@ struct dispatch_impl
     _CUB_LOG_KERNEL_LAUNCH(
       "exclusive_sum_kernel",
       num_passes,
+      1,
+      1,
       scan_block_threads,
       0,
       stream,
@@ -1799,7 +1822,8 @@ struct dispatch_impl
       const int init_startup_blocks =
         static_cast<int>(::cuda::ceil_div(num_init_items, static_cast<size_t>(init_startup_threads)));
 
-      _CUB_LOG_KERNEL_LAUNCH("init_bins_and_counters_kernel", init_startup_blocks, init_startup_threads, 0, stream, "");
+      _CUB_LOG_KERNEL_LAUNCH(
+        "init_bins_and_counters_kernel", init_startup_blocks, 1, 1, init_startup_threads, 0, stream, "");
 
       if (const auto error = CubDebug(
             launcher_factory(init_startup_blocks, init_startup_threads, 0, stream, use_pdl)
@@ -1875,6 +1899,8 @@ struct dispatch_impl
         _CUB_LOG_KERNEL_LAUNCH(
           "onesweep_kernel",
           num_blocks,
+          1,
+          1,
           onesweep_block_threads,
           0,
           stream,

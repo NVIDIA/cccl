@@ -316,6 +316,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       _CUB_LOG_KERNEL_LAUNCH(
         "segmented_kernels",
         static_cast<int>(num_current_segments),
+        1,
+        1,
         static_cast<int>(pass_config.segmented_config.threads_per_block),
         0,
         stream,
@@ -785,6 +787,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
       _CUB_LOG_KERNEL_LAUNCH(
         "segmented_kernels",
         static_cast<int>(num_current_segments),
+        1,
+        1,
         static_cast<int>(config.threads_per_block),
         0,
         stream,
