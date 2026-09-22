@@ -35,7 +35,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Size-independent configuration for a multicast CUDA logical endpoint.
 class multicast_logical_endpoint_spec
 {
-  unsigned int __num_devices_{};
+  ::cuda::std::uint32_t __num_devices_{};
   logical_endpoint_flag __flags_          = logical_endpoint_flag::none;
   logical_endpoint_ipc_handle_type __ipc_ = logical_endpoint_ipc_handle_type::fabric;
 
@@ -59,7 +59,7 @@ public:
   //! @param[in] __flags Logical endpoint creation flags.
   //! @param[in] __ipc The IPC handle type requested for this endpoint.
   _CCCL_HOST_API explicit multicast_logical_endpoint_spec(
-    unsigned int __num_devices,
+    ::cuda::std::uint32_t __num_devices,
     logical_endpoint_flag __flags          = logical_endpoint_flag::none,
     logical_endpoint_ipc_handle_type __ipc = logical_endpoint_ipc_handle_type::fabric) noexcept
       : __num_devices_(__num_devices)
@@ -70,7 +70,7 @@ public:
   //! @brief Returns the number of devices expected by the multicast endpoint.
   //!
   //! @return The endpoint device count.
-  [[nodiscard]] _CCCL_HOST_API constexpr unsigned int num_devices() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::uint32_t num_devices() const noexcept
   {
     return __num_devices_;
   }
@@ -106,9 +106,15 @@ public:
   //! @return The required bind alignment and maximum endpoint size.
   [[nodiscard]] _CCCL_HOST_API logical_endpoint_limits limits() const
   {
-    const auto __prop   = __as_prop(0);
-    const auto __limits = ::cuda::__driver::__logicalEndpointGetLimits(&__prop);
-    return {__limits.first, __limits.second};
+    const auto __prop = __as_prop(0);
+    logical_endpoint_limits __limits{};
+    _CCCL_TRY_DRIVER_API(
+      ::cuda::__driver::__logicalEndpointGetLimitsNoThrow,
+      "Failed to get logical endpoint limits",
+      __limits.bind_alignment,
+      __limits.max_size,
+      &__prop);
+    return __limits;
   }
 };
 
@@ -156,15 +162,8 @@ public:
       : __base()
   {}
 
-  _CCCL_HOST_API multicast_logical_endpoint(multicast_logical_endpoint&& __other) noexcept
-      : __base(::cuda::std::move(__other))
-  {}
-
-  _CCCL_HOST_API multicast_logical_endpoint& operator=(multicast_logical_endpoint&& __other) noexcept
-  {
-    static_cast<__base&>(*this) = ::cuda::std::move(static_cast<__base&>(__other));
-    return *this;
-  }
+  multicast_logical_endpoint(multicast_logical_endpoint&&) noexcept            = default;
+  multicast_logical_endpoint& operator=(multicast_logical_endpoint&&) noexcept = default;
 
   multicast_logical_endpoint(const multicast_logical_endpoint&)            = delete;
   multicast_logical_endpoint& operator=(const multicast_logical_endpoint&) = delete;

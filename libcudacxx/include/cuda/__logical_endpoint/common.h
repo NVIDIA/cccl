@@ -337,7 +337,7 @@ public:
 
   //! @brief Returns an ID from the reserved contiguous range.
   //!
-  //! Throws `std::out_of_range` if `__index >= size()`.
+  //! @throws `std::out_of_range` if `__index >= size()`.
   //!
   //! @param[in] __index The zero-based index into the reserved range.
   //! @return `base_id() + __index`.
@@ -380,30 +380,6 @@ private:
 
 namespace __detail
 {
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __get_logical_endpoint_limits_no_throw(
-  logical_endpoint_limits& __limits, const ::CUlogicalEndpointProp& __prop) noexcept
-{
-  return ::cuda::__driver::__logicalEndpointGetLimitsNoThrow(__limits.bind_alignment, __limits.max_size, &__prop);
-}
-
-_CCCL_HOST_API inline void
-__throw_logical_endpoint_create_error(::cudaError_t __status, const ::CUlogicalEndpointProp& __prop)
-{
-  if (__status == ::cudaErrorInvalidValue)
-  {
-    logical_endpoint_limits __limits{};
-    if (::cuda::__detail::__get_logical_endpoint_limits_no_throw(__limits, __prop) == ::cudaSuccess
-        && __limits.max_size != 0 && __prop.size > __limits.max_size)
-    {
-      _CCCL_THROW(::cuda::cuda_error,
-                  __status,
-                  "Failed to create a logical endpoint. The requested endpoint size exceeds the device limit");
-    }
-  }
-
-  _CCCL_THROW(::cuda::cuda_error, __status, "Failed to create a logical endpoint");
-}
-
 template <class _EndpointAttribute>
 [[nodiscard]] _CCCL_HOST_API inline bool __is_logical_endpoint_supported(
   ::cuda::device_ref __device,
@@ -642,16 +618,36 @@ protected:
     const auto __status = ::cuda::__driver::__logicalEndpointCreateNoThrow(__id.native_handle(), &__prop);
     if (__status != ::cudaSuccess)
     {
-      ::cuda::__detail::__throw_logical_endpoint_create_error(__status, __prop);
+      if (__status == ::cudaErrorInvalidValue)
+      {
+        logical_endpoint_limits __limits{};
+        if (::cuda::__driver::__logicalEndpointGetLimitsNoThrow(__limits.bind_alignment, __limits.max_size, &__prop)
+              == ::cudaSuccess
+            && __limits.max_size != 0 && __prop.size > __limits.max_size)
+        {
+          _CCCL_THROW(::cuda::cuda_error,
+                      __status,
+                      "Failed to create a logical endpoint. The requested endpoint size exceeds the device limit");
+        }
+      }
+      _CCCL_THROW(::cuda::cuda_error, __status, "Failed to create a logical endpoint");
     }
 
-    // Keep the owner invalid until create succeeds so destruction never targets an ID that was not created.
+    ::cuda::std::uint64_t __bind_alignment = __default_bind_alignment;
+    ::cuda::std::uint64_t __max_size{};
+    const auto __limits_status =
+      ::cuda::__driver::__logicalEndpointGetLimitsNoThrow(__bind_alignment, __max_size, &__prop);
+    if (__limits_status != ::cudaSuccess)
+    {
+      [[maybe_unused]] const auto _ = ::cuda::__driver::__logicalEndpointDestroyNoThrow(__id.native_handle());
+      _CCCL_THROW(::cuda::cuda_error, __limits_status, "Failed to get logical endpoint limits");
+    }
+
+    // Keep the owner invalid until create and metadata setup succeed so failure cleanup never targets an uncreated ID.
     static_cast<_Ref&>(*this) = _Ref{__id};
     __size_                   = __prop.size;
+    __bind_alignment_         = __bind_alignment;
     __ipc_handle_type_        = static_cast<logical_endpoint_ipc_handle_type>(__prop.ipcHandleTypes);
-
-    const auto __limits = ::cuda::__driver::__logicalEndpointGetLimits(&__prop);
-    __bind_alignment_   = __limits.first;
   }
 
   [[nodiscard]] _CCCL_HOST_API constexpr bool __is_engaged() const noexcept
@@ -660,8 +656,6 @@ protected:
   }
 
 public:
-  using release_type = ::cuda::std::pair<logical_endpoint_id, ::cuda::std::optional<logical_endpoint_id_range>>;
-
   _CCCL_HOST_API __logical_endpoint_owner_base(__logical_endpoint_owner_base&& __other) noexcept
       : _Ref{__other.id()}
       , __range_ref_(::cuda::std::move(__other.__range_ref_))
@@ -734,7 +728,8 @@ public:
   //! @brief Releases endpoint ownership without destroying the CUDA logical endpoint.
   //!
   //! @return The endpoint ID and an optional retained ID range reservation.
-  [[nodiscard]] _CCCL_HOST_API release_type release() noexcept
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::pair<logical_endpoint_id, ::cuda::std::optional<logical_endpoint_id_range>>
+  release() noexcept
   {
     _CCCL_ASSERT(__is_engaged(), "Cannot release an empty logical endpoint");
     if (!__is_engaged())
@@ -778,12 +773,11 @@ private:
   {
     if (__is_engaged())
     {
-      [[maybe_unused]] const auto __destroy_status =
-        ::cuda::__driver::__logicalEndpointDestroyNoThrow(this->native_handle());
-      static_cast<_Ref&>(*this) = _Ref{::cuda::invalid_logical_endpoint_id};
-      __size_                   = 0;
-      __bind_alignment_         = __default_bind_alignment;
-      __ipc_handle_type_        = logical_endpoint_ipc_handle_type::none;
+      [[maybe_unused]] const auto _ = ::cuda::__driver::__logicalEndpointDestroyNoThrow(this->native_handle());
+      static_cast<_Ref&>(*this)     = _Ref{::cuda::invalid_logical_endpoint_id};
+      __size_                       = 0;
+      __bind_alignment_             = __default_bind_alignment;
+      __ipc_handle_type_            = logical_endpoint_ipc_handle_type::none;
     }
   }
 };

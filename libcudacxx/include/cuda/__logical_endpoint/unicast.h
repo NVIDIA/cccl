@@ -111,9 +111,15 @@ public:
   //! @return The required bind alignment and maximum endpoint size.
   [[nodiscard]] _CCCL_HOST_API logical_endpoint_limits limits() const
   {
-    const auto __prop   = __as_prop(0);
-    const auto __limits = ::cuda::__driver::__logicalEndpointGetLimits(&__prop);
-    return {__limits.first, __limits.second};
+    const auto __prop = __as_prop(0);
+    logical_endpoint_limits __limits{};
+    _CCCL_TRY_DRIVER_API(
+      ::cuda::__driver::__logicalEndpointGetLimitsNoThrow,
+      "Failed to get logical endpoint limits",
+      __limits.bind_alignment,
+      __limits.max_size,
+      &__prop);
+    return __limits;
   }
 };
 
@@ -152,15 +158,8 @@ public:
       : __base()
   {}
 
-  _CCCL_HOST_API unicast_logical_endpoint(unicast_logical_endpoint&& __other) noexcept
-      : __base(::cuda::std::move(__other))
-  {}
-
-  _CCCL_HOST_API unicast_logical_endpoint& operator=(unicast_logical_endpoint&& __other) noexcept
-  {
-    static_cast<__base&>(*this) = ::cuda::std::move(static_cast<__base&>(__other));
-    return *this;
-  }
+  unicast_logical_endpoint(unicast_logical_endpoint&&) noexcept            = default;
+  unicast_logical_endpoint& operator=(unicast_logical_endpoint&&) noexcept = default;
 
   unicast_logical_endpoint(const unicast_logical_endpoint&)            = delete;
   unicast_logical_endpoint& operator=(const unicast_logical_endpoint&) = delete;
