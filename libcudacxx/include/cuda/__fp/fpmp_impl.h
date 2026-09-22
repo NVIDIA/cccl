@@ -88,23 +88,18 @@
 */
 
 #include <cuda/__fp/fpmp_common.h> // IWYU pragma: keep
-#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
 #include <cuda/std/__cccl/preprocessor.h> // IWYU pragma: keep
-#include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
-#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
-#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
-#include <cuda/std/__type_traits/is_arithmetic.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/fma.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/roots.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/rounding_functions.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h> // IWYU pragma: keep
-#include <cuda/std/__type_traits/make_nbit_int.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cfloat> // IWYU pragma: keep
-#include <cuda/std/cmath> // IWYU pragma: keep
+#include <cuda/std/cfloat>
 #include <cuda/std/cstdint>
-#include <cuda/std/cstring> // IWYU pragma: keep
 
 #include <nv/target>
 

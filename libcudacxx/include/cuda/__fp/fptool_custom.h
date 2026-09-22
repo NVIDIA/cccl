@@ -195,13 +195,14 @@
 //! setter runs concurrently with arithmetic.
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cmath/fma.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/roots.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cmath> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)

@@ -28,10 +28,8 @@
 
 #include <cuda/__fp/fpmp_math_impl.h>
 #include <cuda/std/numbers>
-// Sibling families whose kernels this family calls (log from exp, rcbrt from pow, fabs from manip).
+// Sibling family whose log kernel this family calls.
 #include <cuda/__fp/fpmp_math_impl_exp.h>
-#include <cuda/__fp/fpmp_math_impl_manip.h> // IWYU pragma: keep
-#include <cuda/__fp/fpmp_math_impl_pow.h> // IWYU pragma: keep
 
 #include <nv/target>
 

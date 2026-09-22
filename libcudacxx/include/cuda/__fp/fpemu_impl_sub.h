@@ -37,7 +37,6 @@
 
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_add.h>
-#include <cuda/__fp/fpemu_impl_unpack.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

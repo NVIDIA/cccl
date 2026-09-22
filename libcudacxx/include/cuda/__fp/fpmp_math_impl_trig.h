@@ -27,10 +27,8 @@
 */
 
 #include <cuda/__fp/fpmp_math_impl.h>
-#include <cuda/std/numbers>
-// Sibling families whose kernels this family calls (exp10 is used by trig).
-#include <cuda/__fp/fpmp_math_impl_exp.h> // IWYU pragma: keep
 #include <cuda/std/__bit/countl.h> // countl_zero for the Payne-Hanek normalization
+#include <cuda/std/numbers>
 
 #include <nv/target>
 

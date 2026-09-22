@@ -188,11 +188,17 @@
 // Per-operation implementation families (see fpmp_impl.h). Aggregated here (not
 // by the base) to avoid a family->base->family include cycle. Each family is
 // self-contained and pulls the siblings it needs (divsqrt/atomic -> muladd).
-#include <cuda/__fp/fpmp_impl_atomic.h> // IWYU pragma: keep
+#include <cuda/__fp/fpmp_impl_atomic.h>
 #include <cuda/__fp/fpmp_impl_cmp.h>
 #include <cuda/__fp/fpmp_impl_cvt.h>
 #include <cuda/__fp/fpmp_impl_divsqrt.h>
 #include <cuda/__fp/fpmp_impl_muladd.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
