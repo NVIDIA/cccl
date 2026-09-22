@@ -154,10 +154,10 @@ struct pass_ref
 // a user provided functor that forwards its argument
 struct forward
 {
-  template <class _Tp>
-  constexpr _Tp&& operator()(_Tp&& __t) const noexcept
+  template <class Tp>
+  constexpr Tp&& operator()(Tp&& t) const noexcept
   {
-    return ::cuda::std::forward<_Tp>(__t);
+    return ::cuda::std::forward<Tp>(t);
   }
 };
 

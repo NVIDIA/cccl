@@ -3,6 +3,4 @@ InheritParentConfig: true
 CheckOptions:
  - key:             readability-identifier-naming.TemplateParameterCase
    value:           CamelCase
- - key:             readability-identifier-naming.TemplateParameterIgnoredRegexp
-   value:           '^_[A-Z][a-zA-Z0-9_]*$'
 ...

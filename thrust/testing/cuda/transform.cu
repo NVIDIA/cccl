@@ -446,11 +446,11 @@ public:
       : __fun_(::cuda::std::move(func))
   {}
 
-  template <typename _Tuple>
-  _CCCL_HOST_DEVICE decltype(auto) operator()(_Tuple&& __tuple) const noexcept
+  template <typename Tuple>
+  _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& tuple) const noexcept
   {
     // not calling func, just return a default ctored element, so we would get a wrong result if we were called
-    return decltype(::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple))){};
+    return decltype(::cuda::std::apply(__fun_, ::cuda::std::forward<Tuple>(tuple))){};
   }
 
   _CCCL_HOST_DEVICE sum_five& __fun() noexcept
