@@ -260,8 +260,8 @@ using layout_v1_t = layout_t<dot_layout::v1>;
 [[maybe_unused]] static constexpr layout_v0_t layout_v0{};
 [[maybe_unused]] static constexpr layout_v1_t layout_v1{};
 
-template <int n>
-using n32_t = ::cuda::std::integral_constant<int, n>;
+template <int _Np>
+using n32_t = ::cuda::std::integral_constant<int, _Np>;
 
 template <dot_report_mechanism __report_mechanism>
 using report_mechanism_t         = ::cuda::std::integral_constant<dot_report_mechanism, __report_mechanism>;

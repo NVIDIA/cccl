@@ -43,8 +43,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 using true_type  = integral_constant<bool, true>;
 using false_type = integral_constant<bool, false>;
 
-template <bool __b>
-using bool_constant = integral_constant<bool, __b>;
+template <bool _Bp>
+using bool_constant = integral_constant<bool, _Bp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

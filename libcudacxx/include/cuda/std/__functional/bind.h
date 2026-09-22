@@ -110,7 +110,7 @@ __mu(_Ti& __ti, tuple<_Uj...>& __uj)
   return ::cuda::std::__mu_expand(__ti, __uj, __indices());
 }
 
-template <bool IsPh, class _Ti, class _Uj>
+template <bool _IsPh, class _Ti, class _Uj>
 struct __mu_return2
 {};
 
@@ -138,7 +138,7 @@ __mu(_Ti& __ti, _Uj&)
   return __ti;
 }
 
-template <class _Ti, bool IsReferenceWrapper, bool IsBindEx, bool IsPh, class _TupleUj>
+template <class _Ti, bool _IsReferenceWrapper, bool _IsBindEx, bool _IsPh, class _TupleUj>
 struct __mu_return_impl;
 
 template <bool _Invocable, class _Ti, class... _Uj>

@@ -31,7 +31,7 @@ namespace __v1
 {
 class thread_block;
 
-template <unsigned int Size, typename ParentT>
+template <unsigned int _Size, typename _ParentT>
 class thread_block_tile;
 } // namespace __v1
 using namespace __v1;
