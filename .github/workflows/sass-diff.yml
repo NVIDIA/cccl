@@ -36,6 +36,10 @@ on:
         required: false
         default: 14
         type: number
+    secrets:
+      inference_api_key:
+        description: "NVIDIA Inference Hub API key, for the triage of the differences."
+        required: true
 
 jobs:
   run:
@@ -147,18 +151,88 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ inputs.artifact_retention_days }}
 
+      - name: Set up Node for triage
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        with:
+          node-version: 24
+
+      # The action invokes node through sudo, whose PATH excludes the tool cache.
+      #
+      # See https://github.com/openai/codex-action/issues/180
+      - name: Make Node available to sudo
+        run: |
+          command -v node > "${RUNNER_TEMP}/triage-node-path"
+          read -r node_path < "${RUNNER_TEMP}/triage-node-path"
+          sudo -n ln -s "${node_path}" /usr/local/bin/node
+          sudo -n node --version
+
+      # codex-action applies this setup only on GitHub-hosted runners, before dropping
+      # sudo. https://github.com/openai/codex-action/blob/52fe01ec70a42f454c9d2ebd47598f9fd6893d56/action.yml#L262-L284
+      #
+      # Otherwise it errors with:
+      #
+      # ERROR codex_core::session: Failed to create session: failed to load AGENTS.md
+      # instructions for environment `local`: fs sandbox helper failed with status exit
+      # status: 1: bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted
+      - name: Enable namespaces for Codex sandbox
+        run: |
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Prepare the triage environment
+        run: |
+          mkdir -p "${RUNNER_TEMP}/codex-home"
+          cp ci/sass/sass_triage_config.toml "${RUNNER_TEMP}/codex-home/config.toml"
+
+      # A triage failure must not hide the comparison, thus this step does not fail the
+      # job. The render step below adds the section only when this step wrote a file.
+      - name: Triage the SASS differences
+        id: triage
+        continue-on-error: true
+        uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1.11
+        env:
+          SASS_RESULT_DIR: ${{ github.workspace }}/${{ env.ARTIFACT_ROOT }}/result
+        with:
+          openai-api-key: ${{ secrets.inference_api_key }}
+          responses-api-endpoint: https://inference-api.nvidia.com/v1/responses
+          codex-version: 0.149.0
+          codex-home: ${{ runner.temp }}/codex-home
+          permission-profile: sass_triage
+          safety-strategy: drop-sudo
+          allow-bot-users: "copy-pr-bot[bot]"
+          model: openai/openai/gpt-5.6-sol
+          effort: high
+          codex-args: --strict-config --ephemeral
+          output-file: ${{ runner.temp }}/sass-analysis.json
+          output-schema-file: ci/sass/model-output.schema.json
+          prompt-file: ci/sass/sass_triage_prompt.md
+
       # This step renders the comment. It comes after the upload, because the comment
       # links to the artifact, and that URL exists only after the upload.
       - name: Report the SASS summary
         env:
           ARTIFACTS_URL: ${{ steps.dumps.outputs.artifact-url }}
+          ANALYSIS_FILE: ${{ runner.temp }}/sass-analysis.json
+          TRIAGE_OUTCOME: ${{ steps.triage.outcome }}
         run: |
           summary="${ARTIFACT_ROOT}/result/summary.md"
+
+          # `render_report.py` fails on a file that does not match the schema or that
+          # names a diff that does not exist, so a bad analysis stops the render
+          # instead of reaching the comment.
+          analysis_args=()
+          if [[ "${TRIAGE_OUTCOME}" == "success" ]] && [[ -s "${ANALYSIS_FILE}" ]]; then
+            analysis_args=(--analysis "${ANALYSIS_FILE}")
+          else
+            echo "No SASS triage to render (outcome: ${TRIAGE_OUTCOME})."
+          fi
+
           python3 ci/sass/render_report.py \
             --report "${ARTIFACT_ROOT}/result/report.json" \
             --meta "${ARTIFACT_ROOT}/result/meta.json" \
             --output "${summary}" \
-            --artifacts-url "${ARTIFACTS_URL}"
+            --artifacts-url "${ARTIFACTS_URL}" \
+            "${analysis_args[@]}"
 
           if [[ ! -s "${summary}" ]]; then
             echo "::error::${summary} is missing or empty after a successful comparison."
