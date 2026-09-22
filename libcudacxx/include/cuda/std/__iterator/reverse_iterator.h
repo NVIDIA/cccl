@@ -159,6 +159,10 @@ public:
     {
       return ::cuda::std::prev(current);
     }
+    else if constexpr (is_convertible_v<decltype(::cuda::std::prev(current)), pointer>)
+    {
+      return ::cuda::std::prev(current);
+    }
     else
     {
       return ::cuda::std::prev(current).operator->();

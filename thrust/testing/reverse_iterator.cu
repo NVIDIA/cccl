@@ -54,6 +54,18 @@ void TestReverseIteratorCopyConstructor()
   REQUIRE(*d_iter2 == *d_iter3);
 }
 DECLARE_UNITTEST(TestReverseIteratorCopyConstructor);
+
+void TestReverseIteratorDevicePtrArrow()
+{
+  int storage[2]{};
+  int* raw = storage;
+  thrust::device_ptr<int> base(raw + 1);
+  auto reverse = thrust::make_reverse_iterator(base);
+
+  REQUIRE(reverse.operator->().get() == raw);
+}
+DECLARE_UNITTEST(TestReverseIteratorDevicePtrArrow);
+
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::reverse_iterator<int*>>::value);
 static_assert(cuda::std::is_trivially_copyable<thrust::reverse_iterator<int*>>::value);
 
