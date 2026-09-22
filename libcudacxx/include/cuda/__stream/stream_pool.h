@@ -39,65 +39,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-// Atomics on the round-robin counter and the slots of a stream_pool through the compiler builtins, so that the header
-// does not pull in <atomic>. MSVC gets the same builtins from cuda/std/__atomic/platform.h, in namespace cuda::std.
-#  if _CCCL_COMPILER(MSVC)
-#    define _CUDA_STREAM_POOL_ATOMIC(__op) ::cuda::std::__op
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-#    define _CUDA_STREAM_POOL_ATOMIC(__op) __op
-#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
-
-//! @brief Relaxed atomic load of a round-robin position
-//!
-//! @param[in] __ptr The position to read
-//!
-//! @return The value stored at `__ptr`
-_CCCL_HOST_API inline ::cuda::std::size_t __stream_pool_load_relaxed(const ::cuda::std::size_t* __ptr) noexcept
-{
-  return _CUDA_STREAM_POOL_ATOMIC(__atomic_load_n)(__ptr, __ATOMIC_RELAXED);
-}
-
-//! @brief Weak relaxed compare-exchange advancing a round-robin position
-//!
-//! @param[in,out] __ptr The position to advance
-//! @param[in,out] __expected The value `__ptr` is expected to hold; on failure, set to the value it holds
-//! @param[in] __desired The value to store if `__ptr` holds `__expected`
-//!
-//! @return `true` if `__desired` was stored, `false` otherwise, including spuriously
-_CCCL_HOST_API inline bool __stream_pool_advance(
-  ::cuda::std::size_t* __ptr, ::cuda::std::size_t& __expected, ::cuda::std::size_t __desired) noexcept
-{
-  return _CUDA_STREAM_POOL_ATOMIC(
-    __atomic_compare_exchange_n)(__ptr, &__expected, __desired, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
-}
-
-//! @brief Acquire atomic load of a slot
-//!
-//! @param[in] __ptr The slot to read
-//!
-//! @return The stream stored in the slot, `nullptr` if the slot is empty
-_CCCL_HOST_API inline ::cudaStream_t __stream_pool_load_acquire(::cudaStream_t* __ptr) noexcept
-{
-  return _CUDA_STREAM_POOL_ATOMIC(__atomic_load_n)(__ptr, __ATOMIC_ACQUIRE);
-}
-
-//! @brief Strong compare-exchange publishing a stream into an empty slot
-//!
-//! @param[in,out] __ptr The slot to fill
-//! @param[in,out] __expected The value the slot is expected to hold, `nullptr` for an empty slot; on failure, set to
-//! the stream another thread published
-//! @param[in] __desired The stream to publish
-//!
-//! @return `true` if `__desired` was published, `false` if the slot already held a stream
-_CCCL_HOST_API inline bool
-__stream_pool_publish(::cudaStream_t* __ptr, ::cudaStream_t& __expected, ::cudaStream_t __desired) noexcept
-{
-  return _CUDA_STREAM_POOL_ATOMIC(
-    __atomic_compare_exchange_n)(__ptr, &__expected, __desired, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
-}
-
-#  undef _CUDA_STREAM_POOL_ATOMIC
-
 //! @brief When the streams of a `stream_pool` are created
 enum class stream_pool_creation
 {
@@ -106,6 +47,14 @@ enum class stream_pool_creation
   //! Each stream is created the first time its slot is requested
   lazy,
 };
+
+// Atomics on the round-robin counter and the slots of a stream_pool through the compiler builtins, so that the header
+// does not pull in <atomic>. MSVC gets the same builtins from cuda/std/__atomic/platform.h, in namespace cuda::std.
+#  if _CCCL_COMPILER(MSVC)
+#    define _CUDA_STREAM_POOL_ATOMIC(__op) ::cuda::std::__op
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#    define _CUDA_STREAM_POOL_ATOMIC(__op) __op
+#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
 //! @brief A fixed-size pool of non-blocking streams on one device or green context.
 //!
@@ -252,8 +201,8 @@ public:
     _CCCL_ASSERT(__size_ != 0, "cuda::stream_pool::next_stream called on a moved-from pool");
     // Advance the position and wrap it at size() in one compare-exchange, retried if another caller advanced it
     // in between. The position is always a valid slot, so the order is exact and nothing ever overflows.
-    ::cuda::std::size_t __slot = ::cuda::__stream_pool_load_relaxed(&__next_);
-    while (!::cuda::__stream_pool_advance(&__next_, __slot, __slot + 1 == __size_ ? 0 : __slot + 1))
+    ::cuda::std::size_t __slot = __load_relaxed(&__next_);
+    while (!__advance(&__next_, __slot, __slot + 1 == __size_ ? 0 : __slot + 1))
     {
     }
     return __stream_at(__slot);
@@ -323,6 +272,55 @@ public:
   }
 
 private:
+  //! @brief Relaxed atomic load of a round-robin position
+  //!
+  //! @param[in] __ptr The position to read
+  //!
+  //! @return The value stored at `__ptr`
+  _CCCL_HOST_API static ::cuda::std::size_t __load_relaxed(const ::cuda::std::size_t* __ptr) noexcept
+  {
+    return _CUDA_STREAM_POOL_ATOMIC(__atomic_load_n)(__ptr, __ATOMIC_RELAXED);
+  }
+
+  //! @brief Weak relaxed compare-exchange advancing a round-robin position
+  //!
+  //! @param[in,out] __ptr The position to advance
+  //! @param[in,out] __expected The value `__ptr` is expected to hold; on failure, set to the value it holds
+  //! @param[in] __desired The value to store if `__ptr` holds `__expected`
+  //!
+  //! @return `true` if `__desired` was stored, `false` otherwise, including spuriously
+  _CCCL_HOST_API static bool
+  __advance(::cuda::std::size_t* __ptr, ::cuda::std::size_t& __expected, ::cuda::std::size_t __desired) noexcept
+  {
+    return _CUDA_STREAM_POOL_ATOMIC(
+      __atomic_compare_exchange_n)(__ptr, &__expected, __desired, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+  }
+
+  //! @brief Acquire atomic load of a slot
+  //!
+  //! @param[in] __ptr The slot to read
+  //!
+  //! @return The stream stored in the slot, `nullptr` if the slot is empty
+  _CCCL_HOST_API static ::cudaStream_t __load_acquire(::cudaStream_t* __ptr) noexcept
+  {
+    return _CUDA_STREAM_POOL_ATOMIC(__atomic_load_n)(__ptr, __ATOMIC_ACQUIRE);
+  }
+
+  //! @brief Strong compare-exchange publishing a stream into an empty slot
+  //!
+  //! @param[in,out] __ptr The slot to fill
+  //! @param[in,out] __expected The value the slot is expected to hold, `nullptr` for an empty slot; on failure, set to
+  //! the stream another thread published
+  //! @param[in] __desired The stream to publish
+  //!
+  //! @return `true` if `__desired` was published, `false` if the slot already held a stream
+  _CCCL_HOST_API static bool
+  __publish(::cudaStream_t* __ptr, ::cudaStream_t& __expected, ::cudaStream_t __desired) noexcept
+  {
+    return _CUDA_STREAM_POOL_ATOMIC(
+      __atomic_compare_exchange_n)(__ptr, &__expected, __desired, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+  }
+
   //! @brief Returns the stream of slot `__i`, creating it if the slot is still empty
   //!
   //! A slot changes exactly once, from empty to a stream that lives until the pool is destroyed, so a filled slot
@@ -337,7 +335,7 @@ private:
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref __stream_at(::cuda::std::size_t __i) const
   {
-    ::cudaStream_t __published = ::cuda::__stream_pool_load_acquire(&__slots_[__i]);
+    ::cudaStream_t __published = __load_acquire(&__slots_[__i]);
     if (__published != nullptr)
     {
       return stream_ref{__published};
@@ -347,7 +345,7 @@ private:
     // calling thread is not capturing.
     const __relaxed_capture_scope __relaxed{};
     stream __fresh = __create_stream();
-    if (::cuda::__stream_pool_publish(&__slots_[__i], __published, __fresh.get()))
+    if (__publish(&__slots_[__i], __published, __fresh.get()))
     {
       return stream_ref{__fresh.release()};
     }
@@ -397,13 +395,15 @@ private:
   //! Number of slots, zero only for a moved-from pool.
   ::cuda::std::size_t __size_;
   //! `__size_` slots; an empty slot holds `nullptr`, a filled slot the stream that lives until the pool is destroyed.
-  //! Only ever accessed through the atomic builtins at the top of this file, except in the constructors, the move
+  //! Only ever accessed through the atomic helpers above, except in the constructors, the move
   //! assignment and `__destroy_slots()`, where no other thread can see the pool.
   ::cudaStream_t* __slots_;
   //! The slot the next call to `next_stream()` returns, always below `__size_`; only ever accessed through the
-  //! atomic builtins at the top of this file.
+  //! atomic helpers above.
   mutable ::cuda::std::size_t __next_{0};
 };
+
+#  undef _CUDA_STREAM_POOL_ATOMIC
 
 _CCCL_END_NAMESPACE_CUDA
 
