@@ -67,7 +67,7 @@ bool is_partitioned(my_system& system, InputIterator /*first*/, InputIterator, P
   return false;
 }
 
-void TestIsPartitionedDispatchExplicit()
+TEST_CASE("TestIsPartitionedDispatchExplicit", "[is_partitioned]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -76,7 +76,6 @@ void TestIsPartitionedDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestIsPartitionedDispatchExplicit);
 
 template <typename InputIterator, typename Predicate>
 bool is_partitioned(my_tag, InputIterator first, InputIterator, Predicate)
@@ -85,7 +84,7 @@ bool is_partitioned(my_tag, InputIterator first, InputIterator, Predicate)
   return false;
 }
 
-void TestIsPartitionedDispatchImplicit()
+TEST_CASE("TestIsPartitionedDispatchImplicit", "[is_partitioned]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -93,4 +92,3 @@ void TestIsPartitionedDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestIsPartitionedDispatchImplicit);

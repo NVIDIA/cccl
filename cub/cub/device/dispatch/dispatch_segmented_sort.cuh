@@ -81,19 +81,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
     // One CTA per segment
     const local_segment_index_t blocks_in_grid = large_segments;
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking "
-            "DeviceSegmentedSortKernelLarge<<<%d, %d, 0, %lld>>>()\n",
-            static_cast<int>(blocks_in_grid),
-            large_threads_per_block,
-            (long long) stream);
-#else // CUB_DEBUG_LOG
-    log("Invoking "
-        "DeviceSegmentedSortKernelLarge<<<%d, %d, 0, %lld>>>()\n",
-        static_cast<int>(blocks_in_grid),
-        large_threads_per_block,
-        (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeviceSegmentedSortKernelLarge", static_cast<int>(blocks_in_grid), 1, 1, large_threads_per_block, 0, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(blocks_in_grid, large_threads_per_block, 0, stream)
@@ -136,19 +125,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
 
   if (small_and_medium_blocks_in_grid)
   {
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking "
-            "DeviceSegmentedSortKernelSmall<<<%d, %d, 0, %lld>>>()\n",
-            static_cast<int>(small_and_medium_blocks_in_grid),
-            small_threads_per_block,
-            (long long) stream);
-#else // CUB_DEBUG_LOG
-    log("Invoking "
-        "DeviceSegmentedSortKernelSmall<<<%d, %d, 0, %lld>>>()\n",
-        static_cast<int>(small_and_medium_blocks_in_grid),
-        small_threads_per_block,
-        (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeviceSegmentedSortKernelSmall",
+      static_cast<int>(small_and_medium_blocks_in_grid),
+      1,
+      1,
+      small_threads_per_block,
+      0,
+      stream,
+      "");
 
     launcher_factory(small_and_medium_blocks_in_grid, small_threads_per_block, 0, stream)
       .doit(small_kernel,
@@ -952,24 +937,16 @@ private:
     const auto threads_in_block = static_cast<unsigned int>(wrapped_policy.LargeSegmentThreadsPerBlock());
 
     // Log kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceSegmentedSortFallbackKernel<<<%d, %d, "
-            "0, %lld>>>(), %d items per thread, bit_grain %d\n",
-            blocks_in_grid,
-            threads_in_block,
-            (long long) stream,
-            wrapped_policy.LargeSegmentItemsPerThread(),
-            wrapped_policy.LargeSegmentRadixBits());
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking DeviceSegmentedSortFallbackKernel<<<%d, %d, "
-      "0, %lld>>>(), %d items per thread, bit_grain %d\n",
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeviceSegmentedSortFallbackKernel",
       blocks_in_grid,
+      1,
+      1,
       threads_in_block,
-      (long long) stream,
-      wrapped_policy.LargeSegmentItemsPerThread(),
+      0,
+      stream,
+      ", bit_grain: %d",
       wrapped_policy.LargeSegmentRadixBits());
-#endif // CUB_DEBUG_LOG
 
     // Invoke fallback kernel
     launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
@@ -1220,21 +1197,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
 {
   const auto blocks_in_grid   = static_cast<local_segment_index_t>(num_segments);
   const auto threads_in_block = static_cast<unsigned int>(active_policy.large_segment.threads_per_block);
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeviceSegmentedSortFallbackKernel<<<%d, %d, 0, %lld>>>(), %d items per thread, bit_grain %d\n",
-          blocks_in_grid,
-          threads_in_block,
-          (long long) stream,
-          active_policy.large_segment.items_per_thread,
-          active_policy.large_segment.radix_bits);
-#else // CUB_DEBUG_LOG
-  log("Invoking DeviceSegmentedSortFallbackKernel<<<%d, %d, 0, %lld>>>(), %d items per thread, bit_grain %d\n",
-      blocks_in_grid,
-      threads_in_block,
-      (long long) stream,
-      active_policy.large_segment.items_per_thread,
-      active_policy.large_segment.radix_bits);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH(
+    "DeviceSegmentedSortFallbackKernel",
+    blocks_in_grid,
+    1,
+    1,
+    threads_in_block,
+    0,
+    stream,
+    ", bit_grain: %d",
+    active_policy.large_segment.radix_bits);
 
   if (const auto error = CubDebug(
         launcher_factory(blocks_in_grid, threads_in_block, 0, stream)

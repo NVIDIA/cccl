@@ -114,3 +114,28 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
 }
 } // namespace detail
 CUB_NAMESPACE_END
+
+#ifdef CUB_DEBUG_LOG
+#  define _CUB_LOG_KERNEL_LAUNCH(                                                             \
+    kernel_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim, smem_bytes, stream, fmt, ...) \
+    _CubLog("Invoking " kernel_name "<<<{%u, %u, %u}, %u, %zu, %lld>>>()" fmt "\n",           \
+            static_cast<unsigned int>(grid_dim_x),                                            \
+            static_cast<unsigned int>(grid_dim_y),                                            \
+            static_cast<unsigned int>(grid_dim_z),                                            \
+            static_cast<unsigned int>(block_dim),                                             \
+            static_cast<size_t>(smem_bytes),                                                  \
+            reinterpret_cast<long long>(stream),                                              \
+            ##__VA_ARGS__)
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+#  define _CUB_LOG_KERNEL_LAUNCH(                                                             \
+    kernel_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim, smem_bytes, stream, fmt, ...) \
+    CUB_NS_QUALIFIER::detail::log(                                                            \
+      "Invoking " kernel_name "<<<{%u, %u, %u}, %u, %zu, %lld>>>()" fmt "\n",                 \
+      static_cast<unsigned int>(grid_dim_x),                                                  \
+      static_cast<unsigned int>(grid_dim_y),                                                  \
+      static_cast<unsigned int>(grid_dim_z),                                                  \
+      static_cast<unsigned int>(block_dim),                                                   \
+      static_cast<size_t>(smem_bytes),                                                        \
+      reinterpret_cast<long long>(stream),                                                    \
+      ##__VA_ARGS__)
+#endif // !CUB_DEBUG_LOG

@@ -119,6 +119,18 @@ When a kernel is launched with PDL enabled (either directly or via a launcher fa
 via `cub::detail::ptx_compute_cap`. PDL may only be enabled if
 `cc >= ::cuda::compute_capability{9, 0}` (see `dispatch_find.cuh`).
 
+## correctness.pdl-sync (critical, kernels launched with programmatic dependent launch)
+
+<!-- provenance:
+  #3114→#5456 (backports #5460, #5461) PDL grid-dependency sync in AgentMerge::consume_tile placed after the merge_partitions reads it was meant to guard, causing intermittent races/cudaErrorIllegalInstruction (issue #5297)
+-->
+
+When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
+at the kernel launcher, flag any global memory access in the kernel's body (i.e., a load from or a
+store to a pointer passed at the kernel's interface) that happens before any call to
+`_CCCL_PDL_GRID_DEPENDENCY_SYNC` — the previous kernel may still be writing that memory — unless the
+access has a comment explaining why a PDL sync can come later.
+
 ## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
 
 <!-- provenance:
@@ -186,6 +198,63 @@ the call. PR CI builds and runs with matched driver/CTK, so this only reproduces
 
 Flag dependencies fetched by branch name (`CPMAddPackage("gh:org/repo#main")`, `GIT_TAG
 main`); pin a commit or tag. Candidate for a pre-commit grep.
+
+## correctness.stale-refs-after-rename (important, renames, moves, or splits of files, symbols, or modules anywhere in the repo)
+
+<!-- provenance:
+  #3177→#3192 cuda.parallel module split left docs automodule pointing at emptied package;
+  #10012→#10042 docs flattening left stale path in a test comment and an empty api/thread toctree stub;
+  #1075→#1108,#1110 lit.cfg path not updated after symlink removal broke local lit runs;
+  #4537→#6516 NVTX macro rename left a stale #define in test_nvtx_disabled.cu, silently defanging a negative test;
+  #4795→#4814 cudax detail→__detail rename swept ~120 files but missed the second example copy at top-level examples/cudax/
+-->
+<!-- note:
+  A docs CI check failing on autodoc directives that yield no members (or on empty generated pages)
+  would cover the last clause mechanically; retire it once such a check exists.
+-->
+
+When a diff renames, moves, or splits a file, macro, symbol, or module, `git grep` for the old name:
+each remaining hit must be updated, or be classified as an unrelated entity that merely shares
+the name. Doc directives (`automodule::`/`toctree::`) can go stale without containing the old name and
+still build cleanly (autodoc renders emptied packages as blank pages) — verify the rendered docs, not
+just the grep.
+
+## correctness.workaround-breaks-constexpr (important, constexpr-marked)
+
+<!-- provenance:
+  #5939→#7059 `auto __tmp = mapping(); return __tmp.is_exhaustive();` workaround for a clang [[nodiscard]] warning made mdspan's is_exhaustive unusable in constexpr context on some compilers; propagated to is_unique/is_strided/stride in #6703
+-->
+
+When a diff introduces any workaround inside a `constexpr` function, verify the function is still
+usable during constant evaluation on every supported compiler, not merely that it compiles as a
+runtime call. The break only surfaces when a caller uses the function during constant evaluation,
+which the unit tests may not exercise. Adding a test that evaluates the function at compile time is
+recommended.
+
+## perf.partial-pdl (important, kernels launched with programmatic dependent launch)
+
+<!-- provenance:
+  #3114→#3199 PDL enabled at Partition/Merge triple_chevron launches but not the sibling BlockSort launch
+-->
+
+When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
+at the kernel launcher, open the full dispatch function (or equivalent) and enumerate EVERY kernel
+launch it makes. All kernels should be launched using PDL, otherwise the performance gain is marginal.
+Replacing calls to `cudaMemset` by kernels launched using PDL should be strongly considered and
+pointed out as suggestions.
+
+## api.type-replacement (critical, public types in thrust/libcudacxx/cub)
+
+<!-- provenance:
+  #262→#1249 (backport #1292) pair trivial copyability;
+  #454→#1286,#1425,#1497 complex reverted three times;
+  #6393→#6403 variant modularization dropped monostate include from the umbrella header
+-->
+
+When a diff reimplements, re-derives, or aliases any public type (`thrust::pair`/`tuple`/`complex`,
+iterators, …), verify every observable property of the old type is preserved: trivial copyability and
+layout (downstream code `memcpy`s them), size/alignment, implicit conversions and promotions, overload
+resolution, and numerical behavior.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
