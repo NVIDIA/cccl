@@ -56,50 +56,6 @@
 #  define CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
 #endif
 
-// ==== shared Catch2 type lists (merged from the former catch2_test_helper.h) ====
-
-// corresponds to DECLARE_VECTOR_UNITTEST
-using vector_list = cuda::std::__type_list<
-  // host
-  thrust::host_vector<signed char>,
-  thrust::host_vector<short>,
-  thrust::host_vector<int>,
-  thrust::host_vector<float>,
-  thrust::host_vector<custom_numeric>,
-  thrust::host_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::host_memory_resource>>,
-  // device
-  thrust::device_vector<signed char>,
-  thrust::device_vector<short>,
-  thrust::device_vector<int>,
-  thrust::device_vector<float>,
-  thrust::device_vector<custom_numeric>,
-  thrust::device_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::device_memory_resource>>,
-  // universal
-  thrust::universal_vector<int>,
-  thrust::universal_host_pinned_vector<int>>;
-
-// corresponds to DECLARE_INTEGRAL_VECTOR_UNITTEST
-using integral_vector_list = cuda::std::__type_list<
-  // host
-  thrust::host_vector<signed char>,
-  thrust::host_vector<short>,
-  thrust::host_vector<int>,
-  // device
-  thrust::device_vector<signed char>,
-  thrust::device_vector<short>,
-  thrust::device_vector<int>,
-  // universal
-  thrust::universal_vector<int>,
-  thrust::universal_host_pinned_vector<int>>;
-
-// corresponds to DECLARE_GENERIC_UNITTEST
-using generic_list =
-  cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float>;
-
-// corresponds to DECLARE_VARIABLE_UNITTEST
-using variable_list =
-  cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float, double>;
-
 // gcc >= 11 emits bogus -Werror=stringop-overflow diagnostics ("writing N bytes into a region of size 0") for copies
 // of small vectors of narrow types. The culprit optimizations are the tree vectorizer and the loop-distribute-patterns
 // pass (which rewrites copy loops into memmove). Disabling both on the affected test functions works around it.
@@ -259,72 +215,63 @@ using BuiltinNumericTypes = unittest::type_list<
            4096, 4097, 5030, 7791, 10000, 10027, 12345, 16384, 17354, 26255, 32768, 43718, 65533, 65536)
 // clang-format on
 
-// Macro to create a single unittest
-#define DECLARE_UNITTEST(TEST)                    \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__)) \
-  {                                               \
-    TEST();                                       \
+// Bridges a function-template test `template <class T> void VTEST()` into a functor so it can be driven by
+// unittest::detail::for_each_type over a type list.
+#define _THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, TYPE_LIST)       \
+  template <class T>                                               \
+  struct VTEST##_invoker                                           \
+  {                                                                \
+    void operator()() const                                        \
+    {                                                              \
+      VTEST<T>();                                                  \
+    }                                                              \
+  };                                                               \
+  TEST_CASE(#VTEST, THRUST_PP_STRINGIZE(__FILE__))                 \
+  {                                                                \
+    unittest::detail::for_each_type<VTEST##_invoker>(TYPE_LIST{}); \
   }
 
-#define DECLARE_UNITTEST_WITH_NAME(TEST, NAME)    \
-  TEST_CASE(#NAME, THRUST_PP_STRINGIZE(__FILE__)) \
-  {                                               \
-    TEST();                                       \
-  }
-
-// Macro to create host and device versions of a
-// unit test for a bunch of data types
-#define DECLARE_VECTOR_UNITTEST(VTEST)                                                                                  \
-  TEST_CASE(#VTEST, THRUST_PP_STRINGIZE(__FILE__))                                                                      \
-  {                                                                                                                     \
-    /* host */                                                                                                          \
-    VTEST<thrust::host_vector<signed char>>();                                                                          \
-    VTEST<thrust::host_vector<short>>();                                                                                \
-    VTEST<thrust::host_vector<int>>();                                                                                  \
-    VTEST<thrust::host_vector<float>>();                                                                                \
-    VTEST<thrust::host_vector<custom_numeric>>();                                                                       \
-    VTEST<thrust::host_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::host_memory_resource>>>();     \
-    /* device */                                                                                                        \
-    VTEST<thrust::device_vector<signed char>>();                                                                        \
-    VTEST<thrust::device_vector<short>>();                                                                              \
-    VTEST<thrust::device_vector<int>>();                                                                                \
-    VTEST<thrust::device_vector<float>>();                                                                              \
-    VTEST<thrust::device_vector<custom_numeric>>();                                                                     \
-    VTEST<thrust::device_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::device_memory_resource>>>(); \
-    /* universal*/                                                                                                      \
-    VTEST<thrust::universal_vector<int>>();                                                                             \
-    VTEST<thrust::universal_host_pinned_vector<int>>();                                                                 \
-  }
+// Macro to create host and device versions of a unit test for a bunch of data types
+using vector_list = cuda::std::__type_list<
+  // host
+  thrust::host_vector<signed char>,
+  thrust::host_vector<short>,
+  thrust::host_vector<int>,
+  thrust::host_vector<float>,
+  thrust::host_vector<custom_numeric>,
+  thrust::host_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::host_memory_resource>>,
+  // device
+  thrust::device_vector<signed char>,
+  thrust::device_vector<short>,
+  thrust::device_vector<int>,
+  thrust::device_vector<float>,
+  thrust::device_vector<custom_numeric>,
+  thrust::device_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::device_memory_resource>>,
+  // universal
+  thrust::universal_vector<int>,
+  thrust::universal_host_pinned_vector<int>>;
+#define DECLARE_VECTOR_UNITTEST(VTEST) _THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, vector_list)
 
 // Same as above, but only for integral types
-#define DECLARE_INTEGRAL_VECTOR_UNITTEST(VTEST)         \
-  TEST_CASE(#VTEST, THRUST_PP_STRINGIZE(__FILE__))      \
-  {                                                     \
-    /* host */                                          \
-    VTEST<thrust::host_vector<signed char>>();          \
-    VTEST<thrust::host_vector<short>>();                \
-    VTEST<thrust::host_vector<int>>();                  \
-    /* device */                                        \
-    VTEST<thrust::device_vector<signed char>>();        \
-    VTEST<thrust::device_vector<short>>();              \
-    VTEST<thrust::device_vector<int>>();                \
-    /* universal*/                                      \
-    VTEST<thrust::universal_vector<int>>();             \
-    VTEST<thrust::universal_host_pinned_vector<int>>(); \
-  }
+using integral_vector_list = cuda::std::__type_list<
+  // host
+  thrust::host_vector<signed char>,
+  thrust::host_vector<short>,
+  thrust::host_vector<int>,
+  // device
+  thrust::device_vector<signed char>,
+  thrust::device_vector<short>,
+  thrust::device_vector<int>,
+  // universal
+  thrust::universal_vector<int>,
+  thrust::universal_host_pinned_vector<int>>;
+#define DECLARE_INTEGRAL_VECTOR_UNITTEST(VTEST) _THRUST_DECLARE_TYPE_LIST_UNITTEST(VTEST, integral_vector_list)
 
 // Macro to create instances of a test for several data types.
-#define DECLARE_GENERIC_UNITTEST(TEST)            \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__)) \
-  {                                               \
-    TEST<signed char>();                          \
-    TEST<unsigned char>();                        \
-    TEST<short>();                                \
-    TEST<unsigned short>();                       \
-    TEST<int>();                                  \
-    TEST<unsigned int>();                         \
-    TEST<float>();                                \
-  }
+using generic_list =
+  cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float>;
+#define DECLARE_GENERIC_UNITTEST(TEST) _THRUST_DECLARE_TYPE_LIST_UNITTEST(TEST, generic_list)
+// _THRUST_DECLARE_TYPE_LIST_UNITTEST must stay defined: the DECLARE_* macros above expand it at their call sites.
 
 namespace unittest::detail
 {
@@ -348,32 +295,29 @@ void for_each_type(L<Ts...>, Args&&... args)
     unittest::detail::for_each_type<TEST>(__VA_ARGS__{}, s); \
   }
 
-// Macro to create instances of a test for several data types and array sizes
-#define DECLARE_VARIABLE_UNITTEST(TEST)            \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))  \
-  {                                                \
-    const size_t s = GENERATE_THRUST_TEST_SIZES(); \
-    TEST<signed char>(s);                          \
-    TEST<unsigned char>(s);                        \
-    TEST<short>(s);                                \
-    TEST<unsigned short>(s);                       \
-    TEST<int>(s);                                  \
-    TEST<unsigned int>(s);                         \
-    TEST<float>(s);                                \
-    TEST<double>(s);                               \
+#define _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, TYPE_LIST)    \
+  template <class T>                                                 \
+  struct TEST##_invoker                                              \
+  {                                                                  \
+    void operator()(size_t s) const                                  \
+    {                                                                \
+      TEST<T>(s);                                                    \
+    }                                                                \
+  };                                                                 \
+  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))                    \
+  {                                                                  \
+    const size_t s = GENERATE_THRUST_TEST_SIZES();                   \
+    unittest::detail::for_each_type<TEST##_invoker>(TYPE_LIST{}, s); \
   }
 
-#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST)   \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__))  \
-  {                                                \
-    const size_t s = GENERATE_THRUST_TEST_SIZES(); \
-    TEST<signed char>(s);                          \
-    TEST<unsigned char>(s);                        \
-    TEST<short>(s);                                \
-    TEST<unsigned short>(s);                       \
-    TEST<int>(s);                                  \
-    TEST<unsigned int>(s);                         \
-  }
+using variable_list =
+  cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float, double>;
+#define DECLARE_VARIABLE_UNITTEST(TEST) _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, variable_list)
+
+using integral_variable_list =
+  cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int>;
+#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST) _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST(TEST, integral_variable_list)
+// _THRUST_DECLARE_SIZED_TYPE_LIST_UNITTEST must stay defined: the DECLARE_* macros above expand it at their call sites.
 
 namespace unittest::detail
 {

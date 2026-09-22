@@ -306,28 +306,28 @@ struct DeviceCopy
   //!
   //! @endrst
   //!
-  //! @tparam T_In
+  //! @tparam TIn
   //!   **[inferred]** The element type of the source mdspan
   //!
-  //! @tparam Extents_In
+  //! @tparam ExtentsIn
   //!   **[inferred]** The extents type of the source mdspan
   //!
-  //! @tparam Layout_In
+  //! @tparam LayoutIn
   //!   **[inferred]** The layout type of the source mdspan
   //!
-  //! @tparam Accessor_In
+  //! @tparam AccessorIn
   //!   **[inferred]** The accessor type of the source mdspan
   //!
-  //! @tparam T_Out
+  //! @tparam TOut
   //!   **[inferred]** The element type of the destination mdspan
   //!
-  //! @tparam Extents_Out
+  //! @tparam ExtentsOut
   //!   **[inferred]** The extents type of the destination mdspan
   //!
-  //! @tparam Layout_Out
+  //! @tparam LayoutOut
   //!   **[inferred]** The layout type of the destination mdspan
   //!
-  //! @tparam Accessor_Out
+  //! @tparam AccessorOut
   //!   **[inferred]** The accessor type of the destination mdspan
   //!
   //! @tparam EnvT
@@ -352,20 +352,20 @@ struct DeviceCopy
   //!   @rst
   //!   **cudaSuccess** on success, **cudaErrorInvalidValue** if mdspan extents don't match, or error code on failure
   //!   @endrst
-  template <typename T_In,
-            typename Extents_In,
-            typename Layout_In,
-            typename Accessor_In,
-            typename T_Out,
-            typename Extents_Out,
-            typename Layout_Out,
-            typename Accessor_Out,
+  template <typename TIn,
+            typename ExtentsIn,
+            typename LayoutIn,
+            typename AccessorIn,
+            typename TOut,
+            typename ExtentsOut,
+            typename LayoutOut,
+            typename AccessorOut,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Copy(void* d_temp_storage,
        size_t& temp_storage_bytes,
-       ::cuda::std::mdspan<T_In, Extents_In, Layout_In, Accessor_In> mdspan_in,
-       ::cuda::std::mdspan<T_Out, Extents_Out, Layout_Out, Accessor_Out> mdspan_out,
+       ::cuda::std::mdspan<TIn, ExtentsIn, LayoutIn, AccessorIn> mdspan_in,
+       ::cuda::std::mdspan<TOut, ExtentsOut, LayoutOut, AccessorOut> mdspan_out,
        const EnvT& env = {})
   {
     if (d_temp_storage == nullptr)
@@ -429,28 +429,28 @@ struct DeviceCopy
   //!
   //! @endrst
   //!
-  //! @tparam T_In
+  //! @tparam TIn
   //!   **[inferred]** The element type of the source mdspan
   //!
-  //! @tparam Extents_In
+  //! @tparam ExtentsIn
   //!   **[inferred]** The extents type of the source mdspan
   //!
-  //! @tparam Layout_In
+  //! @tparam LayoutIn
   //!   **[inferred]** The layout type of the source mdspan
   //!
-  //! @tparam Accessor_In
+  //! @tparam AccessorIn
   //!   **[inferred]** The accessor type of the source mdspan
   //!
-  //! @tparam T_Out
+  //! @tparam TOut
   //!   **[inferred]** The element type of the destination mdspan
   //!
-  //! @tparam Extents_Out
+  //! @tparam ExtentsOut
   //!   **[inferred]** The extents type of the destination mdspan
   //!
-  //! @tparam Layout_Out
+  //! @tparam LayoutOut
   //!   **[inferred]** The layout type of the destination mdspan
   //!
-  //! @tparam Accessor_Out
+  //! @tparam AccessorOut
   //!   **[inferred]** The accessor type of the destination mdspan
   //!
   //! @tparam EnvT
@@ -464,18 +464,18 @@ struct DeviceCopy
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename T_In,
-            typename Extents_In,
-            typename Layout_In,
-            typename Accessor_In,
-            typename T_Out,
-            typename Extents_Out,
-            typename Layout_Out,
-            typename Accessor_Out,
+  template <typename TIn,
+            typename ExtentsIn,
+            typename LayoutIn,
+            typename AccessorIn,
+            typename TOut,
+            typename ExtentsOut,
+            typename LayoutOut,
+            typename AccessorOut,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Copy(::cuda::std::mdspan<T_In, Extents_In, Layout_In, Accessor_In> mdspan_in,
-       ::cuda::std::mdspan<T_Out, Extents_Out, Layout_Out, Accessor_Out> mdspan_out,
+  Copy(::cuda::std::mdspan<TIn, ExtentsIn, LayoutIn, AccessorIn> mdspan_in,
+       ::cuda::std::mdspan<TOut, ExtentsOut, LayoutOut, AccessorOut> mdspan_out,
        const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceCopy::Copy");

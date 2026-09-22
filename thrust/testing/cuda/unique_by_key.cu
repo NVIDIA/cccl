@@ -106,23 +106,20 @@ void TestUniqueByKeyDevice(ExecutionPolicy exec)
   REQUIRE(values == values_ref);
 }
 
-void TestUniqueByKeyDeviceSeq()
+TEST_CASE("TestUniqueByKeyDeviceSeq", "[unique_by_key]")
 {
   TestUniqueByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueByKeyDeviceSeq);
 
-void TestUniqueByKeyDeviceDevice()
+TEST_CASE("TestUniqueByKeyDeviceDevice", "[unique_by_key]")
 {
   TestUniqueByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueByKeyDeviceDevice);
 
-void TestUniqueByKeyDeviceNoSync()
+TEST_CASE("TestUniqueByKeyDeviceNoSync", "[unique_by_key]")
 {
   TestUniqueByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueByKeyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -178,17 +175,15 @@ void TestUniqueByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestUniqueByKeyCudaStreamsSync()
+TEST_CASE("TestUniqueByKeyCudaStreamsSync", "[unique_by_key]")
 {
   TestUniqueByKeyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueByKeyCudaStreamsSync);
 
-void TestUniqueByKeyCudaStreamsNoSync()
+TEST_CASE("TestUniqueByKeyCudaStreamsNoSync", "[unique_by_key]")
 {
   TestUniqueByKeyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueByKeyCudaStreamsNoSync);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy,
@@ -300,23 +295,20 @@ void TestUniqueCopyByKeyDevice(ExecutionPolicy exec)
   REQUIRE(output_values == values_ref);
 }
 
-void TestUniqueCopyByKeyDeviceSeq()
+TEST_CASE("TestUniqueCopyByKeyDeviceSeq", "[unique_by_key]")
 {
   TestUniqueCopyByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyDeviceSeq);
 
-void TestUniqueCopyByKeyDeviceDevice()
+TEST_CASE("TestUniqueCopyByKeyDeviceDevice", "[unique_by_key]")
 {
   TestUniqueCopyByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyDeviceDevice);
 
-void TestUniqueCopyByKeyDeviceNoSync()
+TEST_CASE("TestUniqueCopyByKeyDeviceNoSync", "[unique_by_key]")
 {
   TestUniqueCopyByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -384,14 +376,12 @@ void TestUniqueCopyByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestUniqueCopyByKeyCudaStreamsSync()
+TEST_CASE("TestUniqueCopyByKeyCudaStreamsSync", "[unique_by_key]")
 {
   TestUniqueCopyByKeyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyCudaStreamsSync);
 
-void TestUniqueCopyByKeyCudaStreamsNoSync()
+TEST_CASE("TestUniqueCopyByKeyCudaStreamsNoSync", "[unique_by_key]")
 {
   TestUniqueCopyByKeyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyCudaStreamsNoSync);

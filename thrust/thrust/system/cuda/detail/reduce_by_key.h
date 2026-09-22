@@ -73,20 +73,20 @@ template <>
 struct is_true<true> : thrust::detail::true_type
 {};
 
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD                   = 1,
-          cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
-          cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_DEFAULT,
-          cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
+template <int BlockThreads,
+          int ItemsPerThread                    = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier   = cub::LOAD_DEFAULT,
+          cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
-  static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  static const cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
+  static const cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
+  static const cub::BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 }; // struct PtxPolicy
 
 template <class Arch, class Key, class Value>
@@ -238,7 +238,7 @@ struct ReduceByKeyAgent
     // Zip utility methods
     //---------------------------------------------------------------------
 
-    template <bool IS_LAST_TILE>
+    template <bool IsLastTile>
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void zip_values_and_flags(
       size_type num_remaining,
       value_type (&values)[ITEMS_PER_THREAD],
@@ -250,7 +250,7 @@ struct ReduceByKeyAgent
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         // Set segment_flags for first out-of-bounds item, zero for others
-        if (IS_LAST_TILE && Size(threadIdx.x * ITEMS_PER_THREAD) + ITEM == num_remaining)
+        if (IsLastTile && Size(threadIdx.x * ITEMS_PER_THREAD) + ITEM == num_remaining)
         {
           segment_flags[ITEM] = 1;
         }
@@ -393,7 +393,7 @@ struct ReduceByKeyAgent
     // Returns the running  count of segments
     // and aggregated values (including this tile)
     //
-    template <bool IS_LAST_TILE>
+    template <bool IsLastTile>
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     consume_first_tile(Size num_remaining, Size tile_offset, ScanTileState& tile_state)
     {
@@ -406,7 +406,7 @@ struct ReduceByKeyAgent
       key_value_pair_t scatter_items[ITEMS_PER_THREAD]; // Zipped key value pairs for scattering
 
       // Load keys (last tile repeats final element)
-      if (IS_LAST_TILE)
+      if (IsLastTile)
       {
         // Fill last elements with the first element
         // because collectives are not suffix guarded
@@ -421,7 +421,7 @@ struct ReduceByKeyAgent
       __syncthreads();
 
       // Load values (last tile repeats final element)
-      if (IS_LAST_TILE)
+      if (IsLastTile)
       {
         BlockLoadValues(storage.load_values)
           .Load(values_load_it + tile_offset, values, num_remaining, *(values_load_it + tile_offset));
@@ -447,7 +447,7 @@ struct ReduceByKeyAgent
       }
 
       // Zip values and segment_flags
-      zip_values_and_flags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
+      zip_values_and_flags<IsLastTile>(num_remaining, values, segment_flags, scan_items);
 
       // Exclusive scan of values and segment_flags
       size_value_pair_t tile_aggregate;
@@ -456,7 +456,7 @@ struct ReduceByKeyAgent
       if (threadIdx.x == 0)
       {
         // Update tile status if this is not the last tile
-        if (!IS_LAST_TILE)
+        if (!IsLastTile)
         {
           tile_state.SetInclusive(0, tile_aggregate);
         }
@@ -475,7 +475,7 @@ struct ReduceByKeyAgent
       // Scatter flagged items
       scatter(scatter_items, segment_flags, segment_indices, tile_aggregate.key, 0);
 
-      if (IS_LAST_TILE)
+      if (IsLastTile)
       {
         // Finalize the carry-out from the last tile
         finalize_last_tile(tile_aggregate.key, num_remaining, keys[ITEMS_PER_THREAD - 1], tile_aggregate.value);
@@ -486,7 +486,7 @@ struct ReduceByKeyAgent
     // Returns the running count of segments
     // and aggregated values (including this tile)
 
-    template <bool IS_LAST_TILE>
+    template <bool IsLastTile>
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     consume_subsequent_tile(Size num_remaining, int tile_idx, Size tile_offset, ScanTileState& tile_state)
     {
@@ -499,7 +499,7 @@ struct ReduceByKeyAgent
       key_value_pair_t scatter_items[ITEMS_PER_THREAD]; // Zipped key value pairs for scattering
 
       // Load keys (last tile repeats final element)
-      if (IS_LAST_TILE)
+      if (IsLastTile)
       {
         BlockLoadKeys(storage.load_keys)
           .Load(keys_load_it + tile_offset, keys, num_remaining, *(keys_load_it + tile_offset));
@@ -514,7 +514,7 @@ struct ReduceByKeyAgent
       __syncthreads();
 
       // Load values (last tile repeats final element)
-      if (IS_LAST_TILE)
+      if (IsLastTile)
       {
         BlockLoadValues(storage.load_values)
           .Load(values_load_it + tile_offset, values, num_remaining, *(values_load_it + tile_offset));
@@ -531,7 +531,7 @@ struct ReduceByKeyAgent
         .FlagHeads(segment_flags, keys, pred_keys, inequality_op, tile_pred_key);
 
       // Zip values and segment_flags
-      zip_values_and_flags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
+      zip_values_and_flags<IsLastTile>(num_remaining, values, segment_flags, scan_items);
 
       // Exclusive scan of values and segment_flags
       size_value_pair_t tile_aggregate;
@@ -545,24 +545,24 @@ struct ReduceByKeyAgent
       // Scatter flagged items
       scatter(scatter_items, segment_flags, segment_indices, tile_aggregate.key, prefix_op.GetExclusivePrefix().key);
 
-      if (IS_LAST_TILE)
+      if (IsLastTile)
       {
         // Finalize the carry-out from the last tile
         finalize_last_tile(
           tile_inclusive_prefix.key, num_remaining, keys[ITEMS_PER_THREAD - 1], tile_inclusive_prefix.value);
       }
     }
-    template <bool IS_LAST_TILE>
+    template <bool IsLastTile>
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     consume_tile(size_type num_remaining, int tile_idx, size_type tile_offset, ScanTileState& tile_state)
     {
       if (tile_idx == 0)
       {
-        consume_first_tile<IS_LAST_TILE>(num_remaining, tile_offset, tile_state);
+        consume_first_tile<IsLastTile>(num_remaining, tile_offset, tile_state);
       }
       else
       {
-        consume_subsequent_tile<IS_LAST_TILE>(num_remaining, tile_idx, tile_offset, tile_state);
+        consume_subsequent_tile<IsLastTile>(num_remaining, tile_idx, tile_offset, tile_state);
       }
     }
 

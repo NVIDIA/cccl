@@ -231,7 +231,7 @@ scan_warp_tile_run_counts(const int* slot_warp_run_counts, int lane_id)
   return {lane_run_count, lane_scan};
 }
 
-template <int tile_size, int slot_pad, class KeyT>
+template <int TileSize, int SlotPad, class KeyT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
   KeyT* slot,
   const KeyT* d_keys,
@@ -255,16 +255,16 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_tile_keys(
     else
     {
       // if it is not first tile, we overcopy 16B to the left to get last key from last tile
-      const unsigned nbytes = static_cast<unsigned>((tile_len + (first_tile ? 0 : slot_pad)) * int{sizeof(KeyT)});
+      const unsigned nbytes = static_cast<unsigned>((tile_len + (first_tile ? 0 : SlotPad)) * int{sizeof(KeyT)});
       const unsigned span_bytes =
         (nbytes + base_skip + (detail::bulk_copy_min_align - 1)) & ~unsigned{detail::bulk_copy_min_align - 1};
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, full_bar, span_bytes);
       ptx::cp_async_bulk_ignore_oob(
         ptx::space_shared,
         ptx::space_global,
-        slot + (first_tile ? slot_pad : 0),
+        slot + (first_tile ? SlotPad : 0),
         ::cuda::ptr_rebind<KeyT>(
-          ::cuda::ptr_rebind<char>(d_keys + static_cast<size_t>(tile_id) * tile_size - (first_tile ? 0 : slot_pad))
+          ::cuda::ptr_rebind<char>(d_keys + static_cast<size_t>(tile_id) * TileSize - (first_tile ? 0 : SlotPad))
           - base_skip),
         span_bytes,
         first_tile ? base_skip : 0u,
@@ -345,7 +345,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned compute_head_flags(
   return my_flags;
 }
 
-template <int compute_warps>
+template <int ComputeWarps>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
   tile_partial_state_t* tile_partial_states,
   int tile_id,
@@ -354,9 +354,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
   const int* slot_warp_last_heads,
   int lane_id)
 {
-  // compute_warps<=32 so one lane/warp fits (in practice we will never have anything close to 32)
-  static_assert(compute_warps <= 32, "compute_warps must be less than 32!");
-  const bool active        = lane_id < compute_warps;
+  // ComputeWarps<=32 so one lane/warp fits (in practice we will never have anything close to 32)
+  static_assert(ComputeWarps <= 32, "ComputeWarps must be less than 32!");
+  const bool active        = lane_id < ComputeWarps;
   const int warp_run_count = active ? slot_warp_run_counts[lane_id] : 0;
   const int run_count      = __reduce_add_sync(full_mask, warp_run_count);
   // last head = the highest-index warp that has any run (its last_head is the tile's last head)
@@ -484,7 +484,7 @@ struct head_flag_decode_t
   }
 };
 
-template <int window_size_cap, class PolicySelector, class OffT>
+template <int WindowSizeCap, class PolicySelector, class OffT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   tile_partial_state_t* tile_partial_states,
   int tile_id,
@@ -495,13 +495,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
   int& dense_mode)
 {
   constexpr int poll_items_per_thread = current_policy<PolicySelector>().lookahead.poll_items_per_thread;
-  static_assert(window_size_cap >= 1 && window_size_cap <= detail::warp_threads * poll_items_per_thread,
+  static_assert(WindowSizeCap >= 1 && WindowSizeCap <= detail::warp_threads * poll_items_per_thread,
                 "the fold window must be covered by the lanes");
   while (first_unseen_tile_id < tile_id)
   {
     const int remain = tile_id - first_unseen_tile_id;
     // # of tiles to fold this iteration
-    const int window_size     = (::cuda::std::min) (remain, window_size_cap);
+    const int window_size     = (::cuda::std::min) (remain, WindowSizeCap);
     const int lane_tile_count = (window_size - lane_id + (detail::warp_threads - 1)) >> detail::log2_warp_threads;
     tile_partial_state_t packed_words[poll_items_per_thread] = {}; // must zero initialize
 

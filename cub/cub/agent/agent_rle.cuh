@@ -165,7 +165,7 @@ struct AgentRle
    * forcing both (1) the last item to be tail-flagged and (2) all oob items to be marked
    * trivial.
    */
-  template <bool LAST_TILE>
+  template <bool LastTile>
   struct OobInequalityOp
   {
     OffsetT num_remaining;
@@ -179,7 +179,7 @@ struct AgentRle
     template <typename Index>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T first, T second, Index idx)
     {
-      if (!LAST_TILE || (idx < num_remaining))
+      if (!LastTile || (idx < num_remaining))
       {
         return !equality_op(first, second);
       }
@@ -335,7 +335,7 @@ struct AgentRle
   // Utility methods for initializing the selections
   //---------------------------------------------------------------------
 
-  template <bool FIRST_TILE, bool LAST_TILE>
+  template <bool FirstTile, bool LastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
     OffsetT tile_offset,
     OffsetT num_remaining,
@@ -345,16 +345,16 @@ struct AgentRle
     bool head_flags[ITEMS_PER_THREAD];
     bool tail_flags[ITEMS_PER_THREAD];
 
-    const OobInequalityOp<LAST_TILE> inequality_op(num_remaining, equality_op);
+    const OobInequalityOp<LastTile> inequality_op(num_remaining, equality_op);
 
-    if (FIRST_TILE && LAST_TILE)
+    if (FirstTile && LastTile)
     {
       // First-and-last-tile always head-flags the first item and tail-flags the last item
 
       BlockDiscontinuityT(temp_storage.aliasable.scan_storage.discontinuity)
         .FlagHeadsAndTails(head_flags, tail_flags, items, inequality_op);
     }
-    else if (FIRST_TILE)
+    else if (FirstTile)
     {
       // First-tile always head-flags the first item
 
@@ -368,7 +368,7 @@ struct AgentRle
       BlockDiscontinuityT(temp_storage.aliasable.scan_storage.discontinuity)
         .FlagHeadsAndTails(head_flags, tail_flags, tile_successor_item, items, inequality_op);
     }
-    else if (LAST_TILE)
+    else if (LastTile)
     {
       // Last-tile always flags the last item
 
@@ -745,7 +745,7 @@ struct AgentRle
    * @param &tile_status
    *   Global list of tile status
    */
-  template <bool LAST_TILE>
+  template <bool LastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE LengthOffsetPair
   ConsumeTile(OffsetT num_items, OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_status)
   {
@@ -755,7 +755,7 @@ struct AgentRle
 
       // Load items
       T items[ITEMS_PER_THREAD];
-      if (LAST_TILE)
+      if (LastTile)
       {
         BlockLoadT(temp_storage.aliasable.load).Load(d_in + tile_offset, items, num_remaining, T());
       }
@@ -778,7 +778,7 @@ struct AgentRle
         {
           if (streaming_context.last_partition)
           {
-            InitializeSelections<true, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+            InitializeSelections<true, LastTile>(tile_offset, num_remaining, items, lengths_and_num_runs);
           }
           else
           {
@@ -789,7 +789,7 @@ struct AgentRle
         {
           if (streaming_context.last_partition)
           {
-            InitializeSelections<false, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+            InitializeSelections<false, LastTile>(tile_offset, num_remaining, items, lengths_and_num_runs);
           }
           else
           {
@@ -799,7 +799,7 @@ struct AgentRle
       }
       else
       {
-        InitializeSelections<true, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+        InitializeSelections<true, LastTile>(tile_offset, num_remaining, items, lengths_and_num_runs);
       }
 
       // Exclusive scan of lengths and runs
@@ -821,7 +821,7 @@ struct AgentRle
         tile_aggregate, warp_aggregate, warp_exclusive_in_tile, thread_exclusive_in_warp, lengths_and_num_runs);
 
       // Update tile status if this is not the last tile
-      if (!LAST_TILE && (threadIdx.x == 0))
+      if (!LastTile && (threadIdx.x == 0))
       {
         tile_status.SetInclusive(0, tile_aggregate);
       }
@@ -876,7 +876,7 @@ struct AgentRle
 
       // Load items
       T items[ITEMS_PER_THREAD];
-      if (LAST_TILE)
+      if (LastTile)
       {
         BlockLoadT(temp_storage.aliasable.load).Load(d_in + tile_offset, items, num_remaining, T());
       }
@@ -897,7 +897,7 @@ struct AgentRle
       {
         if (streaming_context.last_partition)
         {
-          InitializeSelections<false, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+          InitializeSelections<false, LastTile>(tile_offset, num_remaining, items, lengths_and_num_runs);
         }
         else
         {
@@ -906,7 +906,7 @@ struct AgentRle
       }
       else
       {
-        InitializeSelections<false, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+        InitializeSelections<false, LastTile>(tile_offset, num_remaining, items, lengths_and_num_runs);
       }
 
       // Exclusive scan of lengths and runs
