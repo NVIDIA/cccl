@@ -356,7 +356,7 @@ C2H_CCCLRT_TEST("Stream pool is usable from several threads", "[stream][stream_p
   const auto device = cuda::devices[0];
   const cuda::stream_pool pool{device, 4};
 
-  constexpr int num_threads      = 8;
+  constexpr int num_threads             = 8;
   static constexpr int picks_per_thread = 64;
   std::vector<std::vector<cudaStream_t>> picks(num_threads);
   std::vector<std::thread> threads;
@@ -436,7 +436,7 @@ C2H_CCCLRT_TEST("Eager stream pool is usable from several threads", "[stream][st
   }
   REQUIRE(slots.size() == 4);
 
-  constexpr int num_threads      = 8;
+  constexpr int num_threads             = 8;
   static constexpr int picks_per_thread = 64;
   std::vector<std::vector<cudaStream_t>> picks(num_threads);
   std::vector<std::thread> threads;
