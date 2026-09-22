@@ -131,6 +131,62 @@ use `cuda::is_trivially_copyable(_v)` instead, which supports more cases. The ve
 `__half`/`__nv_bfloat16` non-trivial special members, so the standard trait reports false for them
 (and aggregates of them) even though they are functionally copyable. Candidate for a pre-commit grep.
 
+## api.internal-symbol-exposure (important, new implementation-detail types/functions)
+
+<!-- provenance:
+  #2591→#3209 CUB launcher factories and kernel-source getters added outside detail (pair auto-inferred from issue #2448)
+-->
+
+Flag any entity added to a public namespace which can be recognized as intended to be internal by its
+spelling (e.g. snake_case in CUB, or prefixed with `__` in libcu++/cudax) or usage pattern (e.g. used
+as utility for other functions, not documented, etc.). The entity should be marked internal as
+appropriate.
+
+## abi.missing-hide-from-abi (critical, inline functions in public headers whose behavior depends on the build configuration)
+
+<!-- provenance:
+  #2591→#3209 CUB kernel-source getters returned kernel pointers without _CCCL_HIDE_FROM_ABI;
+  #5255→#5272 driver_api.h promoted into the public libcudacxx tree carrying plain-inline functions without _CCCL_HOST_API
+-->
+
+Flag an inline function in a public header whose result can differ between two copies of CCCL linked
+into one binary (e.g., built against different CUDA toolkits or CCCL versions) — especially functions
+returning kernel or function pointers — unless it is marked `_CCCL_HIDE_FROM_ABI` (or an attribute macro
+that includes it, like `_CCCL_HOST_API`). With default visibility the linker keeps ONE definition
+across all copies, so the losing copy's callers get the other build's result (e.g. a wrong kernel
+pointer) — no build error, just wrong behavior at run time.
+
+## correctness.cuda-driver-symbol-version-guard (critical, code calling CUDA Driver API symbols)
+
+<!-- provenance:
+  #2192→#5971 cudaGetDriverEntryPointByVersion gated only by a build-time CUDART_VERSION check, breaking when built against CTK>=12.5 but run against an older CUDA runtime (pair auto-inferred from issue #5970);
+  #5976→#6895 (backport #6896) cuGetProcAddress switch reintroduced the same break by bootstrapping via the unversioned cudaGetDriverEntryPoint
+-->
+
+<!-- note:
+  The Runtime API half of the historical incidents is no longer relevant to CCCL: cudart is statically
+  linked everywhere (c/parallel pins CUDA_RUNTIME_LIBRARY STATIC; #7221 fixed the one shared-cudart
+  mix), and the driver bootstrap in cuda/__driver/driver_api.h now dlopens libcuda directly instead of
+  going through cudart.
+-->
+
+When a diff gates a call to a CUDA Driver API symbol introduced in a specific CUDA version behind a
+build-time-only check (`_CCCL_CTK_AT_LEAST(...)`), flag it: `libcuda.so`/`nvcuda.dll` comes from the
+installed display driver, which is independent of — and often older than — the CTK the binary was
+built against, so the symbol can be absent at run time regardless of any build-time guard. Resolve
+driver entry points through the versioned `cuGetProcAddress` bootstrap in
+`cuda/__driver/driver_api.h` (which reports availability), or verify `cudaDriverGetVersion` before
+the call. PR CI builds and runs with matched driver/CTK, so this only reproduces in the field.
+
+## infra.pin-deps (important, CMake/CI/submodules)
+
+<!-- provenance:
+  #534 nvbench `#main` →#582
+-->
+
+Flag dependencies fetched by branch name (`CPMAddPackage("gh:org/repo#main")`, `GIT_TAG
+main`); pin a commit or tag. Candidate for a pre-commit grep.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
