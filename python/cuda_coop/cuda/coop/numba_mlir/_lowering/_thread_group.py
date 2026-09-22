@@ -40,7 +40,7 @@ _INCLUDE_LINES = (
     "#include <cuda/hierarchy>",
     "#include <cuda/std/cstdint>",
     "#include <cuda/std/type_traits>",
-    "#include <cuda/experimental/group.cuh>",
+    "#include <cuda/experimental/coop/group>",
 )
 
 
