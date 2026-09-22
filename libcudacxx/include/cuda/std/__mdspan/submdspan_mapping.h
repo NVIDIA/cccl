@@ -178,7 +178,7 @@ inline constexpr bool __all_slices_are_full_extent_v<_Offset, index_sequence<_In
   (is_convertible_v<__type_index_c<_Offset + _Indices, _Slices...>, full_extent_t> && ...);
 
 // [mdspan.sub.map.left]
-// submdspan_mapping_result{layout_left​::​mapping(sub_ext), offset}, if SubExtents​::​rank() == 0 is true;
+// submdspan_mapping_result{layout_left::mapping(sub_ext), offset}, if SubExtents::rank() == 0 is true;
 template <class _LayoutMapping, class _SubExtents, class... _Slices>
 _CCCL_API constexpr bool __can_layout_left()
 {
@@ -189,10 +189,10 @@ _CCCL_API constexpr bool __can_layout_left()
     return true;
   }
   // [mdspan.sub.map.left-1.3.2]
-  // for k equal to SubExtents​::​rank() - 1, SliceSpecifiers...[k] is a unit-stride slice type;
+  // for k equal to SubExtents::rank() - 1, SliceSpecifiers...[k] is a unit-stride slice type;
   else if constexpr (::cuda::std::__is_unit_stride_slice<_LayoutMapping, __type_index_c<__sub_rank - 1, _Slices...>>())
   { // [mdspan.sub.map.left-1.3.1]
-    // for each k in the range [0, SubExtents​::​rank() - 1), SliceSpecifiers...[k] denotes full_extent_t;
+    // for each k in the range [0, SubExtents::rank() - 1), SliceSpecifiers...[k] denotes full_extent_t;
     return __all_slices_are_full_extent_v<0, make_index_sequence<__sub_rank - 1>, _Slices...>;
   }
   else
@@ -208,7 +208,7 @@ __submdspan_mapping_impl(const typename layout_left::mapping<_Extents>& __mappin
 {
   if constexpr (_Extents::rank() == 0)
   { // [mdspan.sub.map.left-1.1]
-    // submdspan_mapping_result{*this, 0}, if Extents​::​rank() == 0 is true;
+    // submdspan_mapping_result{*this, 0}, if Extents::rank() == 0 is true;
     return submdspan_mapping_result{__mapping, 0};
   }
   else
@@ -219,7 +219,7 @@ __submdspan_mapping_impl(const typename layout_left::mapping<_Extents>& __mappin
     if constexpr (::cuda::std::__can_layout_left<typename layout_left::mapping<_Extents>, _SubExtents, _Slices...>())
     { // [mdspan.sub.map.left-1.2]
       // [mdspan.sub.map.left-1.3]
-      // otherwise, submdspan_mapping_result{layout_left​::​mapping(sub_ext), offset}
+      // otherwise, submdspan_mapping_result{layout_left::mapping(sub_ext), offset}
       using __sub_mapping_t = layout_left::template mapping<_SubExtents>;
       return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext}, __offset};
     }
@@ -244,15 +244,15 @@ _CCCL_API constexpr bool __can_layout_right()
   constexpr auto __sub_rank              = _SubExtents::rank();
   if constexpr (__sub_rank == 0)
   { // [mdspan.sub.map.right-1.2]
-    // submdspan_mapping_result{layout_right​::​mapping(sub_ext), offset}, if SubExtents​::​rank() == 0 is true;
+    // submdspan_mapping_result{layout_right::mapping(sub_ext), offset}, if SubExtents::rank() == 0 is true;
     return true;
   }
   // [mdspan.sub.map.right-1.3.2]
-  // for k equal to rank_ - SubExtents​::​rank(), SliceSpecifiers...[k] is a unit-stride slice type;
+  // for k equal to rank_ - SubExtents::rank(), SliceSpecifiers...[k] is a unit-stride slice type;
   else if constexpr (::cuda::std::__is_unit_stride_slice<_LayoutMapping,
                                                          __type_index_c<__rank - __sub_rank, _Slices...>>())
   { // [mdspan.sub.map.right-1.3.1]
-    // for each k in the range [rank_ - SubExtents​::​rank() + 1, rank_), SliceSpecifiers...[k] denotes
+    // for each k in the range [rank_ - SubExtents::rank() + 1, rank_), SliceSpecifiers...[k] denotes
     // full_extent_t;
     return __all_slices_are_full_extent_v<__rank - __sub_rank + 1, make_index_sequence<__sub_rank - 1>, _Slices...>;
   }
@@ -269,7 +269,7 @@ __submdspan_mapping_impl(const typename layout_right::mapping<_Extents>& __mappi
 {
   if constexpr (_Extents::rank() == 0)
   { // [mdspan.sub.map.right-1.1]
-    // submdspan_mapping_result{*this, 0}, if Extents​::​rank() == 0 is true;
+    // submdspan_mapping_result{*this, 0}, if Extents::rank() == 0 is true;
     return submdspan_mapping_result{__mapping, 0};
   }
   else
@@ -280,7 +280,7 @@ __submdspan_mapping_impl(const typename layout_right::mapping<_Extents>& __mappi
     if constexpr (::cuda::std::__can_layout_right<typename layout_right::mapping<_Extents>, _SubExtents, _Slices...>())
     { // [mdspan.sub.map.right-1.2]
       // [mdspan.sub.map.right-1.3]
-      // otherwise, submdspan_mapping_result{layout_right​::​mapping(sub_ext), offset}
+      // otherwise, submdspan_mapping_result{layout_right::mapping(sub_ext), offset}
       using __sub_mapping_t = layout_right::template mapping<_SubExtents>;
       return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext}, __offset};
     }
@@ -303,7 +303,7 @@ __submdspan_mapping_impl(const typename layout_stride::mapping<_Extents>& __mapp
 {
   if constexpr (_Extents::rank() == 0)
   { // [mdspan.sub.map.stride-1.1]
-    // submdspan_mapping_result{*this, 0}, if Extents​::​rank() == 0 is true;
+    // submdspan_mapping_result{*this, 0}, if Extents::rank() == 0 is true;
     return submdspan_mapping_result{__mapping, 0};
   }
   else
