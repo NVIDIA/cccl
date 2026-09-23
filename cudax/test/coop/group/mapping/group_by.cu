@@ -28,45 +28,35 @@ __device__ void test_group_by(Config config)
 {
   // Test static N.
   {
-    using Mapping = cudax::coop::group_by<N>;
-    static_assert(cuda::std::is_same_v<Mapping, cudax::coop::group_by<N, true>>);
+    using Mapping = cudax::coop::group_by<N, true>;
 
-    // Test default constructor.
+    // Test the mapping is empty.
+    static_assert(cuda::std::is_empty_v<Mapping>);
+
+    // Test default constructor is deleted.
+    static_assert(!cuda::std::is_default_constructible_v<Mapping>);
+
+    // Test the mapping is constructible from uint32_t.
+    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+
+    // Test the mapping is constructible & deductible from integral_constant<size_t, N>.
     {
-      static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
-      static_assert(cuda::std::is_empty_v<Mapping>);
+      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::integral_constant<cuda::std::size_t, N>>);
 
-      const cudax::coop::group_by<N> mapping;
-      CHECK(mapping.unit_count() == static_cast<unsigned>(N));
+      cudax::coop::group_by mapping{cuda::std::integral_constant<cuda::std::size_t, N>{}};
+      static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     }
-
-    // Test the mapping is not constructible from unsigned.
-    static_assert(!cuda::std::is_constructible_v<Mapping, unsigned>);
 
     // Test the mapping is not constructible from non_exhaustive_t.
-    static_assert(!cuda::std::is_constructible_v<Mapping, cudax::coop::non_exhaustive_t>);
+    static_assert(!cuda::std::is_constructible_v<Mapping, const cudax::coop::non_exhaustive_t&>);
 
-    // Test the mapping is not constructible from unsigned and non_exhaustive_t.
-    static_assert(!cuda::std::is_constructible_v<Mapping, unsigned, cudax::coop::non_exhaustive_t>);
+    // Test the mapping is not constructible from non_exhaustive_t and uint32_t.
+    static_assert(!cuda::std::is_constructible_v<Mapping, const cudax::coop::non_exhaustive_t&, cuda::std::uint32_t>);
 
-    // Test static_unit_count().
-    static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count())>);
-    static_assert(noexcept(Mapping::static_unit_count()));
-    static_assert(Mapping::static_unit_count() == N);
-
-    // Test is_always_exhaustive().
-    static_assert(cuda::std::is_same_v<bool, decltype(Mapping::is_always_exhaustive())>);
-    static_assert(noexcept(Mapping::is_always_exhaustive()));
-    static_assert(Mapping::is_always_exhaustive());
-
-    // Test unit_count().
-    {
-      static_assert(cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count())>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count()));
-
-      const Mapping mapping;
-      CHECK(mapping.unit_count() == static_cast<unsigned>(N));
-    }
+    // Test the mapping is not constructible from non_exhaustive_t and integral_constant<size_t, N>.
+    static_assert(!cuda::std::is_constructible_v<Mapping,
+                                                 const cudax::coop::non_exhaustive_t&,
+                                                 cuda::std::integral_constant<cuda::std::size_t, N>>);
 
     // Test map(...).
     {
@@ -78,7 +68,7 @@ __device__ void test_group_by(Config config)
       static_assert(
         noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const Mapping mapping;
+      const cudax::coop::group_by mapping{cuda::std::integral_constant<cuda::std::size_t, N>{}};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
@@ -101,47 +91,29 @@ __device__ void test_group_by(Config config)
 
   // Test dynamic N.
   {
-    using Mapping = cudax::coop::group_by<>;
-    static_assert(cuda::std::is_same_v<Mapping, cudax::coop::group_by<cuda::std::dynamic_extent, true>>);
+    using Mapping = cudax::coop::group_by<cuda::std::dynamic_extent, true>;
 
-    // Test default constructor.
+    // Test default constructor is deleted.
     static_assert(!cuda::std::is_default_constructible_v<Mapping>);
-    static_assert(!cuda::std::is_empty_v<Mapping>);
 
-    // Test the mapping is constructible from unsigned.
+    // Test the mapping is constructible & deducible from uint32_t.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, unsigned>);
+      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
 
-      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
-      cudax::coop::group_by mapping{N};
-      static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
-      CHECK(mapping.unit_count() == static_cast<unsigned>(N));
+      cudax::coop::group_by mapping{static_cast<cuda::std::uint32_t>(N)};
+      static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     }
 
-    // Test the mapping is not constructible from non_exhaustive_t.
-    static_assert(!cuda::std::is_constructible_v<Mapping, cudax::coop::non_exhaustive_t>);
+    // Test the mapping is constructible from integral_constant<size_t, N>.
+    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::integral_constant<cuda::std::size_t, N>>);
 
-    // Test the mapping is not constructible from unsigned and non_exhaustive_t.
-    static_assert(!cuda::std::is_constructible_v<Mapping, unsigned, cudax::coop::non_exhaustive_t>);
+    // Test the mapping is not constructible from non_exhaustive_t and uint32_t.
+    static_assert(!cuda::std::is_constructible_v<Mapping, const cudax::coop::non_exhaustive_t&, cuda::std::uint32_t>);
 
-    // Test static_unit_count().
-    static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count())>);
-    static_assert(noexcept(Mapping::static_unit_count()));
-    static_assert(Mapping::static_unit_count() == cuda::std::dynamic_extent);
-
-    // Test is_always_exhaustive().
-    static_assert(cuda::std::is_same_v<bool, decltype(Mapping::is_always_exhaustive())>);
-    static_assert(noexcept(Mapping::is_always_exhaustive()));
-    static_assert(Mapping::is_always_exhaustive());
-
-    // Test unit_count().
-    {
-      static_assert(cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count())>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count()));
-
-      const Mapping mapping{N};
-      CHECK(mapping.unit_count() == static_cast<unsigned>(N));
-    }
+    // Test the mapping is not constructible from non_exhaustive_t and integral_constant<size_t, N>.
+    static_assert(!cuda::std::is_constructible_v<Mapping,
+                                                 const cudax::coop::non_exhaustive_t&,
+                                                 cuda::std::integral_constant<cuda::std::size_t, N>>);
 
     // Test map(...).
     {
@@ -153,7 +125,7 @@ __device__ void test_group_by(Config config)
       static_assert(
         noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const Mapping mapping{N};
+      const cudax::coop::group_by mapping{static_cast<cuda::std::uint32_t>(N)};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
@@ -182,43 +154,33 @@ __device__ void test_group_by_non_exhaustive(Config config)
   {
     using Mapping = cudax::coop::group_by<N, false>;
 
-    // Test default constructor.
-    static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
+    // Test the mapping is empty.
     static_assert(cuda::std::is_empty_v<Mapping>);
 
-    // Test the mapping is not constructible from unsigned.
-    static_assert(!cuda::std::is_constructible_v<Mapping, unsigned>);
+    // Test default constructor is deleted.
+    static_assert(!cuda::std::is_default_constructible_v<Mapping>);
+
+    // Test the mapping is not constructible from uint32_t.
+    static_assert(!cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
+
+    // Test the mapping is not constructible from integral_constant<size_t, N>.
+    static_assert(!cuda::std::is_constructible_v<Mapping, cuda::std::integral_constant<cuda::std::size_t, N>>);
 
     // Test the mapping is not constructible from non_exhaustive_t.
-    {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cudax::coop::non_exhaustive_t>);
+    static_assert(!cuda::std::is_constructible_v<Mapping, const cudax::coop::non_exhaustive_t&>);
 
-      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
-      Mapping mapping{cudax::coop::non_exhaustive};
+    // Test the mapping is constructible from non_exhaustive_t and uint32_t.
+    static_assert(
+      cuda::std::is_nothrow_constructible_v<Mapping, const cudax::coop::non_exhaustive_t&, cuda::std::uint32_t>);
+
+    // Test the mapping is constructible & deducible from non_exhaustive_t and integral_constant<size_t, N>.
+    {
+      static_assert(cuda::std::is_nothrow_constructible_v<Mapping,
+                                                          const cudax::coop::non_exhaustive_t&,
+                                                          cuda::std::integral_constant<cuda::std::size_t, N>>);
+
+      cudax::coop::group_by mapping{cudax::coop::non_exhaustive, cuda::std::integral_constant<cuda::std::size_t, N>{}};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
-      CHECK(mapping.unit_count() == static_cast<unsigned>(N));
-    }
-
-    // Test the mapping is not constructible from unsigned and non_exhaustive_t.
-    static_assert(!cuda::std::is_constructible_v<Mapping, unsigned, cudax::coop::non_exhaustive_t>);
-
-    // Test static_unit_count().
-    static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count())>);
-    static_assert(noexcept(Mapping::static_unit_count()));
-    static_assert(Mapping::static_unit_count() == N);
-
-    // Test is_always_exhaustive().
-    static_assert(cuda::std::is_same_v<bool, decltype(Mapping::is_always_exhaustive())>);
-    static_assert(noexcept(Mapping::is_always_exhaustive()));
-    static_assert(!Mapping::is_always_exhaustive());
-
-    // Test unit_count().
-    {
-      static_assert(cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count())>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count()));
-
-      const Mapping mapping{cudax::coop::non_exhaustive};
-      CHECK(mapping.unit_count() == static_cast<unsigned>(N));
     }
 
     // Test map(...).
@@ -231,7 +193,8 @@ __device__ void test_group_by_non_exhaustive(Config config)
       static_assert(
         noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const Mapping mapping{cudax::coop::non_exhaustive};
+      const cudax::coop::group_by mapping{
+        cudax::coop::non_exhaustive, cuda::std::integral_constant<cuda::std::size_t, N>{}};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
@@ -261,46 +224,31 @@ __device__ void test_group_by_non_exhaustive(Config config)
   {
     using Mapping = cudax::coop::group_by<cuda::std::dynamic_extent, false>;
 
-    // Test default constructor.
+    // Test default constructor is deleted.
     static_assert(!cuda::std::is_default_constructible_v<Mapping>);
-    static_assert(!cuda::std::is_empty_v<Mapping>);
 
-    // Test the mapping is constructible from unsigned.
-    {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, unsigned>);
+    // Test the mapping is not constructible from uint32_t.
+    static_assert(!cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
 
-      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
-      Mapping mapping{N};
-      static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
-      CHECK(mapping.unit_count() == static_cast<unsigned>(N));
-    }
+    // Test the mapping is not constructible from integral_constant<size_t, N>.
+    static_assert(!cuda::std::is_constructible_v<Mapping, cuda::std::integral_constant<cuda::std::size_t, N>>);
 
     // Test the mapping is not constructible from non_exhaustive_t.
-    static_assert(!cuda::std::is_constructible_v<Mapping, cudax::coop::non_exhaustive_t>);
+    static_assert(!cuda::std::is_constructible_v<Mapping, const cudax::coop::non_exhaustive_t&>);
 
-    // Test the mapping is not constructible from unsigned and non_exhaustive_t.
+    // Test the mapping is constructible & deducible from non_exhaustive_t and uint32_t.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, unsigned, cudax::coop::non_exhaustive_t>);
+      static_assert(
+        cuda::std::is_nothrow_constructible_v<Mapping, const cudax::coop::non_exhaustive_t&, cuda::std::uint32_t>);
 
-      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
-      cudax::coop::group_by mapping{static_cast<unsigned>(N), cudax::coop::non_exhaustive};
+      cudax::coop::group_by mapping{cudax::coop::non_exhaustive, static_cast<cuda::std::uint32_t>(N)};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
-      CHECK(mapping.unit_count() == static_cast<unsigned>(N));
     }
 
-    // Test static_unit_count().
-    static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count())>);
-    static_assert(noexcept(Mapping::static_unit_count()));
-    static_assert(Mapping::static_unit_count() == cuda::std::dynamic_extent);
-
-    // Test unit_count().
-    {
-      static_assert(cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count())>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count()));
-
-      const Mapping mapping{N, cudax::coop::non_exhaustive};
-      CHECK(mapping.unit_count() == static_cast<unsigned>(N));
-    }
+    // Test the mapping is constructible & deducible from non_exhaustive_t and integral_constant<size_t, N>.
+    static_assert(cuda::std::is_nothrow_constructible_v<Mapping,
+                                                        const cudax::coop::non_exhaustive_t&,
+                                                        cuda::std::integral_constant<cuda::std::size_t, N>>);
 
     // Test map(...).
     {
@@ -312,7 +260,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
       static_assert(
         noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const Mapping mapping{N, cudax::coop::non_exhaustive};
+      const cudax::coop::group_by mapping{cudax::coop::non_exhaustive, static_cast<cuda::std::uint32_t>(N)};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 

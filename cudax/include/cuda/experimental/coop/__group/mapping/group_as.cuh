@@ -32,6 +32,7 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
@@ -44,17 +45,17 @@
 
 namespace cuda::experimental::coop
 {
-template <::cuda::std::size_t... _UnitCounts>
+template <::cuda::std::size_t... _StaticUnitCounts>
 struct __group_as_static_tag;
 
-template <::cuda::std::size_t... _UnitCounts, bool _IsAlwaysExhaustive>
-class group_as<__group_as_static_tag<_UnitCounts...>, _IsAlwaysExhaustive>
+template <::cuda::std::size_t... _StaticUnitCounts, bool _IsAlwaysExhaustive>
+class group_as<__group_as_static_tag<_StaticUnitCounts...>, _IsAlwaysExhaustive>
 {
-  static_assert(((_UnitCounts != 0) && ...), "all _UnitCounts must not be zero");
-  static_assert((::cuda::std::in_range<::cuda::std::uint32_t>(_UnitCounts) && ...),
-                "all _UnitCounts must be within uint32_t range");
+  static_assert(((_StaticUnitCounts != 0) && ...), "all _StaticUnitCounts must not be zero");
+  static_assert((::cuda::std::in_range<::cuda::std::uint32_t>(_StaticUnitCounts) && ...),
+                "all _StaticUnitCounts must be within uint32_t range");
 
-  static constexpr auto __counts_sum = (0 + ... + _UnitCounts);
+  static constexpr auto __unit_counts_sum = (0 + ... + _StaticUnitCounts);
 
 public:
   _CCCL_HIDE_FROM_ABI explicit group_as() = default;
@@ -62,27 +63,27 @@ public:
   _CCCL_TEMPLATE(bool _IsAlwaysExhaustive2 = _IsAlwaysExhaustive)
   _CCCL_REQUIRES(_IsAlwaysExhaustive2)
   _CCCL_DEVICE_API explicit constexpr group_as(
-    const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&) noexcept
+    const ::cuda::std::integer_sequence<::cuda::std::size_t, _StaticUnitCounts...>&) noexcept
   {}
 
   _CCCL_TEMPLATE(bool _IsAlwaysExhaustive2 = _IsAlwaysExhaustive)
   _CCCL_REQUIRES((!_IsAlwaysExhaustive2))
   _CCCL_DEVICE_API explicit constexpr group_as(
-    const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&, const non_exhaustive_t&) noexcept
+    const ::cuda::std::integer_sequence<::cuda::std::size_t, _StaticUnitCounts...>&, const non_exhaustive_t&) noexcept
   {}
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
   {
-    return sizeof...(_UnitCounts);
+    return sizeof...(_StaticUnitCounts);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i) noexcept
   {
-    if (__i >= sizeof...(_UnitCounts))
+    if (__i >= sizeof...(_StaticUnitCounts))
     {
       _CCCL_THROW(::std::out_of_range, "__i is out of range");
     }
-    constexpr ::cuda::std::size_t __counts[]{_UnitCounts...};
+    constexpr ::cuda::std::size_t __counts[]{_StaticUnitCounts...};
     return __counts[__i];
   }
 
@@ -100,9 +101,11 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
+    constexpr ::cuda::std::uint32_t __unit_counts[]{static_cast<::cuda::std::uint32_t>(_StaticUnitCounts)...};
+
     constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
     constexpr auto __static_prev_nunits  = _PrevMappingResult::static_unit_count();
-    constexpr auto __static_curr_ngroups = sizeof...(_UnitCounts);
+    constexpr auto __static_curr_ngroups = sizeof...(_StaticUnitCounts);
     constexpr auto __static_ngroups =
       (__static_prev_ngroups != ::cuda::std::dynamic_extent)
         ? (__static_prev_ngroups * __static_curr_ngroups)
@@ -121,19 +124,19 @@ public:
 
     const auto __prev_nunits      = __prev_mapping_result.unit_count();
     const auto __prev_unit_rank   = __prev_mapping_result.unit_rank();
-    constexpr auto __curr_ngroups = static_cast<::cuda::std::uint32_t>(sizeof...(_UnitCounts));
+    constexpr auto __curr_ngroups = static_cast<::cuda::std::uint32_t>(sizeof...(_StaticUnitCounts));
     const auto __ngroups          = __prev_mapping_result.group_count() * __curr_ngroups;
 
     if constexpr (_IsAlwaysExhaustive)
     {
       if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
       {
-        static_assert(__static_prev_nunits == __counts_sum,
+        static_assert(__static_prev_nunits == __unit_counts_sum,
                       "group_as mapping _IsAlwaysExhaustive precondition violation");
       }
       else
       {
-        _CCCL_ASSERT(__prev_nunits == static_cast<::cuda::std::uint32_t>(__counts_sum),
+        _CCCL_ASSERT(__prev_nunits == static_cast<::cuda::std::uint32_t>(__unit_counts_sum),
                      "group_as mapping _IsAlwaysExhaustive precondition violation");
       }
     }
@@ -141,15 +144,16 @@ public:
     {
       if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
       {
-        static_assert(__static_prev_nunits >= __counts_sum, "group_as mapping requires more units than are available");
+        static_assert(__static_prev_nunits >= __unit_counts_sum,
+                      "group_as mapping requires more units than are available");
       }
       else
       {
-        _CCCL_ASSERT(__prev_nunits >= static_cast<::cuda::std::uint32_t>(__counts_sum),
+        _CCCL_ASSERT(__prev_nunits >= static_cast<::cuda::std::uint32_t>(__unit_counts_sum),
                      "group_as mapping requires more units than are available");
       }
 
-      if (__prev_unit_rank >= static_cast<::cuda::std::uint32_t>(__counts_sum))
+      if (__prev_unit_rank >= static_cast<::cuda::std::uint32_t>(__unit_counts_sum))
       {
         return _MappingResult::__invalid();
       }
@@ -159,7 +163,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i)
     {
-      const auto __i_count = unit_count(__i);
+      const auto __i_count = __unit_counts[__i];
       if (__prev_unit_rank < __sum + __i_count)
       {
         const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;
@@ -178,51 +182,51 @@ public:
   }
 };
 
-template <::cuda::std::size_t _GroupCount>
+template <::cuda::std::size_t _StaticGroupCount>
 struct __group_as_dynamic_tag;
 
-template <::cuda::std::size_t _GroupCount, bool _IsAlwaysExhaustive>
-class group_as<__group_as_dynamic_tag<_GroupCount>, _IsAlwaysExhaustive>
+template <::cuda::std::size_t _StaticGroupCount, bool _IsAlwaysExhaustive>
+class group_as<__group_as_dynamic_tag<_StaticGroupCount>, _IsAlwaysExhaustive>
 {
-  static_assert(_GroupCount != ::cuda::std::dynamic_extent, "group_as requires static number of groups");
+  static_assert(_StaticGroupCount != ::cuda::std::dynamic_extent, "group_as requires static number of groups");
 
-  ::cuda::std::uint32_t __counts_[_GroupCount];
+  ::cuda::std::uint32_t __unit_counts_[_StaticGroupCount];
 
 public:
   _CCCL_TEMPLATE(bool _IsAlwaysExhaustive2 = _IsAlwaysExhaustive)
   _CCCL_REQUIRES(_IsAlwaysExhaustive2)
   _CCCL_DEVICE_API explicit constexpr group_as(
-    ::cuda::std::span<const ::cuda::std::uint32_t, _GroupCount> __counts) noexcept
+    ::cuda::std::span<const ::cuda::std::uint32_t, _StaticGroupCount> __unit_counts) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (::cuda::std::size_t __i = 0; __i < _GroupCount; ++__i)
+    for (::cuda::std::size_t __i = 0; __i < _StaticGroupCount; ++__i)
     {
-      _CCCL_ASSERT(__counts[__i] > 0, "none of the __counts can be 0");
-      __counts_[__i] = __counts[__i];
+      _CCCL_ASSERT(__unit_counts[__i] > 0, "none of the __unit_counts can be 0");
+      __unit_counts_[__i] = __unit_counts[__i];
     }
   }
 
   _CCCL_TEMPLATE(bool _IsAlwaysExhaustive2 = _IsAlwaysExhaustive)
   _CCCL_REQUIRES((!_IsAlwaysExhaustive2))
-  _CCCL_DEVICE_API explicit constexpr group_as(::cuda::std::span<const ::cuda::std::uint32_t, _GroupCount> __counts,
-                                               const non_exhaustive_t&) noexcept
+  _CCCL_DEVICE_API explicit constexpr group_as(
+    ::cuda::std::span<const ::cuda::std::uint32_t, _StaticGroupCount> __unit_counts, const non_exhaustive_t&) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (::cuda::std::size_t __i = 0; __i < _GroupCount; ++__i)
+    for (::cuda::std::size_t __i = 0; __i < _StaticGroupCount; ++__i)
     {
-      _CCCL_ASSERT(__counts[__i] > 0, "none of the __counts can be 0");
-      __counts_[__i] = __counts[__i];
+      _CCCL_ASSERT(__unit_counts[__i] > 0, "none of the __unit_counts can be 0");
+      __unit_counts_[__i] = __unit_counts[__i];
     }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
   {
-    return _GroupCount;
+    return _StaticGroupCount;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i) noexcept
   {
-    if (__i >= _GroupCount)
+    if (__i >= _StaticGroupCount)
     {
       _CCCL_THROW(::std::out_of_range, "__i is out of range");
     }
@@ -236,11 +240,11 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count(::cuda::std::size_t __i) const noexcept
   {
-    if (__i >= _GroupCount)
+    if (__i >= _StaticGroupCount)
     {
       _CCCL_THROW(::std::out_of_range, "__i is out of range");
     }
-    return __counts_[__i];
+    return __unit_counts_[__i];
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
@@ -249,7 +253,7 @@ public:
   {
     constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
     constexpr auto __static_prev_nunits  = _PrevMappingResult::static_unit_count();
-    constexpr auto __static_curr_ngroups = _GroupCount;
+    constexpr auto __static_curr_ngroups = _StaticGroupCount;
     constexpr auto __static_ngroups =
       (__static_prev_ngroups != ::cuda::std::dynamic_extent)
         ? (__static_prev_ngroups * __static_curr_ngroups)
@@ -268,16 +272,16 @@ public:
 
     const auto __prev_nunits      = __prev_mapping_result.unit_count();
     const auto __prev_unit_rank   = __prev_mapping_result.unit_rank();
-    constexpr auto __curr_ngroups = static_cast<::cuda::std::uint32_t>(_GroupCount);
+    constexpr auto __curr_ngroups = static_cast<::cuda::std::uint32_t>(_StaticGroupCount);
     const auto __ngroups          = __prev_mapping_result.group_count() * __curr_ngroups;
 
     // If the mapping is exhaustive, check the preconditions, otherwise remove the last partial group.
     if constexpr (_IsAlwaysExhaustive)
     {
-      _CCCL_ASSERT(::cuda::std::accumulate(__counts_, __counts_ + __curr_ngroups, 0u) == __prev_nunits,
+      _CCCL_ASSERT(::cuda::std::accumulate(__unit_counts_, __unit_counts_ + __curr_ngroups, 0u) == __prev_nunits,
                    "group_as mapping _IsAlwaysExhaustive precondition violation");
     }
-    else if (__prev_unit_rank >= ::cuda::std::accumulate(__counts_, __counts_ + __curr_ngroups, 0u))
+    else if (__prev_unit_rank >= ::cuda::std::accumulate(__unit_counts_, __unit_counts_ + __curr_ngroups, 0u))
     {
       return _MappingResult::__invalid();
     }
@@ -286,7 +290,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i)
     {
-      const auto __i_count = unit_count(__i);
+      const auto __i_count = __unit_counts_[__i];
       if (__prev_unit_rank < __sum + __i_count)
       {
         const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;
@@ -305,14 +309,15 @@ public:
   }
 };
 
-template <::cuda::std::size_t... _UnitCounts>
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&)
-  -> group_as<__group_as_static_tag<_UnitCounts...>, true>;
-
-template <::cuda::std::size_t... _UnitCounts>
+template <::cuda::std::size_t... _StaticUnitCounts>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _UnitCounts...>&, const non_exhaustive_t&)
-  -> group_as<__group_as_static_tag<_UnitCounts...>, false>;
+group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _StaticUnitCounts...>&)
+  -> group_as<__group_as_static_tag<_StaticUnitCounts...>, true>;
+
+template <::cuda::std::size_t... _StaticUnitCounts>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+group_as(const ::cuda::std::integer_sequence<::cuda::std::size_t, _StaticUnitCounts...>&, const non_exhaustive_t&)
+  -> group_as<__group_as_static_tag<_StaticUnitCounts...>, false>;
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(

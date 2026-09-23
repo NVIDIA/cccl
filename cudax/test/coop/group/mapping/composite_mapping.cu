@@ -25,6 +25,19 @@
 
 namespace
 {
+template <class Mapping>
+struct unknown_mapping
+{
+  static_assert(cuda::std::__always_false_v<Mapping>, "unknown mapping used in mapping_static_unit_count_v");
+  static constexpr cuda::std::size_t value = 0;
+};
+
+template <class Mapping>
+inline constexpr cuda::std::size_t mapping_static_unit_count_v = unknown_mapping<Mapping>::value;
+template <cuda::std::size_t StaticUnitCount, bool IsAlwaysExhaustive>
+inline constexpr cuda::std::size_t
+  mapping_static_unit_count_v<cudax::coop::group_by<StaticUnitCount, IsAlwaysExhaustive>> = StaticUnitCount;
+
 template <class Mapping1, class Mapping2, class Config>
 __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2& mapping2, Config config)
 {
@@ -46,12 +59,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(cuda::std::is_same_v<decltype(mapping.get()), const cuda::std::tuple<Mapping1, Mapping2>&>);
     static_assert(noexcept(mapping.get()));
 
-    const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.unit_count() == 4);
+    decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
+    decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
 
-    const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.unit_count(0) == 1);
-    CHECK(mapping2_ref.unit_count(1) == 3);
+    static_assert(cuda::std::is_same_v<decltype(mapping1_ref), const Mapping1&>);
+    static_assert(cuda::std::is_same_v<decltype(mapping2_ref), const Mapping2&>);
   }
 
   // Test map(...).
@@ -68,7 +80,7 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
 
     const auto rank_in_warp = cuda::gpu_thread.rank_as<unsigned>(parent_group);
 
-    if constexpr (Mapping1::static_unit_count() != cuda::std::dynamic_extent
+    if constexpr (mapping_static_unit_count_v<Mapping1> != cuda::std::dynamic_extent
                   && Mapping2::static_group_count() != cuda::std::dynamic_extent)
     {
       static_assert(Result::static_group_count() == 16);
@@ -99,12 +111,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
     static_assert(noexcept(mapping1 | mapping2));
 
-    const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.unit_count() == 4);
+    decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
+    decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
 
-    const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.unit_count(0) == 1);
-    CHECK(mapping2_ref.unit_count(1) == 3);
+    static_assert(cuda::std::is_same_v<decltype(mapping1_ref), const Mapping1&>);
+    static_assert(cuda::std::is_same_v<decltype(mapping2_ref), const Mapping2&>);
   }
   {
     auto mapping = cudax::coop::composite_mapping{mapping1} | mapping2;
@@ -112,12 +123,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
     static_assert(noexcept(cudax::coop::composite_mapping{mapping1} | mapping2));
 
-    const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.unit_count() == 4);
+    decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
+    decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
 
-    const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.unit_count(0) == 1);
-    CHECK(mapping2_ref.unit_count(1) == 3);
+    static_assert(cuda::std::is_same_v<decltype(mapping1_ref), const Mapping1&>);
+    static_assert(cuda::std::is_same_v<decltype(mapping2_ref), const Mapping2&>);
   }
   {
     auto mapping = mapping1 | cudax::coop::composite_mapping{mapping2};
@@ -125,12 +135,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
     static_assert(noexcept(mapping1 | cudax::coop::composite_mapping{mapping2}));
 
-    const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.unit_count() == 4);
+    decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
+    decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
 
-    const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.unit_count(0) == 1);
-    CHECK(mapping2_ref.unit_count(1) == 3);
+    static_assert(cuda::std::is_same_v<decltype(mapping1_ref), const Mapping1&>);
+    static_assert(cuda::std::is_same_v<decltype(mapping2_ref), const Mapping2&>);
   }
   {
     auto mapping = cudax::coop::composite_mapping{mapping1} | cudax::coop::composite_mapping{mapping2};
@@ -138,12 +147,11 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
     static_assert(noexcept(cudax::coop::composite_mapping{mapping1} | cudax::coop::composite_mapping{mapping2}));
 
-    const auto& mapping1_ref = cuda::std::get<0>(mapping.get());
-    CHECK(mapping1_ref.unit_count() == 4);
+    decltype(auto) mapping1_ref = cuda::std::get<0>(mapping.get());
+    decltype(auto) mapping2_ref = cuda::std::get<1>(mapping.get());
 
-    const auto& mapping2_ref = cuda::std::get<1>(mapping.get());
-    CHECK(mapping2_ref.unit_count(0) == 1);
-    CHECK(mapping2_ref.unit_count(1) == 3);
+    static_assert(cuda::std::is_same_v<decltype(mapping1_ref), const Mapping1&>);
+    static_assert(cuda::std::is_same_v<decltype(mapping2_ref), const Mapping2&>);
   }
 }
 
@@ -153,7 +161,7 @@ struct TestKernel
   __device__ void operator()(const Config& config)
   {
     {
-      const cudax::coop::group_by<4> mapping1{};
+      const cudax::coop::group_by mapping1{cuda::std::integral_constant<cuda::std::size_t, 4>{}};
       const cudax::coop::group_as mapping2{cuda::std::integer_sequence<cuda::std::size_t, 1, 3>{}};
       test_composite_mapping(mapping1, mapping2, config);
     }
@@ -163,7 +171,7 @@ struct TestKernel
       test_composite_mapping(mapping1, mapping2, config);
     }
     {
-      const cudax::coop::group_by<4> mapping1{};
+      const cudax::coop::group_by mapping1{cuda::std::integral_constant<cuda::std::size_t, 4>{}};
       constexpr unsigned counts2[]{1, 3};
       const cudax::coop::group_as mapping2{counts2};
       test_composite_mapping(mapping1, mapping2, config);
