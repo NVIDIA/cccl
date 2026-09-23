@@ -166,11 +166,30 @@ __to_mdspan(const ::DLTensor& __tensor)
   {
     _CCCL_THROW(::std::invalid_argument, "DLTensor data type does not match expected type");
   }
-  if (__tensor.data == nullptr)
+  ::cuda::std::array<int64_t, _Rank> __extents_array{};
+  bool __is_empty = false;
+  if constexpr (_Rank > 0)
+  {
+    // (1) Evaluate Extents
+    if (__tensor.shape == nullptr)
+    {
+      _CCCL_THROW(::std::invalid_argument, "DLTensor shape must be non-null");
+    }
+    for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
+    {
+      if (__tensor.shape[__i] < 0)
+      {
+        _CCCL_THROW(::std::invalid_argument, "DLTensor shapes must be positive");
+      }
+      __extents_array[__i] = __tensor.shape[__i];
+      __is_empty          = __is_empty || __tensor.shape[__i] == 0;
+    }
+  }
+  if (__tensor.data == nullptr && !__is_empty)
   {
     _CCCL_THROW(::std::invalid_argument, "DLTensor data must be non-null");
   }
-  // (1) Evaluate Data Pointer
+  // (2) Evaluate Data Pointer
   const auto __datatype_size = __tensor.dtype.bits * __tensor.dtype.lanes / 8;
   __element_type* __data     = nullptr;
   if constexpr (::cuda::__is_layout_stride_relaxed_v<_LayoutPolicy>)
@@ -179,15 +198,18 @@ __to_mdspan(const ::DLTensor& __tensor)
     {
       _CCCL_THROW(::std::invalid_argument, "DLTensor byte_offset must be a multiple of element size");
     }
-    __data = reinterpret_cast<__element_type*>(__tensor.data);
+    if (__tensor.data != nullptr)
+    {
+      __data = reinterpret_cast<__element_type*>(__tensor.data);
+    }
   }
-  else
+  else if (__tensor.data != nullptr)
   {
     __data = reinterpret_cast<__element_type*>(static_cast<char*>(__tensor.data) + __tensor.byte_offset);
   }
   // this is not the exact solution because data type size != data type alignment.
   // However, it always works for the supported data types.
-  if (__datatype_size > 0 && !::cuda::is_aligned(__data, __datatype_size))
+  if (__tensor.data != nullptr && __datatype_size > 0 && !::cuda::is_aligned(__data, __datatype_size))
   {
     _CCCL_THROW(::std::invalid_argument, "DLTensor data must be aligned to the data type");
   }
@@ -206,20 +228,6 @@ __to_mdspan(const ::DLTensor& __tensor)
   }
   else // Rank > 0
   {
-    // (2) Evaluate Extents
-    if (__tensor.shape == nullptr)
-    {
-      _CCCL_THROW(::std::invalid_argument, "DLTensor shape must be non-null");
-    }
-    ::cuda::std::array<int64_t, _Rank> __extents_array{};
-    for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
-    {
-      if (__tensor.shape[__i] < 0)
-      {
-        _CCCL_THROW(::std::invalid_argument, "DLTensor shapes must be positive");
-      }
-      __extents_array[__i] = __tensor.shape[__i];
-    }
     // (3) Evaluate Strides
     ::cuda::__validate_dlpack_strides<_LayoutPolicy>(__tensor, _Rank);
     if constexpr (::cuda::__is_layout_stride_v<_LayoutPolicy> || ::cuda::__is_layout_stride_relaxed_v<_LayoutPolicy>)
