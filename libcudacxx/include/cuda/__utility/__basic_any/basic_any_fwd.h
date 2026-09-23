@@ -61,7 +61,7 @@ struct __rtti_base;
 
 struct __rtti;
 
-template <size_t NbrBases>
+template <size_t _NbrBases>
 struct __rtti_ex;
 
 template <class...>

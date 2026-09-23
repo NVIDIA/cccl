@@ -61,8 +61,8 @@ using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 #  define _CCCL_CONCEPT                      concept
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 #  define _CCCL_TEMPLATE(...) template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...) , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
-#  define _CCCL_AND           &&__cccl_true_, int > = 0, __cccl_enable_if_t <
+#  define _CCCL_REQUIRES(...) , bool _CcclTrue = true, __cccl_enable_if_t < __VA_ARGS__ && _CcclTrue, int > = 0 >
+#  define _CCCL_AND           &&_CcclTrue, int > = 0, __cccl_enable_if_t <
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_TRAILING_REQUIRES_IMPL_(...) , __VA_ARGS__ >
 #  define _CCCL_CONCEPT                      inline constexpr bool

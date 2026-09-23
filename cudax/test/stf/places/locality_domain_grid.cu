@@ -16,8 +16,12 @@
  * Checks that `make_locality_domain_grid` builds a grid whose size adapts to
  * the queried domain count and whose sub-places match the scalar factories,
  * and that `exec_place::locality_domains` is the same grid.
+ * `exec_place::all_locality_domains` covers every domain of every visible
+ * device, in device-major order.
  */
 
+#include <cuda/experimental/__places/place_partition.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_partition_into_stf.cuh>
 #include <cuda/experimental/stf.cuh>
 
 #include <cstddef>
@@ -81,6 +85,33 @@ int main()
   if (ndomains < 2)
   {
     fprintf(stderr, "Device reports a single locality domain: multi-domain grid checks degenerate to size 1.\n");
+  }
+
+  // The machine-wide grid concatenates the per-device grids in device-major
+  // order
+  const int ndevs = cuda_try<cudaGetDeviceCount>();
+  exec_place all  = exec_place::all_locality_domains();
+
+  size_t offset = 0;
+  for (int d = 0; d < ndevs; d++)
+  {
+    exec_place per_dev = exec_place::locality_domains(d);
+    EXPECT(per_dev.size() == locality_domain_count(d));
+    for (size_t i = 0; i < per_dev.size(); i++)
+    {
+      EXPECT(all.get_place(offset + i) == per_dev.get_place(i));
+    }
+    offset += per_dev.size();
+  }
+  EXPECT(all.size() == offset);
+
+  // Same domains as partitioning all_devices() at locality-domain scope, the
+  // mechanism this is sugar over
+  place_partition part(exec_place::all_devices(), place_partition_scope::locality_domain);
+  EXPECT(all.size() == part.size());
+  for (size_t i = 0; i < part.size(); i++)
+  {
+    EXPECT(all.get_place(i) == part.get(i));
   }
 
   return 0;
