@@ -184,8 +184,7 @@ public:
   }
 
   template <bool _Copyable = __copyable, ::cuda::std::enable_if_t<_Copyable, int> = 0>
-  _CCCL_HOST_DEVICE_API
-  __basic_any(__basic_any<_Interface&>&& __other) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_Interface&>&& __other)
   {
     __convert_from(::cuda::std::move(__other));
   }

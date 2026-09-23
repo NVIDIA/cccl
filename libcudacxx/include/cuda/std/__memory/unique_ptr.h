@@ -217,7 +217,6 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterConvertible<_Ep>>
-  // release() transfers ownership; forward preserves reference deleters.
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20
   unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
       : __ptr_(__u.release(), ::cuda::std::forward<_Ep>(__u.get_deleter()))
@@ -234,7 +233,6 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterAssignable<_Ep>>
-  // release() transfers ownership; forward preserves reference deleters.
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr&
   operator=(unique_ptr<_Up, _Ep>&& __u) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
@@ -433,7 +431,6 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterConvertible<_Ep>>
-  // release() transfers ownership; forward preserves reference deleters.
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20
   unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
       : __ptr_(__u.release(), ::cuda::std::forward<_Ep>(__u.get_deleter()))
@@ -443,7 +440,6 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterAssignable<_Ep>>
-  // release() transfers ownership; forward preserves reference deleters.
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr&
   operator=(unique_ptr<_Up, _Ep>&& __u) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
