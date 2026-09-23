@@ -413,8 +413,8 @@ or grid-size arithmetic fed from `OffsetT`. Such code compiles and passes small 
 misbehaves beyond 2^31 elements. A public API accepting a templated offset type must normalize it via
 `cub::detail::choose_offset_t` immediately and pass the adjusted type to the dispatch and kernels, and
 a unit test with a problem size larger than 2^32 is required. Not affected: implementations that accept
-a generic offset type at the device-layer API but dispatch with a fixed 64-bit offset (e.g. scan,
-transform).
+a generic offset type at the device-layer API but dispatch with a fixed 64-bit offset (e.g. lookahead
+scan, transform).
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
