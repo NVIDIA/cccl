@@ -360,35 +360,35 @@ struct get_arch<Plan<Arch>>
 template <class T>
 class cuda_optional
 {
-  cudaError_t status_{cudaSuccess};
-  T value_{};
+  cudaError_t err{cudaSuccess};
+  T data{};
 
 public:
   cuda_optional() = default;
 
   _CCCL_HOST_DEVICE cuda_optional(T v, cudaError_t status = cudaSuccess)
-      : status_(status)
-      , value_(v)
+      : err(status)
+      , data(v)
   {}
 
   bool _CCCL_HOST_DEVICE isValid() const
   {
-    return cudaSuccess == status_;
+    return cudaSuccess == err;
   }
 
   cudaError_t _CCCL_HOST_DEVICE status() const
   {
-    return status_;
+    return err;
   }
 
   _CCCL_HOST_DEVICE T const& value() const
   {
-    return value_;
+    return data;
   }
 
   _CCCL_HOST_DEVICE operator T const&() const
   {
-    return value_;
+    return data;
   }
 };
 
@@ -465,9 +465,9 @@ struct uninitialized
 {
   using DeviceWord = typename cub::UnitWord<T>::DeviceWord;
 
-  static constexpr int WORDS = sizeof(T) / sizeof(DeviceWord);
+  static constexpr int words = sizeof(T) / sizeof(DeviceWord);
 
-  DeviceWord storage[WORDS];
+  DeviceWord storage[words];
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& get()
   {

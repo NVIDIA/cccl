@@ -10,39 +10,39 @@
 // Base 2 fixed point
 class ScaledInteger
 {
-  int value_;
-  int scale_;
+  int stored_value;
+  int stored_scale;
 
 public:
   __host__ __device__ ScaledInteger(int value, int scale)
-      : value_{value}
-      , scale_{scale}
+      : stored_value{value}
+      , stored_scale{scale}
   {}
 
   __host__ __device__ int value() const
   {
-    return value_;
+    return stored_value;
   }
 
   __host__ __device__ ScaledInteger rescale(int scale) const
   {
-    const int shift  = scale - scale_;
-    const int result = shift < 0 ? value_ << (-shift) : value_ >> shift;
+    const int shift  = scale - stored_scale;
+    const int result = shift < 0 ? stored_value << (-shift) : stored_value >> shift;
     return ScaledInteger{result, scale};
   }
 
   __host__ __device__ friend ScaledInteger operator+(ScaledInteger a, ScaledInteger b)
   {
     // Rescale inputs to the lesser of the two scales
-    if (b.scale_ < a.scale_)
+    if (b.stored_scale < a.stored_scale)
     {
-      a = a.rescale(b.scale_);
+      a = a.rescale(b.stored_scale);
     }
-    else if (a.scale_ < b.scale_)
+    else if (a.stored_scale < b.stored_scale)
     {
-      b = b.rescale(a.scale_);
+      b = b.rescale(a.stored_scale);
     }
-    return ScaledInteger{a.value_ + b.value_, a.scale_};
+    return ScaledInteger{a.stored_value + b.stored_value, a.stored_scale};
   }
 };
 

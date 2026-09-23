@@ -44,36 +44,36 @@ struct allocator_delete final
   _CCCL_TEMPLATE(typename UAllocator)
   _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<UAllocator>, allocator_delete>) )
   allocator_delete(UAllocator&& other) noexcept
-      : alloc_(THRUST_FWD(other))
+      : alloc(THRUST_FWD(other))
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <typename U, typename UAllocator>
   allocator_delete(allocator_delete<U, UAllocator> const& other) noexcept
-      : alloc_(other.get_allocator())
+      : alloc(other.get_allocator())
   {}
   template <typename U, typename UAllocator>
   allocator_delete(allocator_delete<U, UAllocator>&& other) noexcept
-      : alloc_(::cuda::std::move(other.get_allocator()))
+      : alloc(::cuda::std::move(other.get_allocator()))
   {}
 
   template <typename U, typename UAllocator>
   allocator_delete& operator=(allocator_delete<U, UAllocator> const& other) noexcept
   {
-    alloc_ = other.get_allocator();
+    alloc = other.get_allocator();
     return *this;
   }
   template <typename U, typename UAllocator>
   allocator_delete& operator=(allocator_delete<U, UAllocator>&& other) noexcept
   {
-    alloc_ = ::cuda::std::move(other.get_allocator());
+    alloc = ::cuda::std::move(other.get_allocator());
     return *this;
   }
 
   void operator()(pointer p)
   {
     using traits = ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>;
-    typename traits::allocator_type alloc_T(alloc_);
+    typename traits::allocator_type alloc_T(alloc);
 
     if (nullptr != ::cuda::std::to_address(p))
     {
@@ -87,21 +87,21 @@ struct allocator_delete final
 
   allocator_type& get_allocator() noexcept
   {
-    return alloc_;
+    return alloc;
   }
   allocator_type const& get_allocator() const noexcept
   {
-    return alloc_;
+    return alloc;
   }
 
   void swap(allocator_delete& other) noexcept
   {
     using ::cuda::std::swap;
-    swap(alloc_, other.alloc_);
+    swap(alloc, other.alloc);
   }
 
 private:
-  allocator_type alloc_;
+  allocator_type alloc;
 };
 
 template <typename T, typename Allocator>
@@ -115,33 +115,33 @@ struct array_allocator_delete final
 
   template <typename UAllocator>
   array_allocator_delete(UAllocator&& other, std::size_t n) noexcept
-      : alloc_(THRUST_FWD(other))
-      , count_(n)
+      : alloc(THRUST_FWD(other))
+      , count(n)
   {}
 
   template <typename U, typename UAllocator>
   array_allocator_delete(array_allocator_delete<U, UAllocator> const& other) noexcept
-      : alloc_(other.get_allocator())
-      , count_(other.count_)
+      : alloc(other.get_allocator())
+      , count(other.count)
   {}
   template <typename U, typename UAllocator>
   array_allocator_delete(array_allocator_delete<U, UAllocator>&& other) noexcept
-      : alloc_(::cuda::std::move(other.get_allocator()))
-      , count_(other.count_)
+      : alloc(::cuda::std::move(other.get_allocator()))
+      , count(other.count)
   {}
 
   template <typename U, typename UAllocator>
   array_allocator_delete& operator=(array_allocator_delete<U, UAllocator> const& other) noexcept
   {
-    alloc_ = other.get_allocator();
-    count_ = other.count_;
+    alloc = other.get_allocator();
+    count = other.count;
     return *this;
   }
   template <typename U, typename UAllocator>
   array_allocator_delete& operator=(array_allocator_delete<U, UAllocator>&& other) noexcept
   {
-    alloc_ = ::cuda::std::move(other.get_allocator());
-    count_ = other.count_;
+    alloc = ::cuda::std::move(other.get_allocator());
+    count = other.count;
     return *this;
   }
 
@@ -153,31 +153,31 @@ struct array_allocator_delete final
     {
       if constexpr (!Uninitialized)
       {
-        destroy_n(alloc_T, p, count_);
+        destroy_n(alloc_T, p, count);
       }
-      traits::deallocate(alloc_T, p, count_);
+      traits::deallocate(alloc_T, p, count);
     }
   }
 
   allocator_type& get_allocator() noexcept
   {
-    return alloc_;
+    return alloc;
   }
   allocator_type const& get_allocator() const noexcept
   {
-    return alloc_;
+    return alloc;
   }
 
   void swap(array_allocator_delete& other) noexcept
   {
     using ::cuda::std::swap;
-    swap(alloc_, other.alloc_);
-    swap(count_, other.count_);
+    swap(alloc, other.alloc);
+    swap(count, other.count);
   }
 
 private:
-  allocator_type alloc_;
-  std::size_t count_;
+  allocator_type alloc;
+  std::size_t count;
 };
 
 template <typename T, typename Allocator>
