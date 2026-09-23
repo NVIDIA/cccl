@@ -38,6 +38,7 @@
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
+#include <memory>
 #include <mutex>
 
 namespace cuda::experimental::stf
@@ -363,14 +364,26 @@ public:
     // Make sure we release resources attached to this context
     state.release_ctx_resources(state.submitted_stream);
 
+    // Finalization has to complete even when the synchronize below reports a failure, which is
+    // the likely case rather than the exotic one: cudaStreamSynchronize is where asynchronous
+    // errors from earlier work surface. Leaving the context in `submitted` with its resources
+    // already released makes it unusable AND unretryable -- a second finalize() re-enters
+    // release_ctx_resources and trips its "already released" assertion. The guard is armed
+    // after that release so that a failure there still leaves the context retryable, which it
+    // is today: release() only sets its released flag once it has finished.
+    //
+    // The error still propagates; the caller simply gets a consistent context along with it.
+    SCOPE(exit)
+    {
+      state.submitted_stream = nullptr;
+      state.cleanup();
+      set_phase(backend_ctx_untyped::phase::finalized);
+    };
+
     if (state.blocking_finalize)
     {
       cuda_try(cudaStreamSynchronize(state.submitted_stream));
     }
-
-    state.submitted_stream = nullptr;
-    state.cleanup();
-    set_phase(backend_ctx_untyped::phase::finalized);
   }
 
   void submit(cudaStream_t stream = nullptr)
@@ -622,7 +635,7 @@ private:
     auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
       if (*pGraphExec)
       {
-        cudaGraphExecDestroy(*pGraphExec);
+        cuda_safe_call(cudaGraphExecDestroy(*pGraphExec));
       }
       delete pGraphExec;
     };
@@ -637,11 +650,23 @@ private:
   // Creates a new CUDA graph and wrap it into a shared_ptr
   static ::std::shared_ptr<cudaGraph_t> shared_cuda_graph()
   {
+    // Same two precautions as cudaGraphExecDeleter above, for the same reasons. A custom
+    // deleter replaces the default `delete`, so it has to free the cell itself. And the handle
+    // is value-initialized so it stays null if cudaGraphCreate throws, since destroying an
+    // indeterminate handle is undefined behaviour rather than a no-op.
+    //
+    // cuda_safe_call, not a bare call: a failed destroy would otherwise be dropped silently and
+    // leave a sticky error to surface at some later, unrelated CUDA call. It aborts rather than
+    // throws, which is what a shared_ptr deleter needs.
     auto cudaGraphDeleter = [](cudaGraph_t* pGraph) {
-      cudaGraphDestroy(*pGraph);
+      if (*pGraph)
+      {
+        cuda_safe_call(cudaGraphDestroy(*pGraph));
+      }
+      delete pGraph;
     };
 
-    ::std::shared_ptr<cudaGraph_t> res(new cudaGraph_t, cudaGraphDeleter);
+    ::std::shared_ptr<cudaGraph_t> res(new cudaGraph_t{}, cudaGraphDeleter);
 
     cuda_try(cudaGraphCreate(res.get(), 0));
 
@@ -651,14 +676,11 @@ private:
   // Wrap an existing CUDA graph into a shared_ptr, the destruction of the graph is let to the application
   static ::std::shared_ptr<cudaGraph_t> wrap_cuda_graph(cudaGraph_t g)
   {
-    // Allocate memory for a new cudaGraph_t and copy the existing graph to it
-    cudaGraph_t* pGraph = new cudaGraph_t;
-    *pGraph             = g;
-
-    // There is no custom deleter : only the pointer itself will be destroyed
-    ::std::shared_ptr<cudaGraph_t> res(pGraph);
-
-    return res;
+    // No custom deleter: the graph's lifetime belongs to the application, so only the cell
+    // holding the handle is freed. make_shared keeps that allocation exception-safe -- a raw
+    // `new` followed by a throwing shared_ptr construction would leak it -- and folds the
+    // control block into the same allocation.
+    return ::std::make_shared<cudaGraph_t>(g);
   }
 
   cudaStream_t submit_one_stage(cudaGraph_t g, size_t stage)

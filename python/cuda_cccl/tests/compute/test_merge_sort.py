@@ -96,11 +96,10 @@ def test_merge_sort_keys(dtype, num_items, op):
 
 
 @pytest.mark.parametrize("dtype,num_items,op", merge_sort_params)
-def test_merge_sort_pairs(dtype, num_items, op, monkeypatch):
-    if dtype == np.float16:
-        import cuda.compute._cccl_interop
-
-        monkeypatch.setattr(cuda.compute._cccl_interop, "_check_sass", False)
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_merge_sort_pairs(dtype, num_items, op):
 
     h_in_keys = random_array(num_items, dtype)
     h_in_items = random_array(num_items, np.float32)
@@ -138,11 +137,10 @@ def test_merge_sort_keys_copy(dtype, num_items, op):
 
 
 @pytest.mark.parametrize("dtype,num_items,op", merge_sort_params)
-def test_merge_sort_pairs_copy(dtype, num_items, op, monkeypatch):
-    if dtype == np.float16:
-        import cuda.compute._cccl_interop
-
-        monkeypatch.setattr(cuda.compute._cccl_interop, "_check_sass", False)
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_merge_sort_pairs_copy(dtype, num_items, op):
 
     h_in_keys = random_array(num_items, dtype)
     h_in_items = random_array(num_items, np.float32)
@@ -237,7 +235,7 @@ def test_merge_sort_keys_complex():
 
 
 @pytest.mark.parametrize("dtype,num_items,op", merge_sort_params)
-def test_merge_sort_keys_copy_iterator_input(dtype, num_items, op):
+def test_merge_sort_keys_cache_modified_input_iterator(dtype, num_items, op):
     h_in_keys = random_array(num_items, dtype)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
@@ -255,11 +253,10 @@ def test_merge_sort_keys_copy_iterator_input(dtype, num_items, op):
 
 
 @pytest.mark.parametrize("dtype,num_items,op", merge_sort_params)
-def test_merge_sort_pairs_copy_iterator_input(dtype, num_items, op, monkeypatch):
-    if dtype == np.float16:
-        import cuda.compute._cccl_interop
-
-        monkeypatch.setattr(cuda.compute._cccl_interop, "_check_sass", False)
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_merge_sort_pairs_copy_iterator_input(dtype, num_items, op):
 
     h_in_keys = random_array(num_items, dtype)
     h_in_items = random_array(num_items, np.float32)
@@ -324,6 +321,31 @@ def test_merge_sort_well_known_less():
 
     expected = np.array([1, 2, 3, 5, 8, 9])
     np.testing.assert_equal(d_out_keys.copy_to_host(), expected)
+
+
+@pytest.mark.no_numba
+def test_merge_sort_well_known_with_struct_values():
+    # Only the keys participate in the built-in comparison.
+    Point = gpu_struct({"x": np.int32, "y": np.int32})
+    h_keys = np.array([3, 1, 4, 2], dtype=np.int32)
+    h_values = np.array([(30, 31), (10, 11), (40, 41), (20, 21)], dtype=Point.dtype)
+    d_in_keys = DeviceArray.from_numpy(h_keys)
+    d_in_values = DeviceArray.from_numpy(h_values)
+    d_out_keys = DeviceArray.empty(h_keys.shape, h_keys.dtype)
+    d_out_values = DeviceArray.empty(h_values.shape, h_values.dtype)
+
+    cuda.compute.merge_sort(
+        d_in_keys=d_in_keys,
+        d_in_values=d_in_values,
+        d_out_keys=d_out_keys,
+        d_out_values=d_out_values,
+        num_items=h_keys.size,
+        op=OpKind.LESS,
+    )
+
+    order = np.argsort(h_keys)
+    np.testing.assert_array_equal(d_out_keys.copy_to_host(), h_keys[order])
+    np.testing.assert_array_equal(d_out_values.copy_to_host(), h_values[order])
 
 
 def test_merge_sort_well_known_greater():

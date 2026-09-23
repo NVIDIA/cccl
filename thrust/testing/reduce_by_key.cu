@@ -48,15 +48,15 @@ void TestReduceByKeySimple()
   new_last =
     thrust::reduce_by_key(keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin());
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
+  REQUIRE(new_last.first - output_keys.begin() == 5);
   output_keys.resize(new_last.first - output_keys.begin());
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
+  REQUIRE(new_last.second - output_values.begin() == 5);
   output_values.resize(new_last.second - output_values.begin());
   Vector ref_keys{11, 21, 20, 21, 37};
-  ASSERT_EQUAL(output_keys, ref_keys);
+  REQUIRE(output_keys == ref_keys);
 
   Vector ref_values{1, 2, 3, 15, 15};
-  ASSERT_EQUAL(output_values, ref_values);
+  REQUIRE(output_values == ref_values);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -65,16 +65,16 @@ void TestReduceByKeySimple()
   new_last = thrust::reduce_by_key(
     keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin(), is_equal_div_10_reduce<T>());
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
+  REQUIRE(new_last.first - output_keys.begin() == 3);
   output_keys.resize(new_last.first - output_keys.begin());
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
+  REQUIRE(new_last.second - output_values.begin() == 3);
   output_values.resize(new_last.second - output_values.begin());
 
   ref_keys = {11, 21, 37};
-  ASSERT_EQUAL(output_keys, ref_keys);
+  REQUIRE(output_keys == ref_keys);
 
   ref_values = {1, 20, 15};
-  ASSERT_EQUAL(output_values, ref_values);
+  REQUIRE(output_values == ref_values);
 
   // test BinaryFunction
   initialize_keys(keys);
@@ -92,16 +92,16 @@ void TestReduceByKeySimple()
     ::cuda::std::equal_to<T>(),
     ::cuda::std::plus<T>());
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
+  REQUIRE(new_last.first - output_keys.begin() == 5);
   output_keys.resize(new_last.first - output_keys.begin());
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
+  REQUIRE(new_last.second - output_values.begin() == 5);
   output_values.resize(new_last.second - output_values.begin());
 
   ref_keys = {11, 21, 20, 21, 37};
-  ASSERT_EQUAL(output_keys, ref_keys);
+  REQUIRE(output_keys == ref_keys);
 
   ref_values = {1, 2, 3, 15, 15};
-  ASSERT_EQUAL(output_values, ref_values);
+  REQUIRE(output_values == ref_values);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestReduceByKeySimple);
 
@@ -130,23 +130,23 @@ struct TestReduceByKey
     using HostIteratorPair   = typename cuda::std::pair<HostKeyIterator, HostValIterator>;
     using DeviceIteratorPair = typename cuda::std::pair<DeviceKeyIterator, DeviceValIterator>;
 
-    HostIteratorPair h_last =
+    const HostIteratorPair h_last =
       thrust::reduce_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_keys_output.begin(), h_vals_output.begin());
-    DeviceIteratorPair d_last =
+    const DeviceIteratorPair d_last =
       thrust::reduce_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys_output.begin(), d_vals_output.begin());
 
-    ASSERT_EQUAL(h_last.first - h_keys_output.begin(), d_last.first - d_keys_output.begin());
-    ASSERT_EQUAL(h_last.second - h_vals_output.begin(), d_last.second - d_vals_output.begin());
+    REQUIRE(h_last.first - h_keys_output.begin() == d_last.first - d_keys_output.begin());
+    REQUIRE(h_last.second - h_vals_output.begin() == d_last.second - d_vals_output.begin());
 
-    size_t N = h_last.first - h_keys_output.begin();
+    const size_t N = h_last.first - h_keys_output.begin();
 
     h_keys_output.resize(N);
     h_vals_output.resize(N);
     d_keys_output.resize(N);
     d_vals_output.resize(N);
 
-    ASSERT_EQUAL(h_keys_output, d_keys_output);
-    ASSERT_EQUAL(h_vals_output, d_vals_output);
+    REQUIRE(h_keys_output == d_keys_output);
+    REQUIRE(h_vals_output == d_vals_output);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceByKey, IntegralTypes);
@@ -163,22 +163,22 @@ struct TestReduceByKeyToDiscardIterator
     thrust::device_vector<K> d_keys = h_keys;
     thrust::device_vector<V> d_vals = h_vals;
 
-    thrust::host_vector<K> h_keys_output(n);
+    const thrust::host_vector<K> h_keys_output(n);
     thrust::host_vector<V> h_vals_output(n);
-    thrust::device_vector<K> d_keys_output(n);
+    const thrust::device_vector<K> d_keys_output(n);
     thrust::device_vector<V> d_vals_output(n);
 
     thrust::host_vector<K> unique_keys = h_keys;
     unique_keys.erase(thrust::unique(unique_keys.begin(), unique_keys.end()), unique_keys.end());
 
     // discard key output
-    size_t h_size =
+    const size_t h_size =
       thrust::reduce_by_key(
         h_keys.begin(), h_keys.end(), h_vals.begin(), thrust::make_discard_iterator(), h_vals_output.begin())
         .second
       - h_vals_output.begin();
 
-    size_t d_size =
+    const size_t d_size =
       thrust::reduce_by_key(
         d_keys.begin(), d_keys.end(), d_vals.begin(), thrust::make_discard_iterator(), d_vals_output.begin())
         .second
@@ -187,9 +187,9 @@ struct TestReduceByKeyToDiscardIterator
     h_vals_output.resize(h_size);
     d_vals_output.resize(d_size);
 
-    ASSERT_EQUAL(h_vals_output.size(), unique_keys.size());
-    ASSERT_EQUAL(d_vals_output.size(), unique_keys.size());
-    ASSERT_EQUAL(d_vals_output.size(), h_vals_output.size());
+    REQUIRE(h_vals_output.size() == unique_keys.size());
+    REQUIRE(d_vals_output.size() == unique_keys.size());
+    REQUIRE(d_vals_output.size() == h_vals_output.size());
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceByKeyToDiscardIterator, IntegralTypes);
@@ -207,16 +207,15 @@ cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestReduceByKeyDispatchExplicit()
+TEST_CASE("TestReduceByKeyDispatchExplicit", "[reduce_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::reduce_by_key(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReduceByKeyDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
 cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
@@ -226,7 +225,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestReduceByKeyDispatchImplicit()
+TEST_CASE("TestReduceByKeyDispatchImplicit", "[reduce_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -237,6 +236,5 @@ void TestReduceByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReduceByKeyDispatchImplicit);

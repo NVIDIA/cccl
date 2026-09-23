@@ -21,68 +21,66 @@ void TestAllOfDevice(ExecutionPolicy exec)
   all_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   v[1] = 0;
 
   all_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   all_of_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 }
 
-void TestAllOfDeviceSeq()
+TEST_CASE("TestAllOfDeviceSeq", "[logical]")
 {
   TestAllOfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestAllOfDeviceSeq);
 
-void TestAllOfDeviceDevice()
+TEST_CASE("TestAllOfDeviceDevice", "[logical]")
 {
   TestAllOfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestAllOfDeviceDevice);
 #endif
 
-void TestAllOfCudaStreams()
+TEST_CASE("TestAllOfCudaStreams", "[logical]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -92,20 +90,19 @@ void TestAllOfCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(thrust::all_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}), true);
+  REQUIRE(thrust::all_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
   v[1] = 0;
 
-  ASSERT_EQUAL(thrust::all_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}), false);
+  REQUIRE_FALSE(thrust::all_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
-  ASSERT_EQUAL(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}), false);
-  ASSERT_EQUAL(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}), false);
+  REQUIRE(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}));
+  REQUIRE(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::all_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestAllOfCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Function, typename Iterator2>
@@ -125,68 +122,66 @@ void TestAnyOfDevice(ExecutionPolicy exec)
   any_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   v[1] = 0;
 
   any_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   any_of_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 }
 
-void TestAnyOfDeviceSeq()
+TEST_CASE("TestAnyOfDeviceSeq", "[logical]")
 {
   TestAnyOfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestAnyOfDeviceSeq);
 
-void TestAnyOfDeviceDevice()
+TEST_CASE("TestAnyOfDeviceDevice", "[logical]")
 {
   TestAnyOfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestAnyOfDeviceDevice);
 #endif
 
-void TestAnyOfCudaStreams()
+TEST_CASE("TestAnyOfCudaStreams", "[logical]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -196,20 +191,19 @@ void TestAnyOfCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(thrust::any_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}), true);
+  REQUIRE(thrust::any_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
   v[1] = 0;
 
-  ASSERT_EQUAL(thrust::any_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}), true);
+  REQUIRE(thrust::any_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
-  ASSERT_EQUAL(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}), false);
-  ASSERT_EQUAL(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}), false);
+  REQUIRE_FALSE(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}));
+  REQUIRE(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}));
+  REQUIRE(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::any_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestAnyOfCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Function, typename Iterator2>
@@ -229,68 +223,66 @@ void TestNoneOfDevice(ExecutionPolicy exec)
   none_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   v[1] = 0;
 
   none_of_kernel<<<1, 1>>>(exec, v.begin(), v.end(), ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(false, result[0]);
+  REQUIRE_FALSE(result[0]);
 
   none_of_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 }
 
-void TestNoneOfDeviceSeq()
+TEST_CASE("TestNoneOfDeviceSeq", "[logical]")
 {
   TestNoneOfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestNoneOfDeviceSeq);
 
-void TestNoneOfDeviceDevice()
+TEST_CASE("TestNoneOfDeviceDevice", "[logical]")
 {
   TestNoneOfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestNoneOfDeviceDevice);
 #endif
 
-void TestNoneOfCudaStreams()
+TEST_CASE("TestNoneOfCudaStreams", "[logical]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -300,17 +292,16 @@ void TestNoneOfCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(thrust::none_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}), false);
+  REQUIRE_FALSE(thrust::none_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
   v[1] = 0;
 
-  ASSERT_EQUAL(thrust::none_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}), false);
+  REQUIRE_FALSE(thrust::none_of(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
-  ASSERT_EQUAL(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}), true);
-  ASSERT_EQUAL(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}), false);
-  ASSERT_EQUAL(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}), false);
-  ASSERT_EQUAL(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}), true);
+  REQUIRE(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 0, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 1, ::cuda::std::identity{}));
+  REQUIRE_FALSE(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
+  REQUIRE(thrust::none_of(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestNoneOfCudaStreams);

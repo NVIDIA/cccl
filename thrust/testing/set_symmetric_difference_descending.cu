@@ -15,11 +15,11 @@ void TestSetSymmetricDifferenceDescendingSimple()
   Vector ref{7, 6, 3, 3, 2};
   Vector result(5);
 
-  Iterator end =
+  const Iterator end =
     thrust::set_symmetric_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetSymmetricDifferenceDescendingSimple);
 
@@ -51,6 +51,6 @@ void TestSetSymmetricDifferenceDescending(const size_t n)
 
   d_result.erase(d_end, d_result.end());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceDescending);

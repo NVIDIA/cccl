@@ -10,7 +10,7 @@ struct addable
   }
 };
 
-void TestAddressStabilityLibcuxx()
+TEST_CASE("TestAddressStabilityLibcuxx", "[address_stability]")
 {
   using ::cuda::proclaim_copyable_arguments;
   using ::cuda::proclaims_copyable_arguments;
@@ -27,9 +27,8 @@ void TestAddressStabilityLibcuxx()
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(cuda::std::plus<addable>{}))>::value);
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(cuda::std::plus<>{}))>::value);
 }
-DECLARE_UNITTEST(TestAddressStabilityLibcuxx);
 
-void TestAddressStabilityThrust()
+TEST_CASE("TestAddressStabilityThrust", "[address_stability]")
 {
   using ::cuda::proclaim_copyable_arguments;
   using ::cuda::proclaims_copyable_arguments;
@@ -47,7 +46,6 @@ void TestAddressStabilityThrust()
     proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(::cuda::std::plus<addable>{}))>::value);
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(::cuda::std::plus<>{}))>::value);
 }
-DECLARE_UNITTEST(TestAddressStabilityThrust);
 
 template <typename T>
 struct my_plus
@@ -58,7 +56,7 @@ struct my_plus
   }
 };
 
-void TestAddressStabilityUserDefinedFunctionObject()
+TEST_CASE("TestAddressStabilityUserDefinedFunctionObject", "[address_stability]")
 {
   using ::cuda::proclaim_copyable_arguments;
   using ::cuda::proclaims_copyable_arguments;
@@ -81,7 +79,6 @@ void TestAddressStabilityUserDefinedFunctionObject()
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(my_plus<int&&>{}))>::value);
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(my_plus<const int&&>{}))>::value);
 }
-DECLARE_UNITTEST(TestAddressStabilityUserDefinedFunctionObject);
 
 void TestAddressStabilityLambda()
 {
@@ -94,7 +91,7 @@ void TestAddressStabilityLambda()
     };
     static_assert(!proclaims_copyable_arguments<decltype(l)>::value);
     auto pr_l = proclaim_copyable_arguments(l);
-    ASSERT_EQUAL(pr_l(3), 5);
+    REQUIRE(pr_l(3) == 5);
     static_assert(proclaims_copyable_arguments<decltype(pr_l)>::value);
   }
 
@@ -113,8 +110,11 @@ void TestAddressStabilityLambda()
     };
     static_assert(!proclaims_copyable_arguments<decltype(l)>::value);
     auto pr_l = proclaim_copyable_arguments(l);
-    ASSERT_EQUAL(pr_l(3), 5);
+    REQUIRE(pr_l(3) == 5);
     static_assert(proclaims_copyable_arguments<decltype(pr_l)>::value);
   }
 }
-DECLARE_UNITTEST(TestAddressStabilityLambda);
+TEST_CASE("TestAddressStabilityLambda", "[address_stability]")
+{
+  TestAddressStabilityLambda();
+}

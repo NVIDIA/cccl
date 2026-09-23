@@ -27,40 +27,35 @@ struct CustomLess
 /**
  * @brief Kernel to dispatch to the appropriate WarpMergeSort member function, sorting keys-only.
  */
-template <int ITEMS_PER_THREAD,
-          int LOGICAL_WARP_THREADS,
-          int TOTAL_WARPS,
-          typename T,
-          typename SegmentSizeItT,
-          typename ActionT>
+template <int ItemsPerThread, int LogicalWarpThreads, int TotalWarps, typename T, typename SegmentSizeItT, typename ActionT>
 __global__ void warp_merge_sort_kernel(T* in, T* out, SegmentSizeItT segment_sizes, T oob_default, ActionT action)
 {
-  using warp_merge_sort_t = cub::WarpMergeSort<T, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>;
+  using warp_merge_sort_t = cub::WarpMergeSort<T, ItemsPerThread, LogicalWarpThreads>;
   using storage_t         = typename warp_merge_sort_t::TempStorage;
 
   // Get linear thread and warp index
   const int tid     = static_cast<int>(threadIdx.x);
-  const int warp_id = tid / LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LogicalWarpThreads;
 
   // Test case of partially finished CTA
-  if (warp_id >= TOTAL_WARPS)
+  if (warp_id >= TotalWarps)
   {
     return;
   }
 
   // Thread-local storage & warp-scope temporary storage allocation
-  T thread_data[ITEMS_PER_THREAD];
-  __shared__ storage_t storage[TOTAL_WARPS];
+  T thread_data[ItemsPerThread];
+  __shared__ storage_t storage[TotalWarps];
 
   // Instantiate warp-scope algorithm
   warp_merge_sort_t warp_sort(storage[warp_id]);
 
-  const int warp_offset   = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD * warp_id;
-  const int thread_offset = warp_offset + warp_sort.get_linear_tid() * ITEMS_PER_THREAD;
+  const int warp_offset   = LogicalWarpThreads * ItemsPerThread * warp_id;
+  const int thread_offset = warp_offset + warp_sort.get_linear_tid() * ItemsPerThread;
   const int valid_items   = segment_sizes[warp_id];
 
   // Load data
-  for (int item = 0; item < ITEMS_PER_THREAD; item++)
+  for (int item = 0; item < ItemsPerThread; item++)
   {
     const int idx     = thread_offset + item;
     thread_data[item] = in[idx];
@@ -71,7 +66,7 @@ __global__ void warp_merge_sort_kernel(T* in, T* out, SegmentSizeItT segment_siz
   action(warp_sort, thread_data, valid_items, oob_default);
 
   // Store data
-  for (int item = 0; item < ITEMS_PER_THREAD; item++)
+  for (int item = 0; item < ItemsPerThread; item++)
   {
     const int idx = thread_offset + item;
     out[idx]      = (idx - warp_offset) >= valid_items ? oob_default : thread_data[item];
@@ -82,9 +77,9 @@ __global__ void warp_merge_sort_kernel(T* in, T* out, SegmentSizeItT segment_siz
  * @brief Kernel to dispatch to the appropriate WarpMergeSort member function, sorting key-value
  * pairs.
  */
-template <int ITEMS_PER_THREAD,
-          int LOGICAL_WARP_THREADS,
-          int TOTAL_WARPS,
+template <int ItemsPerThread,
+          int LogicalWarpThreads,
+          int TotalWarps,
           typename KeyT,
           typename ValueT,
           typename SegmentSizeItT,
@@ -98,34 +93,34 @@ __global__ void warp_merge_sort_kernel(
   KeyT oob_default,
   ActionT action)
 {
-  using warp_merge_sort_t = cub::WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>;
+  using warp_merge_sort_t = cub::WarpMergeSort<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>;
   using storage_t         = typename warp_merge_sort_t::TempStorage;
 
   // Get linear thread and warp index
   const int tid =
     cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
-  const int warp_id = tid / LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LogicalWarpThreads;
 
   // Test case of partially finished CTA
-  if (warp_id >= TOTAL_WARPS)
+  if (warp_id >= TotalWarps)
   {
     return;
   }
 
   // Thread-local storage & warp-scope temporary storage allocation
-  KeyT keys[ITEMS_PER_THREAD];
-  ValueT values[ITEMS_PER_THREAD];
-  __shared__ storage_t storage[TOTAL_WARPS];
+  KeyT keys[ItemsPerThread];
+  ValueT values[ItemsPerThread];
+  __shared__ storage_t storage[TotalWarps];
 
   // Instantiate warp-scope algorithm
   warp_merge_sort_t warp_sort(storage[warp_id]);
 
-  const int warp_offset   = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD * warp_id;
-  const int thread_offset = warp_offset + warp_sort.get_linear_tid() * ITEMS_PER_THREAD;
+  const int warp_offset   = LogicalWarpThreads * ItemsPerThread * warp_id;
+  const int thread_offset = warp_offset + warp_sort.get_linear_tid() * ItemsPerThread;
   const int valid_items   = segment_sizes[warp_id];
 
   // Load data
-  for (int item = 0; item < ITEMS_PER_THREAD; item++)
+  for (int item = 0; item < ItemsPerThread; item++)
   {
     const int idx = thread_offset + item;
     keys[item]    = keys_in[idx];
@@ -137,7 +132,7 @@ __global__ void warp_merge_sort_kernel(
   action(warp_sort, keys, values, valid_items, oob_default);
 
   // Store data
-  for (int item = 0; item < ITEMS_PER_THREAD; item++)
+  for (int item = 0; item < ItemsPerThread; item++)
   {
     const int idx   = thread_offset + item;
     keys_out[idx]   = (idx - warp_offset) >= valid_items ? oob_default : keys[item];
@@ -155,9 +150,9 @@ __global__ void warp_merge_sort_kernel(
  */
 struct warp_stable_sort_keys_t
 {
-  template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
+  template <typename T, int ItemsPerThread, typename WarpSortT>
   __device__ void
-  operator()(WarpSortT& warp_sort, T (&thread_data)[ITEMS_PER_THREAD], int /*valid_items*/, T /*oob_default*/) const
+  operator()(WarpSortT& warp_sort, T (&thread_data)[ItemsPerThread], int /*valid_items*/, T /*oob_default*/) const
   {
     warp_sort.StableSort(thread_data, CustomLess{});
   }
@@ -168,9 +163,9 @@ struct warp_stable_sort_keys_t
  */
 struct warp_partial_stable_sort_keys_t
 {
-  template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
+  template <typename T, int ItemsPerThread, typename WarpSortT>
   __device__ void
-  operator()(WarpSortT& warp_sort, T (&thread_data)[ITEMS_PER_THREAD], int valid_items, T oob_default) const
+  operator()(WarpSortT& warp_sort, T (&thread_data)[ItemsPerThread], int valid_items, T oob_default) const
   {
     warp_sort.StableSort(thread_data, CustomLess{}, valid_items, oob_default);
   }
@@ -181,9 +176,9 @@ struct warp_partial_stable_sort_keys_t
  */
 struct warp_sort_keys_t
 {
-  template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
+  template <typename T, int ItemsPerThread, typename WarpSortT>
   __device__ void
-  operator()(WarpSortT& warp_sort, T (&thread_data)[ITEMS_PER_THREAD], int /*valid_items*/, T /*oob_default*/) const
+  operator()(WarpSortT& warp_sort, T (&thread_data)[ItemsPerThread], int /*valid_items*/, T /*oob_default*/) const
   {
     warp_sort.Sort(thread_data, CustomLess{});
   }
@@ -194,9 +189,9 @@ struct warp_sort_keys_t
  */
 struct warp_partial_sort_keys_t
 {
-  template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
+  template <typename T, int ItemsPerThread, typename WarpSortT>
   __device__ void
-  operator()(WarpSortT& warp_sort, T (&thread_data)[ITEMS_PER_THREAD], int valid_items, T oob_default) const
+  operator()(WarpSortT& warp_sort, T (&thread_data)[ItemsPerThread], int valid_items, T oob_default) const
   {
     warp_sort.Sort(thread_data, CustomLess{}, valid_items, oob_default);
   }
@@ -207,11 +202,11 @@ struct warp_partial_sort_keys_t
  */
 struct warp_stable_sort_pairs_t
 {
-  template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
+  template <typename KeyT, typename ValueT, int ItemsPerThread, typename WarpSortT>
   __device__ void operator()(
     WarpSortT& warp_sort,
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&values)[ItemsPerThread],
     int /*valid_items*/,
     KeyT /*oob_default*/) const
   {
@@ -224,11 +219,11 @@ struct warp_stable_sort_pairs_t
  */
 struct warp_partial_stable_sort_pairs_t
 {
-  template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
+  template <typename KeyT, typename ValueT, int ItemsPerThread, typename WarpSortT>
   __device__ void operator()(
     WarpSortT& warp_sort,
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&values)[ItemsPerThread],
     int valid_items,
     KeyT oob_default) const
   {
@@ -241,11 +236,11 @@ struct warp_partial_stable_sort_pairs_t
  */
 struct warp_sort_pairs_t
 {
-  template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
+  template <typename KeyT, typename ValueT, int ItemsPerThread, typename WarpSortT>
   __device__ void operator()(
     WarpSortT& warp_sort,
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&values)[ItemsPerThread],
     int /*valid_items*/,
     KeyT /*oob_default*/) const
   {
@@ -258,11 +253,11 @@ struct warp_sort_pairs_t
  */
 struct warp_partial_sort_pairs_t
 {
-  template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
+  template <typename KeyT, typename ValueT, int ItemsPerThread, typename WarpSortT>
   __device__ void operator()(
     WarpSortT& warp_sort,
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&values)[ItemsPerThread],
     int valid_items,
     KeyT oob_default) const
   {
@@ -273,18 +268,12 @@ struct warp_partial_sort_pairs_t
 /**
  * @brief Dispatch helper function for sorting keys
  */
-template <int ITEMS_PER_THREAD,
-          int LOGICAL_WARP_THREADS,
-          int TOTAL_WARPS,
-          typename T,
-          typename SegmentSizesItT,
-          typename ActionT>
+template <int ItemsPerThread, int LogicalWarpThreads, int TotalWarps, typename T, typename SegmentSizesItT, typename ActionT>
 void warp_merge_sort(
   c2h::device_vector<T>& in, c2h::device_vector<T>& out, SegmentSizesItT segment_sizes, T oob_default, ActionT action)
 {
-  warp_merge_sort_kernel<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, TOTAL_WARPS>
-    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
-      thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), segment_sizes, oob_default, action);
+  warp_merge_sort_kernel<ItemsPerThread, LogicalWarpThreads, TotalWarps><<<1, LogicalWarpThreads * TotalWarps>>>(
+    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), segment_sizes, oob_default, action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -293,9 +282,9 @@ void warp_merge_sort(
 /**
  * @brief Dispatch helper function for sorting key-value pairs
  */
-template <int ITEMS_PER_THREAD,
-          int LOGICAL_WARP_THREADS,
-          int TOTAL_WARPS,
+template <int ItemsPerThread,
+          int LogicalWarpThreads,
+          int TotalWarps,
           typename KeyT,
           typename ValueT,
           typename SegmentSizesItT,
@@ -309,15 +298,14 @@ void warp_merge_sort(
   KeyT oob_default,
   ActionT action)
 {
-  warp_merge_sort_kernel<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, TOTAL_WARPS>
-    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
-      thrust::raw_pointer_cast(keys_in.data()),
-      thrust::raw_pointer_cast(keys_out.data()),
-      thrust::raw_pointer_cast(values_in.data()),
-      thrust::raw_pointer_cast(values_out.data()),
-      segment_sizes,
-      oob_default,
-      action);
+  warp_merge_sort_kernel<ItemsPerThread, LogicalWarpThreads, TotalWarps><<<1, LogicalWarpThreads * TotalWarps>>>(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    segment_sizes,
+    oob_default,
+    action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -333,7 +321,7 @@ void compute_host_reference(
 {
   for (unsigned int segment_id = 0; segment_id < num_segments; segment_id++)
   {
-    unsigned int segment_size = segment_sizes[segment_id];
+    const unsigned int segment_size = segment_sizes[segment_id];
     std::stable_sort(h_data, h_data + segment_size);
     std::fill(h_data + segment_size, h_data + logical_warp_items, oob_default);
     h_data += logical_warp_items;
@@ -435,8 +423,8 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
     d_in, d_out, d_segment_sizes.cbegin(), oob_default, warp_sort_delegate{});
 
   // Prepare verification data
-  c2h::host_vector<type> h_in_out     = d_in;
-  c2h::host_vector<int> segment_sizes = d_segment_sizes;
+  c2h::host_vector<type> h_in_out           = d_in;
+  const c2h::host_vector<int> segment_sizes = d_segment_sizes;
   compute_host_reference(h_in_out.begin(), segment_sizes, params::total_warps, oob_default, params::logical_warp_items);
 
   // Verify results
@@ -518,7 +506,7 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   // Prepare verification data
   c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
   c2h::host_vector<value_type> h_values_in_out = d_values_in;
-  c2h::host_vector<int> segment_sizes          = d_segment_sizes;
+  const c2h::host_vector<int> segment_sizes    = d_segment_sizes;
   auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
   compute_host_reference(
     cpu_kv_pairs,

@@ -44,31 +44,31 @@ int g_grid_size = 1;
 /**
  * Simple kernel for performing a block-wide reduction.
  */
-template <int BLOCK_THREADS,
-          int ITEMS_PER_THREAD,
+template <int BlockThreads,
+          int ItemsPerThread,
           BlockReduceAlgorithm ALGORITHM>
 __global__ void BlockReduceKernel(int* d_in, // Tile of input
                                   int* d_out, // Tile aggregate
                                   clock_t* d_elapsed) // Elapsed cycle count of block reduction
 {
   // Specialize BlockReduce type for our thread block
-  using BlockReduceT = BlockReduce<int, BLOCK_THREADS, ALGORITHM>;
+  using BlockReduceT = BlockReduce<int, BlockThreads, ALGORITHM>;
 
   // Shared memory
   __shared__ typename BlockReduceT::TempStorage temp_storage;
 
   // Per-thread tile data
-  int data[ITEMS_PER_THREAD];
-  LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in, data);
+  int data[ItemsPerThread];
+  LoadDirectStriped<BlockThreads>(threadIdx.x, d_in, data);
 
   // Start cycle timer
-  clock_t start = clock();
+  const clock_t start = clock();
 
   // Compute sum
-  int aggregate = BlockReduceT(temp_storage).Sum(data);
+  const int aggregate = BlockReduceT(temp_storage).Sum(data);
 
   // Stop cycle timer
-  clock_t stop = clock();
+  const clock_t stop = clock();
 
   // Store aggregate and elapsed clocks
   if (threadIdx.x == 0)
@@ -102,14 +102,14 @@ int Initialize(int* h_in, int num_items)
 /**
  * Test thread block reduction
  */
-template <int BLOCK_THREADS, int ITEMS_PER_THREAD, BlockReduceAlgorithm ALGORITHM>
+template <int BlockThreads, int ItemsPerThread, BlockReduceAlgorithm ALGORITHM>
 void Test()
 {
-  constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+  constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 
   // Allocate host arrays
-  int* h_in  = new int[TILE_SIZE];
-  int* h_gpu = new int[TILE_SIZE + 1];
+  int* h_in        = new int[TILE_SIZE];
+  const int* h_gpu = new int[TILE_SIZE + 1];
 
   // Initialize problem and reference output on host
   int h_aggregate = Initialize(h_in, TILE_SIZE);
@@ -136,7 +136,7 @@ void Test()
   // Kernel props
   int max_sm_occupancy;
   CubDebugExit(
-    MaxSmOccupancy(max_sm_occupancy, BlockReduceKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>, BLOCK_THREADS));
+    MaxSmOccupancy(max_sm_occupancy, BlockReduceKernel<BlockThreads, ItemsPerThread, ALGORITHM>, BlockThreads));
 
   // Copy problem to device
   cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice);
@@ -147,16 +147,16 @@ void Test()
          TILE_SIZE,
          g_timing_iterations,
          g_grid_size,
-         BLOCK_THREADS,
-         ITEMS_PER_THREAD,
+         BlockThreads,
+         ItemsPerThread,
          max_sm_occupancy);
 
   // Run kernel
-  BlockReduceKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM><<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+  BlockReduceKernel<BlockThreads, ItemsPerThread, ALGORITHM><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
   // Check total aggregate
   printf("\tAggregate: ");
-  int compare = CompareDeviceResults(&h_aggregate, d_out, 1, g_verbose, g_verbose);
+  const int compare = CompareDeviceResults(&h_aggregate, d_out, 1, g_verbose, g_verbose);
   printf("%s\n", compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
@@ -173,8 +173,7 @@ void Test()
     timer.Start();
 
     // Run kernel
-    BlockReduceKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>
-      <<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+    BlockReduceKernel<BlockThreads, ItemsPerThread, ALGORITHM><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
     timer.Stop();
     elapsed_millis += timer.ElapsedMillis();
@@ -190,10 +189,10 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Display timing results
-  float avg_millis          = elapsed_millis / static_cast<float>(g_timing_iterations);
-  float avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
-  float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
-  float avg_clocks_per_item = avg_clocks / TILE_SIZE;
+  const float avg_millis          = elapsed_millis / static_cast<float>(g_timing_iterations);
+  const float avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
+  const float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
+  const float avg_clocks_per_item = avg_clocks / TILE_SIZE;
 
   printf("\tAverage BlockReduce::Sum clocks: %.3f\n", avg_clocks);
   printf("\tAverage BlockReduce::Sum clocks per item: %.3f\n", avg_clocks_per_item);

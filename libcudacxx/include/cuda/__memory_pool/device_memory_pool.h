@@ -129,9 +129,9 @@ static_assert(::cuda::std::is_trivially_destructible_v<device_memory_pool_ref>);
 //! @returns The default memory pool of the specified device.
 [[nodiscard]] _CCCL_HOST_API inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
 {
-  static ::cuda::std::unique_ptr<__default_device_memory_pool[]> __pools_{
+  static const ::cuda::std::unique_ptr<__default_device_memory_pool[]> __pools_{
     ::new __default_device_memory_pool[::cuda::__physical_devices_count()]};
-  return __pools_[__device.get()].__get(__device);
+  return __pools_[static_cast<::cuda::std::size_t>(__device.get())].__get(__device);
 }
 
 //! @rst

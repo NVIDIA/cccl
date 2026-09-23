@@ -1,18 +1,14 @@
 CUB Tests
 ###########################
 
-.. warning::
-    CUB is in the progress of migrating to [Catch2](https://github.com/catchorg/Catch2) framework.
-
-CUB tests rely on `CPM <https://github.com/cpm-cmake/CPM.cmake>`_ to fetch
-`Catch2 <https://github.com/catchorg/Catch2>`_ that's used as our main testing framework.
-
-Currently,
-legacy tests coexist with Catch2 ones.
-This guide is focused on new tests.
+CUB tests are mainly written in Catch2,
+with a small portion of standalone tests, not using a particular testing framework.
+This guide is mostly focused on Catch2 tests.
+Standalone tests sometimes remain for historical reasons, or when the test requires a minimal environment.
 
 .. important::
-    Instead of including ``<catch2/catch.hpp>`` directly, use ``catch2_test_helper.h``.
+    Instead of including Catch2 headers directly, like ``<catch2/catch.hpp>``,
+    use the C2H (Catch2 helper) headers, like ``c2h/catch2_test_helper.h``.
 
 .. code-block:: c++
 
@@ -24,19 +20,30 @@ Directory and File Naming
 *************************************
 
 Our tests can be found in the ``test`` directory.
-Legacy tests have the following naming scheme: ``test_SCOPE_FACILITY.cu``.
+Standalone tests have the following naming scheme: ``test_SCOPE_FACILITY[_ASPECT].cu``.
+Catch2-based tests additionally have the prefix ``catch2_``,
+which is used by CMake to distinguish Catch2 tests from standalone ones.
+
 For instance, here are the reduce tests:
 
 .. code-block:: c++
 
-    test/test_warp_reduce.cu
-    test/test_block_reduce.cu
-    test/test_device_reduce.cu
+    test/catch2_test_warp_reduce.cu
+    test/catch2_test_block_reduce.cu
+    test/catch2_test_device_reduce.cu
+    test/catch2_test_device_reduce_env.cu
+    test/catch2_test_device_reduce_env_api.cu
+    test/catch2_test_device_reduce_fp_inf.cu
+    test/test_device_reduce_env_fail.cu
 
-Catch2-based tests have a different naming scheme: ``catch2_test_SCOPE_FACILITY.cu``.
-
-The prefix is essential since that's how CMake finds tests
-and distinguishes new tests from legacy ones.
+Device-wide algorithm tests are often split into multiple files, covering different aspects.
+In general, the main ``[catch2_]test_device_FACILITY.cu`` file contains functional tests covering the algorithm.
+There may be further files for additional edge cases, like covering floating point corner cases,
+different iterator types, large offsets, [non-]determinism, deferred problem sizes, etc.
+A common convention are tests for the single phase environment API overloads,
+which are placed in a file with suffix ``_env.cu``.
+Similarly, ``_api.cu`` files contain tests for API examples in the documentation.
+Tests with a ``_fail.cu`` suffix usually test for an expected (compilation) failure.
 
 Test Structure
 *************************************
@@ -49,7 +56,7 @@ Say there's no need to cover many types with your test.
 .. code-block:: c++
 
     // 0) Define test name and tags
-    C2H_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]")
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]", CUB_SMALL)
     {
       using type = std::int32_t;
       constexpr int threads_per_block = 256;
@@ -65,7 +72,7 @@ Say there's no need to cover many types with your test.
       c2h::device_vector<type> d_output(d_input.size());
 
       // 4) Copy device input to host
-      c2h::host_vector<key_t> h_reference = d_input;
+      c2h::host_vector<type> h_reference = d_input;
 
       // 5) Compute reference output
       std::ALGORITHM(
@@ -78,12 +85,13 @@ Say there's no need to cover many types with your test.
                                          d_input.size());
 
       // 7) Compare device and host results
-      REQUIRE( d_input == d_output );
+      REQUIRE( h_reference == d_output );
     }
 
-We introduce test cases with the ``C2H_TEST`` macro in (0).
+We introduce test cases with the ``CUB_TEST`` macro in (0).
 This macro always takes two string arguments - a free-form test name and
-one or more tags. Then, in (1), we allocate device memory using ``c2h::device_vector``.
+one or more tags, followed by the memory use classification (more on that later).
+Then, in (1), we allocate device memory using ``c2h::device_vector``.
 ``c2h::device_vector`` and ``c2h::host_vector`` behave similarly to their Thrust counterparts,
 but are modified to provide more stable behavior in some testing edge cases.
 
@@ -147,7 +155,7 @@ If these are **runtime values**, we can use the Catch2 ``GENERATE`` macro:
 
 .. code-block:: c++
 
-    C2H_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]")
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]", CUB_SMALL)
     {
       int num_items = GENERATE(1, 100, 1'000'000); // 0) Init. a variable with a generator
       // ...
@@ -167,7 +175,7 @@ Type Lists
 Since CUB is a generic library,
 it's often required to test CUB algorithms against many types.
 To do so,
-it's sufficient to define a type list and provide it to the ``C2H_TEST`` macro.
+it's sufficient to define a type list and provide it to the ``CUB_TEST`` macro.
 This is useful for **compile-time** parameterization of tests.
 
 .. code-block:: c++
@@ -175,7 +183,7 @@ This is useful for **compile-time** parameterization of tests.
     // 0) Define type list
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    C2H_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]", CUB_SMALL,
             types) // 1) Provide it to the test case
     {
       // 2) Access current type with `c2h::get`
@@ -185,11 +193,22 @@ This is useful for **compile-time** parameterization of tests.
 
 This will lead to the test being compiled (instantiated) and run twice.
 The first run will cause ``type`` to be ``std::uint8_t``.
-The second one will cause ``type`` to be ``std::uint32_t``.
+The second one will cause ``type`` to be ``std::int32_t``.
 
 .. warning::
     It's important to use types from the ``<cstdint>`` header
     instead of built-in types like ``char`` and ``int``.
+
+Memory footprint classification
+=====================================
+
+Our CI runs CUB tests in parallel to increase throughput and cut down CI time.
+To help with scheduling, we classify all tests into two categories: small and large.
+Small tests may run concurrently with others, while large tests require exclusive access to the GPU.
+As a rule of thumb, tests requiring below 1GiB of device memory can be considered as small.
+When unsure about which class to apply, contributors should choose ``CUB_LARGE``.
+Each test declaration using ``CUB_TEST`` must use the ``CUB_SMALL`` or ``CUB_LARGE`` tag,
+which adds a matching ``[small-mem]`` or ``[large-mem]`` tag.
 
 Multidimensional Configuration Spaces
 =====================================
@@ -204,7 +223,7 @@ To do so, you can add another type list as follows:
     using block_sizes = c2h::enum_type_list<int, 128, 256>;
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    C2H_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]", CUB_SMALL,
              types, block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
@@ -227,7 +246,7 @@ and multiple random sequence generations.
     using block_sizes = c2h::enum_type_list<int, 128, 256>;
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    C2H_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]", CUB_SMALL,
              types, block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
@@ -255,7 +274,7 @@ example above the test would execute X more times and so on.
 Speedup Compilation Time
 =====================================
 
-Since type lists in the ``C2H_TEST`` form a Cartesian product,
+Since type lists in the ``CUB_TEST`` form a Cartesian product,
 compilation time grows quickly with every new dimension.
 To keep the compilation process parallelized,
 it's possible to rely on our ``%PARAM%`` machinery:
@@ -266,7 +285,7 @@ it's possible to rely on our ``%PARAM%`` machinery:
     using block_sizes = c2h::enum_type_list<int, BLOCK_SIZE>;
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    C2H_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]", CUB_SMALL,
              types, block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
@@ -295,7 +314,7 @@ Let's consider the final test that illustrates all of the tools we discussed abo
     using block_sizes = c2h::enum_type_list<int, BLOCK_SIZE>;
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    C2H_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]", CUB_SMALL,
              types, block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
@@ -326,3 +345,120 @@ Each of these executables is going to generate ``2`` input problem sizes.
 For each problem size, ``3`` random vectors are generated.
 As a result, we have ``12`` different tests.
 The code also demonstrates the syntax and usage of ``c2h::device_policy`` with a Thrust algorithm.
+
+Launch wrappers
+*************************************
+
+CUB's device-scope algorithms can be invoked from host code, from device code (CDP), and
+recorded into a CUDA graph via stream capture. To cover all three call sites without
+duplicating each test, add the following ``%PARAM%`` line and include the launch helper:
+
+.. code-block:: c++
+
+    // %PARAM% TEST_LAUNCH lid 0:1:2
+    #include "catch2_test_launch_helper.h"
+
+This causes the test file to be compiled three times, once per launcher id:
+``0`` launches the algorithm from the host,
+``1`` launches it from device code,
+and ``2`` records the launch under CUDA graph capture and then executes it.
+
+Instead of calling the CUB API directly, declare a launch wrapper for it with
+``DECLARE_LAUNCH_WRAPPER`` and call the wrapper from the test body,
+with exactly the same arguments as you would call the wrapped function,
+omitting the temporary storage size and pointer arguments, as well as a stream argument:
+
+.. code-block:: c++
+
+    DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
+
+    CUB_TEST("Reduce test", "[device][reduce]", CUB_SMALL)
+    {
+      // ...
+      cub_reduce_sum(d_in, d_out, n); // same
+    }
+
+The wrapper allocates temporary storage and invokes the CUB API through whichever of the
+three launch mechanisms matches the current ``TEST_LAUNCH`` value, checking return codes and
+launch errors along the way.
+
+Under CUDA graph capture (``TEST_LAUNCH == 2``), the wrapper implicitly appends a ``stream`` argument to the call.
+If the wrapped API has default parameters before its ``stream`` parameter,
+specify those explicitly at all call sites so the injected stream argument lines up.
+
+For APIs that take template parameters, use ``DECLARE_TMPL_LAUNCH_WRAPPER`` instead,
+passing the template parameter list and the arguments to instantiate it with.
+Use the ``ESCAPE_LIST`` macro to protect commas inside each list from the preprocessor:
+
+.. code-block:: c++
+
+    DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramEven,
+                                multi_histogram_even,
+                                ESCAPE_LIST(int Channels, int ActiveChannels),
+                                ESCAPE_LIST(Channels, ActiveChannels));
+
+For testing single phase environment-based APIs use the ``DECLARE_LAUNCH_WRAPPER_ENV`` and
+``DECLARE_TMPL_LAUNCH_WRAPPER_ENV`` macros from the same header instead.
+They expect the wrapped API's last argument to be an execution environment.
+The helper injects a memory resource and stream into that env automatically.
+Consult ``test/catch2_test_launch_wrapper.cu`` for more usage examples.
+
+Since the whole file is compiled three times, any ``CUB_TEST`` in the same translation unit
+that does *not* go through a launch wrapper would otherwise be registered identically in all
+three binaries. Guard such launcher-independent tests with ``#if TEST_LAUNCH == 0`` (picking
+whichever launcher ID you want to keep) so the test only exists in one of the three
+executables:
+
+.. code-block:: c++
+
+    #if TEST_LAUNCH == 0
+    CUB_TEST("Some launcher-independent edge case", "[device][reduce]", CUB_SMALL)
+    {
+      // ...
+    }
+    #endif // TEST_LAUNCH == 0
+
+Testing Environment-Aware API Overloads
+***************************************
+
+Every CUB device-wide algorithm must expose two overloads of each API, as described in
+:ref:`device-module`: a two-phase API with explicit temporary storage management, and a
+single-phase API that obtains temporary storage from the execution environment.
+
+Both overloads must take an execution environment as their last parameter.
+This is not yet the case for every existing API, but new APIs must follow this convention,
+and existing ones will be converted eventually.
+
+This split maps directly onto how tests are organized:
+
+- **Functional tests** (correctness of the algorithm itself: types, sizes, edge cases, corner
+  cases, non-determinism, etc.) belong in ``test/catch2_test_device_xxx.cu`` and must only use
+  the two-phase API, invoked implicitly via `Launch wrappers`_.
+- **Environment-interaction tests** belong in ``test/catch2_test_device_xxx_env.cu`` and must
+  only cover how the single-phase API interacts with its environment argument (streams, tuning,
+  determinism requirements, memory resources, etc.). These files should not contain functional
+  or correctness tests of the algorithm itself.
+
+Recommended minimum checklist for a new single-phase API overload's ``_env.cu`` file:
+
+1. ``"<algorithm> works with default environment"`` — the algorithm is called without an
+   environment argument at all, using a minimal example, and checked for a correct output.
+2. ``"<algorithm> uses environment"`` — an environment carrying only
+   ``expected_allocation_size(...)`` is honored: the algorithm neither over- nor under-allocates
+   temporary storage compared to the two-phase API.
+3. ``"<algorithm> uses custom stream"`` — passing a ``cuda::stream_ref`` (e.g. obtained from
+   ``c2h::make_current_device_stream()``) as custom environment is honored: the algorithm's work
+   actually runs on that stream (verified by explicitly synchronizing it, not the default
+   stream).
+4. ``"<algorithm> can be tuned"`` — an environment carrying ``cuda::execution::tune(...)`` is
+   honored: test with two distinct tunings that each modify the block size used by the kernel,
+   and verify the applied block size on the device using ``block_size_extracting_op`` or
+   ``block_size_extracting_constant_iterator``.
+5. If the algorithm has a determinism/ordering axis, ``cuda::execution::require(...)`` is
+   tested for each supported level.
+6. If the algorithm takes an operator/predicate parameter (e.g. a comparator or equality op),
+   that parameter is tested in combination with the environment, not only in isolation.
+
+All of the above should be applied to every variant of the API (e.g. pointer vs.
+``DoubleBuffer``, in-place vs. out-of-place, alternate segment/offset layouts, with/without a
+decomposer) rather than only to the "primary" variant.

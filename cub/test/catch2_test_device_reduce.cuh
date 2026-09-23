@@ -211,8 +211,8 @@ inline AccumulatorT
 compute_single_problem_reference(const c2h::device_vector<ItemT>& d_in, ReductionOpT reduction_op, AccumulatorT init)
 {
   constexpr std::size_t num_segments = 1;
-  c2h::host_vector<ItemT> h_items(d_in);
-  c2h::host_vector<AccumulatorT> h_results(num_segments);
+  const c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<AccumulatorT> h_results(num_segments);
 
   return compute_single_problem_reference(h_items.cbegin(), h_items.cend(), reduction_op, init);
 }
@@ -229,13 +229,13 @@ void compute_segmented_problem_reference(
   AccumulatorT init,
   ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
-  c2h::host_vector<OffsetT> h_offsets(d_offsets);
+  const c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it   = h_offsets.cbegin();
   auto seg_sizes_it = cuda::transform_iterator(cuda::counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
     return offsets_it[i + 1] - offsets_it[i];
   });
-  std::size_t num_segments = h_offsets.size() - 1;
+  const std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(
     h_items.cbegin(), h_offsets.cbegin(), seg_sizes_it, num_segments, reduction_op, init, h_results);
@@ -253,12 +253,12 @@ void compute_segmented_problem_reference(
   AccumulatorT init,
   ResultItT h_results)
 {
-  c2h::host_vector<OffsetT> h_offsets(d_offsets);
+  const c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it   = h_offsets.cbegin();
   auto seg_sizes_it = cuda::transform_iterator(cuda::counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
     return offsets_it[i + 1] - offsets_it[i];
   });
-  std::size_t num_segments = h_offsets.size() - 1;
+  const std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(in_it, h_offsets.cbegin(), seg_sizes_it, num_segments, reduction_op, init, h_results);
 }
@@ -271,7 +271,7 @@ template <typename ItemT, typename OffsetT, typename ResultItT>
 void compute_segmented_argmin_reference(
   const c2h::device_vector<ItemT>& d_in, const c2h::device_vector<OffsetT>& d_offsets, ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
@@ -284,7 +284,7 @@ void compute_segmented_argmin_reference(
     {
       auto expected_result_it =
         std::min_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset =
+      const int result_offset =
         static_cast<int>(cuda::std::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
       h_results[seg] = {result_offset, *expected_result_it};
     }
@@ -299,7 +299,7 @@ template <typename ItemT, typename OffsetT, typename ResultItT>
 void compute_segmented_argmax_reference(
   const c2h::device_vector<ItemT>& d_in, const c2h::device_vector<OffsetT>& d_offsets, ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
@@ -312,7 +312,7 @@ void compute_segmented_argmax_reference(
     {
       auto expected_result_it =
         std::max_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset =
+      const int result_offset =
         static_cast<int>(cuda::std::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
       h_results[seg] = {result_offset, *expected_result_it};
     }
@@ -332,7 +332,7 @@ void compute_fixed_size_segmented_problem_reference(
   AccumulatorT init,
   ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<ItemT> h_items(d_in);
   auto h_begin = h_items.cbegin();
 
   for (int segment = 0; segment < num_segments; segment++)
@@ -366,7 +366,7 @@ void compute_fixed_size_segmented_argmax_reference(
       auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::max_element(seg_begin, seg_end);
-      int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      const int result_offset = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
       h_results[seg]          = {result_offset, *expected_result_it};
     }
   }
@@ -394,7 +394,7 @@ void compute_fixed_size_segmented_argmin_reference(
       auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::min_element(seg_begin, seg_end);
-      int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      const int result_offset = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
       h_results[seg]          = {result_offset, *expected_result_it};
     }
   }
@@ -430,7 +430,7 @@ inline OutputItT compute_unique_keys_reference(InputItT h_in_begin, std::size_t 
 template <typename ItemT>
 inline c2h::host_vector<ItemT> compute_unique_keys_reference(const c2h::device_vector<ItemT>& d_keys)
 {
-  c2h::host_vector<ItemT> h_keys(d_keys);
+  const c2h::host_vector<ItemT> h_keys(d_keys);
   c2h::host_vector<ItemT> h_unique_keys_out(d_keys.size());
 
   auto end_it = compute_unique_keys_reference(h_keys.cbegin(), h_keys.size(), h_unique_keys_out.begin());

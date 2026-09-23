@@ -245,7 +245,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
 
 _CCCL_HOST_DEVICE inline complex<float> casinf(complex<float> z)
 {
-  complex<float> w = casinhf(complex<float>(z.imag(), z.real()));
+  const complex<float> w = casinhf(complex<float>(z.imag(), z.real()));
 
   return (complex<float>(w.imag(), w.real()));
 }
@@ -532,7 +532,7 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
 
 _CCCL_HOST_DEVICE inline complex<float> catanf(complex<float> z)
 {
-  complex<float> w = catanhf(complex<float>(z.imag(), z.real()));
+  const complex<float> w = catanhf(complex<float>(z.imag(), z.real()));
   return (complex<float>(w.imag(), w.real()));
 }
 } // namespace detail::complex

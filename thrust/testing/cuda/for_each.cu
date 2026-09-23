@@ -11,7 +11,7 @@ static const size_t NUM_REGISTERS = 64;
 template <size_t N>
 _CCCL_HOST_DEVICE void f(int* x)
 {
-  int temp = *x;
+  const int temp = *x;
   f<N - 1>(x + 1);
   *x = temp;
 };
@@ -27,7 +27,7 @@ struct CopyFunctorWithManyRegisters
   }
 };
 
-void TestForEachLargeRegisterFootprint()
+TEST_CASE("TestForEachLargeRegisterFootprint", "[for_each]")
 {
   int current_device = -1;
   cudaGetDevice(&current_device);
@@ -40,9 +40,8 @@ void TestForEachLargeRegisterFootprint()
 
   thrust::for_each(input.begin(), input.end(), CopyFunctorWithManyRegisters<NUM_REGISTERS>());
 }
-DECLARE_UNITTEST(TestForEachLargeRegisterFootprint);
 
-void TestForEachNLargeRegisterFootprint()
+TEST_CASE("TestForEachNLargeRegisterFootprint", "[for_each]")
 {
   int current_device = -1;
   cudaGetDevice(&current_device);
@@ -55,7 +54,6 @@ void TestForEachNLargeRegisterFootprint()
 
   thrust::for_each_n(input.begin(), input.size(), CopyFunctorWithManyRegisters<NUM_REGISTERS>());
 }
-DECLARE_UNITTEST(TestForEachNLargeRegisterFootprint);
 
 template <typename T>
 struct mark_present_for_each
@@ -100,9 +98,9 @@ void TestForEachDeviceSeq(const size_t n)
 
   for_each_kernel<<<1, 1>>>(thrust::seq, d_input.begin(), d_input.end(), d_f);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachDeviceSeq);
 
@@ -133,14 +131,14 @@ void TestForEachDeviceDevice(const size_t n)
   for_each_kernel<<<1, 1>>>(thrust::device, d_input.begin(), d_input.end(), d_f);
   {
     cudaError_t const err = cudaGetLastError();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachDeviceDevice);
 
@@ -176,9 +174,9 @@ void TestForEachNDeviceSeq(const size_t n)
 
   for_each_n_kernel<<<1, 1>>>(thrust::seq, d_input.begin(), d_input.size(), d_f);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachNDeviceSeq);
 
@@ -208,14 +206,14 @@ void TestForEachNDeviceDevice(const size_t n)
 
   for_each_n_kernel<<<1, 1>>>(thrust::device, d_input.begin(), d_input.size(), d_f);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestForEachNDeviceDevice);
 #endif
 
-void TestForEachCudaStreams()
+TEST_CASE("TestForEachCudaStreams", "[for_each]")
 {
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -230,9 +228,8 @@ void TestForEachCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  thrust::device_vector<int> ref{0, 0, 1, 1, 1, 0, 1};
-  ASSERT_EQUAL(output, ref);
+  const thrust::device_vector<int> ref{0, 0, 1, 1, 1, 0, 1};
+  REQUIRE(output == ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestForEachCudaStreams);

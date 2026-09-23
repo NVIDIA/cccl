@@ -12,16 +12,15 @@ ForwardIterator2 swap_ranges(my_system& system, ForwardIterator1, ForwardIterato
   return first2;
 }
 
-void TestSwapRangesDispatchExplicit()
+TEST_CASE("TestSwapRangesDispatchExplicit", "[swap_ranges]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::swap_ranges(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSwapRangesDispatchExplicit);
 
 template <typename ForwardIterator1, typename ForwardIterator2>
 ForwardIterator2 swap_ranges(my_tag, ForwardIterator1, ForwardIterator1, ForwardIterator2 first2)
@@ -30,16 +29,15 @@ ForwardIterator2 swap_ranges(my_tag, ForwardIterator1, ForwardIterator1, Forward
   return first2;
 }
 
-void TestSwapRangesDispatchImplicit()
+TEST_CASE("TestSwapRangesDispatchImplicit", "[swap_ranges]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::swap_ranges(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSwapRangesDispatchImplicit);
 
 template <class Vector>
 void TestSwapRangesSimple()
@@ -50,18 +48,18 @@ void TestSwapRangesSimple()
   thrust::swap_ranges(v1.begin(), v1.end(), v2.begin());
 
   Vector ref1{5, 6, 7, 8, 9};
-  ASSERT_EQUAL(v1, ref1);
+  REQUIRE(v1 == ref1);
 
   Vector ref2{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v2, ref2);
+  REQUIRE(v2 == ref2);
 }
 DECLARE_VECTOR_UNITTEST(TestSwapRangesSimple);
 
 template <typename T>
 void TestSwapRanges(const size_t n)
 {
-  thrust::host_vector<T> a1 = unittest::random_integers<T>(n);
-  thrust::host_vector<T> a2 = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> a1 = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> a2 = unittest::random_integers<T>(n);
 
   thrust::host_vector<T> h1   = a1;
   thrust::host_vector<T> h2   = a2;
@@ -71,15 +69,15 @@ void TestSwapRanges(const size_t n)
   thrust::swap_ranges(h1.begin(), h1.end(), h2.begin());
   thrust::swap_ranges(d1.begin(), d1.end(), d2.begin());
 
-  ASSERT_EQUAL(h1, a2);
-  ASSERT_EQUAL(d1, a2);
-  ASSERT_EQUAL(h2, a1);
-  ASSERT_EQUAL(d2, a1);
+  REQUIRE(h1 == a2);
+  REQUIRE(d1 == a2);
+  REQUIRE(h2 == a1);
+  REQUIRE(d2 == a1);
 }
 DECLARE_VARIABLE_UNITTEST(TestSwapRanges);
 
 #if (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP)
-void TestSwapRangesForcedIterator()
+TEST_CASE("TestSwapRangesForcedIterator", "[swap_ranges]")
 {
   thrust::device_vector<int> A(3, 0);
   thrust::device_vector<int> B(3, 1);
@@ -88,14 +86,13 @@ void TestSwapRangesForcedIterator()
                       thrust::retag<thrust::cpp::tag>(A.end()),
                       thrust::retag<thrust::cpp::tag>(B.begin()));
 
-  ASSERT_EQUAL(A[0], 1);
-  ASSERT_EQUAL(A[1], 1);
-  ASSERT_EQUAL(A[2], 1);
-  ASSERT_EQUAL(B[0], 0);
-  ASSERT_EQUAL(B[1], 0);
-  ASSERT_EQUAL(B[2], 0);
+  REQUIRE(A[0] == 1);
+  REQUIRE(A[1] == 1);
+  REQUIRE(A[2] == 1);
+  REQUIRE(B[0] == 0);
+  REQUIRE(B[1] == 0);
+  REQUIRE(B[2] == 0);
 }
-DECLARE_UNITTEST(TestSwapRangesForcedIterator);
 #endif
 
 struct type_with_swap
@@ -136,7 +133,7 @@ inline _CCCL_HOST_DEVICE void swap(type_with_swap& a, type_with_swap& b) noexcep
   b.m_swapped = true;
 }
 
-void TestSwapRangesUserSwap()
+TEST_CASE("TestSwapRangesUserSwap", "[swap_ranges]")
 {
   thrust::host_vector<type_with_swap> h_A(3, type_with_swap(0));
   thrust::host_vector<type_with_swap> h_B(3, type_with_swap(1));
@@ -147,23 +144,23 @@ void TestSwapRangesUserSwap()
   // check that nothing is yet swapped
   type_with_swap ref = type_with_swap(0, false);
 
-  ASSERT_EQUAL_QUIET(ref, h_A[0]);
-  ASSERT_EQUAL_QUIET(ref, h_A[1]);
-  ASSERT_EQUAL_QUIET(ref, h_A[2]);
+  REQUIRE((ref == h_A[0]));
+  REQUIRE((ref == h_A[1]));
+  REQUIRE((ref == h_A[2]));
 
-  ASSERT_EQUAL_QUIET(ref, d_A[0]);
-  ASSERT_EQUAL_QUIET(ref, d_A[1]);
-  ASSERT_EQUAL_QUIET(ref, d_A[2]);
+  REQUIRE((ref == d_A[0]));
+  REQUIRE((ref == d_A[1]));
+  REQUIRE((ref == d_A[2]));
 
   ref = type_with_swap(1, false);
 
-  ASSERT_EQUAL_QUIET(ref, h_B[0]);
-  ASSERT_EQUAL_QUIET(ref, h_B[1]);
-  ASSERT_EQUAL_QUIET(ref, h_B[2]);
+  REQUIRE((ref == h_B[0]));
+  REQUIRE((ref == h_B[1]));
+  REQUIRE((ref == h_B[2]));
 
-  ASSERT_EQUAL_QUIET(ref, d_B[0]);
-  ASSERT_EQUAL_QUIET(ref, d_B[1]);
-  ASSERT_EQUAL_QUIET(ref, d_B[2]);
+  REQUIRE((ref == d_B[0]));
+  REQUIRE((ref == d_B[1]));
+  REQUIRE((ref == d_B[2]));
 
   // swap the ranges
 
@@ -173,22 +170,21 @@ void TestSwapRangesUserSwap()
   // check that things were swapped
   ref = type_with_swap(1, true);
 
-  ASSERT_EQUAL_QUIET(ref, h_A[0]);
-  ASSERT_EQUAL_QUIET(ref, h_A[1]);
-  ASSERT_EQUAL_QUIET(ref, h_A[2]);
+  REQUIRE((ref == h_A[0]));
+  REQUIRE((ref == h_A[1]));
+  REQUIRE((ref == h_A[2]));
 
-  ASSERT_EQUAL_QUIET(ref, d_A[0]);
-  ASSERT_EQUAL_QUIET(ref, d_A[1]);
-  ASSERT_EQUAL_QUIET(ref, d_A[2]);
+  REQUIRE((ref == d_A[0]));
+  REQUIRE((ref == d_A[1]));
+  REQUIRE((ref == d_A[2]));
 
   ref = type_with_swap(0, true);
 
-  ASSERT_EQUAL_QUIET(ref, h_B[0]);
-  ASSERT_EQUAL_QUIET(ref, h_B[1]);
-  ASSERT_EQUAL_QUIET(ref, h_B[2]);
+  REQUIRE((ref == h_B[0]));
+  REQUIRE((ref == h_B[1]));
+  REQUIRE((ref == h_B[2]));
 
-  ASSERT_EQUAL_QUIET(ref, d_B[0]);
-  ASSERT_EQUAL_QUIET(ref, d_B[1]);
-  ASSERT_EQUAL_QUIET(ref, d_B[2]);
+  REQUIRE((ref == d_B[0]));
+  REQUIRE((ref == d_B[1]));
+  REQUIRE((ref == d_B[2]));
 }
-DECLARE_UNITTEST(TestSwapRangesUserSwap);

@@ -523,3 +523,145 @@ def test_cpp_stateful_op_select_with_counter():
     assert np.array_equal(selected_values, expected_selected), (
         "Selected values don't match"
     )
+
+
+def test_cpp_stateful_op_with_transform_output_iterator():
+    """Regression test: a stateful RawOp used as a TransformOutputIterator's
+    transform op must receive its state.
+
+    This mirrors computing a mean as sum(x) * (1/n): the scale factor lives
+    in the RawOp's state and is applied to the reduction result by a
+    TransformOutputIterator.
+    """
+    from cuda.compute import OpKind, TransformOutputIterator
+
+    scale_factor = np.array([3], dtype=np.int32)
+    state_data = scale_factor.tobytes()
+    state_alignment = np.dtype(np.int32).alignment
+
+    cpp_source = """
+    extern "C" __device__ void scale_by_state(void* state, void* input, void* output) {
+        int factor = *static_cast<int*>(state);
+        *static_cast<int*>(output) = *static_cast<int*>(input) * factor;
+    }
+    """
+
+    op = make_cpp_stateful_op(cpp_source, state_data, "scale_by_state", state_alignment)
+
+    num_items = 10
+    h_input = np.arange(num_items, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
+
+    output_iterator = TransformOutputIterator(
+        d_output, op, output_value_type=types.int32
+    )
+
+    h_init = np.array(0, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=output_iterator,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    expected = int(np.sum(h_input)) * 3
+    assert result == expected, f"Expected {expected}, got {result}"
+
+
+def test_cpp_stateful_op_with_transform_input_iterator():
+    """Regression test: a stateful RawOp used as a TransformIterator's
+    (input-side) transform op must receive its state."""
+    from cuda.compute import OpKind, TransformIterator
+
+    scale_factor = np.array([3], dtype=np.int32)
+    state_data = scale_factor.tobytes()
+    state_alignment = np.dtype(np.int32).alignment
+
+    cpp_source = """
+    extern "C" __device__ void scale_by_state(void* state, void* input, void* output) {
+        int factor = *static_cast<int*>(state);
+        *static_cast<int*>(output) = *static_cast<int*>(input) * factor;
+    }
+    """
+
+    op = make_cpp_stateful_op(cpp_source, state_data, "scale_by_state", state_alignment)
+
+    num_items = 10
+    h_input = np.arange(num_items, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
+
+    transform_iter = TransformIterator(d_input, op, value_type=types.int32)
+
+    h_init = np.array(0, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=transform_iter,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    expected = int(np.sum(h_input)) * 3
+    assert result == expected, f"Expected {expected}, got {result}"
+
+
+def test_cpp_stateful_op_transform_nested_in_zip():
+    """Regression test: a stateful RawOp's state must still be correctly
+    composed when its TransformIterator is nested inside another compound
+    iterator (here, ZipIterator), which treats its children's `.state` /
+    `.state_alignment` opaquely."""
+    from cuda.compute import OpKind, TransformIterator, ZipIterator
+
+    # Stateful op: scales its input by a state-provided factor.
+    scale_factor = np.array([3], dtype=np.int32)
+    state_data = scale_factor.tobytes()
+    state_alignment = np.dtype(np.int32).alignment
+
+    scale_source = """
+    extern "C" __device__ void scale_by_state(void* state, void* input, void* output) {
+        int factor = *static_cast<int*>(state);
+        *static_cast<int*>(output) = *static_cast<int*>(input) * factor;
+    }
+    """
+    scale_op = make_cpp_stateful_op(
+        scale_source, state_data, "scale_by_state", state_alignment
+    )
+
+    # Stateless op: sums the two fields of the zipped pair.
+    add_source = """
+    struct Pair { int field_0; int field_1; };
+    extern "C" __device__ void add_pair(void* input, void* output) {
+        Pair* p = static_cast<Pair*>(input);
+        *static_cast<int*>(output) = p->field_0 + p->field_1;
+    }
+    """
+    add_op = make_cpp_op(add_source, "add_pair")
+
+    num_items = 10
+    h_x = np.arange(num_items, dtype=np.int32)
+    h_y = np.arange(num_items, dtype=np.int32) * 100
+    d_x = DeviceArray.from_numpy(h_x)
+    d_y = DeviceArray.from_numpy(h_y)
+
+    scaled_x = TransformIterator(d_x, scale_op, value_type=types.int32)
+    zipped = ZipIterator(scaled_x, d_y)
+    combined = TransformIterator(zipped, add_op, value_type=types.int32)
+
+    d_output = DeviceArray.empty(1, np.int32)
+    h_init = np.array(0, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=combined,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    expected = int((h_x * 3 + h_y).sum())
+    assert result == expected, f"Expected {expected}, got {result}"

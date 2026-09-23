@@ -9,59 +9,59 @@
 #include <c2h/fill_striped.h>
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
-          int LOGICAL_WARP_THREADS,
-          int ITEMS_PER_THREAD,
-          int TOTAL_WARPS,
+          int LogicalWarpThreads,
+          int ItemsPerThread,
+          int TotalWarps,
           typename T,
           typename OutputIteratorT,
           typename ActionT>
 __global__ void warp_store_kernel(OutputIteratorT output_iterator, ActionT action)
 {
-  using warp_store_t = cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS>;
+  using warp_store_t = cub::WarpStore<T, ItemsPerThread, StoreAlgorithm, LogicalWarpThreads>;
   using storage_t    = typename warp_store_t::TempStorage;
 
-  constexpr int tile_size = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
-  __shared__ storage_t storage[TOTAL_WARPS];
+  constexpr int tile_size = ItemsPerThread * LogicalWarpThreads;
+  __shared__ storage_t storage[TotalWarps];
 
   const int tid =
     cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
-  T reg[ITEMS_PER_THREAD];
+  T reg[ItemsPerThread];
 
-  for (int item = 0; item < ITEMS_PER_THREAD; item++)
+  for (int item = 0; item < ItemsPerThread; item++)
   {
-    reg[item] = static_cast<T>(tid * ITEMS_PER_THREAD + item); // NOLINT(bugprone-misplaced-widening-cast)
+    reg[item] = static_cast<T>(tid * ItemsPerThread + item); // NOLINT(bugprone-misplaced-widening-cast)
   }
 
-  const int warp_id = tid / LOGICAL_WARP_THREADS;
-  warp_store_t store(storage[warp_id]);
+  const int warp_id = tid / LogicalWarpThreads;
+  warp_store_t store(storage[warp_id]); // NOLINT(misc-const-correctness)
 
   action(store, output_iterator + (warp_id * tile_size), reg);
 }
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
-          int LOGICAL_WARP_THREADS,
-          int ITEMS_PER_THREAD,
-          int TOTAL_WARPS,
+          int LogicalWarpThreads,
+          int ItemsPerThread,
+          int TotalWarps,
           typename T,
           typename OutputIteratorT,
           typename ActionT>
 void warp_store(OutputIteratorT output_iterator, ActionT action)
 {
-  warp_store_kernel<StoreAlgorithm, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, T, OutputIteratorT, ActionT>
-    <<<1, TOTAL_WARPS * LOGICAL_WARP_THREADS>>>(output_iterator, action);
+  warp_store_kernel<StoreAlgorithm, LogicalWarpThreads, ItemsPerThread, TotalWarps, T, OutputIteratorT, ActionT>
+    <<<1, TotalWarps * LogicalWarpThreads>>>(output_iterator, action);
 }
 
 struct guarded_store_t
 {
   int valid_items;
   template <cub::WarpStoreAlgorithm StoreAlgorithm,
-            int LOGICAL_WARP_THREADS,
-            int ITEMS_PER_THREAD,
+            int LogicalWarpThreads,
+            int ItemsPerThread,
             typename T,
             typename OutputIteratorT>
-  __device__ void operator()(cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
+  __device__ void operator()(cub::WarpStore<T, ItemsPerThread, StoreAlgorithm, LogicalWarpThreads> store,
                              OutputIteratorT output,
-                             T (&reg)[ITEMS_PER_THREAD])
+                             T (&reg)[ItemsPerThread])
   {
     store.Store(output, reg, valid_items);
   }
@@ -70,33 +70,29 @@ struct guarded_store_t
 struct unguarded_store_t
 {
   template <cub::WarpStoreAlgorithm StoreAlgorithm,
-            int LOGICAL_WARP_THREADS,
-            int ITEMS_PER_THREAD,
+            int LogicalWarpThreads,
+            int ItemsPerThread,
             typename T,
             typename OutputIteratorT>
-  __device__ void operator()(cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
+  __device__ void operator()(cub::WarpStore<T, ItemsPerThread, StoreAlgorithm, LogicalWarpThreads> store,
                              OutputIteratorT output,
-                             T (&reg)[ITEMS_PER_THREAD])
+                             T (&reg)[ItemsPerThread])
   {
     store.Store(output, reg);
   }
 };
 
-template <cub::WarpStoreAlgorithm StoreAlgorithm,
-          int LOGICAL_WARP_THREADS,
-          int ITEMS_PER_THREAD,
-          int TOTAL_WARPS,
-          typename T>
+template <cub::WarpStoreAlgorithm StoreAlgorithm, int LogicalWarpThreads, int ItemsPerThread, int TotalWarps, typename T>
 c2h::device_vector<T> compute_reference(int valid_items)
 {
-  constexpr int tile_size        = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
-  constexpr int total_item_count = TOTAL_WARPS * tile_size;
+  constexpr int tile_size        = LogicalWarpThreads * ItemsPerThread;
+  constexpr int total_item_count = TotalWarps * tile_size;
   c2h::device_vector<T> d_input(total_item_count);
 
   if constexpr (StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
   {
     c2h::host_vector<T> input(total_item_count);
-    fill_striped<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD * TOTAL_WARPS>(input.begin());
+    fill_striped<ItemsPerThread, LogicalWarpThreads, ItemsPerThread * TotalWarps>(input.begin());
     d_input = input;
   }
   else
@@ -105,7 +101,7 @@ c2h::device_vector<T> compute_reference(int valid_items)
   }
   if (valid_items != total_item_count)
   {
-    for (int warp_id = 0; warp_id < TOTAL_WARPS; warp_id++)
+    for (int warp_id = 0; warp_id < TotalWarps; warp_id++)
     {
       thrust::fill(c2h::device_policy,
                    d_input.begin() + warp_id * tile_size + valid_items, // NOLINT(bugprone-misplaced-widening-cast)
@@ -141,13 +137,13 @@ using cache_store_modifier =
 
 constexpr int guarded_store_tests_count = 30;
 
-template <int logical_warp_threads>
+template <int LogicalWarpThreads>
 struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
-  static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
+  static constexpr bool is_arch_warp  = (LogicalWarpThreads == cub::detail::warp_threads);
+  static constexpr bool is_pow_of_two = ((LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
 public:

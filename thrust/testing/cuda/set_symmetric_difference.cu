@@ -36,23 +36,21 @@ void TestSetSymmetricDifferenceDevice(ExecutionPolicy exec)
   test_runtime::assert_equal(stream, result, {2, 3, 3, 6, 7});
 }
 
-void TestSetSymmetricDifferenceDeviceSeq()
+TEST_CASE("TestSetSymmetricDifferenceDeviceSeq", "[set_symmetric_difference]")
 {
   TestSetSymmetricDifferenceDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceDeviceSeq);
 
-void TestSetSymmetricDifferenceDeviceDevice()
+TEST_CASE("TestSetSymmetricDifferenceDeviceDevice", "[set_symmetric_difference]")
 {
   TestSetSymmetricDifferenceDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceDeviceDevice);
 #endif
 
-void TestSetSymmetricDifferenceCudaStreams()
+TEST_CASE("TestSetSymmetricDifferenceCudaStreams", "[set_symmetric_difference]")
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto a      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 6});
   auto b      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 7});
@@ -61,7 +59,6 @@ void TestSetSymmetricDifferenceCudaStreams()
   auto end = thrust::set_symmetric_difference(
     thrust::cuda::par.on(stream.get()), a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {2, 3, 3, 6, 7});
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceCudaStreams);
