@@ -346,11 +346,10 @@ the base pointer up and report the required size.
   the cooperative-group launch branches also had no error check at all, unlike their cg_size==1 siblings
 -->
 
-No statement in a `noexcept` function is allowed to throw — an escaping exception calls
+No exception may escape a `noexcept` function on any code path — an escaping exception calls
 `std::terminate`, turning a recoverable error into a process crash, and it compiles cleanly with no
 warning. Pay attention to throwing reached through helpers: `_CCCL_TRY_CUDA_API`, `_CCCL_THROW`, or
-callees documented `@throws`. Also check that kernel launches on all possible code paths in a function
-carry the same error check — an unchecked launch silently swallows failures.
+callees documented `@throws`.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
