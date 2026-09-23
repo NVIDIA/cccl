@@ -440,12 +440,14 @@ public:
     return decltype(::cuda::std::apply(__fun_, ::cuda::std::forward<Tuple>(tuple))){};
   }
 
-  _CCCL_HOST_DEVICE sum_five& fun() noexcept
+  // NOTE: this must be named __fun() to match the real cuda::zip_function API, which
+  // cub::device_transform.cuh calls directly (without any existence check) when unwrapping.
+  _CCCL_HOST_DEVICE sum_five& __fun() noexcept
   {
     return __fun_;
   }
 
-  _CCCL_HOST_DEVICE const sum_five& fun() const noexcept
+  _CCCL_HOST_DEVICE const sum_five& __fun() const noexcept
   {
     return __fun_;
   }
