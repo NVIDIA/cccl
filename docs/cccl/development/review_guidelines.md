@@ -378,6 +378,71 @@ platform and silently truncates or fails on the other. Use a type that says what
 traits, overload sets, type-list tests enumerating fundamental types, and external API signatures
 that use it. Candidate for a pre-commit grep.
 
+## correctness.ptx-asm-operand-index (critical, hand-written/generated inline PTX `asm volatile` blocks)
+
+<!-- provenance:
+  #3440→#8403 128-bit atomic CAS codegen template misindexed asm operands (mov.b128 read from output/undefined and cross-mixed compare/desired registers), returning success while writing garbled data (intro corrected from issue #8402)
+-->
+
+When a diff adds or edits an inline `asm volatile("..." : outputs : inputs : clobbers)` block
+referencing operands by number (`%0`, `%1`, …), manually verify each `%N` against its declared position
+(outputs first, then inputs, in constraint-list order) — the compiler only checks that `%N` is in
+range, not that it refers to the intended operand. Watch for reads of output-only (`"="`) operands and
+off-by-one indices after a reorder. Tests should read back the written values, not just a status.
+
+## api.alias-template-ctad-gap (important, public type aliases wrapping a class template that supports CTAD)
+
+<!-- provenance:
+  #3686→#6093 host_mdspan/device_mdspan/managed_mdspan alias templates over cuda::std::mdspan with a substituted accessor; CTAD silently failed to compile (pair auto-inferred from issue #6076)
+-->
+
+When a diff introduces a type as an alias template, users cannot construct it via CTAD in C++17.
+This is usually fine, unless the alias replaced a public entity that previously supported CTAD,
+in which case the change breaks CTAD. Flag the alias template and require a test for CTAD to be added.
+
+## correctness.offset-type-narrowing (important, CUB/Thrust device-algorithm dispatches and kernels templated on an offset type)
+
+<!-- provenance:
+  #2234→#4888 new cub::DeviceReduce RFA (deterministic reduce) kernel accepted a generic OffsetT but truncated it to int internally for grid sizing/indexing
+-->
+
+When a dispatch or kernel is templated on an offset type instead of using a fixed-width integral type,
+the entire implementation behind it must support both 32-bit and 64-bit offsets. Flag any unguarded
+conversion of an offset to a narrower type: `static_cast<int>(num_items)`, `int`-typed loop counters,
+or grid-size arithmetic fed from `OffsetT`. Such code compiles and passes small tests but silently
+misbehaves beyond 2^31 elements. A public API accepting a templated offset type must normalize it via
+`cub::detail::choose_offset_t` immediately and pass the adjusted type to the dispatch and kernels, and
+a unit test with a problem size larger than 2^32 is required. Not affected: implementations that accept
+a generic offset type at the device-layer API but dispatch with a fixed 64-bit offset (e.g. lookahead
+scan, transform).
+
+## api.generic-param-replaces-concrete-type (important, public CUB/Thrust API overloads accepting a stream/config parameter)
+
+<!-- provenance:
+  #6204→#7915 (backport #8011) DeviceTransform Env=env<> default replaced the cudaStream_t stream parameter, breaking non-copyable types implicitly convertible to cudaStream_t
+-->
+
+When a diff replaces a concrete parameter type (e.g. `cudaStream_t stream`) with a generic templated
+parameter (e.g. `Env env`), consider all possible call-site conventions the old parameter supported:
+arguments could have been only implicitly convertible to the old type (e.g., a user stream wrapper
+with `operator cudaStream_t()`), or non-copyable. A by-value template parameter binds to the
+argument's own deduced type, not a potentially converted type from the old argument, so a non-copyable
+stream-like lvalue that used to convert-then-copy now fails to compile. Either require an explicit
+non-template overload taking the old type and constraining the generic overload, or turn the template
+parameter into a const reference (e.g. `const Env& env`).
+
+## correctness.element-index-to-byte-offset (important, CUDA kernels and dispatch code computing byte offsets from element indices)
+
+<!-- provenance:
+  #2086→#8803 (backports #8806–#8808) transform_kernel_ublkcp multiplied a 32-bit element offset by sizeof(T) in 32-bit arithmetic for bulk-copy addressing; for num_items*sizeof(T) > 4 GB the product wrapped and read wrong tile addresses, corrupting outputs (issue #8800)
+-->
+
+When an in-bounds element index or count stored in a 32-bit type is converted into a byte offset —
+multiplied by `sizeof(T)`, used for pointer alignment, or applied to a `char*`/`std::byte*` cast of a
+typed pointer — flag arithmetic performed in the 32-bit type: the element index may fit 32 bits while
+the byte offset does not, so the multiplication must be widened to 64 bits first (e.g.
+`offset * size_t{sizeof(T)}`).
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:

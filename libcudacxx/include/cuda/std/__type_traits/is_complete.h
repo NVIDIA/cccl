@@ -29,21 +29,21 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifdef _CCCL_BUILTIN_IS_COMPLETE_TYPE
 
-template <typename T>
-inline constexpr bool __is_complete_v = _CCCL_BUILTIN_IS_COMPLETE_TYPE(T);
+template <typename _Tp>
+inline constexpr bool __is_complete_v = _CCCL_BUILTIN_IS_COMPLETE_TYPE(_Tp);
 
 #else // ^^^  _CCCL_BUILTIN_IS_COMPLETE_TYPE ^^^ / vvv no builtin vvv
 // Must be a SFINAE trait instead of
 //
-// template <typename T>
-// inline constexpr __is_complete_v = sizeof(T) > 0;
+// template <typename _Tp>
+// inline constexpr __is_complete_v = sizeof(_Tp) > 0;
 //
-// Because older NVCC doesn't even allow you to utter the phrase sizeof(T) if T is incomplete
-template <typename T, typename = void>
+// Because older NVCC doesn't even allow you to utter the phrase sizeof(_Tp) if _Tp is incomplete
+template <typename _Tp, typename = void>
 inline constexpr bool __is_complete_v = false;
 
-template <typename T>
-inline constexpr bool __is_complete_v<T, void_t<decltype(sizeof(T))>> = (sizeof(T) > 0);
+template <typename _Tp>
+inline constexpr bool __is_complete_v<_Tp, void_t<decltype(sizeof(_Tp))>> = (sizeof(_Tp) > 0);
 #endif // ^^^ no builtin ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
