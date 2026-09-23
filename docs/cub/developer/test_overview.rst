@@ -441,24 +441,29 @@ This split maps directly onto how tests are organized:
 
 Recommended minimum tests cases to be added for each new single-phase API overload in an ``_env.cu`` file:
 
-1. ``"<algorithm> works with default environment"`` — the algorithm is called without an
-   environment argument at all, using a minimal example, and checked for a correct output.
+1. ``"<algorithm> works with default environment"`` — the algorithm is called directly (no
+   launch wrapper) without an environment argument at all, using a minimal example, and checked
+   for a correct output. Guard with ``#if TEST_LAUNCH == 0``, since it bypasses the launch
+   wrapper and is therefore identical under all three launch ids.
 2. ``"<algorithm> uses environment"`` — an environment carrying only
    ``expected_allocation_size(...)`` is honored: the algorithm neither over- nor under-allocates
    temporary storage compared to the two-phase API. Don't repeat this check in other test cases
-   exercising the same overload for a different checklist item.
+   exercising the same overload for a different checklist item. Runs for all 3 test launches.
 3. ``"<algorithm> uses custom stream"`` — passing a ``cuda::stream_ref`` (e.g. obtained from
    ``c2h::make_current_device_stream()``) as custom environment is honored: the algorithm's work
    actually runs on that stream (verified by explicitly synchronizing it, not the default
-   stream).
+   stream). The test case should be guarded by ``#if TEST_LAUNCH != 1``, since host streams are
+   unusable when launching from device code.
 4. ``"<algorithm> can be tuned"`` — an environment carrying ``cuda::execution::tune(...)`` is
    honored: test with two distinct tunings that each modify the block size used by the kernel,
    and verify the applied block size on the device using ``block_size_extracting_op`` or
-   ``block_size_extracting_constant_iterator``.
+   ``block_size_extracting_constant_iterator``. The test case should be guarded by
+   ``#if TEST_LAUNCH != 1``.
 5. If the algorithm has a determinism/ordering axis, ``cuda::execution::require(...)`` is
-   tested for each supported level.
+   tested for each supported level. The test case should be guarded by ``#if TEST_LAUNCH != 1``.
 6. If the algorithm takes an operator/predicate parameter (e.g. a comparator or equality op),
-   that parameter is tested in combination with the environment, not only in isolation.
+   that parameter is tested in combination with the environment, not only in isolation. The test
+   case should be guarded by ``#if TEST_LAUNCH != 1``.
 
 All of the above should be applied to every variant of the API (e.g. pointer vs.
 ``DoubleBuffer``, in-place vs. out-of-place, alternate segment/offset layouts, with/without a
