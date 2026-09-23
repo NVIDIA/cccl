@@ -41,10 +41,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::__simple_vector<device_ref> __make_devices()
 {
   ::cuda::__simple_vector<device_ref> __ret{::cuda::__physical_devices().size(), ::cuda::no_init};
-  auto* __current = __ret.data();
   for (::cuda::std::size_t __i = 0; __i < ::cuda::__physical_devices().size(); ++__i)
   {
-    ::cuda::std::__construct_at(__current + __i, static_cast<int>(__i));
+    __ret.emplace_back(static_cast<int>(__i));
   }
   return __ret;
 }

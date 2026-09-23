@@ -12,9 +12,9 @@
 
 #include <cuda/__container/simple_vector.h>
 #include <cuda/memory>
-#include <cuda/std/__new_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/memory>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
@@ -42,9 +42,19 @@ struct alignas(32) OverAligned
 };
 
 static_assert(!cuda::std::is_default_constructible_v<NoDefault>, "");
-static_assert(!cuda::std::is_default_constructible_v<cuda::__simple_vector<int>>, "");
+static_assert(cuda::std::is_default_constructible_v<cuda::__simple_vector<int>>, "");
 static_assert(cuda::std::is_constructible_v<cuda::__simple_vector<int>, cuda::std::size_t, cuda::no_init_t>, "");
 static_assert(!cuda::std::is_constructible_v<cuda::__simple_vector<int>, cuda::std::size_t>, "");
+
+template <class T>
+TEST_HOST_DEVICE_FUNC void test_default_constructed()
+{
+  cuda::__simple_vector<T> vec;
+  assert(vec.size() == 0);
+  assert(vec.empty());
+  assert(vec.data() == nullptr);
+  assert(vec.begin() == vec.end());
+}
 
 template <class T>
 TEST_HOST_DEVICE_FUNC void test_empty()
@@ -60,17 +70,24 @@ template <class T>
 TEST_HOST_DEVICE_FUNC void test_uninitialized_storage(cuda::std::size_t n)
 {
   cuda::__simple_vector<T> vec(n, cuda::no_init);
-  assert(vec.size() == n);
-  assert(!vec.empty());
+  assert(vec.size() == 0);
+  assert(vec.empty());
   assert(vec.data() != nullptr);
   assert(vec.begin() == vec.data());
-  assert(vec.end() == vec.data() + n);
+  assert(vec.end() == vec.data());
   assert(cuda::is_aligned(vec.data(), alignof(T)));
 
   for (cuda::std::size_t i = 0; i < n; ++i)
   {
-    ::new (static_cast<void*>(vec.data() + i)) T{static_cast<int>(i + 1)};
+    T& ref = vec.emplace_back(static_cast<int>(i + 1));
+    assert(cuda::std::addressof(ref) == vec.data() + i);
+    assert(vec.size() == i + 1);
+    assert(!vec.empty());
   }
+
+  assert(vec.size() == n);
+  assert(vec.begin() == vec.data());
+  assert(vec.end() == vec.data() + n);
 
   for (cuda::std::size_t i = 0; i < n; ++i)
   {
@@ -80,6 +97,10 @@ TEST_HOST_DEVICE_FUNC void test_uninitialized_storage(cuda::std::size_t n)
 
 TEST_HOST_DEVICE_FUNC void test()
 {
+  test_default_constructed<int>();
+  test_default_constructed<NoDefault>();
+  test_default_constructed<OverAligned>();
+
   test_empty<int>();
   test_empty<NoDefault>();
   test_empty<OverAligned>();
