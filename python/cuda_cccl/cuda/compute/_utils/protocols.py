@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
 
 import numpy as np
 
@@ -22,12 +22,12 @@ def is_device_array(obj: object) -> bool:
     return hasattr(obj, "__cuda_array_interface__")
 
 
-_DATA_POINTER_ACCESSOR_CACHE: dict = {}
+# Perf: this cache is used in get_data_pointer() to avoid repeated
+# lookups of the data pointer accessor for known types
+_DATA_POINTER_ACCESSOR_CACHE: dict[type, Callable] = {}
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
-    # Perf: which branch below applies depends only on the array's type, so cache
-    # it per type after the first call.
 
     accessor = _DATA_POINTER_ACCESSOR_CACHE.get(type(arr))
     if accessor is not None:
