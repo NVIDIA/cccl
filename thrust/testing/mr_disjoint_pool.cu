@@ -122,7 +122,7 @@ public:
 };
 
 template <template <typename, typename> class PoolTemplate>
-void TestDisjointPool()
+void test_disjoint_pool()
 {
   dummy_resource upstream;
   thrust::mr::new_delete_resource bookkeeper;
@@ -200,16 +200,16 @@ void TestDisjointPool()
 
 TEST_CASE("TestDisjointUnsynchronizedPool", "[mr_disjoint_pool]")
 {
-  TestDisjointPool<thrust::mr::disjoint_unsynchronized_pool_resource>();
+  test_disjoint_pool<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
 
 TEST_CASE("TestDisjointSynchronizedPool", "[mr_disjoint_pool]")
 {
-  TestDisjointPool<thrust::mr::disjoint_synchronized_pool_resource>();
+  test_disjoint_pool<thrust::mr::disjoint_synchronized_pool_resource>();
 }
 
 template <template <typename, typename> class PoolTemplate>
-void TestDisjointPoolCachingOversized()
+void test_disjoint_pool_caching_oversized()
 {
   dummy_resource upstream;
   thrust::mr::new_delete_resource bookkeeper;
@@ -276,16 +276,16 @@ void TestDisjointPoolCachingOversized()
 
 TEST_CASE("TestDisjointUnsynchronizedPoolCachingOversized", "[mr_disjoint_pool]")
 {
-  TestDisjointPoolCachingOversized<thrust::mr::disjoint_unsynchronized_pool_resource>();
+  test_disjoint_pool_caching_oversized<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
 
 TEST_CASE("TestDisjointSynchronizedPoolCachingOversized", "[mr_disjoint_pool]")
 {
-  TestDisjointPoolCachingOversized<thrust::mr::disjoint_synchronized_pool_resource>();
+  test_disjoint_pool_caching_oversized<thrust::mr::disjoint_synchronized_pool_resource>();
 }
 
 template <template <typename, typename> class PoolTemplate>
-void TestDisjointGlobalPool()
+void test_disjoint_global_pool()
 {
   using Pool = PoolTemplate<thrust::mr::new_delete_resource, thrust::mr::new_delete_resource>;
 
@@ -294,16 +294,16 @@ void TestDisjointGlobalPool()
 
 TEST_CASE("TestUnsynchronizedDisjointGlobalPool", "[mr_disjoint_pool]")
 {
-  TestDisjointGlobalPool<thrust::mr::disjoint_unsynchronized_pool_resource>();
+  test_disjoint_global_pool<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
 
 TEST_CASE("TestSynchronizedDisjointGlobalPool", "[mr_disjoint_pool]")
 {
-  TestDisjointGlobalPool<thrust::mr::disjoint_synchronized_pool_resource>();
+  test_disjoint_global_pool<thrust::mr::disjoint_synchronized_pool_resource>();
 }
 
 template <template <typename, typename> class PoolTemplate>
-void TestDisjointPoolSqueeze()
+void test_disjoint_pool_squeeze()
 {
   dummy_resource upstream;
   thrust::mr::new_delete_resource bookkeeper;
@@ -505,10 +505,10 @@ void TestDisjointPoolSqueeze()
 
 TEST_CASE("TestDisjointUnsynchronizedPoolSqueeze", "[mr_disjoint_pool]")
 {
-  TestDisjointPoolSqueeze<thrust::mr::disjoint_unsynchronized_pool_resource>();
+  test_disjoint_pool_squeeze<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
 
 TEST_CASE("TestDisjointSynchronizedPoolSqueeze", "[mr_disjoint_pool]")
 {
-  TestDisjointPoolSqueeze<thrust::mr::disjoint_synchronized_pool_resource>();
+  test_disjoint_pool_squeeze<thrust::mr::disjoint_synchronized_pool_resource>();
 }

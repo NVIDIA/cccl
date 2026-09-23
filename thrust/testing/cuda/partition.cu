@@ -663,7 +663,7 @@ TEST_CASE("TestPartitionIfWithLargeNumberOfItems", "[partition]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestPartitionCudaStreams(ExecutionPolicy policy)
+void test_partition_cuda_streams(ExecutionPolicy policy)
 {
   using Vector   = thrust::device_vector<int>;
   using T        = Vector::value_type;
@@ -698,10 +698,10 @@ void TestPartitionCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestPartitionCudaStreamsSync", "[partition]")
 {
-  TestPartitionCudaStreams(thrust::cuda::par);
+  test_partition_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestPartitionCudaStreamsNoSync", "[partition]")
 {
-  TestPartitionCudaStreams(thrust::cuda::par_nosync);
+  test_partition_cuda_streams(thrust::cuda::par_nosync);
 }

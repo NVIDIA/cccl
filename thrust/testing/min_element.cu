@@ -6,7 +6,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestMinElementSimple()
+void test_min_element_simple()
 {
   using T = typename Vector::value_type;
 
@@ -18,10 +18,10 @@ void TestMinElementSimple()
   REQUIRE(*thrust::min_element(data.begin(), data.end(), ::cuda::std::greater<T>()) == 5);
   REQUIRE(thrust::min_element(data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin() == 1);
 }
-DECLARE_VECTOR_UNITTEST(TestMinElementSimple);
+DECLARE_VECTOR_UNITTEST(test_min_element_simple);
 
 template <class Vector>
-void TestMinElementWithTransform()
+void test_min_element_with_transform()
 {
   using T = typename Vector::value_type;
 
@@ -35,10 +35,10 @@ void TestMinElementWithTransform()
                                ::cuda::std::greater<T>())
           == -1);
 }
-DECLARE_VECTOR_UNITTEST(TestMinElementWithTransform);
+DECLARE_VECTOR_UNITTEST(test_min_element_with_transform);
 
 template <typename T>
-void TestMinElement(const size_t n)
+void test_min_element(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -55,7 +55,7 @@ void TestMinElement(const size_t n)
 
   REQUIRE(h_max - h_data.begin() == d_max - d_data.begin());
 }
-DECLARE_VARIABLE_UNITTEST(TestMinElement);
+DECLARE_VARIABLE_UNITTEST(test_min_element);
 
 template <typename ForwardIterator>
 ForwardIterator min_element(my_system& system, ForwardIterator first, ForwardIterator)
@@ -90,7 +90,7 @@ TEST_CASE("TestMinElementDispatchImplicit", "[min_element]")
   REQUIRE(13 == vec.front());
 }
 
-void TestMinElementWithBigIndexesHelper(int magnitude)
+void test_min_element_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
@@ -101,11 +101,11 @@ void TestMinElementWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestMinElementWithBigIndexes", "[min_element]")
 {
-  TestMinElementWithBigIndexesHelper(30);
+  test_min_element_with_big_indexes_helper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestMinElementWithBigIndexesHelper(31);
-  TestMinElementWithBigIndexesHelper(32);
-  TestMinElementWithBigIndexesHelper(33);
+  test_min_element_with_big_indexes_helper(31);
+  test_min_element_with_big_indexes_helper(32);
+  test_min_element_with_big_indexes_helper(33);
 #endif
 }
 

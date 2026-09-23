@@ -153,7 +153,7 @@ transform_if(my_system& system, InputIterator1, InputIterator1, ForwardIterator 
   return result;
 }
 
-void TestTransformIfUnaryDispatchExplicit()
+void test_transform_if_unary_dispatch_explicit()
 {
   thrust::device_vector<int> vec(1);
 

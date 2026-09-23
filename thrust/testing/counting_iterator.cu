@@ -70,12 +70,12 @@ TEST_CASE("TestCountingIteratorTraits", "[counting_iterator]")
 }
 
 template <typename T>
-void TestCountingDefaultConstructor()
+void test_counting_default_constructor()
 {
   const thrust::counting_iterator<T> iter0;
   REQUIRE(*iter0 == T{});
 }
-DECLARE_GENERIC_UNITTEST(TestCountingDefaultConstructor);
+DECLARE_GENERIC_UNITTEST(test_counting_default_constructor);
 
 TEST_CASE("TestCountingIteratorCopyConstructor", "[counting_iterator]")
 {

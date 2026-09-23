@@ -110,7 +110,7 @@ struct maybe_unwrap_nested<
 {
   _CCCL_HOST_DEVICE ::cuda::std::tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const
   {
-    return t.template __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
+    return t.template to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
   }
 };
 
@@ -171,7 +171,7 @@ public:
     ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0>
   _CCCL_HOST_DEVICE constexpr operator ::cuda::std::tuple<Us...>() const
   {
-    return __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
+    return to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
   }
 
   template <class... Us>
@@ -192,7 +192,7 @@ public:
     class... Us,
     size_t... Id,
     ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0>
-  _CCCL_HOST_DEVICE constexpr ::cuda::std::tuple<Us...> __to_tuple(::cuda::std::__tuple_indices<Id...>) const
+  _CCCL_HOST_DEVICE constexpr ::cuda::std::tuple<Us...> to_tuple(::cuda::std::__tuple_indices<Id...>) const
   {
     return {maybe_unwrap_nested<Us, Ts>{}(::cuda::std::get<Id>(*this))...};
   }

@@ -40,7 +40,7 @@ struct stream_wrapper_ref
 };
 
 template <typename Wrapper, typename ExecutionPolicy>
-void TestOnStream(ExecutionPolicy policy)
+void test_on_stream(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
 
@@ -63,20 +63,20 @@ void TestOnStream(ExecutionPolicy policy)
 
 TEST_CASE("TestCudartStreamSync", "[stream_wrapper]")
 {
-  TestOnStream<stream_wrapper>(thrust::cuda::par);
+  test_on_stream<stream_wrapper>(thrust::cuda::par);
 }
 
 TEST_CASE("TestCudartStreamNoSync", "[stream_wrapper]")
 {
-  TestOnStream<stream_wrapper>(thrust::cuda::par_nosync);
+  test_on_stream<stream_wrapper>(thrust::cuda::par_nosync);
 }
 
 TEST_CASE("TestCudaStreamRefSync", "[stream_wrapper]")
 {
-  TestOnStream<stream_wrapper_ref>(thrust::cuda::par);
+  test_on_stream<stream_wrapper_ref>(thrust::cuda::par);
 }
 
 TEST_CASE("TestCudaStreamRefNoSync", "[stream_wrapper]")
 {
-  TestOnStream<stream_wrapper_ref>(thrust::cuda::par_nosync);
+  test_on_stream<stream_wrapper_ref>(thrust::cuda::par_nosync);
 }

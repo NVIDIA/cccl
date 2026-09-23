@@ -14,7 +14,7 @@ struct is_even
 };
 
 template <typename Vector>
-void TestPartitionPointSimple()
+void test_partition_point_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -30,10 +30,10 @@ void TestPartitionPointSimple()
   ref  = last;
   REQUIRE(ref == thrust::partition_point(first, last, ::cuda::std::identity{}));
 }
-DECLARE_VECTOR_UNITTEST(TestPartitionPointSimple);
+DECLARE_VECTOR_UNITTEST(test_partition_point_simple);
 
 template <class Vector>
-void TestPartitionPoint()
+void test_partition_point()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -46,7 +46,7 @@ void TestPartitionPoint()
 
   REQUIRE(ref - v.begin() == thrust::partition_point(v.begin(), v.end(), is_even<T>()) - v.begin());
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionPoint);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_point);
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition_point(my_system& system, ForwardIterator first, ForwardIterator, Predicate)
@@ -91,7 +91,7 @@ struct test_less_than
   }
 };
 
-void TestPartitionPointWithBigIndexesHelper(int magnitude)
+void test_partition_point_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(0);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
@@ -106,9 +106,9 @@ void TestPartitionPointWithBigIndexesHelper(int magnitude)
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
 TEST_CASE("TestPartitionPointWithBigIndexes", "[partition_point]")
 {
-  TestPartitionPointWithBigIndexesHelper(30);
-  TestPartitionPointWithBigIndexesHelper(31);
-  TestPartitionPointWithBigIndexesHelper(32);
-  TestPartitionPointWithBigIndexesHelper(33);
+  test_partition_point_with_big_indexes_helper(30);
+  test_partition_point_with_big_indexes_helper(31);
+  test_partition_point_with_big_indexes_helper(32);
+  test_partition_point_with_big_indexes_helper(33);
 }
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
