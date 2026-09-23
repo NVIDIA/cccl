@@ -629,31 +629,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE void* get_device_ptr(void* ptr)
   return *reinterpret_cast<void**>(ptr);
 }
 
-//! Preserve caller-selected immediate offset types; select a concrete offset type for deferred arguments.
+//! @copydoc CUB_NS_QUALIFIER::detail::num_items_offset_t
 template <typename OffsetT>
-using num_items_offset_t =
-  ::cuda::std::conditional_t<::cuda::args::__traits<OffsetT>::is_deferred,
-                             detail::choose_offset_t<typename ::cuda::args::__traits<OffsetT>::element_type>,
-                             typename ::cuda::args::__traits<OffsetT>::element_type>;
-
-//! Creates the kernel argument for an immediate or deferred problem size without reading a deferred source.
-//! Immediate values are cast to the selected offset type; deferred arguments are stripped to their source.
-template <typename OffsetT>
-[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto make_num_items_kernel_arg(OffsetT num_items) noexcept
-{
-  using args_traits_t = ::cuda::args::__traits<OffsetT>;
-  using element_t     = typename args_traits_t::element_type;
-
-  if constexpr (args_traits_t::is_deferred)
-  {
-    static_assert(args_traits_t::is_single_value, "num_items must be a single value wrapped in cuda::args::deferred");
-    static_assert(::cuda::std::__cccl_is_integer_v<element_t>, "the num_items element type must be an integer");
-    static_assert(
-      sizeof(element_t) == sizeof(::cuda::std::int32_t) || sizeof(element_t) == sizeof(::cuda::std::int64_t));
-  }
-
-  return CUB_NS_QUALIFIER::detail::parameter_from_host<num_items_offset_t<OffsetT>>(num_items);
-}
+using num_items_offset_t = CUB_NS_QUALIFIER::detail::num_items_offset_t<OffsetT>;
 
 template <bool StableReductionOrder,
           typename AccumT,
@@ -681,7 +659,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
 {
   using offset_t = num_items_offset_t<OffsetT>;
 
-  const auto kernel_num_items = make_num_items_kernel_arg(num_items);
+  const auto kernel_num_items = CUB_NS_QUALIFIER::detail::make_num_items_kernel_arg(num_items);
 
   // Get SM count
   int sm_count = 0;

@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_arch.cuh>
@@ -25,12 +26,31 @@
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/atomic>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
+// Deferred scans reuse one fixed-size tile state across batches.
+inline constexpr ::cuda::std::uint32_t tiles_per_batch = 65536;
+
+// CTAs per SM in the persistent grid.
+inline constexpr int batch_ctas_per_sm = 8;
+
+template <typename AccumT>
+struct scan_batch_state
+{
+  ::cuda::std::uint64_t batch_idx;
+  ::cuda::std::uint64_t next_tile_idx;
+  ::cuda::std::uint32_t lookbacks_completed;
+  Uninitialized<AccumT> batched_sum;
+};
+
 template <typename AccumT>
 struct lookahead_tile_state_arg_t
 {
@@ -85,6 +105,31 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   {
     // Initialize tile status
     tile_state.lookback.InitializeStatus(num_tiles);
+  }
+}
+
+/**
+ * @brief Initialization kernel for batched tile status and batch state
+ *
+ * @param[in] tile_state
+ *   Tile status interface
+ *
+ * @param[out] batch_state
+ *   Batched look-back state
+ */
+template <typename ScanTileState, typename AccumT>
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(128) void DeviceScanBatchInitKernel(ScanTileState tile_state, scan_batch_state<AccumT>* batch_state)
+{
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
+  tile_state.InitializeStatus(static_cast<int>(tiles_per_batch));
+  if (blockIdx.x == 0 && threadIdx.x == 0)
+  {
+    batch_state->batch_idx           = 0;
+    batch_state->next_tile_idx       = 0;
+    batch_state->lookbacks_completed = 0;
   }
 }
 
@@ -192,6 +237,7 @@ template <typename PolicySelector,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
+          typename KernelNumItemsT,
           typename AccumT,
           bool ForceInclusive,
           bool StableReductionOrder = false,
@@ -203,9 +249,11 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const int start_tile,
   const ScanOpT scan_op,
   const InitValueT init_value,
-  const OffsetT num_items,
+  const KernelNumItemsT kernel_num_items,
   const int num_stages)
 {
+  const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+
   static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
@@ -261,9 +309,191 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     RealInitValueT real_init_value = init_value;
 
+    if constexpr (!::cuda::std::is_same_v<KernelNumItemsT, OffsetT>)
+    {
+      constexpr auto tile_items = static_cast<OffsetT>(policy.threads_per_block * policy.items_per_thread);
+      if (static_cast<OffsetT>(start_tile) + blockIdx.x >= ::cuda::ceil_div(num_items, tile_items))
+      {
+        return;
+      }
+    }
+
     // Process tiles
     AgentScanT(temp_storage, d_in, d_out, scan_op, real_init_value)
       .ConsumeRange(num_items, tile_state.lookback, start_tile);
+  }
+}
+
+//! Claims the next tile and waits until its batch owns the tile state.
+template <typename AccumT>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t claim_batch_tile(
+  scan_batch_state<AccumT>* batch_state, ::cuda::std::uint64_t num_tiles, ::cuda::std::uint64_t& current_batch_idx)
+{
+  const auto tile_idx =
+    ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{batch_state->next_tile_idx}.fetch_add(
+      1, ::cuda::std::memory_order_relaxed);
+  if (tile_idx >= num_tiles)
+  {
+    return tile_idx;
+  }
+
+  const auto tile_batch_idx = tile_idx / tiles_per_batch;
+  if (tile_batch_idx != current_batch_idx)
+  {
+    auto batch_idx = ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{batch_state->batch_idx};
+    while (batch_idx.load(::cuda::std::memory_order_acquire) < tile_batch_idx)
+    {
+    }
+    current_batch_idx = tile_batch_idx;
+  }
+  return tile_idx;
+}
+
+//! Completes one tile and retires the batch when its final look-back finishes.
+template <typename ScanTileState, typename AccumT>
+struct batch_completion_op
+{
+  ScanTileState tile_state;
+  scan_batch_state<AccumT>* batch_state;
+  ::cuda::std::uint64_t tile_idx;
+  ::cuda::std::uint64_t num_tiles;
+  ::cuda::std::uint32_t batch_tiles;
+
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(const AccumT& tile_inclusive)
+  {
+    const auto batch_idx      = tile_idx / tiles_per_batch;
+    const auto local_tile_idx = static_cast<::cuda::std::uint32_t>(tile_idx % tiles_per_batch);
+    const bool has_next_batch = (batch_idx + 1) * tiles_per_batch < num_tiles;
+
+    // Save the batch prefix before publishing completion.
+    if (has_next_batch && local_tile_idx + 1 == batch_tiles)
+    {
+      batch_state->batched_sum.Alias() = tile_inclusive;
+      __threadfence();
+    }
+
+    auto lookbacks_completed =
+      ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_device>{batch_state->lookbacks_completed};
+    const auto completed = lookbacks_completed.fetch_add(1, ::cuda::std::memory_order_acq_rel) + 1;
+    return has_next_batch && completed == batch_tiles;
+  }
+
+  //! Resets the tile state and publishes the next batch.
+  _CCCL_DEVICE_API void reset_tiles_and_publish()
+  {
+    const auto batch_idx = tile_idx / tiles_per_batch;
+
+    for (::cuda::std::uint32_t tile = threadIdx.x; tile < tiles_per_batch; tile += blockDim.x)
+    {
+      tile_state.SetInvalid(static_cast<int>(tile));
+    }
+    __syncthreads();
+    if (threadIdx.x == 0)
+    {
+      ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_device>{batch_state->lookbacks_completed}.store(
+        0, ::cuda::std::memory_order_relaxed);
+      // Publish the reset state and batch prefix to waiting CTAs.
+      ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{batch_state->batch_idx}.store(
+        batch_idx + 1, ::cuda::std::memory_order_release);
+    }
+  }
+};
+
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanTileState,
+          typename ScanOpT,
+          typename InitValueT,
+          typename OffsetT,
+          typename KernelNumItemsT,
+          typename AccumT,
+          bool ForceInclusive,
+          bool StableReductionOrder = false,
+          typename RealInitValueT   = typename InitValueT::value_type>
+__launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATTRIBUTES void DeviceScanBatchKernel(
+  const InputIteratorT d_in,
+  const OutputIteratorT d_out,
+  ScanTileState tile_state,
+  scan_batch_state<AccumT>* batch_state,
+  const ScanOpT scan_op,
+  const InitValueT init_value,
+  const KernelNumItemsT kernel_num_items)
+{
+  const OffsetT num_items             = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
+  constexpr ScanLookbackPolicy policy = current_policy<PolicySelector>().lookback;
+  using scan_policy_t                 = agent_scan_policy<
+                    0,
+                    0,
+                    void,
+                    policy.load_algorithm,
+                    policy.load_modifier,
+                    policy.store_algorithm,
+                    policy.scan_algorithm,
+                    NoScaling<policy.threads_per_block, policy.items_per_thread>,
+                    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+  // Disable PDL because each persistent CTA consumes multiple tiles.
+  using agent_t =
+    AgentScan<scan_policy_t,
+              InputIteratorT,
+              OutputIteratorT,
+              ScanOpT,
+              RealInitValueT,
+              OffsetT,
+              AccumT,
+              ForceInclusive,
+              /* UsePDL */ false,
+              StableReductionOrder>;
+
+  // Keep tile indices wide while preserving the user-selected offset type.
+  static_assert(::cuda::std::is_unsigned_v<OffsetT>, "the batched scan expects an unsigned offset type");
+
+  __shared__ typename agent_t::TempStorage temp_storage;
+  __shared__ ::cuda::std::uint64_t tile_idx;
+
+  ::cuda::std::uint64_t current_batch_idx = 0;
+
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  const auto num_tiles =
+    static_cast<::cuda::std::uint64_t>(::cuda::ceil_div(num_items, static_cast<OffsetT>(agent_t::TILE_ITEMS)));
+  RealInitValueT real_init_value = init_value;
+  agent_t agent{temp_storage, d_in, d_out, scan_op, real_init_value};
+
+  while (true)
+  {
+    if (threadIdx.x == 0)
+    {
+      tile_idx = claim_batch_tile(batch_state, num_tiles, current_batch_idx);
+    }
+    // Separate consecutive uses of the shared tile index.
+    __syncthreads();
+    if (tile_idx >= num_tiles)
+    {
+      return;
+    }
+
+    const auto batch_idx   = tile_idx / tiles_per_batch;
+    const auto batch_begin = batch_idx * tiles_per_batch;
+    const auto batch_tiles = static_cast<::cuda::std::uint32_t>(
+      (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(tiles_per_batch), num_tiles - batch_begin));
+    const auto batch_tile_idx = static_cast<int>(tile_idx - batch_begin);
+    const auto tile_offset    = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(agent_t::TILE_ITEMS);
+    const auto num_remaining  = num_items - tile_offset;
+    // Seed each batch with the preceding batches' prefix.
+    const AccumT* const preceding_batched_sum = batch_idx == 0 ? nullptr : &batch_state->batched_sum.Alias();
+    const batch_completion_op<ScanTileState, AccumT> completion{
+      tile_state, batch_state, tile_idx, num_tiles, batch_tiles};
+
+    if (num_remaining < static_cast<OffsetT>(agent_t::TILE_ITEMS))
+    {
+      agent.template ConsumeBatchTile<true>(
+        num_remaining, static_cast<OffsetT>(tile_idx), batch_tile_idx, preceding_batched_sum, tile_state, completion);
+    }
+    else
+    {
+      agent.template ConsumeBatchTile<false>(
+        num_remaining, static_cast<OffsetT>(tile_idx), batch_tile_idx, preceding_batched_sum, tile_state, completion);
+    }
   }
 }
 } // namespace detail::scan

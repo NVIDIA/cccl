@@ -25,6 +25,7 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/warpspeed/warpspeed.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -50,6 +51,7 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
 
 #include <cuda_runtime_api.h>
 #include <cudaTypedefs.h>
@@ -58,18 +60,36 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
+// Force lookback for deferred scans while preserving the wrapped selector's state and empty type.
+template <typename PolicySelector>
+struct deferred_policy_selector : PolicySelector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
+  {
+    auto policy      = static_cast<const PolicySelector&>(*this)(cc);
+    policy.algorithm = ScanAlgorithm::lookback;
+    return policy;
+  }
+};
+
+template <typename PolicySelector, bool IsDeferred>
+using deferred_policy_selector_t =
+  ::cuda::std::_If<IsDeferred, deferred_policy_selector<PolicySelector>, PolicySelector>;
+
 template <typename PolicySelector,
           typename UnwrappedInputIteratorT,
           typename UnwrappedOutputIteratorT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
+          typename KernelNumItemsT,
           typename AccumT,
           ForceInclusive EnforceInclusive,
           bool StableReductionOrder = false>
 struct DeviceScanKernelSource
 {
   using ScanTileStateT = ScanTileState<AccumT>;
+  using accum_type     = AccumT;
 
   CUB_DEFINE_KERNEL_GETTER(
     InitKernel,
@@ -84,9 +104,26 @@ struct DeviceScanKernelSource
                      ScanOpT,
                      InitValueT,
                      OffsetT,
+                     KernelNumItemsT,
                      AccumT,
                      EnforceInclusive == ForceInclusive::Yes,
                      StableReductionOrder>)
+
+  CUB_DEFINE_KERNEL_GETTER(BatchInitKernel, DeviceScanBatchInitKernel<ScanTileStateT, AccumT>)
+
+  CUB_DEFINE_KERNEL_GETTER(
+    BatchScanKernel,
+    DeviceScanBatchKernel<PolicySelector,
+                          UnwrappedInputIteratorT,
+                          UnwrappedOutputIteratorT,
+                          ScanTileStateT,
+                          ScanOpT,
+                          InitValueT,
+                          OffsetT,
+                          KernelNumItemsT,
+                          AccumT,
+                          EnforceInclusive == ForceInclusive::Yes,
+                          StableReductionOrder>)
 
   CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t InputSize()
   {
@@ -121,6 +158,11 @@ struct DeviceScanKernelSource
   CUB_RUNTIME_FUNCTION static ScanTileStateT TileState()
   {
     return {};
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t scan_batch_state_size()
+  {
+    return sizeof(scan_batch_state<AccumT>);
   }
 
   CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t lookahead_tile_state_size()
@@ -234,6 +276,7 @@ template <
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
     ScanOpT,
     InitValueT,
+    OffsetT,
     OffsetT,
     AccumT,
     EnforceInclusive>,
@@ -919,7 +962,112 @@ template <typename PolicyGetter,
           typename OutputIteratorT,
           typename ScanOpT,
           typename InitValueT,
-          typename OffsetT,
+          typename NumItemsT,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_lookback(
+  PolicyGetter policy_getter,
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  ScanOpT scan_op,
+  InitValueT init_value,
+  NumItemsT num_items,
+  cudaStream_t stream,
+  bool dependent_launch,
+  KernelSource kernel_source,
+  KernelLauncherFactory launcher_factory)
+{
+  CUB_DETAIL_CONSTEXPR_ISH const ScanLookbackPolicy policy = policy_getter().lookback;
+  auto tile_state                                          = kernel_source.TileState();
+
+  // Specify temporary storage requirements for the reusable tile states and batch state
+  size_t allocation_sizes[2];
+  if (const auto error =
+        CubDebug(tile_state.AllocationSize(static_cast<int>(detail::scan::tiles_per_batch), allocation_sizes[0])))
+  {
+    return error;
+  }
+  allocation_sizes[1] = kernel_source.scan_batch_state_size();
+
+  // Compute allocation pointers into the single storage blob
+  void* allocations[2]{};
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  // Return after reporting the temporary storage requirement
+  if (d_temp_storage == nullptr)
+  {
+    return cudaSuccess;
+  }
+
+  // Construct the reusable tile status interface and locate the batch state
+  if (const auto error =
+        CubDebug(tile_state.Init(static_cast<int>(detail::scan::tiles_per_batch), allocations[0], allocation_sizes[0])))
+  {
+    return error;
+  }
+  auto* const batch_state = static_cast<scan_batch_state<typename KernelSource::accum_type>*>(allocations[1]);
+
+  // Initialize the tile descriptors and batch state
+  constexpr int init_threads = 128;
+  constexpr int init_grid    = static_cast<int>(detail::scan::tiles_per_batch) / init_threads;
+  if (const auto error = CubDebug(launcher_factory(init_grid, init_threads, 0, stream, dependent_launch)
+                                    .doit(kernel_source.BatchInitKernel(), tile_state, batch_state)))
+  {
+    return error;
+  }
+
+  // Check for failure to launch
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  // Size the persistent scan grid independently of the problem size
+  int sm_count = 0;
+  if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
+  {
+    return error;
+  }
+  const int scan_grid_size =
+    (::cuda::std::min) (static_cast<int>(detail::scan::tiles_per_batch), detail::scan::batch_ctas_per_sm * sm_count);
+
+  // Invoke the scan kernel; its CTAs dynamically claim tiles until the deferred range is exhausted
+  if (const auto error = CubDebug(
+        launcher_factory(scan_grid_size, policy.threads_per_block, 0, stream, dependent_launch)
+          .doit(kernel_source.BatchScanKernel(),
+                THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
+                THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
+                tile_state,
+                batch_state,
+                ::cuda::std::move(scan_op),
+                init_value,
+                detail::make_num_items_kernel_arg(num_items))))
+  {
+    return error;
+  }
+
+  // Check for failure to launch
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  // Sync the stream if specified to flush runtime errors
+  return CubDebug(detail::DebugSyncStream(stream));
+}
+
+template <typename PolicyGetter,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename NumItemsT,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
@@ -930,12 +1078,14 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   OutputIteratorT d_out,
   ScanOpT scan_op,
   InitValueT init_value,
-  OffsetT num_items,
+  NumItemsT num_items,
   cudaStream_t stream,
   bool dependent_launch,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
+  using offset_t = detail::num_items_offset_t<NumItemsT>;
+
   CUB_DETAIL_CONSTEXPR_ISH const ScanLookbackPolicy active_policy = policy_getter().lookback;
   CUB_DETAIL_STATIC_ISH_ASSERT(
     active_policy.threads_per_block >= 1, "Lookback scan policy must have at least 1 thread per block");
@@ -945,8 +1095,29 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
                                "The memory consistency model does not apply to texture accesses");
 
   // Number of input tiles
-  const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
-  const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+  const int tile_size  = active_policy.threads_per_block * active_policy.items_per_thread;
+  const auto max_tiles = ::cuda::ceil_div(static_cast<::cuda::std::uint64_t>(detail::num_items_upper_bound(num_items)),
+                                          static_cast<::cuda::std::uint64_t>(tile_size));
+  if constexpr (detail::is_deferred_v<NumItemsT>)
+  {
+    if (max_tiles > static_cast<::cuda::std::uint64_t>(detail::scan::tiles_per_batch))
+    {
+      return invoke_batched_lookback(
+        policy_getter,
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        scan_op,
+        init_value,
+        num_items,
+        stream,
+        dependent_launch,
+        kernel_source,
+        launcher_factory);
+    }
+  }
+  const int num_tiles = static_cast<int>(max_tiles);
 
   auto tile_state = kernel_source.TileState();
 
@@ -967,7 +1138,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   }
 
   // Return if the caller is simply requesting the size of the storage allocation, or the problem is empty
-  if (d_temp_storage == nullptr || num_items == 0)
+  if (d_temp_storage == nullptr || num_tiles == 0)
   {
     return cudaSuccess;
   }
@@ -1047,7 +1218,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
                   start_tile,
                   scan_op,
                   init_value,
-                  num_items,
+                  detail::make_num_items_kernel_arg(num_items),
                   /* num_stages, unused */ 1)))
     {
       return error;
@@ -1277,7 +1448,7 @@ template <typename PolicyGetter,
           typename OutputIteratorT,
           typename ScanOpT,
           typename InitValueT,
-          typename OffsetT,
+          typename NumItemsT,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
@@ -1288,14 +1459,30 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
   OutputIteratorT d_out,
   ScanOpT scan_op,
   InitValueT init_value,
-  OffsetT num_items,
+  NumItemsT num_items,
   cudaStream_t stream,
   ::cuda::compute_capability cc,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
   const bool dependent_launch = cc >= ::cuda::compute_capability{9, 0};
-  if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::lookahead)
+  if constexpr (detail::is_deferred_v<NumItemsT>)
+  {
+    return invoke_lookback(
+      policy_getter,
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      scan_op,
+      init_value,
+      num_items,
+      stream,
+      dependent_launch,
+      kernel_source,
+      launcher_factory);
+  }
+  else if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::lookahead)
   {
     const bool atomic_scheduling = cc == ::cuda::compute_capability{9, 0};
     return invoke_lookahead(
@@ -1338,24 +1525,31 @@ template <
   typename OutputIteratorT,
   typename ScanOpT,
   typename InitValueT,
-  typename OffsetT,
-  typename AccumT = ::cuda::std::__accumulator_t<ScanOpT,
-                                                 cub::detail::it_value_t<InputIteratorT>,
-                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                  cub::detail::it_value_t<InputIteratorT>,
-                                                                  typename InitValueT::value_type>>,
-  typename PolicySelector =
-    policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT, StableReductionOrder>,
-  typename KernelSource = DeviceScanKernelSource<
-    PolicySelector,
-    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-    ScanOpT,
-    InitValueT,
-    OffsetT,
-    AccumT,
-    EnforceInclusive,
-    StableReductionOrder>,
+  typename NumItemsT,
+  typename AccumT         = ::cuda::std::__accumulator_t<ScanOpT,
+                                                         cub::detail::it_value_t<InputIteratorT>,
+                                                         ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                          cub::detail::it_value_t<InputIteratorT>,
+                                                                          typename InitValueT::value_type>>,
+  typename OffsetT        = detail::num_items_offset_t<NumItemsT>,
+  typename PolicySelector = policy_selector_from_types<InputIteratorT,
+                                                       OutputIteratorT,
+                                                       AccumT,
+                                                       OffsetT,
+                                                       ScanOpT,
+                                                       StableReductionOrder,
+                                                       detail::is_deferred_v<NumItemsT>>,
+  typename KernelSource   = DeviceScanKernelSource<
+      deferred_policy_selector_t<PolicySelector, detail::is_deferred_v<NumItemsT>>,
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+      ScanOpT,
+      InitValueT,
+      OffsetT,
+      detail::parameter_from_host_t<OffsetT, NumItemsT>,
+      AccumT,
+      EnforceInclusive,
+      StableReductionOrder>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires scan_policy_selector<PolicySelector>
@@ -1367,7 +1561,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   OutputIteratorT d_out,
   ScanOpT scan_op,
   InitValueT init_value,
-  OffsetT num_items,
+  NumItemsT num_items,
   cudaStream_t stream,
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
@@ -1393,7 +1587,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  const auto invoke_with_policy = [&](auto policy_getter) {
     return invoke(
       policy_getter,
       d_temp_storage,
@@ -1407,30 +1601,47 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       cc,
       kernel_source,
       launcher_factory);
-  });
+  };
+
+  if constexpr (detail::is_deferred_v<NumItemsT>)
+  {
+    return dispatch_compute_cap(deferred_policy_selector<PolicySelector>{policy_selector}, cc, invoke_with_policy);
+  }
+  else
+  {
+    return dispatch_compute_cap(policy_selector, cc, invoke_with_policy);
+  }
 }
 
-template <typename AccumT,
-          ForceInclusive EnforceInclusive = ForceInclusive::No,
-          bool StableReductionOrder       = false,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename OffsetT,
-          typename PolicySelector =
-            policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT, StableReductionOrder>,
-          typename KernelSource = DeviceScanKernelSource<
-            PolicySelector,
-            THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-            THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-            ScanOpT,
-            InitValueT,
-            OffsetT,
-            AccumT,
-            EnforceInclusive,
-            StableReductionOrder>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  typename AccumT,
+  ForceInclusive EnforceInclusive = ForceInclusive::No,
+  bool StableReductionOrder       = false,
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename ScanOpT,
+  typename InitValueT,
+  typename NumItemsT,
+  typename OffsetT        = detail::num_items_offset_t<NumItemsT>,
+  typename PolicySelector = policy_selector_from_types<InputIteratorT,
+                                                       OutputIteratorT,
+                                                       AccumT,
+                                                       OffsetT,
+                                                       ScanOpT,
+                                                       StableReductionOrder,
+                                                       detail::is_deferred_v<NumItemsT>>,
+  typename KernelSource   = DeviceScanKernelSource<
+      deferred_policy_selector_t<PolicySelector, detail::is_deferred_v<NumItemsT>>,
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+      ScanOpT,
+      InitValueT,
+      OffsetT,
+      detail::parameter_from_host_t<OffsetT, NumItemsT>,
+      AccumT,
+      EnforceInclusive,
+      StableReductionOrder>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -1438,7 +1649,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   OutputIteratorT d_out,
   ScanOpT scan_op,
   InitValueT init_value,
-  OffsetT num_items,
+  NumItemsT num_items,
   cudaStream_t stream,
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
@@ -1450,8 +1661,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
                   OutputIteratorT,
                   ScanOpT,
                   InitValueT,
-                  OffsetT,
-                  AccumT>(
+                  NumItemsT,
+                  AccumT,
+                  OffsetT>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,

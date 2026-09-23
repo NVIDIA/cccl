@@ -262,7 +262,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const auto kernel_num_items = [=] {
       if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
       {
-        return detail::reduce::make_num_items_kernel_arg(num_items);
+        return detail::make_num_items_kernel_arg(num_items);
       }
       else
       {
@@ -342,7 +342,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                 DeterministicAccumT>,
               d_block_reductions,
               d_out,
-              detail::reduce::make_num_items_kernel_arg(num_items),
+              detail::make_num_items_kernel_arg(num_items),
               reduce_grid_size,
               reduction_op,
               init,

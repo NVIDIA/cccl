@@ -906,6 +906,7 @@ struct policy_selector
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
   bool require_stable_reduction_order = false;
+  bool is_deferred                    = false;
 
   _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_lookahead_policy() const -> ScanLookaheadPolicy
   {
@@ -1057,28 +1058,9 @@ struct policy_selector
 #endif
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_scan_policy(::cuda::compute_capability cc) const
+    -> ScanPolicy
   {
-    // we first try to get the valid lookahead implementation. if we can't run it, fall back to the old scan impl.
-    // For stable reduction order (fp + plus), lookahead can only be used on sm_90+, Older arches fall back to classic
-    // lookback stable reduction order implementation below.
-    if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{9, 0})
-    {
-      auto lookahead_policy_opt = get_lookahead_policy(cc);
-      if (lookahead_policy_opt && can_use_lookahead(cc, *lookahead_policy_opt))
-      {
-#if _CCCL_COMPILER(NVHPC)
-        // need to reduce the number of threads to <= 256, so each thread can use up to 255 registers. This avoids an
-        // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700 and
-        // https://github.com/NVIDIA/cccl/issues/9208. This probably degrades performance a lot. We should revert this
-        // once nvhpc can properly inline a function again.
-        lookahead_policy_opt->reduce_and_scan_warps = 2;
-#endif // _CCCL_COMPILER(NVHPC)
-
-        return {ScanAlgorithm::lookahead, ScanLookbackPolicy{}, *lookahead_policy_opt};
-      }
-    }
-
     const primitive_accum primitive_accum_t =
       accum_type != type_t::other && accum_type != type_t::int128 ? primitive_accum::yes : primitive_accum::no;
     const primitive_op primitive_op_t = operation_t != op_kind_t::other ? primitive_op::yes : primitive_op::no;
@@ -1309,6 +1291,64 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{8, 0})
     {
+      // seperate tunings for deferred lookback scan
+      if (is_deferred && benchmark_match && operation_t == op_kind_t::plus)
+      {
+        switch (accum_type)
+        {
+          case type_t::int32:
+            return ScanPolicy{
+              ScanAlgorithm::lookback,
+              ScanLookbackPolicy{
+                256,
+                22,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 268, 1180}},
+              ScanLookaheadPolicy{}};
+          case type_t::float32:
+            return ScanPolicy{
+              ScanAlgorithm::lookback,
+              ScanLookbackPolicy{
+                256,
+                20,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 724, 1050}},
+              ScanLookaheadPolicy{}};
+          case type_t::int64:
+            return ScanPolicy{
+              ScanAlgorithm::lookback,
+              ScanLookbackPolicy{
+                256,
+                16,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 716, 785}},
+              ScanLookaheadPolicy{}};
+          case type_t::float64:
+            return ScanPolicy{
+              ScanAlgorithm::lookback,
+              ScanLookbackPolicy{
+                256,
+                17,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 388, 1100}},
+              ScanLookaheadPolicy{}};
+          default:
+            break;
+        }
+      }
+
       if (primitive_op_t == primitive_op::yes)
       {
         if (primitive_accum_t == primitive_accum::yes)
@@ -1453,6 +1493,31 @@ struct policy_selector
       BLOCK_SCAN_RAKING,
       default_delay);
   }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
+  {
+    // We first try to get the valid lookahead implementation. If we can't run it, fall back to the old scan impl.
+    // For stable reduction order (fp + plus), lookahead can only be used on sm_90+. Older arches fall back to classic
+    // lookback stable reduction order implementation below.
+    if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{9, 0})
+    {
+      auto lookahead_policy_opt = get_lookahead_policy(cc);
+      if (lookahead_policy_opt && can_use_lookahead(cc, *lookahead_policy_opt))
+      {
+#if _CCCL_COMPILER(NVHPC)
+        // need to reduce the number of threads to <= 256, so each thread can use up to 255 registers. This avoids an
+        // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700 and
+        // https://github.com/NVIDIA/cccl/issues/9208. This probably degrades performance a lot. We should revert this
+        // once nvhpc can properly inline a function again.
+        lookahead_policy_opt->reduce_and_scan_warps = 2;
+#endif // _CCCL_COMPILER(NVHPC)
+
+        return {ScanAlgorithm::lookahead, get_lookback_scan_policy(cc).lookback, *lookahead_policy_opt};
+      }
+    }
+
+    return get_lookback_scan_policy(cc);
+  }
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -1484,7 +1549,8 @@ template <typename InputIteratorT,
           typename AccumT,
           typename OffsetT,
           typename ScanOpT,
-          bool StableReductionOrder = false>
+          bool StableReductionOrder = false,
+          bool IsDeferred           = false>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
@@ -1516,7 +1582,8 @@ struct policy_selector_from_types
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match,
-      StableReductionOrder};
+      StableReductionOrder,
+      IsDeferred};
     return policies(cc);
   }
 };

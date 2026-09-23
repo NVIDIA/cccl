@@ -269,6 +269,22 @@ struct AgentScan
     }
   }
 
+  template <bool Inclusive = IS_INCLUSIVE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanFirstTileWithPrefix(AccumT (&items)[ITEMS_PER_THREAD], AccumT prefix, ScanOpT scan_op, AccumT& block_aggregate)
+  {
+    BlockScanT block_scan(temp_storage.scan_storage.scan);
+    if constexpr (Inclusive)
+    {
+      block_scan.InclusiveScan(items, items, prefix, scan_op, block_aggregate);
+    }
+    else
+    {
+      block_scan.ExclusiveScan(items, items, prefix, scan_op, block_aggregate);
+    }
+    block_aggregate = scan_op(prefix, block_aggregate);
+  }
+
   template <typename PrefixCallback, bool Inclusive = IS_INCLUSIVE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScanSubsequentTile(AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op)
@@ -426,6 +442,110 @@ struct AgentScan
     {
       // Last tile
       ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state);
+    }
+  }
+
+  /**
+   * @brief Process a tile of input as part of a batch of chained scans sharing one reusable tile state
+   *
+   * Like ConsumeTile, but the look-back stays within the current batch: the batch's first tile starts from the prefix
+   * of the preceding batches instead of looking back. Each tile then reports to @p completion_op, which decides
+   * whether to retire the batch and hand the tile state to the next one. See detail::scan::batch_completion_op.
+   *
+   * @tparam IsLastTile
+   *   Whether the current tile is the last tile of the whole problem
+   *
+   * @param num_remaining
+   *   Number of global input items remaining (including this tile)
+   *
+   * @param tile_idx
+   *   Tile index within the whole problem
+   *
+   * @param batch_tile_idx
+   *   Tile index within the current batch, i.e. the index the look-back operates on
+   *
+   * @param preceding_batched_sum
+   *   Inclusive prefix of every tile preceding this batch, or nullptr for the first batch. Only read by the first
+   *   tile of a batch.
+   *
+   * @param tile_state
+   *   Tile state descriptor, indexed by @p batch_tile_idx and reused by every batch
+   *
+   * @param completion_op
+   *   Called by one thread with this tile's inclusive prefix once its look-back is done
+   */
+  template <bool IsLastTile, typename CompletionOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeBatchTile(
+    OffsetT num_remaining,
+    OffsetT tile_idx,
+    int batch_tile_idx,
+    const AccumT* preceding_batched_sum,
+    ScanTileStateT& tile_state,
+    CompletionOpT completion_op)
+  {
+    const OffsetT tile_offset = OffsetT{TILE_ITEMS} * tile_idx;
+    AccumT items[ITEMS_PER_THREAD];
+
+    if constexpr (IsLastTile)
+    {
+      BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, num_remaining, *(d_in + tile_offset));
+    }
+    else
+    {
+      BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items);
+    }
+
+    __syncthreads();
+
+    AccumT tile_inclusive;
+    if (batch_tile_idx == 0)
+    {
+      // The batch's first tile has nothing to look back at within the batch, so it scans from the preceding batches'
+      // prefix. Publishing it inclusive is what lets the rest of the batch terminate its look-back.
+      if (tile_idx == 0)
+      {
+        ScanFirstTile(items, init_value, scan_op, tile_inclusive);
+      }
+      else
+      {
+        ScanFirstTileWithPrefix(items, *preceding_batched_sum, scan_op, tile_inclusive);
+      }
+
+      if (threadIdx.x == 0)
+      {
+        tile_state.SetInclusive(0, tile_inclusive);
+      }
+    }
+    else
+    {
+      TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, scan_op, batch_tile_idx);
+      ScanSubsequentTile(items, scan_op, prefix_op);
+      if (threadIdx.x == 0)
+      {
+        tile_inclusive = prefix_op.GetInclusivePrefix();
+      }
+    }
+
+    __syncthreads();
+    // Thread 0 reports the tile once. If that retires the batch, the whole block resets the tile state.
+    const bool reset_batch = threadIdx.x == 0 ? completion_op(tile_inclusive) : false;
+    if (__syncthreads_or(reset_batch))
+    {
+      completion_op.reset_tiles_and_publish();
+    }
+
+    if constexpr (UsePDL)
+    {
+      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+    }
+
+    if constexpr (IsLastTile)
+    {
+      BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, num_remaining);
+    }
+    else
+    {
+      BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items);
     }
   }
 
