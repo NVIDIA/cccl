@@ -579,7 +579,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '26.10'
+devcontainer_version: '26.12'
 
 # Devcontainer image configuration.
 #
