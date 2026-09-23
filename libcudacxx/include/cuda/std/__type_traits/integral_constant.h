@@ -24,10 +24,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp, _Tp __v>
+template <class _Tp, _Tp _Vp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 {
-  static constexpr const _Tp value = __v;
+  static constexpr const _Tp value = _Vp;
   using value_type                 = _Tp;
   using type                       = integral_constant;
   _CCCL_API constexpr operator value_type() const noexcept

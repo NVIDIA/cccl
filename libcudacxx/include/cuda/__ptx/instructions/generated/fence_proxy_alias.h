@@ -1,7 +1,7 @@
 // This file was automatically generated. Do not edit.
 
 // clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
-// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #ifndef _CUDA_PTX_GENERATED_FENCE_PROXY_ALIAS_H_
 #define _CUDA_PTX_GENERATED_FENCE_PROXY_ALIAS_H_
@@ -42,6 +42,6 @@ _CCCL_DEVICE_API void fence_proxy_alias(::cuda::ptx::sem_t<_Sem> __sem)
 }
 #endif // __cccl_ptx_isa >= 940
 
-// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #endif // _CUDA_PTX_GENERATED_FENCE_PROXY_ALIAS_H_

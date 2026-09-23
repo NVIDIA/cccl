@@ -63,13 +63,13 @@ enum class launch_option_kind
 struct option_not_found
 {};
 
-template <__detail::launch_option_kind Kind>
+template <__detail::launch_option_kind _Kind>
 struct find_option_in_tuple_impl
 {
   template <typename _Option, typename... _Options>
   _CCCL_DEVICE_API auto& operator()(const _Option& opt, const _Options&... rest)
   {
-    if constexpr (_Option::kind == Kind)
+    if constexpr (_Option::kind == _Kind)
     {
       return opt;
     }
@@ -85,10 +85,10 @@ struct find_option_in_tuple_impl
   }
 };
 
-template <__detail::launch_option_kind Kind, typename... _Options>
+template <__detail::launch_option_kind _Kind, typename... _Options>
 _CCCL_DEVICE_API auto& find_option_in_tuple(const ::cuda::std::tuple<_Options...>& tuple)
 {
-  return ::cuda::std::apply(find_option_in_tuple_impl<Kind>(), tuple);
+  return ::cuda::std::apply(find_option_in_tuple_impl<_Kind>(), tuple);
 }
 
 template <typename _Option, typename... _OptionsList>
