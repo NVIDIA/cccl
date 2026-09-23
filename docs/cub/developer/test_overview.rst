@@ -439,13 +439,14 @@ This split maps directly onto how tests are organized:
   determinism requirements, memory resources, etc.). These files should not contain functional
   or correctness tests of the algorithm itself.
 
-Recommended minimum checklist for a new single-phase API overload's ``_env.cu`` file:
+Recommended minimum tests cases to be added for each new single-phase API overload in an ``_env.cu`` file:
 
 1. ``"<algorithm> works with default environment"`` — the algorithm is called without an
    environment argument at all, using a minimal example, and checked for a correct output.
 2. ``"<algorithm> uses environment"`` — an environment carrying only
    ``expected_allocation_size(...)`` is honored: the algorithm neither over- nor under-allocates
-   temporary storage compared to the two-phase API.
+   temporary storage compared to the two-phase API. Don't repeat this check in other test cases
+   exercising the same overload for a different checklist item.
 3. ``"<algorithm> uses custom stream"`` — passing a ``cuda::stream_ref`` (e.g. obtained from
    ``c2h::make_current_device_stream()``) as custom environment is honored: the algorithm's work
    actually runs on that stream (verified by explicitly synchronizing it, not the default
