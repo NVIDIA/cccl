@@ -82,8 +82,14 @@ public:
     {
       if (getenv("USE_CUDA_MALLOC"))
       {
-        out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
+        // Same order as the host branch: allocate first, then add the node, so a failure in
+        // either step leaves neither an orphan node in the graph nor an unreachable buffer.
         cuda_try(cudaMalloc(&result, s));
+        SCOPE(fail)
+        {
+          cuda_safe_call(cudaFree(result));
+        };
+        out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
       }
       else
       {
