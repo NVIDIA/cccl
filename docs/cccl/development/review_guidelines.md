@@ -418,3 +418,13 @@ follow-up PR):
 - `cmake/CCCLCheckCudaArchitectures.cmake` — `all-major-cccl`/`all-cccl` resolution, if the new SM
   belongs in default multi-arch builds.
 - Recommended: `ci/matrix.yaml` — new SM number added to at least one `sm:`/`codegen_target` job.
+
+## docs.link-resolves (important, diffs adding or changing hyperlinks in docs, comments, or messages)
+
+<!-- provenance:
+  #10887→#10895 bulk CUDA-guide link migration pointed memcpy_async performance guidance at the device-callable-APIs appendix instead of the async-copies page
+-->
+
+When a diff adds or changes a hyperlink, verify the URL actually resolves, including the `#fragment`:
+the anchor must exist on the target page. CI runs no link checker, so a broken or misdirected link
+ships silently. Also check that the target page covers the topic the surrounding prose promises.
