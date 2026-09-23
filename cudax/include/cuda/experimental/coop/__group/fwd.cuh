@@ -116,10 +116,16 @@ inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 
 template <class _Tp>
 inline constexpr bool __is_group_mapping_v = false;
+template <class _Fn>
+inline constexpr bool __is_group_mapping_v<binary_partition<_Fn>> = true;
 template <::cuda::std::size_t _StaticUnitCount, bool _IsAlwaysExhaustive>
 inline constexpr bool __is_group_mapping_v<group_by<_StaticUnitCount, _IsAlwaysExhaustive>> = true;
-template <class _Data, bool _IsAlwaysExhaustive>
-inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsAlwaysExhaustive>> = true;
+template <class _Tag, bool _IsAlwaysExhaustive>
+inline constexpr bool __is_group_mapping_v<group_as<_Tag, _IsAlwaysExhaustive>> = true;
+template <>
+inline constexpr bool __is_group_mapping_v<identity_mapping> = true;
+template <::cuda::std::size_t _StaticUnitCount>
+inline constexpr bool __is_group_mapping_v<take<_StaticUnitCount>> = true;
 
 // tags
 
