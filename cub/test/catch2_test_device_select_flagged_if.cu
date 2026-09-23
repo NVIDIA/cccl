@@ -16,9 +16,9 @@
 
 #include <algorithm>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/device_and_stream.h>
 
 template <typename PredOpT>
 struct predicate_op_wrapper_t
@@ -277,43 +277,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
     REQUIRE(reference == out);
   };
 
-  SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged_if(stream.get());
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged_if(stream);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_flagged_if(stream_ref);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_flagged_if(env);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_flagged_if(policy);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_flagged_if(policy);
-  }
+  test_with_custom_streams(test_flagged_if);
 }
 
 CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and environment",
@@ -383,43 +347,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
     REQUIRE(reference == in);
   };
 
-  SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged_if(stream.get());
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged_if(stream);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_flagged_if(stream_ref);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_flagged_if(env);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_flagged_if(policy);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_flagged_if(policy);
-  }
+  test_with_custom_streams(test_flagged_if);
 }
 
 template <cub::detail::LoadPrefetch Prefetch, cub::SelectImpl SelectionOpt>
