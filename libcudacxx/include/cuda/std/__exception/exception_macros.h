@@ -60,7 +60,12 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 // Expand to keywords only for host code when exceptions are enabled. nvc++ in CUDA mode traps when an exception is
 // thrown in device code.
-#if _CCCL_HAS_EXCEPTIONS() && _CCCL_HOST_COMPILATION()
+//
+// clang-tidy analyzes a .cu file in its device pass, where these macros would expand to the no-exceptions form
+// below. The exception checks (bugprone-exception-escape) then see a `noexcept` function whose `_CCCL_TRY` block
+// has vanished and report an escape that cannot happen in host code. Under clang-tidy (the runner defines
+// _CCCL_CLANG_TIDY_INVOKED) keep the keyword form in both passes; nothing is code-generated there.
+#if _CCCL_HAS_EXCEPTIONS() && (_CCCL_HOST_COMPILATION() || defined(_CCCL_CLANG_TIDY_INVOKED))
 #  define _CCCL_TRY       try
 #  define _CCCL_CATCH     catch
 #  define _CCCL_CATCH_ALL catch (...)
