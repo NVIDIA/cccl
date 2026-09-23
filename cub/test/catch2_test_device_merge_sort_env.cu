@@ -105,8 +105,8 @@ CUB_TEST_CASE("DeviceMergeSort::SortPairsCopy works with default environment", "
 {
   auto d_keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
-  auto d_keys_out   = c2h::device_vector<int>(7);
-  auto d_values_out = c2h::device_vector<int>(7);
+  auto d_keys_out   = c2h::device_vector<int>(7, thrust::no_init);
+  auto d_values_out = c2h::device_vector<int>(7, thrust::no_init);
 
   REQUIRE(
     cudaSuccess
@@ -127,7 +127,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortPairsCopy works with default environment", "
 CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy works with default environment", "[merge_sort][device]", CUB_SMALL)
 {
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out = c2h::device_vector<int>(7);
+  auto d_keys_out = c2h::device_vector<int>(7, thrust::no_init);
 
   REQUIRE(
     cudaSuccess
@@ -141,7 +141,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy works with default environment", "[
 CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy works with default environment", "[merge_sort][device]", CUB_SMALL)
 {
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out = c2h::device_vector<int>(7);
+  auto d_keys_out = c2h::device_vector<int>(7, thrust::no_init);
 
   REQUIRE(
     cudaSuccess
@@ -244,26 +244,16 @@ CUB_TEST("DeviceMergeSort::StableSortKeys uses environment", "[merge_sort][devic
   REQUIRE(d_keys == expected_keys);
 }
 
+#if TEST_LAUNCH != 1
+
 CUB_TEST_CASE("DeviceMergeSort::SortPairs uses custom stream", "[merge_sort][device]", CUB_SMALL)
 {
   auto d_keys   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_values = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
 
   const cuda::stream stream = c2h::make_current_device_stream();
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMergeSort::SortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys.data().get(),
-      d_values.data().get(),
-      static_cast<int>(d_keys.size()),
-      cuda::std::less<int>{}));
-
   const cuda::stream_ref stream_ref{stream};
-  auto env = stdexec::env{stream_ref, expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{stream_ref};
 
   device_merge_sort_pairs(
     d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
@@ -281,15 +271,8 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeys uses custom stream", "[merge_sort][devi
   auto d_keys = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
 
   const cuda::stream stream = c2h::make_current_device_stream();
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMergeSort::SortKeys(
-      nullptr, expected_bytes_allocated, d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}));
-
   const cuda::stream_ref stream_ref{stream};
-  auto env = stdexec::env{stream_ref, expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{stream_ref};
 
   device_merge_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
 
@@ -305,20 +288,8 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortPairs uses custom stream", "[merge_sor
   auto d_values = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
 
   const cuda::stream stream = c2h::make_current_device_stream();
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMergeSort::StableSortPairs(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys.data().get(),
-      d_values.data().get(),
-      static_cast<int>(d_keys.size()),
-      cuda::std::less<int>{}));
-
   const cuda::stream_ref stream_ref{stream};
-  auto env = stdexec::env{stream_ref, expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{stream_ref};
 
   device_merge_stable_sort_pairs(
     d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
@@ -336,15 +307,8 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeys uses custom stream", "[merge_sort
   auto d_keys = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
 
   const cuda::stream stream = c2h::make_current_device_stream();
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMergeSort::StableSortKeys(
-      nullptr, expected_bytes_allocated, d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}));
-
   const cuda::stream_ref stream_ref{stream};
-  auto env = stdexec::env{stream_ref, expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{stream_ref};
 
   device_merge_stable_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
 
@@ -354,12 +318,14 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeys uses custom stream", "[merge_sort
   REQUIRE(d_keys == expected_keys);
 }
 
+#endif // TEST_LAUNCH != 1
+
 CUB_TEST("DeviceMergeSort::SortPairsCopy uses environment", "[merge_sort][device]", CUB_SMALL)
 {
   auto d_keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
-  auto d_keys_out   = c2h::device_vector<int>(7);
-  auto d_values_out = c2h::device_vector<int>(7);
+  auto d_keys_out   = c2h::device_vector<int>(7, thrust::no_init);
+  auto d_values_out = c2h::device_vector<int>(7, thrust::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -394,7 +360,7 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy uses environment", "[merge_sort][device
 CUB_TEST("DeviceMergeSort::SortKeysCopy uses environment", "[merge_sort][device]", CUB_SMALL)
 {
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out = c2h::device_vector<int>(7);
+  auto d_keys_out = c2h::device_vector<int>(7, thrust::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -419,7 +385,7 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy uses environment", "[merge_sort][device]
 CUB_TEST("DeviceMergeSort::StableSortKeysCopy uses environment", "[merge_sort][device]", CUB_SMALL)
 {
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out = c2h::device_vector<int>(7);
+  auto d_keys_out = c2h::device_vector<int>(7, thrust::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -441,30 +407,18 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy uses environment", "[merge_sort][d
   REQUIRE(d_keys_out == expected_keys);
 }
 
+#if TEST_LAUNCH != 1
+
 CUB_TEST_CASE("DeviceMergeSort::SortPairsCopy uses custom stream", "[merge_sort][device]", CUB_SMALL)
 {
   auto d_keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
-  auto d_keys_out   = c2h::device_vector<int>(7);
-  auto d_values_out = c2h::device_vector<int>(7);
+  auto d_keys_out   = c2h::device_vector<int>(7, thrust::no_init);
+  auto d_values_out = c2h::device_vector<int>(7, thrust::no_init);
 
   const cuda::stream stream = c2h::make_current_device_stream();
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMergeSort::SortPairsCopy(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys_in.data().get(),
-      d_values_in.data().get(),
-      d_keys_out.data().get(),
-      d_values_out.data().get(),
-      static_cast<int>(d_keys_in.size()),
-      cuda::std::less<int>{}));
-
   const cuda::stream_ref stream_ref{stream};
-  auto env = stdexec::env{stream_ref, expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{stream_ref};
 
   device_merge_sort_pairs_copy(
     d_keys_in.data().get(),
@@ -486,23 +440,11 @@ CUB_TEST_CASE("DeviceMergeSort::SortPairsCopy uses custom stream", "[merge_sort]
 CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy uses custom stream", "[merge_sort][device]", CUB_SMALL)
 {
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out = c2h::device_vector<int>(7);
+  auto d_keys_out = c2h::device_vector<int>(7, thrust::no_init);
 
   const cuda::stream stream = c2h::make_current_device_stream();
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMergeSort::SortKeysCopy(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys_in.data().get(),
-      d_keys_out.data().get(),
-      static_cast<int>(d_keys_in.size()),
-      cuda::std::less<int>{}));
-
   const cuda::stream_ref stream_ref{stream};
-  auto env = stdexec::env{stream_ref, expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{stream_ref};
 
   device_merge_sort_keys_copy(
     d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), cuda::std::less<int>{}, env);
@@ -516,23 +458,11 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy uses custom stream", "[merge_sort][
 CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_sort][device]", CUB_SMALL)
 {
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out = c2h::device_vector<int>(7);
+  auto d_keys_out = c2h::device_vector<int>(7, thrust::no_init);
 
   const cuda::stream stream = c2h::make_current_device_stream();
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMergeSort::StableSortKeysCopy(
-      nullptr,
-      expected_bytes_allocated,
-      d_keys_in.data().get(),
-      d_keys_out.data().get(),
-      static_cast<int>(d_keys_in.size()),
-      cuda::std::less<int>{}));
-
   const cuda::stream_ref stream_ref{stream};
-  auto env = stdexec::env{stream_ref, expected_allocation_size(expected_bytes_allocated)};
+  auto env = stdexec::env{stream_ref};
 
   device_merge_stable_sort_keys_copy(
     d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), cuda::std::less<int>{}, env);
@@ -542,6 +472,8 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_
   const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys_out == expected_keys);
 }
+
+#endif // TEST_LAUNCH != 1
 
 using block_size_compare_t = block_size_extracting_op<cuda::std::less<>>;
 
@@ -568,8 +500,8 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy can be tuned", "[merge_sort][device]", 
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_keys_in{4, 1, 3, 2};
   c2h::device_vector<int> d_values_in{0, 1, 2, 3};
-  c2h::device_vector<int> d_keys_out(4);
-  c2h::device_vector<int> d_values_out(4);
+  c2h::device_vector<int> d_keys_out(4, thrust::no_init);
+  c2h::device_vector<int> d_values_out(4, thrust::no_init);
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
@@ -601,7 +533,7 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy can be tuned", "[merge_sort][device]", C
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_keys_in{4, 1, 3, 2};
-  c2h::device_vector<int> d_keys_out(4);
+  c2h::device_vector<int> d_keys_out(4, thrust::no_init);
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
@@ -641,7 +573,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned", "[merge_sort][devic
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_keys_in{4, 1, 3, 2};
-  c2h::device_vector<int> d_keys_out(4);
+  c2h::device_vector<int> d_keys_out(4, thrust::no_init);
   c2h::device_vector<unsigned int> d_block_size(1);
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env        = cuda::execution::tune(merge_sort_tuning<target_block_size>{});
@@ -842,8 +774,8 @@ CUB_TEST_CASE("DeviceMergeSort::SortPairsCopy works with user provided memory an
 {
   auto d_keys_in       = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_values_in     = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
-  auto d_keys_out      = c2h::device_vector<int>(7);
-  auto d_values_out    = c2h::device_vector<int>(7);
+  auto d_keys_out      = c2h::device_vector<int>(7, thrust::no_init);
+  auto d_values_out    = c2h::device_vector<int>(7, thrust::no_init);
   const auto num_items = static_cast<int>(d_keys_in.size());
 
   size_t expected_bytes{};
@@ -883,7 +815,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy works with user provided memory and
               CUB_SMALL)
 {
   auto d_keys_in       = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out      = c2h::device_vector<int>(7);
+  auto d_keys_out      = c2h::device_vector<int>(7, thrust::no_init);
   const auto num_items = static_cast<int>(d_keys_in.size());
 
   size_t expected_bytes{};
@@ -912,7 +844,7 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy works with user provided memo
               CUB_SMALL)
 {
   auto d_keys_in       = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto d_keys_out      = c2h::device_vector<int>(7);
+  auto d_keys_out      = c2h::device_vector<int>(7, thrust::no_init);
   const auto num_items = static_cast<int>(d_keys_in.size());
 
   size_t expected_bytes{};
@@ -1103,8 +1035,8 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy can be tuned with user provided memory"
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_keys_in{4, 1, 3, 2};
   c2h::device_vector<int> d_values_in{0, 1, 2, 3};
-  c2h::device_vector<int> d_keys_out(4);
-  c2h::device_vector<int> d_values_out(4);
+  c2h::device_vector<int> d_keys_out(4, thrust::no_init);
+  c2h::device_vector<int> d_values_out(4, thrust::no_init);
   c2h::device_vector<unsigned int> d_block_size(1);
   const auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
 
@@ -1137,7 +1069,7 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy can be tuned with user provided memory",
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_keys_in{4, 1, 3, 2};
-  c2h::device_vector<int> d_keys_out(4);
+  c2h::device_vector<int> d_keys_out(4, thrust::no_init);
   c2h::device_vector<unsigned int> d_block_size(1);
   const auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
 
@@ -1166,7 +1098,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned with user provided me
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_keys_in{4, 1, 3, 2};
-  c2h::device_vector<int> d_keys_out(4);
+  c2h::device_vector<int> d_keys_out(4, thrust::no_init);
   c2h::device_vector<unsigned int> d_block_size(1);
   const auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
 
