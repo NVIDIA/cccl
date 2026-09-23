@@ -427,9 +427,9 @@ parameter (e.g. `Env env`), consider all possible call-site conventions the old 
 arguments could have been only implicitly convertible to the old type (e.g., a user stream wrapper
 with `operator cudaStream_t()`), or non-copyable. A by-value template parameter binds to the
 argument's own deduced type, not a potentially converted type from the old argument, so a non-copyable
-stream-like type that used to convert-then-copy now fails to compile. Either require an explicit
-non-template overload taking the old type, or turn the template parameter into a const reference
-(e.g. `const Env& env`).
+stream-like lvalue that used to convert-then-copy now fails to compile. Either require an explicit
+non-template overload taking the old type and constraining the generic overload, or turn the template
+parameter into a const reference (e.g. `const Env& env`).
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
