@@ -35,13 +35,27 @@ def matrix() -> dict:
 def test_a_ctk_alias_resolves_to_a_real_version(matrix) -> None:
     """`13.X` follows the newest CTK, so it must not resolve to itself."""
     resolved = resolve_ctk(matrix, "13.X")
-    # YAML reads the version keys as numbers, so compare as strings.
-    assert resolved in {str(key) for key in matrix["ctk_versions"]}
+    assert resolved in matrix["ctk_versions"]
     assert resolved != "13.X"
 
 
 def test_an_explicit_ctk_version_is_kept(matrix) -> None:
     assert resolve_ctk(matrix, "12.0") == "12.0"
+
+
+def test_ctk_version_keys_are_strings(matrix) -> None:
+    assert all(isinstance(version, str) for version in matrix["ctk_versions"])
+
+
+def test_a_numeric_ctk_version_key_is_rejected() -> None:
+    matrix = yaml.safe_load("ctk_versions:\n  14.12: {alias: ['14.X']}\n")
+    with pytest.raises(ValueError, match="must be quoted strings"):
+        resolve_ctk(matrix, "14.X")
+
+
+def test_a_multi_digit_ctk_minor_resolves() -> None:
+    matrix = yaml.safe_load("ctk_versions:\n  '14.12': {alias: ['14.X']}\n")
+    assert resolve_ctk(matrix, "14.X") == "14.12"
 
 
 def test_an_unknown_ctk_is_rejected(matrix) -> None:
