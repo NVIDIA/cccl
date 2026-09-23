@@ -27,36 +27,27 @@ namespace
 template <cuda::std::size_t N, class Config>
 __device__ void test_take(Config config)
 {
-  constexpr auto n = static_cast<unsigned>(N);
+  constexpr auto n = static_cast<cuda::std::uint32_t>(N);
 
   // Test static N.
   {
     using Mapping = cudax::coop::take<N>;
 
-    // Test default constructor.
+    // Test that the mapping is empty.
+    static_assert(cuda::std::is_empty_v<Mapping>);
+
+    // Test default constructor is deleted.
+    static_assert(!cuda::std::is_default_constructible_v<Mapping>);
+
+    // Test the mapping is constructible from uint32_t.
+    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+
+    // Test the mapping is constructible and deducible from integral_constant<size_t, N>.
     {
-      static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
-      static_assert(cuda::std::is_empty_v<Mapping>);
+      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::integral_constant<cuda::std::size_t, N>>);
 
-      const Mapping mapping;
-      CHECK(mapping.unit_count() == n);
-    }
-
-    // Test static_unit_count().
-    {
-      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count())>);
-      static_assert(noexcept(Mapping::static_unit_count()));
-
-      static_assert(Mapping::static_unit_count() == N);
-    }
-
-    // Test unit_count().
-    {
-      static_assert(cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count())>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count()));
-
-      const Mapping mapping;
-      CHECK(mapping.unit_count() == n);
+      cudax::coop::take mapping{cuda::std::integral_constant<cuda::std::size_t, N>{}};
+      static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     }
 
     // Test map(...).
@@ -69,7 +60,7 @@ __device__ void test_take(Config config)
       static_assert(
         noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const Mapping mapping;
+      const cudax::coop::take mapping{cuda::std::integral_constant<cuda::std::size_t, N>{}};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
@@ -102,40 +93,19 @@ __device__ void test_take(Config config)
   {
     using Mapping = cudax::coop::take<cuda::std::dynamic_extent>;
 
-    // Test default constructor.
+    // Test default constructor is deleted.
+    static_assert(!cuda::std::is_default_constructible_v<Mapping>);
+
+    // Test the mapping is constructible and deducible from uint32_t.
     {
-      static_assert(cuda::std::is_nothrow_default_constructible_v<Mapping>);
+      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
 
-      const Mapping mapping;
-      CHECK(mapping.unit_count() == 0);
-    }
-
-    // Test the mapping is constructible from n.
-    {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, unsigned>);
-
-      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::coop::take mapping{n};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
-      CHECK(mapping.unit_count() == n);
     }
 
-    // Test static_unit_count().
-    {
-      static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(Mapping::static_unit_count())>);
-      static_assert(noexcept(Mapping::static_unit_count()));
-
-      static_assert(Mapping::static_unit_count() == cuda::std::dynamic_extent);
-    }
-
-    // Test unit_count().
-    {
-      static_assert(cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const Mapping>().unit_count())>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().unit_count()));
-
-      const Mapping mapping{n};
-      CHECK(mapping.unit_count() == n);
-    }
+    // Test the mapping is constructible from integral_constant<size_t, N>.
+    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::integral_constant<cuda::std::size_t, N>>);
 
     // Test map(...).
     {
