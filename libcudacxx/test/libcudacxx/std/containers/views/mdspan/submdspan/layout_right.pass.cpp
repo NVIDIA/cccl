@@ -289,14 +289,14 @@ TEST_FUNC constexpr bool test()
       static_assert(sub.rank_dynamic() == 2);
 
       using submdspan_t = decltype(sub);
-      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_right>);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_stride>);
 
-      assert(sub.stride(0) == 1);
+      assert(sub.stride(0) == 3);
       assert(sub.stride(1) == md.stride(1));
       assert(sub.extent(0) == md.extent(0));
       assert(sub.extent(1) == 1);
       assert(sub.size() == 2);
-      assert(equal_to(sub, {"H", "O"}));
+      assert(equal_to(sub, {"H", "P"}));
     }
 
     { // Slice of elements from start 1:2, then full extent
@@ -309,7 +309,7 @@ TEST_FUNC constexpr bool test()
       static_assert(sub.rank_dynamic() == 2);
 
       using submdspan_t = decltype(sub);
-      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_stride>);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_right>);
 
       assert(sub.stride(0) == md.stride(0));
       assert(sub.stride(1) == md.stride(1));
@@ -399,6 +399,125 @@ TEST_FUNC constexpr bool test()
       assert(sub.size() == 1);
       assert(equal_to(sub, "R"));
     }
+
+    { // Index, then full extent
+      // ['H', 'O', 'P'] [   ] [             ]
+      // ['P', 'E', 'R'] [ x ] [ x    x    x ]
+      cuda::std::mdspan sub = cuda::std::submdspan(md, 1, cuda::std::full_extent);
+
+      static_assert(sub.rank() == 1);
+      static_assert(sub.rank_dynamic() == 1);
+
+      using submdspan_t = decltype(sub);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_right>);
+
+      assert(sub.stride(0) == md.stride(1));
+      assert(sub.extent(0) == md.extent(1));
+      assert(sub.size() == 3);
+      assert(equal_to(sub, "PER"));
+    }
+
+    { // Index, then slice of elements from start 0:2
+      // ['H', 'O', 'P'] [   ] [             ]
+      // ['P', 'E', 'R'] [ x ] [ x    x      ]
+      const auto slice2     = cuda::std::pair{0, 2};
+      cuda::std::mdspan sub = cuda::std::submdspan(md, 1, slice2);
+
+      static_assert(sub.rank() == 1);
+      static_assert(sub.rank_dynamic() == 1);
+
+      using submdspan_t = decltype(sub);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_right>);
+
+      assert(sub.stride(0) == md.stride(1));
+      assert(sub.extent(0) == 2);
+      assert(sub.size() == 2);
+      assert(equal_to(sub, "PE"));
+    }
+
+    { // Index, then strided_slice without offset, full size and stride 1
+      // ['H', 'O', 'P'] [   ] [             ]
+      // ['P', 'E', 'R'] [ x ] [ x    x    x ]
+      const cuda::std::strided_slice slice2{0, md.extent(1), 1};
+      cuda::std::mdspan sub = cuda::std::submdspan(md, 1, slice2);
+
+      static_assert(sub.rank() == 1);
+      static_assert(sub.rank_dynamic() == 1);
+
+      using submdspan_t = decltype(sub);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_stride>);
+
+      assert(sub.stride(0) == md.stride(1));
+      assert(sub.extent(0) == md.extent(1));
+      assert(sub.size() == 3);
+      assert(equal_to(sub, "PER"));
+    }
+  }
+
+  { // 3d mdspan
+    // ['H', 'O', 'P']
+    // ['P', 'E', 'R']
+    cuda::std::mdspan md{data, cuda::std::layout_right::mapping{cuda::std::dims<3>{1, 2, 3}}};
+    static_assert(md.rank() == 3);
+    static_assert(md.rank_dynamic() == 3);
+
+    assert(md.stride(0) == 6);
+    assert(md.stride(1) == 3);
+    assert(md.stride(2) == 1);
+    assert(md.size() == 6);
+
+    { // Index, then full extent, then full extent
+      cuda::std::mdspan sub = cuda::std::submdspan(md, 0, cuda::std::full_extent, cuda::std::full_extent);
+
+      static_assert(sub.rank() == 2);
+      static_assert(sub.rank_dynamic() == 2);
+
+      using submdspan_t = decltype(sub);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_right>);
+
+      assert(sub.stride(0) == md.stride(1));
+      assert(sub.stride(1) == md.stride(2));
+      assert(sub.extent(0) == md.extent(1));
+      assert(sub.extent(1) == md.extent(2));
+      assert(sub.size() == 6);
+      assert(equal_to(sub, {"HOP", "PER"}));
+    }
+
+    { // Index, then slice of elements from start 0:1, then full extent
+      const auto slice1     = cuda::std::pair{0, 1};
+      cuda::std::mdspan sub = cuda::std::submdspan(md, 0, slice1, cuda::std::full_extent);
+
+      static_assert(sub.rank() == 2);
+      static_assert(sub.rank_dynamic() == 2);
+
+      using submdspan_t = decltype(sub);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_right>);
+
+      assert(sub.stride(0) == md.stride(1));
+      assert(sub.stride(1) == md.stride(2));
+      assert(sub.extent(0) == 1);
+      assert(sub.extent(1) == md.extent(2));
+      assert(sub.size() == 3);
+      assert(equal_to(sub, {"HOP", ""}));
+    }
+
+    { // Index, then full extent, then slice of elements from start 0:2
+      const auto slice2     = cuda::std::pair{0, 2};
+      cuda::std::mdspan sub = cuda::std::submdspan(md, 0, cuda::std::full_extent, slice2);
+
+      static_assert(sub.rank() == 2);
+      static_assert(sub.rank_dynamic() == 2);
+
+      using submdspan_t = decltype(sub);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_stride>);
+
+      assert(sub.stride(0) == md.stride(1));
+      assert(sub.stride(1) == md.stride(2));
+      assert(sub.extent(0) == md.extent(1));
+      assert(sub.extent(1) == 2);
+      assert(sub.size() == 4);
+      assert(equal_to(sub, {"HO", "PE"}));
+    }
   }
 
   return true;
@@ -407,6 +526,6 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
-  // static_assert(test());
+  static_assert(test());
   return 0;
 }

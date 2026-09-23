@@ -12,11 +12,10 @@ void verify_stream()
   REQUIRE(stream == cudaStreamLegacy);
 }
 
-void TestLegacyDefaultStream()
+TEST_CASE("TestLegacyDefaultStream", "[stream_legacy]")
 {
   verify_stream();
 
   std::thread t(verify_stream);
   t.join();
 }
-DECLARE_UNITTEST(TestLegacyDefaultStream);

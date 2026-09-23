@@ -57,15 +57,13 @@ void TestPairStableSortByKeyDevice(ExecutionPolicy exec)
   REQUIRE(h_values == d_values);
 };
 
-void TestPairStableSortByKeyDeviceSeq()
+TEST_CASE("TestPairStableSortByKeyDeviceSeq", "[pair_sort_by_key]")
 {
   TestPairStableSortByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPairStableSortByKeyDeviceSeq);
 
-void TestPairStableSortByKeyDeviceDevice()
+TEST_CASE("TestPairStableSortByKeyDeviceDevice", "[pair_sort_by_key]")
 {
   TestPairStableSortByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPairStableSortByKeyDeviceDevice);
 #endif

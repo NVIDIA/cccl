@@ -211,7 +211,7 @@ using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 9, 7, 1>;
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // numeric(33): C: '=': conversion from 'int' to '_Ty', possible loss of data
 
-template <typename predefined_op, typename T>
+template <typename PredefinedOp, typename T>
 void compute_host_reference(
   const c2h::host_vector<T>& h_in,
   c2h::host_vector<T>& h_out,
@@ -220,7 +220,7 @@ void compute_host_reference(
   int items_per_logical_warp = 0,
   int items_per_thread       = 1)
 {
-  const auto identity    = identity_v<predefined_op, T>;
+  const auto identity    = identity_v<PredefinedOp, T>;
   items_per_logical_warp = items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp;
   for (unsigned i = 0; i < total_warps; ++i)
   {
@@ -231,7 +231,7 @@ void compute_host_reference(
         + (i * warp_size + j * logical_warp_threads) * items_per_thread; // NOLINT(bugprone-misplaced-widening-cast)
       auto end = start + static_cast<long>(items_per_logical_warp) * items_per_thread;
       // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-      h_out[i * logical_warps + j] = static_cast<T>(std::accumulate(start, end, identity, predefined_op{}));
+      h_out[i * logical_warps + j] = static_cast<T>(std::accumulate(start, end, identity, PredefinedOp{}));
     }
   }
 }

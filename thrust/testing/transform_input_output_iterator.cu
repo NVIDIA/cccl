@@ -8,7 +8,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::transform_input_output_iterator from cuda::std
-void TestTransformInputOutputIteratorTraits()
+TEST_CASE("TestTransformInputOutputIteratorTraits", "[transform_input_output_iterator]")
 {
   using input_func  = ::cuda::std::negate<int>;
   using output_func = thrust::square<int>;
@@ -35,7 +35,6 @@ void TestTransformInputOutputIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTransformInputOutputIteratorTraits);
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()

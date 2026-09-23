@@ -11,7 +11,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::constant_iterator from cuda::std
-void TestConstantIteratorTraits()
+TEST_CASE("TestConstantIteratorTraits", "[constant_iterator]")
 {
   using it       = thrust::constant_iterator<int>;
   using traits   = cuda::std::iterator_traits<it>;
@@ -36,9 +36,8 @@ void TestConstantIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestConstantIteratorTraits);
 
-void TestConstantIteratorConstructFromConvertibleSystem()
+TEST_CASE("TestConstantIteratorConstructFromConvertibleSystem", "[constant_iterator]")
 {
   const thrust::constant_iterator<int> default_system(13);
 
@@ -48,9 +47,8 @@ void TestConstantIteratorConstructFromConvertibleSystem()
   const thrust::constant_iterator<int, thrust::use_default, thrust::device_system_tag> device_system = default_system;
   REQUIRE(*default_system == *device_system);
 }
-DECLARE_UNITTEST(TestConstantIteratorConstructFromConvertibleSystem);
 
-void TestConstantIteratorIncrement()
+TEST_CASE("TestConstantIteratorIncrement", "[constant_iterator]")
 {
   thrust::constant_iterator<int> lhs(0, 0);
   const thrust::constant_iterator<int> rhs(0, 0);
@@ -74,11 +72,10 @@ void TestConstantIteratorIncrement()
 
   REQUIRE(-2 == lhs - rhs);
 }
-DECLARE_UNITTEST(TestConstantIteratorIncrement);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::constant_iterator<int>>::value);
 static_assert(cuda::std::is_trivially_copyable<thrust::constant_iterator<int>>::value);
 
-void TestConstantIteratorIncrementBig()
+TEST_CASE("TestConstantIteratorIncrementBig", "[constant_iterator]")
 {
   const long long int n = 10000000000ULL;
 
@@ -87,9 +84,8 @@ void TestConstantIteratorIncrementBig()
 
   REQUIRE(cuda::std::distance(begin, end) == n);
 }
-DECLARE_UNITTEST(TestConstantIteratorIncrementBig);
 
-void TestConstantIteratorComparison()
+TEST_CASE("TestConstantIteratorComparison", "[constant_iterator]")
 {
   thrust::constant_iterator<int> iter1(0);
   thrust::constant_iterator<int> iter2(0);
@@ -113,9 +109,8 @@ void TestConstantIteratorComparison()
   REQUIRE(0 == iter1 - iter2);
   REQUIRE(iter1 == iter2);
 }
-DECLARE_UNITTEST(TestConstantIteratorComparison);
 
-void TestMakeConstantIterator()
+TEST_CASE("TestMakeConstantIterator", "[constant_iterator]")
 {
   // test one argument version
   const thrust::constant_iterator<int> iter0 = thrust::make_constant_iterator<int>(13);
@@ -135,7 +130,6 @@ void TestMakeConstantIterator()
   static_assert(cuda::std::is_same_v<decltype(deduced_iter), thrust::constant_iterator<int>>);
   REQUIRE(42 == *deduced_iter);
 }
-DECLARE_UNITTEST(TestMakeConstantIterator);
 
 template <typename Vector>
 void TestConstantIteratorCopy()
@@ -178,7 +172,7 @@ void TestConstantIteratorTransform()
 };
 DECLARE_VECTOR_UNITTEST(TestConstantIteratorTransform);
 
-void TestConstantIteratorReduce()
+TEST_CASE("TestConstantIteratorReduce", "[constant_iterator]")
 {
   using T         = int;
   using ConstIter = thrust::constant_iterator<T>;
@@ -189,5 +183,4 @@ void TestConstantIteratorReduce()
   const T sum = thrust::reduce(first, last);
 
   REQUIRE(sum == 4 * 7);
-};
-DECLARE_UNITTEST(TestConstantIteratorReduce);
+}

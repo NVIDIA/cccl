@@ -12,7 +12,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::transform_iterator from cuda::std
-void TestTransformIteratorTraits()
+TEST_CASE("TestTransformIteratorTraits", "[transform_iterator]")
 {
   using func    = ::cuda::std::negate<int>;
   using base_it = thrust::host_vector<int>::iterator;
@@ -37,7 +37,6 @@ void TestTransformIteratorTraits()
   static_assert(cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTransformIteratorTraits);
 
 template <class Vector>
 void TestTransformIterator()
@@ -118,7 +117,7 @@ struct ExtractValue
   }
 };
 
-void TestTransformIteratorNonCopyable()
+TEST_CASE("TestTransformIteratorNonCopyable", "[transform_iterator]")
 {
   thrust::host_vector<std::unique_ptr<int>> hv(4);
   hv[0] = std::make_unique<int>(1);
@@ -132,8 +131,6 @@ void TestTransformIteratorNonCopyable()
   REQUIRE(transformed[2] == 3);
   REQUIRE(transformed[3] == 4);
 }
-
-DECLARE_UNITTEST(TestTransformIteratorNonCopyable);
 
 struct flip_value
 {
@@ -154,14 +151,14 @@ struct pass_ref
 // a user provided functor that forwards its argument
 struct forward
 {
-  template <class _Tp>
-  constexpr _Tp&& operator()(_Tp&& __t) const noexcept
+  template <class Tp>
+  constexpr Tp&& operator()(Tp&& t) const noexcept
   {
-    return ::cuda::std::forward<_Tp>(__t);
+    return ::cuda::std::forward<Tp>(t);
   }
 };
 
-void TestTransformIteratorReferenceAndValueType()
+TEST_CASE("TestTransformIteratorReferenceAndValueType", "[transform_iterator]")
 {
   using ::cuda::std::is_same;
   using ::cuda::std::negate;
@@ -240,9 +237,8 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value);
   }
 }
-DECLARE_UNITTEST(TestTransformIteratorReferenceAndValueType);
 
-void TestTransformIteratorIdentity()
+TEST_CASE("TestTransformIteratorIdentity", "[transform_iterator]")
 {
   thrust::device_vector<int> v(3, 42);
 
@@ -250,5 +246,3 @@ void TestTransformIteratorIdentity()
   using namespace thrust::placeholders;
   REQUIRE(*thrust::make_transform_iterator(v.begin(), _1) == 42);
 }
-
-DECLARE_UNITTEST(TestTransformIteratorIdentity);
