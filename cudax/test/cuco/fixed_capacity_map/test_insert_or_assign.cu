@@ -113,7 +113,7 @@ C2H_TEST(
                cudax::cuco::empty_value{mapped_type{-1}}};
   auto results     = ::cuda::make_buffer<mapped_type>(stream, mr, num_keys, mapped_type{-1});
   const auto keys  = ::cuda::counting_iterator<key_type>{0};
-  const auto pairs = [](int offset, int modulus = 400) {
+  const auto pairs = [=](int offset, int modulus = 400) {
     return ::cuda::transform_iterator{::cuda::counting_iterator<int>{0}, make_pair<value_type>{offset, modulus}};
   };
   const auto verify = [&](int count, int offset, bool duplicates = false) {
