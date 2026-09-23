@@ -22,15 +22,17 @@ def is_device_array(obj: object) -> bool:
     return hasattr(obj, "__cuda_array_interface__")
 
 
-# Perf: this cache is used in get_data_pointer() to avoid repeated
-# lookups of the data pointer accessor for known types
-_DATA_POINTER_ACCESSOR_CACHE: dict[type, Callable] = {}
+# Perf: This cache holds the pointer accessor functions for all types we have seen.
+# This avoids try..except chains or repeated attribute lookups for the same type.
+_DATA_POINTER_ACCESSOR_CACHE: dict[type, Callable[[DeviceArrayLike], int]] = {}
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
-
-    accessor = _DATA_POINTER_ACCESSOR_CACHE.get(type(arr))
-    if accessor is not None:
+    try:
+        accessor = _DATA_POINTER_ACCESSOR_CACHE[type(arr)]
+    except KeyError:
+        pass
+    else:
         try:
             return accessor(arr)
         except AttributeError:
