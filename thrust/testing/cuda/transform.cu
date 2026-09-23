@@ -442,11 +442,13 @@ public:
 
   // NOTE: this must be named __fun() to match the real cuda::zip_function API, which
   // cub::device_transform.cuh calls directly (without any existence check) when unwrapping.
+  // NOLINTNEXTLINE(readability-identifier-naming)
   _CCCL_HOST_DEVICE sum_five& __fun() noexcept
   {
     return __fun_;
   }
 
+  // NOLINTNEXTLINE(readability-identifier-naming)
   _CCCL_HOST_DEVICE const sum_five& __fun() const noexcept
   {
     return __fun_;
