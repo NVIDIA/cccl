@@ -123,7 +123,7 @@ struct Transforms
     // bool, 8-bit, 16-bit, 32-bit integers -> uint32_t
     // 64-bit integers                      -> uint64_t
     // Other types                          -> IntArithmeticT
-    [[nodiscard]] static constexpr auto FractionStorageType()
+    [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto FractionStorageType()
     {
       if constexpr (is_integral_excl_int128<CommonT>::value)
       {
