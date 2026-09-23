@@ -129,14 +129,18 @@ environment selects the contract):
   (``reserved::mgmn_engine``, ``__sharded/reference/mgmn_transform.cuh``, not part of
   the API) as the comparison point for the interfacing cost of those
   engines;
-- ``reduce`` / ``sum`` / ``min`` / ``max``, ``reduce_into``,
+- ``transform_reduce`` / ``reduce`` / ``sum`` / ``min`` / ``max``,
+  ``transform_reduce_into`` / ``reduce_into``,
   ``reduce_into_lanes``: the MGMN reduce (``cuda::experimental::mgmn::reduce``:
   per-shard CUB ``DeviceReduce``, then an all-reduce of the P partials
   folded in shard order) over the same in-process communicator — the
   synchronous forms return the value; ``reduce_into`` is the asynchronous
   form, writing the aggregate through a device-writable output iterator on
   the call environment's stream; ``reduce_into_lanes`` delivers it once per
-  lane on the lane's own stream (both capture-legal). Operators without a
+  lane on the lane's own stream (both capture-legal). ``transform_reduce``
+  / ``transform_reduce_into`` apply a unary transform to every element
+  inside the per-shard reduce (one iterator layer, no extra kernel or
+  intermediate); ``reduce`` is the no-transform case. Operators without a
   known ``cuda::identity_element`` run the engine over a lifted
   ``{value, present}`` pair, so no identity is required of the caller;
 - ``inclusive_scan`` / ``exclusive_scan`` / ``inclusive_sum`` /
@@ -166,7 +170,11 @@ environment selects the contract):
   one row-offsets buffer per shard). A member of the map family despite the
   name: segments are shard-local, there is no cross-shard combine, and the
   stream-bearing call form records under graph capture;
-- ``count`` / ``count_if``: per-shard CUB transform-reduce plus a host sum;
+- ``count_if`` / ``count_if_into``, ``count`` / ``count_into``:
+  ``transform_reduce`` with a 0/1 transform (the data is read once, inside
+  the per-shard reduce; no intermediate is materialized) — same engine,
+  same forms and contract as ``reduce`` / ``reduce_into``; ``count`` is
+  ``count_if`` with an equality predicate;
 - ``histogram_even``: per-shard CUB ``DeviceHistogram`` plus a per-bin sum;
 - ``select_if`` / ``remove_if`` / ``unique``: in-place per-shard
   ``DeviceSelect`` over any ``owning_sharded`` structure (``select_if``
@@ -419,7 +427,7 @@ work. The refusing set:
 - synchronization: ``sharded_array::sync`` and ``place_group::sync``;
 - the synchronous forms, which synchronize with the host and refuse at
   ENTRY, before any work is enqueued: ``reduce`` / ``sum`` / ``min`` /
-  ``max``, the no-stream form of the scans, ``count`` / ``count_if``,
+  ``max`` / ``transform_reduce`` / ``count`` / ``count_if``, the no-stream form of the scans,
   ``histogram_even``, the no-stream form of ``adjacent_difference``,
   ``select_if`` / ``remove_if`` / ``copy_if``, ``unique``.
 

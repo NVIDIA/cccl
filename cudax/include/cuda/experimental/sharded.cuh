@@ -37,7 +37,6 @@
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__sharded/algorithm/adjacent_difference/adjacent_difference.cuh>
 #include <cuda/experimental/__sharded/algorithm/copy_if/copy_if.cuh>
-#include <cuda/experimental/__sharded/algorithm/count/count.cuh>
 #include <cuda/experimental/__sharded/algorithm/fill/fill.cuh>
 #include <cuda/experimental/__sharded/algorithm/for_each_shard/for_each_shard.cuh>
 #include <cuda/experimental/__sharded/algorithm/histogram/histogram.cuh>

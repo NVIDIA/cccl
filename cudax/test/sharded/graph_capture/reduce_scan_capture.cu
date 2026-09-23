@@ -40,6 +40,14 @@ struct plus_one_op
   }
 };
 
+struct is_even
+{
+  __host__ __device__ bool operator()(long long x) const
+  {
+    return x % 2 == 0;
+  }
+};
+
 constexpr long long exclusive_init = 5;
 constexpr long long lanes_init     = 100;
 
@@ -123,7 +131,9 @@ void test_reduce_scan_capture(place_group& group)
 
   long long* d_total = nullptr;
   long long* d_lanes = nullptr;
+  size_t* d_count    = nullptr;
   cuda_safe_call(cudaMalloc(&d_total, sizeof(long long)));
+  cuda_safe_call(cudaMalloc(&d_count, sizeof(size_t)));
   cuda_safe_call(cudaMalloc(&d_lanes, P * sizeof(long long)));
 
   cudaStream_t origin;
@@ -195,6 +205,8 @@ void test_reduce_scan_capture(place_group& group)
   // boundary (direct read of the predecessor's last element): pure stream
   // work, so it captures too. Reads `data` after the transform above.
   adjacent_difference(data, envs, diff, ::cuda::std::minus<long long>{}, ce);
+  // count_if_into is transform_reduce_into with a 0/1 transform: captures too
+  count_if_into(data, envs, d_count, is_even{}, ce);
   data.join_into(origin);
   diff.join_into(origin);
 
@@ -220,6 +232,14 @@ void test_reduce_scan_capture(place_group& group)
     check(data, d_total, d_lanes, expected, total);
     // diff[0] = expected[0]; diff[i] = expected[i] - expected[i-1], across
     // every shard boundary
+    size_t h_count = 0;
+    cuda_safe_call(cudaMemcpy(&h_count, d_count, sizeof(size_t), cudaMemcpyDefault));
+    size_t ref_count = 0;
+    for (const auto x : expected)
+    {
+      ref_count += (x % 2 == 0) ? 1 : 0;
+    }
+    EXPECT(h_count == ref_count);
     ::std::vector<long long> host_diff(n);
     diff.copy_to_host(host_diff.data());
     EXPECT(host_diff[0] == expected[0]);
@@ -250,6 +270,7 @@ void test_reduce_scan_capture(place_group& group)
   cuda_safe_call(cudaStreamDestroy(origin));
   cuda_safe_call(cudaFree(d_total));
   cuda_safe_call(cudaFree(d_lanes));
+  cuda_safe_call(cudaFree(d_count));
 }
 } // namespace
 

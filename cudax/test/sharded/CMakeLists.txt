@@ -153,7 +153,6 @@ set(
   cuda/experimental/__sharded/engine/mgmn.cuh
   cuda/experimental/__sharded/algorithm/adjacent_difference/adjacent_difference.cuh
   cuda/experimental/__sharded/algorithm/copy_if/copy_if.cuh
-  cuda/experimental/__sharded/algorithm/count/count.cuh
   cuda/experimental/__sharded/algorithm/fill/fill.cuh
   cuda/experimental/__sharded/algorithm/histogram/histogram.cuh
   cuda/experimental/__sharded/algorithm/reduce/reduce.cuh

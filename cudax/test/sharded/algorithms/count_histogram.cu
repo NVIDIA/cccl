@@ -46,6 +46,8 @@ void test_count(place_group& group)
 
   // Multiples of 3 in [0, n): ceil(n / 3)
   EXPECT(count_if(data, is_multiple_of_3{}) == (n + 2) / 3);
+  // count_if is transform_reduce with a 0/1 transform: spell it out once
+  EXPECT(transform_reduce(data, is_multiple_of_3{}, ::cuda::std::plus<size_t>{}, size_t{0}) == (n + 2) / 3);
 
   // count == count_if with equality
   EXPECT(count(data, 42LL) == 1UL);

@@ -176,6 +176,10 @@ __global__ void __mgmn_store_value_kernel(_Tp __value, _OutIt __out)
   }
 }
 
+//! @brief Marker: the plain reduce (no unary transform on the input).
+struct __no_transform_t
+{};
+
 //! @brief The engine's view of a reduction of `_Tp` under `_Op`: the stored
 //! (accumulator) type, the operator and the identity it runs with, and the
 //! input adaptor — the element type itself when the identity is known, the
@@ -235,6 +239,29 @@ struct __reduce_engine
       return ::cuda::make_transform_iterator(__data, __lift_fn<_Tp>{});
     }
   }
+
+  //! @brief The input with a caller's unary transform applied first (the
+  //! transform_reduce family): one more iterator layer, no extra kernel.
+  template <class _Elem, class _TransformOp>
+  [[nodiscard]] static auto __input(const _Elem* __data, _TransformOp __transform)
+  {
+    if constexpr (::cuda::std::is_same_v<_TransformOp, __no_transform_t>)
+    {
+      return __input(__data);
+    }
+    else
+    {
+      auto __transformed = ::cuda::make_transform_iterator(__data, __transform);
+      if constexpr (__direct)
+      {
+        return __transformed;
+      }
+      else
+      {
+        return ::cuda::make_transform_iterator(__transformed, __lift_fn<_Tp>{});
+      }
+    }
+  }
 };
 
 //! @brief The engine call shared by the three forms: the broadcasted MGMN
@@ -244,14 +271,22 @@ struct __reduce_engine
 //! for the synchronous form, `__lane_ordered_t` for the forms that own
 //! their edges); @p __call_env is the caller's environment, read for its
 //! requirements only.
-template <class _S, class _Envs, class _DriveEnv, class _CallEnv, class _Stored, class _ReduceOp, class _Tp>
-_CCCL_HOST_API void __mgmn_reduce_into_slots(
+template <class _S,
+          class _Envs,
+          class _DriveEnv,
+          class _CallEnv,
+          class _Stored,
+          class _TransformOp,
+          class _ReduceOp,
+          class _Tp>
+_CCCL_HOST_API void __mgmn_transform_reduce_into_slots(
   const _S& __data,
   const _Envs& __envs,
   const _DriveEnv& __drive_env,
   const _CallEnv& __call_env,
   const char* __what,
   const ::std::vector<_Stored*>& __outputs,
+  _TransformOp __transform,
   _ReduceOp __op,
   const _Tp& __init)
 {
@@ -271,7 +306,7 @@ _CCCL_HOST_API void __mgmn_reduce_into_slots(
     },
     [&](const auto& __comms, const auto& __menvs, const auto& __lanes) {
       const auto __inputs = __mgmn_per_lane(__lanes, [&](::std::size_t __g) {
-        return __engine::__input(static_cast<const __elem_t*>(__data.shard(__g).data));
+        return __engine::__input(static_cast<const __elem_t*>(__data.shard(__g).data), __transform);
       });
       ::cuda::experimental::mgmn::reduce(
         ::cuda::experimental::broadcasted,
@@ -284,6 +319,22 @@ _CCCL_HOST_API void __mgmn_reduce_into_slots(
         __engine::__lift_op(__op),
         __engine::__identity());
     });
+}
+
+//! @brief The plain reduce: the driver above with no input transform.
+template <class _S, class _Envs, class _DriveEnv, class _CallEnv, class _Stored, class _ReduceOp, class _Tp>
+_CCCL_HOST_API void __mgmn_reduce_into_slots(
+  const _S& __data,
+  const _Envs& __envs,
+  const _DriveEnv& __drive_env,
+  const _CallEnv& __call_env,
+  const char* __what,
+  const ::std::vector<_Stored*>& __outputs,
+  _ReduceOp __op,
+  const _Tp& __init)
+{
+  __mgmn_transform_reduce_into_slots(
+    __data, __envs, __drive_env, __call_env, __what, __outputs, __no_transform_t{}, __op, __init);
 }
 
 //! @brief One `_Stored` scratch slot per lane, from the lane's resource on
@@ -332,10 +383,13 @@ private:
 // ============================================================================
 
 /**
- * @brief Synchronous reduce over any `sharded_view`: the MGMN reduce over
- * the shards (per-shard `cub::DeviceReduce` on the shard's environment, the
- * P partials folded in shard order on device), lane 0's copy of the result
- * returned.
+ * @brief Synchronous transform-reduce over any `sharded_view`: the MGMN
+ * reduce over the shards (per-shard `cub::DeviceReduce` on the shard's
+ * environment, reading the elements through @p transform_op — one iterator
+ * layer, so the data is read exactly once and no intermediate is
+ * materialized — the P partials folded in shard order on device), lane 0's
+ * copy of the result returned. `reduce` is this with no transform;
+ * `count_if` is this with a 0/1 transform.
  *
  * This is the synchronous convenience form: it returns the value to the
  * caller and therefore synchronizes with the host. It refuses under CUDA
@@ -349,15 +403,21 @@ private:
  * @throws std::invalid_argument when the environment count does not match
  *         the shard count, or on more than 64 shards.
  */
-_CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _CallEnv = default_call_env)
+_CCCL_TEMPLATE(
+  class _S, class _Envs, class _TransformOp, class _Tp, class _ReduceOp, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(
   sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
-[[nodiscard]] _CCCL_HOST_API _Tp
-reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env = {})
+[[nodiscard]] _CCCL_HOST_API _Tp transform_reduce(
+  const _S& data,
+  const _Envs& envs,
+  _TransformOp transform_op,
+  _ReduceOp reduce_op,
+  _Tp init_value,
+  const _CallEnv& call_env = {})
 {
   using __stored_t               = typename reserved::__reduce_engine<_ReduceOp, _Tp>::__stored_t;
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  reserved::__check_env_count(envs, num_shards, "sharded::reduce");
+  reserved::__check_env_count(envs, num_shards, "sharded::transform_reduce");
   if (num_shards == 0)
   {
     return init_value;
@@ -366,14 +426,22 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
   // Refusals first, before any CUDA call: this form synchronizes. (The call
   // environment is read for its policy and requirements only; a stream it
   // may carry does not select the asynchronous contract of this form.)
-  require_sync_allowed(call_env, "sharded::reduce (synchronous form)");
-  reserved::__check_envs_not_capturing(envs, num_shards, "sharded::reduce");
+  require_sync_allowed(call_env, "sharded::transform_reduce (synchronous form)");
+  reserved::__check_envs_not_capturing(envs, num_shards, "sharded::transform_reduce");
 
   // The synchronous form of the driver: every lane synchronized before it
   // returns, lane 0's slot then holds the result.
   reserved::__lane_slots<__stored_t, _Envs> slots(envs, num_shards);
-  reserved::__mgmn_reduce_into_slots(
-    data, envs, default_call_env{}, call_env, "sharded::reduce", slots.__pointers(), reduce_op, init_value);
+  reserved::__mgmn_transform_reduce_into_slots(
+    data,
+    envs,
+    default_call_env{},
+    call_env,
+    "sharded::transform_reduce",
+    slots.__pointers(),
+    transform_op,
+    reduce_op,
+    init_value);
 
   __stored_t result{};
   cuda_safe_call(cudaMemcpy(&result, slots.__pointers()[0], sizeof(__stored_t), cudaMemcpyDefault));
@@ -381,9 +449,23 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
 }
 
 /**
- * @brief Asynchronous reduce over any `sharded_view`, writing the aggregate
- * through an output iterator: the value-returning form's stream-ordered
- * sibling.
+ * @brief Synchronous reduce over any `sharded_view`: `transform_reduce`
+ * with no input transform (see there for the contract and refusals).
+ */
+_CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+[[nodiscard]] _CCCL_HOST_API _Tp
+reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env = {})
+{
+  return sharded::transform_reduce(data, envs, reserved::__no_transform_t{}, reduce_op, init_value, call_env);
+}
+
+/**
+ * @brief Asynchronous transform-reduce over any `sharded_view`, writing the
+ * aggregate through an output iterator: the value-returning form's
+ * stream-ordered sibling (`reduce_into` = no transform; `count_if_into` =
+ * 0/1 transform).
  *
  * The MGMN reduce runs over the shards into a P-slot scratch (stream-ordered
  * from `envs[0]`'s resource on the call stream); the aggregate is then
@@ -409,18 +491,24 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
  * @throws std::invalid_argument when the environment count does not match
  *         the shard count, or on more than 64 shards.
  */
-_CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _OutIt, class _CallEnv)
+_CCCL_TEMPLATE(class _S, class _Envs, class _TransformOp, class _Tp, class _ReduceOp, class _OutIt, class _CallEnv)
 _CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
                  sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND async_call_env<_CallEnv>)
-_CCCL_HOST_API void reduce_into(
-  const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
+_CCCL_HOST_API void transform_reduce_into(
+  const _S& data,
+  const _Envs& envs,
+  _OutIt out,
+  _TransformOp transform_op,
+  _ReduceOp reduce_op,
+  _Tp init_value,
+  const _CallEnv& call_env)
 {
   using __stored_t               = typename reserved::__reduce_engine<_ReduceOp, _Tp>::__stored_t;
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  reserved::__check_env_count(envs, num_shards, "sharded::reduce_into");
+  reserved::__check_env_count(envs, num_shards, "sharded::transform_reduce_into");
   if (num_shards > reserved::__max_fold_shards)
   {
-    _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into: more than 64 shards not supported");
+    _CCCL_THROW(::std::invalid_argument, "sharded::transform_reduce_into: more than 64 shards not supported");
   }
 
   const ::cuda::stream_ref call_stream = ::cuda::get_stream(call_env);
@@ -449,8 +537,16 @@ _CCCL_HOST_API void reduce_into(
     __detail::__wait_stream_on(::cuda::get_stream(envs[g]).get(), call_stream.get());
   }
 
-  reserved::__mgmn_reduce_into_slots(
-    data, envs, reserved::__lane_ordered_t{}, call_env, "sharded::reduce_into", outputs, reduce_op, init_value);
+  reserved::__mgmn_transform_reduce_into_slots(
+    data,
+    envs,
+    reserved::__lane_ordered_t{},
+    call_env,
+    "sharded::transform_reduce_into",
+    outputs,
+    transform_op,
+    reduce_op,
+    init_value);
 
   for (const auto g : each(num_shards))
   {
@@ -466,6 +562,32 @@ _CCCL_HOST_API void reduce_into(
     cuda_safe_call(cudaGetLastError());
   }
   scratch_mr.deallocate(call_stream, d_slots, num_shards * sizeof(__stored_t), alignof(__stored_t));
+}
+
+/**
+ * @brief Asynchronous reduce over any `sharded_view`: `transform_reduce_into`
+ * with no input transform (see there for the contract).
+ */
+_CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _OutIt, class _CallEnv)
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
+                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND async_call_env<_CallEnv>)
+_CCCL_HOST_API void reduce_into(
+  const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
+{
+  sharded::transform_reduce_into(data, envs, out, reserved::__no_transform_t{}, reduce_op, init_value, call_env);
+}
+
+/**
+ * @brief Asynchronous transform-reduce over a self-bound sharded structure:
+ * environments derived via `default_envs`.
+ */
+_CCCL_TEMPLATE(class _S, class _TransformOp, class _Tp, class _ReduceOp, class _OutIt, class _CallEnv)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND async_call_env<_CallEnv>)
+_CCCL_HOST_API void transform_reduce_into(
+  const _S& data, _OutIt out, _TransformOp transform_op, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
+{
+  const auto envs = default_envs(data);
+  sharded::transform_reduce_into(data, envs, out, transform_op, reduce_op, init_value, call_env);
 }
 
 /**
@@ -614,6 +736,17 @@ reduce(const _S& data, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call
   return sharded::reduce(data, envs, reduce_op, init_value, call_env);
 }
 
+/// @brief Synchronous transform-reduce over a self-bound sharded structure.
+_CCCL_TEMPLATE(class _S, class _TransformOp, class _Tp, class _ReduceOp, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
+  !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_TransformOp>>))
+[[nodiscard]] _CCCL_HOST_API _Tp transform_reduce(
+  const _S& data, _TransformOp transform_op, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env = {})
+{
+  const auto envs = default_envs(data);
+  return sharded::transform_reduce(data, envs, transform_op, reduce_op, init_value, call_env);
+}
+
 // Reduction conveniences over the generic tier -------------------------------
 
 /// @brief Sum of all elements (generic).
@@ -674,5 +807,135 @@ _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
 {
   const auto envs = default_envs(data);
   return sharded::max(data, envs, call_env);
+}
+
+// ============================================================================
+// Counting: transform_reduce with a 0/1 transform (read-only; available on
+// contiguous arrays too)
+// ============================================================================
+
+namespace reserved
+{
+/// @brief Maps an element to 1 when the predicate holds, 0 otherwise.
+template <class _Pred>
+struct __count_transform_fn
+{
+  _Pred __pred;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Tp>
+  _CCCL_HOST_DEVICE ::std::size_t operator()(const _Tp& __val) const
+  {
+    return __pred(__val) ? ::std::size_t{1} : ::std::size_t{0};
+  }
+};
+
+/// @brief Equality with a fixed value (the `count` predicate).
+template <class _Tp>
+struct __equals_value_fn
+{
+  _Tp __value;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE bool operator()(const _Tp& __val) const
+  {
+    return __val == __value;
+  }
+};
+} // namespace reserved
+
+/// @brief Count the elements satisfying @p pred (synchronous form of
+/// `transform_reduce`: returns the value, refuses under capture and
+/// `sync_policy::forbid`).
+_CCCL_TEMPLATE(class _S, class _Envs, class _Pred, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+[[nodiscard]] _CCCL_HOST_API ::std::size_t
+count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env = {})
+{
+  return sharded::transform_reduce(
+    data,
+    envs,
+    reserved::__count_transform_fn<_Pred>{pred},
+    ::cuda::std::plus<::std::size_t>{},
+    ::std::size_t{0},
+    call_env);
+}
+
+/// @brief Count the elements satisfying @p pred (self-bound).
+_CCCL_TEMPLATE(class _S, class _Pred, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(
+  self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>))
+[[nodiscard]] _CCCL_HOST_API ::std::size_t count_if(const _S& data, _Pred pred, const _CallEnv& call_env = {})
+{
+  const auto envs = default_envs(data);
+  return sharded::count_if(data, envs, pred, call_env);
+}
+
+/// @brief Asynchronous count: the number of elements satisfying @p pred is
+/// written through @p out on the call environment's stream
+/// (`transform_reduce_into` with a 0/1 transform; capture-legal).
+_CCCL_TEMPLATE(class _S, class _Envs, class _OutIt, class _Pred, class _CallEnv)
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
+                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND async_call_env<_CallEnv>)
+_CCCL_HOST_API void count_if_into(const _S& data, const _Envs& envs, _OutIt out, _Pred pred, const _CallEnv& call_env)
+{
+  sharded::transform_reduce_into(
+    data,
+    envs,
+    out,
+    reserved::__count_transform_fn<_Pred>{pred},
+    ::cuda::std::plus<::std::size_t>{},
+    ::std::size_t{0},
+    call_env);
+}
+
+/// @brief Asynchronous count over a self-bound sharded structure.
+_CCCL_TEMPLATE(class _S, class _OutIt, class _Pred, class _CallEnv)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND async_call_env<_CallEnv>)
+_CCCL_HOST_API void count_if_into(const _S& data, _OutIt out, _Pred pred, const _CallEnv& call_env)
+{
+  const auto envs = default_envs(data);
+  sharded::count_if_into(data, envs, out, pred, call_env);
+}
+
+/// @brief Count the elements equal to @p value: `count_if` with an equality
+/// predicate.
+_CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+[[nodiscard]] _CCCL_HOST_API ::std::size_t
+count(const _S& data, const _Envs& envs, view_element_t<_S> value, const _CallEnv& call_env = {})
+{
+  return sharded::count_if(data, envs, reserved::__equals_value_fn<view_element_t<_S>>{value}, call_env);
+}
+
+/// @brief Count the elements equal to @p value (self-bound).
+_CCCL_TEMPLATE(class _S, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>>)
+[[nodiscard]] _CCCL_HOST_API ::std::size_t count(const _S& data, view_element_t<_S> value, const _CallEnv& call_env = {})
+{
+  const auto envs = default_envs(data);
+  return sharded::count(data, envs, value, call_env);
+}
+
+/// @brief Asynchronous count of the elements equal to @p value, written
+/// through @p out on the call environment's stream (capture-legal).
+_CCCL_TEMPLATE(class _S, class _Envs, class _OutIt, class _CallEnv)
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
+                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND async_call_env<_CallEnv>)
+_CCCL_HOST_API void
+count_into(const _S& data, const _Envs& envs, _OutIt out, view_element_t<_S> value, const _CallEnv& call_env)
+{
+  sharded::count_if_into(data, envs, out, reserved::__equals_value_fn<view_element_t<_S>>{value}, call_env);
+}
+
+/// @brief Asynchronous count of a value over a self-bound sharded structure.
+_CCCL_TEMPLATE(class _S, class _OutIt, class _CallEnv)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND async_call_env<_CallEnv>)
+_CCCL_HOST_API void count_into(const _S& data, _OutIt out, view_element_t<_S> value, const _CallEnv& call_env)
+{
+  const auto envs = default_envs(data);
+  sharded::count_into(data, envs, out, value, call_env);
 }
 } // namespace cuda::experimental::sharded
