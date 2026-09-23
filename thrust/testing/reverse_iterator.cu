@@ -53,7 +53,7 @@ TEST_CASE("TestReverseIteratorCopyConstructor", "[reverse_iterator]")
   REQUIRE(*d_iter2 == *d_iter3);
 }
 
-TEST_CASE("TestReverseIteratorCopyConstructor", "[reverse_iterator]")
+TEST_CASE("TestReverseIteratorDevicePtrOperatorArrow", "[reverse_iterator]")
 {
   int storage[2]{};
   int* raw = storage;
