@@ -431,6 +431,18 @@ stream-like lvalue that used to convert-then-copy now fails to compile. Either r
 non-template overload taking the old type and constraining the generic overload, or turn the template
 parameter into a const reference (e.g. `const Env& env`).
 
+## correctness.element-index-to-byte-offset (important, CUDA kernels and dispatch code computing byte offsets from element indices)
+
+<!-- provenance:
+  #2086→#8803 (backports #8806–#8808) transform_kernel_ublkcp multiplied a 32-bit element offset by sizeof(T) in 32-bit arithmetic for bulk-copy addressing; for num_items*sizeof(T) > 4 GB the product wrapped and read wrong tile addresses, corrupting outputs (issue #8800)
+-->
+
+When an in-bounds element index or count stored in a 32-bit type is converted into a byte offset —
+multiplied by `sizeof(T)`, used for pointer alignment, or applied to a `char*`/`std::byte*` cast of a
+typed pointer — flag arithmetic performed in the 32-bit type: the element index may fit 32 bits while
+the byte offset does not, so the multiplication must be widened to 64 bits first (e.g.
+`offset * size_t{sizeof(T)}`).
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
