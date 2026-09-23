@@ -402,8 +402,9 @@ byte buffer. Static shared memory with alignment > 16 is fine.
   occupancy/shared-memory limits inherited from an older SM in the meantime
 -->
 
-When a diff adds support for a new CUDA architecture (SM number) not previously known to CCCL, check
-whether ALL of the following occurrences were updated in the same diff (or a linked follow-up PR):
+When a diff adds support for a new CUDA architecture (SM number) not previously known to CCCL, go
+through this checklist and verify every applicable entry was updated in the same diff (or a linked
+follow-up PR):
 - `libcudacxx/include/nv/detail/__target_macros` and `libcudacxx/include/nv/target` — the
   `NV_PROVIDES_SM_XXX`/`NV_IS_EXACTLY_SM_XXX` macro pair itself.
 - `libcudacxx/include/cuda/std/__cccl/execution_space.h` — the new SM added to
