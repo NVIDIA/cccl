@@ -50,6 +50,15 @@ struct make_pair
   }
 };
 
+template <class Pair>
+struct make_pair_iterator
+{
+  [[nodiscard]] _CCCL_HOST_API auto operator()(int offset, int modulus = 400) const
+  {
+    return cuda::transform_iterator{cuda::counting_iterator<int>{0}, make_pair<Pair>{offset, modulus}};
+  }
+};
+
 template <class Value>
 struct matches_payload
 {
@@ -111,11 +120,9 @@ C2H_TEST(
                ::cuda::std::size_t{num_keys} * 2,
                cudax::cuco::empty_key{key_type{-1}},
                cudax::cuco::empty_value{mapped_type{-1}}};
-  auto results     = ::cuda::make_buffer<mapped_type>(stream, mr, num_keys, mapped_type{-1});
-  const auto keys  = ::cuda::counting_iterator<key_type>{0};
-  const auto pairs = [=](int offset, int modulus = 400) {
-    return ::cuda::transform_iterator{::cuda::counting_iterator<int>{0}, make_pair<value_type>{offset, modulus}};
-  };
+  auto results    = ::cuda::make_buffer<mapped_type>(stream, mr, num_keys, mapped_type{-1});
+  const auto keys = ::cuda::counting_iterator<key_type>{0};
+  const make_pair_iterator<value_type> pairs{};
   const auto verify = [&](int count, int offset, bool duplicates = false) {
     REQUIRE(map.size(stream) == static_cast<::cuda::std::size_t>(count));
     map.find(stream, keys, keys + count, results.begin());
