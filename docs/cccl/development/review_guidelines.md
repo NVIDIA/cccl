@@ -312,6 +312,19 @@ the move disarms the moved-from source — resets its flag or nulls its handle, 
 destruction. Require a test that moves the object and confirms the action fires exactly once and that the
 moved-from object has been disarmed.
 
+## correctness.verification-removed-without-replacement (important, any diff deleting a check or test)
+
+<!-- provenance:
+  #3743→#3866 dropping deprecated cub::Traits CATEGORY usage also deleted the static_assert cross-checks (old_IS_SMALL_UNSIGNED, "sanity check, remove eventually") comparing new type classification to the old one, breaking dispatch for library-extended types (NVBug 5121653);
+  #3970→#9211 (issue #807) generate/raw_reference_cast simplification deleted the compile-fail harness (runtime_static_assert.h, unittest_static_assert.cu) with no replacement
+-->
+
+When a diff deletes a check verifying a property, but does not delete the checked entity, like a
+`static_assert` cross-checking a new computation against an old one (tells: "sanity check" comments,
+`old_*` names), a negative or compile-fail test (`*_fail*`, `*_static_assert*`, `UNSUPPORTED`/`XFAIL`
+markers), a runtime assertion, then do not accept the deletion of the check, unless the diff shows the
+property now holds by construction or adds a replacement check verifying the same property.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
