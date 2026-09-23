@@ -138,7 +138,6 @@ endif()
 set(
   sharded_standalone_headers
   cuda/experimental/__sharded/concepts.cuh
-  cuda/experimental/__sharded/cuda_safe_call.cuh
   cuda/experimental/__sharded/concepts/env.cuh
   cuda/experimental/__sharded/concepts/guards.cuh
   cuda/experimental/__sharded/concepts/view.cuh

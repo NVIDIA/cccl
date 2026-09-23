@@ -45,7 +45,7 @@
 #include <cuda/experimental/__places/place_group.cuh> // stream_in_capture
 #include <cuda/experimental/__sharded/concepts/env.cuh>
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
-#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
+#include <cuda/experimental/__sharded/concepts.cuh>
 
 #include <cstddef>
 #include <stdexcept>

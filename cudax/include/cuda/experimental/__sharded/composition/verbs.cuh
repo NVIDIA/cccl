@@ -54,7 +54,6 @@
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
-#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 
 #include <initializer_list>
 #include <stdexcept>

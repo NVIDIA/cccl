@@ -47,7 +47,7 @@
 #include <cuda/experimental/__sharded/composition/fork_join.cuh>
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
 #include <cuda/experimental/__sharded/container/shard.cuh>
-#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
+#include <cuda/experimental/__sharded/concepts.cuh>
 
 #include <algorithm>
 #include <functional>

@@ -49,7 +49,6 @@
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
 #include <cuda/experimental/__sharded/container/default_envs.cuh>
-#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/engine/visit_shards.cuh>
 
 #include <cstddef>

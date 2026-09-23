@@ -73,7 +73,6 @@
 #include <cuda/experimental/__sharded/composition/verbs.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
-#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 
 #include <stdexcept>
 #include <string>

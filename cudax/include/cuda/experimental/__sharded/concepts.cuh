@@ -73,6 +73,21 @@
 #  pragma system_header
 #endif // no system header
 
+// The STF utilities the tier calls unqualified from inside
+// `cuda::experimental::sharded`: `cuda_safe_call`, `cuda_try` and the `each`
+// index range. Declared here, before the sub-headers: `concepts/guards.cuh`
+// uses them and includes this header for exactly that (the include cycle is
+// benign under `#pragma once` only because the declarations precede it).
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+
+namespace cuda::experimental::sharded
+{
+using ::cuda::experimental::stf::cuda_safe_call;
+using ::cuda::experimental::stf::cuda_try;
+using ::cuda::experimental::stf::each;
+} // namespace cuda::experimental::sharded
+
 #include <cuda/experimental/__sharded/concepts/env.cuh>
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
 #include <cuda/experimental/__sharded/concepts/view.cuh>

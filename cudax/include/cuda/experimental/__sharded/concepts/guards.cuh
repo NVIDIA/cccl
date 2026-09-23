@@ -38,7 +38,7 @@
 #include <cuda/experimental/__places/place_group.cuh> // check_not_capturing
 #include <cuda/experimental/__places/stream_scope.cuh>
 #include <cuda/experimental/__sharded/concepts/env.cuh>
-#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
+#include <cuda/experimental/__sharded/concepts.cuh>
 
 #include <cstddef>
 #include <stdexcept>

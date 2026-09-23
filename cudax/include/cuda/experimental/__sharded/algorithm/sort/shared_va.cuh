@@ -85,7 +85,7 @@
 
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__sharded/container/sharded_array.cuh>
-#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
+#include <cuda/experimental/__sharded/concepts.cuh>
 
 #include <cmath>
 #include <functional>
