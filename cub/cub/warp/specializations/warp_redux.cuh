@@ -109,23 +109,31 @@ warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 
 template <typename T, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
-warp_redux_plus_large(const T input, const ::cuda::std::uint32_t mask, ReductionOp op)
+warp_redux_plus_large(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
-  static_assert(is_warp_redux_plus_large_supported<ReductionOp, T>, "Reduction operator not supported");
-  using unsigned_t        = ::cuda::std::make_unsigned_t<T>;
-  constexpr int half_bits = ::cuda::std::__num_bits_v<T> / 2;
-  const auto [high, low]  = cub::detail::split_integer(static_cast<unsigned_t>(input));
+  static_assert(is_warp_redux_op_supported_sm80<ReductionOp, T> || is_warp_redux_plus_large_supported<ReductionOp, T>,
+                "Reduction operator not supported");
+  constexpr ::cuda::std::plus<> op;
+  if constexpr (sizeof(T) == sizeof(unsigned)) // base case
+  {
+    return cub::detail::warp_redux_sm80(input, mask, op);
+  }
+  else // recursive case
+  {
+    using unsigned_t        = ::cuda::std::make_unsigned_t<T>;
+    constexpr int half_bits = ::cuda::std::__num_bits_v<T> / 2;
+    const auto [high, low]  = cub::detail::split_integer(static_cast<unsigned_t>(input));
 
-  const auto high_reduction = cub::detail::warp_redux_plus_large(high, mask, op);
-  const auto low_reduction  = cub::detail::warp_redux_plus_large(low, mask, op);
+    const auto high_reduction = cub::detail::warp_redux_plus_large(high, mask, op);
+    const auto low_reduction  = cub::detail::warp_redux_plus_large(low, mask, op);
 
-  // Each warp has at most 32 participants. Split the low half after five bits so both partial sums fit.
-  const auto low_top_digits = low >> 5;
-  const auto carry_out_low  = cub::detail::warp_redux_plus_large(low & 0b11111u, mask, op) >> 5;
-  const auto carry_out_top  = cub::detail::warp_redux_plus_large(low_top_digits, mask, op);
-  const auto result_high    = high_reduction + ((carry_out_top + carry_out_low) >> (half_bits - 5));
+    // Each warp has at most 32 participants. Split the low half after five bits so both partial sums fit.
+    const auto carry_out_low = cub::detail::warp_redux_plus_large(low >> 5, mask, op) >> 5;
+    const auto carry_out_top = cub::detail::warp_redux_plus_large(low & 0b11111u, mask, op);
+    const auto result_high   = high_reduction + ((carry_out_top + carry_out_low) >> (half_bits - 5));
 
-  return static_cast<T>(cub::detail::merge_integers(result_high, low_reduction));
+    return static_cast<T>(cub::detail::merge_integers(result_high, low_reduction));
+  }
 }
 
 template <typename T, typename ReductionOp>
