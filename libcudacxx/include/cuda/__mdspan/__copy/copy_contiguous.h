@@ -196,7 +196,7 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
   const auto __bytes_in_flight  = ::cuda::__bytes_in_flight();
   const auto __elems_per_thread = ::cuda::__elem_per_thread(static_cast<int>(sizeof(_TpIn)), __bytes_in_flight);
   const auto __tile_size_rt     = __block_size * __elems_per_thread;
-  constexpr auto __arch_limits  = ::cuda::__common_arch_traits(::cuda::arch_id::sm_90);
+  [[maybe_unused]] constexpr auto __arch_limits = ::cuda::__common_arch_traits(::cuda::arch_id::sm_90);
 
   ::cuda::__dispatch_tile_size(__tile_size_rt, [&](auto __tile_constant) {
     constexpr int __tile_size    = decltype(__tile_constant)::value;
