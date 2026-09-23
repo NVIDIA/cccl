@@ -30,7 +30,11 @@
 // UNSUPPORTED: force-tile
 // error: calling a __host__ __device__ function in tile is not allowed
 
+#include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/fptool>
+#include <cuda/launch>
+#include <cuda/memory_resource>
 #include <cuda/std/cassert>
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
@@ -410,14 +414,16 @@ __global__ void event_kernel(float* sink)
   *sink = acc;
 }
 
+// Every kernel here records into per-device state rather than fanning out over data, so a
+// single thread is all any of them needs.
+inline constexpr auto one_thread = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
+
 void test_event_counters(cuda::stream_ref stream)
 {
-  float* sink = nullptr;
-  assert(cudaMalloc(&sink, sizeof(float)) == cudaSuccess);
+  auto sink = cuda::make_device_buffer<float>(stream, cuda::device_ref{0}, 1, cuda::no_init);
   cudax::fpmp2_stat_reset_device_data(stream);
 
-  event_kernel<<<1, 1, 0, stream.get()>>>(sink);
-  assert(cudaGetLastError() == cudaSuccess);
+  cuda::launch(stream, one_thread, event_kernel, sink.data());
 
   // The read waits on the stream, so the kernel above is done and counted.
   const cudax::fpmp2_stat_data d = cudax::fpmp2_stat_read_device_data(stream);
@@ -429,8 +435,6 @@ void test_event_counters(cuda::stream_ref stream)
 
   // The classified operations are a subset of the counted ones.
   assert(d.full_cancel_count + d.partial_cancel_count + d.underflow_count + d.overflow_count < d.ops_count);
-
-  assert(cudaFree(sink) == cudaSuccess);
 }
 
 void test_device_record(cuda::stream_ref stream)
@@ -439,12 +443,10 @@ void test_device_record(cuda::stream_ref stream)
   const int sentinel_min = cuda::std::numeric_limits<int>::min();
 
   // The parity kernel runs first and also counts, so the record is reset afterwards.
-  parity_kernel<<<1, 1, 0, stream.get()>>>();
-  assert(cudaGetLastError() == cudaSuccess);
-  assert(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  cuda::launch(stream, one_thread, parity_kernel);
+  stream.sync();
 
-  float* sink = nullptr;
-  assert(cudaMalloc(&sink, sizeof(float)) == cudaSuccess);
+  auto sink = cuda::make_device_buffer<float>(stream, cuda::device_ref{0}, 1, cuda::no_init);
 
   cudax::fpmp2_stat_reset_device_data(stream);
 
@@ -466,8 +468,7 @@ void test_device_record(cuda::stream_ref stream)
   assert(after_reset.result.min_hi_lo_gap == sentinel_max);
   assert(after_reset.result.max_hi_lo_gap == sentinel_min);
 
-  counting_kernel<<<1, 1, 0, stream.get()>>>(sink);
-  assert(cudaGetLastError() == cudaSuccess);
+  cuda::launch(stream, one_thread, counting_kernel, sink.data());
 
   const cudax::fpmp2_stat_data after_run = cudax::fpmp2_stat_read_device_data(stream);
 
@@ -497,8 +498,7 @@ void test_device_record(cuda::stream_ref stream)
   assert(after_second_reset.ops_count == 0ull);
 
   // An inexact result must be summarized with a gap that reflects a normalized pair.
-  gap_kernel<<<1, 1, 0, stream.get()>>>(sink);
-  assert(cudaGetLastError() == cudaSuccess);
+  cuda::launch(stream, one_thread, gap_kernel, sink.data());
 
   const cudax::fpmp2_stat_data after_gap = cudax::fpmp2_stat_read_device_data(stream);
 
@@ -517,8 +517,7 @@ void test_device_record(cuda::stream_ref stream)
 
   { // subnormals: recognized, and measured by their leading bit
     cudax::fpmp2_stat_reset_device_data(stream);
-    denorm_kernel<<<1, 1, 0, stream.get()>>>(sink);
-    assert(cudaGetLastError() == cudaSuccess);
+    cuda::launch(stream, one_thread, denorm_kernel, sink.data());
 
     const cudax::fpmp2_stat_data after_denorm = cudax::fpmp2_stat_read_device_data(stream);
 
@@ -540,8 +539,7 @@ void test_device_record(cuda::stream_ref stream)
 
   { // low accuracy: overlap must be both bounded and counted
     cudax::fpmp2_stat_reset_device_data(stream);
-    overlap_kernel<<<1, 1, 0, stream.get()>>>(sink);
-    assert(cudaGetLastError() == cudaSuccess);
+    cuda::launch(stream, one_thread, overlap_kernel, sink.data());
 
     const cudax::fpmp2_stat_data after_overlap = cudax::fpmp2_stat_read_device_data(stream);
 
@@ -554,8 +552,7 @@ void test_device_record(cuda::stream_ref stream)
 
   { // a pair led by lo, its hi being zero: measured by lo, and not a deep cancellation
     cudax::fpmp2_stat_reset_device_data(stream);
-    zero_hi_kernel<<<1, 1, 0, stream.get()>>>(sink);
-    assert(cudaGetLastError() == cudaSuccess);
+    cuda::launch(stream, one_thread, zero_hi_kernel, sink.data());
 
     const cudax::fpmp2_stat_data after_zero_hi = cudax::fpmp2_stat_read_device_data(stream);
 
@@ -577,8 +574,7 @@ void test_device_record(cuda::stream_ref stream)
 
   { // inverted limbs: counted as both an inversion and an overlap
     cudax::fpmp2_stat_reset_device_data(stream);
-    invert_kernel<<<1, 1, 0, stream.get()>>>(sink);
-    assert(cudaGetLastError() == cudaSuccess);
+    cuda::launch(stream, one_thread, invert_kernel, sink.data());
 
     const cudax::fpmp2_stat_data after_invert = cudax::fpmp2_stat_read_device_data(stream);
 
@@ -595,38 +591,38 @@ void test_device_record(cuda::stream_ref stream)
   }
 
   { // atomics: same total as the wrapped type, and counted
-    base_t* base_total = nullptr;
-    stat_t* stat_total = nullptr;
-    float* base_olds   = nullptr;
-    float* stat_olds   = nullptr;
-    assert(cudaMallocManaged(&base_total, sizeof(base_t)) == cudaSuccess);
-    assert(cudaMallocManaged(&stat_total, sizeof(stat_t)) == cudaSuccess);
-    assert(cudaMallocManaged(&base_olds, atomic_threads * sizeof(float)) == cudaSuccess);
-    assert(cudaMallocManaged(&stat_olds, atomic_threads * sizeof(float)) == cudaSuccess);
-    *base_total = base_t(0.0f);
-    *stat_total = stat_t(0.0f);
+    // Unified memory, so the totals are seeded and checked on the host without a copy. The
+    // legacy resource is the one spelling that works on every supported toolkit.
+    cuda::mr::synchronous_resource_adapter<cuda::mr::legacy_managed_memory_resource> managed{
+      cuda::mr::legacy_managed_memory_resource{}};
+
+    auto base_total    = cuda::make_buffer<base_t>(stream, managed, 1, cuda::no_init);
+    auto stat_total    = cuda::make_buffer<stat_t>(stream, managed, 1, cuda::no_init);
+    auto base_olds     = cuda::make_buffer<float>(stream, managed, atomic_threads, cuda::no_init);
+    auto stat_olds     = cuda::make_buffer<float>(stream, managed, atomic_threads, cuda::no_init);
+    *base_total.data() = base_t(0.0f);
+    *stat_total.data() = stat_t(0.0f);
 
     cudax::fpmp2_stat_reset_device_data(stream);
-    atomic_kernel<<<1, atomic_threads, 0, stream.get()>>>(base_total, stat_total, base_olds, stat_olds);
-    assert(cudaGetLastError() == cudaSuccess);
+    cuda::launch(
+      stream,
+      cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<atomic_threads>()),
+      atomic_kernel,
+      base_total.data(),
+      stat_total.data(),
+      base_olds.data(),
+      stat_olds.data());
     // The managed totals are read here on the host, so the kernel has to be waited for
     // before the record is, rather than through it.
-    assert(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+    stream.sync();
 
-    assert(base_total->hi() == stat_total->hi());
-    assert(base_total->lo() == stat_total->lo());
+    assert(base_total.data()->hi() == stat_total.data()->hi());
+    assert(base_total.data()->lo() == stat_total.data()->lo());
 
     const cudax::fpmp2_stat_data after_atomics = cudax::fpmp2_stat_read_device_data(stream);
     assert(after_atomics.add_count == static_cast<unsigned long long int>(atomic_threads));
     assert(after_atomics.ops_count == static_cast<unsigned long long int>(atomic_threads));
-
-    assert(cudaFree(base_total) == cudaSuccess);
-    assert(cudaFree(stat_total) == cudaSuccess);
-    assert(cudaFree(base_olds) == cudaSuccess);
-    assert(cudaFree(stat_olds) == cudaSuccess);
   }
-
-  assert(cudaFree(sink) == cudaSuccess);
 }
 
 #endif // _CCCL_CUDA_COMPILATION()
@@ -636,20 +632,16 @@ int main(int, char**)
   test_parity();
 #if _CCCL_CUDA_COMPILATION()
   // force_include.h makes this main __host__ __device__ and runs it twice: on the host,
-  // then inside a kernel. Only the host run can launch kernels and reach the runtime API
-  // that resets and reads the record, so NV_IS_HOST selects the driver of the test, not
-  // the code under test -- the instrumented arithmetic itself runs on the GPU.
+  // then inside a kernel. Only the host run can launch kernels and reach the host API that
+  // resets and reads the record, so NV_IS_HOST selects the driver of the test, not the code
+  // under test -- the instrumented arithmetic itself runs on the GPU.
   //
   // The record is per-device state that the reset and the read place through a stream, so
   // the test owns one and launches everything on it.
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (cudaStream_t raw_stream = nullptr; //
-     assert(cudaStreamCreate(&raw_stream) == cudaSuccess);
-     const cuda::stream_ref stream{raw_stream};
-     test_device_record(stream);
-     test_event_counters(stream);
-     assert(cudaStreamDestroy(raw_stream) == cudaSuccess);))
+  NV_IF_TARGET(NV_IS_HOST,
+               (const cuda::stream stream{cuda::device_ref{0}}; //
+                test_device_record(stream);
+                test_event_counters(stream);))
 #endif // _CCCL_CUDA_COMPILATION()
   return 0;
 }

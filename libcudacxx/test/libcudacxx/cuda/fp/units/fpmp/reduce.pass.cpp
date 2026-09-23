@@ -21,10 +21,13 @@
 // UNSUPPORTED: force-tile
 // error: calling a __host__ __device__ function in tile is not allowed
 
+#include <cuda/devices>
 #include <cuda/fpmp>
+#include <cuda/launch>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
+#include <cuda/stream>
 
 #include "test_macros.h"
 
@@ -63,16 +66,20 @@ __global__ void test_reduce_kernel(unsigned int seed)
 
 // The launches must live outside the NV_IF_TARGET(NV_IS_HOST) block in main(): nvcc's device
 // pass discards that block, so the kernel template would never be instantiated for the device
-// and every launch would fail with cudaErrorInvalidDeviceFunction.
+// and every launch would fail for want of a device function.
 void run_reduce()
 {
   const unsigned int seed = 10;
-  test_reduce_kernel<4, cudax::fp32mp2><<<1, 4>>>(seed);
-  test_reduce_kernel<32, cudax::fp32mp2><<<1, 64>>>(seed);
-  test_reduce_kernel<4, cudax::fp64mp2><<<1, 4>>>(seed);
-  test_reduce_kernel<32, cudax::fp64mp2><<<1, 64>>>(seed);
-  assert(cudaGetLastError() == cudaSuccess);
-  assert(cudaDeviceSynchronize() == cudaSuccess);
+  const cuda::stream stream{cuda::device_ref{0}};
+
+  const auto narrow_config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<4>());
+  const auto wide_config   = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<64>());
+
+  cuda::launch(stream, narrow_config, test_reduce_kernel<4, cudax::fp32mp2>, seed);
+  cuda::launch(stream, wide_config, test_reduce_kernel<32, cudax::fp32mp2>, seed);
+  cuda::launch(stream, narrow_config, test_reduce_kernel<4, cudax::fp64mp2>, seed);
+  cuda::launch(stream, wide_config, test_reduce_kernel<32, cudax::fp64mp2>, seed);
+  stream.sync();
 }
 #endif // _CCCL_CUDA_COMPILATION()
 

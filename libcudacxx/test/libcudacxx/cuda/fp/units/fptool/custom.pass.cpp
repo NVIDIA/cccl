@@ -32,6 +32,16 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+// Host-side allocation and launch machinery, which NVRTC's device-only translation unit has
+// no use for and cannot parse; everything that needs it is guarded the same way.
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/buffer>
+#  include <cuda/devices>
+#  include <cuda/launch>
+#  include <cuda/memory_resource>
+#  include <cuda/stream>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
+
 // <cuda/stream> is only usable where the CUDA runtime is: under NVRTC cuda::stream_ref is left
 // undefined while get_stream.h still returns it by value. The stream-based runtime-size tests
 // below are host-side and carry the same guard.
@@ -543,28 +553,32 @@ __global__ void device_set_size_kernel(int new_size, int* observed)
 // in the new format without any synchronization in between.
 void test_runtime_sizes(cuda::stream_ref stream)
 {
-  double* sum           = nullptr;
-  int* mant_size        = nullptr;
-  const double sum_full = 1.0 + 0x1p-30;
-  assert(cudaMallocManaged(&sum, sizeof(double)) == cudaSuccess);
-  assert(cudaMallocManaged(&mant_size, sizeof(int)) == cudaSuccess);
+  // Unified memory, so the kernel results below are read back without a copy. The legacy
+  // resource is the one spelling that works on every supported toolkit.
+  cuda::mr::synchronous_resource_adapter<cuda::mr::legacy_managed_memory_resource> managed{
+    cuda::mr::legacy_managed_memory_resource{}};
+  const auto one_thread = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
+
+  auto sum_storage       = cuda::make_buffer<double>(stream, managed, 1, cuda::no_init);
+  auto mant_size_storage = cuda::make_buffer<int>(stream, managed, 1, cuda::no_init);
+  double* sum            = sum_storage.data();
+  int* mant_size         = mant_size_storage.data();
+  const double sum_full  = 1.0 + 0x1p-30;
 
   // Untouched, the sizes are the native ones, so the small term survives.
   assert(cudax::fp_custom_get_device_mantissa_size(stream) == 52);
   assert(cudax::fp_custom_get_device_exponent_size(stream) == 11);
 
-  dynamic_size_kernel<<<1, 1, 0, stream.get()>>>(sum, mant_size);
-  assert(cudaGetLastError() == cudaSuccess);
-  assert(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  cuda::launch(stream, one_thread, dynamic_size_kernel, sum, mant_size);
+  stream.sync();
   assert(*sum == sum_full);
   assert(*mant_size == 52);
 
   // 23 bits cannot hold a term 30 binades down, and the kernel needs no synchronization to
   // see the new size: the copy is ahead of it on the stream.
   cudax::fp_custom_set_device_mantissa_size(23, stream);
-  dynamic_size_kernel<<<1, 1, 0, stream.get()>>>(sum, mant_size);
-  assert(cudaGetLastError() == cudaSuccess);
-  assert(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  cuda::launch(stream, one_thread, dynamic_size_kernel, sum, mant_size);
+  stream.sync();
   assert(*sum == 1.0);
   assert(*mant_size == 23);
   assert(cudax::fp_custom_get_device_mantissa_size(stream) == 23);
@@ -580,11 +594,11 @@ void test_runtime_sizes(cuda::stream_ref stream)
   assert(cudax::fp_custom_get_host_exponent_size() == 11);
 
   // A write from device code reaches the same variable the host accessors see.
-  int* observed = nullptr;
-  assert(cudaMallocManaged(&observed, sizeof(int)) == cudaSuccess);
-  device_set_size_kernel<<<1, 32, 0, stream.get()>>>(40, observed);
-  assert(cudaGetLastError() == cudaSuccess);
-  assert(cudaStreamSynchronize(stream.get()) == cudaSuccess);
+  auto observed_storage = cuda::make_buffer<int>(stream, managed, 1, cuda::no_init);
+  int* observed         = observed_storage.data();
+  cuda::launch(
+    stream, cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<32>()), device_set_size_kernel, 40, observed);
+  stream.sync();
   assert(*observed == 40);
   assert(cudax::fp_custom_get_device_mantissa_size(stream) == 40);
 
@@ -593,10 +607,6 @@ void test_runtime_sizes(cuda::stream_ref stream)
   cudax::fp_custom_set_device_exponent_size(11, stream);
   assert(cudax::fp_custom_get_device_mantissa_size(stream) == 52);
   assert(cudax::fp_custom_get_device_exponent_size(stream) == 11);
-
-  assert(cudaFree(sum) == cudaSuccess);
-  assert(cudaFree(mant_size) == cudaSuccess);
-  assert(cudaFree(observed) == cudaSuccess);
 }
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
@@ -607,11 +617,7 @@ int main(int, char**)
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
   // force_include.h runs this main on the host and then inside a kernel; only the host run
   // can create a stream and launch, so NV_IS_HOST selects the driver, not the code tested.
-  NV_IF_TARGET(NV_IS_HOST,
-               (cudaStream_t raw_stream = nullptr; //
-                assert(cudaStreamCreate(&raw_stream) == cudaSuccess);
-                test_runtime_sizes(cuda::stream_ref{raw_stream});
-                assert(cudaStreamDestroy(raw_stream) == cudaSuccess);))
+  NV_IF_TARGET(NV_IS_HOST, (const cuda::stream stream{cuda::device_ref{0}}; test_runtime_sizes(stream);))
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
   return 0;
