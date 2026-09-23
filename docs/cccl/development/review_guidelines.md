@@ -126,10 +126,9 @@ via `cub::detail::ptx_compute_cap`. PDL may only be enabled if
 -->
 
 When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
-at the kernel launcher, flag any global memory access in the kernel's body (i.e., a load from or a
-store to a pointer passed at the kernel's interface) that happens before any call to
-`_CCCL_PDL_GRID_DEPENDENCY_SYNC` — the previous kernel may still be writing that memory — unless the
-access has a comment explaining why a PDL sync can come later.
+at the kernel launcher, flag any global-memory access in the kernel's body that happens before a
+call to `_CCCL_PDL_GRID_DEPENDENCY_SYNC` by that thread — the previous kernel's writes may not be
+visible yet — unless the access has a comment explaining why a PDL sync can come later.
 
 ## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
 
@@ -256,6 +255,76 @@ iterators, …), verify every observable property of the old type is preserved: 
 layout (downstream code `memcpy`s them), size/alignment, implicit conversions and promotions, overload
 resolution, and numerical behavior.
 
+## build.windows-min-max-macro (important, C++ code calling `.max()`/`.min()` or naming a new member/trait `max`/`min`)
+
+<!-- provenance:
+  #8875→#9246 argument-annotation trait member named max, computed via unparenthesized numeric_limits<T>::max(), a preprocessor argument-count error under <windows.h>'s max/min macros;
+  renamed to highest/lowest and parenthesized
+-->
+
+Flag an unparenthesized call to a function literally named `max`/`min` (e.g.
+`std::numeric_limits<T>::max()`), and any new member or trait named `max`/`min`. On Windows,
+`<windows.h>` defines `max`/`min` as function-like macros, breaking such code. Headers sandwiched
+between `<cuda/std/__cccl/prologue.h>`/`epilogue.h` (libcudacxx, cudax) are safe; everywhere else
+(CUB, Thrust, tests, examples), require the macro-safe spelling `(std::numeric_limits<T>::max)()`
+and prefer other member names. Candidate for a pre-commit grep.
+
+## perf.benchmark-exec-tag-sync-without-sync-call (important, nvbench benchmark harness `state.exec(...)` calls)
+
+<!-- provenance:
+  #3114→#5350 merge_sort keys benchmark switched no_batch→sync while adding PDL although the exec lambda never synchronizes;
+  reverted as an unnecessary workaround
+-->
+
+When a diff makes an nvbench `state.exec(...)` call use `nvbench::exec_tag::sync` (which tells
+nvbench that the benchmark region will perform CUDA synchronization itself), or changes the lambda
+body of a call already using such a tag, verify the lambda actually performs any explicit CUDA
+synchronization (like `launch.get_stream().sync()`, `cudaStreamSynchronize`). Parallel algorithms in
+Thrust and `cuda::std::` synchronize internally, except under `thrust::cuda::par_nosync`. Without a
+sync, the measured time silently excludes some or all of the kernel's execution. If the lambda does
+not sync, `exec_tag::no_batch` or `exec_tag::timer` is likely what was intended.
+
+## api.narrowed-constraints-on-reimplementation (important, refactors/reimplementations of existing public APIs)
+
+<!-- provenance:
+  #1817→#2075 cub::DeviceMerge static_assert requiring identical value_type across both merge inputs, stricter than the thrust::merge implementation it replaced
+-->
+
+When a diff reimplements or reroutes an existing public API (port to a different backend, dispatch-layer
+swap, internal rewrite), flag newly added `static_assert`/`enable_if`/concept/trait constraints that
+reject inputs the previous implementation accepted (e.g. requiring identical `value_type` across two
+input ranges where differing types previously worked). Rejecting previously accepted code is a breaking
+change for downstream users; narrowing is only acceptable as a bug or conformance fix (the previously
+accepted inputs produced wrong results or violated the documented contract), and must be called out in
+the PR description.
+
+## correctness.raii-move-no-disarm (critical, RAII/resource-owning/scope-guard types with move construction)
+
+<!-- provenance:
+  #5975→#10565 cudax scope_exit's move constructor was = default, copying the active flag without deactivating the moved-from source;
+  both objects ran the cleanup action on destruction
+-->
+
+When a diff adds or defaults a move constructor for a type whose destructor conditionally runs an
+action or releases a resource (an "active"/"engaged"/"owns" flag, a handle nulled on release), verify
+the move disarms the moved-from source — resets its flag or nulls its handle, not merely copies it.
+`= default` is a red flag: it member-wise copies the flag, so both objects fire the cleanup on
+destruction. Require a test that moves the object and confirms the action fires exactly once and that the
+moved-from object has been disarmed.
+
+## correctness.verification-removed-without-replacement (important, any diff deleting a check or test)
+
+<!-- provenance:
+  #3743→#3866 dropping deprecated cub::Traits CATEGORY usage also deleted the static_assert cross-checks (old_IS_SMALL_UNSIGNED, "sanity check, remove eventually") comparing new type classification to the old one, breaking dispatch for library-extended types (NVBug 5121653);
+  #3970→#9211 (issue #807) generate/raw_reference_cast simplification deleted the compile-fail harness (runtime_static_assert.h, unittest_static_assert.cu) with no replacement
+-->
+
+When a diff deletes a check verifying a property, but does not delete the checked entity, like a
+`static_assert` cross-checking a new computation against an old one (tells: "sanity check" comments,
+`old_*` names), a negative or compile-fail test (`*_fail*`, `*_static_assert*`, `UNSUPPORTED`/`XFAIL`
+markers), a runtime assertion, then do not accept the deletion of the check, unless the diff shows the
+property now holds by construction or adds a replacement check verifying the same property.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
@@ -323,3 +392,29 @@ shared-memory padding for the entire translation unit, which can reduce occupanc
 kernels, including in downstream user code. CCCL code must not introduce any `extern __shared__`
 storage with alignment above 16. A different design is required instead, e.g., manual alignment of a
 byte buffer. Static shared memory with alignment > 16 is fine.
+
+## infra.new-cuda-arch-rollout (important, diffs adding support for a CUDA architecture/SM number)
+
+<!-- related: test.new-arch-coverage-gap covers the CI/test-exercise angle for arch-conditional branches in general; this rule is the specific checklist of sibling locations for rolling out a brand-new SM -->
+<!-- provenance:
+  #3550→#4931 sm_120 macros added to nv/target in January 2025; arch_traits<sm_120> (then living in
+  cudax) wasn't added until June 2025, ~4 months later — code branching on NV_PROVIDES_SM_120 got wrong
+  occupancy/shared-memory limits inherited from an older SM in the meantime
+-->
+
+When a diff adds support for a new CUDA architecture (SM number) not previously known to CCCL, go
+through this checklist and verify every applicable entry was updated in the same diff (or a linked
+follow-up PR):
+- `libcudacxx/include/nv/detail/__target_macros` and `libcudacxx/include/nv/target` — the
+  `NV_PROVIDES_SM_XXX`/`NV_IS_EXACTLY_SM_XXX` macro pair itself.
+- `libcudacxx/include/cuda/std/__cccl/execution_space.h` — the new SM added to
+  `_CCCL_KNOWN_CUDA_ARCH_LIST` (and to `_CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST` if it needs a
+  family-specific `arch_id`/`arch_traits` entry distinct from its base SM).
+- `libcudacxx/include/cuda/__device/arch_traits.h` — new `arch_traits<arch_id::sm_XXX>()`
+  specialization with its own limits, not copied from an older SM.
+- `libcudacxx/test/libcudacxx/cuda/ccclrt/device/{all_arch_ids,arch_id,arch_id_fmt,arch_traits.c2h,is_specific_arch}`
+  — exhaustive per-arch test tables.
+- `cub/test/catch2_test_util_device.cu` — new `GEN_POLICY` entry in the `policy_hub_all` self-test.
+- `cmake/CCCLCheckCudaArchitectures.cmake` — `all-major-cccl`/`all-cccl` resolution, if the new SM
+  belongs in default multi-arch builds.
+- Recommended: `ci/matrix.yaml` — new SM number added to at least one `sm:`/`codegen_target` job.
