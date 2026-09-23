@@ -48,14 +48,14 @@ def test_ctk_version_keys_are_strings(matrix) -> None:
 
 
 def test_a_numeric_ctk_version_key_is_rejected() -> None:
-    matrix = yaml.safe_load("ctk_versions:\n  14.12: {alias: ['14.X']}\n")
+    matrix = yaml.safe_load("ctk_versions:\n  99.10: {alias: ['99.X']}\n")
     with pytest.raises(ValueError, match="must be quoted strings"):
-        resolve_ctk(matrix, "14.X")
+        resolve_ctk(matrix, "99.X")
 
 
 def test_a_multi_digit_ctk_minor_resolves() -> None:
-    matrix = yaml.safe_load("ctk_versions:\n  '14.12': {alias: ['14.X']}\n")
-    assert resolve_ctk(matrix, "14.X") == "14.12"
+    matrix = yaml.safe_load("ctk_versions:\n  '99.10': {alias: ['99.X']}\n")
+    assert resolve_ctk(matrix, "99.X") == "99.10"
 
 
 def test_an_unknown_ctk_is_rejected(matrix) -> None:
