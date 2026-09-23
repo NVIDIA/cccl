@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <cuda/execution>
 #include <cuda/std/execution>
 #include <cuda/stream>
 
