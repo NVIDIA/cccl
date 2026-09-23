@@ -12,7 +12,9 @@
  * @file
  * @brief Adjacent difference over sharded arrays. Each shard computes its
  *        differences locally; the only cross-place traffic is one boundary
- *        element per shard (the predecessor of the shard's first element).
+ *        element per shard (the predecessor of the shard's first element),
+ *        read directly from the previous shard through the shared address
+ *        space.
  */
 
 #pragma once
@@ -30,15 +32,13 @@
 #include <cuda/std/functional>
 
 #include <cuda/experimental/__places/place_group.cuh>
-#include <cuda/experimental/__sharded/composition/pinned_staging.cuh>
-#include <cuda/experimental/__sharded/composition/verbs.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
 #include <cuda/experimental/__sharded/container/default_envs.cuh>
-#include <cuda/experimental/__sharded/container/sharded_array.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
-#include <cuda/experimental/__sharded/engine/generic_map.cuh>
+#include <cuda/experimental/__sharded/engine/visit_shards.cuh>
 
+#include <cstddef>
 #include <stdexcept>
 #include <vector>
 
@@ -52,8 +52,8 @@ namespace reserved
  * @brief Per-shard adjacent difference kernel.
  *
  * output[i] = op(input[i], input[i-1]) for i > 0.
- * output[0] = op(input[0], *prev_last) when a predecessor exists (pinned host
- * boundary element from the previous shard), otherwise input[0].
+ * output[0] = op(input[0], *prev_last) when a predecessor exists (the last
+ * element of the previous non-empty shard, read in place), otherwise input[0].
  */
 template <typename _Tp, typename _BinaryOp>
 __global__ void adjacent_difference_kernel(const _Tp* input, _Tp* output, size_t n, const _Tp* prev_last, _BinaryOp op)
@@ -81,19 +81,23 @@ __global__ void adjacent_difference_kernel(const _Tp* input, _Tp* output, size_t
 /**
  * @brief Out-of-place adjacent difference over sharded views:
  * `out[i] = op(in[i], in[i-1])` across the global index space (`out[0] =
- * in[0]`), with the boundary element of each shard's predecessor staged
- * through pinned host memory (one element per shard — the degenerate halo).
+ * in[0]`). Each shard's kernel reads its predecessor's last element directly
+ * from the previous non-empty shard (the degenerate one-element halo): no
+ * staging buffer, no host round trip.
  *
- * SYNCHRONOUS-ONLY in this form: the boundary staging requires a host
- * synchronization mid-flight, so the call refuses at entry under
- * `sync_policy::forbid` and under CUDA graph capture, before any work is
- * enqueued. (An asynchronous variant reading the predecessor's last element
- * directly through the shared address space is the recorded follow-up.)
+ * A map-family call with one extra edge per shard boundary: shard g's kernel
+ * waits (event edge, non-blocking, capture-legal) on the lane of the shard
+ * whose element it reads, so a predecessor still being produced on its own
+ * lane is observed complete. Everything else follows the map-family contract
+ * (`__visit_shards`): stream on the call environment = asynchronous,
+ * lane-ordered by default, `composition::bracketed` on request; no stream =
+ * synchronous convenience (refused under `sync_policy::forbid`).
  *
- * Views must be co-partitioned. Boundary staging is drawn from a memory
- * resource on the call environment when one is present
- * (`cuda::mr::get_memory_resource`, host-accessible + async-transfer-capable),
- * otherwise from the cached pinned arena.
+ * The direct read requires the previous shard's memory to be addressable
+ * from the reading shard's place — always true within one device (locality
+ * domains share the address space), and for peer-mapped multi-device arrays.
+ *
+ * Views must be co-partitioned.
  *
  * @pre `in` and `out` do not overlap: `in[i-1]` is read while `out[i]` is
  *      written, on per-shard streams, so any overlap (including the exact
@@ -117,77 +121,45 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
 
   reserved::__check_copartitioned(out, in, "sharded::adjacent_difference");
   const ::std::size_t num_shards = reserved::__shard_count(out);
-  reserved::__check_env_count(envs, num_shards, "sharded::adjacent_difference");
   if (num_shards == 0)
   {
     return;
   }
 
-  // Refusals first, before any CUDA call: the boundary staging synchronizes.
-  require_sync_allowed(call_env, "sharded::adjacent_difference (boundary staging synchronizes)");
-  reserved::__check_envs_not_capturing(envs, num_shards, "sharded::adjacent_difference");
-
-  // Boundary staging: one element per shard, host-accessible, from the call
-  // environment's resource when present, the cached pinned arena otherwise.
-  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  elem_t* h_last              = nullptr;
-  if constexpr (__env_has_mr)
+  // Predecessor per shard: index of the previous NON-EMPTY shard (host-known
+  // from the sizes alone; no data is inspected).
+  constexpr ::std::size_t no_pred = static_cast<::std::size_t>(-1);
+  ::std::vector<::std::size_t> pred(num_shards, no_pred);
   {
-    auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
-    h_last          = static_cast<elem_t*>(staging_mr.allocate_sync(num_shards * sizeof(elem_t), alignof(elem_t)));
-  }
-  else
-  {
-    h_last = static_cast<elem_t*>(reserved::__pinned_staging(num_shards * sizeof(elem_t)));
-  }
-
-  // Phase 1: gather each non-empty input shard's last element on its
-  // environment stream, then synchronize (the host must see the values and
-  // the successor kernels read them zero-copy).
-  for (const auto g : each(num_shards))
-  {
-    const auto& s = in.shard(g);
-    if (s.size == 0)
-    {
-      continue;
-    }
-    cuda_safe_call(cudaMemcpyAsync(
-      &h_last[g], s.data + s.size - 1, sizeof(elem_t), cudaMemcpyDeviceToHost, ::cuda::get_stream(envs[g]).get()));
-  }
-  barrier(envs);
-
-  // Predecessor per shard: the last element of the previous NON-EMPTY shard.
-  ::std::vector<const elem_t*> prev(num_shards, nullptr);
-  {
-    const elem_t* running = nullptr;
+    ::std::size_t running = no_pred;
     for (const auto g : each(num_shards))
     {
-      prev[g] = running;
+      pred[g] = running;
       if (in.shard(g).size != 0)
       {
-        running = &h_last[g];
+        running = g;
       }
     }
   }
 
-  // Phase 2: per-shard difference kernels through the shared driver (its
-  // synchronous tail provides this form's final join).
-  __detail::__generic_map(
+  __detail::__visit_shards(
     out, envs, call_env, "sharded::adjacent_difference", [&](::std::size_t g, const auto& d_out, cudaStream_t s) {
+      const elem_t* prev_last = nullptr;
+      if (pred[g] != no_pred)
+      {
+        // The halo edge: the predecessor was (possibly) produced on its own
+        // lane; make this lane observe that lane's enqueued work before the
+        // read. A no-op when both shards share a stream.
+        __detail::__wait_stream_on(s, ::cuda::get_stream(envs[pred[g]]).get());
+        const auto& p = in.shard(pred[g]);
+        prev_last     = p.data + p.size - 1;
+      }
       constexpr int block_size = 256;
       const int num_blocks     = static_cast<int>((d_out.size + block_size - 1) / block_size);
       reserved::adjacent_difference_kernel<<<num_blocks, block_size, 0, s>>>(
-        in.shard(g).data, d_out.data, d_out.size, prev[g], op);
+        in.shard(g).data, d_out.data, d_out.size, prev_last, op);
       cuda_safe_call(cudaGetLastError());
     });
-
-  if constexpr (__env_has_mr)
-  {
-    auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
-    staging_mr.deallocate_sync(h_last, num_shards * sizeof(elem_t), alignof(elem_t));
-  }
-  // (arena staging is cached; nothing to release)
 }
 
 /**

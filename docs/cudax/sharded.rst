@@ -134,8 +134,11 @@ environment selects the contract):
   per-shard CUB scans run under ``determinism::run_to_run`` whenever CUB can
   honor it (its known operators on integers, ``plus`` on floating point), or
   under the requirements the call environment carries;
-- ``adjacent_difference``: per-shard differences with each predecessor's
-  boundary element staged through pinned host memory;
+- ``adjacent_difference``: per-shard differences, each shard's kernel
+  reading its predecessor's last element directly from the previous shard
+  through the shared address space (one event edge per shard boundary; a
+  map-family call, asynchronous and capture-legal in the stream-bearing
+  form);
 - ``sort``: global in-place sort, each shard keeping its original
   boundaries (a contiguous array reads as one globally sorted array
   afterwards). The shared-address-space engine: local per-shard sorts,
@@ -404,9 +407,8 @@ work. The refusing set:
 - the synchronous forms, which synchronize with the host and refuse at
   ENTRY, before any work is enqueued: ``reduce`` / ``sum`` / ``min`` /
   ``max``, the no-stream form of the scans, ``count`` / ``count_if``,
-  ``histogram_even``, ``adjacent_difference``,
-  ``select_if`` / ``remove_if`` / ``copy_if``, ``unique``,
-  ``adjacent_difference``.
+  ``histogram_even``, the no-stream form of ``adjacent_difference``,
+  ``select_if`` / ``remove_if`` / ``copy_if``, ``unique``.
 
 The guards also refuse when a global-mode capture is active anywhere in the
 process, since the underlying synchronization would invalidate it under the

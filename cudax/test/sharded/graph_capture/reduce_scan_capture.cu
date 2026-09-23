@@ -113,6 +113,7 @@ void test_reduce_scan_capture(place_group& group)
 {
   const size_t n  = 100003;
   auto data       = sharded_array<long long>::allocate(group, n);
+  auto diff       = sharded_array<long long>::allocate_like(data);
   const size_t P  = data.num_shards();
   const auto envs = default_envs(data);
   ::std::vector<long long> input(n);
@@ -132,6 +133,7 @@ void test_reduce_scan_capture(place_group& group)
 
   cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
   data.fork_from(origin);
+  diff.fork_from(origin);
 
   // Every synchronous form refuses with std::runtime_error and leaves the
   // capture ACTIVE
@@ -189,7 +191,12 @@ void test_reduce_scan_capture(place_group& group)
   reduce_into(data, envs, d_total, ::cuda::std::plus<long long>{}, 0LL, ce);
   reduce_into_lanes(data, envs, d_lanes, ::cuda::std::plus<long long>{}, lanes_init);
   transform(data, envs, plus_one_op{}, ce);
+  // adjacent_difference is a map-family call with one halo edge per shard
+  // boundary (direct read of the predecessor's last element): pure stream
+  // work, so it captures too. Reads `data` after the transform above.
+  adjacent_difference(data, envs, diff, ::cuda::std::minus<long long>{}, ce);
   data.join_into(origin);
+  diff.join_into(origin);
 
   cudaGraph_t graph = nullptr;
   cuda_safe_call(cudaStreamEndCapture(origin, &graph));
@@ -211,6 +218,15 @@ void test_reduce_scan_capture(place_group& group)
     cuda_safe_call(cudaGraphLaunch(exec, origin));
     cuda_safe_call(cudaStreamSynchronize(origin));
     check(data, d_total, d_lanes, expected, total);
+    // diff[0] = expected[0]; diff[i] = expected[i] - expected[i-1], across
+    // every shard boundary
+    ::std::vector<long long> host_diff(n);
+    diff.copy_to_host(host_diff.data());
+    EXPECT(host_diff[0] == expected[0]);
+    for (size_t i = 1; i < n; i++)
+    {
+      EXPECT(host_diff[i] == expected[i] - expected[i - 1]);
+    }
   }
 
   // Eager reduce/scan work normally after the capture (state not wedged)
