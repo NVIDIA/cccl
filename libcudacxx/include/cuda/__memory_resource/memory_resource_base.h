@@ -23,8 +23,8 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__execution/property_query.h>
 #  include <cuda/__fwd/get_memory_resource.h>
-#  include <cuda/std/__execution/env.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

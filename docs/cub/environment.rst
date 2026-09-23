@@ -97,7 +97,8 @@ Advertised query metadata and custom environments
 
 Use ``cuda::execution::property_keys_t<T>`` to obtain the query expressions advertised by an
 environment. ``cuda::std::execution::prop``, ``cuda::std::execution::env``,
-``cuda::stream_ref``, and CCCL memory resources provide this metadata automatically.
+``cuda::stream_ref``, ``cuda::mr::memory_resource_base`` derivatives, and ``cuda::mr::resource_ref`` provide this
+metadata automatically.
 User-defined environments can customize the alias by defining
 ``cuda::std::remove_cvref_t<T>::property_keys`` as a
 ``cuda::execution::property_key_list`` specialization. ``cuda::std::execution::env``

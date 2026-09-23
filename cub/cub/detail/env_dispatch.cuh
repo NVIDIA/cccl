@@ -42,7 +42,7 @@ namespace detail
 //! @param[in] env The environment or object to query.
 //! @return The query result when selected; otherwise @p fallback.
 template <bool UseAdvertisedQueries, typename QueryT, typename FallbackT, typename EnvT>
-CUB_RUNTIME_FUNCTION auto query_or(QueryT query, FallbackT&& fallback, const EnvT& env)
+CUB_RUNTIME_FUNCTION auto query_or([[maybe_unused]] QueryT query, FallbackT&& fallback, const EnvT& env)
 {
   if constexpr (UseAdvertisedQueries && ::cuda::std::execution::__detail::__has_property_keys<EnvT>)
   {
