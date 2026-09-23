@@ -148,6 +148,7 @@ set(
   cuda/experimental/__sharded/container/sharded_array.cuh
   cuda/experimental/__sharded/composition/fork_join.cuh
   cuda/experimental/__sharded/composition/pinned_staging.cuh
+  cuda/experimental/__sharded/composition/for_each_shard.cuh
   cuda/experimental/__sharded/composition/verbs.cuh
   cuda/experimental/__sharded/engine/visit_shards.cuh
   cuda/experimental/__sharded/engine/mgmn.cuh

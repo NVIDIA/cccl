@@ -104,7 +104,8 @@ an explicit-environments form ``algo(view, envs, ...)`` and, for self-bound
 structures, the one-argument form ``algo(view, ...)``; a trailing per-call
 environment selects the contract):
 
-- ``for_each_shard``: the map family's driver as a public verb — run a
+- ``for_each_shard`` (a composition verb, ``composition/for_each_shard.cuh``,
+  not an algorithm): the tier's shard visitor made public — run a
   caller-supplied body once per non-empty shard, on the shard's stream and
   in its execution context, under the same call contract as every
   algorithm below (environment-count guard, lane-ordered or bracketed
