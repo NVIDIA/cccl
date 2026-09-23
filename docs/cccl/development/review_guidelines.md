@@ -126,10 +126,9 @@ via `cub::detail::ptx_compute_cap`. PDL may only be enabled if
 -->
 
 When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
-at the kernel launcher, flag any global memory access in the kernel's body (i.e., a load from or a
-store to a pointer passed at the kernel's interface) that happens before any call to
-`_CCCL_PDL_GRID_DEPENDENCY_SYNC` — the previous kernel may still be writing that memory — unless the
-access has a comment explaining why a PDL sync can come later.
+at the kernel launcher, flag any global-memory access in the kernel's body that happens before a
+call to `_CCCL_PDL_GRID_DEPENDENCY_SYNC` by that thread — the previous kernel's writes may not be
+visible yet — unless the access has a comment explaining why a PDL sync can come later.
 
 ## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
 
@@ -284,6 +283,34 @@ synchronization (like `launch.get_stream().sync()`, `cudaStreamSynchronize`). Pa
 Thrust and `cuda::std::` synchronize internally, except under `thrust::cuda::par_nosync`. Without a
 sync, the measured time silently excludes some or all of the kernel's execution. If the lambda does
 not sync, `exec_tag::no_batch` or `exec_tag::timer` is likely what was intended.
+
+## api.narrowed-constraints-on-reimplementation (important, refactors/reimplementations of existing public APIs)
+
+<!-- provenance:
+  #1817→#2075 cub::DeviceMerge static_assert requiring identical value_type across both merge inputs, stricter than the thrust::merge implementation it replaced
+-->
+
+When a diff reimplements or reroutes an existing public API (port to a different backend, dispatch-layer
+swap, internal rewrite), flag newly added `static_assert`/`enable_if`/concept/trait constraints that
+reject inputs the previous implementation accepted (e.g. requiring identical `value_type` across two
+input ranges where differing types previously worked). Rejecting previously accepted code is a breaking
+change for downstream users; narrowing is only acceptable as a bug or conformance fix (the previously
+accepted inputs produced wrong results or violated the documented contract), and must be called out in
+the PR description.
+
+## correctness.raii-move-no-disarm (critical, RAII/resource-owning/scope-guard types with move construction)
+
+<!-- provenance:
+  #5975→#10565 cudax scope_exit's move constructor was = default, copying the active flag without deactivating the moved-from source;
+  both objects ran the cleanup action on destruction
+-->
+
+When a diff adds or defaults a move constructor for a type whose destructor conditionally runs an
+action or releases a resource (an "active"/"engaged"/"owns" flag, a handle nulled on release), verify
+the move disarms the moved-from source — resets its flag or nulls its handle, not merely copies it.
+`= default` is a red flag: it member-wise copies the flag, so both objects fire the cleanup on
+destruction. Require a test that moves the object and confirms the action fires exactly once and that the
+moved-from object has been disarmed.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
