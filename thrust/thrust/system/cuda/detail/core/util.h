@@ -233,9 +233,9 @@ struct AgentPlan
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
   AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = nullptr)
-      : threads_per_block(PtxPlan::BLOCK_THREADS)
-      , items_per_thread(PtxPlan::ITEMS_PER_THREAD)
-      , items_per_tile(PtxPlan::ITEMS_PER_TILE)
+      : threads_per_block(PtxPlan::block_threads)
+      , items_per_thread(PtxPlan::items_per_thread)
+      , items_per_tile(PtxPlan::items_per_tile)
       , shared_memory_size(temp_storage_size<PtxPlan>::value)
       , grid_size(0)
   {}
