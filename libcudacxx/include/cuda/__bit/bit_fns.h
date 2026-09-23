@@ -26,10 +26,51 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr int __bit_fns_impl(const _Tp __value, const int __rank) noexcept
+{
+  constexpr int __digits = ::cuda::std::numeric_limits<_Tp>::digits;
+  if constexpr (sizeof(_Tp) > sizeof(unsigned))
+  {
+    // Keep only the half that contains the wanted set bit, so the remaining steps run on a narrower type.
+    using __half_bits_t         = ::cuda::std::__make_nbit_uint_t<__digits / 2>;
+    constexpr int __half_bits   = __digits / 2;
+    const auto __low_half       = static_cast<__half_bits_t>(__value);
+    const int __low_half_count  = ::cuda::std::popcount(__low_half);
+    const bool __in_high_half   = __rank >= __low_half_count;
+    const auto __selected_half  = __in_high_half ? static_cast<__half_bits_t>(__value >> __half_bits) : __low_half;
+    const int __selected_rank   = __in_high_half ? __rank - __low_half_count : __rank;
+    const int __selected_offset = __in_high_half ? __half_bits : 0;
+    return __selected_offset + ::cuda::__bit_fns_impl(__selected_half, __selected_rank);
+  }
+  else
+  {
+    auto __window   = +__value; // small types are promoted to 32 bits
+    int __remaining = __rank;
+    int __position  = 0;
+    // Binary search: each step keeps the half of the window that contains the wanted set bit.
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __half_bits = __digits / 2; __half_bits >= 1; __half_bits /= 2)
+    {
+      // __half_bits < __digits, so neither shift reaches the width of the type.
+      const auto __low_half_mask = static_cast<_Tp>((_Tp{1} << __half_bits) - _Tp{1});
+      const int __low_half_count = ::cuda::std::popcount(static_cast<_Tp>(__window & __low_half_mask));
+      if (__remaining >= __low_half_count)
+      {
+        __remaining -= __low_half_count;
+        __position += __half_bits;
+        __window = __window >> __half_bits;
+      }
+    }
+    return __position;
+  }
+}
 
 //! @brief Finds the position of the set bit with rank \p __rank in \p __value, counting set bits from the least
 //! significant one.
@@ -61,23 +102,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
     }
   }
 #endif // _CCCL_BUILTIN_CONSTANT_P
-  auto __window   = +__value; // small types are promoted to 32 bits
-  int __remaining = __rank;
-  int __position  = 0;
-  // Binary search: each step keeps the half of the window that contains the wanted set bit.
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int __half_width = __digits / 2; __half_width >= 1; __half_width /= 2)
-  {
-    // __half_width < __digits, so neither shift reaches the width of the type.
-    const auto __low_half_mask = static_cast<_Tp>((_Tp{1} << __half_width) - _Tp{1});
-    const int __low_half_count = ::cuda::std::popcount(static_cast<_Tp>(__window & __low_half_mask));
-    if (__remaining >= __low_half_count)
-    {
-      __remaining -= __low_half_count;
-      __position += __half_width;
-      __window = __window >> __half_width;
-    }
-  }
+  const int __position = ::cuda::__bit_fns_impl(__value, __rank);
   _CCCL_ASSUME(__position >= 0 && __position < __digits);
   return __position;
 }
