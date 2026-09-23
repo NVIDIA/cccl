@@ -21,7 +21,8 @@
  *    store lives in domain `i` (`CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN`,
  *    both VMM physical handles and stream-ordered memory pools),
  *  - `exec_place::locality_domains(dev)` / `make_locality_domain_grid(dev)`
- *    build a grid over every domain of a device,
+ *    build a grid over every domain of a device;
+ *    `exec_place::all_locality_domains()` over every domain of every device,
  *  - `locality_domain_helper` enumerates the domains of a device.
  *
  * `exec_place::locality_domain(d, i)` and `data_place::locality_domain(d, i)`
@@ -973,6 +974,24 @@ make_locality_domain_grid(int dev_id, locality_domain_sm_split split = locality_
 inline exec_place exec_place::locality_domains(int dev_id, locality_domain_sm_split split)
 {
   return make_locality_domain_grid(dev_id, split);
+}
+
+//! Machine-wide grid over every domain of every device, like all_devices() one level down
+inline exec_place exec_place::all_locality_domains(locality_domain_sm_split split)
+{
+  const int ndevs = cuda_try<cudaGetDeviceCount>();
+
+  ::std::vector<exec_place> domains;
+  for (int d = 0; d < ndevs; d++)
+  {
+    const unsigned int num_domains = locality_domain_count(d);
+    _CCCL_ASSERT(num_domains > 0, "locality_domain_count never reports zero domains");
+    for (unsigned int i = 0; i < num_domains; i++)
+    {
+      domains.push_back(exec_place::locality_domain(d, static_cast<int>(i), split));
+    }
+  }
+  return make_grid(mv(domains));
 }
 
 /**
