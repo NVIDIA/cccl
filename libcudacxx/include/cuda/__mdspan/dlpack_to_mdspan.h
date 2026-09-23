@@ -167,6 +167,7 @@ __to_mdspan(const ::DLTensor& __tensor)
     _CCCL_THROW(::std::invalid_argument, "DLTensor data type does not match expected type");
   }
   ::cuda::std::array<int64_t, _Rank> __extents_array{};
+  // A rank-0 mdspan has required_span_size() == 1, so it is not empty.
   bool __is_empty = false;
   if constexpr (_Rank > 0)
   {
@@ -198,10 +199,7 @@ __to_mdspan(const ::DLTensor& __tensor)
     {
       _CCCL_THROW(::std::invalid_argument, "DLTensor byte_offset must be a multiple of element size");
     }
-    if (__tensor.data != nullptr)
-    {
-      __data = reinterpret_cast<__element_type*>(__tensor.data);
-    }
+    __data = reinterpret_cast<__element_type*>(__tensor.data);
   }
   else if (__tensor.data != nullptr)
   {
@@ -209,7 +207,7 @@ __to_mdspan(const ::DLTensor& __tensor)
   }
   // this is not the exact solution because data type size != data type alignment.
   // However, it always works for the supported data types.
-  if (__tensor.data != nullptr && __datatype_size > 0 && !::cuda::is_aligned(__data, __datatype_size))
+  if (__datatype_size > 0 && !::cuda::is_aligned(__data, __datatype_size))
   {
     _CCCL_THROW(::std::invalid_argument, "DLTensor data must be aligned to the data type");
   }
