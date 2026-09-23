@@ -400,6 +400,22 @@ When a diff introduces a type as an alias template, users cannot construct it vi
 This is usually fine, unless the alias replaced a public entity that previously supported CTAD,
 in which case the change breaks CTAD. Flag the alias template and require a test for CTAD to be added.
 
+## correctness.offset-type-narrowing (important, CUB/Thrust device-algorithm dispatches and kernels templated on an offset type)
+
+<!-- provenance:
+  #2234→#4888 new cub::DeviceReduce RFA (deterministic reduce) kernel accepted a generic OffsetT but truncated it to int internally for grid sizing/indexing
+-->
+
+When a dispatch or kernel is templated on an offset type instead of using a fixed-width integral type,
+the entire implementation behind it must support both 32-bit and 64-bit offsets. Flag any unguarded
+conversion of an offset to a narrower type: `static_cast<int>(num_items)`, `int`-typed loop counters,
+or grid-size arithmetic fed from `OffsetT`. Such code compiles and passes small tests but silently
+misbehaves beyond 2^31 elements. A public API accepting a templated offset type must normalize it via
+`cub::detail::choose_offset_t` immediately and pass the adjusted type to the dispatch and kernels, and
+a unit test with a problem size larger than 2^32 is required. Not affected: implementations that accept
+a generic offset type at the device-layer API but dispatch with a fixed 64-bit offset (e.g. lookahead
+scan, transform).
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
