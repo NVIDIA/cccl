@@ -786,6 +786,10 @@ scopes affected by the new declaration; require qualification or confirm no ambi
   renamed back after release branching (pair auto-inferred as #6927→#6937)
 -->
 
+<!-- note: not choosing a name that collides with a different API, but compiles fine, is not
+  something we can automatically detect. This is about API design, for which I think I don't want
+  to have AI input -->
+
 When a diff introduces or renames a public (non-`__`-prefixed) symbol — especially when promoting an
 internal `__detail` utility to a public name — grep every CCCL subproject (cub, thrust, libcudacxx,
 c/parallel, python/cuda_cccl) for the same name or its CamelCase/snake_case variants. Flag a new name
