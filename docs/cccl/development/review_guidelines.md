@@ -364,6 +364,20 @@ fatbin, so a launch can resolve to a stub whose kernel was registered by a diffe
 runtime. Hidden visibility (`_CCCL_KERNEL_ATTRIBUTES`) does not prevent this. Give the kernel internal
 linkage instead: `static` or an unnamed namespace.
 
+## build.no-long (important, C++/CUDA code, including tests)
+
+<!-- provenance:
+  #6068→#6081 c/parallel three_way_partition used `using OffsetT = long`, whose choose_signed_offset static_assert fails under MSVC (LLP64: long is 32-bit)
+-->
+
+Flag any use of `long`/`unsigned long` as a chosen type. `long` is 64-bit on LP64 Linux/macOS but
+32-bit on LLP64 Windows (MSVC, clang-cl), so code assuming either width builds and passes on one
+platform and silently truncates or fails on the other. Use a type that says what is meant:
+`int32_t`/`uint32_t` or `int64_t`/`uint64_t` for exact widths, `size_t` for object sizes,
+`ptrdiff_t` for pointer differences. Acceptable: `long` as a *supported* type for
+traits, overload sets, type-list tests enumerating fundamental types, and external API signatures
+that use it. Candidate for a pre-commit grep.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
