@@ -180,8 +180,8 @@ CUB_TEST(
   c2h::device_vector<value_t> device_values_in = values_in;
   c2h::device_vector<value_t> values_out(num_items);
 
-  c2h::host_vector<key_t> host_keys_in = keys_in;
-  auto expected_input                  = make_pairs(host_keys_in, values_in);
+  const c2h::host_vector<key_t> host_keys_in = keys_in;
+  auto expected_input                        = make_pairs(host_keys_in, values_in);
 
   sort_pairs_kernel<algorithm, key_t, value_t, items_per_thread><<<1, threads>>>(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -192,10 +192,10 @@ CUB_TEST(
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<key_t> host_keys_out     = keys_out;
-  c2h::host_vector<value_t> host_values_out = values_out;
-  auto actual                               = make_pairs(host_keys_out, host_values_out);
-  auto pair_less                            = [](auto lhs, auto rhs) {
+  const c2h::host_vector<key_t> host_keys_out     = keys_out;
+  const c2h::host_vector<value_t> host_values_out = values_out;
+  auto actual                                     = make_pairs(host_keys_out, host_values_out);
+  auto pair_less                                  = [](auto lhs, auto rhs) {
     return popcount_less{}(lhs.first, rhs.first);
   };
 
