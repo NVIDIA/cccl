@@ -276,7 +276,10 @@ struct TestKernel
     {
       const cudax::coop::this_warp warp{config};
       const cudax::coop::generic_group group{
-        cuda::gpu_thread, warp, cudax::coop::group_by<4>{}, cudax::coop::lane_synchronizer{}};
+        cuda::gpu_thread,
+        warp,
+        cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, 4>{}},
+        cudax::coop::lane_synchronizer{}};
 
       if (group.rank(warp) == 0)
       {

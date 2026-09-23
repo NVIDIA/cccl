@@ -111,7 +111,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
   {
     auto& barriers = get_barriers<nbarriers, 0>(level);
 
-    const cudax::coop::group_by<N> mapping{};
+    const cudax::coop::group_by mapping{cuda::std::integral_constant<cuda::std::size_t, N>{}};
     const cudax::coop::barrier_synchronizer synchronizer{barriers};
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 

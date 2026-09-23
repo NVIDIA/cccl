@@ -191,9 +191,15 @@ struct TestKernel
     test_cooperative_algorithm(cudax::coop::this_cluster{config});
 
     test_cooperative_algorithm(cudax::coop::generic_group{
-      cuda::gpu_thread, cudax::coop::this_block{config}, cudax::coop::group_by<2>{}, cudax::coop::lane_synchronizer{}});
+      cuda::gpu_thread,
+      cudax::coop::this_block{config},
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, 2>{}},
+      cudax::coop::lane_synchronizer{}});
     test_cooperative_algorithm(cudax::coop::generic_group{
-      cuda::gpu_thread, cudax::coop::this_block{config}, cudax::coop::group_by<16>{}, cudax::coop::lane_synchronizer{}});
+      cuda::gpu_thread,
+      cudax::coop::this_block{config},
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, 16>{}},
+      cudax::coop::lane_synchronizer{}});
   }
 };
 } // namespace

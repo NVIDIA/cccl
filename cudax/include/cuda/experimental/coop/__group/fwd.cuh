@@ -93,10 +93,10 @@ class group_view;
 template <class _Fn>
 class binary_partition;
 
-template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent, bool _IsAlwaysExhaustive = true>
+template <::cuda::std::size_t _StaticUnitCount, bool _IsAlwaysExhaustive>
 class group_by;
 
-template <class _Data, bool _IsExahustive>
+template <class _Tag, bool _IsAlwaysExahustive>
 class group_as;
 
 class identity_mapping;
