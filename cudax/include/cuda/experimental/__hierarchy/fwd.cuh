@@ -31,13 +31,13 @@
 
 namespace cuda::experimental
 {
-using __implicit_hierarchy_t =
+using __implicit_hierarchy_t _CCCL_NODEBUG =
   hierarchy<thread_level,
             hierarchy_level_desc<grid_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
 
-using __implicit_hierarchy_1d_t =
+using __implicit_hierarchy_1d_t _CCCL_NODEBUG =
   hierarchy<thread_level,
             hierarchy_level_desc<grid_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
             hierarchy_level_desc<cluster_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
