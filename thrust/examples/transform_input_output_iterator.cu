@@ -10,24 +10,24 @@
 // Base 2 fixed point
 class ScaledInteger
 {
-  int raw_value;
+  int val;
   int exponent;
 
 public:
   __host__ __device__ ScaledInteger(int value, int scale)
-      : raw_value{value}
+      : val{value}
       , exponent{scale}
   {}
 
   __host__ __device__ int value() const
   {
-    return raw_value;
+    return val;
   }
 
   __host__ __device__ ScaledInteger rescale(int scale) const
   {
     const int shift  = scale - exponent;
-    const int result = shift < 0 ? raw_value << (-shift) : raw_value >> shift;
+    const int result = shift < 0 ? val << (-shift) : val >> shift;
     return ScaledInteger{result, scale};
   }
 
@@ -42,7 +42,7 @@ public:
     {
       b = b.rescale(a.exponent);
     }
-    return ScaledInteger{a.raw_value + b.raw_value, a.exponent};
+    return ScaledInteger{a.val + b.val, a.exponent};
   }
 };
 
