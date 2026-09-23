@@ -334,11 +334,10 @@ property now holds by construction or adds a replacement check verifying the sam
 
 Flag any manual handling of the caller-supplied `d_temp_storage` in a dispatch: pointer arithmetic,
 hand-computed offsets or alignment, or passing the raw pointer into a kernel argument. Only two forms
-are allowed: (1) algorithms needing no temporary storage return a `temp_storage_bytes` of 1 and never
+are allowed: (1) algorithms needing no temporary storage set `temp_storage_bytes` to 1 and never
 touch the pointer; (2) algorithms needing one or more allocations must carve them out via
 `detail::alias_temporaries` or `detail::temporary_storage::layout`, which alone are allowed to round
-the base pointer up and report the required size. A hand-rolled offset inherits whatever alignment
-the caller's allocation had, and a `_CCCL_ASSERT(is_aligned(...))` compiles out in release builds.
+the base pointer up and report the required size.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
