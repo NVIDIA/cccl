@@ -133,7 +133,7 @@ C2H_CCCLRT_TEST("Library", "[library]")
   // Constructor into moved-from state
   {
     STATIC_REQUIRE(cuda::std::is_nothrow_constructible_v<cudax::library, cudax::no_init_t>);
-    cudax::library lib{cudax::no_init};
+    const cudax::library lib{cudax::no_init};
     REQUIRE(lib.get() == CUlibrary{});
 
     // lib is in a moved-from state
@@ -234,7 +234,7 @@ C2H_CCCLRT_TEST("Library", "[library]")
     {
       auto global_sym = lib.global(global_symbol_name, device);
 
-      cuda::__ensure_current_context context_guard{device};
+      const cuda::__ensure_current_context context_guard{device};
 
       CUdeviceptr global_symbol_ptr;
       cuda::std::size_t global_symbol_size;
@@ -250,7 +250,7 @@ C2H_CCCLRT_TEST("Library", "[library]")
     {
       auto const_sym = lib.global(const_symbol_name, device);
 
-      cuda::__ensure_current_context context_guard{device};
+      const cuda::__ensure_current_context context_guard{device};
 
       CUdeviceptr const_symbol_ptr;
       cuda::std::size_t const_symbol_size;
@@ -335,8 +335,8 @@ C2H_CCCLRT_TEST("Library", "[library]")
 
   // Destructor
   {
-    cudax::library lib1 = cudax::library::from_native_handle(lib1_native);
-    cudax::library lib2 = cudax::library::from_native_handle(lib2_native);
+    const cudax::library lib1 = cudax::library::from_native_handle(lib1_native);
+    const cudax::library lib2 = cudax::library::from_native_handle(lib2_native);
 
     // lib1 and lib2 will be destroyed here, which will unload the libraries
   }

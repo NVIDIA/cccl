@@ -111,7 +111,7 @@ template <typename = void>
       return static_cast<bool>(__ret);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
-      bool __p = static_cast<bool>(::__isGlobal(__ptr));
+      const bool __p = static_cast<bool>(::__isGlobal(__ptr));
       if (__p)
       {
         _CCCL_ASSUME(__p);
@@ -133,7 +133,7 @@ template <typename = void>
       return static_cast<bool>(__ret);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
-      bool __p = static_cast<bool>(::__isConstant(__ptr));
+      const bool __p = static_cast<bool>(::__isConstant(__ptr));
       if (__p)
       {
         _CCCL_ASSUME(__p);
@@ -158,7 +158,7 @@ template <typename = void>
 #    if _CCCL_IS_LOCAL_WORKAROUND_13_1_ENABLED
       bool __p = ::cuda::device::__is_local_cuda_13_1_workaround(__ptr);
 #    else // ^^^ _CCCL_IS_LOCAL_WORKAROUND_13_1_ENABLED ^^^ / vvv other NVCC/NVRTC versions vvv
-      bool __p = static_cast<bool>(::__isLocal(__ptr));
+      const bool __p = static_cast<bool>(::__isLocal(__ptr));
 #    endif // ^^^ other NVCC/NVRTC versions ^^^
       if (__p)
       {
@@ -233,7 +233,7 @@ template <typename = void>
 #    if _CCCL_IS_SHARED_WORKAROUND_12_9_TO_13_1_ENABLED
       bool __p = ::cuda::device::__is_shared_cuda_12_9_workaround(__ptr);
 #    else // ^^^ _CCCL_IS_SHARED_WORKAROUND_12_9_TO_13_1_ENABLED ^^^ / vvv other NVCC/NVRTC versions vvv
-      bool __p = static_cast<bool>(::__isShared(__ptr));
+      const bool __p = static_cast<bool>(::__isShared(__ptr));
 #    endif // ^^^ other NVCC/NVRTC versions ^^^
       if (__p)
       {

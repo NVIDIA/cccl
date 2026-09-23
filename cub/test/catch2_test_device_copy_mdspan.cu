@@ -10,12 +10,12 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
-#include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/std/execution>
 #include <cuda/std/mdspan>
 
 #include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 #include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -105,32 +105,28 @@ CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts and user pro
     REQUIRE(d_input == d_output);
   };
 
-  int current_device;
-  auto error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
   SECTION("DeviceCopy::Copy works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_mdspan_copy(stream.get());
   }
 
   SECTION("DeviceCopy::Copy works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_mdspan_copy(stream);
   }
 
   SECTION("DeviceCopy::Copy works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream = c2h::make_current_device_stream();
+    const cuda::stream_ref stream_ref{stream};
     test_mdspan_copy(stream_ref);
   }
 
   SECTION("DeviceCopy::Copy works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_mdspan_copy(env);
   }
 
@@ -142,8 +138,8 @@ CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts and user pro
 
   SECTION("DeviceCopy::Copy works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    const cuda::stream stream = c2h::make_current_device_stream();
+    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_mdspan_copy(policy);
   }
 }
@@ -161,7 +157,7 @@ CUB_TEST("DeviceCopy::Copy: 2D, 4D mdspan with compatible layouts", "[copy][mdsp
   using cuda::std::layout_stride;
   using mdspan_2d_left_t  = cuda::std::mdspan<int, dims_2d_t, layout_left>;
   using mdspan_strided_2d = cuda::std::mdspan<int, dims_2d_t, layout_stride>;
-  layout_stride::mapping<dims_2d_t> map_out{dims_2d_t{100, 100}, cuda::std::array{1, 100}};
+  const layout_stride::mapping<dims_2d_t> map_out{dims_2d_t{100, 100}, cuda::std::array{1, 100}};
 
   auto d_mdspan_in2  = mdspan_2d_left_t(thrust::raw_pointer_cast(d_input.data()), dims_2d_t{100, 100});
   auto d_mdspan_out2 = mdspan_strided_2d(thrust::raw_pointer_cast(d_output.data()), map_out);
@@ -187,8 +183,8 @@ CUB_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]", CUB_SMALL)
   using cuda::std::layout_stride;
   using mdspan_strided_2d = cuda::std::mdspan<int, dims_2d_t, layout_stride>;
 
-  layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
-  layout_stride::mapping<dims_2d_t> map_out{dims_2d_t{100, 100}, cuda::std::array{220, 2}};
+  const layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
+  const layout_stride::mapping<dims_2d_t> map_out{dims_2d_t{100, 100}, cuda::std::array{220, 2}};
   auto d_mdspan_in  = mdspan_strided_2d(thrust::raw_pointer_cast(d_input.data()), map_in);
   auto d_mdspan_out = mdspan_strided_2d(thrust::raw_pointer_cast(d_output.data()), map_out);
   device_copy_mdspan(d_mdspan_in, d_mdspan_out);
@@ -221,7 +217,7 @@ CUB_TEST("DeviceCopy::Copy: 2D strided mdspan + contiguous mdspan", "[copy][mdsp
   using cuda::std::layout_stride;
   using mdspan_strided_2d    = cuda::std::mdspan<int, dims_2d_t, layout_stride>;
   using mdspan_contiguous_2d = cuda::std::mdspan<int, dims_2d_t>;
-  layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
+  const layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
   auto d_mdspan_in  = mdspan_strided_2d(thrust::raw_pointer_cast(d_input.data()), map_in);
   auto d_mdspan_out = mdspan_contiguous_2d(thrust::raw_pointer_cast(d_output.data()), dims_2d_t{100, 100});
   device_copy_mdspan(d_mdspan_in, d_mdspan_out);

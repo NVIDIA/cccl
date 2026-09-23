@@ -40,9 +40,9 @@ __global__ void InclusiveWarpScanKernel(int* output)
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id       = static_cast<int>(threadIdx.x / 32);
-  int initial_value = 3;
-  int thread_data   = static_cast<int>(threadIdx.x % 32) + warp_id;
+  const int warp_id       = static_cast<int>(threadIdx.x / 32);
+  const int initial_value = 3;
+  int thread_data         = static_cast<int>(threadIdx.x % 32) + warp_id;
 
   // warp #0 input: {0, 1, 2, 3, ..., 31}
   // warp #1 input: {1, 2, 3, 4, ..., 32}
@@ -92,9 +92,9 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id       = static_cast<int>(threadIdx.x / 32);
-  int initial_value = 3; // for each warp
-  int thread_data   = 1;
+  const int warp_id       = static_cast<int>(threadIdx.x / 32);
+  const int initial_value = 3; // for each warp
+  int thread_data         = 1;
   int warp_aggregate;
 
   // warp #0 input: {1, 1, 1, 1, ..., 1}
@@ -131,9 +131,9 @@ CUB_TEST("Warp array-based inclusive scan aggregate works with initial value", "
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start   = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
-    auto end     = start + 32;
-    int init_val = 3;
+    auto start         = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
+    auto end           = start + 32;
+    const int init_val = 3;
 
     cuda::std::fill(start, end, 1); // initialize host input for every warp
 
@@ -166,15 +166,15 @@ __global__ void InclusiveWarpScanPartialKernel(int* output)
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id = static_cast<int>(threadIdx.x / 32);
+  const int warp_id = static_cast<int>(threadIdx.x / 32);
 
-  int initial_value = 3;
-  int thread_data   = static_cast<int>(threadIdx.x % 32) + warp_id;
+  const int initial_value = 3;
+  int thread_data         = static_cast<int>(threadIdx.x % 32) + warp_id;
   if (threadIdx.x % 2 == 1)
   {
     thread_data = -thread_data;
   }
-  int valid_items = 40 - warp_id * 16;
+  const int valid_items = 40 - warp_id * 16;
 
   // warp #0 input: {0, -1, 2, -3, ..., 28, -29, 30, -31}, valid_items: 40 (effectively 32)
   // warp #1 input: {1, -2, 3, -4, ..., 29, -30, 31, -32}, valid_items: 24
@@ -206,9 +206,9 @@ CUB_TEST("Warp array-based partial inclusive scan works with initial value", "[s
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start      = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
-    auto end        = start + 32;
-    int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
+    auto start            = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
+    auto end              = start + 32;
+    const int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
 
     cuda::std::iota(start, end, i); // initialize host input for every warp
     cuda::std::transform(start, end, start, [i](int val) {
@@ -244,11 +244,11 @@ __global__ void InclusiveWarpScanPartialKernelAggr(int* output, int* d_warp_aggr
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id       = static_cast<int>(threadIdx.x / 32);
-  int lane_id       = static_cast<int>(threadIdx.x % 32);
-  int initial_value = 3; // for each warp
-  int thread_data   = (lane_id < num_warps - 1 - warp_id) ? 0 : 1;
-  int valid_items   = 40 - warp_id * 16;
+  const int warp_id       = static_cast<int>(threadIdx.x / 32);
+  const int lane_id       = static_cast<int>(threadIdx.x % 32);
+  const int initial_value = 3; // for each warp
+  int thread_data         = (lane_id < num_warps - 1 - warp_id) ? 0 : 1;
+  const int valid_items   = 40 - warp_id * 16;
   int warp_aggregate;
 
   // warp #0 input: {0, 0, 0, 1, ..., 1}, valid_items: 40 (effectively 32)
@@ -285,10 +285,10 @@ CUB_TEST("Warp array-based partial inclusive scan aggregate works with initial v
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start      = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
-    auto end        = start + 32;
-    int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
-    int init_val    = 3;
+    auto start            = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
+    auto end              = start + 32;
+    const int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
+    const int init_val    = 3;
 
     cuda::std::fill(start + num_warps - 1 - i, end, 1); // initialize host input for every warp
 

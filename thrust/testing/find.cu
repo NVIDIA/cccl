@@ -12,12 +12,12 @@ void TestFindSimple()
 {
   Vector vec{1, 2, 3, 3, 5};
 
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 0) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 1) - vec.begin(), 0);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 2) - vec.begin(), 1);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 3) - vec.begin(), 2);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 4) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 5) - vec.begin(), 4);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 0) - vec.begin() == 5);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 1) - vec.begin() == 0);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 2) - vec.begin() == 1);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 3) - vec.begin() == 2);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 4) - vec.begin() == 5);
+  REQUIRE(thrust::find(vec.begin(), vec.end(), 5) - vec.begin() == 4);
 }
 DECLARE_VECTOR_UNITTEST(TestFindSimple);
 
@@ -28,16 +28,15 @@ InputIterator find(my_system& system, InputIterator first, InputIterator, const 
   return first;
 }
 
-void TestFindDispatchExplicit()
+TEST_CASE("TestFindDispatchExplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFindDispatchExplicit);
 
 template <typename InputIterator, typename T>
 InputIterator find(my_tag, InputIterator first, InputIterator, const T&)
@@ -46,15 +45,14 @@ InputIterator find(my_tag, InputIterator first, InputIterator, const T&)
   return first;
 }
 
-void TestFindDispatchImplicit()
+TEST_CASE("TestFindDispatchImplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::find(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFindDispatchImplicit);
 
 template <class Vector>
 void TestFindIfSimple()
@@ -64,12 +62,12 @@ void TestFindIfSimple()
   Vector vec{1, 2, 3, 3, 5};
 
   using thrust::placeholders::_1;
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{0}) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{1}) - vec.begin(), 0);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{2}) - vec.begin(), 1);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{3}) - vec.begin(), 2);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{4}) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{5}) - vec.begin(), 4);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{0}) - vec.begin() == 5);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{1}) - vec.begin() == 0);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{2}) - vec.begin() == 1);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{3}) - vec.begin() == 2);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{4}) - vec.begin() == 5);
+  REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{5}) - vec.begin() == 4);
 }
 DECLARE_VECTOR_UNITTEST(TestFindIfSimple);
 
@@ -80,16 +78,15 @@ InputIterator find_if(my_system& system, InputIterator first, InputIterator, Pre
   return first;
 }
 
-void TestFindIfDispatchExplicit()
+TEST_CASE("TestFindIfDispatchExplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find_if(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFindIfDispatchExplicit);
 
 template <typename InputIterator, typename Predicate>
 InputIterator find_if(my_tag, InputIterator first, InputIterator, Predicate)
@@ -98,15 +95,14 @@ InputIterator find_if(my_tag, InputIterator first, InputIterator, Predicate)
   return first;
 }
 
-void TestFindIfDispatchImplicit()
+TEST_CASE("TestFindIfDispatchImplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::find_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFindIfDispatchImplicit);
 
 template <class Vector>
 void TestFindIfNotSimple()
@@ -116,12 +112,12 @@ void TestFindIfNotSimple()
   Vector vec{0, 1, 2, 3, 4};
 
   using thrust::placeholders::_1;
-  ASSERT_EQUAL(0, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{0}) - vec.begin());
-  ASSERT_EQUAL(1, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{1}) - vec.begin());
-  ASSERT_EQUAL(2, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{2}) - vec.begin());
-  ASSERT_EQUAL(3, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{3}) - vec.begin());
-  ASSERT_EQUAL(4, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{4}) - vec.begin());
-  ASSERT_EQUAL(5, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{5}) - vec.begin());
+  REQUIRE(0 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{0}) - vec.begin());
+  REQUIRE(1 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{1}) - vec.begin());
+  REQUIRE(2 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{2}) - vec.begin());
+  REQUIRE(3 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{3}) - vec.begin());
+  REQUIRE(4 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{4}) - vec.begin());
+  REQUIRE(5 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{5}) - vec.begin());
 }
 DECLARE_VECTOR_UNITTEST(TestFindIfNotSimple);
 
@@ -132,16 +128,15 @@ InputIterator find_if_not(my_system& system, InputIterator first, InputIterator,
   return first;
 }
 
-void TestFindIfNotDispatchExplicit()
+TEST_CASE("TestFindIfNotDispatchExplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find_if_not(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFindIfNotDispatchExplicit);
 
 template <typename InputIterator, typename Predicate>
 InputIterator find_if_not(my_tag, InputIterator first, InputIterator, Predicate)
@@ -150,15 +145,14 @@ InputIterator find_if_not(my_tag, InputIterator first, InputIterator, Predicate)
   return first;
 }
 
-void TestFindIfNotDispatchImplicit()
+TEST_CASE("TestFindIfNotDispatchImplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::find_if_not(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFindIfNotDispatchImplicit);
 
 template <typename T>
 struct TestFind
@@ -173,14 +167,14 @@ struct TestFind
 
     h_iter = thrust::find(h_data.begin(), h_data.end(), T(0));
     d_iter = thrust::find(d_data.begin(), d_data.end(), T(0));
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
 
     for (size_t i = 1; i < n; i *= 2)
     {
       T sample = h_data[i];
       h_iter   = thrust::find(h_data.begin(), h_data.end(), sample);
       d_iter   = thrust::find(d_data.begin(), d_data.end(), sample);
-      ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+      REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
     }
   }
 };
@@ -200,14 +194,14 @@ struct TestFindIf
     using thrust::placeholders::_1;
     h_iter = thrust::find_if(h_data.begin(), h_data.end(), _1 == T{0});
     d_iter = thrust::find_if(d_data.begin(), d_data.end(), _1 == T{0});
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
 
     for (size_t i = 1; i < n; i *= 2)
     {
       T sample = h_data[i];
       h_iter   = thrust::find_if(h_data.begin(), h_data.end(), _1 == T{sample});
       d_iter   = thrust::find_if(d_data.begin(), d_data.end(), _1 == T{sample});
-      ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+      REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
     }
   }
 };
@@ -227,14 +221,14 @@ struct TestFindIfNot
     using thrust::placeholders::_1;
     h_iter = thrust::find_if_not(h_data.begin(), h_data.end(), _1 != T{0});
     d_iter = thrust::find_if_not(d_data.begin(), d_data.end(), _1 != T{0});
-    ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+    REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
 
     for (size_t i = 1; i < n; i *= 2)
     {
       T sample = h_data[i];
       h_iter   = thrust::find_if_not(h_data.begin(), h_data.end(), _1 != T{sample});
       d_iter   = thrust::find_if_not(d_data.begin(), d_data.end(), _1 != T{sample});
-      ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
+      REQUIRE(h_iter - h_data.begin() == d_iter - d_data.begin());
     }
   }
 };
@@ -242,28 +236,27 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestFindIfNot, SignedIntegralTypes);
 
 void TestFindWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   cuda::std::intmax_t distance_low_value = ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, 17));
 
   cuda::std::intmax_t distance_high_value =
     ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, (1ll << magnitude) - 17));
 
-  ASSERT_EQUAL(distance_low_value, 16);
-  ASSERT_EQUAL(distance_high_value, (1ll << magnitude) - 18);
+  REQUIRE(distance_low_value == 16);
+  REQUIRE(distance_high_value == (1ll << magnitude) - 18);
 }
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-void TestFindWithBigIndexes()
+TEST_CASE("TestFindWithBigIndexes", "[find]")
 {
   TestFindWithBigIndexesHelper(30);
   TestFindWithBigIndexesHelper(31);
   TestFindWithBigIndexesHelper(32);
   TestFindWithBigIndexesHelper(33);
 }
-DECLARE_UNITTEST(TestFindWithBigIndexes);
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 
 namespace
@@ -284,13 +277,12 @@ public:
 };
 } // namespace
 
-void TestFindAsymmetricEquality()
+TEST_CASE("TestFindAsymmetricEquality", "[find]")
 { // Regression test for NVIDIA/thrust#1229
   thrust::host_vector<int> v(1000);
   thrust::sequence(v.begin(), v.end());
   thrust::device_vector<int> dv(v);
   auto result = thrust::find(dv.begin(), dv.end(), Weird(333, 0));
-  ASSERT_EQUAL(*result, 333);
-  ASSERT_EQUAL(result - dv.begin(), 333);
+  REQUIRE(*result == 333);
+  REQUIRE(result - dv.begin() == 333);
 }
-DECLARE_UNITTEST(TestFindAsymmetricEquality);

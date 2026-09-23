@@ -51,7 +51,7 @@ CUB_NAMESPACE_BEGIN
 //! * Supports non-commutative scan operators
 //! * Supports "logical" warps smaller than the physical warp size
 //!   (e.g., a logical warp of 8 threads)
-//! * The number of entrant threads must be an multiple of ``LOGICAL_WARP_THREADS``
+//! * The number of entrant threads must be an multiple of ``LogicalWarpThreads``
 //!
 //! Performance Considerations
 //! ++++++++++++++++++++++++++
@@ -62,7 +62,7 @@ CUB_NAMESPACE_BEGIN
 //! * Computation is slightly more efficient (i.e., having lower instruction overhead) for:
 //!
 //!   * Summation (**vs.** generic scan)
-//!   * The architecture's warp size is a whole multiple of ``LOGICAL_WARP_THREADS``
+//!   * The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
 //!
 //! Simple Examples
 //! ++++++++++++++++++++++++++
@@ -131,12 +131,12 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!   The scan input/output element type
 //!
-//! @tparam LOGICAL_WARP_THREADS
+//! @tparam LogicalWarpThreads
 //!   **[optional]** The number of threads per "logical" warp (may be less than the number of
 //!   hardware warp threads). Default is the warp size associated with the CUDA Compute Capability
 //!   targeted by the compiler (e.g., 32 threads for SM20).
 //!
-template <typename T, int LOGICAL_WARP_THREADS = detail::warp_threads>
+template <typename T, int LogicalWarpThreads = detail::warp_threads>
 class WarpScan
 {
 private:
@@ -145,18 +145,18 @@ private:
    ******************************************************************************/
 
   /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads);
+  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == detail::warp_threads);
 
   /// Whether the logical warp size is a power-of-two
-  static constexpr bool IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0);
+  static constexpr bool IS_POW_OF_TWO = ((LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0);
 
   /// Whether the data type is an integer (which has fully-associative addition)
   static constexpr bool IS_INTEGER = cuda::std::is_integral_v<T>;
 
   /// Internal specialization.
-  /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
+  /// Use SHFL-based scan if LogicalWarpThreads is a power-of-two
   using InternalWarpScan = ::cuda::std::
-    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>, detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LogicalWarpThreads>, detail::WarpScanSmem<T, LogicalWarpThreads>>;
 
   /// Shared memory storage layout type for WarpScan
   using _TempStorage = typename InternalWarpScan::TempStorage;
@@ -187,7 +187,7 @@ public:
   //!   Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
+      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
   {}
 
   //! @}

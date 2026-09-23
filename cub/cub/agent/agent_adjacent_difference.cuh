@@ -112,13 +112,13 @@ struct AgentDifference
       , num_items(num_items)
   {}
 
-  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  template <bool IsLastTile, bool IsFirstTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile_impl(int num_remaining, int tile_idx, OffsetT tile_base)
   {
     InputT input[ITEMS_PER_THREAD];
     OutputT output[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -133,9 +133,9 @@ struct AgentDifference
 
     if (ReadLeft)
     {
-      if (IS_FIRST_TILE)
+      if (IsFirstTile)
       {
-        if (IS_LAST_TILE)
+        if (IsLastTile)
         {
           BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
             .SubtractLeftPartialTile(input, output, difference_op, num_remaining);
@@ -149,7 +149,7 @@ struct AgentDifference
       {
         InputT tile_prev_input = MayAlias ? first_tile_previous[tile_idx] : *(input_it + tile_base - 1);
 
-        if (IS_LAST_TILE)
+        if (IsLastTile)
         {
           BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
             .SubtractLeftPartialTile(input, output, difference_op, num_remaining, tile_prev_input);
@@ -163,7 +163,7 @@ struct AgentDifference
     }
     else
     {
-      if (IS_LAST_TILE)
+      if (IsLastTile)
       {
         BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
           .SubtractRightPartialTile(input, output, difference_op, num_remaining);
@@ -179,7 +179,7 @@ struct AgentDifference
 
     __syncthreads();
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockStore(temp_storage.store).Store(result + tile_base, output, num_remaining);
     }
@@ -189,16 +189,16 @@ struct AgentDifference
     }
   }
 
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int num_remaining, int tile_idx, OffsetT tile_base)
   {
     if (tile_idx == 0)
     {
-      consume_tile_impl<IS_LAST_TILE, true>(num_remaining, tile_idx, tile_base);
+      consume_tile_impl<IsLastTile, true>(num_remaining, tile_idx, tile_base);
     }
     else
     {
-      consume_tile_impl<IS_LAST_TILE, false>(num_remaining, tile_idx, tile_base);
+      consume_tile_impl<IsLastTile, false>(num_remaining, tile_idx, tile_base);
     }
   }
 

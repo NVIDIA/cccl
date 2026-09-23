@@ -78,8 +78,8 @@ public:
                   "Invalid alignment passed to legacy_managed_memory_resource::allocate_sync.");
     }
 
-    ::cuda::__ensure_current_context __guard(__device_);
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocManaged(__bytes, __flags_);
+    const ::cuda::__ensure_current_context __guard(__device_);
+    const ::CUdeviceptr __ptr = ::cuda::__driver::__mallocManaged(__bytes, __flags_);
     return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 

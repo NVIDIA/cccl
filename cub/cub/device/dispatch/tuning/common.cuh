@@ -101,6 +101,8 @@ enum class op_kind_t
   plus,
   min,
   max,
+  arg_extremum, // both argmin and argmax
+  argminmax,
   other
 };
 

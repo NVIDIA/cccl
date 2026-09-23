@@ -1,9 +1,9 @@
+#include <thrust/count.h>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/uninitialized_copy.h>
 
-#include <nv/target>
-
+#include "copy_construct_test.h"
 #include <unittest/unittest.h>
 
 template <typename InputIterator, typename ForwardIterator>
@@ -13,16 +13,15 @@ ForwardIterator uninitialized_copy(my_system& system, InputIterator, InputIterat
   return result;
 }
 
-void TestUninitializedCopyDispatchExplicit()
+TEST_CASE("TestUninitializedCopyDispatchExplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedCopyDispatchExplicit);
 
 template <typename InputIterator, typename ForwardIterator>
 ForwardIterator uninitialized_copy(my_tag, InputIterator, InputIterator, ForwardIterator result)
@@ -31,16 +30,15 @@ ForwardIterator uninitialized_copy(my_tag, InputIterator, InputIterator, Forward
   return result;
 }
 
-void TestUninitializedCopyDispatchImplicit()
+TEST_CASE("TestUninitializedCopyDispatchImplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::uninitialized_copy(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUninitializedCopyDispatchImplicit);
 
 template <typename InputIterator, typename Size, typename ForwardIterator>
 ForwardIterator uninitialized_copy_n(my_system& system, InputIterator, Size, ForwardIterator result)
@@ -49,16 +47,15 @@ ForwardIterator uninitialized_copy_n(my_system& system, InputIterator, Size, For
   return result;
 }
 
-void TestUninitializedCopyNDispatchExplicit()
+TEST_CASE("TestUninitializedCopyNDispatchExplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_copy_n(sys, vec.begin(), vec.size(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDispatchExplicit);
 
 template <typename InputIterator, typename Size, typename ForwardIterator>
 ForwardIterator uninitialized_copy_n(my_tag, InputIterator, Size, ForwardIterator result)
@@ -67,15 +64,14 @@ ForwardIterator uninitialized_copy_n(my_tag, InputIterator, Size, ForwardIterato
   return result;
 }
 
-void TestUninitializedCopyNDispatchImplicit()
+TEST_CASE("TestUninitializedCopyNDispatchImplicit", "[uninitialized_copy]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::uninitialized_copy_n(thrust::retag<my_tag>(vec.begin()), vec.size(), thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUninitializedCopyNDispatchImplicit);
 
 template <class Vector>
 void TestUninitializedCopySimplePOD()
@@ -86,7 +82,7 @@ void TestUninitializedCopySimplePOD()
   Vector v2(5);
   thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v2, ref);
+  REQUIRE(v2 == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedCopySimplePOD);
 
@@ -99,123 +95,94 @@ void TestUninitializedCopyNSimplePOD()
   Vector v2(5);
   thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v2, ref);
+  REQUIRE(v2 == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedCopyNSimplePOD);
 
-struct CopyConstructTest
+TEST_CASE("TestUninitializedCopyNonPODDevice", "[uninitialized_copy]")
 {
-  CopyConstructTest() = default;
+  using T = CopyConstructTest;
 
-  _CCCL_HOST_DEVICE CopyConstructTest(const CopyConstructTest&)
+  thrust::device_vector<T> v1(5), v2(5);
+
+  thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
+
+  const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+  const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
+  if constexpr (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA)
   {
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (copy_constructed_on_device = true; copy_constructed_on_host = false;),
-                 (copy_constructed_on_device = false; copy_constructed_on_host = true;));
+    REQUIRE(n_device == v2.size());
+    REQUIRE(n_host == 0u);
   }
+  else
+  {
+    REQUIRE(n_device == 0u);
+    REQUIRE(n_host == v2.size());
+  }
+}
 
-  CopyConstructTest& operator=(const CopyConstructTest&) = default;
-
-  bool copy_constructed_on_host{false};
-  bool copy_constructed_on_device{false};
-};
-
-struct TestUninitializedCopyNonPODDevice
+TEST_CASE("TestUninitializedCopyNNonPODDevice", "[uninitialized_copy]")
 {
-  void operator()(const size_t)
+  using T = CopyConstructTest;
+
+  thrust::device_vector<T> v1(5), v2(5);
+
+  thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
+
+  const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+  const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
+  if constexpr (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA)
   {
-    using T = CopyConstructTest;
-
-    thrust::device_vector<T> v1(5), v2(5);
-
-    T x;
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
-
-    x = v1[0];
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
-
-    thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
-
-    x = v2[0];
-    ASSERT_EQUAL(true, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+    REQUIRE(n_device == v2.size());
+    REQUIRE(n_host == 0u);
   }
-};
-DECLARE_UNITTEST(TestUninitializedCopyNonPODDevice);
+  else
+  {
+    REQUIRE(n_device == 0u);
+    REQUIRE(n_host == v2.size());
+  }
+}
 
-struct TestUninitializedCopyNNonPODDevice
+TEST_CASE("TestUninitializedCopyNonPODHost", "[uninitialized_copy]")
 {
-  void operator()(const size_t)
-  {
-    using T = CopyConstructTest;
+  using T = CopyConstructTest;
 
-    thrust::device_vector<T> v1(5), v2(5);
+  thrust::host_vector<T> v1(5), v2(5);
 
-    T x;
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+  T x;
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE_FALSE(x.copy_constructed_on_host);
 
-    x = v1[0];
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+  x = v1[0];
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE_FALSE(x.copy_constructed_on_host);
 
-    thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
+  thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
 
-    x = v2[0];
-    ASSERT_EQUAL(true, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
-  }
-};
-DECLARE_UNITTEST(TestUninitializedCopyNNonPODDevice);
+  const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+  const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
+  REQUIRE(n_device == 0u);
+  REQUIRE(n_host == v2.size());
+}
 
-struct TestUninitializedCopyNonPODHost
+TEST_CASE("TestUninitializedCopyNNonPODHost", "[uninitialized_copy]")
 {
-  void operator()(const size_t)
-  {
-    using T = CopyConstructTest;
+  using T = CopyConstructTest;
 
-    thrust::host_vector<T> v1(5), v2(5);
+  thrust::host_vector<T> v1(5), v2(5);
 
-    T x;
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+  T x;
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE_FALSE(x.copy_constructed_on_host);
 
-    x = v1[0];
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+  x = v1[0];
+  REQUIRE_FALSE(x.copy_constructed_on_device);
+  REQUIRE_FALSE(x.copy_constructed_on_host);
 
-    thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
+  thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
 
-    x = v2[0];
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(true, x.copy_constructed_on_host);
-  }
-};
-DECLARE_UNITTEST(TestUninitializedCopyNonPODHost);
-
-struct TestUninitializedCopyNNonPODHost
-{
-  void operator()(const size_t)
-  {
-    using T = CopyConstructTest;
-
-    thrust::host_vector<T> v1(5), v2(5);
-
-    T x;
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
-
-    x = v1[0];
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
-
-    thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
-
-    x = v2[0];
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(true, x.copy_constructed_on_host);
-  }
-};
-DECLARE_UNITTEST(TestUninitializedCopyNNonPODHost);
+  const size_t n_device = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_device{});
+  const size_t n_host   = thrust::count_if(v2.begin(), v2.end(), is_copy_constructed_on_host{});
+  REQUIRE(n_device == 0u);
+  REQUIRE(n_host == v2.size());
+}

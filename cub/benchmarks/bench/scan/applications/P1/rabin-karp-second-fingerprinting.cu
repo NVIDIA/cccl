@@ -83,21 +83,21 @@ inline ZpT __host__ __device__ Zp_add(ZpT v1, ZpT v2, cuda::fast_mod_div<WideT> 
 
 inline MatT __host__ __device__ Zp_matmul(MatT v1, MatT v2, cuda::fast_mod_div<WideT> m_p)
 {
-  ZpT _1_00_2_00 = Zp_mul(v1[0], v2[0], m_p);
-  ZpT _1_01_2_10 = Zp_mul(v1[1], v2[2], m_p);
-  ZpT _r_00      = Zp_add(_1_00_2_00, _1_01_2_10, m_p);
+  const ZpT _1_00_2_00 = Zp_mul(v1[0], v2[0], m_p);
+  const ZpT _1_01_2_10 = Zp_mul(v1[1], v2[2], m_p);
+  const ZpT _r_00      = Zp_add(_1_00_2_00, _1_01_2_10, m_p);
 
-  ZpT _1_00_2_01 = Zp_mul(v1[0], v2[1], m_p);
-  ZpT _1_01_2_11 = Zp_mul(v1[1], v2[3], m_p);
-  ZpT _r_01      = Zp_add(_1_00_2_01, _1_01_2_11, m_p);
+  const ZpT _1_00_2_01 = Zp_mul(v1[0], v2[1], m_p);
+  const ZpT _1_01_2_11 = Zp_mul(v1[1], v2[3], m_p);
+  const ZpT _r_01      = Zp_add(_1_00_2_01, _1_01_2_11, m_p);
 
-  ZpT _1_10_2_00 = Zp_mul(v1[2], v2[0], m_p);
-  ZpT _1_11_2_10 = Zp_mul(v1[3], v2[2], m_p);
-  ZpT _r_10      = Zp_add(_1_10_2_00, _1_11_2_10, m_p);
+  const ZpT _1_10_2_00 = Zp_mul(v1[2], v2[0], m_p);
+  const ZpT _1_11_2_10 = Zp_mul(v1[3], v2[2], m_p);
+  const ZpT _r_10      = Zp_add(_1_10_2_00, _1_11_2_10, m_p);
 
-  ZpT _1_10_2_01 = Zp_mul(v1[2], v2[1], m_p);
-  ZpT _1_11_2_11 = Zp_mul(v1[3], v2[3], m_p);
-  ZpT _r_11      = Zp_add(_1_10_2_01, _1_11_2_11, m_p);
+  const ZpT _1_10_2_01 = Zp_mul(v1[2], v2[1], m_p);
+  const ZpT _1_11_2_11 = Zp_mul(v1[3], v2[3], m_p);
+  const ZpT _r_11      = Zp_add(_1_10_2_01, _1_11_2_11, m_p);
 
   return {_r_00, _r_01, _r_10, _r_11};
 }
