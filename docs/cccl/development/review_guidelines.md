@@ -119,6 +119,17 @@ When a kernel is launched with PDL enabled (either directly or via a launcher fa
 via `cub::detail::ptx_compute_cap`. PDL may only be enabled if
 `cc >= ::cuda::compute_capability{9, 0}` (see `dispatch_find.cuh`).
 
+## correctness.pdl-sync (critical, kernels launched with programmatic dependent launch)
+
+<!-- provenance:
+  #3114→#5456 (backports #5460, #5461) PDL grid-dependency sync in AgentMerge::consume_tile placed after the merge_partitions reads it was meant to guard, causing intermittent races/cudaErrorIllegalInstruction (issue #5297)
+-->
+
+When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
+at the kernel launcher, flag any global-memory access in the kernel's body that happens before a
+call to `_CCCL_PDL_GRID_DEPENDENCY_SYNC` by that thread — the previous kernel's writes may not be
+visible yet — unless the access has a comment explaining why a PDL sync can come later.
+
 ## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
 
 <!-- provenance:
@@ -218,6 +229,88 @@ usable during constant evaluation on every supported compiler, not merely that i
 runtime call. The break only surfaces when a caller uses the function during constant evaluation,
 which the unit tests may not exercise. Adding a test that evaluates the function at compile time is
 recommended.
+
+## perf.partial-pdl (important, kernels launched with programmatic dependent launch)
+
+<!-- provenance:
+  #3114→#3199 PDL enabled at Partition/Merge triple_chevron launches but not the sibling BlockSort launch
+-->
+
+When a diff enables programmatic dependent launch for a kernel by setting `dependent_launch` to true
+at the kernel launcher, open the full dispatch function (or equivalent) and enumerate EVERY kernel
+launch it makes. All kernels should be launched using PDL, otherwise the performance gain is marginal.
+Replacing calls to `cudaMemset` by kernels launched using PDL should be strongly considered and
+pointed out as suggestions.
+
+## api.type-replacement (critical, public types in thrust/libcudacxx/cub)
+
+<!-- provenance:
+  #262→#1249 (backport #1292) pair trivial copyability;
+  #454→#1286,#1425,#1497 complex reverted three times;
+  #6393→#6403 variant modularization dropped monostate include from the umbrella header
+-->
+
+When a diff reimplements, re-derives, or aliases any public type (`thrust::pair`/`tuple`/`complex`,
+iterators, …), verify every observable property of the old type is preserved: trivial copyability and
+layout (downstream code `memcpy`s them), size/alignment, implicit conversions and promotions, overload
+resolution, and numerical behavior.
+
+## build.windows-min-max-macro (important, C++ code calling `.max()`/`.min()` or naming a new member/trait `max`/`min`)
+
+<!-- provenance:
+  #8875→#9246 argument-annotation trait member named max, computed via unparenthesized numeric_limits<T>::max(), a preprocessor argument-count error under <windows.h>'s max/min macros;
+  renamed to highest/lowest and parenthesized
+-->
+
+Flag an unparenthesized call to a function literally named `max`/`min` (e.g.
+`std::numeric_limits<T>::max()`), and any new member or trait named `max`/`min`. On Windows,
+`<windows.h>` defines `max`/`min` as function-like macros, breaking such code. Headers sandwiched
+between `<cuda/std/__cccl/prologue.h>`/`epilogue.h` (libcudacxx, cudax) are safe; everywhere else
+(CUB, Thrust, tests, examples), require the macro-safe spelling `(std::numeric_limits<T>::max)()`
+and prefer other member names. Candidate for a pre-commit grep.
+
+## perf.benchmark-exec-tag-sync-without-sync-call (important, nvbench benchmark harness `state.exec(...)` calls)
+
+<!-- provenance:
+  #3114→#5350 merge_sort keys benchmark switched no_batch→sync while adding PDL although the exec lambda never synchronizes;
+  reverted as an unnecessary workaround
+-->
+
+When a diff makes an nvbench `state.exec(...)` call use `nvbench::exec_tag::sync` (which tells
+nvbench that the benchmark region will perform CUDA synchronization itself), or changes the lambda
+body of a call already using such a tag, verify the lambda actually performs any explicit CUDA
+synchronization (like `launch.get_stream().sync()`, `cudaStreamSynchronize`). Parallel algorithms in
+Thrust and `cuda::std::` synchronize internally, except under `thrust::cuda::par_nosync`. Without a
+sync, the measured time silently excludes some or all of the kernel's execution. If the lambda does
+not sync, `exec_tag::no_batch` or `exec_tag::timer` is likely what was intended.
+
+## api.narrowed-constraints-on-reimplementation (important, refactors/reimplementations of existing public APIs)
+
+<!-- provenance:
+  #1817→#2075 cub::DeviceMerge static_assert requiring identical value_type across both merge inputs, stricter than the thrust::merge implementation it replaced
+-->
+
+When a diff reimplements or reroutes an existing public API (port to a different backend, dispatch-layer
+swap, internal rewrite), flag newly added `static_assert`/`enable_if`/concept/trait constraints that
+reject inputs the previous implementation accepted (e.g. requiring identical `value_type` across two
+input ranges where differing types previously worked). Rejecting previously accepted code is a breaking
+change for downstream users; narrowing is only acceptable as a bug or conformance fix (the previously
+accepted inputs produced wrong results or violated the documented contract), and must be called out in
+the PR description.
+
+## correctness.raii-move-no-disarm (critical, RAII/resource-owning/scope-guard types with move construction)
+
+<!-- provenance:
+  #5975→#10565 cudax scope_exit's move constructor was = default, copying the active flag without deactivating the moved-from source;
+  both objects ran the cleanup action on destruction
+-->
+
+When a diff adds or defaults a move constructor for a type whose destructor conditionally runs an
+action or releases a resource (an "active"/"engaged"/"owns" flag, a handle nulled on release), verify
+the move disarms the moved-from source — resets its flag or nulls its handle, not merely copies it.
+`= default` is a red flag: it member-wise copies the flag, so both objects fire the cleanup on
+destruction. Require a test that moves the object and confirms the action fires exactly once and that the
+moved-from object has been disarmed.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 

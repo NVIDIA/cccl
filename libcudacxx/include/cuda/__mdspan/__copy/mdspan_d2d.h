@@ -28,6 +28,7 @@
 #  include <cuda/__cmath/pow2.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__functional/address_stability.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__mdspan/__copy/copy_contiguous.h>
 #  include <cuda/__mdspan/__copy/copy_dst_contiguous.h>
 #  include <cuda/__mdspan/__copy/copy_optimized.h>
@@ -54,6 +55,7 @@
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/is_signed.h>
 #  include <cuda/std/__type_traits/remove_cv.h>
+#  include <cuda/std/tuple>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -270,11 +272,12 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       if (static_cast<::cuda::std::size_t>(__tile_size) == __tensor_size)
       {
         _CCCL_TRY_RUNTIME_API(
-          CUB_NS_QUALIFIER::DeviceTransform::Transform,
+          CUB_NS_QUALIFIER::DeviceTransform::__transform_internal,
           "cub::DeviceTransform::Transform failed",
-          __src_simplified.__data,
+          ::cuda::std::make_tuple(__src_simplified.__data),
           __dst_simplified.__data,
           __tensor_size,
+          ::cuda::always_true{},
           ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}),
           __stream.get());
         return;
