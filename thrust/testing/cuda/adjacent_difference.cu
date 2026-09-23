@@ -32,30 +32,30 @@ void TestAdjacentDifferenceDevice(ExecutionPolicy exec, const size_t n)
   adjacent_difference_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 
   thrust::adjacent_difference(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::plus<T>());
   adjacent_difference_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::plus<T>());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 
   // in-place operation
   thrust::adjacent_difference(h_input.begin(), h_input.end(), h_input.begin(), ::cuda::std::plus<T>());
   adjacent_difference_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_input.begin(), ::cuda::std::plus<T>());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(h_input, h_output); // computed previously
-  ASSERT_EQUAL(d_input, d_output); // computed previously
+  REQUIRE(h_input == h_output); // computed previously
+  REQUIRE(d_input == d_output); // computed previously
 }
 
 template <typename T>
@@ -87,7 +87,7 @@ void TestAdjacentDifferenceCudaStreams()
 
   const thrust::device_vector<int> ref{1, 3, 2};
 
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 
   cudaStreamDestroy(s);
 }
@@ -135,7 +135,7 @@ void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   const thrust::device_ptr<bool> all_differences_correct = thrust::device_malloc<bool>(1);
   *all_differences_correct                               = true;
@@ -147,7 +147,7 @@ void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
   const bool all_differences_correct_h = *all_differences_correct;
   thrust::device_free(all_differences_correct);
 
-  ASSERT_EQUAL(all_differences_correct_h, true);
+  REQUIRE(all_differences_correct_h);
 }
 
 void TestAdjacentDifferenceWithBigIndexes()

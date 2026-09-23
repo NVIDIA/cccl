@@ -8,6 +8,7 @@ set(
   containers/contiguous.cu
   containers/fork_join.cu
   algorithms/elementwise.cu
+  algorithms/for_each_shard.cu
   algorithms/generic_tier.cu
   algorithms/reduce_into.cu
   algorithms/reduce_lanes.cu

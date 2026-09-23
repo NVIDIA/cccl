@@ -17,7 +17,7 @@
 
 #include <cuda/experimental/execution.cuh>
 
-namespace _retry_detail
+namespace __retry_detail
 {
 namespace ex = ::cuda::experimental::execution;
 
@@ -176,14 +176,14 @@ struct _retry_sender
 private:
   S s_;
 };
-} // namespace _retry_detail
+} // namespace __retry_detail
 
 struct retry_t
 {
   template <class S>
-  [[nodiscard]] auto operator()(S s) const -> _retry_detail::_retry_sender<S>
+  [[nodiscard]] auto operator()(S s) const -> __retry_detail::_retry_sender<S>
   {
-    return _retry_detail::_retry_sender<S>{static_cast<S&&>(s)};
+    return __retry_detail::_retry_sender<S>{static_cast<S&&>(s)};
   }
 };
 

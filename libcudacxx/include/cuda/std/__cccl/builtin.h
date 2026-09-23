@@ -170,6 +170,20 @@
 // _MPtr2)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
+#if _CCCL_HAS_BUILTIN(__builtin_is_implicit_lifetime) || _CCCL_COMPILER(MSVC, >=, 19, 51)
+#  define _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME(...) __builtin_is_implicit_lifetime(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_is_implicit_lifetime) || _CCCL_COMPILER(MSVC, >=, 19, 51)
+
+// nvcc implements __builtin_is_implicit_lifetime since version 13.3.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+#  undef _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+
+// nvcc thinks msvc doesn't support __builtin_is_implicit_lifetime. Remove once nvbug 6782340 is resolved.
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC)
+#  undef _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC)
+
 #if _CCCL_CHECK_BUILTIN(builtin_is_pointer_interconvertible_with_class)
 #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr) \
     __builtin_is_pointer_interconvertible_with_class(_MPtr)

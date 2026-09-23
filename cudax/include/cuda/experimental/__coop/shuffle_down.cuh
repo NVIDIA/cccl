@@ -78,6 +78,8 @@ template <class _Group, class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
 shuffle_down(const _Group& __group, const _Tp& __value, unsigned __offset) noexcept
 {
+  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
+               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__shuffle_down_impl(__group, __value, __offset);
 }
 } // namespace cuda::experimental::coop

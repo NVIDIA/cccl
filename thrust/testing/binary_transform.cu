@@ -7,17 +7,7 @@
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
-#include "catch2_test_helper.h"
-#include "unittest/random.h"
-#include "unittest/special_types.h"
-
-// There is an unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 11)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
+#include <unittest/unittest.h>
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_binary_simple()
@@ -186,149 +176,139 @@ struct is_positive
 
 TEMPLATE_LIST_TEST_CASE("Binary", "[transform]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input1   = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_input2   = unittest::random_integers<T>(n);
-    thrust::device_vector<T> d_input1 = h_input1;
-    thrust::device_vector<T> d_input2 = h_input2;
+  using T                           = TestType;
+  const size_t n                    = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input1   = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_input2   = unittest::random_integers<T>(n);
+  thrust::device_vector<T> d_input1 = h_input1;
+  thrust::device_vector<T> d_input2 = h_input2;
 
-    thrust::host_vector<T> h_output(n);
-    thrust::device_vector<T> d_output(n);
+  thrust::host_vector<T> h_output(n);
+  thrust::device_vector<T> d_output(n);
 
-    thrust::transform(h_input1.begin(), h_input1.end(), h_input2.begin(), h_output.begin(), ::cuda::std::minus<T>());
-    thrust::transform(d_input1.begin(), d_input1.end(), d_input2.begin(), d_output.begin(), ::cuda::std::minus<T>());
+  thrust::transform(h_input1.begin(), h_input1.end(), h_input2.begin(), h_output.begin(), ::cuda::std::minus<T>());
+  thrust::transform(d_input1.begin(), d_input1.end(), d_input2.begin(), d_output.begin(), ::cuda::std::minus<T>());
 
-    CHECK(h_output == d_output);
+  CHECK(h_output == d_output);
 
-    thrust::transform(
-      h_input1.begin(), h_input1.end(), h_input2.begin(), h_output.begin(), ::cuda::std::multiplies<T>());
-    thrust::transform(
-      d_input1.begin(), d_input1.end(), d_input2.begin(), d_output.begin(), ::cuda::std::multiplies<T>());
+  thrust::transform(h_input1.begin(), h_input1.end(), h_input2.begin(), h_output.begin(), ::cuda::std::multiplies<T>());
+  thrust::transform(d_input1.begin(), d_input1.end(), d_input2.begin(), d_output.begin(), ::cuda::std::multiplies<T>());
 
-    CHECK(h_output == d_output);
-  }
+  CHECK(h_output == d_output);
 }
 
 TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input1   = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_input2   = unittest::random_integers<T>(n);
-    thrust::device_vector<T> d_input1 = h_input1;
-    thrust::device_vector<T> d_input2 = h_input2;
+  using T                           = TestType;
+  const size_t n                    = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input1   = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_input2   = unittest::random_integers<T>(n);
+  thrust::device_vector<T> d_input1 = h_input1;
+  thrust::device_vector<T> d_input2 = h_input2;
 
-    const thrust::discard_iterator<> h_result = thrust::transform(
-      h_input1.begin(), h_input1.end(), h_input2.begin(), thrust::make_discard_iterator(), ::cuda::std::minus<T>());
-    const thrust::discard_iterator<> d_result = thrust::transform(
-      d_input1.begin(), d_input1.end(), d_input2.begin(), thrust::make_discard_iterator(), ::cuda::std::minus<T>());
+  const thrust::discard_iterator<> h_result = thrust::transform(
+    h_input1.begin(), h_input1.end(), h_input2.begin(), thrust::make_discard_iterator(), ::cuda::std::minus<T>());
+  const thrust::discard_iterator<> d_result = thrust::transform(
+    d_input1.begin(), d_input1.end(), d_input2.begin(), thrust::make_discard_iterator(), ::cuda::std::minus<T>());
 
-    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-    CHECK((reference == h_result));
-    CHECK((reference == d_result));
-  }
+  CHECK((reference == h_result));
+  CHECK((reference == d_result));
 }
 
 TEMPLATE_LIST_TEST_CASE("Binary", "[transform_if]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input1  = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_input2  = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_stencil = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_output  = unittest::random_integers<T>(n);
+  using T                          = TestType;
+  const size_t n                   = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input1  = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_input2  = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_stencil = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_output  = unittest::random_integers<T>(n);
 
-    thrust::device_vector<T> d_input1  = h_input1;
-    thrust::device_vector<T> d_input2  = h_input2;
-    thrust::device_vector<T> d_stencil = h_stencil;
-    thrust::device_vector<T> d_output  = h_output;
+  thrust::device_vector<T> d_input1  = h_input1;
+  thrust::device_vector<T> d_input2  = h_input2;
+  thrust::device_vector<T> d_stencil = h_stencil;
+  thrust::device_vector<T> d_output  = h_output;
 
-    thrust::transform_if(
-      h_input1.begin(),
-      h_input1.end(),
-      h_input2.begin(),
-      h_stencil.begin(),
-      h_output.begin(),
-      ::cuda::std::minus<T>(),
-      is_positive());
+  thrust::transform_if(
+    h_input1.begin(),
+    h_input1.end(),
+    h_input2.begin(),
+    h_stencil.begin(),
+    h_output.begin(),
+    ::cuda::std::minus<T>(),
+    is_positive());
 
-    thrust::transform_if(
-      d_input1.begin(),
-      d_input1.end(),
-      d_input2.begin(),
-      d_stencil.begin(),
-      d_output.begin(),
-      ::cuda::std::minus<T>(),
-      is_positive());
+  thrust::transform_if(
+    d_input1.begin(),
+    d_input1.end(),
+    d_input2.begin(),
+    d_stencil.begin(),
+    d_output.begin(),
+    ::cuda::std::minus<T>(),
+    is_positive());
 
-    CHECK(h_output == d_output);
+  CHECK(h_output == d_output);
 
-    h_stencil = unittest::random_integers<T>(n);
-    d_stencil = h_stencil;
+  h_stencil = unittest::random_integers<T>(n);
+  d_stencil = h_stencil;
 
-    thrust::transform_if(
-      h_input1.begin(),
-      h_input1.end(),
-      h_input2.begin(),
-      h_stencil.begin(),
-      h_output.begin(),
-      ::cuda::std::multiplies<T>(),
-      is_positive());
+  thrust::transform_if(
+    h_input1.begin(),
+    h_input1.end(),
+    h_input2.begin(),
+    h_stencil.begin(),
+    h_output.begin(),
+    ::cuda::std::multiplies<T>(),
+    is_positive());
 
-    thrust::transform_if(
-      d_input1.begin(),
-      d_input1.end(),
-      d_input2.begin(),
-      d_stencil.begin(),
-      d_output.begin(),
-      ::cuda::std::multiplies<T>(),
-      is_positive());
+  thrust::transform_if(
+    d_input1.begin(),
+    d_input1.end(),
+    d_input2.begin(),
+    d_stencil.begin(),
+    d_output.begin(),
+    ::cuda::std::multiplies<T>(),
+    is_positive());
 
-    CHECK(h_output == d_output);
-  }
+  CHECK(h_output == d_output);
 }
 
 TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform_if]", variable_list)
 {
-  using T = TestType;
-  for (const size_t n : get_test_sizes())
-  {
-    thrust::host_vector<T> h_input1  = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_input2  = unittest::random_integers<T>(n);
-    thrust::host_vector<T> h_stencil = unittest::random_integers<T>(n);
+  using T                          = TestType;
+  const size_t n                   = GENERATE_THRUST_TEST_SIZES();
+  thrust::host_vector<T> h_input1  = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_input2  = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_stencil = unittest::random_integers<T>(n);
 
-    thrust::device_vector<T> d_input1  = h_input1;
-    thrust::device_vector<T> d_input2  = h_input2;
-    thrust::device_vector<T> d_stencil = h_stencil;
+  thrust::device_vector<T> d_input1  = h_input1;
+  thrust::device_vector<T> d_input2  = h_input2;
+  thrust::device_vector<T> d_stencil = h_stencil;
 
-    const thrust::discard_iterator<> h_result = thrust::transform_if(
-      h_input1.begin(),
-      h_input1.end(),
-      h_input2.begin(),
-      h_stencil.begin(),
-      thrust::make_discard_iterator(),
-      ::cuda::std::minus<T>(),
-      is_positive());
+  const thrust::discard_iterator<> h_result = thrust::transform_if(
+    h_input1.begin(),
+    h_input1.end(),
+    h_input2.begin(),
+    h_stencil.begin(),
+    thrust::make_discard_iterator(),
+    ::cuda::std::minus<T>(),
+    is_positive());
 
-    const thrust::discard_iterator<> d_result = thrust::transform_if(
-      d_input1.begin(),
-      d_input1.end(),
-      d_input2.begin(),
-      d_stencil.begin(),
-      thrust::make_discard_iterator(),
-      ::cuda::std::minus<T>(),
-      is_positive());
+  const thrust::discard_iterator<> d_result = thrust::transform_if(
+    d_input1.begin(),
+    d_input1.end(),
+    d_input2.begin(),
+    d_stencil.begin(),
+    thrust::make_discard_iterator(),
+    ::cuda::std::minus<T>(),
+    is_positive());
 
-    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-    CHECK((reference == h_result));
-    CHECK((reference == d_result));
-  }
+  CHECK((reference == h_result));
+  CHECK((reference == d_result));
 }
 
 TEMPLATE_LIST_TEST_CASE("BinaryCountingIterator", "[transform]", generic_list)

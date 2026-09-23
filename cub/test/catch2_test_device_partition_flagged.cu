@@ -10,7 +10,6 @@
 #include <thrust/reverse.h>
 
 #include <cuda/cmath>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 #include <cuda/std/iterator>
@@ -21,6 +20,7 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -262,25 +262,21 @@ CUB_TEST("DevicePartition::Flagged works with user provided memory and environme
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
   SECTION("DevicePartition::Flagged works with cudaStream_t")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_partition_flagged(stream.get());
   }
 
   SECTION("DevicePartition::Flagged works with cuda::stream")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_partition_flagged(stream);
   }
 
   SECTION("DevicePartition::Flagged works with cuda::stream_ref")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     const cuda::stream_ref stream_ref{stream};
     test_partition_flagged(stream_ref);
   }
@@ -299,8 +295,8 @@ CUB_TEST("DevicePartition::Flagged works with user provided memory and environme
 
   SECTION("DevicePartition::Flagged works with cuda::execution::gpu with stream")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    const cuda::stream stream = c2h::make_current_device_stream();
+    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_partition_flagged(policy);
   }
 }

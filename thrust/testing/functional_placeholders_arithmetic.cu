@@ -78,7 +78,7 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Modulus, %, ::cuda::std::modulus, SmallInteg
     Vector result(input.size());                                                          \
     thrust::transform(input.begin(), input.end(), result.begin(), reference_operator _1); \
                                                                                           \
-    ASSERT_EQUAL(reference, result);                                                      \
+    REQUIRE(reference == result);                                                         \
   }                                                                                       \
   DECLARE_VECTOR_UNITTEST(TestFunctionalPlaceholders##name);
 

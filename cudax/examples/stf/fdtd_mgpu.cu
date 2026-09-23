@@ -178,7 +178,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   // entry to split any other dimension). Interior boxes below iterate each
   // place's owned coordinates restricted to the box, and uneven sizes are
   // handled by predication.
-  auto part = make_partition(dim4(SIZE_X, SIZE_Y, SIZE_Z), partition_spec{whole, whole, blocked<0>}, where.get_dims());
+  auto part = make_partition(data_shape, partition_spec{whole, whole, blocked<0>}, where.get_dims());
   auto lEx  = ctx.logical_data(data_shape);
   auto lEy  = ctx.logical_data(data_shape);
   auto lEz  = ctx.logical_data(data_shape);

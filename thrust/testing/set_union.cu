@@ -22,7 +22,7 @@ void TestSetUnionDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_union(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestSetUnionDispatchExplicit);
 
@@ -44,7 +44,7 @@ void TestSetUnionDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
 DECLARE_UNITTEST(TestSetUnionDispatchImplicit);
 
@@ -60,8 +60,8 @@ void TestSetUnionSimple()
 
   const Iterator end = thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetUnionSimple);
 
@@ -77,8 +77,8 @@ void TestSetUnionWithEquivalentElementsSimple()
 
   const Iterator end = thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
 DECLARE_VECTOR_UNITTEST(TestSetUnionWithEquivalentElementsSimple);
 
@@ -114,7 +114,7 @@ void TestSetUnion(const size_t n)
     d_end = thrust::set_union(d_a.begin(), d_a.end(), d_b.begin(), d_b.begin() + size, d_result.begin());
     d_result.resize(d_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnion);
@@ -146,7 +146,7 @@ void TestSetUnionToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(h_reference.size());
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionToDiscardIterator);

@@ -20,8 +20,10 @@
  *  - `data_place::locality_domain(dev, i)` allocates memory whose backing
  *    store lives in domain `i` (`CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN`,
  *    both VMM physical handles and stream-ordered memory pools),
- *  - `make_locality_domain_grid(dev)` builds a grid over every domain of a
- *    device; `make_locality_domain_grid()` over every domain of every device,
+ *  - `exec_place::locality_domains(dev)` / `make_locality_domain_grid(dev)`
+ *    build a grid over every domain of a device;
+ *    `exec_place::all_locality_domains()` / `make_locality_domain_grid()` over
+ *    every domain of every device,
  *  - `locality_domain_helper` enumerates the domains of a device.
  *
  * `exec_place::locality_domain(d, i)` and `data_place::locality_domain(d, i)`
@@ -969,17 +971,15 @@ make_locality_domain_grid(int dev_id, locality_domain_sm_split split = locality_
   return make_grid(mv(domains));
 }
 
-/**
- * @brief Create a grid of execution places over every locality domain of
- * every visible device, in device-major order.
- *
- * Devices without locality-domain support (or with the fallback backend)
- * contribute a single whole-device place, so this is safe on every machine.
- *
- * @param split SM split method applied to every place of the grid; see
- *        `locality_domain_sm_split`.
- * @return exec_place grid with one place per locality domain per device
- */
+//! @brief Create a grid of execution places over every locality domain of
+//! every visible device, in device-major order.
+//!
+//! Devices without locality-domain support (or with the fallback backend)
+//! contribute a single whole-device place, so this is safe on every machine.
+//!
+//! @param[in] split SM split method applied to every place of the grid; see
+//!        @c locality_domain_sm_split
+//! @return exec_place grid with one place per locality domain per device
 inline exec_place make_locality_domain_grid(locality_domain_sm_split split = locality_domain_sm_split::backfill)
 {
   const int ndevs = cuda_try<cudaGetDeviceCount>();
@@ -994,6 +994,18 @@ inline exec_place make_locality_domain_grid(locality_domain_sm_split split = loc
     }
   }
   return make_grid(mv(domains));
+}
+
+//! Single-device sugar over make_locality_domain_grid; see all_devices() for the device-level analogue
+inline exec_place exec_place::locality_domains(int dev_id, locality_domain_sm_split split)
+{
+  return make_locality_domain_grid(dev_id, split);
+}
+
+//! Machine-wide sugar over make_locality_domain_grid: every domain of every device, like all_devices() one level down
+inline exec_place exec_place::all_locality_domains(locality_domain_sm_split split)
+{
+  return make_locality_domain_grid(split);
 }
 
 /**

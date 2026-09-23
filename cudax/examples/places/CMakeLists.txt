@@ -1,9 +1,12 @@
 set(
   places_example_sources
   thrust_device_data_place_allocator.cu
+  hash_table_on_data_place.cu
   sharded_reduce.cu
   sharded_stream.cu
   sharded_relational.cu
+  sharded_hash_per_domain.cu
+  sharded_morsel_join.cu
 )
 
 cccl_get_cudatoolkit()

@@ -8,12 +8,6 @@
 
 #include <unittest/unittest.h>
 
-#if _CCCL_COMPILER(GCC, >=, 11)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
 // ensure that we properly support thrust::permutation_iterator from cuda::std
 void TestPermutationIteratorTraits()
 {
@@ -57,17 +51,17 @@ void TestPermutationIteratorSimple()
   thrust::permutation_iterator<Iterator, Iterator> begin(source.begin(), indices.begin());
   thrust::permutation_iterator<Iterator, Iterator> end(source.begin(), indices.end());
 
-  ASSERT_EQUAL(end - begin, 4);
-  ASSERT_EQUAL((begin + 4) == end, true);
+  REQUIRE(end - begin == 4);
+  REQUIRE(begin + 4 == end);
 
-  ASSERT_EQUAL((T) *begin, 4);
+  REQUIRE((T) *begin == 4);
 
   begin++;
   end--;
 
-  ASSERT_EQUAL((T) *begin, 1);
-  ASSERT_EQUAL((T) *end, 8);
-  ASSERT_EQUAL(end - begin, 2);
+  REQUIRE((T) *begin == 1);
+  REQUIRE((T) *end == 8);
+  REQUIRE(end - begin == 2);
 
   end--;
 
@@ -75,7 +69,7 @@ void TestPermutationIteratorSimple()
   *end   = 20;
 
   Vector ref{10, 2, 3, 4, 5, 20, 7, 8};
-  ASSERT_EQUAL(source, ref);
+  REQUIRE(source == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorSimple);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::permutation_iterator<int*, int*>>::value);
@@ -98,7 +92,7 @@ void TestPermutationIteratorGather()
   thrust::copy(p_source, p_source + 4, output.begin());
 
   Vector ref{4, 1, 6, 8};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorGather);
 
@@ -120,7 +114,7 @@ void TestPermutationIteratorScatter()
   thrust::copy(source.begin(), source.end(), p_output);
 
   Vector ref{10, 2, 3, 10, 5, 10, 7, 10};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorScatter);
 
@@ -139,7 +133,7 @@ void TestMakePermutationIterator()
                output.begin());
 
   Vector ref{4, 1, 6, 8};
-  ASSERT_EQUAL(output, ref);
+  REQUIRE(output == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestMakePermutationIterator);
 
@@ -162,7 +156,7 @@ void TestPermutationIteratorReduce()
   const T result1 = thrust::reduce(thrust::make_permutation_iterator(source.begin(), indices.begin()),
                                    thrust::make_permutation_iterator(source.begin(), indices.begin()) + 4);
 
-  ASSERT_EQUAL(result1, 19);
+  REQUIRE(result1 == 19);
 
   const T result2 = thrust::transform_reduce(
     thrust::make_permutation_iterator(source.begin(), indices.begin()),
@@ -170,7 +164,7 @@ void TestPermutationIteratorReduce()
     ::cuda::std::negate<T>(),
     T(0),
     ::cuda::std::plus<T>());
-  ASSERT_EQUAL(result2, -19);
+  REQUIRE(result2 == -19);
 };
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorReduce);
 
@@ -201,13 +195,13 @@ void TestPermutationIteratorHostDeviceGather()
   thrust::copy(p_h_source, p_h_source + 4, d_output.begin());
 
   const DeviceVector dref{4, 1, 6, 8};
-  ASSERT_EQUAL(d_output, dref);
+  REQUIRE(d_output == dref);
 
   // gather device->host
   thrust::copy(p_d_source, p_d_source + 4, h_output.begin());
 
   const HostVector href{4, 1, 6, 8};
-  ASSERT_EQUAL(h_output, href);
+  REQUIRE(h_output == href);
 }
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceGather);
 
@@ -238,13 +232,13 @@ void TestPermutationIteratorHostDeviceScatter()
   thrust::copy(h_source.begin(), h_source.end(), p_d_output);
 
   const DeviceVector dref{10, 2, 3, 10, 5, 10, 7, 10};
-  ASSERT_EQUAL(d_output, dref);
+  REQUIRE(d_output == dref);
 
   // scatter device->host
   thrust::copy(d_source.begin(), d_source.end(), p_h_output);
 
   const HostVector href = dref;
-  ASSERT_EQUAL(h_output, href);
+  REQUIRE(h_output == href);
 }
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceScatter);
 
@@ -266,7 +260,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestPermutationIteratorWithCountingIte
     thrust::copy(first, last, output.begin());
 
     Vector ref{0, 1, 2, 3};
-    ASSERT_EQUAL(output, ref);
+    REQUIRE(output == ref);
   }
 
   // test copy()
@@ -279,7 +273,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestPermutationIteratorWithCountingIte
                       ::cuda::std::identity{});
 
     Vector ref{0, 1, 2, 3};
-    ASSERT_EQUAL(output, ref);
+    REQUIRE(output == ref);
   }
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorWithCountingIterator);

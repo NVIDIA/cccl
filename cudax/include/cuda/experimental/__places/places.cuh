@@ -996,6 +996,34 @@ public:
 
   static exec_place all_devices();
 
+  /**
+   * @brief Returns a grid of execution places over all locality domains of a device
+   *
+   * Single-device sugar over `make_locality_domain_grid(dev_id, split)`, the
+   * counterpart of `all_devices()` one level down the hierarchy: one place per
+   * locality domain of `dev_id` (a single whole-device place on devices without
+   * locality-domain support). Defined in `exec/locality_domain.cuh`.
+   *
+   * @param[in] dev_id The CUDA device ordinal
+   * @param[in] split SM split method applied to every place of the grid; see
+   *        `locality_domain_sm_split`
+   * @return exec_place grid with one place per locality domain
+   */
+  static exec_place locality_domains(int dev_id, locality_domain_sm_split split = locality_domain_sm_split::backfill);
+
+  //! @brief Returns a grid of execution places over every locality domain of every visible device
+  //!
+  //! Machine-wide sugar over @c make_locality_domain_grid(split), the counterpart
+  //! of @c all_devices() one level down the hierarchy (as @c locality_domains(dev_id)
+  //! is to @c device(dev_id)): one place per locality domain per device, in
+  //! device-major order (devices without locality-domain support contribute a
+  //! single whole-device place). Defined in @c exec/locality_domain.cuh.
+  //!
+  //! @param[in] split SM split method applied to every place of the grid; see
+  //!        @c locality_domain_sm_split
+  //! @return exec_place grid with one place per locality domain per device
+  static exec_place all_locality_domains(locality_domain_sm_split split = locality_domain_sm_split::backfill);
+
   static exec_place n_devices(size_t n, dim4 dims);
 
   static exec_place n_devices(size_t n);
@@ -2016,14 +2044,17 @@ public:
     return (grid_ < o.grid_) ? -1 : 1;
   }
 
-  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
-    // A byte count alone does not carry the tensor geometry the partitioner
-    // needs (it maps element coordinates to places), so there is no meaningful
-    // way to service this request.
-    _CCCL_THROW(::std::runtime_error,
-                "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
-                "allocate through a logical data");
+    // A byte count is a 1-D tensor of bytes: this is what every byte-oriented
+    // allocator interface (std, thrust, cuco, cuda::mr) can offer, and it is
+    // how a container's storage lands on a composite place without knowing
+    // about places at all. The partitioner then maps BYTE coordinates; a
+    // partitioner written in element units for a typed allocation
+    // (tiled_partition<T> ...) must be paired with allocate_nd instead.
+    // Placement is quantized to the VMM granularity anyway, so no element
+    // ever straddles two owners.
+    return allocate_nd(dim4(static_cast<size_t>(size)), 1, stream);
   }
 
   void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
@@ -2031,8 +2062,15 @@ public:
     return allocate_composite_data_place(*this, data_dims, elemsize);
   }
 
-  void deallocate(void* ptr, size_t, cudaStream_t) const override
+  void deallocate(void* ptr, size_t, cudaStream_t stream) const override
   {
+    // The unmap is immediate, not stream-ordered: callers that free through
+    // the stream-ordered allocator protocol expect in-flight work on the
+    // stream to be done with the memory, so wait for it here.
+    if (stream != nullptr)
+    {
+      cuda_safe_call(cudaStreamSynchronize(stream));
+    }
     deallocate_composite_data_place(ptr);
   }
 

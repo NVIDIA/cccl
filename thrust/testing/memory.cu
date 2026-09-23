@@ -72,7 +72,7 @@ template <typename Pointer>
 void return_temporary_buffer(my_old_temporary_allocation_system, Pointer p)
 {
   using RP = typename cuda::std::pointer_traits<Pointer>::raw_pointer;
-  ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(4217));
+  REQUIRE(p.get() == reinterpret_cast<RP>(4217));
 }
 } // namespace my_old_namespace
 
@@ -95,15 +95,15 @@ void return_temporary_buffer(my_new_temporary_allocation_system, Pointer)
 {
   // This should never be called (the three-argument with size overload below
   // should be preferred) and shouldn't be ambiguous.
-  ASSERT_EQUAL(true, false);
+  REQUIRE(false);
 }
 
 template <typename Pointer>
 void return_temporary_buffer(my_new_temporary_allocation_system, Pointer p, std::ptrdiff_t n)
 {
   using RP = typename cuda::std::pointer_traits<Pointer>::raw_pointer;
-  ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(1742));
-  ASSERT_EQUAL(n, 413);
+  REQUIRE(p.get() == reinterpret_cast<RP>(1742));
+  REQUIRE(n == 413);
 }
 } // namespace my_new_namespace
 
@@ -128,11 +128,11 @@ void TestSelectSystemDifferentTypes()
 
   // select_system(my_system, device_system_tag) should return device_system_tag (the minimum tag)
   bool is_device_system_tag = are_same(device_sys, select_system(my_sys, device_sys));
-  ASSERT_EQUAL(true, is_device_system_tag);
+  REQUIRE(is_device_system_tag);
 
   // select_system(device_system_tag, my_tag) should return device_system_tag (the minimum tag)
   is_device_system_tag = are_same(device_sys, select_system(device_sys, my_sys));
-  ASSERT_EQUAL(true, is_device_system_tag);
+  REQUIRE(is_device_system_tag);
 }
 DECLARE_UNITTEST(TestSelectSystemDifferentTypes);
 
@@ -146,15 +146,15 @@ void TestSelectSystemSameTypes()
 
   // select_system(host_system_tag, host_system_tag) should return host_system_tag
   const bool is_host_system_tag = are_same(host_sys, select_system(host_sys, host_sys));
-  ASSERT_EQUAL(true, is_host_system_tag);
+  REQUIRE(is_host_system_tag);
 
   // select_system(device_system_tag, device_system_tag) should return device_system_tag
   const bool is_device_system_tag = are_same(device_sys, select_system(device_sys, device_sys));
-  ASSERT_EQUAL(true, is_device_system_tag);
+  REQUIRE(is_device_system_tag);
 
   // select_system(my_system, my_system) should return my_system
   const bool is_my_system = are_same(my_sys, select_system(my_sys, my_sys));
-  ASSERT_EQUAL(true, is_my_system);
+  REQUIRE(is_my_system);
 }
 DECLARE_UNITTEST(TestSelectSystemSameTypes);
 
@@ -166,14 +166,14 @@ void TestGetTemporaryBuffer()
   using pointer                                             = thrust::pointer<int, thrust::device_system_tag>;
   const cuda::std::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(dev_tag, n);
 
-  ASSERT_EQUAL(ptr_and_sz.second, n);
+  REQUIRE(ptr_and_sz.second == n);
 
   const int ref_val = 13;
   const thrust::device_vector<int> ref(n, ref_val);
 
   thrust::fill_n(ptr_and_sz.first, n, ref_val);
 
-  ASSERT_EQUAL(true, thrust::all_of(ptr_and_sz.first, ptr_and_sz.first + n, thrust::placeholders::_1 == ref_val));
+  REQUIRE(thrust::all_of(ptr_and_sz.first, ptr_and_sz.first + n, thrust::placeholders::_1 == ref_val));
 
   thrust::return_temporary_buffer(dev_tag, ptr_and_sz.first, ptr_and_sz.second);
 }
@@ -192,7 +192,7 @@ void TestMalloc()
 
   thrust::fill_n(ptr, n, ref_val);
 
-  ASSERT_EQUAL(true, thrust::all_of(ptr, ptr + n, thrust::placeholders::_1 == ref_val));
+  REQUIRE(thrust::all_of(ptr, ptr + n, thrust::placeholders::_1 == ref_val));
 
   thrust::free(dev_tag, ptr);
 }
@@ -212,7 +212,7 @@ void TestMallocDispatchExplicit()
   my_memory_system sys(0);
   thrust::malloc(sys, n);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestMallocDispatchExplicit);
 
@@ -229,7 +229,7 @@ void TestFreeDispatchExplicit()
   my_memory_system sys(0);
   thrust::free(sys, ptr);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestFreeDispatchExplicit);
 
@@ -253,15 +253,15 @@ void TestGetTemporaryBufferDispatchExplicit()
   using pointer                                             = thrust::pointer<int, thrust::device_system_tag>;
   const cuda::std::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(sys, n);
 
-  ASSERT_EQUAL(ptr_and_sz.second, n);
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(ptr_and_sz.second == n);
+  REQUIRE(sys.is_valid());
 
   const int ref_val = 13;
   const thrust::device_vector<int> ref(n, ref_val);
 
   thrust::fill_n(ptr_and_sz.first, n, ref_val);
 
-  ASSERT_EQUAL(true, thrust::all_of(ptr_and_sz.first, ptr_and_sz.first + n, thrust::placeholders::_1 == ref_val));
+  REQUIRE(thrust::all_of(ptr_and_sz.first, ptr_and_sz.first + n, thrust::placeholders::_1 == ref_val));
 
   thrust::return_temporary_buffer(sys, ptr_and_sz.first, ptr_and_sz.second);
 }
@@ -287,8 +287,8 @@ void TestGetTemporaryBufferDispatchImplicit()
 
   thrust::sort(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, thrust::is_sorted(vec.begin(), vec.end()));
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(thrust::is_sorted(vec.begin(), vec.end()));
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestGetTemporaryBufferDispatchImplicit);
 
@@ -306,8 +306,8 @@ void TestTemporaryBufferOldCustomization()
     const pointer_and_size ps = thrust::get_temporary_buffer<int>(sys, 0);
 
     // The magic values are defined in `my_old_namespace` above.
-    ASSERT_EQUAL(ps.first.get(), reinterpret_cast<int*>(4217));
-    ASSERT_EQUAL(ps.second, 314);
+    REQUIRE(ps.first.get() == reinterpret_cast<int*>(4217));
+    REQUIRE(ps.second == 314);
 
     thrust::return_temporary_buffer(sys, ps.first, ps.second);
   }
@@ -326,8 +326,8 @@ void TestTemporaryBufferNewCustomization()
     const pointer_and_size ps = thrust::get_temporary_buffer<int>(sys, 0);
 
     // The magic values are defined in `my_new_namespace` above.
-    ASSERT_EQUAL(ps.first.get(), reinterpret_cast<int*>(1742));
-    ASSERT_EQUAL(ps.second, 413);
+    REQUIRE(ps.first.get() == reinterpret_cast<int*>(1742));
+    REQUIRE(ps.second == 413);
 
     thrust::return_temporary_buffer(sys, ps.first, ps.second);
   }
