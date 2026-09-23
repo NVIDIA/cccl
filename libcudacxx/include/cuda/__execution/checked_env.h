@@ -59,7 +59,7 @@ public:
     noexcept(::cuda::std::execution::__nothrow_queryable_with<__query_env_t, _Query, _Args...>)
       -> ::cuda::std::execution::__query_result_t<__query_env_t, _Query, _Args...>
   {
-    const ::cuda::std::remove_reference_t<_Env>& __env = __env_;
+    __query_env_t __env = __env_;
     return __env.query(__query, static_cast<_Args&&>(__args)...);
   }
 

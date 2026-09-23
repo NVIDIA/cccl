@@ -20,6 +20,7 @@
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__utility/forward.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -42,7 +43,7 @@ namespace detail
 //! @param[in] env The environment or object to query.
 //! @return The query result when selected; otherwise @p fallback.
 template <bool UseAdvertisedQueries, typename QueryT, typename FallbackT, typename EnvT>
-CUB_RUNTIME_FUNCTION auto query_or([[maybe_unused]] QueryT query, FallbackT&& fallback, const EnvT& env)
+[[nodiscard]] CUB_RUNTIME_FUNCTION auto query_or([[maybe_unused]] QueryT query, FallbackT&& fallback, const EnvT& env)
 {
   if constexpr (UseAdvertisedQueries && ::cuda::std::execution::__detail::__has_property_keys<EnvT>)
   {
@@ -100,7 +101,7 @@ CUB_RUNTIME_FUNCTION void validate_env_or_object()
 //! @return The temporary-storage sizing or allocation error, if any; otherwise the execution error, if any;
 //! otherwise the deallocation status.
 template <bool UseAdvertisedQueries = false, typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, AlgorithmCallable&& algorithm_callable)
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   // Query stream from environment
   auto stream = detail::query_or<UseAdvertisedQueries>(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
@@ -153,10 +154,11 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, AlgorithmCal
 //! @return The temporary-storage sizing or allocation error, if any; otherwise the execution error, if any;
 //! otherwise the deallocation status.
 template <typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_validation(const EnvT& env, AlgorithmCallable&& algorithm_callable)
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t
+dispatch_with_env_validation(const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   detail::validate_env_or_object<EnvT>();
-  return detail::dispatch_with_env<true>(env, static_cast<AlgorithmCallable&&>(algorithm_callable));
+  return detail::dispatch_with_env<true>(env, ::cuda::std::forward<AlgorithmCallable>(algorithm_callable));
 }
 
 //! @brief Dispatches with automatic storage and selects a tuning policy from the environment.
@@ -171,8 +173,11 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_validation(const EnvT& env, A
 //! @return The temporary-storage sizing or allocation error, if any; otherwise the execution error, if any;
 //! otherwise the deallocation status.
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_callable)
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t
+dispatch_with_env_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
+  // A forwarding reference accepts temporary callables, but the callable is deliberately invoked as an lvalue because
+  // automatic-storage dispatch invokes it twice.
   return detail::dispatch_with_env(
     env,
     [&algorithm_callable](
@@ -197,7 +202,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(const EnvT& env, A
 //! @return The temporary-storage sizing or allocation error, if any; otherwise the execution error, if any;
 //! otherwise the deallocation status.
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t
 dispatch_with_env_validation_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   return detail::dispatch_with_env_validation(
@@ -228,7 +233,7 @@ dispatch_with_env_validation_and_tuning(const EnvT& env, AlgorithmCallable&& alg
 //! @param[in] algorithm_callable The algorithm implementation callable.
 //! @return The status returned by @p algorithm_callable.
 template <bool UseAdvertisedQueries = false, typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   // Query stream from environment
@@ -256,12 +261,12 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(
 //! @param[in] algorithm_callable The algorithm implementation callable.
 //! @return The status returned by @p algorithm_callable.
 template <typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_validation(
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_validation(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   detail::validate_env_or_object<EnvT>();
   return detail::dispatch_with_env<true>(
-    d_temp_storage, temp_storage_bytes, env, static_cast<AlgorithmCallable&&>(algorithm_callable));
+    d_temp_storage, temp_storage_bytes, env, ::cuda::std::forward<AlgorithmCallable>(algorithm_callable));
 }
 
 //! @brief Dispatches with user-provided storage and selects a tuning policy from the environment.
@@ -277,7 +282,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_validation(
 //! @param[in] algorithm_callable The algorithm implementation callable that receives the selected policy.
 //! @return The status returned by @p algorithm_callable.
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   return detail::dispatch_with_env(
@@ -289,7 +294,8 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
       using policy_t = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
       using policy_selector =
         ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
-      return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
+      return ::cuda::std::forward<AlgorithmCallable>(
+        algorithm_callable)(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
     });
 }
 
@@ -307,7 +313,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
 //! @param[in] algorithm_callable The algorithm implementation callable that receives the selected policy.
 //! @return The status returned by @p algorithm_callable.
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_validation_and_tuning(
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_validation_and_tuning(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   return detail::dispatch_with_env_validation(
@@ -319,7 +325,8 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_validation_and_tuning(
       using policy_t = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
       using policy_selector =
         ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
-      return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
+      return ::cuda::std::forward<AlgorithmCallable>(
+        algorithm_callable)(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
     });
 }
 //! @endcond
