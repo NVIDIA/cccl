@@ -853,3 +853,182 @@ CUB_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogra
     static_cast<int>(d_samples.size()));
   CHECK(h_histogram_ref == d_histogram);
 }
+
+// Regression test for NVIDIA/cccl#10977: signed byte samples produced negative privatized bin
+// indices in the pass-thru byte-sample path and were never counted.
+CUB_TEST("DeviceHistogram::Histogram* negative signed byte samples", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_bins         = 4;
+  constexpr int num_levels       = num_bins + 1;
+  constexpr int8_t lower_level   = -60;
+  constexpr int8_t upper_level   = 64;
+  const int8_t h_samples[]       = {lower_level, -1, 10, 63};
+  auto d_samples                 = c2h::device_vector<int8_t>(cs::begin(h_samples), cs::end(h_samples));
+  const auto* const d_sample_ptr = thrust::raw_pointer_cast(d_samples.data());
+  const c2h::host_vector<int> h_expected{1, 1, 1, 1};
+
+  SECTION("HistogramEven")
+  {
+    auto d_histogram = c2h::device_vector<int>(num_bins);
+    histogram_even(
+      d_sample_ptr,
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      static_cast<int>(d_samples.size()));
+    CHECK(d_histogram == h_expected);
+  }
+
+  SECTION("HistogramRange")
+  {
+    const int h_levels[] = {lower_level, -30, 0, 30, upper_level};
+    auto d_levels        = c2h::device_vector<int>(cs::begin(h_levels), cs::end(h_levels));
+    auto d_histogram     = c2h::device_vector<int>(num_bins);
+    histogram_range(
+      d_sample_ptr,
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      thrust::raw_pointer_cast(d_levels.data()),
+      static_cast<int>(d_samples.size()));
+    CHECK(d_histogram == h_expected);
+  }
+}
+
+// Regression test for NVIDIA/cccl#10977: with more than 127 bins, full-range int8_t histograms lost
+// bins through the SampleT round trip of privatized bin indices in StoreOutput.
+CUB_TEST("DeviceHistogram::Histogram* full 8-bit domain", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_bins    = 256;
+  constexpr int num_levels  = num_bins + 1;
+  constexpr int lower_level = -128;
+  constexpr int upper_level = 128;
+
+  c2h::host_vector<int8_t> h_all_samples(num_bins);
+  for (int i = 0; i < num_bins; ++i)
+  {
+    h_all_samples[i] = static_cast<int8_t>(i + lower_level);
+  }
+  auto d_all_samples             = c2h::device_vector<int8_t>(h_all_samples.begin(), h_all_samples.end());
+  const auto* const d_sample_ptr = thrust::raw_pointer_cast(d_all_samples.data());
+  const c2h::host_vector<int> h_expected(num_bins, 1);
+  auto d_histogram = c2h::device_vector<int>(num_bins);
+
+  SECTION("HistogramEven")
+  {
+    histogram_even(
+      d_sample_ptr,
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      static_cast<int>(d_all_samples.size()));
+    CHECK(d_histogram == h_expected);
+  }
+
+  SECTION("HistogramRange")
+  {
+    c2h::host_vector<int> h_levels(num_levels);
+    for (int i = 0; i < num_levels; ++i)
+    {
+      h_levels[i] = i + lower_level;
+    }
+    auto d_levels = c2h::device_vector<int>(h_levels.begin(), h_levels.end());
+    histogram_range(
+      d_sample_ptr,
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      thrust::raw_pointer_cast(d_levels.data()),
+      static_cast<int>(d_all_samples.size()));
+    CHECK(d_histogram == h_expected);
+  }
+}
+
+// Regression test for NVIDIA/cccl#10976: the privatized bin index was cast through the sample type
+// before the output decode op, so bin indices that are not exactly representable in the sample type
+// were merged or dropped (and, for float-like types, could write out of bounds).
+CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_bins   = 65'536; // 2^16
+  constexpr int num_levels = num_bins + 1;
+
+  c2h::host_vector<int16_t> h_i16_samples(num_bins);
+  for (int i = 0; i < num_bins; ++i)
+  {
+    h_i16_samples[i] = static_cast<int16_t>(i - 32768);
+  }
+  auto d_samples                 = c2h::device_vector<int16_t>(h_i16_samples.begin(), h_i16_samples.end());
+  const auto* const d_sample_ptr = thrust::raw_pointer_cast(d_samples.data());
+
+  const c2h::host_vector<int> h_expected(num_bins, 1);
+
+  SECTION("HistogramEven")
+  {
+    auto d_histogram = c2h::device_vector<int>(num_bins);
+    histogram_even(
+      d_sample_ptr,
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      -32768,
+      32768,
+      static_cast<int>(d_samples.size()));
+    CHECK(d_histogram == h_expected);
+  }
+
+  SECTION("HistogramRange")
+  {
+    c2h::host_vector<int> h_i16_levels(num_levels);
+    for (int i = 0; i < num_levels; ++i)
+    {
+      h_i16_levels[i] = i - 32768;
+    }
+    auto d_levels    = c2h::device_vector<int>(h_i16_levels.begin(), h_i16_levels.end());
+    auto d_histogram = c2h::device_vector<int>(num_bins);
+    histogram_range(
+      d_sample_ptr,
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      thrust::raw_pointer_cast(d_levels.data()),
+      static_cast<int>(d_samples.size()));
+    CHECK(d_histogram == h_expected);
+  }
+
+#if TEST_HALF_T()
+  // fp16 mantissa is 10 bits, so it has 11 bits of effective precision. It means it can represent exactly 2^11
+  // integer values.
+  SECTION("__half samples with more than 2048 bins")
+  {
+    constexpr int fp16_num_bins   = 3000;
+    constexpr int fp16_num_levels = fp16_num_bins + 1;
+    const auto exact_fp16         = [](int i) {
+      // In [2048, 4096), the spacing between adjacent half values becomes 2.
+      const int k = i < 2048 ? i : 2048 + (i - 2048) * 2;
+      return half_t{static_cast<float>(k) / 1024.0f};
+    };
+
+    c2h::host_vector<half_t> h_fp16_levels(fp16_num_levels);
+    for (int i = 0; i < fp16_num_levels; ++i)
+    {
+      h_fp16_levels[i] = exact_fp16(i);
+    }
+    c2h::host_vector<half_t> h_fp16_samples(fp16_num_bins);
+    for (int i = 0; i < fp16_num_bins; ++i)
+    {
+      h_fp16_samples[i] = exact_fp16(i);
+    }
+    auto d_fp16_levels  = c2h::device_vector<half_t>(h_fp16_levels.begin(), h_fp16_levels.end());
+    auto d_fp16_samples = c2h::device_vector<half_t>(h_fp16_samples.begin(), h_fp16_samples.end());
+
+    auto d_histogram = c2h::device_vector<int>(fp16_num_bins);
+    histogram_range(
+      cast_if_half_pointer(thrust::raw_pointer_cast(d_fp16_samples.data())),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      fp16_num_levels,
+      cast_if_half_pointer(thrust::raw_pointer_cast(d_fp16_levels.data())),
+      fp16_num_bins);
+
+    const c2h::host_vector<int> h_fp16_expected(fp16_num_bins, 1);
+    CHECK(d_histogram == h_fp16_expected);
+  }
+#endif // TEST_HALF_T()
+}
