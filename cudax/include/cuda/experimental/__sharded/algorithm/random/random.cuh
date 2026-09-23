@@ -40,7 +40,7 @@
  *    mapping (not bitwise-comparable to a stock host-API whole-array run);
  *    the invariance test is the gate to re-run per toolkit.
  *
- * Synchronous convenience contract (the `__generic_map` no-stream form):
+ * Synchronous convenience contract (the `__visit_shards` no-stream form):
  * refuses under CUDA graph capture and under `sync_policy::forbid`, joins
  * every lane before returning.
  *
@@ -66,7 +66,7 @@
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
-#include <cuda/experimental/__sharded/engine/generic_map.cuh>
+#include <cuda/experimental/__sharded/engine/visit_shards.cuh>
 
 #include <functional>
 #include <mutex>
@@ -260,7 +260,7 @@ void generate_uniform(_S&& __data, const _Envs& __envs, unsigned long long __see
   static_assert(::cuda::std::is_same_v<_Tp, float> || ::cuda::std::is_same_v<_Tp, double>,
                 "generate_uniform: float/double elements only");
   reserved::__philox_set __gens;
-  __detail::__generic_map(
+  __detail::__visit_shards(
     __data, __envs, default_call_env{}, "sharded::generate_uniform", [&](const auto& __d, cudaStream_t __stream) {
       if constexpr (::cuda::std::is_same_v<_Tp, double>)
       {
@@ -286,7 +286,7 @@ void generate_normal(
   static_assert(::cuda::std::is_same_v<_Tp, float> || ::cuda::std::is_same_v<_Tp, double>,
                 "generate_normal: float/double elements only");
   reserved::__philox_set __gens;
-  __detail::__generic_map(
+  __detail::__visit_shards(
     __data, __envs, default_call_env{}, "sharded::generate_normal", [&](const auto& __d, cudaStream_t __stream) {
       if constexpr (::cuda::std::is_same_v<_Tp, double>)
       {

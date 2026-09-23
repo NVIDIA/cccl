@@ -45,7 +45,7 @@
 #include <cuda/experimental/__sharded/container/default_envs.cuh>
 #include <cuda/experimental/__sharded/container/sharded_array.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
-#include <cuda/experimental/__sharded/engine/generic_map.cuh>
+#include <cuda/experimental/__sharded/engine/visit_shards.cuh>
 
 #include <cuda_runtime.h>
 
@@ -110,7 +110,7 @@ _CCCL_REQUIRES(
   sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void fill(_S&& data, const _Envs& envs, const _Tp& value, const _CallEnv& call_env = {})
 {
-  __detail::__generic_map(data, envs, call_env, "sharded::fill", [&](const auto& d, cudaStream_t s) {
+  __detail::__visit_shards(data, envs, call_env, "sharded::fill", [&](const auto& d, cudaStream_t s) {
     thrust::fill(thrust::cuda::par_nosync.on(s), d.data, d.data + d.size, value);
     cuda_safe_call(cudaGetLastError());
   });
@@ -138,7 +138,7 @@ _CCCL_HOST_API void sequence(
   const _CallEnv& call_env = {})
 {
   using elem_t = view_element_t<_S>;
-  __detail::__generic_map(data, envs, call_env, "sharded::sequence", [&](const auto& d, cudaStream_t s) {
+  __detail::__visit_shards(data, envs, call_env, "sharded::sequence", [&](const auto& d, cudaStream_t s) {
     thrust::tabulate(thrust::cuda::par_nosync.on(s),
                      d.data,
                      d.data + d.size,
@@ -162,7 +162,7 @@ _CCCL_REQUIRES(
   sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void tabulate(_S&& data, const _Envs& envs, _Fn f, const _CallEnv& call_env = {})
 {
-  __detail::__generic_map(data, envs, call_env, "sharded::tabulate", [&](const auto& d, cudaStream_t s) {
+  __detail::__visit_shards(data, envs, call_env, "sharded::tabulate", [&](const auto& d, cudaStream_t s) {
     thrust::tabulate(thrust::cuda::par_nosync.on(s),
                      d.data,
                      d.data + d.size,
@@ -187,7 +187,7 @@ _CCCL_REQUIRES(
   sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void generate(_S&& data, const _Envs& envs, _Gen gen, const _CallEnv& call_env = {})
 {
-  __detail::__generic_map(data, envs, call_env, "sharded::generate", [&](const auto& d, cudaStream_t s) {
+  __detail::__visit_shards(data, envs, call_env, "sharded::generate", [&](const auto& d, cudaStream_t s) {
     thrust::generate(thrust::cuda::par_nosync.on(s), d.data, d.data + d.size, gen);
     cuda_safe_call(cudaGetLastError());
   });
@@ -210,7 +210,7 @@ _CCCL_REQUIRES(
 _CCCL_HOST_API void for_each(_S&& data, const _Envs& envs, _Op op, const _CallEnv& call_env = {})
 {
   using elem_t = view_element_t<_S>;
-  __detail::__generic_map(data, envs, call_env, "sharded::for_each", [&](const auto& d, cudaStream_t s) {
+  __detail::__visit_shards(data, envs, call_env, "sharded::for_each", [&](const auto& d, cudaStream_t s) {
     const size_t global_offset = static_cast<size_t>(d.global_offset);
     auto begin = thrust::make_zip_iterator(thrust::make_tuple(d.data, thrust::make_counting_iterator(global_offset)));
     auto end   = thrust::make_zip_iterator(

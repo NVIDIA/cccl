@@ -54,7 +54,7 @@
 #include <cuda/experimental/__sharded/container/default_envs.cuh>
 #include <cuda/experimental/__sharded/container/sharded_array.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
-#include <cuda/experimental/__sharded/engine/generic_map.cuh>
+#include <cuda/experimental/__sharded/engine/visit_shards.cuh>
 
 #include <algorithm>
 #include <stdexcept>
@@ -176,7 +176,7 @@ _CCCL_HOST_API void __scan_generic(
 
   // Phase 3: per-shard in-place seeded scans through the shared driver
   // (its synchronous tail provides this form's final join).
-  __detail::__generic_map(data, envs, call_env, what, [&](::std::size_t g, const auto& d, cudaStream_t s) {
+  __detail::__visit_shards(data, envs, call_env, what, [&](::std::size_t g, const auto& d, cudaStream_t s) {
     const auto& env = envs[g];
     auto mr         = ::cuda::mr::get_memory_resource(env);
 

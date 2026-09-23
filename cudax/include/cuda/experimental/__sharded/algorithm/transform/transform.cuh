@@ -14,7 +14,7 @@
  *        n-ary zip). No cross-place stage: each shard transforms locally —
  *        one direct per-shard launch (`thrust::transform`,
  *        `cub::DeviceTransform`) on the shard's environment stream, driven
- *        by `__generic_map` like the rest of the map family.
+ *        by `__visit_shards` like the rest of the map family.
  *
  * The same verbs written over the MGMN transform engine live in
  * `reference/mgmn_transform.cuh` (`reserved::mgmn_engine`), kept as the comparison
@@ -50,7 +50,7 @@
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
 #include <cuda/experimental/__sharded/container/default_envs.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
-#include <cuda/experimental/__sharded/engine/generic_map.cuh>
+#include <cuda/experimental/__sharded/engine/visit_shards.cuh>
 
 #include <cstddef>
 
@@ -88,7 +88,7 @@ _CCCL_REQUIRES(
   sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallEnv& call_env = {})
 {
-  __detail::__generic_map(data, envs, call_env, "sharded::transform", [&](const auto& d, cudaStream_t s) {
+  __detail::__visit_shards(data, envs, call_env, "sharded::transform", [&](const auto& d, cudaStream_t s) {
     thrust::transform(thrust::cuda::par_nosync.on(s), d.data, d.data + d.size, d.data, op);
     cuda_safe_call(cudaGetLastError());
   });
@@ -159,7 +159,7 @@ _CCCL_HOST_API void zip_transform(_SOut&& out, const _Envs& envs, _Op op, const 
   // call stream), fork/join edges only under `composition::bracketed`, and
   // the capture-time refusal of a lane-ordered call whose lanes are not
   // capturing. The shard index selects the co-partitioned input shards.
-  __detail::__generic_map(
+  __detail::__visit_shards(
     out, envs, call_env, "sharded::zip_transform", [&](::std::size_t g, const auto& s_out, cudaStream_t) {
       cuda_safe_call(cub::DeviceTransform::Transform(
         ::cuda::std::tuple{ins.shard(g).data...},

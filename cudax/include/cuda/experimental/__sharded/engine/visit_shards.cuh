@@ -10,8 +10,12 @@
 
 /**
  * @file
- * @brief `__detail::__generic_map`: the shared driver of the concept-generic
- *        map family (no cross-shard stage).
+ * @brief `__detail::__visit_shards`: the concept-tier shard visitor — the
+ *        shared driver of every algorithm whose engine is a per-shard launch
+ *        (the map family, and per-shard kernels with a halo edge such as
+ *        `adjacent_difference`). No cross-shard combine stage lives here;
+ *        a body may add its own lane edges (`__wait_stream_on`) before its
+ *        launch.
  *
  * Visits every non-empty shard under `stream_scope` on its environment's
  * stream and applies the sharded call contract around the per-shard body:
@@ -55,8 +59,9 @@ namespace cuda::experimental::sharded
 {
 namespace __detail
 {
-//! @brief Shared driver for the concept-generic map family (no cross-shard
-//! stage): visit every non-empty shard under `stream_scope` on its
+//! @brief The concept-tier shard visitor (successor of the container's
+//! `each_shard`, with environments as the stream source and the call
+//! contract enforced): visit every non-empty shard under `stream_scope` on its
 //! environment's stream, with the per-call environment selecting the
 //! contract — stream present = asynchronous (LANE-ORDERED by default: the
 //! call enqueues each shard's work on its environment's stream and touches
@@ -80,7 +85,7 @@ namespace __detail
 //! work on the given stream (the `each_shard` dual-arity convention).
 template <class _S, class _Envs, class _CallEnv, class _PerShard>
 _CCCL_HOST_API void
-__generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _PerShard __body)
+__visit_shards(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _PerShard __body)
 {
   const ::std::size_t __num_shards = reserved::__shard_count(__data);
   reserved::__check_env_count(__envs, __num_shards, __what);

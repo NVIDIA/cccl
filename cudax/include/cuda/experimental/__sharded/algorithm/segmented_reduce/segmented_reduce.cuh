@@ -65,7 +65,7 @@
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
 #include <cuda/experimental/__sharded/container/default_envs.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
-#include <cuda/experimental/__sharded/engine/generic_map.cuh>
+#include <cuda/experimental/__sharded/engine/visit_shards.cuh>
 
 #include <stdexcept>
 #include <string>
@@ -160,7 +160,7 @@ _CCCL_HOST_API void segmented_reduce(
   reserved::__check_copartitioned(out, seg_begin, "sharded::segmented_reduce (out/seg_begin)");
   reserved::__check_copartitioned(out, seg_end, "sharded::segmented_reduce (out/seg_end)");
 
-  __detail::__generic_map(
+  __detail::__visit_shards(
     out, envs, call_env, "sharded::segmented_reduce", [&](::std::size_t g, const auto& o, cudaStream_t s) {
       const ::cuda::stream_ref stream{s};
       // Two-phase CUB: size query (host-only, no work recorded), then run
@@ -330,7 +330,7 @@ _CCCL_HOST_API void segmented_reduce(
     }
   }
 
-  __detail::__generic_map(
+  __detail::__visit_shards(
     out, envs, call_env, "sharded::segmented_reduce", [&](::std::size_t g, const auto& o, cudaStream_t s) {
       const ::cuda::stream_ref stream{s};
       const auto& i = in.shard(g);

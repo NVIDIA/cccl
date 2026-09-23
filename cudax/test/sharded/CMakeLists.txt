@@ -148,7 +148,7 @@ set(
   cuda/experimental/__sharded/composition/fork_join.cuh
   cuda/experimental/__sharded/composition/pinned_staging.cuh
   cuda/experimental/__sharded/composition/verbs.cuh
-  cuda/experimental/__sharded/engine/generic_map.cuh
+  cuda/experimental/__sharded/engine/visit_shards.cuh
   cuda/experimental/__sharded/engine/mgmn.cuh
   cuda/experimental/__sharded/algorithm/adjacent_difference/adjacent_difference.cuh
   cuda/experimental/__sharded/algorithm/copy_if/copy_if.cuh
