@@ -902,6 +902,8 @@ CUB_TEST("DeviceHistogram::HistogramEven wide int32 level range is not spuriousl
   CHECK(h_histogram[0] == 1);
   CHECK(h_histogram[num_bins / 2] == 1);
   CHECK(h_histogram[96] == 1);
+}
+
 // Regression test for NVIDIA/cccl#10977: signed byte samples produced negative privatized bin
 // indices in the pass-thru byte-sample path and were never counted.
 CUB_TEST("DeviceHistogram::Histogram* negative signed byte samples", "[histogram][device]", CUB_SMALL)
