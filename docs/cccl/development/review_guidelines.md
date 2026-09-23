@@ -378,6 +378,18 @@ platform and silently truncates or fails on the other. Use a type that says what
 traits, overload sets, type-list tests enumerating fundamental types, and external API signatures
 that use it. Candidate for a pre-commit grep.
 
+## correctness.ptx-asm-operand-index (critical, hand-written/generated inline PTX `asm volatile` blocks)
+
+<!-- provenance:
+  #3440→#8403 128-bit atomic CAS codegen template misindexed asm operands (mov.b128 read from output/undefined and cross-mixed compare/desired registers), returning success while writing garbled data (intro corrected from issue #8402)
+-->
+
+When a diff adds or edits an inline `asm volatile("..." : outputs : inputs : clobbers)` block
+referencing operands by number (`%0`, `%1`, …), manually verify each `%N` against its declared position
+(outputs first, then inputs, in constraint-list order) — the compiler only checks that `%N` is in
+range, not that it refers to the intended operand. Watch for reads of output-only (`"="`) operands and
+off-by-one indices after a reorder. Tests should read back the written values, not just a status.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
