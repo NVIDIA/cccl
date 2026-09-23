@@ -32,6 +32,7 @@
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
+#include <cuda/experimental/__cuco/detail/equal_wrapper.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_ref_impl.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
@@ -427,12 +428,22 @@ public:
   //! @note Requires `cg_size == 1`. Concurrent assignments to the same key leave an
   //! unspecified one of the assigned values. Concurrent lookup and modification are unsupported.
   //!
-  //! @param __value The key-value pair to insert or assign
+  //! @param[in] __value The key-value pair to insert or assign
   _CCCL_DEVICE_API void insert_or_assign(value_type __value) noexcept
   {
     static_assert(cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
-    auto __storage = __impl.storage_ref();
-    auto __iter    = probing_scheme().template make_iterator<bucket_size>(__value.first, __storage.capacity_extent());
+    // An erased slot can precede an existing key in the probe sequence. Find that key before
+    // claiming a reusable slot, otherwise assignment could create a duplicate.
+    if (!detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel()))
+    {
+      if (const auto __slot = find(__value.first); __slot != end())
+      {
+        ::cuda::atomic_ref<mapped_type, _Scope>{__slot->second}.store(__value.second, ::cuda::memory_order_relaxed);
+        return;
+      }
+    }
+    const auto __storage = __impl.storage_ref();
+    auto __iter = probing_scheme().template make_iterator<bucket_size>(__value.first, __storage.capacity_extent());
     const auto __initial = *__iter;
     do
     {
@@ -462,13 +473,26 @@ public:
   //! to the same key leave an unspecified one of the assigned values.
   //!
   //! @tparam _ParentCG Parent cooperative group type
-  //! @param __group The cooperative group used for this operation
-  //! @param __value The key-value pair to insert or assign
+  //! @param[in] __group The cooperative group used for this operation
+  //! @param[in] __value The key-value pair to insert or assign
   template <class _ParentCG>
   _CCCL_DEVICE_API void
   insert_or_assign(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, value_type __value) noexcept
   {
-    auto __storage = __impl.storage_ref();
+    // Search past erased slots before reusing one, as in the scalar overload.
+    if (!detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel()))
+    {
+      if (const auto __slot = find(__group, __value.first); __slot != end())
+      {
+        if (__group.thread_rank() == 0)
+        {
+          ::cuda::atomic_ref<mapped_type, _Scope>{__slot->second}.store(__value.second, ::cuda::memory_order_relaxed);
+        }
+        __group.sync();
+        return;
+      }
+    }
+    const auto __storage = __impl.storage_ref();
     auto __iter =
       probing_scheme().template make_iterator<bucket_size>(__group, __value.first, __storage.capacity_extent());
     const auto __initial = *__iter;
@@ -610,13 +634,19 @@ public:
   }
 
 private:
-  //! @brief Claims an empty slot or assigns the payload if a competing insertion used the same key.
-  _CCCL_DEVICE_API bool __attempt_insert_or_assign(value_type* __slot, value_type __value) noexcept
+  //! @brief Claims an empty or erased slot, or assigns the payload of a competing insertion with the same key.
+  [[nodiscard]] _CCCL_DEVICE_API bool __attempt_insert_or_assign(value_type* __slot, value_type __value) noexcept
   {
-    auto __expected       = empty_key_sentinel();
-    const bool __inserted = ::cuda::atomic_ref<key_type, _Scope>{__slot->first}.compare_exchange_strong(
-      __expected, __value.first, ::cuda::memory_order_relaxed);
-    if (__inserted || __impl.predicate().__equal_to(__value.first, __expected) == detail::__equal_result::__equal)
+    auto __expected = empty_key_sentinel();
+    const ::cuda::atomic_ref<key_type, _Scope> __key_ref{__slot->first};
+    bool __inserted = __key_ref.compare_exchange_strong(__expected, __value.first, ::cuda::memory_order_relaxed);
+    if (!__inserted && detail::__bitwise_compare(__expected, erased_key_sentinel()))
+    {
+      __inserted = __key_ref.compare_exchange_strong(__expected, __value.first, ::cuda::memory_order_relaxed);
+    }
+    if (__inserted
+        || __impl.predicate().template operator()<detail::__is_insert::__no>(__value.first, __expected)
+             == detail::__equal_result::__equal)
     {
       ::cuda::atomic_ref<mapped_type, _Scope>{__slot->second}.store(__value.second, ::cuda::memory_order_relaxed);
       return true;

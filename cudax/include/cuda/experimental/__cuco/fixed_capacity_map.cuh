@@ -371,13 +371,15 @@ public:
 
   //! @brief Inserts pairs in `[__first, __last)` or assigns their mapped values if the keys exist.
   //!
-  //! @note Synchronizes `__stream`. Use `insert_or_assign_async` for asynchronous execution.
+  //! @note This function synchronizes the given stream. For asynchronous execution use `insert_or_assign_async`.
   //! @note If multiple input pairs have equivalent keys, the final mapped value is unspecified.
   //!
   //! @tparam _InputIt Device accessible random access iterator with values convertible to `value_type`
-  //! @param __stream CUDA stream used for insert or assign
-  //! @param __first Beginning of the sequence of key-value pairs
-  //! @param __last End of the sequence of key-value pairs
+  //! @param[in] __stream CUDA stream used for insert or assign
+  //! @param[in] __first Beginning of the sequence of key-value pairs
+  //! @param[in] __last End of the sequence of key-value pairs
+  //!
+  //! @throws cuda_error if the operation fails
   template <class _InputIt>
   _CCCL_HOST_API void insert_or_assign(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
@@ -390,9 +392,11 @@ public:
   //! @note If multiple input pairs have equivalent keys, the final mapped value is unspecified.
   //!
   //! @tparam _InputIt Device accessible random access iterator with values convertible to `value_type`
-  //! @param __stream CUDA stream used for insert or assign
-  //! @param __first Beginning of the sequence of key-value pairs
-  //! @param __last End of the sequence of key-value pairs
+  //! @param[in] __stream CUDA stream used for insert or assign
+  //! @param[in] __first Beginning of the sequence of key-value pairs
+  //! @param[in] __last End of the sequence of key-value pairs
+  //!
+  //! @throws cuda_error if the operation fails
   template <class _InputIt>
   _CCCL_HOST_API void insert_or_assign_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last)
   {
