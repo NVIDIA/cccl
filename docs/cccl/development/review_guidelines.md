@@ -284,6 +284,20 @@ Thrust and `cuda::std::` synchronize internally, except under `thrust::cuda::par
 sync, the measured time silently excludes some or all of the kernel's execution. If the lambda does
 not sync, `exec_tag::no_batch` or `exec_tag::timer` is likely what was intended.
 
+## api.narrowed-constraints-on-reimplementation (important, refactors/reimplementations of existing public APIs)
+
+<!-- provenance:
+  #1817→#2075 cub::DeviceMerge static_assert requiring identical value_type across both merge inputs, stricter than the thrust::merge implementation it replaced
+-->
+
+When a diff reimplements or reroutes an existing public API (port to a different backend, dispatch-layer
+swap, internal rewrite), flag newly added `static_assert`/`enable_if`/concept/trait constraints that
+reject inputs the previous implementation accepted (e.g. requiring identical `value_type` across two
+input ranges where differing types previously worked). Rejecting previously accepted code is a breaking
+change for downstream users; narrowing is only acceptable as a bug or conformance fix (the previously
+accepted inputs produced wrong results or violated the documented contract), and must be called out in
+the PR description.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
