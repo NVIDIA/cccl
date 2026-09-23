@@ -361,14 +361,14 @@ template <class T>
 class cuda_optional
 {
   cudaError_t err{cudaSuccess};
-  T data{};
+  T val{};
 
 public:
   cuda_optional() = default;
 
   _CCCL_HOST_DEVICE cuda_optional(T v, cudaError_t status = cudaSuccess)
       : err(status)
-      , data(v)
+      , val(v)
   {}
 
   bool _CCCL_HOST_DEVICE isValid() const
@@ -383,12 +383,12 @@ public:
 
   _CCCL_HOST_DEVICE T const& value() const
   {
-    return data;
+    return val;
   }
 
   _CCCL_HOST_DEVICE operator T const&() const
   {
-    return data;
+    return val;
   }
 };
 
