@@ -422,6 +422,96 @@ public:
     return __impl.insert(__group, __value);
   }
 
+  //! @brief Inserts `__value` if its key is absent, otherwise assigns its mapped value.
+  //!
+  //! @note Requires `cg_size == 1`. Concurrent assignments to the same key leave an
+  //! unspecified one of the assigned values. Concurrent lookup and modification are unsupported.
+  //!
+  //! @param __value The key-value pair to insert or assign
+  _CCCL_DEVICE_API void insert_or_assign(value_type __value) noexcept
+  {
+    static_assert(cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
+    auto __storage = __impl.storage_ref();
+    auto __iter    = probing_scheme().template make_iterator<bucket_size>(__value.first, __storage.capacity_extent());
+    const auto __initial = *__iter;
+    do
+    {
+      const auto __slots = __storage[*__iter];
+      for (int __i = 0; __i < bucket_size; ++__i)
+      {
+        const auto __state =
+          __impl.predicate().template operator()<detail::__is_insert::__yes>(__value.first, __slots[__i].first);
+        if (__state == detail::__equal_result::__equal)
+        {
+          ::cuda::atomic_ref<mapped_type, _Scope>{__slots[__i].second}.store(
+            __value.second, ::cuda::memory_order_relaxed);
+          return;
+        }
+        if (__state == detail::__equal_result::__available && __attempt_insert_or_assign(&__slots[__i], __value))
+        {
+          return;
+        }
+      }
+      ++__iter;
+    } while (*__iter != __initial);
+  }
+
+  //! @brief Inserts or assigns a key-value pair using a cooperative group.
+  //!
+  //! @note All threads in `__group` must participate with the same value. Concurrent assignments
+  //! to the same key leave an unspecified one of the assigned values.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @param __group The cooperative group used for this operation
+  //! @param __value The key-value pair to insert or assign
+  template <class _ParentCG>
+  _CCCL_DEVICE_API void
+  insert_or_assign(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, value_type __value) noexcept
+  {
+    auto __storage = __impl.storage_ref();
+    auto __iter =
+      probing_scheme().template make_iterator<bucket_size>(__group, __value.first, __storage.capacity_extent());
+    const auto __initial = *__iter;
+    while (true)
+    {
+      const auto [__state, __index] = __impl.__find_insert_slot(__value.first, __storage[*__iter]);
+      const auto __equal            = __group.ballot(__state == detail::__equal_result::__equal);
+      if (__equal)
+      {
+        const auto __lane = __ffs(__equal) - 1;
+        if (__group.thread_rank() == __lane)
+        {
+          auto* __slot = __impl.__get_slot_ptr(*__iter, __index);
+          ::cuda::atomic_ref<mapped_type, _Scope>{__slot->second}.store(__value.second, ::cuda::memory_order_relaxed);
+        }
+        __group.sync();
+        return;
+      }
+      const auto __available = __group.ballot(__state == detail::__equal_result::__available);
+      if (__available)
+      {
+        const auto __lane = __ffs(__available) - 1;
+        bool __success    = false;
+        if (__group.thread_rank() == __lane)
+        {
+          __success = __attempt_insert_or_assign(__impl.__get_slot_ptr(*__iter, __index), __value);
+        }
+        if (__group.shfl(__success, __lane))
+        {
+          return;
+        }
+      }
+      else
+      {
+        ++__iter;
+        if (*__iter == __initial)
+        {
+          return;
+        }
+      }
+    }
+  }
+
   // ===== Lookup operations =====
 
   //! @brief Checks if a key exists in the map.
@@ -518,6 +608,22 @@ public:
   {
     __impl.for_each(__group, __key, ::cuda::std::forward<_CallbackOp>(__callback_op));
   }
+
+private:
+  //! @brief Claims an empty slot or assigns the payload if a competing insertion used the same key.
+  _CCCL_DEVICE_API bool __attempt_insert_or_assign(value_type* __slot, value_type __value) noexcept
+  {
+    auto __expected       = empty_key_sentinel();
+    const bool __inserted = ::cuda::atomic_ref<key_type, _Scope>{__slot->first}.compare_exchange_strong(
+      __expected, __value.first, ::cuda::memory_order_relaxed);
+    if (__inserted || __impl.predicate().__equal_to(__value.first, __expected) == detail::__equal_result::__equal)
+    {
+      ::cuda::atomic_ref<mapped_type, _Scope>{__slot->second}.store(__value.second, ::cuda::memory_order_relaxed);
+      return true;
+    }
+    return false;
+  }
+
 #endif // _CCCL_CUDA_COMPILATION()
 };
 } // namespace cuda::experimental::cuco
