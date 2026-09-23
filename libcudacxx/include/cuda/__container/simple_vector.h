@@ -21,11 +21,11 @@
 #endif // no system header
 
 #include <cuda/__utility/no_init.h>
-#include <cuda/std/__host_stdlib/new>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/allocate.h>
-#include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__utility/exchange.h>
@@ -49,10 +49,15 @@ private:
 
   _CCCL_HOST_DEVICE_API static _Tp* __create(size_t __count)
   {
-    if (__count == 0 || __count > static_cast<size_t>(-1) / sizeof(_Tp))
+    if (__count == 0)
     {
       return nullptr;
     }
+    else if (__count > static_cast<size_t>(-1) / sizeof(_Tp))
+    {
+      _CCCL_THROW(::std::bad_alloc);
+    }
+
     return reinterpret_cast<_Tp*>(::cuda::std::__cccl_allocate(__count * sizeof(_Tp), alignof(_Tp)));
   }
 
