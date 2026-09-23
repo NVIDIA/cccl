@@ -392,3 +392,29 @@ shared-memory padding for the entire translation unit, which can reduce occupanc
 kernels, including in downstream user code. CCCL code must not introduce any `extern __shared__`
 storage with alignment above 16. A different design is required instead, e.g., manual alignment of a
 byte buffer. Static shared memory with alignment > 16 is fine.
+
+## infra.new-cuda-arch-rollout (important, diffs adding support for a CUDA architecture/SM number)
+
+<!-- related: test.new-arch-coverage-gap covers the CI/test-exercise angle for arch-conditional branches in general; this rule is the specific checklist of sibling locations for rolling out a brand-new SM -->
+<!-- provenance:
+  #3550→#4931 sm_120 macros added to nv/target in January 2025; arch_traits<sm_120> (then living in
+  cudax) wasn't added until June 2025, ~4 months later — code branching on NV_PROVIDES_SM_120 got wrong
+  occupancy/shared-memory limits inherited from an older SM in the meantime
+-->
+
+When a diff adds support for a new CUDA architecture (SM number) not previously known to CCCL, go
+through this checklist and verify every applicable entry was updated in the same diff (or a linked
+follow-up PR):
+- `libcudacxx/include/nv/detail/__target_macros` and `libcudacxx/include/nv/target` — the
+  `NV_PROVIDES_SM_XXX`/`NV_IS_EXACTLY_SM_XXX` macro pair itself.
+- `libcudacxx/include/cuda/std/__cccl/execution_space.h` — the new SM added to
+  `_CCCL_KNOWN_CUDA_ARCH_LIST` (and to `_CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST` if it needs a
+  family-specific `arch_id`/`arch_traits` entry distinct from its base SM).
+- `libcudacxx/include/cuda/__device/arch_traits.h` — new `arch_traits<arch_id::sm_XXX>()`
+  specialization with its own limits, not copied from an older SM.
+- `libcudacxx/test/libcudacxx/cuda/ccclrt/device/{all_arch_ids,arch_id,arch_id_fmt,arch_traits.c2h,is_specific_arch}`
+  — exhaustive per-arch test tables.
+- `cub/test/catch2_test_util_device.cu` — new `GEN_POLICY` entry in the `policy_hub_all` self-test.
+- `cmake/CCCLCheckCudaArchitectures.cmake` — `all-major-cccl`/`all-cccl` resolution, if the new SM
+  belongs in default multi-arch builds.
+- Recommended: `ci/matrix.yaml` — new SM number added to at least one `sm:`/`codegen_target` job.
