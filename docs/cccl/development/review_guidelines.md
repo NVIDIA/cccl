@@ -339,6 +339,18 @@ touch the pointer; (2) algorithms needing one or more allocations must carve the
 `detail::alias_temporaries` or `detail::temporary_storage::layout`, which alone are allowed to round
 the base pointer up and report the required size.
 
+## correctness.noexcept (critical, new or changed async/fallible public member functions)
+
+<!-- provenance:
+  #7705→#10888 fixed_capacity_map's *_async members were noexcept while __open_addressing_impl ("@throws cuda_error") used _CCCL_TRY_CUDA_API;
+  the cooperative-group launch branches also had no error check at all, unlike their cg_size==1 siblings
+-->
+
+No exception may escape a `noexcept` function on any code path — an escaping exception calls
+`std::terminate`, turning a recoverable error into a process crash, and it compiles cleanly with no
+warning. Pay attention to throwing reached through helpers: `_CCCL_TRY_CUDA_API`, `_CCCL_THROW`, or
+callees documented `@throws`.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
