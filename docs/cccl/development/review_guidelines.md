@@ -384,7 +384,7 @@ that use it. Candidate for a pre-commit grep.
   #3440→#8403 128-bit atomic CAS codegen template misindexed asm operands (mov.b128 read from output/undefined and cross-mixed compare/desired registers), returning success while writing garbled data (intro corrected from issue #8402)
 -->
 
-When a diff adds or edits an inline `asm volatile("...", : outputs : inputs : clobbers)` block
+When a diff adds or edits an inline `asm volatile("..." : outputs : inputs : clobbers)` block
 referencing operands by number (`%0`, `%1`, …), manually verify each `%N` against its declared position
 (outputs first, then inputs, in constraint-list order) — the compiler only checks that `%N` is in
 range, not that it refers to the intended operand. Watch for reads of output-only (`"="`) operands and
