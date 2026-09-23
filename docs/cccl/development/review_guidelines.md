@@ -309,7 +309,8 @@ When a diff adds or defaults a move constructor for a type whose destructor cond
 action or releases a resource (an "active"/"engaged"/"owns" flag, a handle nulled on release), verify
 the move disarms the moved-from source — resets its flag or nulls its handle, not merely copies it.
 `= default` is a red flag: it member-wise copies the flag, so both objects fire the cleanup on
-destruction. Require a test that moves the object and confirms the action fires exactly once.
+destruction. Require a test that moves the object and confirms the action fires exactly once and that the
+moved-from object has been disarmed.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
