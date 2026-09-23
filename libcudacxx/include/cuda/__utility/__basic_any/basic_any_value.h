@@ -370,6 +370,11 @@ public:
     return __get_vptr() != nullptr;
   }
 
+  // GCC cannot prove __query_interface returns non-null for __iunknown (the invariant guarantees it). This
+  // affects the reset() and type() methods.
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_GCC("-Wnull-dereference")
+
   //! @brief Resets the `__basic_any` object to an empty state.
   //! @post `has_value() == false`
   _CCCL_HOST_DEVICE_API void reset() noexcept
@@ -395,6 +400,7 @@ public:
     }
     return _CCCL_TYPEID(void);
   }
+  _CCCL_DIAG_POP
 
   //! @brief Returns a reference to a type_info object representing the type of
   //! the dynamic interface.
