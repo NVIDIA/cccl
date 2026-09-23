@@ -351,18 +351,18 @@ No exception may escape a `noexcept` function on any code path — an escaping e
 warning. Pay attention to throwing reached through helpers: `_CCCL_TRY_CUDA_API`, `_CCCL_THROW`, or
 callees documented `@throws`.
 
-## correctness.header-kernel-odr-template-hack (critical, `__global__` kernels and free functions defined in headers)
+## correctness.header-kernel-weak-linkage (critical, `__global__` kernels defined in headers)
 
 <!-- provenance:
   #2641→#2656 templatized CUDASTF's callback_completion_kernel to dodge a multiple-definition linker error, risking runtime launch errors
 -->
 
-Flag a `__global__` function (or any function) defined in a header that is turned into a template
-(especially with an unused/default-only parameter like `template <int = 0>`) purely to work around a
-"multiple definition" / ODR linker error — a template is not a safe substitute for `inline` here:
-identically instantiated template kernels in multiple TUs can still misbehave at launch time. The
-correct fix is `inline` for ordinary functions and `static` or an unnamed namespace for `__global__`
-kernels.
+Flag a `__global__` function with an unused template parameter (`template <int = 0>`), or marked
+`inline` — typically done to dodge a "multiple definition" linker error for a kernel defined in a
+header. The linker collapses the weak host stubs to one, but each translation unit registers its own
+fatbin, so a launch can resolve to a stub whose kernel was registered by a different TU and fail at
+runtime. Hidden visibility (`_CCCL_KERNEL_ATTRIBUTES`) does not prevent this. Give the kernel internal
+linkage instead: `static` or an unnamed namespace.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
