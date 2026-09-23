@@ -990,11 +990,11 @@ public:
 
   //! @brief Returns a grid of execution places over every locality domain of every visible device
   //!
-  //! Machine-wide sugar over @c make_locality_domain_grid(split), the counterpart
-  //! of @c all_devices() one level down the hierarchy (as @c locality_domains(dev_id)
-  //! is to @c device(dev_id)): one place per locality domain per device, in
-  //! device-major order (devices without locality-domain support contribute a
-  //! single whole-device place). Defined in @c exec/locality_domain.cuh.
+  //! The counterpart of @c all_devices() one level down the hierarchy (as
+  //! @c locality_domains(dev_id) is to @c device(dev_id)): one place per
+  //! locality domain per device, in device-major order (devices without
+  //! locality-domain support contribute a single whole-device place).
+  //! Defined in @c exec/locality_domain.cuh.
   //!
   //! @param[in] split SM split method applied to every place of the grid; see
   //!        @c locality_domain_sm_split
