@@ -859,13 +859,10 @@ CUB_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogra
 // max_level - min_level in the narrow common type before widening, so level ranges wider than the
 // common type wrapped around (silently misbinning) or overflowed signed types (spuriously rejected).
 CUB_TEST("DeviceHistogram::HistogramEven level range wider than int16", "[histogram_even][device]", CUB_SMALL)
-CUB_TEST("DeviceHistogram::HistogramEven level range wider than int16", "[histogram_even][device]", CUB_SMALL)
 {
   // Full int16 range with 100 equal bins: expected bins are 0, 50, and 99.
-  constexpr int num_bins = 100;
-  constexpr int16_t h_samples[] = {cs::numeric_limits<int16_t>::min(),
-                                   0,
-                                   cs::numeric_limits<int16_t>::max() - 1};
+  constexpr int num_bins        = 100;
+  constexpr int16_t h_samples[] = {cs::numeric_limits<int16_t>::min(), 0, cs::numeric_limits<int16_t>::max() - 1};
   auto d_samples                = c2h::device_vector<int16_t>(cs::begin(h_samples), cs::end(h_samples));
   auto d_histogram              = c2h::device_vector<int>(num_bins);
   histogram_even(

@@ -119,6 +119,31 @@ struct Transforms
       ::cuda::std::is_integral<T>;
 #endif // !_CCCL_HAS_INT128()
 
+    // prefer uint32 for performance reasons when possible
+    // bool, 8-bit, 16-bit, 32-bit integers -> uint32_t
+    // 64-bit integers                      -> uint64_t
+    // Other types                          -> IntArithmeticT
+    [[nodiscard]] static constexpr auto FractionStorageType()
+    {
+      if constexpr (is_integral_excl_int128<CommonT>::value)
+      {
+        if constexpr (sizeof(CommonT) < sizeof(uint32_t))
+        {
+          return uint32_t{};
+        }
+        else
+        {
+          return ::cuda::std::make_unsigned_t<CommonT>{};
+        }
+      }
+      else
+      {
+        return IntArithmeticT{};
+      }
+    }
+
+    using FractionStorageT = decltype(FractionStorageType());
+
     template <typename T>
     [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto subtract_as_unsigned(T lhs, T rhs) noexcept
     {
@@ -138,8 +163,8 @@ struct Transforms
       // rounding errors (see NVIDIA/cub#489).
       struct FractionT
       {
-        IntArithmeticT bins;
-        IntArithmeticT range;
+        FractionStorageT bins;
+        FractionStorageT range;
       } fraction;
 
       // Used when CommonT is floating-point as an optimization.
@@ -164,14 +189,14 @@ struct Transforms
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
     {
       ScaleT result;
-      result.fraction.bins = static_cast<IntArithmeticT>(num_levels - 1);
+      result.fraction.bins = static_cast<FractionStorageT>(num_levels - 1);
       if constexpr (is_integral_excl_int128<T>::value)
       {
-        result.fraction.range = IntArithmeticT{subtract_as_unsigned(max_level, min_level)};
+        result.fraction.range = FractionStorageT{subtract_as_unsigned(max_level, min_level)};
       }
       else
       {
-        result.fraction.range = static_cast<IntArithmeticT>(max_level) - static_cast<IntArithmeticT>(min_level);
+        result.fraction.range = static_cast<FractionStorageT>(max_level) - static_cast<FractionStorageT>(min_level);
       }
       return result;
     }
@@ -258,7 +283,10 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
       const auto offset = subtract_as_unsigned(sample, min_level);
-      return static_cast<int>((IntArithmeticT{offset} * scale.fraction.bins) / scale.fraction.range);
+      const IntArithmeticT offset_cast{offset};
+      const IntArithmeticT bins_cast{scale.fraction.bins};
+      const IntArithmeticT range_cast{scale.fraction.range};
+      return static_cast<int>((offset_cast * bins_cast) / range_cast);
     }
 
     template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
