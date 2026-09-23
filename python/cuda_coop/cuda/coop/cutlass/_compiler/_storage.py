@@ -58,11 +58,18 @@ def _active_cuda_kernel_op() -> Any:
         operation = getattr(op, "operation", op)
         if getattr(operation, "name", None) == "cuda.kernel":
             return operation
+        if (
+            getattr(operation, "name", None) == "lir.func"
+            and "gpu.kernel" in operation.attributes
+            and getattr(getattr(operation, "parent", None), "name", None)
+            == "gpu.module"
+        ):
+            return operation
         op = getattr(op, "parent_op", None) or getattr(op, "parent", None)
 
     raise DSLRuntimeError(
         f"{_SESSION_SCOPE} deferred TempStorage could not find the enclosing "
-        "cuda.kernel operation."
+        "CUDA kernel operation."
     )
 
 
