@@ -67,7 +67,7 @@ template <typename OffsetT>
 generate_pareto_segment_offsets(OffsetT elements, OffsetT num_segments, double alpha, seed_type shuffle_seed)
 {
   auto cumulative_weights = thrust::device_vector<double>(num_segments + 1, thrust::no_init);
-  const auto weights       = thrust::make_transform_iterator(
+  const auto weights      = thrust::make_transform_iterator(
     thrust::make_counting_iterator(::cuda::std::uint64_t{0}),
     pareto_weight{static_cast<::cuda::std::uint64_t>(num_segments), alpha});
   ::cuda::std::philox4x32 rng(shuffle_seed);
@@ -78,14 +78,10 @@ generate_pareto_segment_offsets(OffsetT elements, OffsetT num_segments, double a
   thrust::fill_n(cumulative_weights.end() - 1, 1, weight_sum);
 
   auto offsets = thrust::device_vector<OffsetT>(num_segments + 1, thrust::no_init);
-  thrust::tabulate(
-    offsets.begin(),
-    offsets.end(),
-    cumulative_to_offset<OffsetT>{
-      thrust::raw_pointer_cast(cumulative_weights.data()),
-      1.0 / weight_sum,
-      elements,
-      num_segments});
+  thrust::tabulate(offsets.begin(),
+                   offsets.end(),
+                   cumulative_to_offset<OffsetT>{
+                     thrust::raw_pointer_cast(cumulative_weights.data()), 1.0 / weight_sum, elements, num_segments});
 
   return offsets;
 }
