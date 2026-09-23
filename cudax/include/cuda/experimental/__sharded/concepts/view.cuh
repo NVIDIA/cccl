@@ -191,7 +191,7 @@ template <class _SpanLike, class _PlaceId>
   using _Tp = ::cuda::std::remove_pointer_t<decltype(::cuda::std::declval<const _SpanLike&>().data())>;
   if (__places.size() != __pieces.size())
   {
-    throw ::std::invalid_argument("make_sharded_view: one place identity per piece required");
+    _CCCL_THROW(::std::invalid_argument, "make_sharded_view: one place identity per piece required");
   }
   basic_sharded_view<_Tp, _PlaceId> __v;
   __v.shards.reserve(__pieces.size());

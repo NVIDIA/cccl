@@ -66,10 +66,10 @@ void require_sync_allowed(const _CallEnv& __env, const char* __what)
 {
   if (query_sync_policy(__env) == sync_policy::forbid)
   {
-    throw ::std::runtime_error(
-      ::std::string(__what)
-      + ": operation would synchronize with the host, but the call "
-        "environment carries sync_policy::forbid");
+    _CCCL_THROW(::std::runtime_error,
+                ::std::string(__what)
+                  + ": operation would synchronize with the host, but the call "
+                    "environment carries sync_policy::forbid");
   }
 }
 
@@ -96,7 +96,7 @@ void __check_copartitioned(const _SA& __a, const _SB& __b, const char* __what)
   const ::std::size_t __n = __shard_count(__a);
   if (__n != __shard_count(__b))
   {
-    throw ::std::invalid_argument(::std::string(__what) + ": shard count mismatch");
+    _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": shard count mismatch");
   }
   for (::std::size_t __g = 0; __g < __n; ++__g)
   {
@@ -104,7 +104,7 @@ void __check_copartitioned(const _SA& __a, const _SB& __b, const char* __what)
         || static_cast<::std::size_t>(__a.shard(__g).global_offset)
              != static_cast<::std::size_t>(__b.shard(__g).global_offset))
     {
-      throw ::std::invalid_argument(::std::string(__what) + ": shard regions differ (not co-partitioned)");
+      _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": shard regions differ (not co-partitioned)");
     }
   }
 }
