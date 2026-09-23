@@ -131,7 +131,7 @@ CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][d
   REQUIRE(ref_values == values);
 }
 
-template <typename key_t, typename value_t, typename num_items_t>
+template <typename KeyT, typename ValueT, typename NumItemsT>
 void do_large_offset_test(std::size_t num_items)
 {
   const bool is_descending = GENERATE(false, true);
@@ -140,15 +140,15 @@ void do_large_offset_test(std::size_t num_items)
 
   try
   {
-    large_array_sort_helper<key_t, value_t> arrays;
+    large_array_sort_helper<KeyT, ValueT> arrays;
     arrays.initialize_for_stable_pair_sort(C2H_SEED(1), num_items, is_descending);
 
     TIME(c2h::cpu_timer timer);
 
     double_buffer_sort_t action(is_descending);
     action.initialize();
-    const num_items_t typed_num_items = static_cast<num_items_t>(num_items);
-    launch(action, arrays.keys_buffer, arrays.values_buffer, typed_num_items, begin_bit<key_t>(), end_bit<key_t>());
+    const NumItemsT typed_num_items = static_cast<NumItemsT>(num_items);
+    launch(action, arrays.keys_buffer, arrays.values_buffer, typed_num_items, begin_bit<KeyT>(), end_bit<KeyT>());
 
     TIME(timer.print_elapsed_seconds_and_reset("Device sort"));
 
@@ -164,7 +164,7 @@ void do_large_offset_test(std::size_t num_items)
   catch ([[maybe_unused]] std::bad_alloc& e)
   {
 #ifdef DEBUG_CHECKED_ALLOC_FAILURE
-    const std::size_t num_bytes = num_items * (sizeof(key_t) + sizeof(value_t));
+    const std::size_t num_bytes = num_items * (sizeof(KeyT) + sizeof(ValueT));
     std::cerr
       << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
 #endif // DEBUG_CHECKED_ALLOC_FAILURE
