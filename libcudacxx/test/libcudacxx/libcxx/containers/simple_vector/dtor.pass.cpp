@@ -11,7 +11,6 @@
 // error: dynamic allocations are not supported in tile mode
 
 #include <cuda/__container/simple_vector.h>
-#include <cuda/std/__new_>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
@@ -43,11 +42,12 @@ static_assert(cuda::std::is_trivially_destructible_v<int>, "");
 TEST_HOST_DEVICE_FUNC void test_trivial_destructor()
 {
   cuda::__simple_vector<int> vec(4, cuda::no_init);
-  assert(vec.size() == 4);
+  assert(vec.size() == 0);
   for (int i = 0; i < 4; ++i)
   {
-    ::new (static_cast<void*>(vec.data() + i)) int{i};
+    vec.emplace_back(i);
   }
+  assert(vec.size() == 4);
 }
 
 TEST_HOST_DEVICE_FUNC void test_non_trivial_destructor()
@@ -57,9 +57,22 @@ TEST_HOST_DEVICE_FUNC void test_non_trivial_destructor()
     cuda::__simple_vector<DestroyCounted> vec(3, cuda::no_init);
     for (int i = 0; i < 3; ++i)
     {
-      ::new (static_cast<void*>(vec.data() + i)) DestroyCounted{i};
+      vec.emplace_back(i);
     }
     assert(DestroyCounted_count == 3);
+  }
+  assert(DestroyCounted_count == 0);
+}
+
+TEST_HOST_DEVICE_FUNC void test_destroys_only_constructed_elements()
+{
+  DestroyCounted_count = 0;
+  {
+    cuda::__simple_vector<DestroyCounted> vec(5, cuda::no_init);
+    vec.emplace_back(1);
+    vec.emplace_back(2);
+    assert(vec.size() == 2);
+    assert(DestroyCounted_count == 2);
   }
   assert(DestroyCounted_count == 0);
 }
@@ -74,11 +87,23 @@ TEST_HOST_DEVICE_FUNC void test_empty_non_trivial_destructor()
   assert(DestroyCounted_count == 0);
 }
 
+TEST_HOST_DEVICE_FUNC void test_uninitialized_capacity_does_not_destroy()
+{
+  DestroyCounted_count = 0;
+  {
+    cuda::__simple_vector<DestroyCounted> vec(3, cuda::no_init);
+    assert(vec.empty());
+  }
+  assert(DestroyCounted_count == 0);
+}
+
 TEST_HOST_DEVICE_FUNC void test()
 {
   test_trivial_destructor();
   test_non_trivial_destructor();
+  test_destroys_only_constructed_elements();
   test_empty_non_trivial_destructor();
+  test_uninitialized_capacity_does_not_destroy();
 }
 
 int main(int, char**)

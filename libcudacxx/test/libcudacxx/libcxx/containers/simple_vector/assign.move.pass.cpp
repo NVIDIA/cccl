@@ -11,7 +11,6 @@
 // error: dynamic allocations are not supported in tile mode
 
 #include <cuda/__container/simple_vector.h>
-#include <cuda/std/__new_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/memory>
@@ -56,11 +55,11 @@ static_assert(cuda::std::is_nothrow_move_assignable_v<cuda::__simple_vector<Dest
 static_assert(!cuda::std::is_copy_assignable_v<cuda::__simple_vector<int>>, "");
 
 template <class T>
-TEST_HOST_DEVICE_FUNC void construct_values(cuda::__simple_vector<T>& vec)
+TEST_HOST_DEVICE_FUNC void emplace_values(cuda::__simple_vector<T>& vec, cuda::std::size_t n)
 {
-  for (cuda::std::size_t i = 0; i < vec.size(); ++i)
+  for (cuda::std::size_t i = 0; i < n; ++i)
   {
-    ::new (static_cast<void*>(vec.data() + i)) T{static_cast<int>(i + 1)};
+    vec.emplace_back(static_cast<int>(i + 1));
   }
 }
 
@@ -84,7 +83,7 @@ TEST_HOST_DEVICE_FUNC void test_assign_non_empty_to_empty()
 {
   cuda::std::size_t n = 4;
   cuda::__simple_vector<T> src(n, cuda::no_init);
-  construct_values(src);
+  emplace_values(src, n);
   T* original = src.data();
 
   cuda::__simple_vector<T> dst(0, cuda::no_init);
@@ -110,7 +109,7 @@ TEST_HOST_DEVICE_FUNC void test_assign_empty_to_non_empty()
 {
   cuda::__simple_vector<T> src(0, cuda::no_init);
   cuda::__simple_vector<T> dst(3, cuda::no_init);
-  construct_values(dst);
+  emplace_values(dst, 3);
 
   dst = cuda::std::move(src);
 
@@ -125,11 +124,11 @@ template <class T>
 TEST_HOST_DEVICE_FUNC void test_assign_non_empty_to_non_empty()
 {
   cuda::__simple_vector<T> src(4, cuda::no_init);
-  construct_values(src);
+  emplace_values(src, 4);
   T* original = src.data();
 
   cuda::__simple_vector<T> dst(2, cuda::no_init);
-  construct_values(dst);
+  emplace_values(dst, 2);
 
   dst = cuda::std::move(src);
 
@@ -149,9 +148,9 @@ TEST_HOST_DEVICE_FUNC void test_assign_destroys_destination_elements()
   DestroyCounted_count = 0;
   {
     cuda::__simple_vector<DestroyCounted> src(3, cuda::no_init);
-    construct_values(src);
+    emplace_values(src, 3);
     cuda::__simple_vector<DestroyCounted> dst(2, cuda::no_init);
-    construct_values(dst);
+    emplace_values(dst, 2);
     assert(DestroyCounted_count == 5);
 
     dst = cuda::std::move(src);
@@ -168,7 +167,7 @@ TEST_HOST_DEVICE_FUNC void test_assign_empty_destroys_destination_elements()
   {
     cuda::__simple_vector<DestroyCounted> src(0, cuda::no_init);
     cuda::__simple_vector<DestroyCounted> dst(2, cuda::no_init);
-    construct_values(dst);
+    emplace_values(dst, 2);
     assert(DestroyCounted_count == 2);
 
     dst = cuda::std::move(src);
@@ -183,7 +182,7 @@ TEST_HOST_DEVICE_FUNC void test_self_move_assignment()
   DestroyCounted_count = 0;
   {
     cuda::__simple_vector<DestroyCounted> vec(3, cuda::no_init);
-    construct_values(vec);
+    emplace_values(vec, 3);
     DestroyCounted* original = vec.data();
 
     cuda::__simple_vector<DestroyCounted>& self = vec;

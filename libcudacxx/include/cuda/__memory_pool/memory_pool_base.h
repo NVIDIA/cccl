@@ -377,11 +377,9 @@ _CCCL_HOST_API inline void
 __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> __devices, ::CUmemAccess_flags __flags)
 {
   ::cuda::__simple_vector<::CUmemAccessDesc> __descs(__devices.size(), ::cuda::no_init);
-  auto* __current = __descs.data();
   for (const auto& __dev : __devices)
   {
-    ::cuda::std::__construct_at(
-      __current++, ::CUmemAccessDesc{::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __dev.get()}, __flags});
+    __descs.emplace_back(::CUmemAccessDesc{::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __dev.get()}, __flags});
   }
   ::cuda::__driver::__mempoolSetAccess(__pool, __descs.data(), __descs.size());
 }
