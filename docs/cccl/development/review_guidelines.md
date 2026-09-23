@@ -372,8 +372,9 @@ linkage instead: `static` or an unnamed namespace.
 
 Flag any use of `long`/`unsigned long` as a chosen type. `long` is 64-bit on LP64 Linux/macOS but
 32-bit on LLP64 Windows (MSVC, clang-cl), so code assuming either width builds and passes on one
-platform and silently truncates or fails on the other. Use `int64_t`/`long long`, `int32_t`, or
-`ptrdiff_t`/`size_t` to say which width is meant. Acceptable: `long` as a *supported* type for
+platform and silently truncates or fails on the other. Use a type that says what is meant:
+`int32_t`/`uint32_t` or `int64_t`/`uint64_t` for exact widths, `size_t` for object sizes,
+`ptrdiff_t` for pointer differences. Acceptable: `long` as a *supported* type for
 traits, overload sets, type-list tests enumerating fundamental types, and external API signatures
 that use it. Candidate for a pre-commit grep.
 
