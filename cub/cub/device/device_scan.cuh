@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/temporary_storage.cuh>
@@ -87,6 +88,38 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @cdp_class{DeviceScan}
 //! @determinism{not_guaranteed}
+//!
+//! Deferred problem sizes
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! ``ExclusiveSum``, ``ExclusiveScan``, ``InclusiveSum``, ``InclusiveScan``, and ``InclusiveScanInit`` allow
+//! specifying the problem size from a value that resides in device memory through a single-value
+//! ``cuda::args::deferred`` argument. The deferred source may be a device pointer, a one-element span, or a
+//! random-access fancy iterator whose element is a non-``bool`` 32- or 64-bit integer.
+//!
+//! The problem size is read in stream order by the scan kernels. Work that produces the count in the same stream is
+//! ordered automatically; a producer in another stream requires an event or an equivalent dependency. The source and
+//! its value must remain accessible and unchanged until all scan kernels complete. The value must be nonnegative and
+//! ``[d_in, d_in + num_items)`` must be accessible. A temporary-storage query does not dereference the deferred
+//! source.
+//!
+//! Deferred scans are CUDA Graph capturable. The pointed-to count may change between graph replays without updating
+//! or recapturing the graph.
+//!
+//! A deferred problem size always runs the decoupled look-back algorithm. If the selected tuning policy asks for
+//! another algorithm, look-back is used instead.
+//!
+//! The :ref:`determinism guarantees <cccl-determinism>` below apply unchanged to a deferred problem size. Note that
+//! reproducibility is promised across launches of the *same* configuration: for a non-associative operator such as
+//! floating-point addition, a deferred scan need not produce the same result as an immediate scan over the same
+//! values, because the two group the reduction differently.
+//!
+//! Since the problem size is not available to the host, temporary storage and grid dimensions are derived from the
+//! upper bound of the deferred argument. Compile-time and runtime bounds are accepted as caller preconditions; a
+//! bound tight enough to keep the worst case within a single batch of tiles lets CUB size the launch exactly, which
+//! makes a deferred scan as cheap as an immediate one. Without such a bound, CUB falls back to a reusable-batch
+//! look-back that claims tiles from a persistent grid, which keeps temporary storage at a fixed size and costs a
+//! small constant overhead over an immediate launch.
 //!
 //! Determinism
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -162,8 +195,6 @@ struct DeviceScan
     cudaStream_t stream,
     PolicySelectorT policy_selector)
   {
-    // Unsigned integer type for global offsets
-    using offset_t = detail::choose_offset_t<NumItemsT>;
     return detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
       d_temp_storage,
       temp_storage_bytes,
@@ -171,7 +202,7 @@ struct DeviceScan
       d_out,
       scan_op,
       init,
-      static_cast<offset_t>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       stream,
       policy_selector);
   }
@@ -203,7 +234,7 @@ struct DeviceScan
                                    ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
                                                     cub::detail::it_value_t<InputIteratorT>,
                                                     typename InitValueT::value_type>>;
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<typename ::cuda::args::__traits<NumItemsT>::element_type>;
 
     constexpr bool is_run_to_run_required =
       ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::run_to_run_t>;
@@ -226,8 +257,14 @@ struct DeviceScan
 
     static constexpr bool stable_reduction_order = is_run_to_run_required && is_fp_plus_op;
 
-    using default_policy_selector_t = detail::scan::
-      policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT, stable_reduction_order>;
+    using default_policy_selector_t = detail::scan::policy_selector_from_types<
+      InputIteratorT,
+      OutputIteratorT,
+      accum_t,
+      offset_t,
+      ScanOpT,
+      stable_reduction_order,
+      detail::is_deferred_v<NumItemsT>>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
@@ -383,8 +420,6 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
 
-    // Unsigned integer type for global offsets
-    using OffsetT      = detail::choose_offset_t<NumItemsT>;
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
@@ -397,7 +432,7 @@ struct DeviceScan
       d_out,
       ::cuda::std::plus<>{},
       detail::InputValue<init_value_t>(init_value),
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       stream);
   }
 
@@ -460,8 +495,8 @@ struct DeviceScan
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, const EnvT& env = {})
   {
@@ -609,8 +644,8 @@ struct DeviceScan
   //!   @endrst
   template <typename IteratorT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(IteratorT d_data, NumItemsT num_items, const EnvT& env = {})
   {
@@ -736,9 +771,6 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     return detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
@@ -746,7 +778,7 @@ struct DeviceScan
       d_out,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       stream);
   }
 
@@ -833,8 +865,8 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
@@ -1027,8 +1059,8 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveScan(IteratorT d_data, ScanOpT scan_op, InitValueT init_value, NumItemsT num_items, const EnvT& env = {})
   {
@@ -1163,9 +1195,6 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     return detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
@@ -1173,7 +1202,7 @@ struct DeviceScan
       d_out,
       scan_op,
       detail::InputValue<InitValueT, InitValueIterT>(init_value),
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       stream);
   }
 
@@ -1363,10 +1392,10 @@ struct DeviceScan
   template <typename IteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT                                          = InitValueT*,
-            typename NumItemsT                                               = int,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
+            typename InitValueIterT                                      = InitValueT*,
+            typename NumItemsT                                           = int,
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     IteratorT d_data,
     ScanOpT scan_op,
@@ -1454,10 +1483,10 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT                                              = InitValueT*,
-            typename NumItemsT                                                   = int,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+            typename InitValueIterT                                          = InitValueT*,
+            typename NumItemsT                                               = int,
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
@@ -1569,9 +1598,6 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
 
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     return detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
@@ -1579,7 +1605,7 @@ struct DeviceScan
       d_out,
       ::cuda::std::plus<>{},
       NullType{},
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       stream);
   }
 
@@ -1716,8 +1742,8 @@ struct DeviceScan
   //!   @endrst
   template <typename IteratorT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(IteratorT d_data, NumItemsT num_items, const EnvT& env = {})
   {
@@ -1781,8 +1807,8 @@ struct DeviceScan
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, const EnvT& env = {})
   {
@@ -1901,11 +1927,15 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
 
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     return detail::scan::dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), static_cast<OffsetT>(num_items), stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      scan_op,
+      NullType(),
+      detail::make_num_items_dispatch_arg(num_items),
+      stream);
   }
 
   //! @rst
@@ -1991,9 +2021,6 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
 
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     return detail::scan::dispatch<ForceInclusive::Yes>(
       d_temp_storage,
       temp_storage_bytes,
@@ -2001,7 +2028,7 @@ struct DeviceScan
       d_out,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       stream);
   }
 
@@ -2165,8 +2192,8 @@ struct DeviceScan
   template <typename IteratorT,
             typename ScanOpT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(IteratorT d_data, ScanOpT scan_op, NumItemsT num_items, const EnvT& env = {})
   {
@@ -2237,8 +2264,8 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, const EnvT& env = {})
   {
@@ -2322,8 +2349,8 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2418,8 +2445,8 @@ struct DeviceScan
             typename InitValueIterT,
             typename InitValueBoundsT,
             typename NumItemsT,
-            typename EnvT                                                        = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                    = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2535,9 +2562,6 @@ struct DeviceScan
     static_assert(::cuda::std::indirectly_readable<InitValueIterT>, "The deferred value must model an iterator");
     using __init_value_type = typename ::cuda::std::remove_cvref_t<decltype(init_value)>::__element_type;
 
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
     auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
 
     return detail::scan::dispatch<ForceInclusive::Yes>(
@@ -2547,7 +2571,7 @@ struct DeviceScan
       d_out,
       scan_op,
       detail::InputValue<__init_value_type, InitValueIterT>(__fut),
-      static_cast<OffsetT>(num_items),
+      detail::make_num_items_dispatch_arg(num_items),
       stream);
   }
 
