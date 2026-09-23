@@ -196,7 +196,7 @@ int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group = place_group{make_locality_domain_grid()};
+  auto group = place_group{exec_place::all_locality_domains()};
 
   test_balanced_alloc_free_replays(group);
   test_unbalanced_alloc_fails_predictably(group);

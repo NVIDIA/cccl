@@ -155,7 +155,7 @@ run_result sample(place_group& group, const ::std::vector<size_t>& pair_sizes, u
 int main()
 {
   cuda_safe_call(cudaSetDevice(0));
-  place_group group{make_locality_domain_grid()};
+  place_group group{cuda::experimental::places::exec_place::all_locality_domains()};
   const size_t n_pairs = 1u << 23;
   printf("sharded rejection sampling: %zu candidate pairs over %zu places\n", n_pairs, group.size());
   printf("target p(x) = 6x(1-x): acceptance 2/3, E[x] = 0.5, E[x^2] = 0.3\n\n");

@@ -149,8 +149,7 @@ domain can improve locality. Locality domain places expose this capability:
 - ``exec_place::all_locality_domains([split])`` -- the machine-wide form: a grid
   with one execution place per domain of every visible device, in
   device-major order; devices without locality-domain support contribute a
-  single whole-device place (``make_locality_domain_grid([split])`` is the
-  equivalent free function)
+  single whole-device place
 - ``locality_domain_helper`` -- enumerates the domains of a device, mirroring
   ``green_context_helper``; hands out ``locality_domain_view`` identity
   tokens accepted by both factories
@@ -426,7 +425,7 @@ attached state).
     // WHERE is spelled with the usual place vocabulary (grids, partitions);
     // the group only attaches resources to it. One place per locality domain
     // of every device (whole devices where domains are unsupported):
-    place_group group{make_locality_domain_grid()};
+    place_group group{exec_place::all_locality_domains()};
 
     // Alternatives: one place per device, a single device, or an explicit vector
     place_group by_dev{exec_place::all_devices()};
@@ -719,10 +718,9 @@ The partitioning granularity is specified by ``place_partition_scope``:
 
 Partitioning ``exec_place::all_devices()`` at ``locality_domain`` scope is
 the machine-wide form: it yields every locality domain of every device. The
-helpers ``exec_place::locality_domains(dev_id)`` (single device) and
-``exec_place::all_locality_domains()`` (every device), or equivalently
-``make_locality_domain_grid(dev_id)`` / ``make_locality_domain_grid()``, are
-convenience sugar over this mechanism.
+helpers ``exec_place::locality_domains(dev_id)`` (single device, equivalently
+``make_locality_domain_grid(dev_id)``) and ``exec_place::all_locality_domains()``
+(every device) are convenience sugar over this mechanism.
 
 .. code:: c++
 

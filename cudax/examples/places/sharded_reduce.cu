@@ -37,7 +37,7 @@ int main()
 {
   // One execution place per locality domain, with lazily created per-place
   // stream pools and memory resources
-  auto group = place_group{make_locality_domain_grid()};
+  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
   printf("place_group with %zu place(s)\n", group.size());
 
   // 256M values, distributed evenly: shard i lives on place i

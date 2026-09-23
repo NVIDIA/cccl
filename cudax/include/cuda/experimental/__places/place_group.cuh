@@ -47,7 +47,7 @@
  *
  * @code
  * // Standalone: the group owns its stream pools.
- * place_group group{make_locality_domain_grid()};
+ * place_group group{cuda::experimental::places::exec_place::all_locality_domains()};
  *
  * // Coexisting with STF: borrow the context's pools (one pool owner).
  * cuda::experimental::stf::context ctx;
@@ -781,14 +781,14 @@ UNITTEST("place_group construction from the place vocabulary")
   {
     total_domains += locality_domain_count(static_cast<int>(d));
   }
-  place_group g5{make_locality_domain_grid()};
+  place_group g5{cuda::experimental::places::exec_place::all_locality_domains()};
   EXPECT(g5.size() == total_domains);
   EXPECT(g5.size() >= ndevs);
 };
 
 UNITTEST("place_group per-place stream pools")
 {
-  place_group group{make_locality_domain_grid()};
+  place_group group{cuda::experimental::places::exec_place::all_locality_domains()};
 
   // A stream can be picked and used on every place, for every lane_id
   EXPECT(group.num_lanes() >= 1UL);
@@ -846,7 +846,7 @@ UNITTEST("place_group per-place stream pools")
 
 UNITTEST("place_group lanes are views")
 {
-  place_group group{make_locality_domain_grid()};
+  place_group group{cuda::experimental::places::exec_place::all_locality_domains()};
 
   // lane(k) is the group on lane k; plain group converts to lane 0
   auto l1                   = group.lane(1);
@@ -901,7 +901,7 @@ UNITTEST("place_group lanes are views")
 
 UNITTEST("place_group lane communicators")
 {
-  place_group group{make_locality_domain_grid()};
+  place_group group{cuda::experimental::places::exec_place::all_locality_domains()};
   const size_t P = group.size();
 
   // One group per lane, rank i == place i, created once and stable: the same

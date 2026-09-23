@@ -734,7 +734,7 @@ int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto domains = place_group{make_locality_domain_grid()};
+  auto domains = place_group{exec_place::all_locality_domains()};
   auto single  = place_group{exec_place::device(0)};
   EXPECT(single.size() == 1);
 

@@ -331,17 +331,8 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   {
     constexpr int init_kernel_threads = 128;
     const auto init_grid_size         = ::cuda::ceil_div(num_tiles, init_kernel_threads);
-#  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
-            init_grid_size,
-            init_kernel_threads,
-            (long long) stream);
-#  else // CUB_DEBUG_LOG
-    log("Invoking DeviceRleEncodeLookaheadInitKernel<<<%d, %d, 0, %lld>>>()\n",
-        init_grid_size,
-        init_kernel_threads,
-        (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeviceRleEncodeLookaheadInitKernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* dependent_launch */ false)
             .doit(kernel_source.InitKernel(), tile_partial_states, static_cast<::cuda::std::int64_t>(num_tiles))))
@@ -359,19 +350,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   }
   {
     const int block_dim = num_total_threads(lookahead_policy);
-#  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
-            num_tiles,
-            block_dim,
-            dyn_smem_bytes,
-            (long long) stream);
-#  else // CUB_DEBUG_LOG
-    log("Invoking DeviceRleEncodeLookaheadKernel<<<%d, %d, %zu, %lld>>>()\n",
-        num_tiles,
-        block_dim,
-        dyn_smem_bytes,
-        (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("DeviceRleEncodeLookaheadKernel", num_tiles, 1, 1, block_dim, dyn_smem_bytes, stream, "");
     if (const auto error = CubDebug(
           launcher_factory(num_tiles,
                            block_dim,
@@ -446,18 +425,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
     return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-#  if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-      NV_IF_TARGET(NV_IS_HOST, ({
-                     ::std::stringstream ss;
-                     ss << policy_getter();
-                     _CubLog("Dispatching DeviceRunLengthEncode::Encode to compute capability %d.%d with tuning: %s\n",
-                             cc.major_cap(),
-                             cc.minor_cap(),
-                             ss.str().c_str());
-                   }))
-#  else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-      log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
-#  endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+      detail::log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
 
       if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == RleAlgorithm::lookahead)
       {

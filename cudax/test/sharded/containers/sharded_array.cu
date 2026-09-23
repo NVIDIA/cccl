@@ -307,7 +307,7 @@ void test_uniform_and_host()
 
 void test_empty_shard_allocation()
 {
-  auto group = place_group{make_locality_domain_grid()};
+  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
   if (group.size() < 2)
   {
     return; // needs at least two places so one can be empty

@@ -275,8 +275,9 @@ workflows:
     - {project: 'packaging', jobs: ['install']}
     # NVBench Helper testing:
     - {project: 'nvbench_helper', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 't4'}
-    # c.parallel v2 (HostJIT-based)
-    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13'], gpu: 't4'}
+    # c.parallel v2 (HostJIT-based).
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'gcc13', gpu: 't4'}
+    - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'msvc', gpu: 'l4'}
     # Python against c.parallel v2 (HostJIT-based)
     - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
 
@@ -337,11 +338,6 @@ workflows:
     - {jobs: ['test'], project: 'cudax',      ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'l4', args: '-enable-tile'}
       # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
-    # GB300 ARM64 coverage:
-    - {jobs: ['test'],      cpu: 'arm64', project: 'libcudacxx', std: '20', cxx: 'gcc', gpu: 'gb300', sm: 'gpu', cmake_options: '-Dlibcudacxx_LIT_PARALLEL_LEVEL=1'}
-    - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: '20', cxx: 'gcc', gpu: 'gb300', sm: 'gpu'}
-    - {jobs: ['test'],      cpu: 'arm64', project: 'libcudacxx', std: 'max', cxx: 'clang', gpu: 'gb300', sm: 'gpu', cmake_options: '-Dlibcudacxx_LIT_PARALLEL_LEVEL=1'}
-    - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: 'max', cxx: 'clang', gpu: 'gb300', sm: 'gpu'}
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: ['17', '20'], cxx: 'gcc'}
@@ -933,7 +929,6 @@ gpus:
   rtx4090:    { name: 'RTX4090',     sm: 89,  runner: 'rtx4090-latest',    gpu_count: 1 } # 24 GB,  10 runners
   h100:       { name: 'H100',        sm: 90,  runner: 'h100-latest',       gpu_count: 1 } # 80 GB,  16 runners
   h100_2gpu:  { name: 'H100 2-GPU',  sm: 90,  runner: 'h100-latest',       gpu_count: 2, runner_id: 'h100' } # 2 x 80 GB
-  gb300:      { name: 'GB300',       sm: 103, runner: 'gb300-latest',      gpu_count: 1 }
   # Very small number of runners on loan from cuda-python while we wait for our order to arrive.
   # Limit jobs on these:
   rtxpro6000: { name: 'RTXPRO6000',  sm: 120, runner: 'rtxpro6000-latest', gpu_count: 1 }

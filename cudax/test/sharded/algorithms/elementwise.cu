@@ -289,7 +289,7 @@ int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group = place_group{make_locality_domain_grid()};
+  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
 
   test_fill_and_sequence(group);
   test_tabulate_generate_for_each(group);

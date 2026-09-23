@@ -535,7 +535,7 @@ int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group = place_group{make_locality_domain_grid()};
+  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
 
   test_construction_default_split(group);
   test_explicit_boundaries(group);

@@ -92,7 +92,7 @@ int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group     = place_group{make_locality_domain_grid()};
+  auto group     = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
   const size_t P = group.size();
 
   std::vector<unsigned*> d_smids(P);

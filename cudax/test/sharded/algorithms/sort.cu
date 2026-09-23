@@ -427,7 +427,7 @@ int main()
   cuda_safe_call(cudaSetDevice(0));
 
   // The full locality-domain grid: on a multi-GPU machine it spans devices.
-  auto grid_group = place_group{make_locality_domain_grid()};
+  auto grid_group = place_group{exec_place::all_locality_domains()};
   test_shape_mismatch(grid_group);
 
   if (!on_one_device(grid_group))

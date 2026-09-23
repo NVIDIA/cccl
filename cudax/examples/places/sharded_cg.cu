@@ -129,7 +129,7 @@ double dot(const sharded_array<double>& a, const sharded_array<double>& b, shard
 
 int main()
 {
-  place_group group{make_locality_domain_grid()};
+  place_group group{cuda::experimental::places::exec_place::all_locality_domains()};
   const size_t nd = group.size();
   ::std::printf("CG over %zu place(s)\n", nd);
 

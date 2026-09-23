@@ -72,7 +72,7 @@ int main()
   cuda_safe_call(cuInit(0));
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group = place_group{make_locality_domain_grid()};
+  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
   std::printf("place_group with %zu place(s)\n", group.size());
 
   const size_t n = size_t{1} << 22;

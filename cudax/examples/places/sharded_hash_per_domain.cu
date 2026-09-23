@@ -83,7 +83,7 @@ struct probe_of
 
 int main()
 {
-  auto group            = place_group{make_locality_domain_grid()};
+  auto group            = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
   const ::std::size_t P = group.size();
   printf("place_group with %zu place(s)\n", P);
 

@@ -238,7 +238,7 @@ int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group = place_group{make_locality_domain_grid()};
+  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
 
   const auto m = make_two_region_csr(400000, 2048, 1);
   if (group.size() >= 2)
