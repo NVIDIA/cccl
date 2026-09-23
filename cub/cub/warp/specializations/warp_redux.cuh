@@ -128,8 +128,8 @@ warp_redux_plus_large(const T input, const ::cuda::std::uint32_t mask, Reduction
     const auto low_reduction  = cub::detail::warp_redux_plus_large(low, mask, op);
 
     // Each warp has at most 32 participants. Split the low half after five bits so both partial sums fit.
-    const auto carry_out_low = cub::detail::warp_redux_plus_large(low >> 5, mask, op) >> 5;
-    const auto carry_out_top = cub::detail::warp_redux_plus_large(low & 0b11111u, mask, op);
+    const auto carry_out_low = cub::detail::warp_redux_plus_large(low & 0b11111u, mask, op) >> 5;
+    const auto carry_out_top = cub::detail::warp_redux_plus_large(low >> 5, mask, op);
     const auto result_high   = high_reduction + ((carry_out_top + carry_out_low) >> (half_bits - 5));
 
     return static_cast<T>(cub::detail::merge_integers(result_high, low_reduction));
