@@ -1105,10 +1105,10 @@ CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[
 
     auto d_histogram = c2h::device_vector<int>(fp16_num_bins);
     histogram_range(
-      cast_if_half_pointer(thrust::raw_pointer_cast(d_fp16_samples.data())),
+      unwrap(thrust::raw_pointer_cast(d_fp16_samples.data())),
       thrust::raw_pointer_cast(d_histogram.data()),
       fp16_num_levels,
-      cast_if_half_pointer(thrust::raw_pointer_cast(d_fp16_levels.data())),
+      unwrap(thrust::raw_pointer_cast(d_fp16_levels.data())),
       fp16_num_bins);
 
     const c2h::host_vector<int> h_fp16_expected(fp16_num_bins, 1);
