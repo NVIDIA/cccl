@@ -382,10 +382,26 @@ The wrapper allocates temporary storage and invokes the CUB API through whicheve
 three launch mechanisms matches the current ``TEST_LAUNCH`` value, checking return codes and
 launch errors along the way.
 
-For testing single phase environment-based APIs use ``catch2_test_env_launch_helper.h`` instead.
-It provides the same ``DECLARE_LAUNCH_WRAPPER``,
-but expects the wrapped API's last argument to be an execution environment.
+Under CUDA graph capture (``TEST_LAUNCH == 2``), the wrapper implicitly appends a ``stream`` argument to the call.
+If the wrapped API has default parameters before its ``stream`` parameter,
+specify those explicitly at all call sites so the injected stream argument lines up.
+
+For APIs that take template parameters, use ``DECLARE_TMPL_LAUNCH_WRAPPER`` instead,
+passing the template parameter list and the arguments to instantiate it with.
+Use the ``ESCAPE_LIST`` macro to protect commas inside each list from the preprocessor:
+
+.. code-block:: c++
+
+    DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramEven,
+                                multi_histogram_even,
+                                ESCAPE_LIST(int Channels, int ActiveChannels),
+                                ESCAPE_LIST(Channels, ActiveChannels));
+
+For testing single phase environment-based APIs use the ``DECLARE_LAUNCH_WRAPPER_ENV`` and
+``DECLARE_TMPL_LAUNCH_WRAPPER_ENV`` macros from the same header instead.
+They expect the wrapped API's last argument to be an execution environment.
 The helper injects a memory resource and stream into that env automatically.
+Consult ``test/catch2_test_launch_wrapper.cu`` for more usage examples.
 
 Since the whole file is compiled three times, any ``CUB_TEST`` in the same translation unit
 that does *not* go through a launch wrapper would otherwise be registered identically in all
@@ -401,3 +417,48 @@ executables:
       // ...
     }
     #endif // TEST_LAUNCH == 0
+
+Testing Environment-Aware API Overloads
+***************************************
+
+Every CUB device-wide algorithm must expose two overloads of each API, as described in
+:ref:`device-module`: a two-phase API with explicit temporary storage management, and a
+single-phase API that obtains temporary storage from the execution environment.
+
+Both overloads must take an execution environment as their last parameter.
+This is not yet the case for every existing API, but new APIs must follow this convention,
+and existing ones will be converted eventually.
+
+This split maps directly onto how tests are organized:
+
+- **Functional tests** (correctness of the algorithm itself: types, sizes, edge cases, corner
+  cases, non-determinism, etc.) belong in ``test/catch2_test_device_xxx.cu`` and must only use
+  the two-phase API, invoked implicitly via `Launch wrappers`_.
+- **Environment-interaction tests** belong in ``test/catch2_test_device_xxx_env.cu`` and must
+  only cover how the single-phase API interacts with its environment argument (streams, tuning,
+  determinism requirements, memory resources, etc.). These files should not contain functional
+  or correctness tests of the algorithm itself.
+
+Recommended minimum checklist for a new single-phase API overload's ``_env.cu`` file:
+
+1. ``"<algorithm> works with default environment"`` — the algorithm is called without an
+   environment argument at all, using a minimal example, and checked for a correct output.
+2. ``"<algorithm> uses environment"`` — an environment carrying only
+   ``expected_allocation_size(...)`` is honored: the algorithm neither over- nor under-allocates
+   temporary storage compared to the two-phase API.
+3. ``"<algorithm> uses custom stream"`` — passing a ``cuda::stream_ref`` (e.g. obtained from
+   ``c2h::make_current_device_stream()``) as custom environment is honored: the algorithm's work
+   actually runs on that stream (verified by explicitly synchronizing it, not the default
+   stream).
+4. ``"<algorithm> can be tuned"`` — an environment carrying ``cuda::execution::tune(...)`` is
+   honored: test with two distinct tunings that each modify the block size used by the kernel,
+   and verify the applied block size on the device using ``block_size_extracting_op`` or
+   ``block_size_extracting_constant_iterator``.
+5. If the algorithm has a determinism/ordering axis, ``cuda::execution::require(...)`` is
+   tested for each supported level.
+6. If the algorithm takes an operator/predicate parameter (e.g. a comparator or equality op),
+   that parameter is tested in combination with the environment, not only in isolation.
+
+All of the above should be applied to every variant of the API (e.g. pointer vs.
+``DoubleBuffer``, in-place vs. out-of-place, alternate segment/offset layouts, with/without a
+decomposer) rather than only to the "primary" variant.

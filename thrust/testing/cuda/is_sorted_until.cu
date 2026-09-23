@@ -27,36 +27,34 @@ void TestIsSortedUntilDevice(ExecutionPolicy exec)
   is_sorted_until_kernel<<<1, 1>>>(exec, v.begin(), v.end(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL_QUIET(v.begin() + 1, (iter_type) result[0]);
+  REQUIRE(v.begin() + 1 == (iter_type) result[0]);
 
   thrust::sort(v.begin(), v.end());
 
   is_sorted_until_kernel<<<1, 1>>>(exec, v.begin(), v.end(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL_QUIET(v.end(), (iter_type) result[0]);
+  REQUIRE(v.end() == (iter_type) result[0]);
 }
 
-void TestIsSortedUntilDeviceSeq()
+TEST_CASE("TestIsSortedUntilDeviceSeq", "[is_sorted_until]")
 {
   TestIsSortedUntilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestIsSortedUntilDeviceSeq);
 
-void TestIsSortedUntilDeviceDevice()
+TEST_CASE("TestIsSortedUntilDeviceDevice", "[is_sorted_until]")
 {
   TestIsSortedUntilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestIsSortedUntilDeviceDevice);
 #endif
 
-void TestIsSortedUntilCudaStreams()
+TEST_CASE("TestIsSortedUntilCudaStreams", "[is_sorted_until]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -76,45 +74,44 @@ void TestIsSortedUntilCudaStreams()
 
   Iterator last = v.begin() + 0;
   Iterator ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
 
   last = v.begin() + 1;
   ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
 
   last = v.begin() + 2;
   ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
 
   last = v.begin() + 3;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
 
   last = v.begin() + 4;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last));
 
   last = v.begin() + 3;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::less<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::less<T>()));
 
   last = v.begin() + 4;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::less<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::less<T>()));
 
   last = v.begin() + 1;
   ref  = v.begin() + 1;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::greater<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::greater<T>()));
 
   last = v.begin() + 4;
   ref  = v.begin() + 1;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::greater<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::greater<T>()));
 
   first = v.begin() + 2;
   last  = v.begin() + 4;
   ref   = v.begin() + 4;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::greater<T>()));
+  REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::greater<T>()));
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestIsSortedUntilCudaStreams);

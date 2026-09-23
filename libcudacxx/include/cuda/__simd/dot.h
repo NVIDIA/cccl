@@ -49,7 +49,7 @@ struct __dot_operation
 {
   template <typename _AccumT, typename _LhsStorage, typename _RhsStorage>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _AccumT
-  operator()(const _LhsStorage& __lhs, const _RhsStorage& __rhs, const _AccumT __init) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _LhsStorage& __lhs, const _RhsStorage& __rhs, const _AccumT __init) noexcept
   {
     if constexpr (sizeof(_Tp) == 1 && sizeof(_Up) == 1)
     {

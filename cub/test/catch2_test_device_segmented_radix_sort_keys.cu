@@ -408,7 +408,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
   begin_offsets.pop_back();
 
   {
-    std::size_t num_empty_segments = num_segments / 16;
+    const std::size_t num_empty_segments = num_segments / 16;
     c2h::device_vector<std::size_t> indices(num_empty_segments);
     c2h::gen(C2H_SEED(1), indices, std::size_t{0}, num_segments - 1);
     auto begin = cuda::constant_iterator(key_t{0});
@@ -476,7 +476,7 @@ try
 
   // Generate input keys
   constexpr auto max_histo_size = 250;
-  segmented_verification_helper<key_t> verification_helper{max_histo_size};
+  const segmented_verification_helper<key_t> verification_helper{max_histo_size};
   verification_helper.prepare_input_data(in_keys);
 
   auto offsets = cuda::transform_iterator(

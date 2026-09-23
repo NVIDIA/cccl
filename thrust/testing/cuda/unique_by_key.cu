@@ -67,20 +67,20 @@ void TestUniqueByKeyDevice(ExecutionPolicy exec)
   unique_by_key_kernel<<<1, 1>>>(exec, keys.begin(), keys.end(), values.begin(), new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last.first - keys.begin(), 5);
+  REQUIRE(new_last.first - keys.begin() == 5);
   keys.erase(new_last.first, keys.end());
   Vector keys_ref{11, 21, 20, 21, 37};
-  ASSERT_EQUAL(keys, keys_ref);
+  REQUIRE(keys == keys_ref);
 
-  ASSERT_EQUAL(new_last.second - values.begin(), 5);
+  REQUIRE(new_last.second - values.begin() == 5);
   values.erase(new_last.second, values.end());
   Vector values_ref{0, 2, 3, 4, 7};
-  ASSERT_EQUAL(values, values_ref);
+  REQUIRE(values == values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -90,39 +90,36 @@ void TestUniqueByKeyDevice(ExecutionPolicy exec)
     exec, keys.begin(), keys.end(), values.begin(), is_equal_div_10_unique<T>(), new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last.first - keys.begin(), 3);
+  REQUIRE(new_last.first - keys.begin() == 3);
   keys.erase(new_last.first, keys.end());
   keys_ref = {11, 21, 37};
-  ASSERT_EQUAL(keys, keys_ref);
+  REQUIRE(keys == keys_ref);
 
-  ASSERT_EQUAL(new_last.second - values.begin(), 3);
+  REQUIRE(new_last.second - values.begin() == 3);
   values.erase(new_last.second, values.end());
   values_ref = {0, 2, 7};
-  ASSERT_EQUAL(values, values_ref);
+  REQUIRE(values == values_ref);
 }
 
-void TestUniqueByKeyDeviceSeq()
+TEST_CASE("TestUniqueByKeyDeviceSeq", "[unique_by_key]")
 {
   TestUniqueByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueByKeyDeviceSeq);
 
-void TestUniqueByKeyDeviceDevice()
+TEST_CASE("TestUniqueByKeyDeviceDevice", "[unique_by_key]")
 {
   TestUniqueByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueByKeyDeviceDevice);
 
-void TestUniqueByKeyDeviceNoSync()
+TEST_CASE("TestUniqueByKeyDeviceNoSync", "[unique_by_key]")
 {
   TestUniqueByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueByKeyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -149,15 +146,15 @@ void TestUniqueByKeyCudaStreams(ExecutionPolicy policy)
   new_last = thrust::unique_by_key(streampolicy, keys.begin(), keys.end(), values.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(new_last.first - keys.begin(), 5);
+  REQUIRE(new_last.first - keys.begin() == 5);
   keys.erase(new_last.first, keys.end());
   Vector keys_ref{11, 21, 20, 21, 37};
-  ASSERT_EQUAL(keys, keys_ref);
+  REQUIRE(keys == keys_ref);
 
-  ASSERT_EQUAL(new_last.second - values.begin(), 5);
+  REQUIRE(new_last.second - values.begin() == 5);
   values.erase(new_last.second, values.end());
   Vector values_ref{0, 2, 3, 4, 7};
-  ASSERT_EQUAL(values, values_ref);
+  REQUIRE(values == values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -165,30 +162,28 @@ void TestUniqueByKeyCudaStreams(ExecutionPolicy policy)
 
   new_last = thrust::unique_by_key(streampolicy, keys.begin(), keys.end(), values.begin(), is_equal_div_10_unique<T>());
 
-  ASSERT_EQUAL(new_last.first - keys.begin(), 3);
+  REQUIRE(new_last.first - keys.begin() == 3);
   keys.erase(new_last.first, keys.end());
   keys_ref = {11, 21, 37};
-  ASSERT_EQUAL(keys, keys_ref);
+  REQUIRE(keys == keys_ref);
 
-  ASSERT_EQUAL(new_last.second - values.begin(), 3);
+  REQUIRE(new_last.second - values.begin() == 3);
   values.erase(new_last.second, values.end());
   values_ref = {0, 2, 7};
-  ASSERT_EQUAL(values, values_ref);
+  REQUIRE(values == values_ref);
 
   cudaStreamDestroy(s);
 }
 
-void TestUniqueByKeyCudaStreamsSync()
+TEST_CASE("TestUniqueByKeyCudaStreamsSync", "[unique_by_key]")
 {
   TestUniqueByKeyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueByKeyCudaStreamsSync);
 
-void TestUniqueByKeyCudaStreamsNoSync()
+TEST_CASE("TestUniqueByKeyCudaStreamsNoSync", "[unique_by_key]")
 {
   TestUniqueByKeyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueByKeyCudaStreamsNoSync);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy,
@@ -253,20 +248,20 @@ void TestUniqueCopyByKeyDevice(ExecutionPolicy exec)
     exec, keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin(), new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
+  REQUIRE(new_last.first - output_keys.begin() == 5);
   output_keys.erase(new_last.first, output_keys.end());
   Vector keys_ref{11, 21, 20, 21, 37};
-  ASSERT_EQUAL(output_keys, keys_ref);
+  REQUIRE(output_keys == keys_ref);
 
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
+  REQUIRE(new_last.second - output_values.begin() == 5);
   output_values.erase(new_last.second, output_values.end());
   Vector values_ref{0, 2, 3, 4, 7};
-  ASSERT_EQUAL(output_values, values_ref);
+  REQUIRE(output_values == values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -283,40 +278,37 @@ void TestUniqueCopyByKeyDevice(ExecutionPolicy exec)
     new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   new_last = new_last_vec[0];
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
+  REQUIRE(new_last.first - output_keys.begin() == 3);
 
   output_keys.erase(new_last.first, output_keys.end());
   keys_ref = {11, 21, 37};
-  ASSERT_EQUAL(output_keys, keys_ref);
+  REQUIRE(output_keys == keys_ref);
 
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
+  REQUIRE(new_last.second - output_values.begin() == 3);
   output_values.erase(new_last.second, output_values.end());
   values_ref = {0, 2, 7};
-  ASSERT_EQUAL(output_values, values_ref);
+  REQUIRE(output_values == values_ref);
 }
 
-void TestUniqueCopyByKeyDeviceSeq()
+TEST_CASE("TestUniqueCopyByKeyDeviceSeq", "[unique_by_key]")
 {
   TestUniqueCopyByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyDeviceSeq);
 
-void TestUniqueCopyByKeyDeviceDevice()
+TEST_CASE("TestUniqueCopyByKeyDeviceDevice", "[unique_by_key]")
 {
   TestUniqueCopyByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyDeviceDevice);
 
-void TestUniqueCopyByKeyDeviceNoSync()
+TEST_CASE("TestUniqueCopyByKeyDeviceNoSync", "[unique_by_key]")
 {
   TestUniqueCopyByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
@@ -347,15 +339,15 @@ void TestUniqueCopyByKeyCudaStreams(ExecutionPolicy policy)
     streampolicy, keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
+  REQUIRE(new_last.first - output_keys.begin() == 5);
   output_keys.erase(new_last.first, output_keys.end());
   Vector keys_ref{11, 21, 20, 21, 37};
-  ASSERT_EQUAL(output_keys, keys_ref);
+  REQUIRE(output_keys == keys_ref);
 
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
+  REQUIRE(new_last.second - output_values.begin() == 5);
   output_values.erase(new_last.second, output_values.end());
   Vector values_ref{0, 2, 3, 4, 7};
-  ASSERT_EQUAL(output_values, values_ref);
+  REQUIRE(output_values == values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -371,27 +363,25 @@ void TestUniqueCopyByKeyCudaStreams(ExecutionPolicy policy)
     is_equal_div_10_unique<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
+  REQUIRE(new_last.first - output_keys.begin() == 3);
   output_keys.erase(new_last.first, output_keys.end());
   keys_ref = {11, 21, 37};
-  ASSERT_EQUAL(output_keys, keys_ref);
+  REQUIRE(output_keys == keys_ref);
 
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
+  REQUIRE(new_last.second - output_values.begin() == 3);
   output_values.erase(new_last.second, output_values.end());
   values_ref = {0, 2, 7};
-  ASSERT_EQUAL(output_values, values_ref);
+  REQUIRE(output_values == values_ref);
 
   cudaStreamDestroy(s);
 }
 
-void TestUniqueCopyByKeyCudaStreamsSync()
+TEST_CASE("TestUniqueCopyByKeyCudaStreamsSync", "[unique_by_key]")
 {
   TestUniqueCopyByKeyCudaStreams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyCudaStreamsSync);
 
-void TestUniqueCopyByKeyCudaStreamsNoSync()
+TEST_CASE("TestUniqueCopyByKeyCudaStreamsNoSync", "[unique_by_key]")
 {
   TestUniqueCopyByKeyCudaStreams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestUniqueCopyByKeyCudaStreamsNoSync);

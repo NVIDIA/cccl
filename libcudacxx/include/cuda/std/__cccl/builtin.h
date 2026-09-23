@@ -116,9 +116,15 @@
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
-#if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
+// NVRTC supports __builtin_constant_p in CTK 13.4, but _CCCL_HAS_BUILTIN does not detect it.
+#if _CCCL_HAS_BUILTIN(__builtin_constant_p) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >=, 13, 4)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
+#endif // builtin_constant_p availability
+
+// NVCC doesn't recognize it in host/device code before 13.4
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_CONSTANT_P
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
 
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) __builtin_expect(_EXPR, _VAL)
@@ -169,6 +175,20 @@
 // #  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) __is_corresponding_member(_C1, _C2, _MPtr1,
 // _MPtr2)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
+
+#if _CCCL_HAS_BUILTIN(__builtin_is_implicit_lifetime) || _CCCL_COMPILER(MSVC, >=, 19, 51)
+#  define _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME(...) __builtin_is_implicit_lifetime(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_is_implicit_lifetime) || _CCCL_COMPILER(MSVC, >=, 19, 51)
+
+// nvcc implements __builtin_is_implicit_lifetime since version 13.3.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+#  undef _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+
+// nvcc thinks msvc doesn't support __builtin_is_implicit_lifetime. Remove once nvbug 6782340 is resolved.
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC)
+#  undef _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_pointer_interconvertible_with_class)
 #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr) \
@@ -254,12 +274,6 @@
 #if _CCCL_CUDA_COMPILER(NVCC)
 #  undef _CCCL_BUILTIN_MEMMOVE
 #endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_CHECK_BUILTIN(builtin_operator_new) && _CCCL_CHECK_BUILTIN(builtin_operator_delete) \
-  && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_OPERATOR_DELETE(...) __builtin_operator_delete(__VA_ARGS__)
-#  define _CCCL_BUILTIN_OPERATOR_NEW(...)    __builtin_operator_new(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_operator_new) && _CCCL_CHECK_BUILTIN(builtin_operator_delete)
 
 #if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)

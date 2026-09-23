@@ -24,17 +24,16 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetIntersectionByKeyDispatchExplicit()
+TEST_CASE("TestSetIntersectionByKeyDispatchExplicit", "[set_intersection_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_intersection_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -55,7 +54,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetIntersectionByKeyDispatchImplicit()
+TEST_CASE("TestSetIntersectionByKeyDispatchImplicit", "[set_intersection_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -68,9 +67,8 @@ void TestSetIntersectionByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDispatchImplicit);
 
 template <typename Vector>
 void TestSetIntersectionByKeySimple()
@@ -83,13 +81,13 @@ void TestSetIntersectionByKeySimple()
   Vector ref_key{0, 4}, ref_val{0, 0};
   Vector result_key(2), result_val(2);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
     a_key.begin(), a_key.end(), b_key.begin(), b_key.end(), a_val.begin(), result_key.begin(), result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
+  REQUIRE(ref_key == result_key);
+  REQUIRE(ref_val == result_val);
 }
 DECLARE_VECTOR_UNITTEST(TestSetIntersectionByKeySimple);
 
@@ -150,8 +148,8 @@ void TestSetIntersectionByKey(const size_t n)
     d_result_keys.erase(d_end.first, d_result_keys.end());
     d_result_vals.erase(d_end.second, d_result_vals.end());
 
-    ASSERT_EQUAL(h_result_keys, d_result_keys);
-    ASSERT_EQUAL(h_result_vals, d_result_vals);
+    REQUIRE(h_result_keys == d_result_keys);
+    REQUIRE(h_result_vals == d_result_vals);
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionByKey);
@@ -159,7 +157,7 @@ DECLARE_VARIABLE_UNITTEST(TestSetIntersectionByKey);
 template <typename T>
 void TestSetIntersectionByKeyEquivalentRanges(const size_t n)
 {
-  thrust::host_vector<T> temp = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
 
   thrust::host_vector<T> h_a_key = temp;
   thrust::sort(h_a_key.begin(), h_a_key.end());
@@ -201,8 +199,8 @@ void TestSetIntersectionByKeyEquivalentRanges(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionByKeyEquivalentRanges);
 
@@ -261,7 +259,7 @@ void TestSetIntersectionByKeyMultiset(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionByKeyMultiset);

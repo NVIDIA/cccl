@@ -26,7 +26,7 @@ struct TestFunctionalPlaceholdersValue
     const size_t n = 10000;
     using T        = typename Vector::value_type;
 
-    T a(13);
+    const T a(13);
 
     Vector x = unittest::random_integers<T>(n);
     Vector y = unittest::random_integers<T>(n);
@@ -61,7 +61,7 @@ struct TestFunctionalPlaceholdersTransformIterator
     const size_t n = 10000;
     using T        = typename Vector::value_type;
 
-    T a(13);
+    const T a(13);
 
     Vector x = unittest::random_integers<T>(n);
     Vector y = unittest::random_integers<T>(n);
@@ -93,30 +93,29 @@ DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
   std::allocator,
   TestFunctionalPlaceholdersTransformIteratorHost);
 
-void TestFunctionalPlaceholdersArgumentValueCategories()
+TEST_CASE("TestFunctionalPlaceholdersArgumentValueCategories", "[functional_placeholders_miscellaneous]")
 {
   using namespace thrust::placeholders;
   auto expr = _1 * _1 + _2 * _2;
   int a     = 2;
   int b     = 3;
-  ASSERT_EQUAL(expr(2, 3), 13); // pass pr-value
-  ASSERT_EQUAL(expr(a, b), 13); // pass l-value
-  ASSERT_EQUAL(expr(::cuda::std::move(a), ::cuda::std::move(b)), 13); // pass x-value
+  REQUIRE(expr(2, 3) == 13); // pass pr-value
+  REQUIRE(expr(a, b) == 13); // pass l-value
+  REQUIRE(expr(::cuda::std::move(a), ::cuda::std::move(b)) == 13); // pass x-value
 }
-DECLARE_UNITTEST(TestFunctionalPlaceholdersArgumentValueCategories);
 
-void TestFunctionalPlaceholdersSemiRegular()
+TEST_CASE("TestFunctionalPlaceholdersSemiRegular", "[functional_placeholders_miscellaneous]")
 {
   using namespace thrust::placeholders;
   using Expr = decltype(_1 * _1 + _2 * _2);
+  // NOLINTNEXTLINE(misc-const-correctness)
   Expr expr; // default-constructible
-  ASSERT_EQUAL(expr(2, 3), 13);
-  Expr expr2 = expr; // copy-constructible
-  ASSERT_EQUAL(expr2(2, 3), 13);
+  REQUIRE(expr(2, 3) == 13);
+  const Expr expr2 = expr; // copy-constructible
+  REQUIRE(expr2(2, 3) == 13);
   Expr expr3;
   expr3 = expr; // copy-assignable
-  ASSERT_EQUAL(expr3(2, 3), 13);
+  REQUIRE(expr3(2, 3) == 13);
 
   static_assert(::cuda::std::semiregular<Expr>);
 }
-DECLARE_UNITTEST(TestFunctionalPlaceholdersSemiRegular);

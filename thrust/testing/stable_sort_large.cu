@@ -6,7 +6,7 @@
 template <typename T, unsigned int N>
 void _TestStableSortWithLargeKeys()
 {
-  size_t n = (128 * 1024) / sizeof(FixedVector<T, N>);
+  const size_t n = (128 * 1024) / sizeof(FixedVector<T, N>);
 
   thrust::host_vector<FixedVector<T, N>> h_keys(n);
 
@@ -21,13 +21,12 @@ void _TestStableSortWithLargeKeys()
   thrust::stable_sort(h_keys.begin(), h_keys.end());
   thrust::stable_sort(d_keys.begin(), d_keys.end());
 
-  ASSERT_EQUAL_QUIET(h_keys, d_keys);
+  REQUIRE((h_keys == d_keys));
 }
 
-void TestStableSortWithLargeKeys()
+TEST_CASE("TestStableSortWithLargeKeys", "[stable_sort_large]")
 {
   _TestStableSortWithLargeKeys<int, 2>();
   _TestStableSortWithLargeKeys<int, 17>();
   _TestStableSortWithLargeKeys<int, 128>();
 }
-DECLARE_UNITTEST(TestStableSortWithLargeKeys);

@@ -2,28 +2,30 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Thread-safety of the shared build/cache machinery for the numba-dependent
-op paths, on regular (GIL) interpreters.
+"""Thread-safety of the shared build/cache machinery for the JIT-dependent op
+paths, on regular (GIL) interpreters.
 
 cuda.compute releases the GIL around native builds and
 launches, so concurrent calls overlap in the C layer even under the GIL.
 So the shared caching/native machinery must be thread-safe on every interpreter
-build, and these tests validate that for the numba op paths.
+build, and these tests validate that for the JIT op paths.
 
-They cover the paths the free-threading stress suite
-(test_free_threading_stress.py) cannot: that suite runs on the minimal extra,
-which omits numba, so Python-callable ops, stateful closure ops, gpu_struct
-types, and return-type inference are untested there. This file exercises them
-from multiple threads on a regular GIL interpreter. The C-layer build/launch
+They complement the free-threading stress suite
+(test_free_threading_stress.py), which only runs on a free-threaded interpreter
+and whose JIT-path tests only run where the full extras are installed. This
+file exercises the same surface -- Python-callable ops, stateful closure ops,
+gpu_struct types, and return-type inference -- from multiple threads on a
+regular GIL interpreter, which every full lane runs. The C-layer build/launch
 machinery itself is op-source-agnostic and already covered by the stress suite;
-the unique surface here is the numba frontend (CachableFunction hashing,
+the unique surface here is the JIT frontend (CachableFunction hashing,
 inference, closure/struct handling).
 
 Only the native build/launch phase genuinely overlaps (the GIL is released
-around it); numba's own compilation serializes on its compiler lock and the
-Python-side key hashing serializes under the GIL. So the goal is not to prove
-numba runs in parallel, but that cuda.compute's caching, key hashing, and
-descriptor machinery stay correct when these paths are entered concurrently.
+around it); the backend's own compilation serializes on its compiler lock and
+the Python-side key hashing serializes under the GIL. So the goal is not to
+prove the JIT runs in parallel, but that cuda.compute's caching, key hashing,
+and descriptor machinery stay correct when these paths are entered
+concurrently.
 """
 
 import concurrent.futures
@@ -44,9 +46,16 @@ from cuda.compute import (
     make_unary_transform,
 )
 
-pytestmark = pytest.mark.no_verify_sass(
-    reason="Concurrency tests intentionally run concurrent workers."
-)
+pytestmark = [
+    # These tests drive their own worker threads and call clear_all_caches()
+    # between rounds, which clear_all_caches() documents as unsupported alongside
+    # concurrent factory calls -- so they must not be re-run concurrently with
+    # themselves by pytest-run-parallel.
+    pytest.mark.thread_unsafe,
+    pytest.mark.no_verify_sass(
+        reason="Concurrency tests intentionally run concurrent workers."
+    ),
+]
 
 # Every input in this file is tiny (32-128 elements), so raising the thread count
 # adds no meaningful GPU-memory pressure -- it just exercises the concurrent

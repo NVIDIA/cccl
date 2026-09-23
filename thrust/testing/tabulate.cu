@@ -11,16 +11,15 @@ void tabulate(my_system& system, ForwardIterator, ForwardIterator, UnaryOperatio
   system.validate_dispatch();
 }
 
-void TestTabulateDispatchExplicit()
+TEST_CASE("TestTabulateDispatchExplicit", "[tabulate]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::tabulate(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTabulateDispatchExplicit);
 
 template <typename ForwardIterator, typename UnaryOperation>
 void tabulate(my_tag, ForwardIterator first, ForwardIterator, UnaryOperation)
@@ -28,15 +27,14 @@ void tabulate(my_tag, ForwardIterator first, ForwardIterator, UnaryOperation)
   *first = 13;
 }
 
-void TestTabulateDispatchImplicit()
+TEST_CASE("TestTabulateDispatchImplicit", "[tabulate]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::tabulate(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTabulateDispatchImplicit);
 
 template <class Vector>
 void TestTabulateSimple()
@@ -48,17 +46,17 @@ void TestTabulateSimple()
   thrust::tabulate(v.begin(), v.end(), ::cuda::std::identity{});
 
   Vector ref{0, 1, 2, 3, 4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::tabulate(v.begin(), v.end(), -_1);
 
   ref = {0, -1, -2, -3, -4};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 
   thrust::tabulate(v.begin(), v.end(), _1 * _1 * _1);
 
   ref = {0, 1, 8, 27, 64};
-  ASSERT_EQUAL(v, ref);
+  REQUIRE(v == ref);
 }
 DECLARE_VECTOR_UNITTEST(TestTabulateSimple);
 
@@ -73,12 +71,12 @@ void TestTabulate(size_t n)
   thrust::tabulate(h_data.begin(), h_data.end(), _1 * _1 + 13);
   thrust::tabulate(d_data.begin(), d_data.end(), _1 * _1 + 13);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 
   thrust::tabulate(h_data.begin(), h_data.end(), (_1 - 7) * _1);
   thrust::tabulate(d_data.begin(), d_data.end(), (_1 - 7) * _1);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
 DECLARE_VARIABLE_UNITTEST(TestTabulate);
 

@@ -282,7 +282,7 @@ CUB_TEST("DeviceTransform::Transform non-default constructible types", "[device]
 
   transform_many(cuda::std::make_tuple(input.begin()), result.begin(), num_items, cuda::std::identity{});
 
-  c2h::host_vector<type> reference_h(num_items, non_default_constructible{42});
+  const c2h::host_vector<type> reference_h(num_items, non_default_constructible{42});
   REQUIRE(c2h::host_vector<type>(result) == reference_h);
 }
 
@@ -368,6 +368,179 @@ CUB_TEST("DeviceTransform::Transform add five streams", "[device][transform]", C
   REQUIRE(reference_h == result);
 }
 
+struct sum_two_traceable
+{
+  __host__ __device__ auto operator()(int a, int b) const -> int
+  {
+    return a + b;
+  }
+};
+
+// specializing zip_function for sum_two_traceable and making its call operator return a wrong result means the
+// tests below can only pass if DeviceTransform actually unwraps the zip_iterator/zip_function
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <>
+class zip_function<sum_two_traceable>
+{
+  sum_two_traceable fun;
+
+public:
+  __host__ __device__ zip_function(sum_two_traceable fun)
+      : fun(fun)
+  {}
+
+  __host__ __device__ sum_two_traceable& __fun()
+  {
+    return fun;
+  }
+
+  template <typename Tuple>
+  __host__ __device__ int operator()(Tuple&&) const
+  {
+    return -1; // wrong on purpose; only reached if not unwrapped
+  }
+};
+_CCCL_END_NAMESPACE_CUDA
+
+THRUST_NAMESPACE_BEGIN
+template <>
+class zip_function<sum_two_traceable>
+{
+  mutable sum_two_traceable fun;
+
+public:
+  __host__ __device__ zip_function(sum_two_traceable fun)
+      : fun(fun)
+  {}
+
+  __host__ __device__ sum_two_traceable& underlying_function() const
+  {
+    return fun;
+  }
+
+  template <typename Tuple>
+  __host__ __device__ int operator()(Tuple&&) const
+  {
+    return -1; // wrong on purpose; only reached if not unwrapped
+  }
+};
+THRUST_NAMESPACE_END
+
+struct sum_diff_two_traceable
+{
+  __host__ __device__ auto operator()(int a, int b) const -> cuda::std::tuple<int, int>
+  {
+    return {a + b, a - b};
+  }
+};
+
+// specializing zip_function for sum_diff_two_traceable and making its call operator return a wrong result means the
+// tests below can only pass if DeviceTransform actually unwraps the zip_iterator/zip_function. These also guard
+// against the __transform_internal overload ambiguity between a single zipped input and multiple outputs (#11255).
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <>
+class zip_function<sum_diff_two_traceable>
+{
+  sum_diff_two_traceable fun;
+
+public:
+  __host__ __device__ zip_function(sum_diff_two_traceable fun)
+      : fun(fun)
+  {}
+
+  __host__ __device__ sum_diff_two_traceable& __fun()
+  {
+    return fun;
+  }
+
+  template <typename Tuple>
+  __host__ __device__ cuda::std::tuple<int, int> operator()(Tuple&&) const
+  {
+    return {-1, -1}; // wrong on purpose; only reached if not unwrapped
+  }
+};
+_CCCL_END_NAMESPACE_CUDA
+
+THRUST_NAMESPACE_BEGIN
+template <>
+class zip_function<sum_diff_two_traceable>
+{
+  mutable sum_diff_two_traceable fun;
+
+public:
+  __host__ __device__ zip_function(sum_diff_two_traceable fun)
+      : fun(fun)
+  {}
+
+  __host__ __device__ sum_diff_two_traceable& underlying_function() const
+  {
+    return fun;
+  }
+
+  template <typename Tuple>
+  __host__ __device__ ::cuda::std::tuple<int, int> operator()(Tuple&&) const
+  {
+    return {-1, -1}; // wrong on purpose; only reached if not unwrapped
+  }
+};
+THRUST_NAMESPACE_END
+
+CUB_TEST("DeviceTransform::Transform unpacks cuda::zip_iterator", "[device][transform]", CUB_SMALL)
+{
+  constexpr int num_items = 1337;
+  c2h::device_vector<int> a(num_items, 3);
+  c2h::device_vector<int> b(num_items, 1);
+  auto zip = cuda::make_zip_iterator(a.begin(), b.begin());
+
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  transform_many(
+    cuda::std::make_tuple(zip), result.begin(), num_items, cuda::zip_function<sum_two_traceable>{sum_two_traceable{}});
+
+  const c2h::device_vector<int> reference(num_items, 3 + 1);
+  REQUIRE(reference == result);
+
+  // also unpacks when transforming into multiple outputs
+  c2h::device_vector<int> sum(num_items, thrust::no_init);
+  c2h::device_vector<int> diff(num_items, thrust::no_init);
+  transform_many(cuda::std::make_tuple(zip),
+                 cuda::std::make_tuple(sum.begin(), diff.begin()),
+                 num_items,
+                 cuda::zip_function<sum_diff_two_traceable>{sum_diff_two_traceable{}});
+
+  const c2h::device_vector<int> reference_sum(num_items, 3 + 1);
+  const c2h::device_vector<int> reference_diff(num_items, 3 - 1);
+  REQUIRE(reference_sum == sum);
+  REQUIRE(reference_diff == diff);
+}
+
+CUB_TEST("DeviceTransform::Transform unpacks thrust::zip_iterator", "[device][transform]", CUB_SMALL)
+{
+  constexpr int num_items = 1337;
+  c2h::device_vector<int> a(num_items, 3);
+  c2h::device_vector<int> b(num_items, 1);
+  auto zip = thrust::make_zip_iterator(a.begin(), b.begin());
+
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  transform_many(
+    cuda::std::make_tuple(zip), result.begin(), num_items, thrust::zip_function<sum_two_traceable>{sum_two_traceable{}});
+
+  const c2h::device_vector<int> reference(num_items, 3 + 1);
+  REQUIRE(reference == result);
+
+  // also unpacks when transforming into multiple outputs
+  c2h::device_vector<int> sum(num_items, thrust::no_init);
+  c2h::device_vector<int> diff(num_items, thrust::no_init);
+  transform_many(cuda::std::make_tuple(zip),
+                 cuda::std::make_tuple(sum.begin(), diff.begin()),
+                 num_items,
+                 thrust::zip_function<sum_diff_two_traceable>{sum_diff_two_traceable{}});
+
+  const c2h::device_vector<int> reference_sum(num_items, 3 + 1);
+  const c2h::device_vector<int> reference_diff(num_items, 3 - 1);
+  REQUIRE(reference_sum == sum);
+  REQUIRE(reference_diff == diff);
+}
+
 struct give_me_five
 {
   __device__ auto operator()() const -> int
@@ -383,7 +556,7 @@ CUB_TEST("DeviceTransform::Generate", "[device][transform]", CUB_SMALL)
   generate(result.begin(), num_items, give_me_five{});
 
   // compute reference and verify
-  c2h::device_vector<int> reference(num_items, 5);
+  const c2h::device_vector<int> reference(num_items, 5);
   REQUIRE(reference == result);
 }
 
@@ -394,7 +567,7 @@ CUB_TEST("DeviceTransform::Fill", "[device][transform]", CUB_SMALL)
   fill(result.begin(), num_items, 5);
 
   // compute reference and verify
-  c2h::device_vector<int> reference(num_items, 5);
+  const c2h::device_vector<int> reference(num_items, 5);
   REQUIRE(reference == result);
 }
 
@@ -402,8 +575,8 @@ CUB_TEST("DeviceTransform::Transform fancy input iterator types", "[device][tran
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  cuda::counting_iterator<type> a{0};
-  cuda::counting_iterator<type> b{10};
+  const cuda::counting_iterator<type> a{0};
+  const cuda::counting_iterator<type> b{10};
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
   transform_many(cuda::std::make_tuple(a, b), result.begin(), num_items, cuda::std::plus<type>{});
@@ -456,7 +629,7 @@ CUB_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][tra
 {
   using type          = unsigned; // overflow is defined
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  cuda::counting_iterator<type> a{0};
+  const cuda::counting_iterator<type> a{0};
   c2h::device_vector<type> b(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), b);
 
@@ -654,7 +827,7 @@ CUB_TEST("DeviceTransform::Transform vectorized output bug", "[device][transform
 {
   using thrust::placeholders::_1;
 
-  int num_items = std::numeric_limits<std::uint16_t>::max() - 1;
+  const int num_items = std::numeric_limits<std::uint16_t>::max() - 1;
   c2h::device_vector<std::uint16_t> input(num_items);
   c2h::device_vector<std::uint16_t> output(num_items);
   thrust::sequence(input.begin(), input.end());
@@ -722,7 +895,7 @@ CUB_TEST("DeviceTransform::Transform function/output_iter return type not conver
   auto out_it = cuda::transform_output_iterator(output.begin(), BtoC{});
   transform_many(input.begin(), out_it, num_items, AtoB{});
 
-  c2h::device_vector<C> reference(num_items, C{-43});
+  const c2h::device_vector<C> reference(num_items, C{-43});
   CHECK(output == reference);
 }
 

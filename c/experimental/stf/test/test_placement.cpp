@@ -46,7 +46,7 @@ C2H_TEST("placement evaluation with a native mapper", "[places][placement]")
   stf_placement_stats stats{};
   uint64_t bytes_per_pos[2] = {0, 0};
 
-  int rc = stf_placement_evaluate(
+  const int rc = stf_placement_evaluate(
     grid, stf_partition_fn_blocked(0), &dims, 1, /*probes=*/0, /*block_size=*/2 * MiB, &stats, bytes_per_pos);
   REQUIRE(rc == 0);
 

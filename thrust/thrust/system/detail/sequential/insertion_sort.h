@@ -32,7 +32,7 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
   }
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   for (RandomAccessIterator i = first + 1; i != last; ++i)
   {
@@ -77,15 +77,15 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
   }
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   RandomAccessIterator1 i1 = first1 + 1;
   RandomAccessIterator2 i2 = first2 + 1;
 
   for (; i1 != last1; ++i1, ++i2)
   {
-    value_type1 tmp1 = *i1;
-    value_type2 tmp2 = *i2; // NOLINT(performance-unnecessary-copy-initialization)
+    value_type1 tmp1       = *i1;
+    const value_type2 tmp2 = *i2; // NOLINT(performance-unnecessary-copy-initialization)
 
     if (wrapped_comp(tmp1, *first1))
     {

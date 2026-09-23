@@ -39,8 +39,8 @@ void sum_sparse_vectors(
   assert(A_index.size() == A_value.size());
   assert(B_index.size() == B_value.size());
 
-  size_t A_size = A_index.size();
-  size_t B_size = B_index.size();
+  const size_t A_size = A_index.size();
+  const size_t B_size = B_index.size();
 
   // allocate storage for the combined contents of sparse vectors A and B
   IndexVector3 temp_index(A_size + B_size);
@@ -58,7 +58,7 @@ void sum_sparse_vectors(
     temp_value.begin());
 
   // compute number of unique indices
-  size_t C_size =
+  const size_t C_size =
     thrust::inner_product(
       temp_index.begin(),
       temp_index.end() - 1,

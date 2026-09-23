@@ -33,12 +33,31 @@ Checks:
   - '-bugprone-crtp-constructor-accessibility'
   - '-bugprone-argument-comment'
   # This is just noise
-  - '-bugprone-signed-char-misuse'
+  - '-bugprone-signed-char-misuse,-cert-str34-c'
   - '-bugprone-multi-level-implicit-pointer-conversion'
   - 'misc-*'
-  - '-misc-const-correctness'
   - '-misc-use-anonymous-namespace'
   - '-misc-use-internal-linkage'
+  - 'core-*'
+  - 'mpi-*'
+  - 'cert-*'
+  - '-cert-str34-c'
+  - '-cert-err33-c'
+  - 'portability-*'
+  - '-portability-template-virtual-member-function'
+  - 'google-*'
+  # There are probably instances where this is useful, but a lot of these come from
+  # libcu++ where the types must explicitly match the CUDA intrinsics.
+  - '-google-runtime-int'
+  - '-google-explicit-constructor'
+  - '-google-runtime-operator'
+  - '-google-build-using-namespace'
+  - '-google-runtime-float'
+  # Same as misc-anonymous-namespace-in-header
+  - '-google-build-namespaces'
+  # readability-* as a whole is not enabled yet; only turn on the specific sub-checks we have
+  # vetted so far.
+  - 'readability-identifier-naming'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
@@ -200,24 +219,30 @@ Checks:
   #
   # So better left disabled.
   - '-bugprone-macro-parentheses'
+  # Alias for bugprone-float-loop-counter
+  - '-cert-flp30-c'
+  # Alias for misc-anonymous-namespace-in-header
+  - '-cert-dcl59-cpp'
+  # Alias for readability-uppercase-literal-suffix
+  - '-cert-dcl16-c'
 
   # TODO: Enable for clang-tidy-22
   - '-modernize-avoid-c-style-cast'
   - '-bugprone-signed-bitwise'
-  - '-bugprone-std-namespace-modification'
+  - '-bugprone-std-namespace-modification,-cert-dcl58-cpp'
   - '-clang-diagnostic-deprecated-attributes'
   - '-bugprone-throwing-static-initialization'
   - '-bugprone-unchecked-string-to-number-conversion'
   - '-bugprone-invalid-enum-default-initialization'
   - '-bugprone-derived-method-shadowing-base-method'
   - '-bugprone-unsafe-to-allow-exceptions'
-  - '-bugprone-sizeof-expression'
+  - '-bugprone-sizeof-expression,-cert-arr39-c'
   - '-modernize-use-nullptr'
   - '-bugprone-std-exception-baseclass'
   - '-modernize-avoid-variadic-functions'
   - '-modernize-type-traits'
-  - '-bugprone-random-generator-seed'
-  - '-bugprone-command-processor'
+  - '-bugprone-random-generator-seed,-cert-msc32-c,-cert-msc51-cpp'
+  - '-bugprone-command-processor,-cert-env33-c'
 
   # TODO: ironically enough, enable this someday
   - '-google-readability-todo'
@@ -308,10 +333,10 @@ CheckOptions:
   # readability-identifier-naming.LocalVariableCase: 'lower_case'
   # # We want to allow constexpr auto MY_VAL1
   # readability-identifier-naming.LocalVariableIgnoredRegexp: '[A-Z_0-9]+'
-  # readability-identifier-naming.MacroDefinitionCase: 'UPPER_CASE'
-  # # We want to allow MY_MACRO_PRIVATE_1_
-  # readability-identifier-naming.MacroDefinitionIgnoredRegexp: '[A-Z_0-9]+'
-  # readability-identifier-naming.NamespaceCase: 'lower_case'
+  readability-identifier-naming.MacroDefinitionCase: 'UPPER_CASE'
+  readability-identifier-naming.MacroDefinitionIgnoredRegexp: '_[A-Z_].*|__cccl_lib_.*|__cccl_ptx_isa.*'
+  readability-identifier-naming.NamespaceCase: 'lower_case'
+  readability-identifier-naming.NamespaceIgnoredRegexp: '__.*'
   # readability-identifier-naming.PrivateMemberCase: 'lower_case'
   # readability-identifier-naming.PrivateMemberSuffix: '_'
   # readability-identifier-naming.PrivateMethodCase: 'lower_case'

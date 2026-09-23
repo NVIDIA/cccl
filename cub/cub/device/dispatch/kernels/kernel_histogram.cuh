@@ -49,18 +49,18 @@ struct Transforms
     }
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       /// Level iterator wrapper type
       // Wrap the native input pointer with CacheModifiedInputIterator
       // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         CacheModifiedInputIterator<LoadModifier, LevelT, OffsetT>,
                          LevelIteratorT>;
 
-      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const WrappedLevelIteratorT wrapped_levels(d_levels);
 
       const int num_bins = num_output_levels - 1;
       if (valid)
@@ -266,7 +266,7 @@ struct Transforms
     }
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER>
+    template <CacheLoadModifier LoadModifier>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
     {
       const CommonT common_sample = static_cast<CommonT>(sample);
@@ -298,8 +298,8 @@ struct Transforms
     {}
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       if (valid)
       {

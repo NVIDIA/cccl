@@ -19,24 +19,23 @@ _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 
 #include <unittest/unittest.h>
 
-void TestReadingStridedIterator()
+TEST_CASE("TestReadingStridedIterator", "[strided_iterator]")
 {
   thrust::host_vector<int> v(21);
   std::iota(v.begin(), v.end(), -4);
   auto iter = thrust::make_strided_iterator(v.begin() + 4, 2);
 
-  ASSERT_EQUAL(*iter, 0);
+  REQUIRE(*iter == 0);
   iter++;
-  ASSERT_EQUAL(*iter, 2);
+  REQUIRE(*iter == 2);
   iter++;
   iter++;
-  ASSERT_EQUAL(*iter, 6);
+  REQUIRE(*iter == 6);
   iter += 5;
-  ASSERT_EQUAL(*iter, 16);
+  REQUIRE(*iter == 16);
   iter -= 10;
-  ASSERT_EQUAL(*iter, -4);
+  REQUIRE(*iter == -4);
 }
-DECLARE_UNITTEST(TestReadingStridedIterator);
 
 template <typename Vector>
 void TestWritingStridedIterator()
@@ -45,14 +44,14 @@ void TestWritingStridedIterator()
   {
     Vector v(10);
     auto iter = thrust::make_strided_iterator(v.begin(), 2);
-    ASSERT_EQUAL(v, (Vector{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
+    REQUIRE(v == (Vector{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
     *iter = 33;
-    ASSERT_EQUAL(v, (Vector{33, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
+    REQUIRE(v == (Vector{33, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
     auto iter2 = iter + 1;
     *iter2     = 34;
-    ASSERT_EQUAL(v, (Vector{33, 0, 34, 0, 0, 0, 0, 0, 0, 0}));
+    REQUIRE(v == (Vector{33, 0, 34, 0, 0, 0, 0, 0, 0, 0}));
     thrust::fill(iter + 2, iter + 4, 42);
-    ASSERT_EQUAL(v, (Vector{33, 0, 34, 0, 42, 0, 42, 0, 0, 0}));
+    REQUIRE(v == (Vector{33, 0, 34, 0, 42, 0, 42, 0, 0, 0}));
   }
 
   // iterate over all second elements (static stride)
@@ -60,7 +59,7 @@ void TestWritingStridedIterator()
     Vector v(10);
     auto iter = thrust::make_strided_iterator<2>(v.begin());
     thrust::fill(iter, iter + 3, 42);
-    ASSERT_EQUAL(v, (Vector{42, 0, 42, 0, 42, 0, 0, 0, 0, 0}));
+    REQUIRE(v == (Vector{42, 0, 42, 0, 42, 0, 0, 0, 0, 0}));
   }
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestWritingStridedIterator);
@@ -79,7 +78,7 @@ void TestWritingStridedIteratorToStructMember()
     auto arr  = data;
     auto iter = thrust::make_strided_iterator(&arr[0].second, stride);
     thrust::fill(iter, iter + 4, 1337);
-    ASSERT_EQUAL(arr == reference, true);
+    REQUIRE(arr == reference);
   }
 
   // iterate over all second elements (static stride)
@@ -87,9 +86,12 @@ void TestWritingStridedIteratorToStructMember()
     auto arr  = data;
     auto iter = thrust::make_strided_iterator<stride>(&arr[0].second);
     thrust::fill(iter, iter + 4, 1337);
-    ASSERT_EQUAL(arr == reference, true);
+    REQUIRE(arr == reference);
   }
 }
-DECLARE_UNITTEST(TestWritingStridedIteratorToStructMember);
+TEST_CASE("TestWritingStridedIteratorToStructMember", "[strided_iterator]")
+{
+  TestWritingStridedIteratorToStructMember();
+}
 
 _CCCL_DIAG_POP

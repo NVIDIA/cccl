@@ -136,7 +136,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.large_buffer.thr
     const BufferOffsetT buffer_id = block_buffer_id;
 
     // The relative offset of this tile within the buffer it's assigned to
-    BufferSizeT tile_offset_within_buffer =
+    const BufferSizeT tile_offset_within_buffer =
       static_cast<BufferSizeT>(tile_id - buffer_tile_offsets[buffer_id]) * TILE_SIZE;
 
     // If the tile has already reached beyond the work of the end of the last buffer
@@ -315,18 +315,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
   const BatchedCopyPolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceBatchMemcpy to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceBatchMemcpy", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceBatchMemcpy", cc, active_policy);
 
   enum : uint32_t
   {

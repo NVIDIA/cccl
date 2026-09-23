@@ -56,8 +56,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
 namespace __detail::__segmented_reduce
 {
 template <bool __has_direct_reduction,
@@ -82,11 +81,11 @@ template <bool __has_direct_reduction,
   const _Tp& __ident)
 {
   ::cuda::stream_ref __stream = ::cuda::get_stream(__env);
-  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __stream.__logical_device());
+  auto __resource = ::cuda::experimental::mgmn::__detail::__resource_from_env(__env, __stream.__logical_device());
 
   // One partial per segment. The butterfly fallback folds in place, but needs extra room for
   // the other ranks' data so we allocate it here
-  auto __buff = ::cuda::experimental::__detail::__make_safe_uninitialized_buffer<_Tp>(
+  auto __buff = ::cuda::experimental::mgmn::__detail::__make_safe_uninitialized_buffer<_Tp>(
     __stream, ::cuda::std::move(__resource), __has_direct_reduction ? __num_segments : 2 * __num_segments, __env);
   static_assert(::cuda::std::same_as<decltype(__buff), _Buffer>);
 
@@ -252,7 +251,7 @@ _CCCL_HOST_API void __butterfly_reduction(
       return __rank < __excess || __rank >= __pow2;
     };
 
-    ::cuda::experimental::__detail::__segmented_reduce::__exchange_and_fold(
+    ::cuda::experimental::mgmn::__detail::__segmented_reduce::__exchange_and_fold(
       __comms, __envs, __num_segments, __op, __participates, __pow2, __partials);
   }
 
@@ -263,7 +262,7 @@ _CCCL_HOST_API void __butterfly_reduction(
       return __rank < __pow2;
     };
 
-    ::cuda::experimental::__detail::__segmented_reduce::__exchange_and_fold(
+    ::cuda::experimental::mgmn::__detail::__segmented_reduce::__exchange_and_fold(
       __comms, __envs, __num_segments, __op, __participates, __peer_mask, __partials);
   }
 
@@ -271,7 +270,7 @@ _CCCL_HOST_API void __butterfly_reduction(
   {
     // Every rank in `[0, __pow2)` now holds the full result. Send it back to the excess ranks
     // that dropped out above.
-    ::cuda::experimental::__detail::__segmented_reduce::__broadcast_to_excess(
+    ::cuda::experimental::mgmn::__detail::__segmented_reduce::__broadcast_to_excess(
       __comms, __num_segments, __partials, __excess, __pow2);
   }
 
@@ -400,7 +399,7 @@ _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND //
                ::cuda::std::ranges::forward_range<_OffsetEndIterRange> _CCCL_AND //
                  __detail::__range_of_output_iters<_OutputIterRange, _Tp>)
 _CCCL_HOST_API void segmented_reduce(
-  [[maybe_unused]] const __result_policy_base<_Policy>& __policy,
+  [[maybe_unused]] const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputIterRange&& __input_iters,
@@ -430,12 +429,12 @@ _CCCL_HOST_API void segmented_reduce(
   // butterfly        log2(k)      n*log2(k)       2n
   // Rabenseifner     2*log2(k)    ~2n             1.5n
   // ring             2(k-1)       ~2n             n + n/k
-  static_assert(::cuda::std::same_as<_Policy, broadcasted_t>,
+  static_assert(::cuda::std::same_as<_Policy, ::cuda::experimental::broadcasted_t>,
                 "Only broadcasted results are currently supported. Please open an issue at "
                 "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
 
   using __properties =
-    ::cuda::experimental::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
+    ::cuda::experimental::mgmn::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
 
   const auto __num_local = ::cuda::std::ranges::size(__comms);
 
@@ -444,10 +443,10 @@ _CCCL_HOST_API void segmented_reduce(
     return;
   }
 
-  _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::segmented_reduce");
+  _CCCL_NVTX_RANGE_SCOPE("cuda::mgmn::segmented_reduce");
 
   auto __partials                      = ::std::vector<typename __properties::__buffer_type>{};
-  constexpr bool __comm_has_all_reduce = ::cuda::experimental::
+  constexpr bool __comm_has_all_reduce = ::cuda::experimental::mgmn::
     __has_all_reduce<::cuda::std::ranges::range_value_t<_CommRange>, typename __properties::__output_type*, _BinaryOp>;
 
   __partials.reserve(__num_local);
@@ -455,8 +454,8 @@ _CCCL_HOST_API void segmented_reduce(
        ::cuda::std::ranges::views::zip(__comms, __envs, __input_iters, __offset_begin_iters, __offset_end_iters))
   {
     __partials.emplace_back(
-      ::cuda::experimental::__detail::__segmented_reduce::__local_reduction<__comm_has_all_reduce,
-                                                                            typename __properties::__buffer_type>(
+      ::cuda::experimental::mgmn::__detail::__segmented_reduce::__local_reduction<__comm_has_all_reduce,
+                                                                                  typename __properties::__buffer_type>(
         /*__ROOT_RANK=*/0,
         __comm,
         __env,
@@ -471,11 +470,12 @@ _CCCL_HOST_API void segmented_reduce(
 
   if constexpr (__comm_has_all_reduce)
   {
-    ::cuda::experimental::__detail::__segmented_reduce::__direct_reduction(__comms, __output_iters, __op, &__partials);
+    ::cuda::experimental::mgmn::__detail::__segmented_reduce::__direct_reduction(
+      __comms, __output_iters, __op, &__partials);
   }
   else
   {
-    ::cuda::experimental::__detail::__segmented_reduce::__butterfly_reduction(
+    ::cuda::experimental::mgmn::__detail::__segmented_reduce::__butterfly_reduction(
       __comms, __envs, __num_segments, __output_iters, __op, &__partials);
   }
 }
@@ -521,7 +521,7 @@ _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND //
                ::cuda::std::random_access_iterator<_OffsetEndIter> _CCCL_AND //
                ::cuda::std::output_iterator<_OutputIter, _Tp>)
 _CCCL_HOST_API void segmented_reduce(
-  const __result_policy_base<_Policy>& __policy,
+  const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
   _InputIter __input_it,
@@ -533,7 +533,7 @@ _CCCL_HOST_API void segmented_reduce(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  ::cuda::experimental::segmented_reduce(
+  ::cuda::experimental::mgmn::segmented_reduce(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
@@ -546,7 +546,7 @@ _CCCL_HOST_API void segmented_reduce(
     ::cuda::std::move(__op),
     ::cuda::std::move(__ident));
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

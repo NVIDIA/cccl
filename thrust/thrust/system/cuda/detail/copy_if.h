@@ -148,7 +148,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
   // Get number of selected items
   status = cuda_cub::synchronize(policy);
   cuda_cub::throw_on_error(status, "copy_if failed on sync");
-  offset_t num_selected = get_value(policy, d_num_selected_out);
+  const offset_t num_selected = get_value(policy, d_num_selected_out);
   ::cuda::std::advance(output, num_selected);
   return output;
 }

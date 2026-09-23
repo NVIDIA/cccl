@@ -57,7 +57,7 @@ void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = 
 
   // comparing std::vectors instead compiles in 1m19s, thrust::host_vector 1m23s, thrust::device_vector 1m38
   // let's pick the host_vector, so we don't stress device memory with another (potentially big) allocation
-  c2h::host_vector<Key> result_h(result_d); // perform copy outside CHECK() to propagate a potential bad_alloc
+  const c2h::host_vector<Key> result_h(result_d); // perform copy outside CHECK() to propagate a potential bad_alloc
   CHECK(reference_h == result_h);
 }
 

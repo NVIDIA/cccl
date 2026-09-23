@@ -29,20 +29,20 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = warp_threads>
+template <typename InputT, int ItemsPerThread, int LogicalWarpThreads = warp_threads>
 class WarpExchangeSmem
 {
-  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-  static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS + 1;
+  static constexpr int ITEMS_PER_TILE = ItemsPerThread * LogicalWarpThreads + 1;
 
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == warp_threads;
+  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == warp_threads;
 
   static constexpr int LOG_SMEM_BANKS = log2_smem_banks;
 
   // Insert padding if the number of items per thread is a power of two
   // and > 4 (otherwise we can typically use 128b loads)
-  static constexpr bool INSERT_PADDING = (ITEMS_PER_THREAD > 4) && (::cuda::is_power_of_two(ITEMS_PER_THREAD));
+  static constexpr bool INSERT_PADDING = (ItemsPerThread > 4) && (::cuda::is_power_of_two(ItemsPerThread));
 
   static constexpr int PADDING_ITEMS = INSERT_PADDING ? (ITEMS_PER_TILE >> LOG_SMEM_BANKS) : 0;
 
@@ -66,62 +66,61 @@ public:
 
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
-      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
-      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
+      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
+      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
+      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
   {}
 
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  BlockedToStriped(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
-    for (int item = 0; item < ITEMS_PER_THREAD; item++)
+    for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx                  = ITEMS_PER_THREAD * lane_id + item;
+      const int idx                  = ItemsPerThread * lane_id + item;
       temp_storage.items_shared[idx] = input_items[item];
     }
     __syncwarp(member_mask);
 
-    for (int item = 0; item < ITEMS_PER_THREAD; item++)
+    for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx      = LOGICAL_WARP_THREADS * item + lane_id;
+      const int idx      = LogicalWarpThreads * item + lane_id;
       output_items[item] = temp_storage.items_shared[idx];
     }
   }
 
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  StripedToBlocked(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
-    for (int item = 0; item < ITEMS_PER_THREAD; item++)
+    for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx                  = LOGICAL_WARP_THREADS * item + lane_id;
+      const int idx                  = LogicalWarpThreads * item + lane_id;
       temp_storage.items_shared[idx] = input_items[item];
     }
     __syncwarp(member_mask);
 
-    for (int item = 0; item < ITEMS_PER_THREAD; item++)
+    for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx      = ITEMS_PER_THREAD * lane_id + item;
+      const int idx      = ItemsPerThread * lane_id + item;
       output_items[item] = temp_storage.items_shared[idx];
     }
   }
 
   template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD], OffsetT (&ranks)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(InputT (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
   {
     ScatterToStriped(items, items, ranks);
   }
 
   template <typename OutputT, typename OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
-    const InputT (&input_items)[ITEMS_PER_THREAD],
-    OutputT (&output_items)[ITEMS_PER_THREAD],
-    OffsetT (&ranks)[ITEMS_PER_THREAD])
+    const InputT (&input_items)[ItemsPerThread],
+    OutputT (&output_items)[ItemsPerThread],
+    OffsetT (&ranks)[ItemsPerThread])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+    for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
     {
       if (INSERT_PADDING)
       {
@@ -134,9 +133,9 @@ public:
     __syncwarp(member_mask);
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+    for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
     {
-      int item_offset = (ITEM * LOGICAL_WARP_THREADS) + lane_id;
+      int item_offset = (ITEM * LogicalWarpThreads) + lane_id;
 
       if (INSERT_PADDING)
       {

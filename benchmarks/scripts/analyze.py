@@ -27,7 +27,7 @@ sensitivity = 0.5
 
 
 def get_bench_columns():
-    return ["variant", "elapsed", "center", "samples", "bw"]
+    return ["variant", "cccl", "elapsed", "center", "samples", "bw"]
 
 
 def get_extended_bench_columns():
@@ -110,6 +110,15 @@ def extract_rt_axes_values(df):
     return rt_axes_values
 
 
+def declared_rt_axes_values(df, declared_axes):
+    """The value list each runtime axis is weighted over.
+
+    `check_axis_space_recorded` has already established that the record covers
+    every axis the data has.
+    """
+    return {rt_axis: declared_axes[rt_axis] for rt_axis in get_rt_axes(df)}
+
+
 def extract_rt_space(df):
     rt_axes = get_rt_axes(df)
     rt_axes_values = []
@@ -131,29 +140,69 @@ def extract_complete_variants(df):
     return df.groupby("variant").filter(functools.partial(filter_variants, df))
 
 
-def compute_workload_score(rt_axes_values, rt_axes_ids, weights, row):
+def incomplete_variants(dfs):
+    """The variants that did not cover every workload the others did.
+
+    Judged over every subbench at once: dropping a variant from the one subbench
+    it is incomplete in leaves it in the ranking scored on what remains, which
+    is how a variant that regressed on the workloads it is missing comes out on
+    top. A workload NVBench skips is absent for every variant alike and so costs
+    nobody their completeness.
+    """
+    incomplete = set()
+    measured = set()
+    everywhere = None
+
+    for df in dfs.values():
+        if df.empty:
+            continue
+
+        rt_axes = get_rt_axes(df)
+        covered = set(df[rt_axes].drop_duplicates().itertuples(index=False))
+
+        present = set()
+        for variant, group in df.groupby("variant"):
+            present.add(variant)
+            if set(group[rt_axes].drop_duplicates().itertuples(index=False)) != covered:
+                incomplete.add(variant)
+
+        measured |= present
+        everywhere = present if everywhere is None else everywhere & present
+
+    # A variant that is missing a whole subbench is missing its workloads too.
+    return incomplete | (measured - (everywhere or set()))
+
+
+def compute_workload_weight(rt_axes_values, rt_axes_ids, weights, row):
     rt_workload = []
     for rt_axis in rt_axes_values:
         rt_workload.append("{}={}".format(rt_axis, row[rt_axis]))
 
-    weight = cccl.bench.get_workload_weight(
+    return cccl.bench.get_workload_weight(
         rt_workload, rt_axes_values, rt_axes_ids, weights
     )
-    return row["speedup"] * weight
 
 
 def compute_variant_score(rt_axes_values, rt_axes_ids, weight_matrix, group):
-    workload_score_closure = functools.partial(
-        compute_workload_score, rt_axes_values, rt_axes_ids, weight_matrix
+    """Return weighted speedup and total weight, similarly to bench.score."""
+    workload_weight_closure = functools.partial(
+        compute_workload_weight, rt_axes_values, rt_axes_ids, weight_matrix
     )
-    score_sum = group.apply(workload_score_closure, axis=1).sum()
-    return score_sum
+    workload_weights = group.apply(workload_weight_closure, axis=1)
+    return pd.Series(
+        {
+            "weighted_speedup": (workload_weights * group["speedup"]).sum(),
+            "weight": workload_weights.sum(),
+        }
+    )
 
 
-def extract_scores(dfs):
+def version_scores(dfs, declared_axes):
     rt_axes_values = {}
     for subbench in dfs:
-        rt_axes_values[subbench] = extract_rt_axes_values(dfs[subbench])
+        rt_axes_values[subbench] = declared_rt_axes_values(
+            dfs[subbench], declared_axes[subbench]
+        )
 
     rt_axes_ids = cccl.bench.compute_axes_ids(rt_axes_values)
     weights = cccl.bench.compute_weight_matrices(rt_axes_values, rt_axes_ids)
@@ -168,19 +217,53 @@ def extract_scores(dfs):
         )
         grouped = dfs[subbench].groupby("variant")
         scores = grouped.apply(score_closure, include_groups=False).reset_index()
-        scores.columns = ["variant", "score"]
-        stat = grouped.agg(
+        scores.columns = ["variant", "weighted_speedup", "weight"]
+        score_dfs.append(scores)
+    return score_dfs
+
+
+SCORE_COLUMNS = ["variant", "score", "mins", "means", "maxs"]
+
+
+def extract_scores(dfs, declared_axes):
+    score_dfs = []
+    for version in sorted({v for df in dfs.values() for v in df["cccl"].unique()}):
+        version_dfs = {}
+        for subbench in dfs:
+            subbench_df = dfs[subbench][dfs[subbench]["cccl"] == version]
+            if not subbench_df.empty:
+                version_dfs[subbench] = subbench_df
+
+        score_dfs += version_scores(
+            version_dfs,
+            {s: declared_axes[s][version] for s in version_dfs},
+        )
+
+    if not score_dfs:
+        return pd.DataFrame(columns=SCORE_COLUMNS)
+
+    # The weights are normalized across subbenches, so a variant's score is the
+    # ratio of the sums over all of them, not the mean of their ratios.
+    totals = (
+        pd.concat(score_dfs)
+        .groupby("variant")
+        .agg({"weighted_speedup": "sum", "weight": "sum"})
+    )
+    # The statistics describe the speedups themselves, so they come from every
+    # measurement at once rather than from an average of per-subbench averages.
+    stat = (
+        pd.concat(dfs.values())
+        .groupby("variant")
+        .agg(
             mins=("speedup", "min"), means=("speedup", "mean"), maxs=("speedup", "max")
         )
-        scores = pd.merge(scores, stat, on="variant")
-        score_dfs.append(scores)
-    score_df = pd.concat(score_dfs)
-    result = (
-        score_df.groupby("variant")
-        .agg({"score": "sum", "mins": "min", "means": "mean", "maxs": "max"})
-        .reset_index()
     )
-    return result.sort_values(by=["score"], ascending=False)
+    result = totals.join(stat).reset_index()
+    weight = result["weight"]
+    result["score"] = (result["weighted_speedup"] / weight.where(weight != 0)).fillna(
+        float("-inf")
+    )
+    return result[SCORE_COLUMNS].sort_values(by=["score"], ascending=False)
 
 
 def distributions_are_different(alpha, row):
@@ -220,6 +303,114 @@ def is_finite(x):
     return True
 
 
+def collect_declared_axes(declared_axes, algname, subbench, axes_values, source):
+    recorded = declared_axes.setdefault(subbench, {})
+
+    for version in axes_values:
+        if version in recorded and recorded[version] != axes_values[version]:
+            raise Exception(
+                "{} records a different axis space for {}.{} under CCCL {} than"
+                " another database does: {} vs {}".format(
+                    source,
+                    algname,
+                    subbench,
+                    version,
+                    axes_values[version],
+                    recorded[version],
+                )
+            )
+        recorded[version] = axes_values[version]
+
+
+def drop_unweighable_rows(df, declared_axes):
+    """Remove rows whose axis values the declared space has no position for.
+
+    Leaving them in would also cost every variant that correctly does not have
+    them, since `extract_complete_variants` drops a variant missing any
+    combination the frame contains.
+    """
+    if not declared_axes:
+        return df
+
+    keep = pd.Series(True, index=df.index)
+    for rt_axis in get_rt_axes(df):
+        if rt_axis in declared_axes:
+            keep &= df[rt_axis].isin(declared_axes[rt_axis])
+
+    return df[keep]
+
+
+def collect_measured_values(seen, subbench, df):
+    """Record which runtime values each CCCL version actually holds rows for."""
+    axes_df = df.drop(columns=["ctk", "gpu"])
+    versions = seen.setdefault(subbench, {})
+
+    for version in axes_df["cccl"].unique():
+        version_df = axes_df[axes_df["cccl"] == version]
+        axes = versions.setdefault(version, {})
+        for rt_axis in get_rt_axes(version_df):
+            axes.setdefault(rt_axis, set()).update(version_df[rt_axis].unique())
+
+
+def check_axis_space_recorded(algname, declared_axes, seen):
+    """Refuse to score rows whose declared axis space was never recorded.
+
+    Weights are positional, so without the space the benchmark declared there is
+    no way to know what a speedup was worth -- the values that happen to be in
+    the database are the whole space only if the campaign was not narrowed, and
+    nothing says whether it was. Checked once every database has been read: one
+    of them recording the space covers another one's rows.
+    """
+    missing = []
+    for subbench in sorted(seen):
+        for version in sorted(seen[subbench]):
+            declared = declared_axes.get(subbench, {}).get(version)
+            if not declared:
+                missing.append("{}.{} under CCCL {}".format(algname, subbench, version))
+                continue
+
+            for rt_axis in sorted(seen[subbench][version]):
+                if rt_axis not in declared:
+                    missing.append(
+                        "the {} axis of {}.{} under CCCL {}".format(
+                            rt_axis, algname, subbench, version
+                        )
+                    )
+
+    if missing:
+        raise Exception(
+            "no declared axis space is recorded for {}. It is recorded by the"
+            " tuning run that measures the rows, so a database written before"
+            " that has to be re-measured to be scored.".format("; ".join(missing))
+        )
+
+
+def report_undeclared_values(algname, declared_axes, seen):
+    """Say which rows the declared axis space has no position for.
+
+    `drop_unweighable_rows` leaves them out of the score; a campaign narrowed to
+    a value off the axis is rejected now, so only a database written before that
+    can hold them.
+    """
+    for subbench in sorted(seen):
+        for version in sorted(seen[subbench]):
+            declared = declared_axes[subbench][version]
+            for rt_axis, measured in sorted(seen[subbench][version].items()):
+                undeclared = sorted(measured - set(declared[rt_axis]))
+                if undeclared:
+                    print(
+                        "#### WARNING {}.{} holds rows measured at {}={} under CCCL"
+                        " {}, which the benchmark does not declare; they are left"
+                        " out of the score".format(
+                            algname,
+                            subbench,
+                            rt_axis,
+                            ", ".join(undeclared),
+                            version,
+                        )
+                    )
+
+
 def iterate_case_dfs(args, callable):
     storages = {}
     algnames = set()
@@ -241,7 +432,22 @@ def iterate_case_dfs(args, callable):
         if not pattern.match(algname):
             continue
 
+        # Read every database's record of the declared axis space before
+        # weighing any of them: one database recording it covers another one's
+        # rows, and a row can only be dropped once the space is known.
+        declared_axes: dict[str, dict[str, dict]] = {}
+        for file in storages:
+            for subbench in storages[file].subbenches(algname):
+                collect_declared_axes(
+                    declared_axes,
+                    algname,
+                    subbench,
+                    storages[file].axes_values(algname, subbench),
+                    file,
+                )
+
         case_dfs: dict[str, dict[str, pd.DataFrame]] = {}
+        measured_values: dict[str, dict[str, dict]] = {}
         for file in storages:
             storage = storages[file]
             for subbench in storage.subbenches(algname):
@@ -249,6 +455,8 @@ def iterate_case_dfs(args, callable):
 
                 df = df.map(lambda x: x if is_finite(x) else np.nan)
                 df = df.dropna(subset=["center"], how="all")
+
+                collect_measured_values(measured_values, subbench, df)
 
                 for _, row in df[["ctk", "cccl"]].drop_duplicates().iterrows():
                     ctk_version = row["ctk"]
@@ -260,7 +468,15 @@ def iterate_case_dfs(args, callable):
                     for gpu in ctk_cub_df["gpu"].unique():
                         target_df = ctk_cub_df[ctk_cub_df["gpu"] == gpu]
                         target_df = target_df.drop(columns=["ctk", "cccl", "gpu"])
+                        target_df = drop_unweighable_rows(
+                            target_df, declared_axes[subbench].get(cccl_version)
+                        )
                         target_df = compute_speedup(target_df)
+
+                        # Put the version back, once it is no longer a column
+                        # `compute_speedup` would match base against variant on.
+                        # `extract_scores` weighs each version on its own.
+                        target_df["cccl"] = cccl_version
 
                         for key in exact_values:
                             if key in target_df.columns:
@@ -287,11 +503,14 @@ def iterate_case_dfs(args, callable):
                                     [case_dfs[point_str][subbench], case_df]
                                 )
 
+        check_axis_space_recorded(algname, declared_axes, measured_values)
+        report_undeclared_values(algname, declared_axes, measured_values)
+
         for point_str in case_dfs:
-            callable(algname, point_str, case_dfs[point_str])
+            callable(algname, point_str, case_dfs[point_str], declared_axes)
 
 
-def case_top(alpha, N, algname, ct_point_name, case_dfs):
+def case_top(alpha, N, algname, ct_point_name, case_dfs, declared_axes):
     print("{}[{}]:".format(algname, ct_point_name))
 
     if alpha < 1.0:
@@ -300,17 +519,29 @@ def case_top(alpha, N, algname, ct_point_name, case_dfs):
                 alpha, case_dfs[subbench]
             )
 
-    for subbench in case_dfs:
-        case_dfs[subbench] = extract_complete_variants(case_dfs[subbench])
+    dropped = incomplete_variants(case_dfs)
+    if dropped:
+        listed = sorted(dropped)
+        print(
+            "dropped {} variant(s) that did not cover every workload: {}".format(
+                len(listed),
+                ", ".join(listed[:5]) + (", ..." if len(listed) > 5 else ""),
+            )
+        )
+        for subbench in case_dfs:
+            case_dfs[subbench] = case_dfs[subbench][
+                ~case_dfs[subbench]["variant"].isin(dropped)
+            ]
+
     with pd.option_context("display.max_rows", None):
-        print(extract_scores(case_dfs).head(N))
+        print(extract_scores(case_dfs, declared_axes).head(N))
 
 
 def top(args):
     iterate_case_dfs(args, functools.partial(case_top, args.alpha, args.top))
 
 
-def case_coverage(algname, ct_point_name, case_dfs):
+def case_coverage(algname, ct_point_name, case_dfs, declared_axes):
     num_variants = cccl.bench.Config().variant_space_size(algname)
     min_coverage = 100.0
     for subbench in case_dfs:
@@ -427,7 +658,7 @@ def parallel_coordinates_plot(df, title):
     plt.show()
 
 
-def case_coverage_plot(algname, ct_point_name, case_dfs):
+def case_coverage_plot(algname, ct_point_name, case_dfs, declared_axes):
     data_list = []
 
     for subbench in case_dfs:
@@ -459,7 +690,7 @@ def coverage_plot(args):
     iterate_case_dfs(args, case_coverage_plot)
 
 
-def case_pair_plot(algname, ct_point_name, case_dfs):
+def case_pair_plot(algname, ct_point_name, case_dfs, declared_axes):
     import seaborn as sns
 
     data_list = []
@@ -666,7 +897,7 @@ def ratio(data, ax):
             variant_ratio(data, variant, ax)
 
 
-def case_variants(pattern, mode, algname, ct_point_name, case_dfs):
+def case_variants(pattern, mode, algname, ct_point_name, case_dfs, declared_axes):
     for subbench in case_dfs:
         case_df = case_dfs[subbench]
         title = "{}[{}]:".format(algname + "/" + subbench, ct_point_name)
@@ -797,7 +1028,7 @@ def file_exists(value):
     return value
 
 
-def case_offload(algname, ct_point_name, case_dfs):
+def case_offload(algname, ct_point_name, case_dfs, declared_axes):
     for subbench in case_dfs:
         df = case_dfs[subbench]
         for rt_point in extract_rt_space(df):
