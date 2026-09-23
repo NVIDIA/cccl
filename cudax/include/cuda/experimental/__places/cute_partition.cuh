@@ -1939,14 +1939,8 @@ public:
     return ptr;
   }
 
-  void deallocate(void* ptr, size_t, cudaStream_t stream) const override
+  void deallocate(void* ptr, size_t, cudaStream_t) const override
   {
-    // Same contract as data_place_composite: the unmap is immediate, so
-    // honor the stream-ordered free protocol by waiting for the stream.
-    if (stream != nullptr)
-    {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-    }
     deallocate_composite_data_place(ptr);
   }
 

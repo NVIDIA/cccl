@@ -2044,17 +2044,14 @@ public:
     return (grid_ < o.grid_) ? -1 : 1;
   }
 
-  void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
-    // A byte count is a 1-D tensor of bytes: this is what every byte-oriented
-    // allocator interface (std, thrust, cuco, cuda::mr) can offer, and it is
-    // how a container's storage lands on a composite place without knowing
-    // about places at all. The partitioner then maps BYTE coordinates; a
-    // partitioner written in element units for a typed allocation
-    // (tiled_partition<T> ...) must be paired with allocate_nd instead.
-    // Placement is quantized to the VMM granularity anyway, so no element
-    // ever straddles two owners.
-    return allocate_nd(dim4(static_cast<size_t>(size)), 1, stream);
+    // A byte count alone does not carry the tensor geometry the partitioner
+    // needs (it maps element coordinates to places), so there is no meaningful
+    // way to service this request.
+    _CCCL_THROW(::std::runtime_error,
+                "composite data_place cannot allocate from a byte count alone: use allocate_nd(data_dims, elemsize) or "
+                "allocate through a logical data");
   }
 
   void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
@@ -2062,15 +2059,8 @@ public:
     return allocate_composite_data_place(*this, data_dims, elemsize);
   }
 
-  void deallocate(void* ptr, size_t, cudaStream_t stream) const override
+  void deallocate(void* ptr, size_t, cudaStream_t) const override
   {
-    // The unmap is immediate, not stream-ordered: callers that free through
-    // the stream-ordered allocator protocol expect in-flight work on the
-    // stream to be done with the memory, so wait for it here.
-    if (stream != nullptr)
-    {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-    }
     deallocate_composite_data_place(ptr);
   }
 
