@@ -6,7 +6,7 @@
 #include <cuda/std/execution>
 #include <cuda/stream>
 
-#include <c2h/catch2_test_macros.h>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/device_and_stream.h>
 
 struct stream_convertible
