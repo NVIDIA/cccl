@@ -14,10 +14,15 @@
 #include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/limits>
 #include <cuda/std/memory>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
+
+#if TEST_HAS_EXCEPTIONS()
+#  include <new>
+#endif // TEST_HAS_EXCEPTIONS()
 
 TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
@@ -95,6 +100,34 @@ TEST_HOST_DEVICE_FUNC void test_uninitialized_storage(cuda::std::size_t n)
   }
 }
 
+#if TEST_HAS_EXCEPTIONS()
+template <class T>
+void test_too_large_count_throws_bad_alloc()
+{
+  static_assert(sizeof(T) > 1, "");
+  cuda::std::size_t too_large = cuda::std::numeric_limits<cuda::std::size_t>::max() / sizeof(T) + 1;
+  try
+  {
+    cuda::__simple_vector<T> vec(too_large, cuda::no_init);
+    unused(vec);
+    assert(false);
+  }
+  catch (const std::bad_alloc&)
+  {}
+  catch (...)
+  {
+    assert(false);
+  }
+}
+
+void test_exceptions()
+{
+  test_too_large_count_throws_bad_alloc<int>();
+  test_too_large_count_throws_bad_alloc<NoDefault>();
+  test_too_large_count_throws_bad_alloc<OverAligned>();
+}
+#endif // TEST_HAS_EXCEPTIONS()
+
 TEST_HOST_DEVICE_FUNC void test()
 {
   test_default_constructed<int>();
@@ -113,5 +146,8 @@ TEST_HOST_DEVICE_FUNC void test()
 int main(int, char**)
 {
   test();
+#if TEST_HAS_EXCEPTIONS()
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }
