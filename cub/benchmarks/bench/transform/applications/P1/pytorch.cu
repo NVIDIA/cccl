@@ -70,8 +70,8 @@ using opmath_type = typename opmath_type_impl<T>::type;
 // ============================================================================
 
 // c10::div_floor_floating (c10/util/generic_math.h:34)
-template <typename scalar_t>
-__device__ __forceinline__ scalar_t div_floor_floating(scalar_t a, scalar_t b)
+template <typename ScalarT>
+__device__ __forceinline__ ScalarT div_floor_floating(ScalarT a, ScalarT b)
 {
   if (b == 0)
   {
@@ -82,37 +82,37 @@ __device__ __forceinline__ scalar_t div_floor_floating(scalar_t a, scalar_t b)
   auto div = (a - mod) / b;
   if ((mod != 0) && (b < 0) != (mod < 0))
   {
-    div -= scalar_t(1);
+    div -= ScalarT(1);
   }
 
-  scalar_t floordiv;
+  ScalarT floordiv;
   if (div != 0)
   {
     floordiv = std::floor(div);
-    if (div - floordiv > scalar_t(0.5))
+    if (div - floordiv > ScalarT(0.5))
     {
-      floordiv += scalar_t(1.0);
+      floordiv += ScalarT(1.0);
     }
   }
   else
   {
-    floordiv = ::copysignf(scalar_t(0), a / b);
+    floordiv = ::copysignf(ScalarT(0), a / b);
   }
   return floordiv;
 }
 
 // is_lerp_weight_small + lerp (native/Lerp.h:11,21)
-template <typename scalar_t>
-__device__ __forceinline__ bool is_lerp_weight_small(scalar_t weight)
+template <typename ScalarT>
+__device__ __forceinline__ bool is_lerp_weight_small(ScalarT weight)
 {
-  return std::abs(weight) < scalar_t(0.5);
+  return std::abs(weight) < ScalarT(0.5);
 }
 
-template <typename scalar_t, typename weight_t>
-__device__ __forceinline__ scalar_t aten_lerp(scalar_t self_, scalar_t end_, weight_t weight_)
+template <typename ScalarT, typename WeightT>
+__device__ __forceinline__ ScalarT aten_lerp(ScalarT self_, ScalarT end_, WeightT weight_)
 {
-  using opmath_t        = opmath_type<scalar_t>;
-  using opmath_weight_t = opmath_type<weight_t>;
+  using opmath_t        = opmath_type<ScalarT>;
+  using opmath_weight_t = opmath_type<WeightT>;
 
   const opmath_t self          = self_;
   const opmath_t end           = end_;
@@ -122,13 +122,13 @@ __device__ __forceinline__ scalar_t aten_lerp(scalar_t self_, scalar_t end_, wei
 }
 
 // pointwise_op_impl (native/cuda/DeviceAddCmulCdiv.cuh:9)
-template <typename opmath_t, typename Op>
-__device__ __forceinline__ opmath_t
-pointwise_op_impl(opmath_t input, opmath_t tensor1, opmath_t tensor2, opmath_t alpha, Op op)
+template <typename OpmathT, typename Op>
+__device__ __forceinline__ OpmathT
+pointwise_op_impl(OpmathT input, OpmathT tensor1, OpmathT tensor2, OpmathT alpha, Op op)
 {
-  if (alpha == opmath_t(1))
+  if (alpha == OpmathT(1))
   {
-    if constexpr (std::is_same_v<Op, std::multiplies<opmath_t>> && std::is_floating_point_v<opmath_t>)
+    if constexpr (std::is_same_v<Op, std::multiplies<OpmathT>> && std::is_floating_point_v<OpmathT>)
     {
       return std::fma(tensor1, tensor2, input);
     }
@@ -137,7 +137,7 @@ pointwise_op_impl(opmath_t input, opmath_t tensor1, opmath_t tensor2, opmath_t a
       return input + op(tensor1, tensor2);
     }
   }
-  if constexpr (std::is_floating_point_v<opmath_t>)
+  if constexpr (std::is_floating_point_v<OpmathT>)
   {
     return std::fma(alpha, op(tensor1, tensor2), input);
   }
@@ -148,10 +148,10 @@ pointwise_op_impl(opmath_t input, opmath_t tensor1, opmath_t tensor2, opmath_t a
 }
 
 // DivFunctor (native/cuda/BinaryInternal.h:20)
-template <typename scalar_t>
+template <typename ScalarT>
 struct DivFunctor
 {
-  __device__ scalar_t operator()(scalar_t a, scalar_t b) const
+  __device__ ScalarT operator()(ScalarT a, ScalarT b) const
   {
     return a / b;
   }
@@ -169,17 +169,17 @@ struct MulFunctor
 
 // CUDAFunctorOnSelf_add — torchgen-generated ufunc functor for add(tensor, scalar)
 // (torchgen/dest/ufunc.py, native/ufunc/add.h:14)
-template <typename scalar_t>
+template <typename ScalarT>
 struct CUDAFunctorOnSelf_add
 {
-  using opmath_t = opmath_type<scalar_t>;
+  using opmath_t = opmath_type<ScalarT>;
   opmath_t other_;
   opmath_t alpha_;
   CUDAFunctorOnSelf_add(opmath_t other, opmath_t alpha)
       : other_(other)
       , alpha_(alpha)
   {}
-  __device__ scalar_t operator()(scalar_t self) const
+  __device__ ScalarT operator()(ScalarT self) const
   {
     return static_cast<opmath_t>(self) + alpha_ * other_;
   }
@@ -187,25 +187,25 @@ struct CUDAFunctorOnSelf_add
 
 // CUDAFunctor_add — torchgen-generated ufunc functor for add(tensor, tensor)
 // (torchgen/dest/ufunc.py, native/ufunc/add.h:14)
-template <typename scalar_t>
+template <typename ScalarT>
 struct CUDAFunctor_add
 {
-  using opmath_t = opmath_type<scalar_t>;
+  using opmath_t = opmath_type<ScalarT>;
   opmath_t alpha_;
   CUDAFunctor_add(opmath_t alpha)
       : alpha_(alpha)
   {}
-  __device__ scalar_t operator()(scalar_t self, scalar_t other) const
+  __device__ ScalarT operator()(ScalarT self, ScalarT other) const
   {
     return static_cast<opmath_t>(self) + alpha_ * static_cast<opmath_t>(other);
   }
 };
 
 // AbsFunctor (native/cuda/AbsKernel.cu:11)
-template <typename scalar_t>
+template <typename ScalarT>
 struct AbsFunctor
 {
-  __device__ __forceinline__ scalar_t operator()(const scalar_t a) const
+  __device__ __forceinline__ ScalarT operator()(const ScalarT a) const
   {
     return std::abs(a);
   }
@@ -220,13 +220,13 @@ enum class OpType
   LT
 };
 
-template <typename scalar_t>
+template <typename ScalarT>
 struct CompareFunctor
 {
   constexpr CompareFunctor(OpType op)
       : op_(op) {};
   OpType op_;
-  __device__ __forceinline__ bool operator()(scalar_t a, scalar_t b) const
+  __device__ __forceinline__ bool operator()(ScalarT a, ScalarT b) const
   {
     if (op_ == OpType::GE)
     {
@@ -306,6 +306,8 @@ void transform(Input input, Output output, int64_t n, TransformOp op, cudaStream
 
 #ifdef TUNE_T
 using element_types = nvbench::type_list<TUNE_T>;
+#elif _CCCL_STD_VER >= 2023 // C++23 std::float32_t is not supported on device
+using element_types = nvbench::type_list<float, double>;
 #else
 using element_types = nvbench::type_list<float, BFloat16>;
 #endif
@@ -525,10 +527,10 @@ try
 
   // Captured scalar parameters, matching how ATen sets them up before gpu_kernel
   using opmath_t = opmath_type<T>;
-  T beta_val(1.0); // smooth_l1: scalar_t beta_val(beta)
-  T delta_val(1.0); // huber: scalar_t delta_val(delta)
-  // note: opmath_type is same as at::acc_type<scalar_t, true> here
-  using accscalar_t     = opmath_type<T>; // addcmul: at::acc_type<scalar_t, true>
+  T beta_val(1.0); // smooth_l1: ScalarT beta_val(beta)
+  T delta_val(1.0); // huber: ScalarT delta_val(delta)
+  // note: opmath_type is same as at::acc_type<ScalarT, true> here
+  using accscalar_t     = opmath_type<T>; // addcmul: at::acc_type<ScalarT, true>
   const auto alpha      = accscalar_t(1); // addcmul: value.to<accscalar_t>()
   const auto weight_val = opmath_t(4.0); // lerp scalar: weight.to<opmath_t>()
 
@@ -666,7 +668,7 @@ try
 
   // Captured scalar parameters
   using opmath_t        = opmath_type<T>;
-  const auto exp_val    = T(2.5); // pow: exp_scalar.to<scalar_t>()
+  const auto exp_val    = T(2.5); // pow: exp_scalar.to<ScalarT>()
   const auto beta       = opmath_t(1); // softplus: beta_.to<opmath_t>()
   const auto threshold  = opmath_t(20); // softplus: threshold_.to<opmath_t>()
   const auto negcoef    = opmath_t(1) * opmath_t(1); // elu: alpha * scale
@@ -843,7 +845,7 @@ try
   const opmath_t six(6.0f);
 
   // hardshrink: native/cuda/ActivationHardshrinkKernel.cu:29
-  const auto lambd = T(0.5); // value.to<scalar_t>()
+  const auto lambd = T(0.5); // value.to<ScalarT>()
 
   // gt scalar: native/cuda/CompareKernels.cu:47
   const T rhs(0);

@@ -339,3 +339,79 @@ def test_stateful_operator_infers_its_output_type(result):
     compiled = to_jit_op_adapter(op).compile((int32,))
 
     assert compiled.name.startswith("wrapped_op")
+
+
+@pytest.mark.thread_unsafe(
+    reason="Clears the process-wide caches, which a concurrent instance would race."
+)
+def test_clear_all_caches_drops_compiled_device_code():
+    """clear_all_caches() must make the next build cold, not just empty the memos.
+
+    Building an algorithm compiles in two places: numba-cuda-mlir compiles the
+    Python operator, and the C library compiles and links the CUB kernel. A
+    clear has to reach both, otherwise the next build only redoes the kernel
+    and reuses the memoized operator code. Device code memoized on a live
+    iterator object is object state the clear does not reach; that caveat is
+    pinned down here so it stays documented behavior.
+    """
+    import numpy as np
+    from _utils.device_array import DeviceArray
+
+    import cuda.compute
+    from cuda.compute import CountingIterator, OpKind, TransformIterator
+    from cuda.compute._cpp_compile import compile_cpp_op_code, compile_cpp_to_ltoir
+    from cuda.compute._jit import _compile_op_impl
+    from cuda.compute.algorithms._select import _always_false_op
+
+    def add_one(x):
+        return x + 1
+
+    def make_iter():
+        return TransformIterator(CountingIterator(np.int32(0)), add_one)
+
+    def run_reduce(d_in):
+        d_out = DeviceArray.empty(1, np.int32)
+        cuda.compute.reduce_into(
+            d_in=d_in,
+            d_out=d_out,
+            op=OpKind.PLUS,
+            h_init=np.array([0], dtype=np.int32),
+            num_items=8,
+        )
+        assert d_out.copy_to_host()[0] == sum(range(1, 9))
+
+    def run_select():
+        h_in = np.arange(8, dtype=np.int32)
+        d_out = DeviceArray.empty(8, np.int32)
+        d_num = DeviceArray.empty(1, np.uint64)
+        cuda.compute.select(
+            d_in=DeviceArray.from_numpy(h_in),
+            d_out=d_out,
+            d_num_selected_out=d_num,
+            cond=lambda x: x % 2 == 0,
+            num_items=8,
+        )
+        assert int(d_num.copy_to_host()[0]) == 4
+
+    memos = (_compile_op_impl, compile_cpp_op_code, _always_false_op)
+
+    first = make_iter()
+    run_reduce(first)
+    run_select()
+    assert all(m.cache_info().currsize > 0 for m in memos)
+
+    cuda.compute.clear_all_caches()
+    assert all(m.cache_info().currsize == 0 for m in memos)
+    assert compile_cpp_to_ltoir.cache_info().currsize == 0
+
+    # cache_clear() also zeroes the counters, so a rebuild with fresh objects
+    # is cold exactly when every memo misses again.
+    run_reduce(make_iter())
+    run_select()
+    assert all(m.cache_info().misses > 0 for m in memos)
+
+    # Reusing the live iterator relinks the ops memoized on it: no recompile.
+    cuda.compute.clear_all_caches()
+    run_reduce(first)
+    assert _compile_op_impl.cache_info().misses == 0
+    assert compile_cpp_op_code.cache_info().misses == 0

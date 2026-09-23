@@ -47,14 +47,14 @@
 /**
  * Assert equals
  */
-#define AssertEquals(a, b)                                                                           \
+#define AssertEquals(a, b) /* NOLINT(readability-identifier-naming) */                               \
   if ((a) != (b))                                                                                    \
   {                                                                                                  \
     std::cerr << "\n" << __FILE__ << ": " << __LINE__ << ": AssertEquals(" #a ", " #b ") failed.\n"; \
     exit(1);                                                                                         \
   }
 
-#define AssertTrue(a)                                                                      \
+#define AssertTrue(a) /* NOLINT(readability-identifier-naming) */                          \
   if (!(a))                                                                                \
   {                                                                                        \
     std::cerr << "\n" << __FILE__ << ": " << __LINE__ << ": AssertTrue(" #a ") failed.\n"; \
@@ -673,6 +673,30 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 
   return os;
 }
+
+// NVHPC incorrectly identifies 128-bit integers as stream-insertable in Catch2's detection trait, but then fails to
+// select the global stream insertion overloads above. Explicit string makers bypass the faulty detection.
+template <>
+struct Catch::StringMaker<__uint128_t>
+{
+  static std::string convert(__uint128_t val)
+  {
+    std::ostringstream os;
+    ::operator<<(os, val);
+    return os.str();
+  }
+};
+
+template <>
+struct Catch::StringMaker<__int128_t>
+{
+  static std::string convert(__int128_t val)
+  {
+    std::ostringstream os;
+    ::operator<<(os, val);
+    return os.str();
+  }
+};
 #endif
 
 /******************************************************************************
@@ -1439,10 +1463,10 @@ struct GpuTimer
   }
 };
 
-template <int ELEMENTS_PER_OBJECT_ = 128>
+template <int ElementsPerObjectParam = 128>
 struct HugeDataType
 {
-  static constexpr int ELEMENTS_PER_OBJECT = ELEMENTS_PER_OBJECT_;
+  static constexpr int ELEMENTS_PER_OBJECT = ElementsPerObjectParam;
 
   __device__ __host__ HugeDataType()
   {
@@ -1483,11 +1507,11 @@ struct HugeDataType
   int data[ELEMENTS_PER_OBJECT];
 };
 
-template <int ELEMENTS_PER_OBJECT>
+template <int ElementsPerObject>
 inline __device__ __host__ bool
-operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
+operator==(const HugeDataType<ElementsPerObject>& lhs, const HugeDataType<ElementsPerObject>& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] != rhs.data[i])
     {
@@ -1498,11 +1522,11 @@ operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEM
   return true;
 }
 
-template <int ELEMENTS_PER_OBJECT>
+template <int ElementsPerObject>
 inline __device__ __host__ bool
-operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
+operator<(const HugeDataType<ElementsPerObject>& lhs, const HugeDataType<ElementsPerObject>& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] < rhs.data[i])
     {
@@ -1513,10 +1537,10 @@ operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEME
   return false;
 }
 
-template <typename DataType, int ELEMENTS_PER_OBJECT>
-__device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const DataType& rhs)
+template <typename DataType, int ElementsPerObject>
+__device__ __host__ bool operator!=(const HugeDataType<ElementsPerObject>& lhs, const DataType& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] != rhs)
     {
@@ -1527,14 +1551,14 @@ __device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs
   return false;
 }
 
-template <int ELEMENTS_PER_OBJECT>
-std::ostream& operator<<(std::ostream& os, const HugeDataType<ELEMENTS_PER_OBJECT>& val)
+template <int ElementsPerObject>
+std::ostream& operator<<(std::ostream& os, const HugeDataType<ElementsPerObject>& val)
 {
   os << '(';
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     os << CoutCast(val.data[i]);
-    if (i < ELEMENTS_PER_OBJECT - 1)
+    if (i < ElementsPerObject - 1)
     {
       os << ',';
     }

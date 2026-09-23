@@ -5,8 +5,6 @@
 
 #include <thrust/detail/config/device_system.h>
 
-#include <c2h/detail/generators.cuh>
-
 //! @file
 //! This file includes a custom Catch2 main function. When CMake is configured to build each test as a separate
 //! executable, this header is included into each test. On the other hand, when all the tests are compiled into a single
@@ -43,9 +41,6 @@ int main(int argc, char* argv[])
 
   set_device(device_id);
 #  endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-  c2h::detail::init_generator();
-  const auto ret = session.run();
-  c2h::detail::cleanup_generator();
-  return ret;
+  return session.run();
 }
 #endif // C2H_CONFIG_MAIN

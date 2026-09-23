@@ -486,18 +486,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceTopK to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    log_dispatch("DeviceTopK", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    detail::log_dispatch("DeviceTopK", cc, active_policy);
     using key_in_t                  = it_value_t<KeyInputIteratorT>;
     using value_in_t                = it_value_t<ValueInputIteratorT>;
     static constexpr bool keys_only = ::cuda::std::is_same_v<value_in_t, NullType>;
@@ -604,23 +593,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
     const auto topk_grid_size            = (::cuda::std::min) (main_kernel_max_occupancy, num_tiles);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
-            "%lld>>>(), %d items per thread, %d SM occupancy\n",
-            topk_grid_size,
-            threads_per_block,
-            (long long) stream,
-            items_per_thread,
-            main_kernel_blocks_per_sm);
-#else // CUB_DEBUG_LOG
-    log("Invoking topk_kernel<<<%d, %d, 0, "
-        "%lld>>>(), %d items per thread, %d SM occupancy\n",
-        topk_grid_size,
-        threads_per_block,
-        (long long) stream,
-        items_per_thread,
-        main_kernel_blocks_per_sm);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "topk_kernel", topk_grid_size, 1, 1, threads_per_block, 0, stream, ", SM occupancy: %d", main_kernel_blocks_per_sm);
 
     // Initialize address variables
     counter_t* counter = static_cast<counter_t*>(allocations[0]);

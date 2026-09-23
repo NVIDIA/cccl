@@ -23,9 +23,8 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__mdspan/__copy/types.h>
 #  include <cuda/std/__cstddef/types.h>
-
-#  include <cuda/experimental/__copy_bytes/types.cuh>
 
 #  include <cstdio>
 

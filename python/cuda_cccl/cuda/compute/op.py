@@ -10,9 +10,14 @@ import sys
 import sysconfig
 import warnings
 
-from ._bindings import Op, OpKind
+from ._bindings import Op, OpKind, TypeEnum
 from ._caching import CachableFunction, cache_with_registered_key_functions
 from ._device_code import DeviceCode
+
+try:
+    from ._build_info import USING_V2  # type: ignore[import-not-found]
+except ImportError:
+    USING_V2 = False
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -77,6 +82,14 @@ class _WellKnownOp(_OpAdapter):
         self._kind = kind
 
     def compile(self, input_types, output_type=None) -> Op:
+        # V2 supports some built-in operations on storage types, such as IDENTITY.
+        if not USING_V2:
+            for t in (*input_types, output_type):
+                if t is not None and t.info.typenum == TypeEnum.STORAGE:
+                    raise TypeError(
+                        f"OpKind.{self._kind.name} is not supported for struct or other "
+                        f"opaque types ({t.dtype}). Provide a custom operator instead."
+                    )
         return Op(
             operator_type=self._kind,
             name="",
@@ -226,7 +239,11 @@ def _jit_op_adapter_factory():
 
         return to_jit_op_adapter
     except ModuleNotFoundError as e:
-        if "numba" in str(e):
+        # The minimal extras ship no JIT backend at all, so this is the error a
+        # minimal-install user sees when they pass a Python callable. Prefer the
+        # structured module name; fall back to the message for errors raised
+        # without one.
+        if "numba_cuda_mlir" in (e.name or str(e)):
 
             def _missing_jit_adapter(op):
                 raise ImportError(
@@ -238,12 +255,11 @@ def _jit_op_adapter_factory():
 
 
 # Resolved lazily on the first Python-callable operator (see
-# _get_jit_op_adapter) so that `import cuda.compute` never imports numba.
-# Importing numba eagerly would make every consumer pay its import cost, would
-# turn a broken numba installation into a package-wide import failure, and on
-# free-threaded CPython would re-enable the GIL for the whole process before
-# any user code runs -- even for users who only ever pass OpKind/RawOp
-# operators.
+# _get_jit_op_adapter) so that `import cuda.compute` never imports the JIT
+# backend. Importing it eagerly would make every consumer pay its import cost,
+# would turn a broken backend installation into a package-wide import failure,
+# and would fail outright on the minimal extras, which do not install it --
+# even for users who only ever pass OpKind/RawOp operators.
 _jit_adapter = None
 
 
@@ -259,7 +275,7 @@ def _get_jit_op_adapter():
         _jit_adapter = _jit_op_adapter_factory()
         if gil_was_off and sys._is_gil_enabled():
             warnings.warn(
-                "Compiling a Python callable operator imported numba, which "
+                "Compiling a Python callable operator imported a module that "
                 "re-enabled the GIL for this process. To keep free-threaded "
                 "execution, use OpKind or RawOp (pre-compiled LTO-IR) "
                 "operators instead of Python callables.",

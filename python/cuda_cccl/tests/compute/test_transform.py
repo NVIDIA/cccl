@@ -17,6 +17,11 @@ from cuda.compute import (
     serialize,
 )
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
 
 def unary_transform_host(h_input: np.ndarray, op):
     return np.vectorize(op)(h_input)
@@ -263,7 +268,7 @@ def test_unary_transform_well_known_negate():
     np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
-def test_unary_transform_well_known_identity():
+def test_unary_transform_well_known_identity_int32():
     """Test unary transform with well-known IDENTITY operation."""
     dtype = np.int32
     h_input = np.array([1, 2, 3, 4, 5], dtype=dtype)
@@ -278,6 +283,50 @@ def test_unary_transform_well_known_identity():
     # Check the result is correct
     expected = np.array([1, 2, 3, 4, 5])
     np.testing.assert_equal(d_output.copy_to_host(), expected)
+
+
+@pytest.mark.no_numba
+@pytest.mark.parametrize("structured", [True, False], ids=["struct", "complex"])
+def test_unary_transform_well_known_identity_storage(structured):
+    Point = gpu_struct({"x": np.int32, "y": np.int32})
+    if structured:
+        h_in = np.array([(1, 2), (-3, 4), (5, -6), (7, 8)], dtype=Point.dtype)
+    else:
+        h_in = np.array([1 + 2j, -3 + 4j, 5 - 6j, 7 + 8j], dtype=np.complex64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    if USING_V2:
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=OpKind.IDENTITY, num_items=h_in.size
+        )
+        np.testing.assert_array_equal(d_out.copy_to_host(), h_in)
+    else:
+        with pytest.raises(
+            TypeError,
+            match=r"OpKind\.IDENTITY is not supported for struct or other opaque types.*"
+            r"Provide a custom operator instead\.",
+        ):
+            cuda.compute.unary_transform(
+                d_in=d_in, d_out=d_out, op=OpKind.IDENTITY, num_items=h_in.size
+            )
+
+
+@pytest.mark.no_numba
+@pytest.mark.skipif(USING_V2, reason="storage type rejection is specific to V1")
+@pytest.mark.parametrize("storage_position", [0, 1, 2], ids=["in1", "in2", "out"])
+def test_binary_transform_well_known_storage_types(storage_position):
+    Point = gpu_struct({"x": np.int32, "y": np.int32})
+    dtypes = [np.int32, np.int32, np.int32]
+    dtypes[storage_position] = Point.dtype
+    d_in1, d_in2, d_out = [DeviceArray.empty(4, dtype) for dtype in dtypes]
+
+    with pytest.raises(
+        TypeError,
+        match=r"OpKind\.PLUS is not supported for struct or other opaque types.*"
+        r"Provide a custom operator instead\.",
+    ):
+        make_binary_transform(d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=OpKind.PLUS)
 
 
 def test_unary_transform_well_known_bit_not():
@@ -349,7 +398,7 @@ def test_binary_transform_well_known_multiplies():
         pytest.param(OpKind.LOGICAL_OR, np.logical_or, id="logical_or"),
     ],
 )
-def test_binary_transform_well_known_logical(op, host_op):
+def test_binary_transform_well_known_logical_ops(op, host_op):
     h_input1 = np.array([True, True, False, False], dtype=np.bool_)
     h_input2 = np.array([True, False, True, False], dtype=np.bool_)
     d_input1 = DeviceArray.from_numpy(h_input1)

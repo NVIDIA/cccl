@@ -16,6 +16,7 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_cuda_integer atomic.cuda_integer value
     --case inspect_cuda_reference atomic.cuda_reference value
     --case inspect_cuda_device_integer atomic.cuda_device_integer value
+    --case inspect_cuda_cluster_integer atomic.cuda_cluster_integer value
     --case inspect_cuda_block_reference atomic.cuda_block_reference value
     --case inspect_cuda_thread_integer atomic.cuda_thread_integer value
     --case inspect_before_update atomic.update.before value

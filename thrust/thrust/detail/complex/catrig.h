@@ -520,9 +520,9 @@ _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
   }
   /* cacosh(NaN + I*+-Inf) = +Inf + I*NaN */
   /* cacosh(+-Inf + I*NaN) = +Inf + I*NaN */
-  if (isnan(rx))
+  if (::cuda::std::isnan(rx))
   {
-    return (complex<double>(fabs(ry), rx));
+    return (complex<double>(::cuda::std::fabs(ry), rx));
   }
   /* cacosh(0 + I*NaN) = NaN + I*NaN */
   if (::cuda::std::isnan(ry))

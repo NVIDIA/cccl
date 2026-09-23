@@ -73,20 +73,18 @@ void TestSetSymmetricDifferenceByKeyDevice(ExecutionPolicy exec)
   test_runtime::assert_equal(stream, result_val, {0, 1, 1, 0, 1});
 }
 
-void TestSetSymmetricDifferenceByKeyDeviceSeq()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDeviceSeq", "[set_symmetric_difference_by_key]")
 {
   TestSetSymmetricDifferenceByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDeviceSeq);
 
-void TestSetSymmetricDifferenceByKeyDeviceDevice()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDeviceDevice", "[set_symmetric_difference_by_key]")
 {
   TestSetSymmetricDifferenceByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDeviceDevice);
 #endif
 
-void TestSetSymmetricDifferenceByKeyCudaStreams()
+TEST_CASE("TestSetSymmetricDifferenceByKeyCudaStreams", "[set_symmetric_difference_by_key]")
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -109,9 +107,8 @@ void TestSetSymmetricDifferenceByKeyCudaStreams()
     result_key.begin(),
     result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   test_runtime::assert_equal(stream, result_key, {2, 3, 3, 6, 7});
   test_runtime::assert_equal(stream, result_val, {0, 1, 1, 0, 1});
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyCudaStreams);

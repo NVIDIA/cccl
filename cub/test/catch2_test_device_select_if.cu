@@ -13,7 +13,6 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
-#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/execution>
@@ -24,6 +23,7 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
@@ -222,25 +222,21 @@ CUB_TEST("DeviceSelect::If works with user provided memory and environment", "[d
     REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::equal_to_value{type{}}));
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
   SECTION("DeviceSelect::If works with cudaStream_t")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_select_if(stream.get());
   }
 
   SECTION("DeviceSelect::If works with cuda::stream")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_select_if(stream);
   }
 
   SECTION("DeviceSelect::If works with cuda::stream_ref")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     const cuda::stream_ref stream_ref{stream};
     test_select_if(stream_ref);
   }
@@ -259,8 +255,8 @@ CUB_TEST("DeviceSelect::If works with user provided memory and environment", "[d
 
   SECTION("DeviceSelect::If works with cuda::execution::gpu with stream")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    const cuda::stream stream = c2h::make_current_device_stream();
+    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_select_if(policy);
   }
 }
@@ -311,25 +307,21 @@ CUB_TEST("DeviceSelect::If works in place with user provided memory and environm
     REQUIRE(thrust::all_of(c2h::device_policy, in.begin(), boundary, le));
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
   SECTION("DeviceSelect::If works with cudaStream_t")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_select_if(stream.get());
   }
 
   SECTION("DeviceSelect::If works with cuda::stream")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     test_select_if(stream);
   }
 
   SECTION("DeviceSelect::If works with cuda::stream_ref")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream = c2h::make_current_device_stream();
     const cuda::stream_ref stream_ref{stream};
     test_select_if(stream_ref);
   }
@@ -348,8 +340,8 @@ CUB_TEST("DeviceSelect::If works in place with user provided memory and environm
 
   SECTION("DeviceSelect::If works with cuda::execution::gpu with stream")
   {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    const cuda::stream stream = c2h::make_current_device_stream();
+    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_select_if(policy);
   }
 }
