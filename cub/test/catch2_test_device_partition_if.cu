@@ -19,10 +19,10 @@
 #include <algorithm>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
@@ -233,43 +233,7 @@ CUB_TEST(
     REQUIRE(reference == out);
   };
 
-  SECTION("DevicePartition::If works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_partition_if(stream.get());
-  }
-
-  SECTION("DevicePartition::If works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_partition_if(stream);
-  }
-
-  SECTION("DevicePartition::If works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_partition_if(stream_ref);
-  }
-
-  SECTION("DevicePartition::If works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_partition_if(env);
-  }
-
-  SECTION("DevicePartition::If works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_partition_if(policy);
-  }
-
-  SECTION("DevicePartition::If works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_partition_if(policy);
-  }
+  test_with_custom_streams(test_partition_if);
 }
 #endif // TEST_LAUNCH == 0
 
