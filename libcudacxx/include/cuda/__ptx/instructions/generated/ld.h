@@ -1,7 +1,7 @@
 // This file was automatically generated. Do not edit.
 
 // clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
-// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #ifndef _CUDA_PTX_GENERATED_LD_H_
 #define _CUDA_PTX_GENERATED_LD_H_
@@ -4166,6 +4166,6 @@ _CCCL_DEVICE_API _B256 ld_nc_L1_no_allocate_L2_cache_hint(
 }
 #endif // __cccl_ptx_isa >= 880
 
-// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #endif // _CUDA_PTX_GENERATED_LD_H_
