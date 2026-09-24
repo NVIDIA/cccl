@@ -1460,7 +1460,7 @@ UNITTEST("context launch specific exec places")
 inline void unit_test_context_launch_sync()
 {
   // OK with this (workaround)
-  const stream_ctx ctx;
+  stream_ctx ctx;
 
   // does not compile with context
   // context ctx;
@@ -1549,7 +1549,7 @@ template <typename spec_t>
 inline void unit_test_context_launch_implicit_widths(spec_t spec)
 {
   // OK with this (workaround)
-  const stream_ctx ctx;
+  stream_ctx ctx;
 
   // does not compile with context
   // context ctx;

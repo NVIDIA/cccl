@@ -775,7 +775,7 @@ public:
 
 UNITTEST("movable graph_ctx")
 {
-  const graph_ctx ctx;
+  graph_ctx ctx;
   const graph_ctx ctx2 = mv(ctx);
 };
 
@@ -788,14 +788,14 @@ UNITTEST("copyable graph_ctx")
 
 UNITTEST("movable graph_task<>")
 {
-  const graph_ctx ctx;
+  graph_ctx ctx;
   graph_task<> t           = ctx.task();
   const graph_task<> t_cpy = mv(t);
 };
 
 UNITTEST("set_symbol on graph_task and graph_task<>")
 {
-  const graph_ctx ctx;
+  graph_ctx ctx;
 
   double X[1024], Y[1024];
   auto lX = ctx.logical_data(X);
@@ -830,7 +830,7 @@ namespace reserved
 {
 inline void unit_test_graph_stage()
 {
-  const graph_ctx ctx;
+  graph_ctx ctx;
 
   const size_t N     = 8;
   const size_t NITER = 10;
@@ -878,7 +878,7 @@ UNITTEST("graph with stage")
 
 inline void unit_test_graph_empty_stage()
 {
-  const graph_ctx ctx;
+  graph_ctx ctx;
 
   const size_t N     = 8;
   const size_t NITER = 10;
@@ -928,7 +928,7 @@ UNITTEST("graph with empty stage")
 
 inline void unit_test_graph_stage_2()
 {
-  const graph_ctx ctx;
+  graph_ctx ctx;
 
   const size_t N     = 8;
   const size_t NITER = 10;
@@ -986,7 +986,7 @@ UNITTEST("graph with stage 2")
 
 inline void unit_test_graph_stage_3()
 {
-  const graph_ctx ctx;
+  graph_ctx ctx;
 
   const size_t N     = 8;
   const size_t NITER = 10;
@@ -1058,7 +1058,7 @@ UNITTEST("graph with stage 3")
 
 inline void unit_test_launch_graph()
 {
-  const graph_ctx ctx;
+  graph_ctx ctx;
   SCOPE(exit)
   {
     ctx.finalize();
@@ -1088,7 +1088,7 @@ inline void unit_test_launch_many_graph_ctx()
   // Stress the allocators and all resources !
   for (size_t i = 0; i < 256; i++)
   {
-    const graph_ctx ctx;
+    graph_ctx ctx;
     auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
     ctx.launch(lA.write())->*[] _CCCL_DEVICE(auto t, slice<size_t> A) {
       for (auto i : t.apply_partition(shape(A)))
