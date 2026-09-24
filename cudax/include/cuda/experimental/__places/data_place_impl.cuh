@@ -34,6 +34,7 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/__memory_pool/memory_pool_base.h>
+#include <cuda/__runtime/ensure_current_context.h>
 
 namespace cuda::experimental::places
 {
@@ -255,6 +256,10 @@ public:
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
+    // The device's primary context must be current for a driver allocation on
+    // the null stream (cudaMallocAsync created it on demand; the driver call
+    // does not): libcu++'s scope pushes it, initializing it on first use.
+    const ::cuda::__ensure_current_context __ctx{::cuda::device_ref{device_id_}};
     // The device's default pool, resolved through libcu++'s policy site (which
     // also sets the release threshold): places do not manage pool properties.
     const CUmemoryPool pool = ::cuda::__get_default_memory_pool(
@@ -266,6 +271,7 @@ public:
 
   void deallocate(void* ptr, size_t, cudaStream_t stream) const override
   {
+    const ::cuda::__ensure_current_context __ctx{::cuda::device_ref{device_id_}};
     cuda_try(cuMemFreeAsync(reinterpret_cast<CUdeviceptr>(ptr), reinterpret_cast<CUstream>(stream)));
   }
 
