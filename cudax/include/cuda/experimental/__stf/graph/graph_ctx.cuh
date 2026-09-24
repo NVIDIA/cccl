@@ -228,7 +228,7 @@ class graph_ctx : public backend_ctx<graph_ctx>
       reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
     }
 
-    ~impl() override {}
+    ~impl() override = default;
 
     ::std::string to_string() const override
     {
@@ -744,7 +744,7 @@ private:
       auto e_graph_ptr = graph_instantiate(g);
 
       // Save for future use
-      state.previous_exec_graphs.push_back(::std::make_tuple(nnodes, nedges, e_graph_ptr, stage));
+      state.previous_exec_graphs.emplace_back(nnodes, nedges, e_graph_ptr, stage);
 
       local_exec_graph = *e_graph_ptr;
     }
@@ -777,6 +777,7 @@ UNITTEST("movable graph_ctx")
 UNITTEST("copyable graph_ctx")
 {
   const graph_ctx ctx;
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization) -- the copy is what this test exercises
   const graph_ctx ctx2 = ctx;
 };
 

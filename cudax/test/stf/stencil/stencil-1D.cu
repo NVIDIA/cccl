@@ -152,8 +152,8 @@ int main(int argc, char** argv)
     const int beg = static_cast<int>(b * BLOCK_SIZE);
     const int end = static_cast<int>((b + 1) * BLOCK_SIZE);
 
-    Un.push_back(data_block<double>(beg, end, 1));
-    Un1.push_back(data_block<double>(beg, end, 1));
+    Un.emplace_back(beg, end, 1);
+    Un1.emplace_back(beg, end, 1);
   }
 
   // Fill blocks with initial values

@@ -99,14 +99,9 @@ void compute_residual_full(
 {
   ctx.parallel_for(box(N), residual.write(), U.read(), U_prev.read()).set_symbol("compute_residual_full")
       ->*[N, h, dt, nu] __device__(size_t i, auto dresidual, auto dU, auto dU_prev) {
-            if (i == 0)
+            if (i == 0 || i == N - 1)
             {
-              // Left boundary condition: u[0] = 0
-              dresidual(i) = dU(i) - 0.0;
-            }
-            else if (i == N - 1)
-            {
-              // Right boundary condition: u[N-1] = 0
+              // Boundary conditions: u[0] = u[N-1] = 0
               dresidual(i) = dU(i) - 0.0;
             }
             else

@@ -13,6 +13,7 @@
 
 #include <cstdlib> // For rand() and srand()
 #include <numeric> // accumulate
+#include <random>
 #include <string>
 
 using namespace cuda::experimental::stf;
@@ -167,9 +168,10 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
       //     if (r < 0.5)
       //         res.push_back(j);
       // }
+      static ::std::mt19937 gen(0); // deterministic, as the unseeded rand() was
       for (int k = 0; k < 2; k++)
       {
-        res.push_back(rand() % W);
+        res.push_back(static_cast<int>(gen() % W));
       }
       break;
     default:

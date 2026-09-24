@@ -142,6 +142,7 @@ int main()
   const int num_personalization = 4;
 
   ::std::vector<stackable_logical_data<slice<float>>> lpage_rank_slices;
+  lpage_rank_slices.reserve(num_personalization);
   for (int i = 0; i < num_personalization; i++)
   {
     lpage_rank_slices.push_back(ctx.logical_data(shape_of<slice<float>>(num_vertices)));

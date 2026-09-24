@@ -147,9 +147,9 @@ int main(int argc, char** argv)
   {
     // fprintf(stderr, "Checking result...\n");
     size_t refhist[num_levels - 1];
-    for (size_t i = 0; i < num_levels - 1; i++)
+    for (auto& h : refhist)
     {
-      refhist[i] = 0;
+      h = 0;
     }
 
     for (size_t i = 0; i < N; i++)

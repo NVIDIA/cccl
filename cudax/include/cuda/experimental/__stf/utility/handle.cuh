@@ -82,7 +82,6 @@ public:
   handle(handle&)                  = default;
   handle(const handle&)            = default;
   handle(handle&&)                 = default;
-  handle& operator=(handle&)       = default;
   handle& operator=(const handle&) = default;
   handle& operator=(handle&&)      = default;
   /// @}

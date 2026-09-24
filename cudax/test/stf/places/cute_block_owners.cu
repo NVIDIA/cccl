@@ -58,7 +58,7 @@ namespace
         bp   = e.first;
       }
     }
-    owners.push_back(pos4(bp[0], bp[1], bp[2], bp[3]));
+    owners.emplace_back(bp[0], bp[1], bp[2], bp[3]);
     *misplaced_bytes += (hi - lo) - best;
   }
   return owners;

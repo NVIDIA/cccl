@@ -18,6 +18,7 @@
 #include "cg_solver.cuh"
 #include "dot.cuh"
 
+// NOLINTNEXTLINE(google-global-names-in-headers) -- example header, included only by the example sources
 using namespace cuda::experimental::stf;
 
 /**

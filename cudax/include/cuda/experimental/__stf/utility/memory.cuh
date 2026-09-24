@@ -148,6 +148,7 @@ inline void deallocateHostMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::host_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -187,6 +188,7 @@ inline void deallocateManagedMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::managed_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -246,6 +248,7 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -276,6 +279,7 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -308,6 +312,7 @@ inline cudaGraphNode_t deallocateHostMemory(
       },
     .userData = args.get()};
   const auto result = cuda_try<cudaGraphAddHostNode>(graph, pDependencies, numDependencies, &params);
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
   return result;
 }

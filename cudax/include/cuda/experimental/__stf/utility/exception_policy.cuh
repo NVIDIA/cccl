@@ -1434,13 +1434,12 @@ constexpr bool __value_preserving_impl()
 {
   using _F = typename __integral_base<::cuda::std::remove_cvref_t<_From>>::type;
   using _T = ::cuda::std::remove_cvref_t<_To>;
-  if constexpr (!::cuda::std::is_arithmetic_v<_F> || !::cuda::std::is_arithmetic_v<_T>)
+  if constexpr (!::cuda::std::is_arithmetic_v<_F> || !::cuda::std::is_arithmetic_v<_T>
+                || ::cuda::std::is_floating_point_v<_T>)
   {
-    return true; // non-arithmetic pairs: the is_convertible baseline is the whole law
-  }
-  else if constexpr (::cuda::std::is_floating_point_v<_T>)
-  {
-    return true; // precision loss is tolerated where range loss is not
+    // Non-arithmetic pairs: the is_convertible baseline is the whole law. A floating target:
+    // precision loss is tolerated where range loss is not.
+    return true;
   }
   else if constexpr (::cuda::std::is_floating_point_v<_F>)
   {
@@ -2325,7 +2324,8 @@ private:
             __hit = true;
           }
           else if constexpr (::cuda::std::is_floating_point_v<_Stored>)
-          {
+          { // NOLINT(bugprone-branch-clone) -- same outcome as the last arm for a different reason; one arm is
+            // constexpr
             __found_lossy = true; // floating never converts to integral
           }
           else if (__fits(*__p))
@@ -2334,7 +2334,7 @@ private:
             __hit = true;
           }
           else
-          {
+          { // NOLINT(bugprone-branch-clone)
             __found_lossy = true; // right category, unrepresentable value
           }
         }
@@ -2395,7 +2395,10 @@ public:
   exception_sink& operator=(exception_sink&&) noexcept = default;
   exception_sink& operator=(const exception_sink& __other)
   {
-    __p_.reset(__other.__p_->clone());
+    if (this != &__other)
+    {
+      __p_.reset(__other.__p_->clone());
+    }
     return *this;
   }
 
@@ -2901,7 +2904,7 @@ UNITTEST("on_throw")
   on_throw(notify(log), site) << [] {
     throw 42;
   };
-  ::rewind(log);
+  EXPECT(::fseek(log, 0, SEEK_SET) == 0);
   char message[1024]{};
   char expected[1024]{};
   EXPECT(::fgets(message, sizeof(message), log));
@@ -3338,6 +3341,7 @@ UNITTEST("re-running policies")
     bool escaped = false;
     try
     {
+      // NOLINTNEXTLINE(misc-redundant-expression) -- p | p is what this test exercises
       on_throw(retry | retry) << [&]() -> int {
         ++calls;
         throw ::std::runtime_error("always");
@@ -4501,7 +4505,7 @@ auto operator->*(with_location<exit> where, F&& f)
         , loc(loc)
     {}
     result(result&) = delete;
-    result(result&& rhs)
+    result(result&& rhs) noexcept(::cuda::std::is_nothrow_move_constructible_v<F>)
         : f(mv(rhs.f))
         , loc(rhs.loc)
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
@@ -4555,7 +4559,7 @@ auto operator->*(with_location<fail> where, F&& f)
         , exceptions(exceptions)
     {}
     result(result&) = delete;
-    result(result&& rhs)
+    result(result&& rhs) noexcept(::cuda::std::is_nothrow_move_constructible_v<F>)
         : f(mv(rhs.f))
         , loc(rhs.loc)
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
@@ -4596,7 +4600,7 @@ auto operator->*(success, F&& f)
         , exceptions(exceptions)
     {}
     result(result&) = delete;
-    result(result&& rhs)
+    result(result&& rhs) noexcept(::cuda::std::is_nothrow_move_constructible_v<F>)
         : f(mv(rhs.f))
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}

@@ -109,7 +109,7 @@ private:
       // map against concurrent lookups/insertions which would otherwise race
       // (e.g. a rehash triggered by a new stream pair corrupting buckets being
       // traversed by another thread).
-      const ::std::lock_guard<::std::mutex> guard(mtx);
+      const ::std::scoped_lock guard(mtx);
 
       if (auto i = interactions.find(key); i != interactions.end())
       {

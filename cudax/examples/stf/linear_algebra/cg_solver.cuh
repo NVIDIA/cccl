@@ -18,6 +18,7 @@
 
 #include "dot.cuh"
 
+// NOLINTNEXTLINE(google-global-names-in-headers) -- example header, included only by the example sources
 using namespace cuda::experimental::stf;
 
 #if !_CCCL_CTK_BELOW(12, 4)

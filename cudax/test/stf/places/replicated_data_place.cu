@@ -469,7 +469,9 @@ int main()
       gc_opt.emplace(8, 0);
     }
     catch (...)
-    {}
+    {
+      gc_opt.reset(); // green contexts unavailable: the guarded test below is skipped
+    }
     if (stackable_ok && gc_opt && gc_opt->get_count() >= 2 && conditional_body_multi_context_supported(*gc_opt))
     {
       auto& gc = *gc_opt;

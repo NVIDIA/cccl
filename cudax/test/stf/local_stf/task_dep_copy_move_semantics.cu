@@ -39,6 +39,7 @@ void test_copy_move_semantics(const T& original)
 {
   // Test copy constructor
   {
+    // NOLINTNEXTLINE(performance-unnecessary-copy-initialization) -- the copy is what this test exercises
     T copy_constructed(original);
     (void) copy_constructed; // Suppress unused variable warning
   }
@@ -52,6 +53,7 @@ void test_copy_move_semantics(const T& original)
 
   // Test copy assignment
   {
+    // NOLINTNEXTLINE(performance-unnecessary-copy-initialization) -- the copy is what this test exercises
     T temp(original); // Create a temporary to assign to
     T copy_assigned(original); // Initialize with copy constructor first
     copy_assigned = temp; // Then test copy assignment

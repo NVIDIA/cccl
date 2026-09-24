@@ -48,7 +48,7 @@ int main(int argc, char** argv)
   // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
   int clock_rate;
   cuda_safe_call(cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, 0));
-  long long int clock_cnt = (long long int) (ms * clock_rate);
+  const long long int clock_cnt = static_cast<long long int>(ms) * clock_rate;
 
   graph_ctx ctx;
 

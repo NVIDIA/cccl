@@ -42,7 +42,7 @@ __global__ void add_val(T* inout_addr, T val)
 
 class scalar_sum_t : public stream_reduction_operator<scalar_t>
 {
-public:
+private:
   void op(const scalar_t& in, scalar_t& inout, const exec_place& e, cudaStream_t s) override
   {
     if (e.affine_data_place().is_host())

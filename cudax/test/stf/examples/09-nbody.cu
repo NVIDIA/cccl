@@ -111,9 +111,9 @@ int main()
         p(i).pos[k] += p(i).vel[k] * dt;
       }
 
-      for (size_t k = 0; k < 3; k++)
+      for (auto& a : p(i).acc)
       {
-        p(i).acc[k] = 0.0;
+        a = 0.0;
       }
     };
   };

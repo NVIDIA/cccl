@@ -91,8 +91,8 @@ int main(int argc, char** argv)
   ctx.parallel_for(blocked_partition(), all_devs, lU.shape(), lU.write()).set_symbol("init")->*
     [=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
       const double rad = U.extent(0) / 8.0;
-      const double dx  = (double) i - U.extent(0) / 2;
-      const double dy  = (double) j - U.extent(1) / 2;
+      const double dx  = (double) i - U.extent(0) / 2.0;
+      const double dy  = (double) j - U.extent(1) / 2.0;
 
       U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
 

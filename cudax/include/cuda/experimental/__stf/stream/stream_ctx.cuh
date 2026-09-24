@@ -842,7 +842,7 @@ UNITTEST("logical_data_untyped moveable")
       handle = ctx.logical_data(h_addr, 1);
     }
 
-    scalar& operator=(scalar&& rhs)
+    scalar& operator=(scalar&& rhs) noexcept
     {
       handle = mv(rhs.handle);
       return *this;
@@ -975,9 +975,9 @@ UNITTEST("non contiguous slice")
   // Pinning non contiguous memory is extremely expensive, so we do it now
   cuda_try<cudaHostRegister>(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable);
 
-  for (size_t i = 0; i < 32 * 32; i++)
+  for (auto& x : X)
   {
-    X[i] = 1;
+    x = 1;
   }
 
   // Create a non-contiguous slice

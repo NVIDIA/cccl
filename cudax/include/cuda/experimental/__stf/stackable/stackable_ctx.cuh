@@ -1756,9 +1756,9 @@ inline void test_pop_prologue_repeated_launch()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1806,9 +1806,9 @@ inline void test_pop_prologue_manual_exec_launch()
   stackable_ctx ctx;
 
   int array[512];
-  for (size_t i = 0; i < 512; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1851,9 +1851,9 @@ inline void test_pop_prologue_zero_launches()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 7;
+    v = 7;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1898,9 +1898,9 @@ inline void test_pop_prologue_handle_invalidation()
   stackable_ctx ctx;
 
   int array[4];
-  for (size_t i = 0; i < 4; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1946,9 +1946,9 @@ inline void test_pop_prologue_graph_child_embed()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2017,9 +2017,9 @@ inline void test_launchable_graph_scope_raii()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2059,9 +2059,9 @@ inline void test_pop_prologue_shared_basic()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2117,9 +2117,9 @@ inline void test_pop_prologue_shared_copies()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2168,9 +2168,9 @@ inline void test_pop_prologue_shared_stored_in_container()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2221,9 +2221,9 @@ inline void test_pop_prologue_shared_manual_epilogue_meh()
   stackable_ctx ctx;
 
   int array[4];
-  for (size_t i = 0; i < 4; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2259,9 +2259,9 @@ inline void test_pop_prologue_with_while_graph_scope_meh()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
