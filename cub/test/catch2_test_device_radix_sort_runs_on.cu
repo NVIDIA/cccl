@@ -59,7 +59,7 @@ CUB_TEST("Device radix sort keys with runs_on handles an SM limit", "[radix_sort
   CAPTURE(num_items);
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  cuda::execution::device_description description{};
+  cuda::execution::experimental::device_description description{};
   description.__max_sms_ = 1;
   const auto env         = cuda::execution::guarantee(cuda::execution::experimental::runs_on{cc, description});
 
@@ -136,7 +136,7 @@ CUB_TEST("Device radix sort pairs with runs_on handles an SM limit", "[radix_sor
   CAPTURE(num_items);
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  cuda::execution::device_description description{};
+  cuda::execution::experimental::device_description description{};
   description.__max_sms_ = 1;
   const auto env         = cuda::execution::guarantee(cuda::execution::experimental::runs_on{cc, description});
 
