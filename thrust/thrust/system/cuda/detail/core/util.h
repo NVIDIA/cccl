@@ -371,7 +371,7 @@ public:
       , value_(v)
   {}
 
-  bool _CCCL_HOST_DEVICE isValid() const
+  bool _CCCL_HOST_DEVICE is_valid() const
   {
     return cudaSuccess == status_;
   }

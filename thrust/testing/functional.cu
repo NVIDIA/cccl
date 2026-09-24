@@ -30,7 +30,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestUnaryFunctional()
 }
 
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestBinaryFunctional()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_binary_functional()
 {
   using InputType  = typename InputVector::value_type;
   using OutputType = typename OutputVector::value_type;
@@ -87,17 +87,17 @@ Macro(vector_type, operator_name, unittest::uint64_t)
                       ::std::operator_name<data_type>>();
 // op(T,T) -> T
 #define INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST(vector_type, operator_name, data_type) \
-  TestBinaryFunctional<thrust::vector_type<data_type>,                                       \
-                       thrust::vector_type<data_type>,                                       \
-                       ::cuda::std::operator_name<data_type>,                                \
-                       ::std::operator_name<data_type>>();
+  test_binary_functional<thrust::vector_type<data_type>,                                     \
+                         thrust::vector_type<data_type>,                                     \
+                         ::cuda::std::operator_name<data_type>,                              \
+                         ::std::operator_name<data_type>>();
 // XXX revert OutputVector<T> back to bool
 // op(T,T) -> bool
 #define INSTANTIATE_BINARY_LOGICAL_FUNCTIONAL_TEST(vector_type, operator_name, data_type) \
-  TestBinaryFunctional<thrust::vector_type<data_type>,                                    \
-                       thrust::vector_type<data_type>,                                    \
-                       ::cuda::std::operator_name<data_type>,                             \
-                       ::std::operator_name<data_type>>();
+  test_binary_functional<thrust::vector_type<data_type>,                                  \
+                         thrust::vector_type<data_type>,                                  \
+                         ::cuda::std::operator_name<data_type>,                           \
+                         ::std::operator_name<data_type>>();
 
 // op(T) -> T
 #define DECLARE_UNARY_ARITHMETIC_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                      \
@@ -210,17 +210,17 @@ typename ::cuda::std::add_const<Tp>::type& as_const(Tp& t) noexcept
 }
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctionalVector()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_identity_functional_vector()
 {
   Vector input{0, 1, 2, 3};
   Vector output(4);
   thrust::transform(input.begin(), input.end(), output.begin(), ::cuda::std::identity{});
   REQUIRE(input == output);
 }
-DECLARE_VECTOR_UNITTEST(TestIdentityFunctionalVector);
+DECLARE_VECTOR_UNITTEST(test_identity_functional_vector);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject1stFunctional()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_project1st_functional()
 {
   using T = typename Vector::value_type;
 
@@ -233,10 +233,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject1stFunctional()
 
   REQUIRE(output == lhs);
 }
-DECLARE_VECTOR_UNITTEST(TestProject1stFunctional);
+DECLARE_VECTOR_UNITTEST(test_project1st_functional);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject2ndFunctional()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_project2nd_functional()
 {
   using T = typename Vector::value_type;
 
@@ -249,10 +249,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject2ndFunctional()
 
   REQUIRE(output == rhs);
 }
-DECLARE_VECTOR_UNITTEST(TestProject2ndFunctional);
+DECLARE_VECTOR_UNITTEST(test_project2nd_functional);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMaximumFunctional()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_maximum_functional()
 {
   using T = typename Vector::value_type;
 
@@ -266,10 +266,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMaximumFunctional()
   Vector ref{8, 6, 9, 7};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestMaximumFunctional);
+DECLARE_VECTOR_UNITTEST(test_maximum_functional);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMinimumFunctional()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_minimum_functional()
 {
   using T = typename Vector::value_type;
 
@@ -283,10 +283,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMinimumFunctional()
   Vector ref{5, 3, 7, 3};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestMinimumFunctional);
+DECLARE_VECTOR_UNITTEST(test_minimum_functional);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_not1()
 {
   Vector input{1, 0, 1, 1, 0};
 
@@ -297,10 +297,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
   Vector ref{0, 1, 0, 0, 1};
   REQUIRE(output == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestNot1);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_not1);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_not2()
 {
   using T = typename Vector::value_type;
 
@@ -315,6 +315,6 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
   Vector ref{0, 1, 1, 0, 1};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestNot2);
+DECLARE_VECTOR_UNITTEST(test_not2);
 
 _CCCL_DIAG_POP

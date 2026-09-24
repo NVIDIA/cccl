@@ -23,7 +23,7 @@ struct is_even
 using PartitionTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>;
 
 template <typename Vector>
-void TestPartitionSimple()
+void test_partition_simple()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -48,10 +48,10 @@ void TestPartitionSimple()
   REQUIRE(iter - data.begin() == 2);
   REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_simple);
 
 template <typename Vector>
-void TestPartitionStencilSimple()
+void test_partition_stencil_simple()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -67,10 +67,10 @@ void TestPartitionStencilSimple()
   REQUIRE(iter - data.begin() == 2);
   REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionStencilSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_stencil_simple);
 
 template <typename Vector>
-void TestPartitionCopySimple()
+void test_partition_copy_simple()
 {
   using T = typename Vector::value_type;
 
@@ -91,10 +91,10 @@ void TestPartitionCopySimple()
   REQUIRE(true_ref == true_results);
   REQUIRE(false_ref == false_results);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionCopySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_copy_simple);
 
 template <typename Vector>
-void TestPartitionCopyStencilSimple()
+void test_partition_copy_stencil_simple()
 {
   using T = typename Vector::value_type;
 
@@ -117,10 +117,10 @@ void TestPartitionCopyStencilSimple()
   REQUIRE(true_ref == true_results);
   REQUIRE(false_ref == false_results);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionCopyStencilSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_copy_stencil_simple);
 
 template <typename Vector>
-void TestStablePartitionSimple()
+void test_stable_partition_simple()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -134,10 +134,10 @@ void TestStablePartitionSimple()
   REQUIRE(iter - data.begin() == 2);
   REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStablePartitionSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_stable_partition_simple);
 
 template <typename Vector>
-void TestStablePartitionStencilSimple()
+void test_stable_partition_stencil_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -152,10 +152,10 @@ void TestStablePartitionStencilSimple()
   REQUIRE(iter - data.begin() == 2);
   REQUIRE(data == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestStablePartitionStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_stable_partition_stencil_simple);
 
 template <typename Vector>
-void TestStablePartitionCopySimple()
+void test_stable_partition_copy_simple()
 {
   using T = typename Vector::value_type;
 
@@ -176,10 +176,10 @@ void TestStablePartitionCopySimple()
   REQUIRE(true_ref == true_results);
   REQUIRE(false_ref == false_results);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStablePartitionCopySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_stable_partition_copy_simple);
 
 template <typename Vector>
-void TestStablePartitionCopyStencilSimple()
+void test_stable_partition_copy_stencil_simple()
 {
   Vector data{1, 2, 1, 1, 2};
   Vector stencil{false, true, false, false, true};
@@ -199,7 +199,7 @@ void TestStablePartitionCopyStencilSimple()
   REQUIRE(true_ref == true_results);
   REQUIRE(false_ref == false_results);
 }
-DECLARE_VECTOR_UNITTEST(TestStablePartitionCopyStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_stable_partition_copy_stencil_simple);
 
 template <typename T>
 struct TestPartition
@@ -834,7 +834,7 @@ struct is_ordered
 };
 
 template <typename Vector>
-void TestPartitionZipIterator()
+void test_partition_zip_iterator()
 {
   Vector data1{1, 2, 1, 1, 2};
   Vector data2{2, 1, 2, 2, 1};
@@ -855,10 +855,10 @@ void TestPartitionZipIterator()
   REQUIRE(data1 == ref1);
   REQUIRE(data2 == ref2);
 }
-DECLARE_VECTOR_UNITTEST(TestPartitionZipIterator);
+DECLARE_VECTOR_UNITTEST(test_partition_zip_iterator);
 
 template <typename Vector>
-void TestPartitionStencilZipIterator()
+void test_partition_stencil_zip_iterator()
 {
   Vector data{1, 0, 1, 1, 0};
 
@@ -878,10 +878,10 @@ void TestPartitionStencilZipIterator()
   REQUIRE(iter - data.begin() == 3);
   REQUIRE(data == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestPartitionStencilZipIterator);
+DECLARE_VECTOR_UNITTEST(test_partition_stencil_zip_iterator);
 
 template <typename Vector>
-void TestStablePartitionZipIterator()
+void test_stable_partition_zip_iterator()
 {
   Vector data1{1, 2, 1, 1, 2};
   Vector data2{2, 0, 3, 2, 1};
@@ -902,10 +902,10 @@ void TestStablePartitionZipIterator()
   REQUIRE(data2 == ref2);
   REQUIRE(iter - begin == 3);
 }
-DECLARE_VECTOR_UNITTEST(TestStablePartitionZipIterator);
+DECLARE_VECTOR_UNITTEST(test_stable_partition_zip_iterator);
 
 template <typename Vector>
-void TestStablePartitionStencilZipIterator()
+void test_stable_partition_stencil_zip_iterator()
 {
   Vector data{1, 0, 1, 1, 0};
 
@@ -925,7 +925,7 @@ void TestStablePartitionStencilZipIterator()
   REQUIRE(ref == data);
   REQUIRE(mid - data.begin() == 3);
 }
-DECLARE_VECTOR_UNITTEST(TestStablePartitionStencilZipIterator);
+DECLARE_VECTOR_UNITTEST(test_stable_partition_stencil_zip_iterator);
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition(my_system& system, ForwardIterator first, ForwardIterator, Predicate)

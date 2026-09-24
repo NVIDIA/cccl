@@ -13,7 +13,7 @@ struct greater_div_10
 };
 
 template <unsigned int N>
-void _TestStableSortByKeyWithLargeValues()
+void test_stable_sort_by_key_with_large_values()
 {
   const size_t n = (128 * 1024) / sizeof(FixedVector<int, N>);
 
@@ -47,7 +47,7 @@ void _TestStableSortByKeyWithLargeValues()
 
 TEST_CASE("TestStableSortByKeyWithLargeValues", "[stable_sort_by_key_large_values]")
 {
-  _TestStableSortByKeyWithLargeValues<4>();
-  _TestStableSortByKeyWithLargeValues<8>();
-  _TestStableSortByKeyWithLargeValues<16>();
+  test_stable_sort_by_key_with_large_values<4>();
+  test_stable_sort_by_key_with_large_values<8>();
+  test_stable_sort_by_key_with_large_values<16>();
 }

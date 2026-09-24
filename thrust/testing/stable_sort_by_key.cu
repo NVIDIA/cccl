@@ -46,7 +46,7 @@ struct less_div_10
 };
 
 template <class Vector>
-void InitializeSimpleStableKeyValueSortTest(
+void initialize_simple_stable_key_value_sort_test(
   Vector& unsorted_keys, Vector& unsorted_values, Vector& sorted_keys, Vector& sorted_values)
 {
   unsorted_keys.resize(9);
@@ -61,21 +61,21 @@ void InitializeSimpleStableKeyValueSortTest(
 }
 
 template <class Vector>
-void TestStableSortByKeySimple()
+void test_stable_sort_by_key_simple()
 {
   using T = typename Vector::value_type;
 
   Vector unsorted_keys, unsorted_values;
   Vector sorted_keys, sorted_values;
 
-  InitializeSimpleStableKeyValueSortTest(unsorted_keys, unsorted_values, sorted_keys, sorted_values);
+  initialize_simple_stable_key_value_sort_test(unsorted_keys, unsorted_values, sorted_keys, sorted_values);
 
   thrust::stable_sort_by_key(unsorted_keys.begin(), unsorted_keys.end(), unsorted_values.begin(), less_div_10<T>());
 
   REQUIRE(unsorted_keys == sorted_keys);
   REQUIRE(unsorted_values == sorted_values);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStableSortByKeySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_stable_sort_by_key_simple);
 
 template <typename T>
 struct TestStableSortByKey

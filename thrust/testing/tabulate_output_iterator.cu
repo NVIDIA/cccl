@@ -110,7 +110,7 @@ TEST_CASE("TestTabulateOutputIteratorTraits", "[tabulate_output_iterator]")
 }
 
 template <class Vector>
-void TestTabulateOutputIterator()
+void test_tabulate_output_iterator()
 {
   using T     = typename Vector::value_type;
   using it_t  = typename Vector::iterator;
@@ -150,7 +150,7 @@ void TestTabulateOutputIterator()
   REQUIRE(expected_num_selected == num_selected);
   REQUIRE(output == expected_output);
 }
-DECLARE_VECTOR_UNITTEST(TestTabulateOutputIterator);
+DECLARE_VECTOR_UNITTEST(test_tabulate_output_iterator);
 
 TEST_CASE("TestTabulateOutputIteratorSubscript", "[tabulate_output_iterator]")
 {

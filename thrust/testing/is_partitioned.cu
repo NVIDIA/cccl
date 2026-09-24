@@ -14,7 +14,7 @@ struct is_even
 };
 
 template <typename Vector>
-void TestIsPartitionedSimple()
+void test_is_partitioned_simple()
 {
   Vector v{1, 1, 1, 0};
 
@@ -38,10 +38,10 @@ void TestIsPartitionedSimple()
   // not partitioned
   REQUIRE_FALSE(thrust::is_partitioned(v.begin(), v.end(), ::cuda::std::identity{}));
 }
-DECLARE_VECTOR_UNITTEST(TestIsPartitionedSimple);
+DECLARE_VECTOR_UNITTEST(test_is_partitioned_simple);
 
 template <class Vector>
-void TestIsPartitioned()
+void test_is_partitioned()
 {
   using T = typename Vector::value_type;
 
@@ -58,7 +58,7 @@ void TestIsPartitioned()
 
   REQUIRE(thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestIsPartitioned);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_is_partitioned);
 
 template <typename InputIterator, typename Predicate>
 bool is_partitioned(my_system& system, InputIterator /*first*/, InputIterator, Predicate)

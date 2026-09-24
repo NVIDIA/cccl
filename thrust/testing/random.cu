@@ -217,7 +217,7 @@ struct ValidateDistributionUnqual
 };
 
 template <typename Engine, std::uint64_t Value10000>
-void TestEngineValidation()
+void test_engine_validation()
 {
   // test host
   thrust::host_vector<bool> h(1);
@@ -233,7 +233,7 @@ void TestEngineValidation()
 }
 
 template <typename Engine>
-void TestEngineMax()
+void test_engine_max()
 {
   // test host
   thrust::host_vector<bool> h(1);
@@ -249,7 +249,7 @@ void TestEngineMax()
 }
 
 template <typename Engine>
-void TestEngineMin()
+void test_engine_min()
 {
   // test host
   thrust::host_vector<bool> h(1);
@@ -265,7 +265,7 @@ void TestEngineMin()
 }
 
 template <typename Engine>
-void TestEngineSaveRestore()
+void test_engine_save_restore()
 {
   // create a default engine
   Engine e0;
@@ -293,7 +293,7 @@ void TestEngineSaveRestore()
 }
 
 template <typename Engine>
-void TestEngineEqual()
+void test_engine_equal()
 {
   const ValidateEngineEqual<Engine> f;
 
@@ -311,7 +311,7 @@ void TestEngineEqual()
 }
 
 template <typename Engine>
-void TestEngineUnequal()
+void test_engine_unequal()
 {
   const ValidateEngineUnequal<Engine> f;
 
@@ -332,300 +332,300 @@ TEST_CASE("TestRanlux24BaseValidation", "[random]")
 {
   using Engine = thrust::random::ranlux24_base;
 
-  TestEngineValidation<Engine, 7937952u>();
+  test_engine_validation<Engine, 7937952u>();
 }
 
 TEST_CASE("TestRanlux24BaseMin", "[random]")
 {
   using Engine = thrust::random::ranlux24_base;
 
-  TestEngineMin<Engine>();
+  test_engine_min<Engine>();
 }
 
 TEST_CASE("TestRanlux24BaseMax", "[random]")
 {
   using Engine = thrust::random::ranlux24_base;
 
-  TestEngineMax<Engine>();
+  test_engine_max<Engine>();
 }
 
 TEST_CASE("TestRanlux24BaseSaveRestore", "[random]")
 {
   using Engine = thrust::random::ranlux24_base;
 
-  TestEngineSaveRestore<Engine>();
+  test_engine_save_restore<Engine>();
 }
 
 TEST_CASE("TestRanlux24BaseEqual", "[random]")
 {
   using Engine = thrust::random::ranlux24_base;
 
-  TestEngineEqual<Engine>();
+  test_engine_equal<Engine>();
 }
 
 TEST_CASE("TestRanlux24BaseUnequal", "[random]")
 {
   using Engine = thrust::random::ranlux24_base;
 
-  TestEngineUnequal<Engine>();
+  test_engine_unequal<Engine>();
 }
 
 TEST_CASE("TestRanlux48BaseValidation", "[random]")
 {
   using Engine = thrust::random::ranlux48_base;
 
-  TestEngineValidation<Engine, 192113843633948ull>();
+  test_engine_validation<Engine, 192113843633948ull>();
 }
 
 TEST_CASE("TestRanlux48BaseMin", "[random]")
 {
   using Engine = thrust::random::ranlux48_base;
 
-  TestEngineMin<Engine>();
+  test_engine_min<Engine>();
 }
 
 TEST_CASE("TestRanlux48BaseMax", "[random]")
 {
   using Engine = thrust::random::ranlux48_base;
 
-  TestEngineMax<Engine>();
+  test_engine_max<Engine>();
 }
 
 TEST_CASE("TestRanlux48BaseSaveRestore", "[random]")
 {
   using Engine = thrust::random::ranlux48_base;
 
-  TestEngineSaveRestore<Engine>();
+  test_engine_save_restore<Engine>();
 }
 
 TEST_CASE("TestRanlux48BaseEqual", "[random]")
 {
   using Engine = thrust::random::ranlux48_base;
 
-  TestEngineEqual<Engine>();
+  test_engine_equal<Engine>();
 }
 
 TEST_CASE("TestRanlux48BaseUnequal", "[random]")
 {
   using Engine = thrust::random::ranlux48_base;
 
-  TestEngineUnequal<Engine>();
+  test_engine_unequal<Engine>();
 }
 
 TEST_CASE("TestMinstdRandValidation", "[random]")
 {
   using Engine = thrust::random::minstd_rand;
 
-  TestEngineValidation<Engine, 399268537u>();
+  test_engine_validation<Engine, 399268537u>();
 }
 
 TEST_CASE("TestMinstdRandMin", "[random]")
 {
   using Engine = thrust::random::minstd_rand;
 
-  TestEngineMin<Engine>();
+  test_engine_min<Engine>();
 }
 
 TEST_CASE("TestMinstdRandMax", "[random]")
 {
   using Engine = thrust::random::minstd_rand;
 
-  TestEngineMax<Engine>();
+  test_engine_max<Engine>();
 }
 
 TEST_CASE("TestMinstdRandSaveRestore", "[random]")
 {
   using Engine = thrust::random::minstd_rand;
 
-  TestEngineSaveRestore<Engine>();
+  test_engine_save_restore<Engine>();
 }
 
 TEST_CASE("TestMinstdRandEqual", "[random]")
 {
   using Engine = thrust::random::minstd_rand;
 
-  TestEngineEqual<Engine>();
+  test_engine_equal<Engine>();
 }
 
 TEST_CASE("TestMinstdRandUnequal", "[random]")
 {
   using Engine = thrust::random::minstd_rand;
 
-  TestEngineUnequal<Engine>();
+  test_engine_unequal<Engine>();
 }
 
 TEST_CASE("TestMinstdRand0Validation", "[random]")
 {
   using Engine = thrust::random::minstd_rand0;
 
-  TestEngineValidation<Engine, 1043618065u>();
+  test_engine_validation<Engine, 1043618065u>();
 }
 
 TEST_CASE("TestMinstdRand0Min", "[random]")
 {
   using Engine = thrust::random::minstd_rand0;
 
-  TestEngineMin<Engine>();
+  test_engine_min<Engine>();
 }
 
 TEST_CASE("TestMinstdRand0Max", "[random]")
 {
   using Engine = thrust::random::minstd_rand0;
 
-  TestEngineMax<Engine>();
+  test_engine_max<Engine>();
 }
 
 TEST_CASE("TestMinstdRand0SaveRestore", "[random]")
 {
   using Engine = thrust::random::minstd_rand0;
 
-  TestEngineSaveRestore<Engine>();
+  test_engine_save_restore<Engine>();
 }
 
 TEST_CASE("TestMinstdRand0Equal", "[random]")
 {
   using Engine = thrust::random::minstd_rand0;
 
-  TestEngineEqual<Engine>();
+  test_engine_equal<Engine>();
 }
 
 TEST_CASE("TestMinstdRand0Unequal", "[random]")
 {
   using Engine = thrust::random::minstd_rand0;
 
-  TestEngineUnequal<Engine>();
+  test_engine_unequal<Engine>();
 }
 
 TEST_CASE("TestTaus88Validation", "[random]")
 {
   using Engine = thrust::random::taus88;
 
-  TestEngineValidation<Engine, 3535848941ull>();
+  test_engine_validation<Engine, 3535848941ull>();
 }
 
 TEST_CASE("TestTaus88Min", "[random]")
 {
   using Engine = thrust::random::taus88;
 
-  TestEngineMin<Engine>();
+  test_engine_min<Engine>();
 }
 
 TEST_CASE("TestTaus88Max", "[random]")
 {
   using Engine = thrust::random::taus88;
 
-  TestEngineMax<Engine>();
+  test_engine_max<Engine>();
 }
 
 TEST_CASE("TestTaus88SaveRestore", "[random]")
 {
   using Engine = thrust::random::taus88;
 
-  TestEngineSaveRestore<Engine>();
+  test_engine_save_restore<Engine>();
 }
 
 TEST_CASE("TestTaus88Equal", "[random]")
 {
   using Engine = thrust::random::taus88;
 
-  TestEngineEqual<Engine>();
+  test_engine_equal<Engine>();
 }
 
 TEST_CASE("TestTaus88Unequal", "[random]")
 {
   using Engine = thrust::random::taus88;
 
-  TestEngineUnequal<Engine>();
+  test_engine_unequal<Engine>();
 }
 
 TEST_CASE("TestRanlux24Validation", "[random]")
 {
   using Engine = thrust::random::ranlux24;
 
-  TestEngineValidation<Engine, 9901578>();
+  test_engine_validation<Engine, 9901578>();
 }
 
 TEST_CASE("TestRanlux24Min", "[random]")
 {
   using Engine = thrust::random::ranlux24;
 
-  TestEngineMin<Engine>();
+  test_engine_min<Engine>();
 }
 
 TEST_CASE("TestRanlux24Max", "[random]")
 {
   using Engine = thrust::random::ranlux24;
 
-  TestEngineMax<Engine>();
+  test_engine_max<Engine>();
 }
 
 TEST_CASE("TestRanlux24SaveRestore", "[random]")
 {
   using Engine = thrust::random::ranlux24;
 
-  TestEngineSaveRestore<Engine>();
+  test_engine_save_restore<Engine>();
 }
 
 TEST_CASE("TestRanlux24Equal", "[random]")
 {
   using Engine = thrust::random::ranlux24;
 
-  TestEngineEqual<Engine>();
+  test_engine_equal<Engine>();
 }
 
 TEST_CASE("TestRanlux24Unequal", "[random]")
 {
   using Engine = thrust::random::ranlux24;
 
-  TestEngineUnequal<Engine>();
+  test_engine_unequal<Engine>();
 }
 
 TEST_CASE("TestRanlux48Validation", "[random]")
 {
   using Engine = thrust::random::ranlux48;
 
-  TestEngineValidation<Engine, 88229545517833ull>();
+  test_engine_validation<Engine, 88229545517833ull>();
 }
 
 TEST_CASE("TestRanlux48Min", "[random]")
 {
   using Engine = thrust::random::ranlux48;
 
-  TestEngineMin<Engine>();
+  test_engine_min<Engine>();
 }
 
 TEST_CASE("TestRanlux48Max", "[random]")
 {
   using Engine = thrust::random::ranlux48;
 
-  TestEngineMax<Engine>();
+  test_engine_max<Engine>();
 }
 
 TEST_CASE("TestRanlux48SaveRestore", "[random]")
 {
   using Engine = thrust::random::ranlux48;
 
-  TestEngineSaveRestore<Engine>();
+  test_engine_save_restore<Engine>();
 }
 
 TEST_CASE("TestRanlux48Equal", "[random]")
 {
   using Engine = thrust::random::ranlux48;
 
-  TestEngineEqual<Engine>();
+  test_engine_equal<Engine>();
 }
 
 TEST_CASE("TestRanlux48Unequal", "[random]")
 {
   using Engine = thrust::random::ranlux48;
 
-  TestEngineUnequal<Engine>();
+  test_engine_unequal<Engine>();
 }
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4305) // truncation warning
 template <typename Distribution, typename Validator>
-void ValidateDistributionCharacteristic()
+void validate_distribution_characteristic()
 {
   using Engine = typename Validator::random_engine;
 
@@ -693,7 +693,7 @@ void ValidateDistributionCharacteristic()
 _CCCL_DIAG_POP
 
 template <typename Distribution>
-void TestDistributionSaveRestore()
+void test_distribution_save_restore()
 {
   // create a default distribution
   Distribution d0(7, 13);
@@ -714,8 +714,8 @@ TEST_CASE("TestUniformIntDistributionMin", "[random]")
   using int_dist  = thrust::random::uniform_int_distribution<int>;
   using uint_dist = thrust::random::uniform_int_distribution<unsigned int>;
 
-  ValidateDistributionCharacteristic<int_dist, ValidateDistributionMin<int_dist, thrust::minstd_rand>>();
-  ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMin<uint_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<int_dist, ValidateDistributionMin<int_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<uint_dist, ValidateDistributionMin<uint_dist, thrust::minstd_rand>>();
 }
 
 TEST_CASE("TestUniformIntDistributionMax", "[random]")
@@ -723,8 +723,8 @@ TEST_CASE("TestUniformIntDistributionMax", "[random]")
   using int_dist  = thrust::random::uniform_int_distribution<int>;
   using uint_dist = thrust::random::uniform_int_distribution<unsigned int>;
 
-  ValidateDistributionCharacteristic<int_dist, ValidateDistributionMax<int_dist, thrust::minstd_rand>>();
-  ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMax<uint_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<int_dist, ValidateDistributionMax<int_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<uint_dist, ValidateDistributionMax<uint_dist, thrust::minstd_rand>>();
 }
 
 TEST_CASE("TestUniformIntDistributionSaveRestore", "[random]")
@@ -732,8 +732,8 @@ TEST_CASE("TestUniformIntDistributionSaveRestore", "[random]")
   using int_dist  = thrust::random::uniform_int_distribution<int>;
   using uint_dist = thrust::random::uniform_int_distribution<unsigned int>;
 
-  TestDistributionSaveRestore<int_dist>();
-  TestDistributionSaveRestore<uint_dist>();
+  test_distribution_save_restore<int_dist>();
+  test_distribution_save_restore<uint_dist>();
 }
 
 TEST_CASE("TestUniformRealDistributionMin", "[random]")
@@ -741,8 +741,8 @@ TEST_CASE("TestUniformRealDistributionMin", "[random]")
   using float_dist  = thrust::random::uniform_real_distribution<float>;
   using double_dist = thrust::random::uniform_real_distribution<double>;
 
-  ValidateDistributionCharacteristic<float_dist, ValidateDistributionMin<float_dist, thrust::minstd_rand>>();
-  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<float_dist, ValidateDistributionMin<float_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand>>();
 }
 
 TEST_CASE("TestUniformRealDistributionMax", "[random]")
@@ -750,8 +750,8 @@ TEST_CASE("TestUniformRealDistributionMax", "[random]")
   using float_dist  = thrust::random::uniform_real_distribution<float>;
   using double_dist = thrust::random::uniform_real_distribution<double>;
 
-  ValidateDistributionCharacteristic<float_dist, ValidateDistributionMax<float_dist, thrust::minstd_rand>>();
-  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<float_dist, ValidateDistributionMax<float_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand>>();
 }
 
 TEST_CASE("TestUniformRealDistributionSaveRestore", "[random]")
@@ -759,8 +759,8 @@ TEST_CASE("TestUniformRealDistributionSaveRestore", "[random]")
   using float_dist  = thrust::random::uniform_real_distribution<float>;
   using double_dist = thrust::random::uniform_real_distribution<double>;
 
-  TestDistributionSaveRestore<float_dist>();
-  TestDistributionSaveRestore<double_dist>();
+  test_distribution_save_restore<float_dist>();
+  test_distribution_save_restore<double_dist>();
 }
 
 TEST_CASE("TestNormalDistributionMin", "[random]")
@@ -768,8 +768,8 @@ TEST_CASE("TestNormalDistributionMin", "[random]")
   using float_dist  = thrust::random::normal_distribution<float>;
   using double_dist = thrust::random::normal_distribution<double>;
 
-  ValidateDistributionCharacteristic<float_dist, ValidateDistributionMin<float_dist, thrust::minstd_rand>>();
-  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<float_dist, ValidateDistributionMin<float_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand>>();
 }
 
 TEST_CASE("TestNormalDistributionMax", "[random]")
@@ -777,8 +777,8 @@ TEST_CASE("TestNormalDistributionMax", "[random]")
   using float_dist  = thrust::random::normal_distribution<float>;
   using double_dist = thrust::random::normal_distribution<double>;
 
-  ValidateDistributionCharacteristic<float_dist, ValidateDistributionMax<float_dist, thrust::minstd_rand>>();
-  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<float_dist, ValidateDistributionMax<float_dist, thrust::minstd_rand>>();
+  validate_distribution_characteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand>>();
 }
 
 TEST_CASE("TestNormalDistributionSaveRestore", "[random]")
@@ -786,15 +786,15 @@ TEST_CASE("TestNormalDistributionSaveRestore", "[random]")
   using float_dist  = thrust::random::normal_distribution<float>;
   using double_dist = thrust::random::normal_distribution<double>;
 
-  TestDistributionSaveRestore<float_dist>();
-  TestDistributionSaveRestore<double_dist>();
+  test_distribution_save_restore<float_dist>();
+  test_distribution_save_restore<double_dist>();
 }
 
 template <typename Distribution, typename Engine>
-void ValidateDistributionWithEngine()
+void validate_distribution_with_engine()
 {
-  ValidateDistributionCharacteristic<Distribution, ValidateDistributionMin<Distribution, Engine>>();
-  ValidateDistributionCharacteristic<Distribution, ValidateDistributionMax<Distribution, Engine>>();
+  validate_distribution_characteristic<Distribution, ValidateDistributionMin<Distribution, Engine>>();
+  validate_distribution_characteristic<Distribution, ValidateDistributionMax<Distribution, Engine>>();
 }
 
 TEST_CASE("TestDistributionsWithCudaStdPhilox", "[random]")
@@ -804,7 +804,7 @@ TEST_CASE("TestDistributionsWithCudaStdPhilox", "[random]")
   using float_dist  = thrust::random::uniform_real_distribution<float>;
   using double_dist = thrust::random::normal_distribution<double>;
 
-  ValidateDistributionWithEngine<uint_dist, engine>();
-  ValidateDistributionWithEngine<float_dist, engine>();
-  ValidateDistributionWithEngine<double_dist, engine>();
+  validate_distribution_with_engine<uint_dist, engine>();
+  validate_distribution_with_engine<float_dist, engine>();
+  validate_distribution_with_engine<double_dist, engine>();
 }
