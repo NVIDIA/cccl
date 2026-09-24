@@ -2005,6 +2005,23 @@ struct DeviceScan
       stream);
   }
 
+  //! Deprecated [Since 3.6]
+  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
+  CCCL_DEPRECATED_BECAUSE("Use cub::DeviceScan::InclusiveScan with an init_value argument instead")
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  InclusiveScanInit(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    NumItemsT num_items,
+    cudaStream_t stream = nullptr)
+  {
+    return InclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
+  }
+
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //!
@@ -2341,6 +2358,28 @@ struct DeviceScan
       d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
+  //! Deprecated [Since 3.6]
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
+  [[nodiscard]] CCCL_DEPRECATED_BECAUSE("Use cub::DeviceScan::InclusiveScan with an init_value argument instead")
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  InclusiveScanInit(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    NumItemsT num_items,
+    const EnvT& env = {})
+  {
+    return InclusiveScan(d_in, d_out, scan_op, init_value, num_items, env);
+  }
+
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //! The result of applying the ``scan_op`` binary operator to ``init_value`` value and ``*d_in``
@@ -2441,6 +2480,29 @@ struct DeviceScan
 
     return scan_impl_env<ForceInclusive::Yes>(
       d_in, d_out, scan_op, detail::InputValue<__init_value_type, InitValueIterT>(__fut), num_items, env);
+  }
+
+  //! Deprecated [Since 3.6]
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueIterT,
+            typename InitValueBoundsT,
+            typename NumItemsT,
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
+  [[nodiscard]] CCCL_DEPRECATED_BECAUSE("Use cub::DeviceScan::InclusiveScan with an init_value argument instead")
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  InclusiveScanInit(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
+    NumItemsT num_items,
+    const EnvT& env = {})
+  {
+    return InclusiveScan(d_in, d_out, scan_op, init_value, num_items, env);
   }
 
   //! @rst
@@ -2553,6 +2615,28 @@ struct DeviceScan
       detail::InputValue<__init_value_type, InitValueIterT>(__fut),
       static_cast<OffsetT>(num_items),
       stream);
+  }
+
+  //! Deprecated [Since 3.6]
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueIterT,
+            typename InitValueBoundsT,
+            typename NumItemsT>
+  CCCL_DEPRECATED_BECAUSE("Use cub::DeviceScan::InclusiveScan with an init_value argument instead")
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  InclusiveScanInit(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
+    NumItemsT num_items,
+    cudaStream_t stream = nullptr)
+  {
+    return InclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
   }
 
   //! @}
