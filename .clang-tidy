@@ -82,6 +82,7 @@ Checks:
   - '-cppcoreguidelines-prefer-member-initializer'
   - '-cppcoreguidelines-slicing'
   - '-cppcoreguidelines-no-malloc'
+  # This does not understand the concept macros
   - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME
   # TODO(jfaibussowit):

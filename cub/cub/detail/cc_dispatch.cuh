@@ -107,14 +107,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_cc_list(
   // This causes f to be only instantiated for each distinct policy, since the same policy for different arches results
   // in the same integral_constant type passed to f
   using policy_t = decltype(policy_selector(::cuda::compute_capability{}));
-  (..., (device_cc == all_ccs[Is] ? (e = f(policy_constant<policy_t, policy_selector(all_ccs[Is])>{})) : cudaSuccess));
+  (...,
+   (device_cc == all_ccs[Is]
+      ? (e = ::cuda::std::forward<FunctorT>(f)(policy_constant<policy_t, policy_selector(all_ccs[Is])>{}))
+      : cudaSuccess));
 #  else // _CCCL_STD_VER >= 2020
 #    if _CCCL_COMPILER(GCC, <, 8)
   // GCC 7 ICEs on constexpr evaluation of policy comparisons, so we skip the lowest-CC-with-same-policy optimization
   // and instantiate f for each CC directly. This may increase compile time and binary size.
   (...,
-   (device_cc == all_ccs[Is] ? (e = f(policy_getter<PolicySelector, all_ccs[Is].get()>{policy_selector}))
-                             : cudaSuccess));
+   (device_cc == all_ccs[Is]
+      ? (e = ::cuda::std::forward<FunctorT>(f)(policy_getter<PolicySelector, all_ccs[Is].get()>{policy_selector}))
+      : cudaSuccess));
 #    else // _CCCL_COMPILER(GCC, <, 8)
   // In C++17, we have to collapse architectures with the same policies ourselves, so we instantiate call_for_cc once
   // per policy on the lowest CC which produces the same policy
@@ -122,7 +126,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_cc_list(
     lowest_cc_resolver<::cuda::std::integer_sequence<int, all_ccs[Is].get()...>, PolicySelector, Is...>;
   (...,
    (device_cc == all_ccs[Is]
-      ? (e = f(policy_getter<PolicySelector, resolver_t::lowest_cc_with_same_policy[Is].get()>{policy_selector}))
+      ? (e = ::cuda::std::forward<FunctorT>(f)(
+           policy_getter<PolicySelector, resolver_t::lowest_cc_with_same_policy[Is].get()>{policy_selector}))
       : cudaSuccess));
 #    endif // _CCCL_COMPILER(GCC, <, 8)
 #  endif // _CCCL_STD_VER >= 2020
@@ -154,7 +159,7 @@ template <typename PolicySelector, typename F>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
 dispatch_compute_cap(PolicySelector policy_selector, ::cuda::compute_capability device_cc, F&& f)
 {
-  return f([&] {
+  return ::cuda::std::forward<F>(f)([&] {
     return policy_selector(device_cc);
   });
 }

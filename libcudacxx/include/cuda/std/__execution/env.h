@@ -182,7 +182,7 @@ struct __basic_query<_Query, void>
     noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
   {
     static_assert(is_base_of_v<__basic_query, _Query>, "_Query must be derived from __basic_query<_Query>");
-    return __env.query(_Query{}, static_cast<_Args&&>(__args)...);
+    return static_cast<_Env&&>(__env).query(_Query{}, static_cast<_Args&&>(__args)...);
   }
 };
 

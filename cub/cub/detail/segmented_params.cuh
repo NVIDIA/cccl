@@ -316,7 +316,9 @@ template <typename T, T... Opts, typename Functor>
 [[nodiscard]] _CCCL_HOST_DEVICE bool
 dispatch_impl(T val, [[maybe_unused]] supported_options<T, Opts...> __supported_options, Functor&& f)
 {
-  const bool match_found = ((val == Opts ? (f(::cuda::std::integral_constant<T, Opts>{}), true) : false) || ...);
+  const bool match_found =
+    ((val == Opts ? (::cuda::std::forward<Functor>(f)(::cuda::std::integral_constant<T, Opts>{}), true) : false)
+     || ...);
   _CCCL_ASSERT(match_found, "The given runtime parameter value is not in the supported list");
   return match_found;
 }
