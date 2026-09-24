@@ -82,10 +82,18 @@ class __physical_device
   ::cuda::std::unique_ptr<device_ref[]> __peers_{};
   ::cuda::std::size_t __num_peers_{};
 
-  __once_flag __locality_domains_once_flag_{};
-  __raw_storage_array<__logical_device> __locality_domains_{};
-  __raw_storage_array<__logical_device_ref> __locality_domain_refs_{};
-  ::cuda::std::size_t __num_domains_{};
+  //! One cached set of per-domain logical devices per `__locality_domain_sm_split` method.
+  struct __locality_domain_set
+  {
+    __once_flag __once_flag_{};
+    __raw_storage_array<__logical_device> __domains_{};
+    __raw_storage_array<__logical_device_ref> __refs_{};
+    ::cuda::std::size_t __count_{};
+  };
+  //! No `{}` here: GCC 7 initializes each element of an empty-braced array by copying it from `{}`,
+  //! which needs the deleted copy of `std::once_flag`. Default-initialization constructs every
+  //! element in place and every member has a default member initializer anyway.
+  __locality_domain_set __locality_domain_sets_[__locality_domain_sm_split_count];
 
   _CCCL_HOST_API void __set_name()
   {
@@ -129,7 +137,47 @@ class __physical_device
   }
 
 #  if _CCCL_CTK_AT_LEAST(13, 4)
-  _CCCL_HOST_API void __set_locality_domains_impl()
+  //! Fill one `CU_DEV_SM_RESOURCE_GROUP_PARAMS` per locality domain according to @p __split.
+  _CCCL_HOST_API static void __fill_locality_domain_split_params(
+    ::CU_DEV_SM_RESOURCE_GROUP_PARAMS* __params,
+    ::cuda::std::size_t __domain_count,
+    const ::CUdevResource& __full_resource,
+    __locality_domain_sm_split __split) noexcept
+  {
+    // Equal shares, even (the driver requires smCount to be a multiple of 2), never below the
+    // driver's minimum of 2. Rounding down leaves at most `2 * n - 2` SMs unassigned.
+    const auto __share      = __full_resource.sm.smCount / static_cast<unsigned int>(__domain_count);
+    const auto __even_share = (__share - (__share % 2U) < 2U) ? 2U : __share - (__share % 2U);
+
+    for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
+    {
+      // The driver requires every entry to be zero-initialized before the fields are set.
+      __params[__i]                  = ::CU_DEV_SM_RESOURCE_GROUP_PARAMS{};
+      __params[__i].flags            = ::CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID;
+      __params[__i].localityDomainId = static_cast<unsigned int>(__i);
+
+      switch (__split)
+      {
+        case __locality_domain_sm_split::__aligned:
+          // Discovery defaults: complete co-scheduled groups of the domain only.
+          break;
+        case __locality_domain_sm_split::__fine:
+          // The finest granularity the driver documents recovers every SM attributed to the domain.
+          __params[__i].coscheduledSmCount = 2U;
+          break;
+        case __locality_domain_sm_split::__backfill:
+        default:
+          // Ask for the share and let the driver fill it: the domain's own SMs first, then SMs
+          // attributed to no domain, then other domains. Co-scheduling is kept at the device
+          // default where complete groups exist.
+          __params[__i].flags |= ::CU_DEV_SM_RESOURCE_GROUP_BACKFILL;
+          __params[__i].smCount = __even_share;
+          break;
+      }
+    }
+  }
+
+  _CCCL_HOST_API void __set_locality_domains_impl(__locality_domain_set& __set, __locality_domain_sm_split __split)
   {
     const auto __domain_count = static_cast<::cuda::std::size_t>(
       ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, __device_));
@@ -139,11 +187,7 @@ class __physical_device
     const auto __full_resource = ::cuda::__driver::__deviceGetDevResource(__device_, ::CU_DEV_RESOURCE_TYPE_SM);
     const auto __params        = ::cuda::std::make_unique<::CU_DEV_SM_RESOURCE_GROUP_PARAMS[]>(__domain_count);
 
-    for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
-    {
-      __params[__i].flags            = ::CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID;
-      __params[__i].localityDomainId = static_cast<unsigned int>(__i);
-    }
+    __fill_locality_domain_split_params(__params.get(), __domain_count, __full_resource, __split);
 
     const auto __groups = ::cuda::std::make_unique<::CUdevResource[]>(__domain_count);
 
@@ -174,12 +218,12 @@ class __physical_device
     }
 
     // Commit only once every step succeeds, so a throw leaves this object as it was.
-    __locality_domains_     = ::cuda::std::move(__domains);
-    __locality_domain_refs_ = ::cuda::std::move(__refs);
-    __num_domains_          = __domain_count;
+    __set.__domains_ = ::cuda::std::move(__domains);
+    __set.__refs_    = ::cuda::std::move(__refs);
+    __set.__count_   = __domain_count;
   }
 #  elif _CCCL_CTK_AT_LEAST(12, 5) // ^^^ 13.4+ ^^^ / vvv 12.5+ vvv
-  _CCCL_HOST_API void __set_locality_domains_impl()
+  _CCCL_HOST_API void __set_locality_domains_impl(__locality_domain_set& __set, __locality_domain_sm_split)
   {
     auto __domains = ::cuda::__make_raw_storage_array<__logical_device>(/*__count=*/1);
 
@@ -192,23 +236,25 @@ class __physical_device
     __refs.get_deleter().__count_ = 1;
 
     // Commit only once every step succeeds, so a throw leaves this object as it was.
-    __locality_domains_     = ::cuda::std::move(__domains);
-    __locality_domain_refs_ = ::cuda::std::move(__refs);
-    __num_domains_          = 1;
+    __set.__domains_ = ::cuda::std::move(__domains);
+    __set.__refs_    = ::cuda::std::move(__refs);
+    __set.__count_   = 1;
   }
 #  else // ^^^ 12.5+ ^^^ / vvv no green contexts at all vvv
-  _CCCL_HOST_API constexpr void __set_locality_domains_impl() const noexcept {}
+  _CCCL_HOST_API constexpr void
+  __set_locality_domains_impl(__locality_domain_set&, __locality_domain_sm_split) const noexcept
+  {}
 #  endif // ^^^ no green context at all ^^^
 
-  _CCCL_HOST_API void __set_locality_domains()
+  _CCCL_HOST_API void __set_locality_domains(__locality_domain_set& __set, __locality_domain_sm_split __split)
   {
     // Clear refs before the owning variable just in case refs ends up doing something
     // interesting in a destructor
-    __locality_domain_refs_.reset();
-    __locality_domains_.reset();
-    __num_domains_ = 0;
+    __set.__refs_.reset();
+    __set.__domains_.reset();
+    __set.__count_ = 0;
 
-    __set_locality_domains_impl();
+    __set_locality_domains_impl(__set, __split);
   }
 
 public:
@@ -253,13 +299,18 @@ public:
     return ::cuda::std::span<const device_ref>{__peers_.get(), __num_peers_};
   }
 
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const __logical_device_ref> __locality_domains()
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const __logical_device_ref>
+  __locality_domains(__locality_domain_sm_split __split)
   {
-    ::cuda::__call_once(__locality_domains_once_flag_, [this]() {
-      this->__set_locality_domains();
+    const auto __index = static_cast<::cuda::std::size_t>(__split);
+    _CCCL_ASSERT(__index < __locality_domain_sm_split_count, "Unknown locality domain SM split method");
+    auto& __set = __locality_domain_sets_[__index];
+
+    ::cuda::__call_once(__set.__once_flag_, [this, &__set, __split]() {
+      this->__set_locality_domains(__set, __split);
     });
 
-    return ::cuda::std::span<const __logical_device_ref>{__locality_domain_refs_.get(), __num_domains_};
+    return ::cuda::std::span<const __logical_device_ref>{__set.__refs_.get(), __set.__count_};
   }
 };
 
@@ -315,9 +366,10 @@ _CCCL_HOST_API inline void device_ref::init() const
   return ::cuda::__physical_devices()[__id_].__peers();
 }
 
-[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const __logical_device_ref> device_ref::__locality_domains() const
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const __logical_device_ref>
+device_ref::__locality_domains(__locality_domain_sm_split __split) const
 {
-  return ::cuda::__physical_devices()[__id_].__locality_domains();
+  return ::cuda::__physical_devices()[__id_].__locality_domains(__split);
 }
 
 _CCCL_END_NAMESPACE_CUDA

@@ -14,6 +14,7 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/devices>
+#include <cuda/std/initializer_list>
 #include <cuda/std/memory>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -28,6 +29,15 @@ namespace
 {
 //! The type that `device_ref::__locality_domains()` returns.
 using domains_span = decltype(cuda::std::declval<const cuda::device_ref&>().__locality_domains());
+
+//! Whether `__locality_domains()` can be called with no argument on a `const device_ref`.
+template <class T, class = void>
+struct callable_on_const_device_ref : cuda::std::false_type
+{};
+template <class T>
+struct callable_on_const_device_ref<T, cuda::std::void_t<decltype(cuda::std::declval<const T&>().__locality_domains())>>
+    : cuda::std::true_type
+{};
 
 //! Number of SMs the driver reports for `device`.
 int sm_count(cuda::device_ref device)
@@ -49,10 +59,23 @@ C2H_CCCLRT_TEST("locality domains static interface", "[device][locality_domain]"
 
   SECTION("The accessor is callable on a const device_ref")
   {
-    // `devices[i]` yields a `const device_ref&`, so a non-const overload would break every use below.
-    constexpr bool callable_on_const =
-      cuda::std::is_invocable_v<decltype(&cuda::device_ref::__locality_domains), const cuda::device_ref&>;
-    STATIC_REQUIRE(callable_on_const);
+    // `devices[i]` yields a `const device_ref&`, so a non-const overload would break every use below. The
+    // split method has a default argument, which a member function pointer would not see, so the check
+    // goes through an actual call expression.
+    STATIC_REQUIRE(callable_on_const_device_ref<cuda::device_ref>::value);
+  }
+
+  SECTION("The accessor takes a split method and defaults to backfill")
+  {
+    constexpr bool callable_with_split =
+      cuda::std::is_invocable_v<decltype(&cuda::device_ref::__locality_domains),
+                                const cuda::device_ref&,
+                                cuda::__locality_domain_sm_split>;
+    STATIC_REQUIRE(callable_with_split);
+    STATIC_REQUIRE(static_cast<unsigned int>(cuda::__locality_domain_sm_split::__backfill) == 0U);
+    STATIC_REQUIRE(static_cast<unsigned int>(cuda::__locality_domain_sm_split::__aligned) == 1U);
+    STATIC_REQUIRE(static_cast<unsigned int>(cuda::__locality_domain_sm_split::__fine) == 2U);
+    STATIC_REQUIRE(cuda::__locality_domain_sm_split_count == 3);
   }
 
   SECTION("The domains are never copies the caller can mutate")
@@ -304,42 +327,119 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
   }
 
 #  if _CCCL_CTK_AT_LEAST(13, 4)
-  SECTION("The domains partition the device SMs on 13.4+")
+  SECTION("Each split method builds its own cached set of domains")
   {
     for (auto dev : cuda::devices)
     {
-      auto cu_device = ::cuda::__driver::__deviceGet(dev.get());
-      auto expected  = static_cast<::cuda::std::size_t>(
-        ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, cu_device));
+      const auto backfill = dev.__locality_domains(cuda::__locality_domain_sm_split::__backfill);
+      const auto aligned  = dev.__locality_domains(cuda::__locality_domain_sm_split::__aligned);
+      const auto fine     = dev.__locality_domains(cuda::__locality_domain_sm_split::__fine);
 
-      // Re-split the device the same way the implementation does and compare SM counts. This checks
-      // that each cached domain really carries the SMs of its own locality domain. A device that
-      // reports zero locality domains has no split to reproduce, so only the SM total is checked.
+      // Same domain count whatever the method: one green context per locality domain.
+      REQUIRE(aligned.size() == backfill.size());
+      REQUIRE(fine.size() == backfill.size());
+
+      // Distinct storage and distinct contexts: the methods do not alias each other.
+      REQUIRE(backfill.data() != aligned.data());
+      REQUIRE(backfill.data() != fine.data());
+      REQUIRE(aligned.data() != fine.data());
+      for (::cuda::std::size_t i = 0; i < backfill.size(); ++i)
+      {
+        REQUIRE(backfill[i].context() != aligned[i].context());
+        REQUIRE(backfill[i].context() != fine[i].context());
+        REQUIRE(aligned[i].context() != fine[i].context());
+      }
+
+      // Each method is cached on its own.
+      REQUIRE(dev.__locality_domains(cuda::__locality_domain_sm_split::__aligned).data() == aligned.data());
+      REQUIRE(dev.__locality_domains(cuda::__locality_domain_sm_split::__fine).data() == fine.data());
+      REQUIRE(dev.__locality_domains(cuda::__locality_domain_sm_split::__backfill).data() == backfill.data());
+    }
+  }
+
+  SECTION("The default method is backfill")
+  {
+    for (auto dev : cuda::devices)
+    {
+      REQUIRE(
+        dev.__locality_domains().data() == dev.__locality_domains(cuda::__locality_domain_sm_split::__backfill).data());
+    }
+  }
+
+  SECTION("Every method keeps the domains localized, in ascending domain id order")
+  {
+    for (auto dev : cuda::devices)
+    {
+      for (auto split : {cuda::__locality_domain_sm_split::__backfill,
+                         cuda::__locality_domain_sm_split::__aligned,
+                         cuda::__locality_domain_sm_split::__fine})
+      {
+        auto domains = dev.__locality_domains(split);
+        for (::cuda::std::size_t i = 0; i < domains.size(); ++i)
+        {
+          const auto result = domains[i].locality_domain();
+          REQUIRE(result.localized);
+          REQUIRE(result.domain_id == i);
+        }
+      }
+    }
+  }
+
+  SECTION("The methods carve the device SMs as documented on 13.4+")
+  {
+    for (auto dev : cuda::devices)
+    {
+      auto cu_device          = ::cuda::__driver::__deviceGet(dev.get());
+      const auto domain_count = static_cast<unsigned int>(
+        ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, cu_device));
       auto full = ::cuda::__driver::__deviceGetDevResource(cu_device, ::CU_DEV_RESOURCE_TYPE_SM);
       REQUIRE(full.sm.smCount == static_cast<unsigned int>(::sm_count(dev)));
+      REQUIRE(domain_count > 0);
 
-      auto params = ::cuda::std::make_unique<::CU_DEV_SM_RESOURCE_GROUP_PARAMS[]>(expected);
-      for (::cuda::std::size_t i = 0; i < expected; ++i)
+      const auto sm_resource = [](const cuda::__logical_device_ref& domain) {
+        return ::cuda::__driver::__ctxGetDevResource(domain.context(), ::CU_DEV_RESOURCE_TYPE_SM);
+      };
+
+      const auto backfill = dev.__locality_domains(cuda::__locality_domain_sm_split::__backfill);
+      const auto aligned  = dev.__locality_domains(cuda::__locality_domain_sm_split::__aligned);
+      const auto fine     = dev.__locality_domains(cuda::__locality_domain_sm_split::__fine);
+      REQUIRE(backfill.size() == domain_count);
+
+      // Backfill: every domain holds the same even share of the device, so the contexts cover the
+      // whole device up to the rounding remainder.
+      unsigned int share = full.sm.smCount / domain_count;
+      share -= share % 2U;
+      unsigned int backfill_total = 0;
+      for (auto& domain : backfill)
       {
-        params[i].flags            = ::CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID;
-        params[i].localityDomainId = static_cast<unsigned int>(i);
+        const auto resource = sm_resource(domain);
+        REQUIRE(resource.sm.smCount == share);
+        REQUIRE((resource.sm.flags & ::CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID) != 0U);
+        backfill_total += resource.sm.smCount;
       }
+      REQUIRE(backfill_total <= full.sm.smCount);
+      REQUIRE(full.sm.smCount - backfill_total < 2U * domain_count);
 
-      if (expected != 0)
+      // Aligned and fine take only the domain's own SMs: never more than the share the device could
+      // give it, and fine (the finest co-scheduling granularity) never fewer than aligned.
+      unsigned int aligned_total = 0;
+      unsigned int fine_total    = 0;
+      for (::cuda::std::size_t i = 0; i < domain_count; ++i)
       {
-        auto groups = ::cuda::std::make_unique<::CUdevResource[]>(expected);
-        static_cast<void>(::cuda::__driver::__devSmResourceSplit(
-          groups.get(), static_cast<unsigned int>(expected), full, params.get()));
-
-        unsigned int total = 0;
-        for (::cuda::std::size_t i = 0; i < expected; ++i)
-        {
-          // A locality domain that owns no SM would make the corresponding green context useless.
-          REQUIRE(groups[i].sm.smCount > 0);
-          total += groups[i].sm.smCount;
-        }
-        REQUIRE(total == full.sm.smCount);
+        const auto aligned_resource = sm_resource(aligned[i]);
+        const auto fine_resource    = sm_resource(fine[i]);
+        // A locality domain that owns no SM would make the corresponding green context useless.
+        REQUIRE(aligned_resource.sm.smCount > 0);
+        REQUIRE(fine_resource.sm.smCount >= aligned_resource.sm.smCount);
+        REQUIRE(fine_resource.sm.smCount <= full.sm.smCount);
+        REQUIRE((aligned_resource.sm.flags & ::CU_DEV_SM_RESOURCE_GROUP_BACKFILL) == 0U);
+        REQUIRE((fine_resource.sm.flags & ::CU_DEV_SM_RESOURCE_GROUP_BACKFILL) == 0U);
+        aligned_total += aligned_resource.sm.smCount;
+        fine_total += fine_resource.sm.smCount;
       }
+      // Disjoint partitions of the domain's own SMs cannot exceed the device.
+      REQUIRE(aligned_total <= full.sm.smCount);
+      REQUIRE(fine_total <= full.sm.smCount);
     }
   }
 #  endif // _CCCL_CTK_AT_LEAST(13, 4)
