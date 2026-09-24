@@ -319,7 +319,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
   synchronous_resource_ref(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
-      : __base(const_cast<synchronous_resource_ref<_OtherProperties...>&>(__other).__get_base())
+      : __base(__other.__get_base())
   {}
 
   // resource_ref is convertible to synchronous_resource_ref
@@ -333,14 +333,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
   synchronous_resource_ref& operator=(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
   {
-    __basic_any_access::__cast_to(
-      const_cast<synchronous_resource_ref<_OtherProperties...>&>(__other).__get_base(), __get_base());
+    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
   synchronous_resource_ref& operator=(const synchronous_resource_ref& __other) noexcept
   {
-    __basic_any_access::__cast_to(const_cast<synchronous_resource_ref&>(__other).__get_base(), __get_base());
+    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
@@ -359,6 +358,11 @@ private:
   using __base::interface;
 
   __base& __get_base() noexcept
+  {
+    return *this;
+  }
+
+  const __base& __get_base() const noexcept
   {
     return *this;
   }
@@ -381,20 +385,20 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
   resource_ref(const resource_ref<_OtherProperties...>& __other) noexcept
-      : __base(const_cast<resource_ref<_OtherProperties...>&>(__other).__get_base())
+      : __base(__other.__get_base())
   {}
 
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
   resource_ref& operator=(const resource_ref<_OtherProperties...>& __other) noexcept
   {
-    __basic_any_access::__cast_to(const_cast<resource_ref<_OtherProperties...>&>(__other).__get_base(), __get_base());
+    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
   resource_ref& operator=(const resource_ref& __other) noexcept
   {
-    __basic_any_access::__cast_to(const_cast<resource_ref&>(__other).__get_base(), __get_base());
+    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
@@ -415,6 +419,11 @@ private:
   using __base::interface;
 
   __base& __get_base() noexcept
+  {
+    return *this;
+  }
+
+  const __base& __get_base() const noexcept
   {
     return *this;
   }

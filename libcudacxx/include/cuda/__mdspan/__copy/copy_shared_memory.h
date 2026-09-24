@@ -208,7 +208,9 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
                                 + static_cast<_StrideTIn>(__outer) * __src_perm_src_strides[1];
         const auto __raw_offset = __inner * __tile_src_perm_smem_strides[0] + __outer * __tile_src_perm_smem_strides[1];
         const auto __smem_offset = ::cuda::__smem_offset<true, _Tp, _MaxRankUZ>(__raw_offset);
-        __smem[__smem_offset]    = __src_accessor.access(const_cast<__src_value_type*>(__src_ptr), __src_offset);
+        // The source accessor retains its original handle type despite the kernel parameter adding const.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+        __smem[__smem_offset] = __src_accessor.access(const_cast<__src_value_type*>(__src_ptr), __src_offset);
       }
     }
     else
