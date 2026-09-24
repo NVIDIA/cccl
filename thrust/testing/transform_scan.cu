@@ -37,7 +37,7 @@ OutputIterator transform_inclusive_scan(
   return result;
 }
 
-TEST_CASE("TestTransformInclusiveScanInitDispatchExplicit", "[transform_scan]")
+TEST_CASE("TestTransformInclusiveScanDispatchExplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 

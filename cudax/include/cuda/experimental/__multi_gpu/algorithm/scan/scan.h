@@ -209,7 +209,7 @@ _CCCL_HOST_API void __scan(
     {
       __CUDAX_MULTI_GPU_DISPATCH(
         __prefix.stream(),
-        CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
+        CUB_NS_QUALIFIER::DeviceScan::InclusiveScan,
         __input_it,
         __out,
         __op,

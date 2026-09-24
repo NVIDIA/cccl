@@ -255,7 +255,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
   REQUIRE(output == expected);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]", CUB_SMALL)
+CUB_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-init-env
   auto op     = cuda::std::plus{};
@@ -263,10 +263,10 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]"
   auto output = thrust::device_vector<int>(4);
   auto init   = 10;
 
-  auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, init, input.size());
+  auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, init, input.size());
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << '\n';
+    std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << '\n';
   }
 
   const thrust::device_vector<int> expected{11, 13, 16, 20};
@@ -276,7 +276,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]"
   REQUIRE(output == expected);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScanInit with args::deferred accepts environment", "[scan][env]", CUB_SMALL)
+CUB_TEST("cub::DeviceScan::InclusiveScan with args::deferred accepts environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-future-init-env
   auto op     = cuda::std::plus{};
@@ -288,10 +288,10 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit with args::deferred accepts environ
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, future_init, input.size(), env);
+  auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, future_init, input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveScanInit (FutureValue) failed with status: " << error << '\n';
+    std::cerr << "cub::DeviceScan::InclusiveScan (FutureValue) failed with status: " << error << '\n';
   }
 
   const thrust::device_vector<int> expected{11, 13, 16, 20};
@@ -301,7 +301,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit with args::deferred accepts environ
   REQUIRE(output == expected);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan][env]", CUB_SMALL)
+CUB_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-init-env-stream
   auto op     = cuda::std::plus{};
@@ -312,10 +312,10 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
   const cuda::stream stream{cuda::devices[0]};
   const cuda::stream_ref stream_ref{stream};
 
-  auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, init, input.size(), stream_ref);
+  auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, init, input.size(), stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << '\n';
+    std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << '\n';
   }
 
   const thrust::device_vector<float> expected{11.0f, 13.0f, 16.0f, 20.0f};
