@@ -337,7 +337,7 @@ function run_cuda_smoke_test() {
 
     pushd .. > /dev/null
     run_ci_timed_command "CUDA smoke ${BUILD_NAME}" \
-        ctest --test-dir "${preset_dir}" -L cuda_smoke --output-on-failure --stop-on-failure || { popd > /dev/null; return $?; }
+        ctest --test-dir "${preset_dir}" -L cuda_smoke --output-on-failure --stop-on-failure || { local rc=$?; popd > /dev/null; return "$rc"; }
     popd > /dev/null
 }
 
