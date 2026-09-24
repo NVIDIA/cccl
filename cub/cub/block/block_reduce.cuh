@@ -139,6 +139,9 @@ enum BlockReduceAlgorithm
   //!      operations to accumulate their warp aggregates into a shared location, making the final
   //!      order non-deterministic.
   //!   #. The final block-wide result is available to all threads.
+//!
+  //! Atomic accumulation is only used with ``cuda::std::plus``. Other reduction operators combine the
+  //! warp aggregates in order, as with ``BLOCK_REDUCE_WARP_REDUCTIONS``.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
