@@ -639,7 +639,7 @@ public:
       // A token has no content to materialize: only synchronize the host with
       // the work the token depends on, and return void.
       task(exec_place::host(), ldata.read()).set_symbol("wait")->*[](cudaStream_t stream) {
-        cuda_safe_call(cudaStreamSynchronize(stream));
+        cuda_try<cudaStreamSynchronize>(stream);
       };
     }
     else
@@ -647,7 +647,7 @@ public:
       typename owning_container_of<T>::type out;
 
       task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
-        cuda_safe_call(cudaStreamSynchronize(stream));
+        cuda_try<cudaStreamSynchronize>(stream);
         out = owning_container_of<T>::get_value(data);
       };
 
@@ -839,6 +839,13 @@ UNITTEST("logical_data_untyped moveable")
         free(h_addr);
       };
       cuda_try<cudaHostRegister>(h_addr, s, cudaHostRegisterPortable);
+      // Registered memory must be unregistered before it is freed. Guards run in reverse
+      // order of declaration, so this one undoes the registration before the guard above
+      // releases the buffer.
+      SCOPE(fail)
+      {
+        cuda_safe_call(cudaHostUnregister(h_addr));
+      };
       handle = ctx.logical_data(h_addr, 1);
     }
 
@@ -1146,7 +1153,10 @@ namespace reserved
 inline void unit_test_pfor()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };
@@ -1324,7 +1334,10 @@ UNITTEST("basic parallel_for test on grid")
 inline void unit_test_launch()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };
