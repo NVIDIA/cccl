@@ -72,7 +72,7 @@ template <scan_mode Mode>
 struct merge_init_value_op_t
 {
   segment initial_value;
-  bool* error_flag_ptr;
+  bool* error_flag_ptr{};
 
   template <class WarpScanT>
   __device__ void operator()(WarpScanT& scan, segment& thread_data, int valid_items) const
@@ -91,10 +91,10 @@ struct merge_init_value_op_t
 template <scan_mode Mode>
 struct merge_init_value_aggregate_op_t
 {
-  int m_target_thread_id;
+  int m_target_thread_id{};
   segment initial_value;
-  segment* m_d_warp_aggregate;
-  bool* error_flag_ptr;
+  segment* m_d_warp_aggregate{};
+  bool* error_flag_ptr{};
 
   template <int LogicalWarpThreads>
   __device__ void

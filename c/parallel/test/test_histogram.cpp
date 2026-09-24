@@ -42,7 +42,7 @@ void build_histogram(
   uint64_t row_stride_samples,
   bool is_evenly_segmented)
 {
-  cudaDeviceProp deviceProp;
+  cudaDeviceProp deviceProp{};
   cudaGetDeviceProperties(&deviceProp, 0);
 
   const int cc_major = deviceProp.major;

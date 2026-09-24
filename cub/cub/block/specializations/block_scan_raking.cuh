@@ -331,6 +331,8 @@ struct BlockScanRaking
         T upsweep_partial = Upsweep(scan_op);
 
         // Exclusive Warp-synchronous scan
+        // WarpScan fills the partial before it is read.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
         T exclusive_partial;
         WarpScan(temp_storage.warp_scan).ExclusiveScan(upsweep_partial, exclusive_partial, initial_value, scan_op);
 

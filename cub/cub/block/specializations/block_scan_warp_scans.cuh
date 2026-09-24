@@ -174,7 +174,7 @@ struct BlockScanWarpScans
     __syncthreads();
 
     // Accumulate block aggregates and save the one that is our warp's prefix
-    T warp_prefix;
+    T warp_prefix; // NOLINT(cppcoreguidelines-pro-type-member-init), filled by ApplyWarpAggregates
     block_aggregate = temp_storage.warp_aggregates[0];
 
     // Use template unrolling (since the PTX backend can't handle unrolling it for SM1x)
@@ -273,6 +273,8 @@ struct BlockScanWarpScans
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, const T& initial_value, ScanOp scan_op)
   {
+    // ExclusiveScan fills the aggregate before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T block_aggregate;
     ExclusiveScan(input, exclusive_output, initial_value, scan_op, block_aggregate);
   }
@@ -299,6 +301,8 @@ struct BlockScanWarpScans
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, T& block_aggregate)
   {
     // Compute warp scan in each warp.  The exclusive output from each lane0 is invalid.
+    // WarpScan fills the output before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T inclusive_output;
     WarpScanT(temp_storage.warp_scan[warp_id]).Scan(input, inclusive_output, exclusive_output, scan_op);
 
@@ -341,6 +345,8 @@ struct BlockScanWarpScans
   ExclusiveScan(T input, T& exclusive_output, const T& initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Compute warp scan in each warp.  The exclusive output from each lane0 is invalid.
+    // WarpScan fills the output before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T inclusive_output;
     WarpScanT(temp_storage.warp_scan[warp_id]).Scan(input, inclusive_output, exclusive_output, scan_op);
 
@@ -381,6 +387,8 @@ struct BlockScanWarpScans
   ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     // Compute block-wide exclusive scan.  The exclusive output from tid0 is invalid.
+    // ExclusiveScan fills the aggregate before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T block_aggregate;
     ExclusiveScan(input, exclusive_output, scan_op, block_aggregate);
 
@@ -488,6 +496,8 @@ struct BlockScanWarpScans
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveScan(T input, T& exclusive_output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
+    // InclusiveScan fills the aggregate before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T block_aggregate;
     InclusiveScan(input, exclusive_output, scan_op, block_aggregate);
 

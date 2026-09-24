@@ -73,10 +73,10 @@ struct CommandLineArgs
   std::vector<std::string> keys;
   std::vector<std::string> values;
   std::vector<std::string> args;
-  cudaDeviceProp deviceProp;
-  float device_giga_bandwidth;
-  std::size_t device_free_physmem;
-  std::size_t device_total_physmem;
+  cudaDeviceProp deviceProp{};
+  float device_giga_bandwidth{};
+  std::size_t device_free_physmem{};
+  std::size_t device_total_physmem{};
 
   /**
    * Constructor
@@ -1429,8 +1429,8 @@ struct CpuTimer
 
 struct GpuTimer
 {
-  cudaEvent_t start;
-  cudaEvent_t stop;
+  cudaEvent_t start{};
+  cudaEvent_t stop{};
 
   GpuTimer()
   {
@@ -1504,7 +1504,7 @@ struct HugeDataType
     return *this;
   }
 
-  int data[ELEMENTS_PER_OBJECT];
+  int data[ELEMENTS_PER_OBJECT]{};
 };
 
 template <int ElementsPerObject>

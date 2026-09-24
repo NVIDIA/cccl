@@ -54,6 +54,7 @@ using AgentMergeSortPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for Devic
   detail::agent_merge_sort_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
 
 //! The tuning policy for all algorithms in @ref DeviceMergeSort.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct MergeSortPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block

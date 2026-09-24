@@ -22,7 +22,7 @@ struct scalar_to_vec_t<VectorT, ::cuda::std::void_t<decltype(VectorT::x)>>
   __host__ __device__ __forceinline__ auto operator()(T scalar) const -> VectorT
   {
     const auto c = static_cast<decltype(VectorT::x)>(scalar);
-    VectorT r;
+    VectorT r{};
     constexpr auto components = ::cuda::std::tuple_size_v<VectorT>;
     if constexpr (components >= 1)
     {

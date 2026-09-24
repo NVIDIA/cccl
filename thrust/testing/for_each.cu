@@ -31,8 +31,7 @@ void TestForEachSimple()
   Vector input{3, 2, 3, 4, 6};
   Vector output(7, (T) 0);
 
-  mark_present_for_each<T> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<T> f{thrust::raw_pointer_cast(output.data())};
 
   const typename Vector::iterator result = thrust::for_each(input.begin(), input.end(), f);
 
@@ -83,8 +82,7 @@ void TestForEachNSimple()
   Vector input{3, 2, 3, 4, 6};
   Vector output(7, (T) 0);
 
-  mark_present_for_each<T> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<T> f{thrust::raw_pointer_cast(output.data())};
 
   const typename Vector::iterator result = thrust::for_each_n(input.begin(), input.size(), f);
 
@@ -131,8 +129,7 @@ TEST_CASE("TestForEachSimpleAnySystem", "[for_each]")
 {
   thrust::device_vector<int> output(7, 0);
 
-  mark_present_for_each<int> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<int> f{thrust::raw_pointer_cast(output.data())};
 
   const thrust::counting_iterator<int> result =
     thrust::for_each(thrust::make_counting_iterator(0), thrust::make_counting_iterator(5), f);
@@ -146,8 +143,7 @@ TEST_CASE("TestForEachNSimpleAnySystem", "[for_each]")
 {
   thrust::device_vector<int> output(7, 0);
 
-  mark_present_for_each<int> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<int> f{thrust::raw_pointer_cast(output.data())};
 
   const thrust::counting_iterator<int> result = thrust::for_each_n(thrust::make_counting_iterator(0), 5, f);
 
@@ -173,10 +169,8 @@ void TestForEach(const size_t n)
   thrust::host_vector<T> h_output(output_size, (T) 0);
   thrust::device_vector<T> d_output(output_size, (T) 0);
 
-  mark_present_for_each<T> h_f;
-  mark_present_for_each<T> d_f;
-  h_f.ptr = &h_output[0];
-  d_f.ptr = (&d_output[0]).get();
+  const mark_present_for_each<T> h_f{&h_output[0]};
+  const mark_present_for_each<T> d_f{(&d_output[0]).get()};
 
   const typename thrust::host_vector<T>::iterator h_result = thrust::for_each(h_input.begin(), h_input.end(), h_f);
 
@@ -205,10 +199,8 @@ void TestForEachN(const size_t n)
   thrust::host_vector<T> h_output(output_size, (T) 0);
   thrust::device_vector<T> d_output(output_size, (T) 0);
 
-  mark_present_for_each<T> h_f;
-  mark_present_for_each<T> d_f;
-  h_f.ptr = &h_output[0];
-  d_f.ptr = (&d_output[0]).get();
+  const mark_present_for_each<T> h_f{&h_output[0]};
+  const mark_present_for_each<T> d_f{(&d_output[0]).get()};
 
   const typename thrust::host_vector<T>::iterator h_result = thrust::for_each_n(h_input.begin(), h_input.size(), h_f);
 

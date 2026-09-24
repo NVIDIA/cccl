@@ -139,6 +139,8 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::true_type /* is_fp */)
     {
+      // The active scale representation is assigned below.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
       result.reciprocal = static_cast<T>(static_cast<T>(num_levels - 1) / static_cast<T>(max_level - min_level));
       return result;
@@ -148,6 +150,8 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
     {
+      // The active scale representation is assigned below.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
       result.fraction.bins  = static_cast<T>(num_levels - 1);
       result.fraction.range = static_cast<T>(max_level - min_level);
@@ -163,6 +167,8 @@ struct Transforms
 #if _CCCL_HAS_NVFP16()
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
     {
+      // The active scale representation is assigned below.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
                         (result.reciprocal = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),

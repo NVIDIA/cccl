@@ -80,7 +80,7 @@ public:
    */
   static pool_options get_default_options()
   {
-    pool_options ret;
+    pool_options ret{};
 
     ret.min_blocks_per_chunk = 16;
     ret.min_bytes_per_chunk  = 1024;
@@ -158,7 +158,8 @@ private:
   using void_ptr = typename Upstream::pointer;
   using char_ptr = typename ::cuda::std::pointer_traits<void_ptr>::template rebind<char>;
 
-  struct chunk_descriptor
+  // Preserve default construction of allocator metadata; allocation paths supply the fields.
+  struct chunk_descriptor // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     std::size_t size;
     void_ptr pointer;
@@ -167,7 +168,8 @@ private:
 
   using chunk_vector = thrust::host_vector<chunk_descriptor, allocator<chunk_descriptor, Bookkeeper>>;
 
-  struct oversized_block_descriptor
+  // Preserve default construction of allocator metadata; allocation paths supply the fields.
+  struct oversized_block_descriptor // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     std::size_t size;
     std::size_t alignment;
@@ -367,7 +369,7 @@ public:
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
     if (bytes > m_options.largest_block_size || alignment > m_options.alignment)
     {
-      oversized_block_descriptor oversized;
+      oversized_block_descriptor oversized{};
       oversized.size      = bytes;
       oversized.alignment = alignment;
 
@@ -452,10 +454,7 @@ public:
       assert(bytes >= m_options.min_bytes_per_chunk);
       assert(bytes <= m_options.max_bytes_per_chunk);
 
-      chunk_descriptor allocated;
-      allocated.size     = bytes;
-      allocated.pointer  = m_upstream->do_allocate(bytes, m_options.alignment);
-      allocated.pool_idx = pool_idx;
+      const chunk_descriptor allocated{bytes, m_upstream->do_allocate(bytes, m_options.alignment), pool_idx};
       m_allocated.push_back(allocated);
       bucket.previous_allocated_count = n;
 
