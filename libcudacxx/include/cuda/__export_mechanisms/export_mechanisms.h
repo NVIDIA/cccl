@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___LOGICAL_ENDPOINT_FWD_H
-#define _CUDA___LOGICAL_ENDPOINT_FWD_H
+#ifndef _CUDA___EXPORT_MECHANISMS_EXPORT_MECHANISMS_H
+#define _CUDA___EXPORT_MECHANISMS_EXPORT_MECHANISMS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,26 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK() && _CCCL_CTK_AT_LEAST(13, 3) && !_CCCL_COMPILER(NVRTC)
-
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-class logical_endpoint_id;
-class logical_endpoint_id_range;
-class logical_endpoint_fabric_handle;
-class multicast_logical_endpoint;
-class multicast_logical_endpoint_ref;
-class multicast_logical_endpoint_spec;
-class unicast_logical_endpoint;
-class unicast_logical_endpoint_ref;
-class unicast_logical_endpoint_spec;
+//! @brief Tag selecting fabric-handle export.
+struct fabric_handle_t
+{
+  constexpr explicit fabric_handle_t() noexcept = default;
+};
+
+//! @brief Selects fabric-handle export.
+inline constexpr fabric_handle_t fabric_handle{};
 
 _CCCL_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/epilogue.h>
+#include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK() && _CCCL_CTK_AT_LEAST(13, 3) && !_CCCL_COMPILER(NVRTC)
-
-#endif // _CUDA___LOGICAL_ENDPOINT_FWD_H
+#endif // _CUDA___EXPORT_MECHANISMS_EXPORT_MECHANISMS_H
