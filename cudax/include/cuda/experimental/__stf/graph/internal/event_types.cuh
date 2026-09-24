@@ -174,6 +174,12 @@ join_with_graph_nodes(backend_ctx_untyped& bctx, event_list& prereqs, size_t cur
 
 // This creates a new CUDASTF event list from a cudaGraphNode_t and sets the appropriate annotations in the DOT output.
 /* previous_prereqs is only passed so that we can insert the proper DOT annotations */
+//
+// noexcept: by the time this runs the node is already in the graph, and no caller can take it
+// back out cleanly (allocate() would also have to free a buffer three different ways). The only
+// things that can fail here are host allocations -- the event handle, the event list, and under
+// DOT tracing the symbol and edge bookkeeping -- so host OOM at this point ends the program with
+// a report rather than leaving an orphan node behind.
 template <typename context_t>
 inline void fork_from_graph_node(
   context_t& ctx,
@@ -181,20 +187,23 @@ inline void fork_from_graph_node(
   cudaGraph_t g,
   size_t stage,
   event_list& previous_prereqs,
-  ::std::string prereq_string)
+  ::std::string prereq_string) noexcept
 {
-  auto gnp = reserved::graph_event(n, stage, g);
-  gnp->set_symbol(ctx, mv(prereq_string));
-
-  auto& dot = *ctx.get_dot();
-  if (dot.is_tracing_prereqs())
+  ON_THROW(abort)
   {
-    for (const auto& e : previous_prereqs)
-    {
-      dot.add_edge(e->unique_prereq_id, gnp->unique_prereq_id, edge_type::prereqs);
-    }
-  }
+    auto gnp = reserved::graph_event(n, stage, g);
+    gnp->set_symbol(ctx, mv(prereq_string));
 
-  previous_prereqs = event_list(gnp);
+    auto& dot = *ctx.get_dot();
+    if (dot.is_tracing_prereqs())
+    {
+      for (const auto& e : previous_prereqs)
+      {
+        dot.add_edge(e->unique_prereq_id, gnp->unique_prereq_id, edge_type::prereqs);
+      }
+    }
+
+    previous_prereqs = event_list(gnp);
+  };
 }
 } // namespace cuda::experimental::stf::reserved
