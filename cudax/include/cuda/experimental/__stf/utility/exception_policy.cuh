@@ -668,7 +668,7 @@ struct backoff_t
 
     // maybe_unused: like __cap above, __left is referenced only inside
     // _CCCL_CATCH_ALL, so CTK <= 12.9's cudafe reports #177 without it.
-    for ([[maybe_unused]] const int __left = __n_;;)
+    for ([[maybe_unused]] int __left = __n_;;)
     {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds{__sleep});
       _CCCL_TRY
