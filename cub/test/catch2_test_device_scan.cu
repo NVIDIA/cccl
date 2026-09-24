@@ -13,7 +13,6 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
@@ -229,7 +228,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     compute_inclusive_scan_reference(
       host_items.cbegin(), host_items.cend(), expected_result.begin(), scan_op, init_value);
 
-    device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value, num_items);
+    device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value, num_items);
 
     // Verify result
     REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
@@ -237,7 +236,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
     // Run test in-place
     if constexpr (std::is_same_v<input_t, output_t>)
     {
-      device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
+      device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
 
       // Verify result
       REQUIRE_THAT_QUIET(expected_result, Equals(in_items));

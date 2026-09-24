@@ -17,14 +17,14 @@ CUB_TEST("Device inclusive scan works", "[scan][device]", CUB_SMALL)
   const int init = 1;
   size_t temp_storage_bytes{};
 
-  cub::DeviceScan::InclusiveScanInit(
+  cub::DeviceScan::InclusiveScan(
     nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::maximum<>{}, init, static_cast<int>(input.size()));
 
   // Allocate temporary storage for inclusive scan
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
 
   // Run inclusive prefix sum
-  cub::DeviceScan::InclusiveScanInit(
+  cub::DeviceScan::InclusiveScan(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     input.begin(),
@@ -121,15 +121,15 @@ CUB_TEST("cub::DeviceScan::InclusiveScan non-env in-place overload is not ambigu
   cub::DeviceScan::InclusiveScan(nullptr, temp_storage_bytes, data.begin(), cuda::std::plus<>{}, 1);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScanInit non-env overload is not ambiguous", "[scan][device]", CUB_SMALL)
+CUB_TEST("cub::DeviceScan::InclusiveScan non-env overload is not ambiguous", "[scan][device]", CUB_SMALL)
 {
   thrust::device_vector<int> input(1);
   thrust::device_vector<int> out(1);
   size_t temp_storage_bytes = 0;
-  cub::DeviceScan::InclusiveScanInit(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 5, 1);
+  cub::DeviceScan::InclusiveScan(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 5, 1);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload is not ambiguous",
+CUB_TEST("cub::DeviceScan::InclusiveScan args::deferred non-env overload is not ambiguous",
          "[scan][device]",
          CUB_SMALL)
 {
@@ -138,11 +138,11 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload is 
   thrust::device_vector<int> init_storage(1, 5);
   auto deferred_init        = cuda::args::deferred(init_storage.begin());
   size_t temp_storage_bytes = 0;
-  cub::DeviceScan::InclusiveScanInit(
+  cub::DeviceScan::InclusiveScan(
     nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, deferred_init, 1);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload works", "[scan][device]", CUB_SMALL)
+CUB_TEST("cub::DeviceScan::InclusiveScan args::deferred non-env overload works", "[scan][device]", CUB_SMALL)
 {
   // example-begin device-inclusive-scan-init-deferred
   thrust::device_vector<int> input{0, -1, 2, -3, 4, -5, 6};
@@ -151,7 +151,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload wor
   auto deferred_init = cuda::args::deferred(init_storage.begin());
 
   size_t temp_storage_bytes{};
-  cub::DeviceScan::InclusiveScanInit(
+  cub::DeviceScan::InclusiveScan(
     nullptr,
     temp_storage_bytes,
     input.begin(),
@@ -162,7 +162,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload wor
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
 
-  cub::DeviceScan::InclusiveScanInit(
+  cub::DeviceScan::InclusiveScan(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     input.begin(),
