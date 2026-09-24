@@ -1962,9 +1962,8 @@ inline void test_pop_prologue_graph_child_embed()
   cudaGraph_t body = handle.graph();
 
   // Build an outer graph that embeds `body` as a child node.
-  const cudaGraph_t outer = cuda_try<cudaGraphCreate>(0);
-  cudaGraphNode_t child{};
-  cuda_try(cudaGraphAddChildGraphNode(&child, outer, nullptr, 0, body));
+  const cudaGraph_t outer                      = cuda_try<cudaGraphCreate>(0);
+  [[maybe_unused]] const cudaGraphNode_t child = cuda_try<cudaGraphAddChildGraphNode>(outer, nullptr, 0, body);
 
   const cudaGraphExec_t outer_exec = cuda_try<cudaGraphInstantiateWithFlags>(outer, 0);
 
@@ -1972,8 +1971,8 @@ inline void test_pop_prologue_graph_child_embed()
   // record an event on handle.stream() (where graph() injected dep A) and make
   // our launch stream wait on it before launching the embedded child.
   const cudaStream_t launch_stream = cuda_try<cudaStreamCreate>();
-  cudaEvent_t dep_a                = nullptr;
-  cuda_try(cudaEventCreate(&dep_a)); // an overload set, so the runtime-status form
+  // cudaEventCreate is an overload set; the flags form is the same call with the default flags.
+  const cudaEvent_t dep_a = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
   cuda_try<cudaEventRecord>(dep_a, handle.stream());
   cuda_try<cudaStreamWaitEvent>(launch_stream, dep_a, 0);
 
