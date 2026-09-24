@@ -180,8 +180,8 @@ protected:
     return sizeof...(_Types);
   }
 
-  __union<_DestructibleTrait, 0, _Types...> __data_;
-  __index_t __index_;
+  __union<_DestructibleTrait, 0, _Types...> __data_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
+  __index_t __index_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   friend struct __access::__base;
 };

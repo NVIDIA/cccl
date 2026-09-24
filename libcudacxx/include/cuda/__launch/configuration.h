@@ -166,7 +166,8 @@ protected:
   using value_type = _Tp;
   using view_type  = ::cuda::std::span<_Tp>;
 
-  ::cuda::std::size_t __n_;
+  // The derived launch option uses this count to calculate its size and view.
+  ::cuda::std::size_t __n_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   _CCCL_HOST_API constexpr __dyn_smem_option_base(::cuda::std::size_t __n) noexcept
       : __n_{__n}

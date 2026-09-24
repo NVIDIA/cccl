@@ -38,7 +38,8 @@ template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT front_insert_iterator
 {
 protected:
-  _Container* container;
+  // The standard requires protected access.
+  _Container* container; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 public:
   using iterator_category = output_iterator_tag;

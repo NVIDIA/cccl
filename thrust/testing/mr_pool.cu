@@ -143,8 +143,9 @@ public:
     upstream.do_deallocate(p.ptr, n, alignment);
   }
 
-  std::size_t id_to_allocate{};
-  std::size_t id_to_deallocate{};
+  // Tests directly configure and inspect these tracking IDs.
+  std::size_t id_to_allocate{}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
+  std::size_t id_to_deallocate{}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 private:
   thrust::mr::new_delete_resource upstream;
