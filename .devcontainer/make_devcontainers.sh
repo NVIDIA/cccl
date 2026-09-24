@@ -141,9 +141,9 @@ readonly combinations
 # The root devcontainer.json file is used as the default container as well as a template for all
 # other devcontainer.json files by replacing the `image:` field with the appropriate image name
 readonly base_devcontainer_file="./devcontainer.json"
-NEWEST_GCC_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "gcc")] | sort_by((.cuda | tonumber), (.compiler_version | tonumber)) | .[-1]')
+NEWEST_GCC_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "gcc")] | sort_by((.cuda | split(".") | map(tonumber)), (.compiler_version | tonumber)) | .[-1]')
 readonly NEWEST_GCC_CUDA_ENTRY
-NEWEST_LLVM_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "llvm")] | sort_by((.cuda | tonumber), (.compiler_version | tonumber)) | .[-1]')
+NEWEST_LLVM_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "llvm")] | sort_by((.cuda | split(".") | map(tonumber)), (.compiler_version | tonumber)) | .[-1]')
 # shellcheck disable=SC2034
 readonly NEWEST_LLVM_CUDA_ENTRY
 DEFAULT_CUDA=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.cuda')
