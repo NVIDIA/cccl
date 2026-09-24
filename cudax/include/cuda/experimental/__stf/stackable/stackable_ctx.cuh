@@ -1527,8 +1527,9 @@ static __global__ void kernel_check_value(T* addr, T val)
 UNITTEST("stackable host_launch")
 {
   stackable_ctx ctx;
-  // Finalized by a guard, for pedantry's sake: a step that throws still finalizes the context.
-  SCOPE(exit)
+  // Finalized by a guard, for pedantry's sake. SCOPE(success), since finalize() may throw: a failing
+  // step leaves the context alone and its own exception propagates.
+  SCOPE(success)
   {
     ctx.finalize();
   };
@@ -1730,8 +1731,9 @@ UNITTEST("graph_scope iterative pattern")
 UNITTEST("stackable task on exec_place::host()")
 {
   stackable_ctx ctx;
-  // Finalized by a guard, for pedantry's sake: a step that throws still finalizes the context.
-  SCOPE(exit)
+  // Finalized by a guard, for pedantry's sake. SCOPE(success), since finalize() may throw: a failing
+  // step leaves the context alone and its own exception propagates.
+  SCOPE(success)
   {
     ctx.finalize();
   };
@@ -1746,8 +1748,9 @@ UNITTEST("stackable task on exec_place::host()")
 UNITTEST("stackable task with set_symbol and set_exec_place")
 {
   stackable_ctx ctx;
-  // Finalized by a guard, for pedantry's sake: a step that throws still finalizes the context.
-  SCOPE(exit)
+  // Finalized by a guard, for pedantry's sake. SCOPE(success), since finalize() may throw: a failing
+  // step leaves the context alone and its own exception propagates.
+  SCOPE(success)
   {
     ctx.finalize();
   };
