@@ -22,7 +22,7 @@
 #include <cuda/experimental/sharded.cuh>
 
 using namespace cuda::experimental::sharded;
-using cuda::experimental::places::make_locality_domain_grid;
+using cuda::experimental::places::exec_place;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -39,7 +39,7 @@ struct plus2
 int main()
 {
   cuda_safe_call(cudaSetDevice(0));
-  auto group     = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
+  auto group     = place_group{exec_place::all_locality_domains()};
   const size_t n = 500000;
   auto a         = sharded_array<double>::allocate(group, n);
   fill(a, 1.0);

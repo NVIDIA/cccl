@@ -56,7 +56,7 @@
 #include <vector>
 
 using namespace cuda::experimental::sharded;
-using cuda::experimental::places::make_locality_domain_grid;
+using cuda::experimental::places::exec_place;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -129,7 +129,7 @@ double dot(const sharded_array<double>& a, const sharded_array<double>& b, shard
 
 int main()
 {
-  place_group group{cuda::experimental::places::exec_place::all_locality_domains()};
+  place_group group{exec_place::all_locality_domains()};
   const size_t nd = group.size();
   ::std::printf("CG over %zu place(s)\n", nd);
 

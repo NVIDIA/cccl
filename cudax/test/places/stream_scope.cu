@@ -44,7 +44,7 @@
 
 using cuda::experimental::places::cuda_safe_call;
 using cuda::experimental::places::exec_place_scope;
-using cuda::experimental::places::make_locality_domain_grid;
+using cuda::experimental::places::exec_place;
 using cuda::experimental::places::place_group;
 using cuda::experimental::places::stream_scope;
 
@@ -92,7 +92,7 @@ int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group     = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
+  auto group     = place_group{exec_place::all_locality_domains()};
   const size_t P = group.size();
 
   std::vector<unsigned*> d_smids(P);

@@ -30,7 +30,7 @@
 
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::exec_place_scope;
-using cuda::experimental::places::make_locality_domain_grid;
+using cuda::experimental::places::exec_place;
 using cuda::experimental::places::place_group;
 
 namespace

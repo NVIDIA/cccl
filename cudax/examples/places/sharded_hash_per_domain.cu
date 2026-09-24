@@ -57,7 +57,7 @@
 #include <vector>
 
 using namespace cuda::experimental::sharded;
-using cuda::experimental::places::make_locality_domain_grid;
+using cuda::experimental::places::exec_place;
 using cuda::experimental::places::place_group;
 using cuda::experimental::places::place_memory_resource;
 namespace xcuco = cuda::experimental::cuco;
@@ -83,7 +83,7 @@ struct probe_of
 
 int main()
 {
-  auto group            = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
+  auto group            = place_group{exec_place::all_locality_domains()};
   const ::std::size_t P = group.size();
   printf("place_group with %zu place(s)\n", P);
 

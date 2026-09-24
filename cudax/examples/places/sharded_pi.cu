@@ -53,7 +53,7 @@
 #include <cstdio>
 
 using namespace cuda::experimental::sharded;
-using cuda::experimental::places::make_locality_domain_grid;
+using cuda::experimental::places::exec_place;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -144,7 +144,7 @@ float estimate_hits(place_group& group, const ::std::vector<size_t>& shard_sizes
 int main()
 {
   cuda_safe_call(cudaSetDevice(0));
-  place_group group{cuda::experimental::places::exec_place::all_locality_domains()};
+  place_group group{exec_place::all_locality_domains()};
   const size_t n = 1u << 24;
   printf("sharded Monte Carlo pi: n = %zu samples over %zu places\n", n, group.size());
 

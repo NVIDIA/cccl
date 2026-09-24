@@ -27,7 +27,7 @@
 #include <vector>
 
 using namespace cuda::experimental::sharded;
-using cuda::experimental::places::make_locality_domain_grid;
+using cuda::experimental::places::exec_place;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -156,7 +156,7 @@ int run_case(const char* name, place_group& group, bool normal)
 int main()
 {
   cuda_safe_call(cudaSetDevice(0));
-  place_group group{cuda::experimental::places::exec_place::all_locality_domains()};
+  place_group group{exec_place::all_locality_domains()};
   printf("random_fill invariance: %zu places, N=%zu\n", group.size(), N);
 
   int failures = 0;

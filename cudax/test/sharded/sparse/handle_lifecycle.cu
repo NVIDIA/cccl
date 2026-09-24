@@ -34,7 +34,7 @@
 #include <vector>
 
 using namespace cuda::experimental::sharded;
-using cuda::experimental::places::make_locality_domain_grid;
+using cuda::experimental::places::exec_place;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -131,7 +131,7 @@ void run_spmv_checked(
 
 void test_shared_within_group_distinct_across_groups(const host_csr& m)
 {
-  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
+  auto group = place_group{exec_place::all_locality_domains()};
 
   const auto x_h = random_vector(static_cast<size_t>(m.cols), 11);
   double* d_x    = device_upload(x_h);
@@ -196,7 +196,7 @@ void test_shared_within_group_distinct_across_groups(const host_csr& m)
 
 void test_container_death_leaves_handle_alive(const host_csr& m)
 {
-  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
+  auto group = place_group{exec_place::all_locality_domains()};
 
   const auto x_h = random_vector(static_cast<size_t>(m.cols), 21);
   double* d_x    = device_upload(x_h);
@@ -247,7 +247,7 @@ void test_spmm_and_times_share_the_same_handle(const host_csr& m)
 {
   // Every entry point of the sparse layer draws from the same per-place
   // cache: spmv, spmm, and the measured-rebalance timers.
-  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
+  auto group = place_group{exec_place::all_locality_domains()};
 
   const ::std::int64_t n_cols = 8;
   const auto x_h              = random_vector(static_cast<size_t>(m.cols), 31);

@@ -47,7 +47,7 @@
 #include <vector>
 
 using namespace cuda::experimental::sharded;
-using cuda::experimental::places::make_locality_domain_grid;
+using cuda::experimental::places::exec_place;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -149,7 +149,7 @@ int main(int argc, char** argv)
   const double bytes_rw  = 2.0 * sizeof(T); // copy, scale: one read + one write per element
   const double bytes_rrw = 3.0 * sizeof(T); // add, triad: two reads + one write
 
-  auto group = place_group{cuda::experimental::places::exec_place::all_locality_domains()};
+  auto group = place_group{exec_place::all_locality_domains()};
   printf("STREAM, %zu doubles per array (%.1f GiB), %d reps, place_group with %zu place(s)\n",
          n,
          double(n) * sizeof(T) / (1u << 30),
