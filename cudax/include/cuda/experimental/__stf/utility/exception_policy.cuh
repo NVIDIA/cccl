@@ -3300,8 +3300,8 @@ UNITTEST("policy inventory")
   EXPECT(noted.str().find("noted+deferred") != ::std::string::npos);
 
   // as_expected adapts to the callable's declared expected type on both paths.
-  using _Result = ::cuda::std::expected<int, ::std::exception_ptr>;
-  auto good     = on_throw(as_expected) << []() -> _Result {
+  using _Result   = ::cuda::std::expected<int, ::std::exception_ptr>;
+  const auto good = on_throw(as_expected) << []() -> _Result {
     return 5; // expected's converting constructor keeps the happy path natural
   };
   static_assert(::cuda::std::is_same_v<decltype(good), const _Result>,
@@ -3570,7 +3570,7 @@ UNITTEST("as_expected and defer")
   // The callable declares the boundary type; expected's converting constructor keeps a bare
   // success return natural.
   {
-    auto r = on_throw(as_expected) << []() -> _PtrResult {
+    const auto r = on_throw(as_expected) << []() -> _PtrResult {
       return 42;
     };
     static_assert(::cuda::std::is_same_v<decltype(r), const _PtrResult>);

@@ -645,7 +645,7 @@ UNITTEST("box from an array of integral pairs")
     ::std::pair{0, 10},
     ::std::pair{20, 30},
   };
-  auto shape = box(bounds);
+  const auto shape = box(bounds);
 
   static_assert(::cuda::std::is_same_v<::cuda::std::remove_cv_t<decltype(shape)>, box<2>>);
   EXPECT(shape.get_begin(0) == 0);
