@@ -49,6 +49,7 @@
 
 #include <cuda/experimental/__multi_gpu/concepts.h>
 #include <cuda/experimental/__places/stream_pool.cuh> // get_device_from_stream
+#include <cuda/experimental/__places/stream_scope.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <cstddef>
@@ -99,38 +100,6 @@ __global__ void __mgmn_all_reduce_kernel(
   }
 }
 
-//! @brief RAII device scope derived from a stream: the stream's device is
-//! current for the scope's lifetime (a launch needs the current device to
-//! match the stream's), the previous device restored on exit.
-class __stream_device_scope
-{
-public:
-  explicit __stream_device_scope(cudaStream_t __stream)
-      : __prev_(::cuda::experimental::stf::cuda_try<cudaGetDevice>())
-  {
-    const int __target = get_device_from_stream(__stream);
-    if (__target != __prev_)
-    {
-      ::cuda::experimental::stf::cuda_safe_call(cudaSetDevice(__target));
-      __switched_ = true;
-    }
-  }
-
-  __stream_device_scope(const __stream_device_scope&)            = delete;
-  __stream_device_scope& operator=(const __stream_device_scope&) = delete;
-
-  ~__stream_device_scope()
-  {
-    if (__switched_)
-    {
-      (void) cudaSetDevice(__prev_);
-    }
-  }
-
-private:
-  int __prev_;
-  bool __switched_ = false;
-};
 } // namespace reserved
 
 /**
@@ -720,7 +689,7 @@ private:
         for (::std::size_t __d = 0; __d < __n; ++__d)
         {
           const auto& __dst = __c.__slots[__d];
-          reserved::__stream_device_scope __scope(__dst.__stream);
+          stream_scope __scope(__dst.__stream);
           reserved::__mgmn_all_reduce_kernel<_Tp, _ReduceOp><<<__blocks, __threads, 0, __dst.__stream>>>(
             __ptrs, static_cast<unsigned>(__n), __count, __op, static_cast<_Tp*>(__dst.__recv));
           ::cuda::experimental::stf::cuda_safe_call(cudaGetLastError());

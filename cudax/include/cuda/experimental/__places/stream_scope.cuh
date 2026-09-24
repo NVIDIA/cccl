@@ -10,36 +10,34 @@
 
 /**
  * @file
- * @brief `stream_scope`: device currency derived from a stream, for generic
+ * @brief `stream_scope`: the stream's own context made current, for generic
  *        per-shard work.
  *
  * Work submitted into a CUDA stream executes in the stream's own context:
  * kernels launched into a stream created from a green context run on that
  * context's SM partition regardless of which context is current on the
- * calling thread (this is the design premise of the runtime execution-context
- * model, and is exercised by `cudax/test/places/stream_scope.cu`). The one
- * thing a launch still needs from the calling thread is *device* currency —
- * the runtime requires the current device to match the stream's device.
+ * calling thread (exercised by `cudax/test/places/stream_scope.cu`). What a
+ * launch still needs from the calling thread is a current context matching
+ * the stream's device; making the stream's exact context current also puts
+ * everything context-sensitive done inside the scope (a kernel's first-launch
+ * module load, function attributes, a handle created in place) where the
+ * work runs.
  *
- * `stream_scope` provides exactly that, derived from the stream alone:
- * `cudaSetDevice(get_device_from_stream(stream))` with RAII restore. Generic
- * algorithms over sharded structures therefore never need an execution-place
- * object: the per-shard environment's stream carries everything.
+ * `stream_scope` is libcu++'s `cuda::__ensure_current_context` taken from the
+ * stream (`cuStreamGetCtx_v2`, then a context push, popped on exit) — the
+ * same scope the MGMN algorithms put around their per-rank calls — spelled
+ * for a raw `cudaStream_t`. Generic algorithms over sharded structures
+ * therefore never need an execution-place object: the per-shard environment's
+ * stream carries everything.
  *
  * What deliberately stays outside this scope (provider/engine territory):
  * stream *creation* (streams must be born in their place's context — see
- * `stream_pool::next`), and context-implicit state creation such as vendor
- * library handles (create those under the owning place, before entering
- * generic code, and cache them).
+ * `stream_pool::next`), and long-lived context-implicit state such as vendor
+ * library handles (create those under the owning place and cache them).
  *
- * Capture note: the device query is capture-safe. On CTK >= 12.8,
- * `cudaStreamGetDevice` answers during thread-local, relaxed and global
- * capture, on device and green-context streams, without invalidating the
- * capture (probed on CTK 13.4) — so this scope is correct while lanes are
- * capturing, including cross-device captures. (Pre-12.8 toolkits fall back
- * to the calling thread's current device under capture, which is only
- * correct on single-device systems; the locality-domain feature set
- * requires 13.4+ anyway.)
+ * Capture note: the stream's context query is capture-safe on CTK 13.4 (the
+ * locality-domain feature set requires it anyway), so this scope is correct
+ * while lanes are capturing, including cross-device captures.
  */
 
 #pragma once
@@ -54,57 +52,34 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__stream/stream_ref.h>
-
-#include <cuda/experimental/__places/places.cuh> // cuda_try
-#include <cuda/experimental/__places/stream_pool.cuh> // get_device_from_stream
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h> // defines __ensure_current_context(stream_ref)
 
 #include <cuda_runtime.h>
 
 namespace cuda::experimental::places
 {
 /**
- * @brief RAII device scope derived from a stream: makes the stream's device
- * current for the scope's lifetime and restores the previous device on exit.
- *
- * On a single-device system (or when the stream's device is already current)
- * this is a no-op apart from one device query. Non-copyable, non-movable.
+ * @brief RAII scope making a stream's own context current for its lifetime
+ * (green or primary), restoring the previous context on exit. A thin
+ * spelling of `cuda::__ensure_current_context` for a raw `cudaStream_t`.
+ * Non-copyable, non-movable.
  */
 class stream_scope
 {
 public:
   explicit stream_scope(cudaStream_t __stream)
-  {
-    const int __target = places::get_device_from_stream(__stream);
-    __prev_            = places::cuda_try<cudaGetDevice>();
-    if (__target != __prev_)
-    {
-      ::cuda::experimental::stf::cuda_safe_call(cudaSetDevice(__target));
-      __switched_ = true;
-    }
-  }
-
-  explicit stream_scope(::cuda::stream_ref __stream)
-      : stream_scope(__stream.get())
+      : __ctx_{::cuda::stream_ref{__stream}}
   {}
-
+  explicit stream_scope(::cuda::stream_ref __stream)
+      : __ctx_{__stream}
+  {}
   stream_scope(const stream_scope&)            = delete;
   stream_scope& operator=(const stream_scope&) = delete;
   stream_scope(stream_scope&&)                 = delete;
   stream_scope& operator=(stream_scope&&)      = delete;
 
-  ~stream_scope()
-  {
-    if (__switched_)
-    {
-      // Restore on every path; a failure here would indicate a torn-down
-      // context, in which case there is nothing better to do than continue.
-      (void) cudaSetDevice(__prev_);
-    }
-  }
-
 private:
-  int __prev_      = -1;
-  bool __switched_ = false;
+  ::cuda::__ensure_current_context __ctx_;
 };
 } // namespace cuda::experimental::places
