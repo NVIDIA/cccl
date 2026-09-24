@@ -52,8 +52,6 @@ void run()
 
   const int N = 1024 * 1024 * 32;
 
-  // No guards needed: each vector releases its own storage, so a throw from the second
-  // allocation cannot leak the first.
   ::std::vector<double> X(N), Y(N);
 
   for (size_t ind = 0; ind < N; ind++)
