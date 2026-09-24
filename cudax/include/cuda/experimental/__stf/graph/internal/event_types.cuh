@@ -187,12 +187,15 @@ inline void fork_from_graph_node(
   cudaGraph_t g,
   size_t stage,
   event_list& previous_prereqs,
-  ::std::string prereq_string) noexcept
+  const char* prereq_string) noexcept
 {
   ON_THROW(abort)
   {
     auto gnp = reserved::graph_event(n, stage, g);
-    gnp->set_symbol(ctx, mv(prereq_string));
+    // The label becomes a string only here, inside the guard: a by-value std::string parameter
+    // would be constructed by the caller, after the node is in the graph but before this
+    // function's policy could catch its allocation failing.
+    gnp->set_symbol(ctx, ::std::string(prereq_string));
 
     auto& dot = *ctx.get_dot();
     if (dot.is_tracing_prereqs())
