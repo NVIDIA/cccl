@@ -278,8 +278,7 @@ CUB_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", CUB_S
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
-  REQUIRE(
-    cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items, env));
+  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items, env));
 
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
   REQUIRE(d_block_size[0] == target_block_size);

@@ -129,9 +129,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScan with init non-env overload is not ambig
   cub::DeviceScan::InclusiveScan(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 5, 1);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScan args::deferred non-env overload is not ambiguous",
-         "[scan][device]",
-         CUB_SMALL)
+CUB_TEST("cub::DeviceScan::InclusiveScan args::deferred non-env overload is not ambiguous", "[scan][device]", CUB_SMALL)
 {
   thrust::device_vector<int> input(1);
   thrust::device_vector<int> out(1);
