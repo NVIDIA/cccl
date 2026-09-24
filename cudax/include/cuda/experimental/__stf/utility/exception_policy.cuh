@@ -1547,7 +1547,7 @@ template <class _Reaction>
 struct __on_throw_policy
 {
   _Reaction __reaction_;
-  ::cuda::std::source_location __loc_;
+  const ::cuda::std::source_location __loc_;
 };
 
 template <class _R>
@@ -1933,15 +1933,15 @@ public:
   //! empty meaning "no value") and `clone`; `on_success` defaults to identity.
   struct sink_base
   {
-    answer_kind kind;
+    const answer_kind kind;
     //! Whether the exception path may rethrow (`false`: alternatives after
     //! this sink are unreachable). Conservative for hand-written models.
-    bool may_rethrow;
+    const bool may_rethrow;
     //! Inclusive range of a stored integral answer; unused for other kinds.
-    long long min_value;
+    const unsigned long long max_value;
     unsigned long long max_value;
     //! Exact stored type for `udt` checks; `nullptr` encodes `passthrough`.
-    ::std::type_info* answer_type;
+    const ::std::string_view answer_name;
     ::std::string_view answer_name;
 
     sink_base(answer_kind __kind                    = answer_kind::passthrough,
@@ -4496,7 +4496,7 @@ auto operator->*(with_location<exit> where, F&& f)
   struct result
   {
     F f;
-    ::cuda::std::source_location loc;
+    const ::cuda::std::source_location loc;
     // Uncaught-exception count at construction; move sets -1 to disarm. The count is what
     // lets `SCOPE(exit, name)` tell the body whether the scope is being left by an exception.
     int exceptions = ::std::uncaught_exceptions();
@@ -4550,7 +4550,7 @@ auto operator->*(with_location<fail> where, F&& f)
   struct result
   {
     F f;
-    ::cuda::std::source_location loc;
+    const ::cuda::std::source_location loc;
     // Expected uncaught count, or -1 when disarmed by move.
     int exceptions;
 

@@ -1080,7 +1080,7 @@ UNITTEST("const class containing a stream_ctx")
     mutable stream_ctx ctx;
   };
 
-  foo f;
+  const foo f;
 
   // Create a non-contiguous slice
   auto lX = f.get_ctx().logical_data(shape_of<slice<char>>(24));
