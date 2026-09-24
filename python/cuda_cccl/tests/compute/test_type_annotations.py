@@ -42,6 +42,10 @@ def square_float(x: np.float64) -> np.float64:
     return x * x
 
 
+def half_any(x: Any) -> Any:
+    return x * 0.5
+
+
 @pytest.mark.parametrize(
     "op", [square_any, square_object, square_numpy_object, square_typevar]
 )
@@ -65,13 +69,30 @@ def test_output_iterator_requires_concrete_input_type():
     assert iterator.value_type == types.float64
 
 
-def test_transform_iterator_any_reduction():
+@pytest.mark.parametrize(
+    "op", [square_any, square_object, square_numpy_object, square_typevar]
+)
+def test_transform_iterator_nonconcrete_reduction(op):
     output = DeviceArray.empty(1, np.float64)
     reduce_into(
-        d_in=TransformIterator(CountingIterator(np.float64(0)), square_any),
+        d_in=TransformIterator(CountingIterator(np.float64(0)), op),
         d_out=output,
         num_items=8,
         op=OpKind.PLUS,
         h_init=np.array([0], dtype=np.float64),
     )
     assert output.copy_to_host()[0] == 140.0
+
+
+def test_transform_iterator_infers_different_return_type():
+    iterator = TransformIterator(CountingIterator(np.int32(0)), half_any)
+    assert iterator.value_type == types.float64
+    output = DeviceArray.empty(1, np.float64)
+    reduce_into(
+        d_in=iterator,
+        d_out=output,
+        num_items=8,
+        op=OpKind.PLUS,
+        h_init=np.array([0], dtype=np.float64),
+    )
+    assert output.copy_to_host()[0] == 14.0
