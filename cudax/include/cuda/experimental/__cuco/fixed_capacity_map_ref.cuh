@@ -152,7 +152,7 @@ public:
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __predicate,
     const _ProbingScheme& __probing_scheme,
-    storage_span_type __slots) noexcept
+    storage_span_type __slots)
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                __predicate,
                __probing_scheme,
@@ -173,7 +173,7 @@ public:
     erased_key<_Key> __erased_key_sentinel,
     const _KeyEqual& __predicate,
     const _ProbingScheme& __probing_scheme,
-    storage_span_type __slots) noexcept
+    storage_span_type __slots)
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                key_type(__erased_key_sentinel),
                __predicate,
@@ -218,7 +218,7 @@ public:
   //! @brief Returns the function used to compare keys for equality.
   //!
   //! @return The key equality comparator
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr key_equal key_eq() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr key_equal key_eq() const
   {
     return __impl.key_eq();
   }
@@ -226,7 +226,7 @@ public:
   //! @brief Returns the function(s) used to hash keys.
   //!
   //! @return The hasher used by this ref's probing scheme
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const
   {
     return __impl.hash_function();
   }
@@ -234,7 +234,7 @@ public:
   //! @brief Returns the probing scheme used to resolve hash collisions.
   //!
   //! @return The probing scheme object
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr probing_scheme_type probing_scheme() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr probing_scheme_type probing_scheme() const
   {
     return __impl.probing_scheme();
   }
@@ -249,7 +249,7 @@ public:
   //!
   //! @return Copy of this ref using the new key comparator
   template <class _NewKeyEqual>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_key_eq(const _NewKeyEqual& __predicate) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_key_eq(const _NewKeyEqual& __predicate) const
   {
     using __rebound_ref =
       fixed_capacity_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>;

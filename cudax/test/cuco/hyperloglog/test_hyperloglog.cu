@@ -114,10 +114,18 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
   const auto host_estimate = estimator.estimate(stream);
 
   auto device_estimate = cuda::make_buffer<double>(stream, mr, 1, cuda::no_init);
-  estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>>
-    <<<1, 512, estimator.sketch_bytes(), stream.get()>>>(
-      sketch_size_kb, items.begin(), num_items, device_estimate.begin());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims<1>(),
+                      cuda::block_dims<512>(),
+                      cuda::dynamic_shared_memory<cuda::std::byte[]>(estimator.sketch_bytes())),
+    estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>,
+                    decltype(items.begin()),
+                    decltype(device_estimate.begin())>,
+    sketch_size_kb,
+    items.begin(),
+    num_items,
+    device_estimate.begin());
 
   double device_estimate_value{};
   REQUIRE_CUDART(cudaMemcpyAsync(
