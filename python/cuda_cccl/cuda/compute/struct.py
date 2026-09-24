@@ -43,6 +43,7 @@ def gpu_struct(
         if field_dict.type != np.void or field_dict.fields is None:
             field_dict = {}
         else:
+            types.from_numpy_dtype(field_dict)
             field_dict = {
                 name: field_info[0] for name, field_info in field_dict.fields.items()
             }
