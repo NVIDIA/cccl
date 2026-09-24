@@ -717,6 +717,7 @@ public:
       decomposer,
       stream,
       {},
+      {},
       begin_bit,
       end_bit);
   }
@@ -1619,7 +1620,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, begin_bit, end_bit);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, {}, begin_bit, end_bit);
   }
 
   //! @rst
@@ -2113,6 +2114,7 @@ public:
       num_items,
       decomposer,
       stream,
+      {},
       {},
       begin_bit,
       end_bit);
@@ -2725,7 +2727,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, begin_bit, end_bit);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, {}, begin_bit, end_bit);
   }
 
   //! @rst
@@ -3378,6 +3380,7 @@ public:
       num_items,
       decomposer,
       stream,
+      {},
       {},
       begin_bit,
       end_bit);
@@ -4151,7 +4154,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
     return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, begin_bit, end_bit);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, {}, begin_bit, end_bit);
   }
 
   //! @rst
@@ -4580,6 +4583,7 @@ public:
       num_items,
       decomposer,
       stream,
+      {},
       {},
       begin_bit,
       end_bit);
@@ -5135,7 +5139,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
     return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, begin_bit, end_bit);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, {}, begin_bit, end_bit);
   }
 
   //! @rst
