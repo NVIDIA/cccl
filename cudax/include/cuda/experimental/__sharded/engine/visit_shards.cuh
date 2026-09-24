@@ -83,6 +83,16 @@ namespace __detail
 //! for algorithms that need the shard index (cross-shard boundary logic),
 //! `(size_t, const descriptor&, cudaStream_t)` — that enqueues the shard's
 //! work on the given stream (the `each_shard` dual-arity convention).
+//! @brief The three shapes of a visit, decided once at entry (see
+//! `__visit_shards`): the loop and the tail read the decision, they never
+//! re-derive it.
+enum class __visit_mode
+{
+  __sync, //!< no call stream: synchronize every visited lane at the end
+  __lane_ordered, //!< call stream, default: enqueue on the lanes, no edges
+  __bracketed //!< call stream + `composition::bracketed`: fork-all / join-all
+};
+
 template <class _S, class _Envs, class _CallEnv, class _PerShard>
 _CCCL_HOST_API void
 __visit_shards(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _PerShard __body)
@@ -90,10 +100,11 @@ __visit_shards(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, con
   const ::std::size_t __num_shards = reserved::__shard_count(__data);
   reserved::__check_env_count(__envs, __num_shards, __what);
 
-  constexpr bool __is_async         = async_call_env<_CallEnv>;
-  [[maybe_unused]] bool __bracketed = false;
-
-  if constexpr (!__is_async)
+  // Decide the mode ONCE. Everything below reads `__mode` and `__call_stream`
+  // (null in the synchronous form) and never asks the environment again.
+  __visit_mode __mode        = __visit_mode::__sync;
+  cudaStream_t __call_stream = nullptr;
+  if constexpr (!async_call_env<_CallEnv>)
   {
     // Refusals first, before any CUDA call: this form synchronizes at the
     // end, so both refusal conditions must be decided before any work is
@@ -103,8 +114,10 @@ __visit_shards(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, con
   }
   else
   {
-    __bracketed = query_composition(__call_env) == composition::bracketed;
-    if (!__bracketed && places::stream_in_capture(::cuda::get_stream(__call_env).get()))
+    __call_stream = ::cuda::get_stream(__call_env).get();
+    __mode        = query_composition(__call_env) == composition::bracketed ? __visit_mode::__bracketed
+                                                                            : __visit_mode::__lane_ordered;
+    if (__mode == __visit_mode::__lane_ordered && places::stream_in_capture(__call_stream))
     {
       // Lane-ordered under capture: every lane must already be part of the
       // capture, or its work would silently escape the graph. Refused at
@@ -131,46 +144,40 @@ __visit_shards(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, con
     {
       continue;
     }
-    const ::cuda::stream_ref __shard_stream = ::cuda::get_stream(__envs[__g]);
-    if constexpr (__is_async)
+    const cudaStream_t __shard_stream = ::cuda::get_stream(__envs[__g]).get();
+    if (__mode == __visit_mode::__bracketed)
     {
-      if (__bracketed)
-      {
-        __wait_stream_on(__shard_stream.get(), ::cuda::get_stream(__call_env).get());
-      }
+      __wait_stream_on(__shard_stream, __call_stream); // fork: lane after the caller
     }
-    stream_scope __scope(__shard_stream.get());
+    stream_scope __scope(__shard_stream);
     if constexpr (::cuda::std::is_invocable_v<_PerShard&, ::std::size_t, decltype(__d), cudaStream_t>)
     {
-      __body(__g, __d, __shard_stream.get());
+      __body(__g, __d, __shard_stream);
     }
     else
     {
-      __body(__d, __shard_stream.get());
+      __body(__d, __shard_stream);
     }
   }
 
-  if constexpr (__is_async)
+  if (__mode == __visit_mode::__lane_ordered)
   {
-    if (__bracketed)
-    {
-      for (const auto __g : each(__num_shards))
-      {
-        if (__data.shard(__g).size != 0)
-        {
-          __wait_stream_on(::cuda::get_stream(__call_env).get(), ::cuda::get_stream(__envs[__g]).get());
-        }
-      }
-    }
+    return; // no tail: the lanes carry the work, nothing joins
   }
-  else
+  for (const auto __g : each(__num_shards))
   {
-    for (const auto __g : each(__num_shards))
+    if (__data.shard(__g).size == 0)
     {
-      if (__data.shard(__g).size != 0)
-      {
-        ::cuda::experimental::stf::cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(__envs[__g]).get()));
-      }
+      continue;
+    }
+    const cudaStream_t __shard_stream = ::cuda::get_stream(__envs[__g]).get();
+    if (__mode == __visit_mode::__bracketed)
+    {
+      __wait_stream_on(__call_stream, __shard_stream); // join: the caller after every lane
+    }
+    else
+    {
+      cuda_safe_call(cudaStreamSynchronize(__shard_stream)); // synchronous convenience form
     }
   }
 }
