@@ -82,8 +82,14 @@ public:
     {
       if (getenv("USE_CUDA_MALLOC"))
       {
-        cuda_safe_call(cudaGraphAddEmptyNode(&out, graph, nodes.data(), nodes.size()));
+        // Same order as the host branch: allocate first, then add the node, so a failure in
+        // either step leaves neither an orphan node in the graph nor an unreachable buffer.
         cuda_try(cudaMalloc(&result, s));
+        SCOPE(fail)
+        {
+          cuda_safe_call(cudaFree(result));
+        };
+        out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
       }
       else
       {
@@ -106,11 +112,11 @@ public:
     if (memory_node.is_host())
     {
       // fprintf(stderr, "TODO deallocate host memory (graph_ctx)\n");
-      cuda_safe_call(cudaGraphAddEmptyNode(&out, graph, nodes.data(), nodes.size()));
+      out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
     }
     else
     {
-      cuda_safe_call(cudaGraphAddMemFreeNode(&out, graph, nodes.data(), nodes.size(), ptr));
+      out = cuda_try<cudaGraphAddMemFreeNode>(graph, nodes.data(), nodes.size(), ptr);
     }
     reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "dealloc");
   }
@@ -167,7 +173,7 @@ private:
     params.accessDescCount       = size_t(ndevices);
     params.bytesize              = size_t(s);
 
-    cuda_safe_call(cudaGraphAddMemAllocNode(&out, graph, input_nodes.data(), input_nodes.size(), &params));
+    out = cuda_try<cudaGraphAddMemAllocNode>(graph, input_nodes.data(), input_nodes.size(), &params);
 
     return params.dptr;
   }
@@ -486,11 +492,11 @@ public:
     size_t nedges;
     size_t nnodes;
 
-    cuda_safe_call(cudaGraphGetNodes(*g, nullptr, &nnodes));
+    cuda_try(cudaGraphGetNodes(*g, nullptr, &nnodes));
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(*g, nullptr, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(*g, nullptr, nullptr, nullptr, &nedges));
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(*g, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(*g, nullptr, nullptr, &nedges));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     auto& state = this->state();
@@ -546,17 +552,17 @@ public:
   void display_graph_info(cudaGraph_t g)
   {
     size_t numNodes;
-    cuda_safe_call(cudaGraphGetNodes(g, nullptr, &numNodes));
+    cuda_try(cudaGraphGetNodes(g, nullptr, &numNodes));
 
     size_t numEdges;
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &numEdges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &numEdges));
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &numEdges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, &numEdges));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     cuuint64_t mem_attr;
-    cuda_safe_call(cudaDeviceGetGraphMemAttribute(0, cudaGraphMemAttrUsedMemHigh, &mem_attr));
+    cuda_try(cudaDeviceGetGraphMemAttribute(0, cudaGraphMemAttrUsedMemHigh, &mem_attr));
 
     // fprintf(stderr, "INSTANTIATING graph %p with %ld nodes %ld edges - MEM %ld\n", g, numNodes, numEdges,
     // mem_attr);
@@ -579,7 +585,7 @@ public:
 
       /* This forces the completion of the host callback, so that the host
        * thread can use it as a synchronization point for dynamic control flow */
-      cuda_safe_call(cudaStreamSynchronize(fence()));
+      cuda_try<cudaStreamSynchronize>(fence());
     }
     else
     {
@@ -591,7 +597,7 @@ public:
 
       /* This forces the completion of the host callback, so that the host
        * thread can use the content for dynamic control flow */
-      cuda_safe_call(cudaStreamSynchronize(fence()));
+      cuda_try<cudaStreamSynchronize>(fence());
 
       return out;
     }
@@ -618,8 +624,7 @@ private:
     ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereq_fence, graph_stage);
 
     // Create an empty graph node
-    cudaGraphNode_t n;
-    cuda_safe_call(cudaGraphAddEmptyNode(&n, get_graph(), nodes.data(), nodes.size()));
+    const cudaGraphNode_t n = cuda_try<cudaGraphAddEmptyNode>(get_graph(), nodes.data(), nodes.size());
 
     reserved::fork_from_graph_node(*this, n, get_graph(), graph_stage, prereq_fence, "fence");
 
@@ -698,11 +703,11 @@ private:
     size_t nedges;
     size_t nnodes;
 
-    cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
+    cuda_try(cudaGraphGetNodes(g, nullptr, &nnodes));
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     cudaGraphExec_t local_exec_graph = nullptr;
