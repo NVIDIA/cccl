@@ -249,23 +249,23 @@ public:
       {
         if (start_event && end_event)
         {
-          // Inside the noexcept SCOPE body; keep cuda_safe_call so a CUDA
-          // error aborts rather than throwing through the guard.
-          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-          cuda_safe_call(cudaEventSynchronize(end_event));
-
-          float milliseconds = 0;
-          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-          if (dot.is_tracing())
+          // Timing is telemetry. A CUDA error here is usually a sticky error from earlier device work
+          // surfacing at the next API call; it is reported and the task still completes (clear() below
+          // runs either way). Only a sink can change the outcome of the call; a guard cannot.
+          ON_THROW(notify)
           {
-            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, -1);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
-          }
+            cuda_try<cudaEventRecord>(end_event, t.get_stream());
+            cuda_try<cudaEventSynchronize>(end_event);
+            const float milliseconds = cuda_try<cudaEventElapsedTime>(start_event, end_event);
+            if (dot.is_tracing())
+            {
+              dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, -1);
+            }
+            if (statistics.is_calibrating())
+            {
+              statistics.log_task_time(t, milliseconds);
+            }
+          };
         }
       }
       t.clear();
