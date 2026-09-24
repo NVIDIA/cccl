@@ -44,6 +44,29 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 
 namespace cuda::experimental::cuco::__open_addressing
 {
+//! @brief Inserts or assigns each pair in `[__first, __first + __n)`.
+template <int _CgSize, int _BlockSize, class _InputIt, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
+__insert_or_assign_n(_InputIt __first, detail::__index_type __n, _Ref __ref)
+{
+  const auto __stride = detail::__grid_stride() / _CgSize;
+  auto __idx          = detail::__global_thread_id() / _CgSize;
+  while (__idx < __n)
+  {
+    const typename ::cuda::std::iterator_traits<_InputIt>::value_type __value = *(__first + __idx);
+    if constexpr (_CgSize == 1)
+    {
+      __ref.insert_or_assign(__value);
+    }
+    else
+    {
+      const auto __group = ::cooperative_groups::tiled_partition<_CgSize>(::cooperative_groups::this_thread_block());
+      __ref.insert_or_assign(__group, __value);
+    }
+    __idx += __stride;
+  }
+}
+
 //! @brief Scalar (cooperative-group size 1) functor inserting `first[i]` when `pred(stencil[i])` holds.
 template <class _InputIt, class _StencilIt, class _Predicate, class _Ref>
 struct __insert_if_fn

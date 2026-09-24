@@ -350,6 +350,26 @@ public:
     }
   }
 
+  //! @brief Asynchronously inserts or assigns pairs in `[__first, __last)`.
+  //!
+  //! @throws cuda_error if the operation fails to launch
+  template <class _InputIt, class _Ref>
+  _CCCL_HOST_API void
+  insert_or_assign_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref)
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+    const auto __config    = ::cuda::make_config(
+      ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+    const auto& __kernel =
+      __open_addressing::__insert_or_assign_n<__cg_size, detail::__default_block_size, _InputIt, _Ref>;
+    ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __container_ref);
+  }
+
   //! @brief Asynchronously checks if keys in `[first, last)` exist in the container.
   //!
   //! @throws cuda_error if the query operation fails to launch
