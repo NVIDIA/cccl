@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstdint>
@@ -36,22 +37,16 @@
 
 namespace cuda::experimental::coop
 {
-template <::cuda::std::size_t _UnitCount>
+template <::cuda::std::size_t _StaticUnitCount>
 class take
 {
-  static_assert(::cuda::std::in_range<::cuda::std::uint32_t>(_UnitCount), "_UnitCount must be within uint32_t range");
+  static_assert(::cuda::std::in_range<::cuda::std::uint32_t>(_StaticUnitCount),
+                "_StaticUnitCount must be within uint32_t range");
 
 public:
-  _CCCL_HIDE_FROM_ABI explicit take() = default;
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
+  _CCCL_DEVICE_API constexpr explicit take(::cuda::std::uint32_t __unit_count) noexcept
   {
-    return _UnitCount;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
-  {
-    return ::cuda::std::uint32_t{_UnitCount};
+    _CCCL_ASSERT(__unit_count == _StaticUnitCount, "__unit_count must be same as _StaticUnitCount");
   }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
@@ -62,8 +57,8 @@ public:
 
     using _MappingResult =
       __mapping_result<_PrevMappingResult::static_group_count(),
-                       _UnitCount,
-                       _PrevMappingResult::is_always_exhaustive() && (__static_prev_nunits == _UnitCount),
+                       _StaticUnitCount,
+                       _PrevMappingResult::is_always_exhaustive() && (__static_prev_nunits == _StaticUnitCount),
                        _PrevMappingResult::is_always_contiguous()>;
 
     if (!__prev_mapping_result.is_valid())
@@ -76,23 +71,23 @@ public:
 
     if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
     {
-      static_assert(__static_prev_nunits >= _UnitCount,
+      static_assert(__static_prev_nunits >= _StaticUnitCount,
                     "take mapping requires the previous mapping result to have at least _PrevMappingResult units");
     }
     else
     {
-      _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__prev_units_count, _UnitCount),
+      _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__prev_units_count, _StaticUnitCount),
                    "take mapping requires the previous mapping result to have at least _PrevMappingResult units");
     }
 
-    if (::cuda::std::cmp_greater_equal(__prev_unit_rank, static_cast<::cuda::std::uint32_t>(_UnitCount)))
+    if (::cuda::std::cmp_greater_equal(__prev_unit_rank, static_cast<::cuda::std::uint32_t>(_StaticUnitCount)))
     {
       return _MappingResult::__invalid();
     }
 
     const auto __group_count = __prev_mapping_result.group_count();
     const auto __group_rank  = __prev_mapping_result.group_rank();
-    const auto __unit_count  = static_cast<::cuda::std::uint32_t>(_UnitCount);
+    const auto __unit_count  = static_cast<::cuda::std::uint32_t>(_StaticUnitCount);
     const auto __unit_rank   = __prev_unit_rank;
     const auto __lane_mask =
       (::cuda::std::is_same_v<_Unit, thread_level>)
@@ -106,24 +101,12 @@ public:
 template <>
 class take<::cuda::std::dynamic_extent>
 {
-  ::cuda::std::uint32_t __unit_count_{0};
+  ::cuda::std::uint32_t __unit_count_;
 
 public:
-  _CCCL_HIDE_FROM_ABI explicit take() = default;
-
   _CCCL_DEVICE_API constexpr explicit take(::cuda::std::uint32_t __unit_count) noexcept
       : __unit_count_{__unit_count}
   {}
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
-  {
-    return ::cuda::std::dynamic_extent;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
-  {
-    return __unit_count_;
-  }
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
@@ -164,7 +147,8 @@ public:
   }
 };
 
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take(::cuda::std::uint32_t) -> take<::cuda::std::dynamic_extent>;
+template <class _Tp>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take(_Tp) -> take<::cuda::std::__maybe_static_ext<_Tp>>;
 } // namespace cuda::experimental::coop
 
 #endif // !_CCCL_DOXYGEN_INVOKED
