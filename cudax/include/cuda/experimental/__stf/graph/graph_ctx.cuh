@@ -807,13 +807,13 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   t.add_deps(lX.rw(), lY.rw());
   t.set_symbol("graph_task<>");
   t.start();
-  [[maybe_unused]] const cudaGraphNode_t n = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
+  ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
   t.end();
 
   graph_task<slice<double>, slice<double>> t2 = ctx.task(lX.rw(), lY.rw());
   t2.set_symbol("graph_task");
   t2.start();
-  [[maybe_unused]] const cudaGraphNode_t n2 = cuda_try<cudaGraphAddEmptyNode>(t2.get_graph(), nullptr, 0);
+  ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t2.get_graph(), nullptr, 0);
   t2.end();
 
   ctx.finalize();

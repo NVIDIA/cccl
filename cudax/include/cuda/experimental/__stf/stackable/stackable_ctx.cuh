@@ -1962,8 +1962,8 @@ inline void test_pop_prologue_graph_child_embed()
   cudaGraph_t body = handle.graph();
 
   // Build an outer graph that embeds `body` as a child node.
-  const cudaGraph_t outer                      = cuda_try<cudaGraphCreate>(0);
-  [[maybe_unused]] const cudaGraphNode_t child = cuda_try<cudaGraphAddChildGraphNode>(outer, nullptr, 0, body);
+  const cudaGraph_t outer = cuda_try<cudaGraphCreate>(0);
+  ::std::ignore           = cuda_try<cudaGraphAddChildGraphNode>(outer, nullptr, 0, body);
 
   const cudaGraphExec_t outer_exec = cuda_try<cudaGraphInstantiateWithFlags>(outer, 0);
 
