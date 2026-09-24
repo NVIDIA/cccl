@@ -180,19 +180,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  // Unwrap the input iterator to convert device_ptr<T> to T* (raw pointer). This ensures that dereferencing yields T&
-  // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
-  auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
-  if (const auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-          findif_grid_size,
-          active_policy.threads_per_block,
-          0,
-          stream,
-          /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
-          .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
+  if (num_items != 0)
   {
-    return error;
+    // Unwrap the input iterator to convert device_ptr<T> to T* (raw pointer). This ensures that dereferencing yields T&
+    // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
+    auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
+    if (const auto error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+            findif_grid_size,
+            active_policy.threads_per_block,
+            0,
+            stream,
+            /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
+            .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
+    {
+      return error;
+    }
   }
 
   if constexpr (!can_write_to_output_directly)

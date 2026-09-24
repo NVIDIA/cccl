@@ -48,6 +48,25 @@ auto compute_find_if_reference(InputIt first, InputIt last, Predicate predicate)
   return static_cast<OffsetT>(cuda::std::distance(first, it));
 }
 
+CUB_TEST("Device find_if handles empty input", "[device][find_if]", CUB_SMALL)
+{
+  auto input     = cuda::make_counting_iterator(0);
+  auto predicate = cuda::equal_to_value<int>{0};
+  c2h::device_vector<int> output(1, -1);
+
+  SECTION("contiguous output")
+  {
+    find_if(input, thrust::raw_pointer_cast(output.data()), predicate, 0);
+    REQUIRE(output[0] == 0);
+  }
+  SECTION("transformed output")
+  {
+    auto transformed = cuda::make_transform_output_iterator(output.begin(), cuda::std::negate{});
+    find_if(input, transformed, predicate, 0);
+    REQUIRE(output[0] == 0);
+  }
+}
+
 CUB_TEST("Device find_if works", "[device][find_if]", CUB_SMALL, value_types, offset_types)
 {
   using input_t  = c2h::get<0, TestType>;
