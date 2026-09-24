@@ -88,7 +88,6 @@ int main()
 
   cudaStream_t stream = ctx.pick_stream();
 
-  threads.reserve(NTHREADS);
   for (int i = 0; i < NTHREADS; ++i)
   {
     threads[i].join();
@@ -97,7 +96,6 @@ int main()
 
   fB.unfreeze(stream);
 
-  threads.reserve(NTHREADS);
   for (int i = 0; i < NTHREADS; ++i)
   {
     ctx.host_launch(lA[i].read())->*[i](auto ai) {

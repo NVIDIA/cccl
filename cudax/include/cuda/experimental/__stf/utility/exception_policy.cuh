@@ -4482,8 +4482,9 @@ void invoke_body(F& f, bool failing)
 template <class F>
 void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false) noexcept
 {
-  // NOLINTNEXTLINE(bugprone-exception-escape) -- the body may throw; that is what the abort policy is for. In
-  // clang-tidy's device pass the policy's catch is erased, so the check sees the throw escape this noexcept function.
+  // The body may throw; that is what the abort policy is for. In clang-tidy's device pass the policy's
+  // catch is erased, so the check sees the throw escape this noexcept function.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   on_throw(exception_policies::abort, loc) << [&] {
     invoke_body(f, failing);
   };
