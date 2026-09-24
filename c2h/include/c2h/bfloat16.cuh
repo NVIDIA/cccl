@@ -84,7 +84,7 @@ struct bfloat16_t
     }
     else
     {
-      union
+      union // NOLINT(cppcoreguidelines-pro-type-member-init)
       {
         uint32_t U32;
         float F32;

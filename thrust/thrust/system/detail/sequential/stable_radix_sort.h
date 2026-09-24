@@ -111,7 +111,7 @@ struct RadixEncoder<float>
     {
       float f;
       std::uint32_t i;
-    } u;
+    } u{};
     u.f                = x;
     std::uint32_t mask = -static_cast<std::int32_t>(u.i >> 31) | (static_cast<std::uint32_t>(1) << 31);
     return u.i ^ mask;
@@ -127,7 +127,7 @@ struct RadixEncoder<double>
     {
       double f;
       std::uint64_t i;
-    } u;
+    } u{};
     u.f                = x;
     std::uint64_t mask = -static_cast<std::int64_t>(u.i >> 63) | (static_cast<std::uint64_t>(1) << 63);
     return u.i ^ mask;
