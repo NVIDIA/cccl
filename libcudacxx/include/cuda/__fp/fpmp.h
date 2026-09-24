@@ -414,13 +414,38 @@ public:
   //
   // SFINAE excludes met2 == met to avoid clashing with the defaulted
   // copy constructor.
+  //
+  // Leaving `low` renormalizes. The low algorithms skip the closing
+  // fast_two_sum, so their results may have overlapping hi and lo, while the
+  // mid and high algorithms assume the non-overlap bound |lo| <= ulp(hi)/2 on
+  // their inputs. Feeding them an overlapping pair does not fail to compile,
+  // it just quietly returns a less accurate answer, so the conversion out of
+  // low restores the bound rather than leaving it to the caller to remember.
+  // The step is value-preserving: fast_two_sum is exact, so only the
+  // representation changes, never the number. It is not applied in the other
+  // direction, since a renormalized pair already satisfies the bound and
+  // moving into `low` is a deliberate step into the fast regime.
+  //
+  // The two-component constructor remains the way to retag without touching
+  // the value, which is what the cross-precision constructors below use to
+  // reinterpret a pair under the destination tag.
+  //
+  // `constexpr` still applies, but only bites for the pairs of tags that copy:
+  // __fpmp2_renormalize is a library call under _CCCL_FPMP_USE_LIB and an
+  // intrinsic sequence otherwise, so a specialization that renormalizes is not
+  // usable in a constant expression.
   */
   _CCCL_TEMPLATE(fpmp2_accuracy _TypeAcc2)
   _CCCL_REQUIRES((_TypeAcc2 != _TypeAcc))
   _CCCL_HOST_DEVICE_API constexpr explicit fpmp2(const fpmp2<_FpType, _TypeAcc2>& __other) noexcept
       : __mp2_hi_{__other.hi()}
       , __mp2_lo_{__other.lo()}
-  {}
+  {
+    if constexpr (_TypeAcc2 == fpmp2_accuracy::low)
+    {
+      __fpmp2_renormalize(__mp2_hi_, __mp2_lo_, &__mp2_hi_, &__mp2_lo_);
+    }
+  }
 
   /*
   // Cross-precision converting constructor + assignment (upconvert): fp32mp2 -> fp64mp2.
