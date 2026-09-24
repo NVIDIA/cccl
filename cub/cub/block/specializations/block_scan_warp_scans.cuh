@@ -174,9 +174,8 @@ struct BlockScanWarpScans
     __syncthreads();
 
     // Accumulate block aggregates and save the one that is our warp's prefix
-    // Warp zero needs an initialized prefix because it returns this value.
-    T warp_prefix   = temp_storage.warp_aggregates[0];
-    block_aggregate = warp_prefix;
+    T warp_prefix; // NOLINT(cppcoreguidelines-pro-type-member-init), filled by ApplyWarpAggregates
+    block_aggregate = temp_storage.warp_aggregates[0];
 
     // Use template unrolling (since the PTX backend can't handle unrolling it for SM1x)
     // TODO(bgruber): does that still hold today? This is creating a lot of template instantiations

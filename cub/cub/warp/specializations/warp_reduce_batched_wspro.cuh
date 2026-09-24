@@ -118,8 +118,7 @@ struct warp_reduce_batched_wspro
     if constexpr (Batches != 0)
     {
       // Needed in case of outputs aliasing inputs
-      // Lanes without an output batch also copy their temporary entries below.
-      ::cuda::std::array<T, max_out_per_thread> intermediate_outputs{};
+      ::cuda::std::array<T, max_out_per_thread> intermediate_outputs; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
       // Can't use the full member mask given SyncPhysicalWarp==true because it affects the result of the reduction.
       const auto reduce_mask = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
