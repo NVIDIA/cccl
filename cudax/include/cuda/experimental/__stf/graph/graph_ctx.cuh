@@ -808,14 +808,14 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   t.set_symbol("graph_task<>");
   t.start();
   cudaGraphNode_t n;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
+  cuda_try(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
   t.end();
 
   graph_task<slice<double>, slice<double>> t2 = ctx.task(lX.rw(), lY.rw());
   t2.set_symbol("graph_task");
   t2.start();
   cudaGraphNode_t n2;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n2, t2.get_graph(), nullptr, 0));
+  cuda_try(cudaGraphAddEmptyNode(&n2, t2.get_graph(), nullptr, 0));
   t2.end();
 
   ctx.finalize();
