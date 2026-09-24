@@ -121,7 +121,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScan non-env in-place overload is not ambigu
   cub::DeviceScan::InclusiveScan(nullptr, temp_storage_bytes, data.begin(), cuda::std::plus<>{}, 1);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScan non-env overload is not ambiguous", "[scan][device]", CUB_SMALL)
+CUB_TEST("cub::DeviceScan::InclusiveScan with init non-env overload is not ambiguous", "[scan][device]", CUB_SMALL)
 {
   thrust::device_vector<int> input(1);
   thrust::device_vector<int> out(1);
