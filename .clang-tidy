@@ -78,7 +78,6 @@ Checks:
   - '-cppcoreguidelines-pro-type-const-cast'
   - '-cppcoreguidelines-use-enum-class'
   - '-cppcoreguidelines-non-private-member-variables-in-classes'
-  - '-cppcoreguidelines-pro-type-cstyle-cast'
   - '-cppcoreguidelines-prefer-member-initializer'
   - '-cppcoreguidelines-slicing'
   - '-cppcoreguidelines-no-malloc'
