@@ -106,7 +106,7 @@ public:
     return result;
   }
 
-  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  void deactivate(const exec_place& prev, size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_ctx exec_place");
 
@@ -141,6 +141,7 @@ public:
     {
       return typeid(*this).before(typeid(rhs)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& other = static_cast<const exec_place_cuda_ctx_impl&>(rhs);
     return ::std::less<CUcontext>{}(other.driver_context_, driver_context_)
          - ::std::less<CUcontext>{}(driver_context_, other.driver_context_);
@@ -172,7 +173,7 @@ protected:
 
   static int resolve_devid(CUcontext ctx, int devid)
   {
-    ::cuda::__ensure_current_context guard{ctx};
+    const ::cuda::__ensure_current_context guard{ctx};
     const int context_devid = static_cast<int>(cuda_try<cuCtxGetDevice>());
     if (devid >= 0 && devid != context_devid)
     {
@@ -199,8 +200,6 @@ inline exec_place exec_place::cuda_context(CUcontext ctx, int devid, size_t pool
 }
 
 #ifdef UNITTESTED_FILE
-namespace
-{
 //! RAII holder for the primary context of device 0, used by the unittests below.
 struct primary_ctx_guard
 {
@@ -219,11 +218,10 @@ struct primary_ctx_guard
   CUdevice dev  = -1;
   CUcontext ctx = nullptr;
 };
-} // namespace
 
 UNITTEST("cuda_context exec_place equality")
 {
-  primary_ctx_guard guard;
+  const primary_ctx_guard guard;
 
   auto p0a = exec_place::cuda_context(guard.ctx, 0);
   auto p0b = exec_place::cuda_context(guard.ctx, 0);
@@ -240,7 +238,7 @@ UNITTEST("cuda_context exec_place equality")
 
 UNITTEST("cuda_context exec_place derives the device ordinal")
 {
-  primary_ctx_guard guard;
+  const primary_ctx_guard guard;
 
   // devid intentionally omitted: derived from the context via cuCtxGetDevice
   auto p = exec_place::cuda_context(guard.ctx);
@@ -265,7 +263,7 @@ UNITTEST("cuda_context exec_place rejects a null context")
 
 UNITTEST("cuda_context exec_place rejects a mismatched device ordinal")
 {
-  primary_ctx_guard guard;
+  const primary_ctx_guard guard;
 
   bool thrown = false;
   try
@@ -281,13 +279,13 @@ UNITTEST("cuda_context exec_place rejects a mismatched device ordinal")
 
 UNITTEST("cuda_context exec_place activate/deactivate round trip")
 {
-  primary_ctx_guard guard;
+  const primary_ctx_guard guard;
 
   auto p = exec_place::cuda_context(guard.ctx, 0);
 
   CUcontext before = cuda_try<cuCtxGetCurrent>();
   {
-    exec_place_scope scope(p);
+    const exec_place_scope scope(p);
     EXPECT(cuda_try<cuCtxGetCurrent>() == guard.ctx);
   }
   EXPECT(cuda_try<cuCtxGetCurrent>() == before);

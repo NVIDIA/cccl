@@ -58,6 +58,31 @@ Checks:
   # readability-* as a whole is not enabled yet; only turn on the specific sub-checks we have
   # vetted so far.
   - 'readability-identifier-naming'
+  - 'cppcoreguidelines-*'
+  - '-cppcoreguidelines-pro-bounds-pointer-arithmetic'
+  - '-cppcoreguidelines-pro-bounds-constant-array-index'
+  - '-cppcoreguidelines-avoid-do-while'
+  - '-cppcoreguidelines-pro-bounds-array-to-pointer-decay'
+  - '-cppcoreguidelines-special-member-functions'
+  # Better caught by -Wmaybe-uninitialized
+  - '-cppcoreguidelines-init-variables'
+  # Many false positives
+  - '-cppcoreguidelines-avoid-non-const-global-variables'
+  - '-cppcoreguidelines-avoid-const-or-ref-data-members'
+  # Device code requires printf() and friends
+  - '-cppcoreguidelines-pro-type-vararg'
+  - '-cppcoreguidelines-rvalue-reference-param-not-moved'
+  - '-cppcoreguidelines-virtual-class-destructor'
+  - '-cppcoreguidelines-pro-type-member-init'
+  - '-cppcoreguidelines-pro-type-union-access'
+  - '-cppcoreguidelines-pro-type-const-cast'
+  - '-cppcoreguidelines-use-enum-class'
+  - '-cppcoreguidelines-non-private-member-variables-in-classes'
+  - '-cppcoreguidelines-pro-type-cstyle-cast'
+  - '-cppcoreguidelines-prefer-member-initializer'
+  - '-cppcoreguidelines-slicing'
+  - '-cppcoreguidelines-no-malloc'
+  - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #

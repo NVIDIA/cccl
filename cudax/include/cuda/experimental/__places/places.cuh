@@ -116,7 +116,7 @@ class data_place
     // doing it on every call would race across host threads. The guarded
     // function-local static performs that write once; later calls only copy
     // the handle (atomic refcount bump).
-    static ::std::shared_ptr<data_place_interface> handle{&instance, [](data_place_interface*) {}};
+    static const ::std::shared_ptr<data_place_interface> handle{&instance, [](data_place_interface*) {}};
     return handle;
   }
 
@@ -362,7 +362,7 @@ public:
    */
   friend inline size_t to_index(const data_place& p)
   {
-    int devid = p.pimpl_->get_device_ordinal();
+    const int devid = p.pimpl_->get_device_ordinal();
     EXPECT(devid >= -2, "Data place with device id ", devid, " does not refer to a device.");
     _CCCL_ASSERT(devid < cuda_try<cudaGetDeviceCount>(), "Invalid device id");
     return devid + 2;
@@ -468,7 +468,7 @@ public:
     // tensor, and a composite place would feed the degenerate size to its
     // partitioner. Reject any geometry whose byte count is not representable.
     size_t total_bytes = elemsize;
-    for (size_t extent : {data_dims.x, data_dims.y, data_dims.z, data_dims.t})
+    for (const size_t extent : {data_dims.x, data_dims.y, data_dims.z, data_dims.t})
     {
       if (extent != 0 && total_bytes > ::cuda::std::numeric_limits<size_t>::max() / extent)
       {
@@ -581,7 +581,7 @@ public:
     /**
      * @brief Deactivate the sub-place at the given index, restoring previous state
      */
-    virtual void deactivate(const exec_place& prev, size_t idx = 0) const = 0;
+    virtual void deactivate(const exec_place& prev, size_t idx) const = 0;
 
     // ===== Properties =====
 
@@ -680,7 +680,7 @@ public:
     // same singleton (e.g. concurrent parallel_for -> exec_place::current_device()).
     // The guarded function-local static performs that write once; later calls
     // only copy the handle (atomic refcount bump).
-    static ::std::shared_ptr<impl> handle{&instance, [](impl*) {}};
+    static const ::std::shared_ptr<impl> handle{&instance, [](impl*) {}};
     return handle;
   }
 
@@ -1220,15 +1220,15 @@ auto exec_place::operator->*(Fun&& fun) const
 inline augmented_stream stream_pool::next(const exec_place& place)
 {
   _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
-  ::std::scoped_lock locker(pimpl->mtx);
+  const ::std::scoped_lock locker(pimpl->mtx);
   _CCCL_ASSERT(pimpl->index < pimpl->payload.size(), "stream_pool::next index out of range");
 
   auto& result = pimpl->payload.at(pimpl->index);
 
   if (result.stream != nullptr)
   {
-    CUcontext ctx       = nullptr;
-    CUresult stream_err = cuStreamGetCtx(CUstream(result.stream), &ctx);
+    CUcontext ctx             = nullptr;
+    const CUresult stream_err = cuStreamGetCtx(CUstream(result.stream), &ctx);
 
     // External runtime users (Numba / PyTorch / raw CUDA) may call
     // cudaDeviceReset(), which destroys the primary context and all streams
@@ -1316,7 +1316,7 @@ public:
     return exec_place();
   }
 
-  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  void deactivate(const exec_place& prev, size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
@@ -1440,7 +1440,7 @@ public:
       return exec_place::device(old_dev_id);
     }
 
-    void deactivate(const exec_place& prev, size_t idx = 0) const override
+    void deactivate(const exec_place& prev, size_t idx) const override
     {
       _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
       auto current_dev_id  = cuda_try<cudaGetDevice>();
@@ -1485,9 +1485,9 @@ inline exec_place exec_place::device(int devid)
   // concurrent calls would race on that member (and on the freshly created
   // control blocks). Copying an existing ``shared_ptr`` only touches the atomic
   // reference count, which is thread-safe.
-  static ::std::shared_ptr<exec_place::impl>* impls = [] {
+  static const ::std::shared_ptr<exec_place::impl>* impls = [] {
     auto result = new ::std::shared_ptr<exec_place::impl>[ndevices];
-    for (int i : each(ndevices))
+    for (const int i : each(ndevices))
     {
       // no-op deleter: these device places are process-global singletons
       result[i] = ::std::shared_ptr<exec_place::impl>(new exec_place_device::impl(i), [](exec_place::impl*) {});
@@ -1502,16 +1502,16 @@ inline exec_place exec_place::device(int devid)
 #ifdef UNITTESTED_FILE
 UNITTEST("exec_place ->* operator")
 {
-  exec_place e = exec_place::device(0);
+  const exec_place e = exec_place::device(0);
   e->*[]() {
-    int current_dev = cuda_try<cudaGetDevice>();
+    const int current_dev = cuda_try<cudaGetDevice>();
     EXPECT(current_dev == 0);
   };
 
   // Ensure the ->* operator works with a const exec place
   const exec_place ce = exec_place::device(0);
   ce->*[]() {
-    int current_dev = cuda_try<cudaGetDevice>();
+    const int current_dev = cuda_try<cudaGetDevice>();
     EXPECT(current_dev == 0);
   };
 };
@@ -1520,7 +1520,7 @@ UNITTEST("exec_place assignments")
 {
   // Make sure we can use exec_place by values, replace it, etc...
   exec_place e;
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 1)
   {
     e = exec_place::device(0);
@@ -1534,19 +1534,22 @@ UNITTEST("exec_place assignments")
 
 UNITTEST("exec_place movable")
 {
-  exec_place e  = exec_place::device(0);
-  exec_place e2 = mv(e);
+  exec_place e        = exec_place::device(0);
+  const exec_place e2 = mv(e);
 };
 
 UNITTEST("exec_place copyable")
 {
-  exec_place e  = exec_place::device(0);
-  exec_place e2 = e;
+  const exec_place e = exec_place::device(0);
+  exec_place e2      = e;
+  EXPECT(e2 == e);
+  e2 = exec_place::host();
+  EXPECT(!(e2 == e));
 };
 
 UNITTEST("exec_place_scope reset")
 {
-  int original_dev = cuda_try<cudaGetDevice>();
+  const int original_dev = cuda_try<cudaGetDevice>();
 
   // Activate device 0
   {
@@ -1629,7 +1632,7 @@ public:
     return places_[idx].get_impl()->activate(0);
   }
 
-  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  void deactivate(const exec_place& prev, size_t idx) const override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
     places_[idx].get_impl()->deactivate(prev, 0);
@@ -1651,11 +1654,12 @@ public:
     {
       return typeid(*this).before(typeid(rhs)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& other = static_cast<const exec_place_grid_impl&>(rhs);
     // Compare dims first
     auto this_dims  = ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t);
     auto other_dims = ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
-    if (int c = (other_dims < this_dims) - (this_dims < other_dims); c != 0)
+    if (const int c = (other_dims < this_dims) - (this_dims < other_dims); c != 0)
     {
       return c;
     }
@@ -2009,6 +2013,7 @@ public:
     {
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& o = static_cast<const data_place_composite&>(other);
     if (get_partitioner() != o.get_partitioner())
     {
@@ -2212,6 +2217,7 @@ public:
     {
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& o = static_cast<const data_place_replicated&>(other);
     // Deferred places carry no grid: order them before concrete ones and
     // never dereference grid_ (it has no impl in the deferred form)
@@ -2272,13 +2278,17 @@ private:
 //! Whether this replicated data place still needs its grid bound
 inline bool replicated_is_deferred(const data_place& dp)
 {
-  return static_cast<const data_place_replicated*>(dp.get_impl().get())->is_deferred();
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
+  const auto* rep = static_cast<const data_place_replicated*>(dp.get_impl().get());
+  return rep->is_deferred();
 }
 
 //! Grid of a replicated data place
 inline const exec_place& replicated_grid(const data_place& dp)
 {
-  return static_cast<const data_place_replicated*>(dp.get_impl().get())->get_grid();
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
+  const auto* rep = static_cast<const data_place_replicated*>(dp.get_impl().get());
+  return rep->get_grid();
 }
 
 inline bool data_place::is_composite() const
@@ -2303,6 +2313,7 @@ inline data_place data_place::member(size_t r) const
   {
     return *this;
   }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
   const auto* rep = static_cast<const data_place_replicated*>(get_impl().get());
   return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
 }
@@ -2313,7 +2324,9 @@ inline size_t data_place::instance_of(size_t place_index) const
   {
     return 0;
   }
-  return static_cast<const data_place_replicated*>(get_impl().get())->instance_of(place_index);
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
+  const auto* rep = static_cast<const data_place_replicated*>(get_impl().get());
+  return rep->instance_of(place_index);
 }
 
 inline data_place data_place::composite(partition_mapper f, const exec_place& grid)
@@ -2391,7 +2404,7 @@ UNITTEST("Data place equality")
   EXPECT(data_place::host() != data_place::device(0));
 
   // Different devices should not be equal
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     EXPECT(data_place::device(0) != data_place::device(1));
@@ -2440,6 +2453,7 @@ UNITTEST("grid exec place equality")
 UNITTEST("exec place grid reshape preserves linear place order")
 {
   ::std::vector<exec_place> places;
+  places.reserve(24);
   for (size_t i = 0; i < 24; i++)
   {
     places.push_back(exec_place::repeat(exec_place::host(), i + 2));
@@ -2461,6 +2475,7 @@ UNITTEST("exec place grid reshape preserves linear place order")
 UNITTEST("exec place grid collapse axes preserves linear place order")
 {
   ::std::vector<exec_place> places;
+  places.reserve(24);
   for (size_t i = 0; i < 24; i++)
   {
     places.push_back(exec_place::repeat(exec_place::host(), i + 2));
@@ -2556,7 +2571,7 @@ UNITTEST("pos4 dim4 handle large values beyond 32bit")
   dim4 dims(size_t(100000), size_t(100000)); // 100k x 100k = 10 billion elements
   pos4 pos(ssize_t(50000), ssize_t(50000)); // Middle position
 
-  size_t index = dims.get_index(pos);
+  const size_t index = dims.get_index(pos);
   // Should be: 50000 + 100000 * 50000 = 5,000,050,000 (> 2^32)
   const size_t expected_index = 50000ULL + 100000ULL * 50000ULL;
   EXPECT(index == expected_index);
@@ -2628,7 +2643,7 @@ UNITTEST("Data place as unordered_map key")
   EXPECT(map[data_place::host()] == 10);
 
   // Test with multiple devices
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     map[data_place::device(1)] = 4;
@@ -2659,7 +2674,7 @@ UNITTEST("Exec place as unordered_map key")
   EXPECT(map[exec_place::host()] == 10);
 
   // Test with multiple devices
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     map[exec_place::device(1)] = 3;
@@ -2692,7 +2707,7 @@ UNITTEST("Data place as std::map key")
   EXPECT(map[data_place::host()] == 10);
 
   // Test with multiple devices
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     map[data_place::device(1)] = 4;
@@ -2723,7 +2738,7 @@ UNITTEST("Exec place as std::map key")
   EXPECT(map[exec_place::host()] == 10);
 
   // Test with multiple devices
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   if (ndevices >= 2)
   {
     map[exec_place::device(1)] = 3;

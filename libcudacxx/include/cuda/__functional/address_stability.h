@@ -35,26 +35,26 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! Trait telling whether a function object type F does not rely on the memory addresses of its arguments. The nested
+//! Trait telling whether a function object type _Fn does not rely on the memory addresses of its arguments. The nested
 //! value is true when the addresses of the arguments do not matter and arguments can be provided from arbitrary copies
 //! of the respective sources. This trait can be specialized for custom function objects types.
 //! @see proclaim_copyable_arguments
-template <typename F, typename SFINAE = void>
+template <typename _Fn, typename _Sfinae = void>
 struct proclaims_copyable_arguments : ::cuda::std::false_type
 {};
 
-template <typename F, typename... Args>
-inline constexpr bool proclaims_copyable_arguments_v = proclaims_copyable_arguments<F, Args...>::value;
+template <typename _Fn, typename... _Args>
+inline constexpr bool proclaims_copyable_arguments_v = proclaims_copyable_arguments<_Fn, _Args...>::value;
 
 // Wrapper for a callable to mark it as permitting copied arguments
-template <typename F>
-struct __callable_permitting_copied_arguments : F
+template <typename _Fn>
+struct __callable_permitting_copied_arguments : _Fn
 {
-  using F::operator();
+  using _Fn::operator();
 };
 
-template <typename F>
-struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> : ::cuda::std::true_type
+template <typename _Fn>
+struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<_Fn>> : ::cuda::std::true_type
 {};
 
 //! Creates a new function object from an existing one, which is marked as permitting its arguments to be copies of
@@ -62,16 +62,16 @@ struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> :
 //! object. Some algorithms, like thrust::transform, can benefit from this information and choose a more efficient
 //! implementation.
 //! @see proclaims_copyable_arguments
-template <typename F>
-[[nodiscard]] _CCCL_API constexpr auto proclaim_copyable_arguments(F&& f)
+template <typename _Fn>
+[[nodiscard]] _CCCL_API constexpr auto proclaim_copyable_arguments(_Fn&& f)
 {
-  if constexpr (proclaims_copyable_arguments_v<F>)
-  { // If F is already marked then we do not need to wrap it
+  if constexpr (proclaims_copyable_arguments_v<_Fn>)
+  { // If _Fn is already marked then we do not need to wrap it
     return f;
   }
   else
   {
-    return __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>{::cuda::std::forward<F>(f)};
+    return __callable_permitting_copied_arguments<::cuda::std::decay_t<_Fn>>{::cuda::std::forward<_Fn>(f)};
   }
 }
 
