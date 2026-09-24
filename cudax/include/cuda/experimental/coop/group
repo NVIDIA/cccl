@@ -27,7 +27,6 @@
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/generic_group.cuh>
 #include <cuda/experimental/coop/__group/group_view.cuh>
-#include <cuda/experimental/coop/__group/implicit_hierarchy.cuh>
 #include <cuda/experimental/coop/__group/mapping/binary_partition.cuh>
 #include <cuda/experimental/coop/__group/mapping/composite_mapping.cuh>
 #include <cuda/experimental/coop/__group/mapping/group_as.cuh>

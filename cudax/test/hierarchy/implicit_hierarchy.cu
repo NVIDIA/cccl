@@ -14,7 +14,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
-#include <cuda/experimental/coop/group>
+#include <cuda/experimental/hierarchy.cuh>
 
 #include "group_testing.cuh"
 
@@ -66,7 +66,7 @@ struct TestKernel
   }
 };
 
-C2H_TEST("Implicit Hierarchy", "[group][implicit_hierarchy]")
+C2H_TEST("Implicit Hierarchy", "[hierarchy][implicit_hierarchy]")
 {
   const auto device = cuda::devices[0];
 
