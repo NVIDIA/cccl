@@ -68,8 +68,8 @@ try
     }
     else if (init_kind == CCCL_VALUE_INIT)
     {
-      // ExclusiveScan or InclusiveScanInit with a value init (memcpy'd from void*)
-      const char* fn = force_inclusive ? "cub::DeviceScan::InclusiveScanInit" : "cub::DeviceScan::ExclusiveScan";
+      // ExclusiveScan or InclusiveScan with a value init (memcpy'd from void*)
+      const char* fn = force_inclusive ? "cub::DeviceScan::InclusiveScan" : "cub::DeviceScan::ExclusiveScan";
       cccl_value_t init_val{init_type, nullptr}; // state=nullptr; passed at run time
       return base.run(fn)
         .with(temp_storage, temp_bytes, in(d_in), out(d_out), op, init_val, num_items, stream)
@@ -77,8 +77,8 @@ try
     }
     else // CCCL_FUTURE_VALUE_INIT
     {
-      // ExclusiveScan or InclusiveScanInit with cub::FutureValue<accum_t>(ptr)
-      const char* fn = force_inclusive ? "cub::DeviceScan::InclusiveScanInit" : "cub::DeviceScan::ExclusiveScan";
+      // ExclusiveScan or InclusiveScan with cub::FutureValue<accum_t>(ptr)
+      const char* fn = force_inclusive ? "cub::DeviceScan::InclusiveScan" : "cub::DeviceScan::ExclusiveScan";
       return base.run(fn)
         .with(temp_storage, temp_bytes, in(d_in), out(d_out), op, future_val(init_type), num_items, stream)
         .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
