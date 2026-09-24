@@ -57,6 +57,12 @@ struct with_location
   // Required so a converting temporary can initialize a by-value parameter.
   with_location(with_location&&) = default;
 
+  // No assignment: when `T` is a reference, assigning would write THROUGH the referent
+  // rather than rebind it, silently modifying the caller's object. A location-carrying
+  // argument wrapper has no use for assignment in any case.
+  with_location& operator=(const with_location&) = delete;
+  with_location& operator=(with_location&&)      = delete;
+
   // Constrained so that ill-formed reference bindings are detected by
   // `is_constructible_v` instead of erroring inside the mem-initializer, and so
   // that this template does not hijack the move constructor.
@@ -71,6 +77,17 @@ struct with_location
 
   T payload;
   const ::cuda::std::source_location loc;
+};
+
+//! @brief `with_location<void>` is the degenerate case: naming it is legal (so it may appear
+//! as a parameter type of a candidate that is then discarded), but nothing constructs it, so
+//! such a candidate is never viable. Callers reach this only through traits that answer
+//! `void` for "this function has no such parameter".
+template <>
+struct with_location<void>
+{
+  with_location()                     = delete;
+  with_location(const with_location&) = delete;
 };
 
 // Two-arg form only: CTAD cannot see `T` in the converting constructor, and a
