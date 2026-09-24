@@ -89,7 +89,8 @@ public:
             class              = enable_if_t<sizeof...(_Types) != 0>,
             class _Constraints = __match_construct<_Arg>,
             class              = enable_if_t<_Constraints::__constructible>>
-  _CCCL_API constexpr variant(_Arg&& __arg) noexcept(_Constraints::__nothrow_constructible)
+  _CCCL_API constexpr variant(_Arg&& __arg) noexcept( // NOLINT(bugprone-forwarding-reference-overload)
+    _Constraints::__nothrow_constructible)
       : __impl_(in_place_index<_Constraints::_Ip>, ::cuda::std::forward<_Arg>(__arg))
   {}
 

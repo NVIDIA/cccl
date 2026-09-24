@@ -571,7 +571,7 @@ def generate_dispatch_job_image(matrix_job, job_type):
     ctk_suffix = "ext" if job_info["cuda_ext"] else ""
 
     if is_windows(matrix_job):
-        return f"{image_repo}:{version_prefix}cuda{ctk}{ctk_suffix}-{host_compiler}"
+        return f"{image_repo}:{version_prefix}{host_compiler}-cuda{ctk}{ctk_suffix}"
 
     if is_nvhpc(matrix_job):
         return f"{image_repo}:{version_prefix}cpp-{host_compiler}"
@@ -1508,11 +1508,9 @@ def print_devcontainer_info(args):
 
 
 def preprocess_matrix_yaml(matrix):
-    # Make all CTK version keys into strings:
-    new_ctk = {}
-    for version, attrs in matrix["ctk_versions"].items():
-        new_ctk[str(version)] = attrs
-    matrix["ctk_versions"] = new_ctk
+    # Numeric YAML keys lose the spelling of dotted versions.
+    if not all(isinstance(version, str) for version in matrix["ctk_versions"]):
+        raise ValueError("CTK version keys in matrix.yaml must be quoted strings")
 
     # Make all compiler version keys into strings:
     for id, hc_def in matrix["host_compilers"].items():
