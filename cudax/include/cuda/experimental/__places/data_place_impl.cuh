@@ -33,6 +33,7 @@
 #include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/__memory_pool/memory_pool_base.h>
 
 namespace cuda::experimental::places
 {
@@ -254,44 +255,18 @@ public:
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
-    void* result       = nullptr;
-    const int prev_dev = cuda_try<cudaGetDevice>();
-
-    if (prev_dev != device_id_)
-    {
-      cuda_try(cudaSetDevice(device_id_));
-    }
-
-    SCOPE(exit)
-    {
-      if (prev_dev != device_id_)
-      {
-        cuda_try(cudaSetDevice(prev_dev));
-      }
-    };
-
-    cuda_try(cudaMallocAsync(&result, static_cast<size_t>(size), stream));
-    return result;
+    // The device's default pool, resolved through libcu++'s policy site (which
+    // also sets the release threshold): places do not manage pool properties.
+    const CUmemoryPool pool = ::cuda::__get_default_memory_pool(
+      CUmemLocation{CU_MEM_LOCATION_TYPE_DEVICE, device_id_}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    CUdeviceptr ptr = 0;
+    cuda_try(cuMemAllocFromPoolAsync(&ptr, static_cast<size_t>(size), pool, reinterpret_cast<CUstream>(stream)));
+    return reinterpret_cast<void*>(ptr);
   }
 
   void deallocate(void* ptr, size_t, cudaStream_t stream) const override
   {
-    const int prev_dev = cuda_try<cudaGetDevice>();
-
-    if (prev_dev != device_id_)
-    {
-      cuda_try(cudaSetDevice(device_id_));
-    }
-
-    SCOPE(exit)
-    {
-      if (prev_dev != device_id_)
-      {
-        cuda_try(cudaSetDevice(prev_dev));
-      }
-    };
-
-    cuda_try(cudaFreeAsync(ptr, stream));
+    cuda_try(cuMemFreeAsync(reinterpret_cast<CUdeviceptr>(ptr), reinterpret_cast<CUstream>(stream)));
   }
 
   bool allocation_is_stream_ordered() const override
