@@ -338,6 +338,7 @@ UNITTEST("buddy_allocator is movable")
 
 UNITTEST("buddy allocator meta data")
 {
+  // NOLINTNEXTLINE(misc-const-correctness) -- a const object needs a user-provided default constructor
   event_list prereqs; // starts empty
 
   reserved::buddy_allocator_metadata allocator(1024, prereqs);

@@ -203,7 +203,7 @@ void run(const char* inputfile)
         {
           // Find symbol
           size_t pos;
-          pos                      = params.find(":");
+          pos                      = params.find(':');
           const std::string symbol = params.substr(0, pos);
           // std::cout << symbol << '\n';
 
@@ -238,13 +238,13 @@ void run(const char* inputfile)
       }
 
       // We expect lines of the format : "  symbol: type = gate_name(..., id=VALUE)"
-      const size_t end_symbol = line.find(":");
+      const size_t end_symbol = line.find(':');
 
       // We look for the first "= " to find the gate name
       const size_t gate_symbol_pos = line.find("= ");
       const std::string gate       = line.substr(gate_symbol_pos + 2);
 
-      const size_t gate_name_end     = gate.find("(");
+      const size_t gate_name_end     = gate.find('(');
       const std::string gate_symbol  = gate.substr(0, gate_name_end);
       std::string gate_args          = gate.substr(gate_name_end + 1, gate.size() - gate_name_end - 2);
       std::string gate_outvar_symbol = line.substr(2, end_symbol - 2);
@@ -346,8 +346,8 @@ void run(const char* inputfile)
         const std::string symbol_indices = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
-        const size_t pos_beg          = symbol_indices.find("[");
-        const size_t pos_end          = symbol_indices.find("]");
+        const size_t pos_beg          = symbol_indices.find('[');
+        const size_t pos_end          = symbol_indices.find(']');
         const std::string symbol_in_2 = symbol_indices.substr(pos_beg + 1, pos_end - pos_beg - 1);
         // std::cout << "ARRAY INDEX ... INDEX = " << symbol_in_2 << '\n';
 

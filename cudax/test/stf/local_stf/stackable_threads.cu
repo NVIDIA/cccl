@@ -65,6 +65,7 @@ int main()
 
   const int NTHREADS = 8;
 
+  lA.reserve(NTHREADS);
   for (int i = 0; i < NTHREADS; ++i)
   {
     lA.push_back(sctx.logical_data(shape_of<slice<int>>(N)));
@@ -74,6 +75,7 @@ int main()
   {
     ::std::vector<::std::thread> threads;
 
+    threads.reserve(NTHREADS);
     for (int i = 0; i < NTHREADS; ++i)
     {
       threads.emplace_back(worker, sctx, main_head, lA[i], lB);

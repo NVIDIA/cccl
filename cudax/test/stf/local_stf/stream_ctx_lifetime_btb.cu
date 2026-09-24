@@ -164,7 +164,7 @@ void run_shared_handle_no_sync_once()
     cuda_safe_call(cudaMemsetAsync(d_arr, 0, N * sizeof(int), stream));
   }
 
-  async_resources_handle handle;
+  const async_resources_handle handle;
   {
     stream_ctx ctx(stream, handle);
     submit_token_chains(ctx, d_arr, 1);

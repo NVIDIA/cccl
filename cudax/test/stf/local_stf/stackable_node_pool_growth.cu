@@ -45,6 +45,7 @@ int main()
   const int main_head = sctx.get_head_offset();
 
   ::std::vector<stackable_logical_data<slice<int>>> lds;
+  lds.reserve(NTHREADS);
   for (int i = 0; i < NTHREADS; i++)
   {
     lds.push_back(sctx.logical_data(shape_of<slice<int>>(N)));
@@ -55,6 +56,7 @@ int main()
   for (int batch = 0; batch < NBATCHES; batch++)
   {
     ::std::vector<::std::thread> threads;
+    threads.reserve(NTHREADS);
     for (int i = 0; i < NTHREADS; i++)
     {
       threads.emplace_back(worker, sctx, main_head, lds[i]);

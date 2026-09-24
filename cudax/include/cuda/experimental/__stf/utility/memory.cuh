@@ -85,7 +85,8 @@ inline void* allocateHostMemory(size_t sz)
     // the next call).
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try<cudaFreeHost>(entry);
@@ -123,7 +124,8 @@ inline void* allocateManagedMemory(size_t sz)
     // leaks at most the in-flight pointer, never causes a double-free.
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try(cudaFree(entry));

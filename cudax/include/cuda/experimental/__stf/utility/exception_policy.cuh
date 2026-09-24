@@ -668,6 +668,7 @@ struct backoff_t
 
     // maybe_unused: like __cap above, __left is referenced only inside
     // _CCCL_CATCH_ALL, so CTK <= 12.9's cudafe reports #177 without it.
+    // NOLINTNEXTLINE(misc-const-correctness) -- decremented in the catch arm, which some instantiations never reach
     for ([[maybe_unused]] int __left = __n_;;)
     {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds{__sleep});
@@ -1556,11 +1557,15 @@ __on_throw_policy(_R, ::cuda::std::source_location) -> __on_throw_policy<_R>;
 template <class _Reaction, class _Fn>
 // A resuming chain reads neither exception nor location in some instantiations; gcc 9 flags the
 // unread policy without the attribute.
+// In clang-tidy's device pass _CCCL_TRY/_CCCL_CATCH expand to no handler, so bugprone-exception-escape
+// sees the callable's throw escape this runner in every instantiation whose policy makes it noexcept.
+// NOLINTNEXTLINE(bugprone-exception-escape)
 decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept(
   __exception_path_nothrow_v<_Reaction, _Fn> && __on_enter_nothrow_v<_Reaction>)
 {
-  // Bind as a non-const lvalue: a hook may invoke it again later.
-  const _Fn& __f = __fn;
+  // Bind as a non-const lvalue: a hook may invoke it again later, and a mutable callable needs it.
+  // NOLINTNEXTLINE(misc-const-correctness)
+  _Fn& __f = __fn;
 
   // A `noexcept` callable puts the policy out of reach: an exception raised inside it ends the
   // program where it stands, so the catch below could never run and the policy would be a
@@ -2319,7 +2324,7 @@ private:
         if (const _Stored* __p = ::std::any_cast<_Stored>(&__box))
         {
           if constexpr (::cuda::std::is_floating_point_v<typename detail::__integral_base<_T>::type>)
-          {
+          { // NOLINT(bugprone-branch-clone) -- same body as the fits() arm, for a different reason
             __out = static_cast<_T>(*__p); // anything -> floating: by fiat
             __hit = true;
           }
@@ -2604,9 +2609,6 @@ auto on_throw(_Reaction&& __reaction,
     << [&]()
 
 #ifdef UNITTESTED_FILE
-// The tests below throw on purpose. In clang-tidy's device pass exceptions are disabled, every
-// function is implicitly non-throwing, and bugprone-exception-escape flags each deliberate throw.
-// NOLINTBEGIN(bugprone-exception-escape)
 UNITTEST("nullval")
 {
   using namespace cuda::experimental::stf;
@@ -4382,7 +4384,6 @@ UNITTEST("type erasure")
   //       policy -- subst(0xffffffffu), not subst(-1) -- if the narrowing is intended"
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
-// NOLINTEND(bugprone-exception-escape)
 #endif // UNITTESTED_FILE
 
 /**
@@ -4623,9 +4624,6 @@ auto operator->*(success, F&& f)
 } // namespace cuda::experimental::stf
 
 #ifdef UNITTESTED_FILE
-// The tests below throw on purpose. In clang-tidy's device pass exceptions are disabled, every
-// function is implicitly non-throwing, and bugprone-exception-escape flags each deliberate throw.
-// NOLINTBEGIN(bugprone-exception-escape)
 UNITTEST("SCOPE(exit)")
 {
   //! [SCOPE(exit)]
@@ -4910,5 +4908,4 @@ UNITTEST("policies inside handlers")
   }
 };
 
-// NOLINTEND(bugprone-exception-escape)
 #endif // UNITTESTED_FILE

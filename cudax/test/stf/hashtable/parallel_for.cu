@@ -19,7 +19,7 @@ int main()
   stream_ctx ctx;
 
   // This constructor automatically initializes an empty hashtable on the host
-  hashtable h;
+  const hashtable h;
   auto lh = ctx.logical_data(h);
 
   ctx.parallel_for(box(16), lh.rw())->*[] _CCCL_DEVICE(size_t i, auto h) {

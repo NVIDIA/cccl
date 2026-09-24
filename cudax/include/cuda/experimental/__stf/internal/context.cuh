@@ -1100,7 +1100,7 @@ UNITTEST("context")
 
 UNITTEST("context from existing contexts")
 {
-  stream_ctx ctx;
+  const stream_ctx ctx;
   context unified_ctx = ctx;
   unified_ctx.finalize();
 };
@@ -1236,7 +1236,7 @@ UNITTEST("context with arguments")
     cuda_safe_call(cudaStreamDestroy(stream));
   };
 
-  async_resources_handle h;
+  const async_resources_handle h;
 
   context ctx(h);
   ctx.finalize();
@@ -1460,7 +1460,7 @@ UNITTEST("context launch specific exec places")
 inline void unit_test_context_launch_sync()
 {
   // OK with this (workaround)
-  stream_ctx ctx;
+  const stream_ctx ctx;
 
   // does not compile with context
   // context ctx;
@@ -1549,7 +1549,7 @@ template <typename spec_t>
 inline void unit_test_context_launch_implicit_widths(spec_t spec)
 {
   // OK with this (workaround)
-  stream_ctx ctx;
+  const stream_ctx ctx;
 
   // does not compile with context
   // context ctx;

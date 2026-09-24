@@ -16,7 +16,8 @@ int main()
 {
   context ctx;
 
-  int nqpoints = 3; // deliberately not const: the test is about capturing it
+  // NOLINTNEXTLINE(misc-const-correctness) -- the test is about capturing it; a const literal makes the capture unused
+  int nqpoints = 3;
   auto ltoken  = ctx.token();
 
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC)

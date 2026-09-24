@@ -156,6 +156,7 @@ UNITTEST("with_location")
   };
   consume_value(widget{42});
 
+  // NOLINTNEXTLINE(misc-const-correctness) -- bound to with_location<widget&> and mutated below
   widget live{7};
   auto consume_lref = [](with_location<widget&> w) {
     EXPECT(w.payload.x == 7);

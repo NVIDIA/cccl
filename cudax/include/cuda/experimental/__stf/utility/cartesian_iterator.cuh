@@ -298,7 +298,7 @@ UNITTEST("range")
 
   ::std::vector<int> check(n);
 
-  for (const int num : range)
+  for (const auto num : range)
   {
     // fprintf(stderr, "->%d\n", num);
     check[num] = 1;

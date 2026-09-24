@@ -47,7 +47,7 @@ __device__ void calculating_pagerank(
     const int out_degree = loffsets[neighbor + 1] - loffsets[neighbor];
     rank_sum += lpage_rank[neighbor] / static_cast<float>(out_degree);
   }
-  lnew_page_rank[idx] = static_cast<float>(0.85) * rank_sum + (1.0 - 0.85) * lpersonalization[idx];
+  lnew_page_rank[idx] = static_cast<float>(0.85) * rank_sum + static_cast<float>(1.0 - 0.85) * lpersonalization[idx];
 }
 
 /**
