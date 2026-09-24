@@ -81,7 +81,6 @@ Checks:
   - '-cppcoreguidelines-pro-type-cstyle-cast'
   - '-cppcoreguidelines-prefer-member-initializer'
   - '-cppcoreguidelines-slicing'
-  - '-cppcoreguidelines-no-malloc'
   - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME
   # TODO(jfaibussowit):

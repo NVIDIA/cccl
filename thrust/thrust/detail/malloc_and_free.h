@@ -43,6 +43,8 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::si
 
   // XXX should use a hypothetical thrust::static_pointer_cast here
   void* raw_ptr = static_cast<void*>(
+    // Allocation dispatch transfers ownership to the caller.
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     thrust::raw_pointer_cast(malloc(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), n)));
 
   return pointer<void, DerivedPolicy>(raw_ptr);
@@ -67,6 +69,8 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
 {
   using thrust::system::detail::generic::free;
 
+  // Release caller-owned storage through the selected backend.
+  // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
   free(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), ptr);
 }
 
