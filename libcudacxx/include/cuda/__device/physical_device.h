@@ -90,7 +90,10 @@ class __physical_device
     __raw_storage_array<__logical_device_ref> __refs_{};
     ::cuda::std::size_t __count_{};
   };
-  __locality_domain_set __locality_domain_sets_[__locality_domain_sm_split_count]{};
+  //! No `{}` here: GCC 7 initializes each element of an empty-braced array by copying it from `{}`,
+  //! which needs the deleted copy of `std::once_flag`. Default-initialization constructs every
+  //! element in place and every member has a default member initializer anyway.
+  __locality_domain_set __locality_domain_sets_[__locality_domain_sm_split_count];
 
   _CCCL_HOST_API void __set_name()
   {
