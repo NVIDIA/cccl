@@ -99,6 +99,16 @@ struct max_full_tile_op_t
   }
 };
 
+// num_valid larger than the block size must behave like a full tile
+struct min_oversized_tile_op_t
+{
+  template <int ItemsPerThread, class BlockReduceT, class T>
+  __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int valid_items) const
+  {
+    return reduce.Reduce(thread_data[0], cuda::minimum<>{}, valid_items + 32);
+  }
+};
+
 using types     = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t, float, double>;
 using vec_types = c2h::type_list<
 #if _CCCL_CTK_AT_LEAST(13, 0)
@@ -262,6 +272,35 @@ CUB_TEST("Block reduce works with custom op in partial tiles",
                type>(d_in, d_out, max_partial_tile_op_t{});
 
   REQUIRE_APPROX_EQ(h_reference, d_out);
+}
+
+CUB_TEST("Block reduce treats num_valid larger than the block size as a full tile",
+         "[reduce][block]",
+         CUB_SMALL,
+         types,
+         single_item_per_thread,
+         block_dim_xs,
+         block_dim_yzs,
+         arithmetic_algorithm)
+{
+  using params = params_t<TestType>;
+  using type   = typename params::type;
+
+  c2h::device_vector<type> d_out(1);
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::gen(C2H_SEED(10), d_in, type{1});
+
+  c2h::host_vector<type> h_in = d_in;
+  const c2h::host_vector<type> h_reference(1, *std::min_element(h_in.begin(), h_in.end()));
+
+  block_reduce<params::algorithm,
+               params::items_per_thread,
+               params::block_dim_x,
+               params::block_dim_y,
+               params::block_dim_z,
+               type>(d_in, d_out, min_oversized_tile_op_t{});
+
+  REQUIRE(h_reference == d_out);
 }
 
 CUB_TEST("Block reduce works with custom types", "[reduce][block]", CUB_SMALL, block_dim_xs, block_dim_yzs, algorithm)
