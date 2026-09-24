@@ -1898,8 +1898,9 @@ public:
     {
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- typeid checked just above
     const auto& o = static_cast<const data_place_cute_composite&>(other);
-    if (int c = partition_.cmp(o.partition_))
+    if (const int c = partition_.cmp(o.partition_))
     {
       return c;
     }

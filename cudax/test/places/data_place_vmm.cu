@@ -31,7 +31,7 @@ using namespace cuda::experimental::places;
 
 __global__ void init_kernel(int* ptr, int n, int value)
 {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid < n)
   {
     ptr[tid] = value + tid;
@@ -40,7 +40,7 @@ __global__ void init_kernel(int* ptr, int n, int value)
 
 __global__ void check_kernel(int* ptr, int n, int value, int* result)
 {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid < n)
   {
     if (ptr[tid] != value + tid)
@@ -77,11 +77,11 @@ void test_device_vmm_allocation()
 {
   printf("Testing device VMM allocation (mem_create)...\n");
 
-  int dev_id = 0;
+  const int dev_id = 0;
   cuda_try(cudaSetDevice(dev_id));
 
   // Get allocation granularity - VMM allocations must be aligned to this
-  size_t granularity = get_granularity(dev_id);
+  const size_t granularity = get_granularity(dev_id);
   printf("  Allocation granularity: %zu bytes\n", granularity);
 
   // Allocate at least one granularity unit
@@ -92,7 +92,7 @@ void test_device_vmm_allocation()
   // Create physical memory using data_place::mem_create
   auto place = data_place::device(dev_id);
   CUmemGenericAllocationHandle handle;
-  CUresult result = place.mem_create(&handle, alloc_size);
+  const CUresult result = place.mem_create(&handle, alloc_size);
   EXPECT(result == CUDA_SUCCESS);
 
   // Reserve virtual address space
@@ -117,7 +117,7 @@ void test_device_vmm_allocation()
   cuda_try(cudaStreamCreate(&stream));
 
   // Initialize on device
-  init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
+  init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, static_cast<int>(n), test_value);
   cuda_try(cudaGetLastError());
 
   // Allocate result flag for checking
@@ -126,7 +126,7 @@ void test_device_vmm_allocation()
   cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
 
   // Check on device
-  check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
+  check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, static_cast<int>(n), test_value, d_result);
   cuda_try(cudaGetLastError());
 
   // Copy result back
@@ -165,7 +165,7 @@ void test_host_vmm_allocation()
   prop.location.id         = 0;
 
   size_t granularity;
-  CUresult gran_result = cuMemGetAllocationGranularity(&granularity, &prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
+  const CUresult gran_result = cuMemGetAllocationGranularity(&granularity, &prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
   if (gran_result != CUDA_SUCCESS)
   {
     printf("  Host VMM not supported on this system, skipping.\n");
@@ -180,7 +180,7 @@ void test_host_vmm_allocation()
   // Create physical memory using data_place::mem_create with host place
   auto place = data_place::host();
   CUmemGenericAllocationHandle handle;
-  CUresult result = place.mem_create(&handle, alloc_size);
+  const CUresult result = place.mem_create(&handle, alloc_size);
   if (result != CUDA_SUCCESS)
   {
     printf("  Host mem_create not supported (error %d), skipping.\n", result);
@@ -229,10 +229,10 @@ void test_multi_segment_vmm()
 {
   printf("Testing multi-segment VMM allocation...\n");
 
-  int dev_id = 0;
+  const int dev_id = 0;
   cuda_try(cudaSetDevice(dev_id));
 
-  size_t granularity = get_granularity(dev_id);
+  const size_t granularity = get_granularity(dev_id);
 
   // Create two segments and map them contiguously
   const size_t segment_size = granularity;
@@ -268,14 +268,14 @@ void test_multi_segment_vmm()
   cuda_try(cudaStreamCreate(&stream));
 
   // Initialize the entire contiguous range
-  init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
+  init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, static_cast<int>(n), test_value);
   cuda_try(cudaGetLastError());
 
   // Check the entire range
   int* d_result;
   cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
   cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
-  check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
+  check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, static_cast<int>(n), test_value, d_result);
   cuda_try(cudaGetLastError());
 
   int h_result = 0;
@@ -304,7 +304,7 @@ void test_multi_segment_vmm()
 // override end-to-end through the VMM map/access/kernel path.
 void test_green_ctx_vmm_allocation()
 {
-  int dev_id = 0;
+  const int dev_id = 0;
   cuda_try(cudaSetDevice(dev_id));
 
   // Split the device into green contexts (8 SMs each).
@@ -313,14 +313,14 @@ void test_green_ctx_vmm_allocation()
   auto gc_view = gc_helper.get_view(0);
   auto place   = data_place::green_ctx(gc_view);
 
-  size_t granularity      = get_granularity(dev_id);
-  const size_t alloc_size = granularity;
-  const size_t n          = alloc_size / sizeof(int);
-  const int test_value    = 55;
+  const size_t granularity = get_granularity(dev_id);
+  const size_t alloc_size  = granularity;
+  const size_t n           = alloc_size / sizeof(int);
+  const int test_value     = 55;
 
   // Create physical memory using the green context data place's mem_create().
   CUmemGenericAllocationHandle handle;
-  CUresult result = place.mem_create(&handle, alloc_size);
+  const CUresult result = place.mem_create(&handle, alloc_size);
   EXPECT(result == CUDA_SUCCESS);
 
   // Reserve virtual address space and map the physical allocation into it.
@@ -341,13 +341,13 @@ void test_green_ctx_vmm_allocation()
   cudaStream_t stream;
   cuda_try(cudaStreamCreate(&stream));
 
-  init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
+  init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, static_cast<int>(n), test_value);
   cuda_try(cudaGetLastError());
 
   int* d_result;
   cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
   cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
-  check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
+  check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, static_cast<int>(n), test_value, d_result);
   cuda_try(cudaGetLastError());
 
   int h_result = 0;
