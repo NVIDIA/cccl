@@ -794,6 +794,8 @@ UNITTEST("movable graph_task<>")
 
 UNITTEST("set_symbol on graph_task and graph_task<>")
 {
+  // Every acquisition below gets a guard, purely for the sake of pedantry: should a step throw,
+  // the test still ends its tasks, finalizes the context, and unpins its buffers, in that order.
   graph_ctx ctx;
 
   double X[1024], Y[1024];
@@ -801,25 +803,42 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   auto lY = ctx.logical_data(Y);
 
   pin_memory(X);
+  SCOPE(exit)
+  {
+    unpin_memory(X);
+  };
   pin_memory(Y);
+  SCOPE(exit)
+  {
+    unpin_memory(Y);
+  };
+  SCOPE(exit)
+  {
+    ctx.finalize();
+  };
 
-  graph_task<> t = ctx.task();
-  t.add_deps(lX.rw(), lY.rw());
-  t.set_symbol("graph_task<>");
-  t.start();
-  ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
-  t.end();
+  {
+    graph_task<> t = ctx.task();
+    t.add_deps(lX.rw(), lY.rw());
+    t.set_symbol("graph_task<>");
+    t.start();
+    SCOPE(exit)
+    {
+      t.end();
+    };
+    ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
+  }
 
-  graph_task<slice<double>, slice<double>> t2 = ctx.task(lX.rw(), lY.rw());
-  t2.set_symbol("graph_task");
-  t2.start();
-  ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t2.get_graph(), nullptr, 0);
-  t2.end();
-
-  ctx.finalize();
-
-  unpin_memory(X);
-  unpin_memory(Y);
+  {
+    graph_task<slice<double>, slice<double>> t2 = ctx.task(lX.rw(), lY.rw());
+    t2.set_symbol("graph_task");
+    t2.start();
+    SCOPE(exit)
+    {
+      t2.end();
+    };
+    ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t2.get_graph(), nullptr, 0);
+  }
 };
 
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
