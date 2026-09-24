@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/detail/uninitialized_copy.cuh>
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
@@ -189,26 +190,7 @@ struct BlockReduceWarpReductions
   template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
-    const ::cuda::std::plus<> reduction_op;
-    const int warp_offset = (warp_id * logical_warp_size);
-    const int warp_num_valid =
-      ((FullTile && even_warp_multiple) || (warp_offset + logical_warp_size <= num_valid))
-        ? logical_warp_size
-        : num_valid - warp_offset;
-
-    // Warp reduction in every warp
-    T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
-                         .template Reduce<(FullTile && even_warp_multiple)>(input, warp_num_valid, reduction_op);
-
-    // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    if constexpr (IsDeterministic)
-    {
-      return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
-    }
-    else
-    {
-      return ApplyWarpAggregatesNonDeterministic(reduction_op, warp_aggregate);
-    }
+    return Reduce<FullTile>(input, num_valid, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -245,13 +227,16 @@ struct BlockReduceWarpReductions
                                .template Reduce<(FullTile && even_warp_multiple)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    if constexpr (IsDeterministic)
+    // The atomic accumulation of warp aggregates is only valid for addition
+    if constexpr (IsDeterministic || !is_cuda_std_plus_v<ReductionOp, T>)
     {
       return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
     }
     else
     {
-      return ApplyWarpAggregatesNonDeterministic(reduction_op, warp_aggregate);
+      // Warps without valid items contribute the additive identity
+      const T add_value = (FullTile || warp_offset < num_valid) ? warp_aggregate : T{};
+      return ApplyWarpAggregatesNonDeterministic(reduction_op, add_value);
     }
   }
 };
