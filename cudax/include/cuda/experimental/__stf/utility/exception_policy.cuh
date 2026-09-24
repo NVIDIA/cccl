@@ -1938,11 +1938,11 @@ public:
     //! this sink are unreachable). Conservative for hand-written models.
     const bool may_rethrow;
     //! Inclusive range of a stored integral answer; unused for other kinds.
+    const long long min_value;
     const unsigned long long max_value;
-    unsigned long long max_value;
     //! Exact stored type for `udt` checks; `nullptr` encodes `passthrough`.
+    const ::std::type_info* answer_type;
     const ::std::string_view answer_name;
-    ::std::string_view answer_name;
 
     sink_base(answer_kind __kind                    = answer_kind::passthrough,
               bool __may_rethrow                    = true,
