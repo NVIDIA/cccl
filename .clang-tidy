@@ -80,7 +80,6 @@ Checks:
   - '-cppcoreguidelines-non-private-member-variables-in-classes'
   - '-cppcoreguidelines-pro-type-cstyle-cast'
   - '-cppcoreguidelines-prefer-member-initializer'
-  - '-cppcoreguidelines-slicing'
   - '-cppcoreguidelines-no-malloc'
   - '-cppcoreguidelines-avoid-goto'
   - '-cppcoreguidelines-missing-std-forward'
