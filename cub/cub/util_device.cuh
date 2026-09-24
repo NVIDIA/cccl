@@ -192,7 +192,7 @@ struct PerDeviceAttributeCache
   // `DeviceEntryInitializing` state, and then proceeds to the
   // `DeviceEntryReady` state. These are the only state transitions allowed;
   // i.e. a linear sequence of transitions.
-  enum DeviceEntryStatus
+  enum class DeviceEntryStatus
   {
     DeviceEntryEmpty = 0,
     DeviceEntryInitializing,
@@ -236,16 +236,19 @@ public:
     auto& flag    = entry.flag;
     auto& payload = entry.payload;
 
-    DeviceEntryStatus old_status = DeviceEntryEmpty;
+    DeviceEntryStatus old_status = DeviceEntryStatus::DeviceEntryEmpty;
 
     // First, check for the common case of the entry being ready.
-    if (flag.load(::std::memory_order_acquire) != DeviceEntryReady)
+    if (flag.load(::std::memory_order_acquire) != DeviceEntryStatus::DeviceEntryReady)
     {
       // Assume the entry is empty and attempt to lock it so we can fill
       // it by trying to set the state from `DeviceEntryReady` to
       // `DeviceEntryInitializing`.
       if (flag.compare_exchange_strong(
-            old_status, DeviceEntryInitializing, ::std::memory_order_acq_rel, ::std::memory_order_acquire))
+            old_status,
+            DeviceEntryStatus::DeviceEntryInitializing,
+            ::std::memory_order_acq_rel,
+            ::std::memory_order_acquire))
       {
         // We successfully set the state to `DeviceEntryInitializing`;
         // we have the lock and it's our job to initialize this entry
@@ -263,13 +266,13 @@ public:
         }
 
         // Release the lock by setting the state to `DeviceEntryReady`.
-        flag.store(DeviceEntryReady, ::std::memory_order_release);
+        flag.store(DeviceEntryStatus::DeviceEntryReady, ::std::memory_order_release);
       }
 
       // If the `compare_exchange_weak` failed, then `old_status` has
       // been updated with the value of `flag` that it observed.
 
-      else if (old_status == DeviceEntryInitializing)
+      else if (old_status == DeviceEntryStatus::DeviceEntryInitializing)
       {
         // Another execution agent is initializing this entry; we need
         // to wait for them to finish; we'll know they're done when we
@@ -277,7 +280,7 @@ public:
         do
         {
           old_status = flag.load(::std::memory_order_acquire);
-        } while (old_status != DeviceEntryReady);
+        } while (old_status != DeviceEntryStatus::DeviceEntryReady);
         // FIXME: Use `atomic::wait` instead when we have access to
         // host-side C++20 atomics. We could use libcu++, but it only
         // supports atomics for SM60 and up, even if you're only using

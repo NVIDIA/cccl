@@ -36,6 +36,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/underlying_type.h>
 #include <cuda/std/array>
 
 #include <nv/target>
@@ -983,7 +984,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_init_lookahead_body(
   }
   // we strive to initialize the padding bits to avoid compute-sanitizer's initcheck to report reading uninitialized
   // data when reading the tile state. We use a single atomic load/store up until 16 bytes.
-  static_assert(warpspeed::scan_state::empty == 0); // so we can zero init each tile state
+  // Zero initialization requires the empty state to have value zero.
+  static_assert(static_cast<::cuda::std::underlying_type_t<warpspeed::scan_state>>(warpspeed::scan_state::empty) == 0);
   if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 2)
   {
     *reinterpret_cast<::cuda::std::uint16_t*>(tile_states + tile_id) = 0;

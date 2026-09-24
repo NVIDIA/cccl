@@ -527,7 +527,7 @@ private:
   static constexpr uint32_t BUFFER_STABLE_PARTITION = false;
 
   // Constants
-  enum : uint32_t
+  enum class size_class : uint32_t
   {
     TLEV_SIZE_CLASS = 0,
     WLEV_SIZE_CLASS,
@@ -597,7 +597,8 @@ private:
   //-> (2) WLEV (warp-level collaboration), requiring a full warp to collaborate on a buffer
   //-> (3) BLEV (block-level collaboration), requiring one or multiple thread blocks to collaborate
   // on a buffer */
-  using VectorizedSizeClassCounterT = bit_packed_counter<NUM_SIZE_CLASSES, BUFFERS_PER_BLOCK, PREFER_POW2_BITS>;
+  using VectorizedSizeClassCounterT =
+    bit_packed_counter<static_cast<uint32_t>(size_class::NUM_SIZE_CLASSES), BUFFERS_PER_BLOCK, PREFER_POW2_BITS>;
 
   // Block-level scan used to compute the write offsets
   using BlockSizeClassScanT = cub::BlockScan<VectorizedSizeClassCounterT, static_cast<int32_t>(BLOCK_THREADS)>;
@@ -1030,7 +1031,7 @@ public:
     // That is, WLEV buffer offset has to be offset by the TLEV buffer count and BLEV buffer offset
     // has to be offset by the TLEV+WLEV buffer count
     uint32_t buffer_count = 0U;
-    for (uint32_t i = 0; i < NUM_SIZE_CLASSES; i++)
+    for (uint32_t i = 0; i < static_cast<uint32_t>(size_class::NUM_SIZE_CLASSES); i++)
     {
       size_class_histogram.add(i, buffer_count);
       buffer_count += size_class_agg.get(i);
@@ -1042,7 +1043,8 @@ public:
     {
       if (threadIdx.x == 0)
       {
-        blev_buffer_scan_state.SetInclusive(tile_id, size_class_agg.get(BLEV_SIZE_CLASS));
+        blev_buffer_scan_state.SetInclusive(
+          tile_id, size_class_agg.get(static_cast<uint32_t>(size_class::BLEV_SIZE_CLASS)));
       }
       buffer_exclusive_prefix = 0;
     }
@@ -1054,7 +1056,8 @@ public:
       // Signal our partial prefix and wait for the inclusive prefix of previous tiles
       if (threadIdx.x < warp_threads)
       {
-        buffer_exclusive_prefix = blev_buffer_prefix_op(size_class_agg.get(BLEV_SIZE_CLASS));
+        buffer_exclusive_prefix =
+          blev_buffer_prefix_op(size_class_agg.get(static_cast<uint32_t>(size_class::BLEV_SIZE_CLASS)));
       }
     }
     if (threadIdx.x == 0)
@@ -1082,11 +1085,12 @@ public:
     // Copy block-level buffers
     EnqueueBLEVBuffers(
       &temp_storage.staged
-         .buffers_by_size_class[size_class_agg.get(TLEV_SIZE_CLASS) + size_class_agg.get(WLEV_SIZE_CLASS)],
+         .buffers_by_size_class[size_class_agg.get(static_cast<uint32_t>(size_class::TLEV_SIZE_CLASS))
+                                + size_class_agg.get(static_cast<uint32_t>(size_class::WLEV_SIZE_CLASS))],
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
-      size_class_agg.get(BLEV_SIZE_CLASS),
+      size_class_agg.get(static_cast<uint32_t>(size_class::BLEV_SIZE_CLASS)),
       temp_storage.blev_buffer_offset,
       tile_id);
 
@@ -1095,14 +1099,14 @@ public:
 
     // Copy warp-level buffers
     BatchMemcpyWLEVBuffers(
-      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(TLEV_SIZE_CLASS)],
+      &temp_storage.staged.buffers_by_size_class[size_class_agg.get(static_cast<uint32_t>(size_class::TLEV_SIZE_CLASS))],
       tile_buffer_srcs,
       tile_buffer_dsts,
       tile_buffer_sizes,
-      size_class_agg.get(WLEV_SIZE_CLASS));
+      size_class_agg.get(static_cast<uint32_t>(size_class::WLEV_SIZE_CLASS)));
 
     // Perform batch memcpy for all the buffers that require thread-level collaboration
-    const uint32_t num_tlev_buffers = size_class_agg.get(TLEV_SIZE_CLASS);
+    const uint32_t num_tlev_buffers = size_class_agg.get(static_cast<uint32_t>(size_class::TLEV_SIZE_CLASS));
     BatchMemcpyTLEVBuffers(
       temp_storage.staged.buffers_by_size_class, tile_buffer_srcs, tile_buffer_dsts, num_tlev_buffers);
   }

@@ -28,7 +28,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-enum WarpExchangeAlgorithm
+enum WarpExchangeAlgorithm // NOLINT(cppcoreguidelines-use-enum-class) - Preserve public names and implicit conversions.
 {
   WARP_EXCHANGE_SMEM,
   WARP_EXCHANGE_SHUFFLE,

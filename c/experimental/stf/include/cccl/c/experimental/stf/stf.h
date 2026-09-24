@@ -84,7 +84,7 @@ extern "C" {
 //!
 //! Specifies how a task will access logical data, which determines
 //! synchronization requirements and concurrency opportunities.
-typedef enum stf_access_mode
+typedef enum stf_access_mode // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   STF_NONE  = 0, //!< No access (invalid)
   STF_READ  = 1 << 0, //!< Read-only access - allows concurrent readers
@@ -323,7 +323,7 @@ uint32_t stf_locality_domain_count(int dev_id);
 //!   left out of the partition.
 //! - FINE: all of the domain's SMs at the finest co-scheduling granularity.
 //!   Strictly domain-affine, at the cost of thread-block cluster launches.
-typedef enum stf_locality_domain_sm_split
+typedef enum stf_locality_domain_sm_split // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL = 0,
   STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED  = 1,
@@ -491,7 +491,7 @@ typedef struct stf_placement_stats
 } stf_placement_stats;
 
 //! \brief Per-dimension distribution policy (see stf_partition_dim_spec).
-typedef enum stf_dim_policy
+typedef enum stf_dim_policy // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   STF_DIM_WHOLE        = 0, //!< dimension is not distributed
   STF_DIM_BLOCKED      = 1, //!< contiguous chunks of ceil(extent / places)
@@ -797,7 +797,7 @@ stf_async_resources_handle stf_async_resources_create(void);
 void stf_async_resources_destroy(stf_async_resources_handle h);
 
 //! \brief Backend selector for stf_ctx_create_ex()
-typedef enum stf_backend_kind
+typedef enum stf_backend_kind // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   STF_BACKEND_STREAM = 0, //!< Default stream-backed backend (eager, same as stf_ctx_create())
   STF_BACKEND_GRAPH  = 1, //!< CUDA-graph-backed backend (same as stf_ctx_create_graph())
@@ -2302,7 +2302,7 @@ stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t cou
 void stf_stackable_pop_repeat(stf_repeat_scope_handle scope);
 
 //! \brief Comparison operator for built-in while conditions.
-typedef enum stf_compare_op
+typedef enum stf_compare_op // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   STF_CMP_GT = 0, //!< Greater than (>)
   STF_CMP_LT = 1, //!< Less than (<)
@@ -2311,7 +2311,7 @@ typedef enum stf_compare_op
 } stf_compare_op;
 
 //! \brief Scalar element type for \c stf_stackable_while_cond_scalar().
-typedef enum stf_dtype
+typedef enum stf_dtype // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   STF_DTYPE_FLOAT32 = 0,
   STF_DTYPE_FLOAT64 = 1,
@@ -2343,7 +2343,7 @@ void stf_stackable_while_cond_scalar(
 #  define STF_WHILE_COND_MAX_TERMS 8
 
 //! \brief Combiner for multi-term while conditions.
-typedef enum stf_cond_combiner
+typedef enum stf_cond_combiner // NOLINT(cppcoreguidelines-use-enum-class): C API.
 {
   STF_COND_ALL = 0, //!< Continue while every term holds (logical AND)
   STF_COND_ANY = 1, //!< Continue while at least one term holds (logical OR)
