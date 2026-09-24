@@ -42,11 +42,11 @@ __device__ void calculating_pagerank(
   float rank_sum = 0.0;
   for (int i = loffsets[idx]; i < loffsets[idx + 1]; i++)
   {
-    int neighbor   = lnonzeros[i];
-    int out_degree = loffsets[neighbor + 1] - loffsets[neighbor];
-    rank_sum += lpage_rank[neighbor] / out_degree;
+    const int neighbor   = lnonzeros[i];
+    const int out_degree = loffsets[neighbor + 1] - loffsets[neighbor];
+    rank_sum += lpage_rank[neighbor] / static_cast<float>(out_degree);
   }
-  lnew_page_rank[idx] = 0.85 * rank_sum + (1.0 - 0.85) * init_rank;
+  lnew_page_rank[idx] = static_cast<float>(0.85) * rank_sum + (1.0 - 0.85) * init_rank;
 }
 
 int main()
@@ -62,10 +62,10 @@ int main()
   // edges in CSR format
   std::vector<int> nonzeros = {1, 2, 3, 6, 0, 3, 4, 5, 6, 7, 8, 0, 0, 1, 1, 1, 0, 1, 1, 1};
 
-  int num_vertices = offsets.size() - 1;
-  float init_rank  = 1.0f / num_vertices;
-  float tolerance  = 1e-6f;
-  int NITER        = 100;
+  const int num_vertices = static_cast<int>(offsets.size() - 1);
+  float init_rank        = 1.0f / static_cast<float>(num_vertices);
+  float tolerance        = 1e-6f;
+  int NITER              = 100;
 
   // output pageranks for each vertex
   std::vector<float> page_rank(num_vertices, init_rank);
@@ -107,8 +107,8 @@ int main()
             };
 
     while_guard.update_cond(lmax_diff.read(), liter.rw())->*[NITER, tolerance] __device__(auto max_diff, auto iter) {
-      bool converged   = (*max_diff < tolerance);
-      bool max_reached = ((*iter)++ >= NITER); // Maximum iteration limit
+      const bool converged   = (*max_diff < tolerance);
+      const bool max_reached = ((*iter)++ >= NITER); // Maximum iteration limit
       return !converged && !max_reached; // Continue if not converged and under limit
     };
   }

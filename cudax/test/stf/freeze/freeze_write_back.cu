@@ -23,7 +23,7 @@ int main()
   int array[1024];
   for (size_t i = 0; i < 1024; i++)
   {
-    array[i] = 2 - i * i;
+    array[i] = static_cast<int>(2 - i * i);
   }
 
   auto lA = ctx.logical_data(array).set_symbol("A");

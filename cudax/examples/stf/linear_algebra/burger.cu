@@ -61,30 +61,30 @@ void assemble_jacobian_full(
             {
               // Left boundary: u[0] = 0 (homogeneous Dirichlet)
               // Jacobian row: [1, 0, 0, ..., 0]
-              size_t val_idx   = 0; // First entry in CSR values array
-              dvalues[val_idx] = 1.0;
+              const size_t val_idx = 0; // First entry in CSR values array
+              dvalues[val_idx]     = 1.0;
             }
             else if (row == N - 1)
             {
               // Right boundary: u[N-1] = 0 (homogeneous Dirichlet)
               // Jacobian row: [0, ..., 0, 1]
-              size_t val_idx   = 1 + 3 * (N - 2); // Last entry in CSR values array
-              dvalues[val_idx] = 1.0;
+              const size_t val_idx = 1 + 3 * (N - 2); // Last entry in CSR values array
+              dvalues[val_idx]     = 1.0;
             }
             else
             {
               // Interior point: Burger's equation discretization
-              double u_i   = dU[row];
-              double u_ip1 = dU[row + 1];
-              double u_im1 = dU[row - 1];
+              const double u_i   = dU[row];
+              const double u_ip1 = dU[row + 1];
+              const double u_im1 = dU[row - 1];
 
               // Jacobian entries: ∂F_i/∂u_{i-1}, ∂F_i/∂u_i, ∂F_i/∂u_{i+1}
-              double left   = -u_i / (2 * h) - nu / (h * h);
-              double center = 1.0 / dt + (u_ip1 - u_im1) / (2 * h) + 2.0 * nu / (h * h);
-              double right  = u_i / (2 * h) - nu / (h * h);
+              const double left   = -u_i / (2 * h) - nu / (h * h);
+              const double center = 1.0 / dt + (u_ip1 - u_im1) / (2 * h) + 2.0 * nu / (h * h);
+              const double right  = u_i / (2 * h) - nu / (h * h);
 
               // CSR indexing for interior row i: starts at 1 + 3*(i-1)
-              size_t val_idx       = 1 + 3 * (row - 1);
+              const size_t val_idx = 1 + 3 * (row - 1);
               dvalues[val_idx]     = left; // ∂F_i/∂u_{i-1}
               dvalues[val_idx + 1] = center; // ∂F_i/∂u_i
               dvalues[val_idx + 2] = right; // ∂F_i/∂u_{i+1}
@@ -112,13 +112,13 @@ void compute_residual_full(
             else
             {
               // Interior point: Burger's equation F_i = ∂u/∂t + u*∂u/∂x - nu*∂²u/∂x²
-              double u_i   = dU(i);
-              double u_ip1 = dU(i + 1);
-              double u_im1 = dU(i - 1);
+              const double u_i   = dU(i);
+              const double u_ip1 = dU(i + 1);
+              const double u_im1 = dU(i - 1);
 
-              double term_time = (u_i - dU_prev(i)) / dt; // ∂u/∂t
-              double term_conv = u_i * (u_ip1 - u_im1) / (2 * h); // u * ∂u/∂x (nonlinear convection)
-              double term_diff = -nu * (u_im1 - 2 * u_i + u_ip1) / (h * h); // -nu * ∂²u/∂x²
+              const double term_time = (u_i - dU_prev(i)) / dt; // ∂u/∂t
+              const double term_conv = u_i * (u_ip1 - u_im1) / (2 * h); // u * ∂u/∂x (nonlinear convection)
+              const double term_diff = -nu * (u_im1 - 2 * u_i + u_ip1) / (h * h); // -nu * ∂²u/∂x²
 
               dresidual(i) = term_time + term_conv + term_diff;
             }
@@ -181,18 +181,18 @@ void dump_solution(
     FILE* fp = fopen(filename, "a"); // Simple append - no read/modify/write
     if (fp)
     {
-      fprintf(fp, "# Timestep %zu, t=%.6e\n", timestep, timestep * dt);
+      fprintf(fp, "# Timestep %zu, t=%.6e\n", timestep, static_cast<double>(timestep) * dt);
 
       for (size_t i = 0; i < N; i++)
       {
-        double x = i * h;
+        const double x = static_cast<double>(i) * h;
         fprintf(fp, "%.10e %.10e\n", x, hU(i));
       }
 
       fprintf(fp, "\n"); // Blank line to separate datasets
       fclose(fp);
 
-      printf("Appended timestep %zu (t=%.4e) to %s\n", timestep, timestep * dt, filename);
+      printf("Appended timestep %zu (t=%.4e) to %s\n", timestep, static_cast<double>(timestep) * dt, filename);
     }
     else
     {
@@ -218,14 +218,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   size_t N = 2560;
   if (argc > 1)
   {
-    N = atoi(argv[1]);
+    N = ::std::stoi(argv[1]);
     fprintf(stderr, "N = %zu\n", N);
   }
 
   size_t nsteps = 200;
   if (argc > 2)
   {
-    nsteps = atol(argv[2]);
+    nsteps = ::std::stol(argv[2]);
     fprintf(stderr, "nsteps = %ld\n", nsteps);
   }
 
@@ -233,14 +233,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   double nu = 0.05; // Default viscosity
   if (argc > 3)
   {
-    nu = atof(argv[3]);
+    nu = ::std::stod(argv[3]);
     fprintf(stderr, "nu = %e\n", nu);
   }
 
   ssize_t output_freq = -1;
   if (argc > 4)
   {
-    output_freq = atoi(argv[4]);
+    output_freq = ::std::stoi(argv[4]);
     fprintf(stderr, "output_freq %ld\n", output_freq);
   }
 
@@ -248,15 +248,15 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   int use_while = 2;
   if (argc > 5)
   {
-    use_while = atoi(argv[5]);
+    use_while = ::std::stoi(argv[5]);
     fprintf(stderr, "use_while = %d\n", use_while);
   }
 
-  double h = 1.0 / (N - 1);
+  const double h = 1.0 / static_cast<double>((N - 1));
 
-  double dt_diffusion = 0.5 * h * h / nu; // Diffusion-limited time step
-  double dt_fixed     = 0.001; // Fixed reasonable time step
-  double dt           = std::max(dt_diffusion, dt_fixed); // Use larger of the two
+  const double dt_diffusion = 0.5 * h * h / nu; // Diffusion-limited time step
+  const double dt_fixed     = 0.001; // Fixed reasonable time step
+  double dt                 = std::max(dt_diffusion, dt_fixed); // Use larger of the two
 
   // For very fine grids, cap the time step to prevent tiny steps
   if (N > 10000)
@@ -264,7 +264,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     dt = std::min(dt, 0.01); // Cap at 0.01 for large grids
   }
 
-  double total_time = nsteps * dt;
+  const double total_time = static_cast<double>(nsteps) * dt;
 
   fprintf(stderr, "=== Simulation Parameters ===\n");
   fprintf(stderr, "Grid: N=%zu, h=%e\n", N, h);
@@ -275,7 +275,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   // Full N×N system: boundary rows have 1 entry each, interior rows have 3 entries each
   // Total: 2*1 + (N-2)*3 = 3*N - 4 non-zeros
-  size_t nz = 3 * N - 4;
+  const size_t nz = 3 * N - 4;
 
   size_t* row_offsets;
   size_t* col_indices;
@@ -296,7 +296,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   // Initial condition
   ctx.parallel_for(U.shape(), U.write()).set_symbol("init conditions")->*[h, N] __device__(size_t i, auto dU) {
-    double x = i * h;
+    const double x = static_cast<double>(i) * h;
     if (i == 0 || i == N - 1)
     {
       dU(i) = 0.0; // Homogeneous Dirichlet boundary conditions
@@ -314,8 +314,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
   // Parameters are now set above with auto-scaling
-  size_t substeps         = (output_freq > 0) ? output_freq : nsteps;
-  size_t outer_iterations = nsteps / substeps;
+  const size_t substeps         = (output_freq > 0) ? output_freq : nsteps;
+  const size_t outer_iterations = nsteps / substeps;
 
   if (use_while == 2)
   {
@@ -328,15 +328,15 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         auto repeat_guard = ctx.repeat_graph_scope(substeps);
 
         // Create callback function objects for Burger's equation
-        BurgerResidualCallback residual_callback{N, h, dt, nu};
-        BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
+        const BurgerResidualCallback residual_callback{N, h, dt, nu};
+        const BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
 
         // Solve the nonlinear system using generic Newton solver
         newton_solver(ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback);
       } // repeat_guard automatically manages the loop condition
 
       // Dump solution after each substep block
-      size_t current_timestep = (outer + 1) * substeps;
+      const size_t current_timestep = (outer + 1) * substeps;
       dump_solution(ctx, U, current_timestep, N, h, dt);
     }
   }
@@ -348,8 +348,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       for (size_t substep = 0; substep < substeps; substep++)
       {
         // Create callback function objects for Burger's equation
-        BurgerResidualCallback residual_callback{N, h, dt, nu};
-        BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
+        const BurgerResidualCallback residual_callback{N, h, dt, nu};
+        const BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
 
         // Solve the nonlinear system using generic Newton solver
         newton_solver_no_while(
@@ -357,7 +357,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       } // repeat_guard automatically manages the loop condition
 
       // Dump solution after each substep block
-      size_t current_timestep = (outer + 1) * substeps;
+      const size_t current_timestep = (outer + 1) * substeps;
       dump_solution(ctx, U, current_timestep, N, h, dt);
     }
   }

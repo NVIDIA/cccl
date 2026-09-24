@@ -28,7 +28,7 @@ int main()
 // TODO (miscco): Make it work for windows
 #if !_CCCL_COMPILER(MSVC)
   // Generate a random filename
-  int r = rand();
+  const int r = rand();
 
   char filename[64];
   snprintf(filename, 64, "output_%d.dot", r);

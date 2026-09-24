@@ -31,10 +31,10 @@ int main()
   constexpr double kSofteningSquared = 1e-3;
   constexpr double kG                = 6.67259e-11;
 
-  size_t BODY_CNT = 4096;
+  const size_t BODY_CNT = 4096;
 
-  double dt    = 0.1;
-  size_t NITER = 25;
+  double dt          = 0.1;
+  const size_t NITER = 25;
 
   context ctx = graph_ctx();
 
@@ -83,8 +83,8 @@ int main()
             d[k] = p(j).pos[k] - p(i).pos[k];
           }
 
-          double dist     = d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + kSofteningSquared;
-          double dist_inv = 1.0 / sqrt(dist);
+          const double dist     = d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + kSofteningSquared;
+          const double dist_inv = 1.0 / sqrt(dist);
 
           for (size_t k = 0; k < 3; k++)
           {

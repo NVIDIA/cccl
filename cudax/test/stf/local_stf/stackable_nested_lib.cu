@@ -25,7 +25,7 @@ void fma_lib(stackable_ctx& sctx,
              stackable_logical_data<slice<int>>& lY,
              stackable_logical_data<slice<int>>& lZ)
 {
-  stackable_ctx::graph_scope_guard scope{sctx};
+  const stackable_ctx::graph_scope_guard scope{sctx};
   lX.push(access_mode::read);
   lY.push(access_mode::read);
   sctx.parallel_for(lZ.shape(), lZ.rw(), lX.read(), lY.read())->*[] __device__(size_t i, auto z, auto x, auto y) {
@@ -39,7 +39,7 @@ void dot_lib(stackable_ctx& sctx,
              ::std::vector<stackable_logical_data<slice<int>>>& vecy,
              stackable_logical_data<slice<int>>& Z)
 {
-  stackable_ctx::graph_scope_guard scope{sctx};
+  const stackable_ctx::graph_scope_guard scope{sctx};
   for (size_t i = 0; i < vecx.size(); i++)
   {
     // Force read push to stress test nested context handling
@@ -54,7 +54,7 @@ int main()
 {
   stackable_ctx sctx;
 
-  size_t sz = 4;
+  const size_t sz = 4;
   ::std::vector<int> X(sz), Y(sz);
 
   ::std::vector<stackable_logical_data<slice<int>>> vecx, vecy;
@@ -63,13 +63,13 @@ int main()
 
   for (size_t i = 0; i < sz; i++)
   {
-    X[i] = i;
+    X[i] = static_cast<int>(i);
     vecx.push_back(sctx.logical_data(make_slice(&X[i], 1)));
 
-    Y[i] = (i - 1);
+    Y[i] = static_cast<int>(i - 1);
     vecy.push_back(sctx.logical_data(make_slice(&Y[i], 1)));
 
-    expected += i * (i - 1);
+    expected += static_cast<int>(i * (i - 1));
   }
 
   int result   = 0;

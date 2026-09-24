@@ -81,7 +81,7 @@ public:
       return -1;
     }
 
-    ::std::ptrdiff_t alloc_index = find_free_block(level, prereqs);
+    const ::std::ptrdiff_t alloc_index = find_free_block(level, prereqs);
     if (alloc_index == -1)
     {
       fprintf(stderr, "No free block available for size %zu\n", size);
@@ -194,9 +194,9 @@ private:
       {
         continue;
       }
-      auto& b              = free_lists_[current_level].back();
-      size_t block_index   = b.index;
-      event_list b_prereqs = mv(b.prereqs);
+      auto& b                  = free_lists_[current_level].back();
+      const size_t block_index = b.index;
+      event_list b_prereqs     = mv(b.prereqs);
       free_lists_[current_level].pop_back();
 
       // Dependencies to reuse that block
@@ -206,11 +206,11 @@ private:
       while (current_level > level)
       {
         current_level--;
-        size_t buddy_index = block_index + (1ull << current_level);
+        const size_t buddy_index = block_index + (1ull << current_level);
         // split blocks depend on the previous dependencies of the whole unsplit block
         free_lists_[current_level].emplace_back(buddy_index, b_prereqs);
       }
-      return block_index;
+      return static_cast<::std::ptrdiff_t>(block_index);
     }
 
     return -1; // No block available
@@ -279,7 +279,7 @@ public:
     assert(map.count(memory_node) == 1);
     auto& m = it->second;
 
-    ::std::ptrdiff_t offset = m.metadata.allocate(s, prereqs);
+    const ::std::ptrdiff_t offset = m.metadata.allocate(s, prereqs);
     assert(offset != -1);
     return static_cast<char*>(m.base) + offset;
   }
@@ -292,9 +292,9 @@ public:
     assert(map.count(memory_node) == 1);
     auto& m = map.find(memory_node)->second;
 
-    size_t offset = static_cast<char*>(ptr) - static_cast<char*>(m.base);
+    const size_t offset = static_cast<char*>(ptr) - static_cast<char*>(m.base);
 
-    m.metadata.deallocate(offset, sz, prereqs);
+    m.metadata.deallocate(static_cast<::std::ptrdiff_t>(offset), sz, prereqs);
   }
 
   event_list deinit(backend_ctx_untyped& ctx) override
@@ -338,7 +338,7 @@ UNITTEST("buddy_allocator is movable")
 
 UNITTEST("buddy allocator meta data")
 {
-  event_list prereqs; // starts empty
+  const event_list prereqs; // starts empty
 
   reserved::buddy_allocator_metadata allocator(1024, prereqs);
 
@@ -347,11 +347,11 @@ UNITTEST("buddy allocator meta data")
 
   event_list dummy;
 
-  ::std::ptrdiff_t ptr1 = allocator.allocate(200, dummy); // Allocate 200 bytes
+  const ::std::ptrdiff_t ptr1 = allocator.allocate(200, dummy); // Allocate 200 bytes
   // ::std::cout << "\nAfter allocating 200 bytes:" << ::'\n';
   // allocator.debug_print();
 
-  ::std::ptrdiff_t ptr2 = allocator.allocate(300, dummy); // Allocate 300 bytes
+  const ::std::ptrdiff_t ptr2 = allocator.allocate(300, dummy); // Allocate 300 bytes
   // ::std::cout << "\nAfter allocating 300 bytes:" << ::'\n';
   // allocator.debug_print();
 

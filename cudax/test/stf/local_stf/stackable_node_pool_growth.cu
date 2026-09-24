@@ -42,7 +42,7 @@ int main()
 {
   stackable_ctx sctx;
 
-  int main_head = sctx.get_head_offset();
+  const int main_head = sctx.get_head_offset();
 
   ::std::vector<stackable_logical_data<slice<int>>> lds;
   for (int i = 0; i < NTHREADS; i++)

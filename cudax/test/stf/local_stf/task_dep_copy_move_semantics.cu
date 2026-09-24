@@ -26,7 +26,7 @@ using namespace cuda::experimental::stf;
 // Simple kernel for testing - defined outside to avoid device lambda nesting issues
 __global__ void double_values_kernel(int* out, const int* in, int n)
 {
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const int idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (idx < n)
   {
     out[idx] = in[idx] * 2;
@@ -203,10 +203,10 @@ int main()
       auto output = task.template get<slice<int>>(1); // Second dependency (write)
 
       // Simple kernel that doubles the values
-      int N = input.size();
+      const int N = static_cast<int>(input.size());
 
-      int block_size = 256;
-      int grid_size  = (N + block_size - 1) / block_size;
+      const int block_size = 256;
+      const int grid_size  = (N + block_size - 1) / block_size;
 
       // Use the global kernel function to avoid device lambda nesting
       double_values_kernel<<<grid_size, block_size, 0, stream>>>(output.data_handle(), input.data_handle(), N);

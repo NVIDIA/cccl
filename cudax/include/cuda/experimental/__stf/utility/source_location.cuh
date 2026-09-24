@@ -154,7 +154,7 @@ UNITTEST("with_location")
   };
   consume_value(widget{42});
 
-  widget live{7};
+  const widget live{7};
   auto consume_lref = [](with_location<widget&> w) {
     EXPECT(w.payload.x == 7);
     w.payload.x = 9;

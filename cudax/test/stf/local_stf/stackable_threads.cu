@@ -52,14 +52,14 @@ int main()
   int array[N];
   for (size_t i = 0; i < N; i++)
   {
-    array[i] = 1 + i * i;
+    array[i] = static_cast<int>(1 + i * i);
   }
 
   auto lB = sctx.logical_data(array);
 
   lB.set_read_only();
 
-  int main_head = sctx.get_head_offset();
+  const int main_head = sctx.get_head_offset();
 
   ::std::vector<stackable_logical_data<slice<int>>> lA;
 

@@ -17,8 +17,8 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <algorithm>
-
-#include <stdlib.h>
+#include <cstdlib>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -112,14 +112,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   size_t timesteps = 10;
   if (argc > 1)
   {
-    timesteps = (size_t) atol(argv[1]);
+    timesteps = (size_t) ::std::stol(argv[1]);
   }
 
   // No output by default
   int output_freq = -1;
   if (argc > 2)
   {
-    output_freq = atoi(argv[2]);
+    output_freq = ::std::stoi(argv[2]);
   }
 
   // Default value : grid of all devices
@@ -127,7 +127,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   if (argc > 3)
   {
-    switch (atoi(argv[3]))
+    switch (::std::stoi(argv[3]))
     {
       case 0:
         where = exec_place::host();
@@ -151,7 +151,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   if (argc > 4)
   {
-    int use_graph = atoi(argv[4]);
+    const int use_graph = ::std::stoi(argv[4]);
     if (use_graph)
     {
       ctx = graph_ctx();
@@ -256,7 +256,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
                     + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
         if (i == center_x && j == center_y && k == center_z)
         {
-          Ez(i, j, k) += Source(n * DT, i * DX, j * DY, k * DZ);
+          Ez(i, j, k) += Source(
+            static_cast<double>(n) * DT,
+            static_cast<double>(i) * DX,
+            static_cast<double>(j) * DY,
+            static_cast<double>(k) * DZ);
         }
       };
 
@@ -289,7 +293,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         // Output the electric field at the center of the grid
         fprintf(stderr, "%ld\t%le\n", n, Ez(center_x, center_y, center_z));
 
-        std::string filename = "Ez" + std::to_string(n) + ".vtk";
+        const std::string filename = "Ez" + std::to_string(n) + ".vtk";
 
         // Dump a 2D slice of Ez in VTK
         write_vtk_2D(filename, Ez, DX, DY, DZ);

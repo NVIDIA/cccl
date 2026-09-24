@@ -90,7 +90,7 @@ void cg_solver(ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T>& B, dou
 
     while_guard.update_cond(rsnew.read(), cg_iter.rw())->*[cg_tol, max_cg] __device__(auto drsnew, auto diter) {
       (*diter)++; // increment iteration counter
-      bool converged = (*drsnew < cg_tol * cg_tol);
+      const bool converged = (*drsnew < cg_tol * cg_tol);
       // printf("CG iter %d: RES %e (tol=%e)\n", *diter, sqrt(*drsnew), cg_tol);
       return !converged && (*diter < max_cg);
     };

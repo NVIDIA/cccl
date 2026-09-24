@@ -85,8 +85,8 @@ inline void* allocateHostMemory(size_t sz)
     // the next call).
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
-      void* const entry = it->second;
+      const auto it           = pool.begin();
+      const void* const entry = it->second;
       pool.erase(it);
       cuda_try<cudaFreeHost>(entry);
     }

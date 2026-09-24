@@ -26,8 +26,8 @@ using logical_slice = logical_data<slice<double>>;
 
 static __global__ void cuda_sleep_kernel(long long int clock_cnt)
 {
-  long long int start_clock  = clock64();
-  long long int clock_offset = 0;
+  const long long int start_clock = clock64();
+  long long int clock_offset      = 0;
   while (clock_offset < clock_cnt)
   {
     clock_offset = clock64() - start_clock;
@@ -43,7 +43,7 @@ void cuda_sleep(double ms, cudaStream_t stream)
   int clock_rate;
   cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
 
-  long long int clock_cnt = (long long int) (ms * clock_rate);
+  const long long int clock_cnt = (long long int) (ms * clock_rate);
   cuda_sleep_kernel<<<1, 1, 0, stream>>>(clock_cnt);
 }
 
@@ -203,8 +203,8 @@ void run(const char* inputfile)
         {
           // Find symbol
           size_t pos;
-          pos                = params.find(":");
-          std::string symbol = params.substr(0, pos);
+          pos                      = params.find(":");
+          const std::string symbol = params.substr(0, pos);
           // std::cout << symbol << '\n';
 
           // We create a dummy allocation so that the data handles refers to actually allocated host memory
@@ -238,19 +238,19 @@ void run(const char* inputfile)
       }
 
       // We expect lines of the format : "  symbol: type = gate_name(..., id=VALUE)"
-      size_t end_symbol = line.find(":");
+      const size_t end_symbol = line.find(":");
 
       // We look for the first "= " to find the gate name
-      size_t gate_symbol_pos = line.find("= ");
-      std::string gate       = line.substr(gate_symbol_pos + 2);
+      const size_t gate_symbol_pos = line.find("= ");
+      const std::string gate       = line.substr(gate_symbol_pos + 2);
 
-      size_t gate_name_end           = gate.find("(");
-      std::string gate_symbol        = gate.substr(0, gate_name_end);
+      const size_t gate_name_end     = gate.find("(");
+      const std::string gate_symbol  = gate.substr(0, gate_name_end);
       std::string gate_args          = gate.substr(gate_name_end + 1, gate.size() - gate_name_end - 2);
       std::string gate_outvar_symbol = line.substr(2, end_symbol - 2);
 
       // Possibly remove the "ret" out of the gate_outvar_symbol
-      size_t ret_pos = gate_outvar_symbol.find("ret ");
+      const size_t ret_pos = gate_outvar_symbol.find("ret ");
       if (ret_pos != std::string::npos)
       {
         // This is our result !
@@ -268,8 +268,8 @@ void run(const char* inputfile)
       if (gate_symbol == "literal")
       {
         //  literal.916: bits[1] = literal(value=1, id=916)
-        int value = 42; // TODO parse
-        size_t sz = 1;
+        const int value = 42; // TODO parse
+        const size_t sz = 1;
 
         logical_slices[gate_outvar_symbol] = LITERAL(ctx, sz, value, gate_outvar_symbol);
 
@@ -280,12 +280,12 @@ void run(const char* inputfile)
       {
         //  or.1268: bits[1] = or(or.1267, and.1236, id=1268)
         size_t pos;
-        pos                     = gate_args.find(", ");
-        std::string symbol_left = gate_args.substr(0, pos);
+        pos                           = gate_args.find(", ");
+        const std::string symbol_left = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
-        pos                      = gate_args.find(", ");
-        std::string symbol_right = gate_args.substr(0, pos);
+        pos                            = gate_args.find(", ");
+        const std::string symbol_right = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
         // std::cout << "OR GATE on symbols" << symbol_left << " AND " << symbol_right << '\n';
@@ -300,12 +300,12 @@ void run(const char* inputfile)
       if (gate_symbol == "and")
       {
         size_t pos;
-        pos                     = gate_args.find(", ");
-        std::string symbol_left = gate_args.substr(0, pos);
+        pos                           = gate_args.find(", ");
+        const std::string symbol_left = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
-        pos                      = gate_args.find(", ");
-        std::string symbol_right = gate_args.substr(0, pos);
+        pos                            = gate_args.find(", ");
+        const std::string symbol_right = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
         auto data_left                     = logical_slices[symbol_left];
@@ -319,12 +319,12 @@ void run(const char* inputfile)
       {
         // bit_slice.936: bits[1] = bit_slice(y, start=15, width=1, id=936)
         size_t pos;
-        pos                   = gate_args.find(", ");
-        std::string symbol_in = gate_args.substr(0, pos);
+        pos                         = gate_args.find(", ");
+        const std::string symbol_in = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
         // hardcoded ...
-        size_t sz = 1;
+        const size_t sz = 1;
 
         auto data_in                       = logical_slices[symbol_in];
         logical_slices[gate_outvar_symbol] = BIT_SLICE(ctx, data_in, 42, sz, gate_outvar_symbol);
@@ -338,21 +338,21 @@ void run(const char* inputfile)
       {
         // array_index.2804: bits[8] = array_index(window, indices=[literal.2803], id=2804)
         size_t pos;
-        pos                   = gate_args.find(", ");
-        std::string symbol_in = gate_args.substr(0, pos);
+        pos                         = gate_args.find(", ");
+        const std::string symbol_in = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
-        pos                        = gate_args.find(", ");
-        std::string symbol_indices = gate_args.substr(0, pos);
+        pos                              = gate_args.find(", ");
+        const std::string symbol_indices = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
-        size_t pos_beg          = symbol_indices.find("[");
-        size_t pos_end          = symbol_indices.find("]");
-        std::string symbol_in_2 = symbol_indices.substr(pos_beg + 1, pos_end - pos_beg - 1);
+        const size_t pos_beg          = symbol_indices.find("[");
+        const size_t pos_end          = symbol_indices.find("]");
+        const std::string symbol_in_2 = symbol_indices.substr(pos_beg + 1, pos_end - pos_beg - 1);
         // std::cout << "ARRAY INDEX ... INDEX = " << symbol_in_2 << '\n';
 
         // hardcoded ...
-        size_t sz = 1;
+        const size_t sz = 1;
 
         auto data_in                       = logical_slices[symbol_in];
         auto data_in_2                     = logical_slices[symbol_in_2];
@@ -366,8 +366,8 @@ void run(const char* inputfile)
       {
         // not.953: bits[1] = not(bit_slice.936, id=953)
         size_t pos;
-        pos                   = gate_args.find(", ");
-        std::string symbol_in = gate_args.substr(0, pos);
+        pos                         = gate_args.find(", ");
+        const std::string symbol_in = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
         auto data_in                       = logical_slices[symbol_in];
@@ -381,8 +381,8 @@ void run(const char* inputfile)
         //   ret concat.1269: bits[16] = concat(or.1238, or.1240, or.1242, or.1244, or.1246, or.1248, or.1250,
         //   or.1252, or.1254, or.1256, or.1258, or.1260, or.1262, or.1264, or.1266, or.1268, id=1269)
         // Remove the end ", id =.."
-        size_t id_pos = gate_args.find(", id=");
-        gate_args     = gate_args.substr(0, id_pos);
+        const size_t id_pos = gate_args.find(", id=");
+        gate_args           = gate_args.substr(0, id_pos);
 
         std::vector<logical_slice> inputs;
         size_t pos;
@@ -395,14 +395,14 @@ void run(const char* inputfile)
             break;
           }
 
-          std::string symbol = gate_args.substr(0, pos);
+          const std::string symbol = gate_args.substr(0, pos);
           inputs.push_back(logical_slices[symbol]);
           gate_args.erase(0, pos + 2);
 
           // std::cout << "CONCAT ARG = " << symbol << '\n';
         }
 
-        size_t sz                          = 1;
+        const size_t sz                    = 1;
         logical_slices[gate_outvar_symbol] = CONCAT(ctx, sz, inputs, gate_outvar_symbol);
         continue;
       }

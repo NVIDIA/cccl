@@ -137,7 +137,7 @@ private:
     static const int ndevices = cuda_try<cudaGetDeviceCount>();
     // We need to declare who may access this buffer
     ::std::vector<cudaMemAccessDesc> desc(ndevices);
-    for (int peer : each(0, ndevices))
+    for (const int peer : each(0, ndevices))
     {
       desc[peer].location.type = cudaMemLocationTypeDevice;
       desc[peer].location.id   = peer;
@@ -481,7 +481,7 @@ public:
   // Execute the CUDA graph in the provided stream.
   ::std::shared_ptr<cudaGraphExec_t> instantiate()
   {
-    ::std::shared_ptr<cudaGraph_t> g = finalize_as_graph();
+    const ::std::shared_ptr<cudaGraph_t> g = finalize_as_graph();
 
     size_t nedges;
     size_t nnodes;
@@ -508,8 +508,8 @@ public:
     // the cache
     if (get_graph_cache_policy().has_value())
     {
-      ::std::function<bool()> policy = get_graph_cache_policy().value();
-      use_cache                      = policy();
+      const ::std::function<bool()> policy = get_graph_cache_policy().value();
+      use_cache                            = policy();
     }
 
     if (use_cache)
@@ -771,20 +771,20 @@ public:
 UNITTEST("movable graph_ctx")
 {
   graph_ctx ctx;
-  graph_ctx ctx2 = mv(ctx);
+  const graph_ctx ctx2 = mv(ctx);
 };
 
 UNITTEST("copyable graph_ctx")
 {
-  graph_ctx ctx;
-  graph_ctx ctx2 = ctx;
+  const graph_ctx ctx;
+  const graph_ctx ctx2 = ctx;
 };
 
 UNITTEST("movable graph_task<>")
 {
   graph_ctx ctx;
-  graph_task<> t     = ctx.task();
-  graph_task<> t_cpy = mv(t);
+  graph_task<> t           = ctx.task();
+  const graph_task<> t_cpy = mv(t);
 };
 
 UNITTEST("set_symbol on graph_task and graph_task<>")
@@ -832,7 +832,7 @@ inline void unit_test_graph_stage()
   ::std::vector<double> A(N);
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
   pin_memory(A);
@@ -853,7 +853,7 @@ inline void unit_test_graph_stage()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = cos(Ai_ref);
@@ -880,7 +880,7 @@ inline void unit_test_graph_empty_stage()
   double A[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
   pin_memory(A);
@@ -903,7 +903,7 @@ inline void unit_test_graph_empty_stage()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = cos(Ai_ref);
@@ -930,7 +930,7 @@ inline void unit_test_graph_stage_2()
   double A[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
   pin_memory(A);
@@ -961,7 +961,7 @@ inline void unit_test_graph_stage_2()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = ((k % 2) == 0) ? cos(Ai_ref) : sin(Ai_ref);
@@ -989,8 +989,8 @@ inline void unit_test_graph_stage_3()
   double B[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
-    B[i] = -1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
+    B[i] = -1.0 * static_cast<double>(i);
   }
 
   pin_memory(A);
@@ -1023,8 +1023,8 @@ inline void unit_test_graph_stage_3()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
-    double Bi_ref = -1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
+    double Bi_ref = -1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       if ((k % 2) == 0)

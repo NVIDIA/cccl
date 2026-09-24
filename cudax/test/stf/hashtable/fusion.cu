@@ -22,7 +22,7 @@ __global__ void gpu_merge_hashtable(hashtable A, const hashtable B)
   {
     if (B.addr[threadid].key != reserved::kEmpty)
     {
-      uint32_t value = B.addr[threadid].value;
+      const uint32_t value = B.addr[threadid].value;
       if (value != reserved::kEmpty)
       {
         //    printf("INSERTING key %d value %d\n", pHashTableB[threadid].key, value);

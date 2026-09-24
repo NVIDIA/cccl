@@ -17,8 +17,8 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <algorithm>
-
-#include <stdlib.h>
+#include <cstdlib>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -116,14 +116,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   size_t timesteps = 10;
   if (argc > 1)
   {
-    timesteps = (size_t) atol(argv[1]);
+    timesteps = (size_t) ::std::stol(argv[1]);
   }
 
   // No output by default
   int output_freq = -1;
   if (argc > 2)
   {
-    output_freq = atoi(argv[2]);
+    output_freq = ::std::stoi(argv[2]);
   }
 
   // Domain dimensions
@@ -189,7 +189,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   box Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
   box source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
 
-  int iterations_per_graph = (output_freq == -1) ? timesteps : output_freq;
+  int iterations_per_graph = (output_freq == -1) ? static_cast<int>(timesteps) : output_freq;
 
   for (size_t n = 0; n < timesteps / iterations_per_graph; n++)
   {
@@ -232,7 +232,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
       // Add the source function at the center of the grid
       ctx.parallel_for(source_s, lEz.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
-        Ez(i, j, k) = Ez(i, j, k) + Source(n * DT, i * DX, j * DY, k * DZ);
+        Ez(i, j, k) =
+          Ez(i, j, k)
+          + Source(static_cast<double>(n) * DT,
+                   static_cast<double>(i) * DX,
+                   static_cast<double>(j) * DY,
+                   static_cast<double>(k) * DZ);
       };
 
       // Update the magnetic fields
@@ -264,7 +269,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       auto handle = while_guard.cond_handle();
       ctx.parallel_for(box(1), lcounter.rw())->*[handle] __device__(size_t, auto counter) {
         (*counter)--;
-        bool should_continue = (*counter > 0);
+        const bool should_continue = (*counter > 0);
         cudaGraphSetConditional(handle, should_continue);
       };
 
@@ -276,7 +281,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         // Output the electric field at the center of the grid
         fprintf(stderr, "%ld\t%le\n", n, Ez(center_x, center_y, center_z));
 
-        std::string filename = "Ez" + std::to_string(n) + ".vtk";
+        const std::string filename = "Ez" + std::to_string(n) + ".vtk";
 
         // Dump a 2D slice of Ez in VTK
         write_vtk_2D(filename, Ez, DX, DY, DZ);

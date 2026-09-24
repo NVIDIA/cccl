@@ -12,6 +12,7 @@
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 #include <algorithm>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -163,20 +164,20 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   size_t timesteps = 10;
   if (argc > 1)
   {
-    timesteps = (size_t) atol(argv[1]);
+    timesteps = (size_t) ::std::stol(argv[1]);
   }
 
   // No output by default
   int64_t output_freq = -1;
   if (argc > 2)
   {
-    output_freq = (int64_t) atol(argv[2]);
+    output_freq = (int64_t) ::std::stol(argv[2]);
   }
 
   /* Index shapes for Electric fields, Magnetic fields, and the indices where there is a source */
-  box<3> Es({1ul, SIZE_X - 1}, {1ul, SIZE_Y - 1}, {1ul, SIZE_Z - 1});
-  box<3> Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
-  box<3> source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
+  const box<3> Es({1ul, SIZE_X - 1}, {1ul, SIZE_Y - 1}, {1ul, SIZE_Z - 1});
+  const box<3> Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
+  const box<3> source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
 
   for (size_t n = 0; n < timesteps; n++)
   {
@@ -208,7 +209,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
     // Add the source function at the center of the grid
     ctx.parallel_for(source_s, lEz.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
-      Ez(i, j, k) = Ez(i, j, k) + Source(n * DT, i * DX, j * DY, k * DZ);
+      Ez(i, j, k) =
+        Ez(i, j, k)
+        + Source(static_cast<double>(n) * DT,
+                 static_cast<double>(i) * DX,
+                 static_cast<double>(j) * DY,
+                 static_cast<double>(k) * DZ);
     };
 
     // Update the magnetic fields
@@ -242,7 +248,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
         if (output_freq > 0 && n % output_freq == 0)
         {
-          std::string filename = "Ez" + std::to_string(n) + ".vtk";
+          const std::string filename = "Ez" + std::to_string(n) + ".vtk";
 
           // Dump a 2D slice of Ez in VTK
           write_vtk_2D(filename, Ez, DX, DY, DZ);

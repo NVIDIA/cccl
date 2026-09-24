@@ -34,7 +34,7 @@ void dump_iter(slice<const double, 2> sUn, int iter)
   {
     for (size_t i = 0; i < sUn.extent(0); i++)
     {
-      int v = (int) (255.0 * sUn(i, j) / 100.0);
+      const int v = (int) (255.0 * sUn(i, j) / 100.0);
       // we assume values between 0.0 and 100.0 : max value is in red,
       // min is in blue
       unsigned char color[3];
@@ -59,14 +59,14 @@ int main()
   // Initialize the Un field with boundary conditions, and a disk at a lower
   // temperature in the middle.
   ctx.parallel_for(lU.shape(), lU.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
-    double rad = U.extent(0) / 8.0;
-    double dx  = (double) i - U.extent(0) / 2;
-    double dy  = (double) j - U.extent(1) / 2;
+    const double rad = U.extent(0) / 8.0;
+    const double dx  = (double) i - U.extent(0) / 2;
+    const double dy  = (double) j - U.extent(1) / 2;
 
     U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
 
     /* Set up boundary conditions */
-    if (j == 0.0)
+    if (static_cast<double>(j) == 0.0)
     {
       U(i, j) = 100.0;
     }
@@ -74,7 +74,7 @@ int main()
     {
       U(i, j) = 0.0;
     }
-    if (i == 0.0)
+    if (static_cast<double>(i) == 0.0)
     {
       U(i, j) = 0.0;
     }
@@ -85,20 +85,20 @@ int main()
   };
 
   // diffusion constant
-  double a = 0.5;
+  const double a = 0.5;
 
-  double dx  = 0.1;
-  double dy  = 0.1;
-  double dx2 = dx * dx;
-  double dy2 = dy * dy;
+  const double dx = 0.1;
+  const double dy = 0.1;
+  double dx2      = dx * dx;
+  double dy2      = dy * dy;
 
   // time step
-  double dt = dx2 * dy2 / (2.0 * a * (dx2 + dy2));
+  const double dt = dx2 * dy2 / (2.0 * a * (dx2 + dy2));
 
   double c = a * dt;
 
-  int nsteps     = 1000;
-  int image_freq = -1;
+  const int nsteps     = 1000;
+  const int image_freq = -1;
 
   for (int iter = 0; iter < nsteps; iter++)
   {

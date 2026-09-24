@@ -668,7 +668,7 @@ struct backoff_t
 
     // maybe_unused: like __cap above, __left is referenced only inside
     // _CCCL_CATCH_ALL, so CTK <= 12.9's cudafe reports #177 without it.
-    for ([[maybe_unused]] int __left = __n_;;)
+    for ([[maybe_unused]] const int __left = __n_;;)
     {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds{__sleep});
       _CCCL_TRY
@@ -1561,7 +1561,7 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
   __exception_path_nothrow_v<_Reaction, _Fn> && __on_enter_nothrow_v<_Reaction>)
 {
   // Bind as a non-const lvalue: a hook may invoke it again later.
-  _Fn& __f = __fn;
+  const _Fn& __f = __fn;
 
   // A `noexcept` callable puts the policy out of reach: an exception raised inside it ends the
   // program where it stands, so the catch below could never run and the policy would be a
@@ -2601,6 +2601,9 @@ auto on_throw(_Reaction&& __reaction,
     << [&]()
 
 #ifdef UNITTESTED_FILE
+// The tests below throw on purpose. In clang-tidy's device pass exceptions are disabled, every
+// function is implicitly non-throwing, and bugprone-exception-escape flags each deliberate throw.
+// NOLINTBEGIN(bugprone-exception-escape)
 UNITTEST("nullval")
 {
   using namespace cuda::experimental::stf;
@@ -2696,9 +2699,9 @@ UNITTEST("circuit_breaker")
   EXPECT(__gated);
 
   // The erased form carries the gate through: sinks re-erase, gates survive.
-  *budget                      = 0;
-  pol::exception_sink __erased = pol::type_erase(pol::circuit_breaker(budget) & pol::subst(-1));
-  __gated                      = false;
+  *budget                            = 0;
+  const pol::exception_sink __erased = pol::type_erase(pol::circuit_breaker(budget) & pol::subst(-1));
+  __gated                            = false;
   _CCCL_TRY
   {
     on_throw(__erased) << flaky;
@@ -4134,7 +4137,7 @@ UNITTEST("type erasure")
   }
   // One sink object serves callables of different result types (passthrough).
   {
-    exception_sink r = type_erase(retry * 2);
+    const exception_sink r = type_erase(retry * 2);
     {
       int calls   = 0;
       const int x = on_throw(r) << [&]() -> int {
@@ -4290,7 +4293,7 @@ UNITTEST("type erasure")
         return ::std::any(21);
       }
     };
-    exception_sink custom{::std::unique_ptr<exception_sink::sink_base>(new halving_sink())};
+    const exception_sink custom{::std::unique_ptr<exception_sink::sink_base>(new halving_sink())};
     const int x = on_throw(custom) << []() -> int {
       throw ::std::runtime_error("x");
     };
@@ -4375,6 +4378,7 @@ UNITTEST("type erasure")
   //       policy -- subst(0xffffffffu), not subst(-1) -- if the narrowing is intended"
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
+// NOLINTEND(bugprone-exception-escape)
 #endif // UNITTESTED_FILE
 
 /**
@@ -4474,6 +4478,8 @@ void invoke_body(F& f, bool failing)
 template <class F>
 void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false) noexcept
 {
+  // NOLINTNEXTLINE(bugprone-exception-escape) -- the body may throw; that is what the abort policy is for. In
+  // clang-tidy's device pass the policy's catch is erased, so the check sees the throw escape this noexcept function.
   on_throw(exception_policies::abort, loc) << [&] {
     invoke_body(f, failing);
   };
@@ -4612,6 +4618,9 @@ auto operator->*(success, F&& f)
 } // namespace cuda::experimental::stf
 
 #ifdef UNITTESTED_FILE
+// The tests below throw on purpose. In clang-tidy's device pass exceptions are disabled, every
+// function is implicitly non-throwing, and bugprone-exception-escape flags each deliberate throw.
+// NOLINTBEGIN(bugprone-exception-escape)
 UNITTEST("SCOPE(exit)")
 {
   //! [SCOPE(exit)]
@@ -4896,4 +4905,5 @@ UNITTEST("policies inside handlers")
   }
 };
 
+// NOLINTEND(bugprone-exception-escape)
 #endif // UNITTESTED_FILE

@@ -234,7 +234,7 @@ int main()
 
   for (size_t i = 0; i < v_out.size(); i++)
   {
-    char expected = circuit(vA[i], vB[i]);
+    const char expected = circuit(vA[i], vB[i]);
     EXPECT(expected == v_out[i]);
   }
 }

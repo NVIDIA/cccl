@@ -416,7 +416,7 @@ private:
 
     void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) override
     {
-      nvtx_range r("stackable_logical_data::pop_after_finalize");
+      const nvtx_range r("stackable_logical_data::pop_after_finalize");
 
       _CCCL_ASSERT(parent_offset >= 0, "");
       _CCCL_ASSERT(data_nodes[static_cast<size_t>(parent_offset)].has_value(), "");
@@ -749,7 +749,7 @@ private:
 
 inline stackable_logical_data<void_interface> stackable_ctx::token()
 {
-  int head = pimpl->get_head_offset();
+  const int head = pimpl->get_head_offset();
   return stackable_logical_data<void_interface>(*this, head, true, get_root_ctx().token(), true);
 }
 
@@ -1565,7 +1565,7 @@ UNITTEST("graph_scope direct constructor style")
 
   // Test direct constructor style (like std::lock_guard)
   {
-    stackable_ctx::graph_scope_guard scope{ctx}; // Direct constructor, push() called here
+    const stackable_ctx::graph_scope_guard scope{ctx}; // Direct constructor, push() called here
     lA.push(access_mode::write, data_place::current_device());
     ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
       reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 24);
@@ -1584,14 +1584,14 @@ UNITTEST("graph_scope nested scopes")
 
   // Test nested scopes work correctly using direct constructor style
   {
-    stackable_ctx::graph_scope_guard outer_scope{ctx}; // outer push()
+    const stackable_ctx::graph_scope_guard outer_scope{ctx}; // outer push()
     lA.push(access_mode::write, data_place::current_device());
     ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
       reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 10);
     };
 
     {
-      stackable_ctx::graph_scope_guard inner_scope{ctx}; // inner push() (nested)
+      const stackable_ctx::graph_scope_guard inner_scope{ctx}; // inner push() (nested)
       lB.push(access_mode::write, data_place::current_device());
       ctx.task(lB.write())->*[](cudaStream_t stream, auto b) {
         reserved::kernel_set<<<1, 1, 0, stream>>>(b.data_handle(), 20);
@@ -1684,7 +1684,7 @@ inline void test_graph_scope()
   int array[1024];
   for (size_t i = 0; i < 1024; i++)
   {
-    array[i] = 1 + i * i;
+    array[i] = static_cast<int>(1 + i * i);
   }
 
   auto lA = ctx.logical_data(array).set_symbol("A");

@@ -16,8 +16,8 @@ int main()
 {
   context ctx;
 
-  int nqpoints = 3;
-  auto ltoken  = ctx.token();
+  const int nqpoints = 3;
+  auto ltoken        = ctx.token();
 
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC)
   ctx.parallel_for(exec_place::host(), box(5), ltoken.read())->*[nqpoints] __host__(size_t) {
