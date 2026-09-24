@@ -639,7 +639,7 @@ public:
       // A token has no content to materialize: only synchronize the host with
       // the work the token depends on, and return void.
       task(exec_place::host(), ldata.read()).set_symbol("wait")->*[](cudaStream_t stream) {
-        cuda_safe_call(cudaStreamSynchronize(stream));
+        cuda_try<cudaStreamSynchronize>(stream);
       };
     }
     else
@@ -647,7 +647,7 @@ public:
       typename owning_container_of<T>::type out;
 
       task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
-        cuda_safe_call(cudaStreamSynchronize(stream));
+        cuda_try<cudaStreamSynchronize>(stream);
         out = owning_container_of<T>::get_value(data);
       };
 
