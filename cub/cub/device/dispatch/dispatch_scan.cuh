@@ -1351,7 +1351,7 @@ template <
   typename OffsetT,
   typename AccumT = ::cuda::std::__accumulator_t<ScanOpT,
                                                  cub::detail::it_value_t<InputIteratorT>,
-                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,  // This should be modified
                                                                   cub::detail::it_value_t<InputIteratorT>,
                                                                   typename InitValueT::value_type>>,
   typename PolicySelector =
@@ -1417,7 +1417,7 @@ template <typename AccumT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename ScanOpT,
-          typename InitValueT,
+          typename InitValueT,   // This should be modified(?)
           typename OffsetT,
           typename PolicySelector =
             policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT, StableReductionOrder>,
@@ -1426,7 +1426,7 @@ template <typename AccumT,
             THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
             THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
             ScanOpT,
-            InitValueT,
+            InitValueT,  // This should be modified(?)
             OffsetT,
             AccumT,
             EnforceInclusive,
