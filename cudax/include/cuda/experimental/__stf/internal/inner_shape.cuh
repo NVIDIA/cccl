@@ -94,7 +94,7 @@ _CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
 #ifdef UNITTESTED_FILE
 UNITTEST("inner explicit shape (explicit bounds)")
 {
-  const box s({10, 100}, {-10, 10});
+  box s({10, 100}, {-10, 10});
   static_assert(::cuda::std::is_same_v<decltype(s), box<2>>);
 
   auto i = inner<2>(s);
@@ -106,7 +106,7 @@ UNITTEST("inner explicit shape (explicit bounds)")
 
 UNITTEST("inner explicit shape (sizes)")
 {
-  const box s(10, 100, 12);
+  box s(10, 100, 12);
   static_assert(::cuda::std::is_same_v<decltype(s), box<3>>);
 
   auto i = inner<2>(s);
