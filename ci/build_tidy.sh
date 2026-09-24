@@ -17,7 +17,6 @@ CMAKE_OPTIONS+=("-DCMAKE_CUDA_FLAGS=")
 # hasn't been compiled against clang-cuda before or whether it's an issue with clang-cuda
 # itself.
 CMAKE_OPTIONS+=("-Dcudax_ENABLE_CUDASTF=OFF")
-CMAKE_OPTIONS+=("-Dcudax_ENABLE_PLACES=OFF")
 
 # todo(dabayer): Re-enable OpenMP thrust builds for clang-tidy.
 CMAKE_OPTIONS+=("-DTHRUST_MULTICONFIG_ENABLE_SYSTEM_OMP=OFF")
