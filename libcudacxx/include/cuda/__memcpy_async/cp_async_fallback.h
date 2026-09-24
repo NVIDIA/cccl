@@ -30,10 +30,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <::cuda::std::size_t _Copy_size>
+template <::cuda::std::size_t _CopySize>
 struct __copy_chunk
 {
-  _CCCL_ALIGNAS(_Copy_size) char data[_Copy_size];
+  _CCCL_ALIGNAS(_CopySize) char data[_CopySize];
 };
 
 template <::cuda::std::size_t _Alignment, typename _Group>

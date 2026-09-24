@@ -312,6 +312,137 @@ the move disarms the moved-from source — resets its flag or nulls its handle, 
 destruction. Require a test that moves the object and confirms the action fires exactly once and that the
 moved-from object has been disarmed.
 
+## correctness.verification-removed-without-replacement (important, any diff deleting a check or test)
+
+<!-- provenance:
+  #3743→#3866 dropping deprecated cub::Traits CATEGORY usage also deleted the static_assert cross-checks (old_IS_SMALL_UNSIGNED, "sanity check, remove eventually") comparing new type classification to the old one, breaking dispatch for library-extended types (NVBug 5121653);
+  #3970→#9211 (issue #807) generate/raw_reference_cast simplification deleted the compile-fail harness (runtime_static_assert.h, unittest_static_assert.cu) with no replacement
+-->
+
+When a diff deletes a check verifying a property, but does not delete the checked entity, like a
+`static_assert` cross-checking a new computation against an old one (tells: "sanity check" comments,
+`old_*` names), a negative or compile-fail test (`*_fail*`, `*_static_assert*`, `UNSUPPORTED`/`XFAIL`
+markers), a runtime assertion, then do not accept the deletion of the check, unless the diff shows the
+property now holds by construction or adds a replacement check verifying the same property.
+
+## correctness.temp-storage-raw-alignment (critical, CUB/Thrust device-dispatch code allocating or indexing into `d_temp_storage`)
+
+<!-- provenance:
+  #6811→#9565 (backport #9781) warpspeed DeviceScan dispatch performed raw uint4 stores into d_temp_storage at a hand-computed offset, guarded only by a debug-only _CCCL_ASSERT and a "we probably need to ensure alignment" TODO, instead of routing through detail::alias_temporaries();
+  misaligned callers hit Warp Misaligned Address faults on Blackwell (issue #9742)
+-->
+
+Flag any manual handling of the caller-supplied `d_temp_storage` in a dispatch: pointer arithmetic,
+hand-computed offsets or alignment, or passing the raw pointer into a kernel argument. Only two forms
+are allowed: (1) algorithms needing no temporary storage set `temp_storage_bytes` to 1 and never
+touch the pointer; (2) algorithms needing one or more allocations must carve them out via
+`detail::alias_temporaries` or `detail::temporary_storage::layout`, which alone are allowed to round
+the base pointer up and report the required size.
+
+## correctness.noexcept (critical, new or changed async/fallible public member functions)
+
+<!-- provenance:
+  #7705→#10888 fixed_capacity_map's *_async members were noexcept while __open_addressing_impl ("@throws cuda_error") used _CCCL_TRY_CUDA_API;
+  the cooperative-group launch branches also had no error check at all, unlike their cg_size==1 siblings
+-->
+
+No exception may escape a `noexcept` function on any code path — an escaping exception calls
+`std::terminate`, turning a recoverable error into a process crash, and it compiles cleanly with no
+warning. Pay attention to throwing reached through helpers: `_CCCL_TRY_CUDA_API`, `_CCCL_THROW`, or
+callees documented `@throws`.
+
+## correctness.header-kernel-weak-linkage (critical, `__global__` kernels defined in headers)
+
+<!-- provenance:
+  #2641→#2656 templatized CUDASTF's callback_completion_kernel to dodge a multiple-definition linker error, risking runtime launch errors
+-->
+
+Flag a `__global__` function with an unused template parameter (`template <int = 0>`), or marked
+`inline` — typically done to dodge a "multiple definition" linker error for a kernel defined in a
+header. The linker collapses the weak host stubs to one, but each translation unit registers its own
+fatbin, so a launch can resolve to a stub whose kernel was registered by a different TU and fail at
+runtime. Hidden visibility (`_CCCL_KERNEL_ATTRIBUTES`) does not prevent this. Give the kernel internal
+linkage instead: `static` or an unnamed namespace.
+
+## build.no-long (important, C++/CUDA code, including tests)
+
+<!-- provenance:
+  #6068→#6081 c/parallel three_way_partition used `using OffsetT = long`, whose choose_signed_offset static_assert fails under MSVC (LLP64: long is 32-bit)
+-->
+
+Flag any use of `long`/`unsigned long` as a chosen type. `long` is 64-bit on LP64 Linux/macOS but
+32-bit on LLP64 Windows (MSVC, clang-cl), so code assuming either width builds and passes on one
+platform and silently truncates or fails on the other. Use a type that says what is meant:
+`int32_t`/`uint32_t` or `int64_t`/`uint64_t` for exact widths, `size_t` for object sizes,
+`ptrdiff_t` for pointer differences. Acceptable: `long` as a *supported* type for
+traits, overload sets, type-list tests enumerating fundamental types, and external API signatures
+that use it. Candidate for a pre-commit grep.
+
+## correctness.ptx-asm-operand-index (critical, hand-written/generated inline PTX `asm volatile` blocks)
+
+<!-- provenance:
+  #3440→#8403 128-bit atomic CAS codegen template misindexed asm operands (mov.b128 read from output/undefined and cross-mixed compare/desired registers), returning success while writing garbled data (intro corrected from issue #8402)
+-->
+
+When a diff adds or edits an inline `asm volatile("..." : outputs : inputs : clobbers)` block
+referencing operands by number (`%0`, `%1`, …), manually verify each `%N` against its declared position
+(outputs first, then inputs, in constraint-list order) — the compiler only checks that `%N` is in
+range, not that it refers to the intended operand. Watch for reads of output-only (`"="`) operands and
+off-by-one indices after a reorder. Tests should read back the written values, not just a status.
+
+## api.alias-template-ctad-gap (important, public type aliases wrapping a class template that supports CTAD)
+
+<!-- provenance:
+  #3686→#6093 host_mdspan/device_mdspan/managed_mdspan alias templates over cuda::std::mdspan with a substituted accessor; CTAD silently failed to compile (pair auto-inferred from issue #6076)
+-->
+
+When a diff introduces a type as an alias template, users cannot construct it via CTAD in C++17.
+This is usually fine, unless the alias replaced a public entity that previously supported CTAD,
+in which case the change breaks CTAD. Flag the alias template and require a test for CTAD to be added.
+
+## correctness.offset-type-narrowing (important, CUB/Thrust device-algorithm dispatches and kernels templated on an offset type)
+
+<!-- provenance:
+  #2234→#4888 new cub::DeviceReduce RFA (deterministic reduce) kernel accepted a generic OffsetT but truncated it to int internally for grid sizing/indexing
+-->
+
+When a dispatch or kernel is templated on an offset type instead of using a fixed-width integral type,
+the entire implementation behind it must support both 32-bit and 64-bit offsets. Flag any unguarded
+conversion of an offset to a narrower type: `static_cast<int>(num_items)`, `int`-typed loop counters,
+or grid-size arithmetic fed from `OffsetT`. Such code compiles and passes small tests but silently
+misbehaves beyond 2^31 elements. A public API accepting a templated offset type must normalize it via
+`cub::detail::choose_offset_t` immediately and pass the adjusted type to the dispatch and kernels, and
+a unit test with a problem size larger than 2^32 is required. Not affected: implementations that accept
+a generic offset type at the device-layer API but dispatch with a fixed 64-bit offset (e.g. lookahead
+scan, transform).
+
+## api.generic-param-replaces-concrete-type (important, public CUB/Thrust API overloads accepting a stream/config parameter)
+
+<!-- provenance:
+  #6204→#7915 (backport #8011) DeviceTransform Env=env<> default replaced the cudaStream_t stream parameter, breaking non-copyable types implicitly convertible to cudaStream_t
+-->
+
+When a diff replaces a concrete parameter type (e.g. `cudaStream_t stream`) with a generic templated
+parameter (e.g. `Env env`), consider all possible call-site conventions the old parameter supported:
+arguments could have been only implicitly convertible to the old type (e.g., a user stream wrapper
+with `operator cudaStream_t()`), or non-copyable. A by-value template parameter binds to the
+argument's own deduced type, not a potentially converted type from the old argument, so a non-copyable
+stream-like lvalue that used to convert-then-copy now fails to compile. Either require an explicit
+non-template overload taking the old type and constraining the generic overload, or turn the template
+parameter into a const reference (e.g. `const Env& env`).
+
+## correctness.element-index-to-byte-offset (important, CUDA kernels and dispatch code computing byte offsets from element indices)
+
+<!-- provenance:
+  #2086→#8803 (backports #8806–#8808) transform_kernel_ublkcp multiplied a 32-bit element offset by sizeof(T) in 32-bit arithmetic for bulk-copy addressing; for num_items*sizeof(T) > 4 GB the product wrapped and read wrong tile addresses, corrupting outputs (issue #8800)
+-->
+
+When an in-bounds element index or count stored in a 32-bit type is converted into a byte offset —
+multiplied by `sizeof(T)`, used for pointer alignment, or applied to a `char*`/`std::byte*` cast of a
+typed pointer — flag arithmetic performed in the 32-bit type: the element index may fit 32 bits while
+the byte offset does not, so the multiplication must be widened to 64 bits first (e.g.
+`offset * size_t{sizeof(T)}`).
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
@@ -379,3 +510,39 @@ shared-memory padding for the entire translation unit, which can reduce occupanc
 kernels, including in downstream user code. CCCL code must not introduce any `extern __shared__`
 storage with alignment above 16. A different design is required instead, e.g., manual alignment of a
 byte buffer. Static shared memory with alignment > 16 is fine.
+
+## infra.new-cuda-arch-rollout (important, diffs adding support for a CUDA architecture/SM number)
+
+<!-- related: test.new-arch-coverage-gap covers the CI/test-exercise angle for arch-conditional branches in general; this rule is the specific checklist of sibling locations for rolling out a brand-new SM -->
+<!-- provenance:
+  #3550→#4931 sm_120 macros added to nv/target in January 2025; arch_traits<sm_120> (then living in
+  cudax) wasn't added until June 2025, ~4 months later — code branching on NV_PROVIDES_SM_120 got wrong
+  occupancy/shared-memory limits inherited from an older SM in the meantime
+-->
+
+When a diff adds support for a new CUDA architecture (SM number) not previously known to CCCL, go
+through this checklist and verify every applicable entry was updated in the same diff (or a linked
+follow-up PR):
+- `libcudacxx/include/nv/detail/__target_macros` and `libcudacxx/include/nv/target` — the
+  `NV_PROVIDES_SM_XXX`/`NV_IS_EXACTLY_SM_XXX` macro pair itself.
+- `libcudacxx/include/cuda/std/__cccl/execution_space.h` — the new SM added to
+  `_CCCL_KNOWN_CUDA_ARCH_LIST` (and to `_CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST` if it needs a
+  family-specific `arch_id`/`arch_traits` entry distinct from its base SM).
+- `libcudacxx/include/cuda/__device/arch_traits.h` — new `arch_traits<arch_id::sm_XXX>()`
+  specialization with its own limits, not copied from an older SM.
+- `libcudacxx/test/libcudacxx/cuda/ccclrt/device/{all_arch_ids,arch_id,arch_id_fmt,arch_traits.c2h,is_specific_arch}`
+  — exhaustive per-arch test tables.
+- `cub/test/catch2_test_util_device.cu` — new `GEN_POLICY` entry in the `policy_hub_all` self-test.
+- `cmake/CCCLCheckCudaArchitectures.cmake` — `all-major-cccl`/`all-cccl` resolution, if the new SM
+  belongs in default multi-arch builds.
+- Recommended: `ci/matrix.yaml` — new SM number added to at least one `sm:`/`codegen_target` job.
+
+## docs.link-resolves (important, diffs adding or changing hyperlinks in docs, comments, or messages)
+
+<!-- provenance:
+  #10887→#10895 bulk CUDA-guide link migration pointed memcpy_async performance guidance at the device-callable-APIs appendix instead of the async-copies page
+-->
+
+When a diff adds or changes a hyperlink, verify the URL actually resolves, including the `#fragment`:
+the anchor must exist on the target page. CI runs no link checker, so a broken or misdirected link
+ships silently. Also check that the target page covers the topic the surrounding prose promises.

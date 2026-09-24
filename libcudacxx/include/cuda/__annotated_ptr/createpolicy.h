@@ -173,7 +173,7 @@ __createpolicy_fraction_ptx(__l2_evict_t __primary, __l2_evict_t __secondary, fl
 
 extern "C" _CCCL_DEVICE void __createpolicy_is_not_supported_before_SM_80();
 
-template <typename T = void>
+template <typename _Tp = void>
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API uint64_t __createpolicy_range(
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_size, uint32_t __total_size)
 {
@@ -189,7 +189,7 @@ template <typename T = void>
     (::cuda::__createpolicy_is_not_supported_before_SM_80(); return 0;))
 }
 
-template <typename T = void>
+template <typename _Tp = void>
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API uint64_t
 __createpolicy_fraction(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction = 1.0f)
 {

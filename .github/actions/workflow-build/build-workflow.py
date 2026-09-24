@@ -571,7 +571,7 @@ def generate_dispatch_job_image(matrix_job, job_type):
     ctk_suffix = "ext" if job_info["cuda_ext"] else ""
 
     if is_windows(matrix_job):
-        return f"{image_repo}:{version_prefix}cuda{ctk}{ctk_suffix}-{host_compiler}"
+        return f"{image_repo}:{version_prefix}{host_compiler}-cuda{ctk}{ctk_suffix}"
 
     if is_nvhpc(matrix_job):
         return f"{image_repo}:{version_prefix}cpp-{host_compiler}"
