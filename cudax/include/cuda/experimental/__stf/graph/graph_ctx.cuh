@@ -776,7 +776,7 @@ UNITTEST("movable graph_ctx")
 
 UNITTEST("copyable graph_ctx")
 {
-  const graph_ctx ctx;
+  graph_ctx ctx;
   // NOLINTNEXTLINE(performance-unnecessary-copy-initialization) -- the copy is what this test exercises
   const graph_ctx ctx2 = ctx;
 };

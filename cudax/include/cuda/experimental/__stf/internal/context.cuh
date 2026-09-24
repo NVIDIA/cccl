@@ -1100,7 +1100,7 @@ UNITTEST("context")
 
 UNITTEST("context from existing contexts")
 {
-  const stream_ctx ctx;
+  stream_ctx ctx;
   context unified_ctx = ctx;
   unified_ctx.finalize();
 };
@@ -1236,7 +1236,7 @@ UNITTEST("context with arguments")
     cuda_safe_call(cudaStreamDestroy(stream));
   };
 
-  const async_resources_handle h;
+  async_resources_handle h;
 
   context ctx(h);
   ctx.finalize();

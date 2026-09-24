@@ -338,7 +338,7 @@ UNITTEST("buddy_allocator is movable")
 
 UNITTEST("buddy allocator meta data")
 {
-  const event_list prereqs; // starts empty
+  event_list prereqs; // starts empty
 
   reserved::buddy_allocator_metadata allocator(1024, prereqs);
 

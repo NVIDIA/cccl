@@ -39,7 +39,7 @@ int main()
   stream_ctx ctx;
 
   // This constructor automatically initializes an empty hashtable on the host
-  const hashtable h;
+  hashtable h;
   auto lh = ctx.logical_data(h);
 
   // Create an array of values on the host

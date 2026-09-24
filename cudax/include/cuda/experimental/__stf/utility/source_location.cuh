@@ -72,7 +72,7 @@ struct with_location
   {}
 
   T payload;
-  const ::cuda::std::source_location loc;
+  ::cuda::std::source_location loc;
 };
 
 // Two-arg form only: CTAD cannot see `T` in the converting constructor, and a

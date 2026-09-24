@@ -176,7 +176,7 @@ void capturedWhileGraph()
   cudaGraphExec_t graphExec;
 
   cudaStreamCaptureStatus status;
-  const cudaGraphNode_t* dependencies;
+  cudaGraphNode_t* dependencies;
   size_t numDependencies;
 
   // Allocate a byte of device memory to use as input

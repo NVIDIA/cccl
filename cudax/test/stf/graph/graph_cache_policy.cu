@@ -19,7 +19,7 @@ using namespace cuda::experimental::stf;
 
 int main()
 {
-  const async_resources_handle handle;
+  async_resources_handle handle;
   for (size_t i = 0; i < 10; i++)
   {
     graph_ctx ctx(handle);

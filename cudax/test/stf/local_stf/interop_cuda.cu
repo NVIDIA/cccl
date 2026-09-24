@@ -42,7 +42,7 @@ int main()
   cudaStream_t stream;
   cuda_safe_call(cudaStreamCreate(&stream));
 
-  const async_resources_handle handle;
+  async_resources_handle handle;
   for (size_t i = 0; i < NITER; i++)
   {
     stream_ctx ctx(stream, handle);

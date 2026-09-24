@@ -22,7 +22,7 @@ int main()
   // User allocated memory
   cuda_safe_call(cudaMalloc(&d_ptrA, N * sizeof(double)));
 
-  const async_resources_handle handle;
+  async_resources_handle handle;
 
   cudaStream_t stream;
   cuda_safe_call(cudaStreamCreate(&stream));
