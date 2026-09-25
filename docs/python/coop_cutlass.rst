@@ -995,3 +995,35 @@ More items per thread can increase register use, and additional scratch can
 reduce the number of resident blocks. Check the compiled kernel's resource
 usage as well as its execution time. Use inferred scratch capacity and
 alignment unless the kernel needs an explicit allocation policy.
+
+.. _coop-cutlass-run-length:
+
+Run Length Decode
+-----------------
+
+``run_length_decode`` expands blocked run values and lengths into a fresh
+per-thread window. ``run_length_decode_into`` writes the full decoded stream
+to a contiguous one-dimensional CuTe global-memory tensor and returns a
+``Uint32`` total to every block member. Both operations require a complete
+one-dimensional block and preserve their inputs.
+
+Positive run lengths must precede trailing zero padding. Negative lengths,
+misplaced padding, and totals exceeding uint32 trap before decoding. A window
+starting beyond the decoded stream contains zeros. Bulk decoding checks the
+destination offset and remaining capacity before writing; empty input leaves
+the destination unchanged. The internal prepared table is retained across
+all bulk windows.
+
+The qualified functions additionally accept CuTe register payloads. Numba's
+optional total-size and relative-offset payloads and uint64 decoded totals
+are outside the current CUTLASS-qualified interface.
+
+This example decodes a window starting at item three, then reuses the scratch
+to write the complete stream at destination offset five. The bulk operation
+uses two internal windows.
+
+.. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_run_length_examples.py
+   :language: python
+   :start-after: example-begin
+   :end-before: example-end
+   :dedent: 4
