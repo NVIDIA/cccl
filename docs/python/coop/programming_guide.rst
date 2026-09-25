@@ -4,13 +4,13 @@
 
 .. _cuda.coop.programming_guide:
 
-``cuda.coop`` Programming Guide
-===============================
+Numba-CUDA-MLIR Programming Guide
+=================================
 
-``cuda.coop`` lets threads cooperate inside a Python GPU kernel. You can
-load a tile, compute a prefix sum across its elements, and write the result
-without leaving the kernel. You choose the participating group and the data
-each thread contributes.
+This guide shows how to use ``cuda.coop`` inside Numba-CUDA-MLIR kernels.
+You can load a tile, compute a prefix sum across its elements, and write the
+result without leaving the kernel. The :doc:`shared overview <../coop>`
+introduces groups, payloads, layouts, and participation across backends.
 
 The :doc:`visualizations <visualizations/index>` show how values move through
 these operations. Each explorer includes an example kernel and lets you
@@ -18,7 +18,7 @@ step through the algorithm. The :doc:`glossary <glossary>` defines terms and
 layouts; the :doc:`FAQs <faqs>` explain common API choices.
 
 This guide assumes you have written a CUDA kernel and know how threads,
-blocks, and device arrays work. The examples use Numba-CUDA-MLIR. The
+blocks, and device arrays work. The
 :doc:`installation instructions <../coop>` describe the matching
 ``cuda-coop`` extra; the current backend requires
 ``numba-cuda-mlir>=0.5.0,<0.6``. Check the
@@ -27,9 +27,12 @@ Keep a compiled kernel in its original CUDA context; see the
 :ref:`device and context-lifetime limitation <coop-numba-context-lifetime>`
 before reusing a dispatcher across devices or recreated contexts.
 
-This guide describes the experimental Numba-CUDA-MLIR 0.5.x API.
-Operation support varies by group and backend. The examples below use
-supported block and warp operations.
+For CuTe kernels, see the :doc:`CUTLASS Programming Guide <../coop_cutlass>`.
+The :doc:`Numba-CUDA-MLIR Developer Guide <developer_overview>` explains
+the compiler integration; the :doc:`CUTLASS Developer Guide
+<cutlass_developer_guide>` covers its CuTe counterpart. Operation support
+varies by group and backend, so use the guide for the compiler running your
+kernel.
 
 A first kernel: prefix sums within tiles
 ----------------------------------------
@@ -65,9 +68,10 @@ The remaining examples reuse the imports above. Each kernel example includes
 its own input and result check.
 
 .. _coop-programming-api-choice:
+.. _choosing-the-common-or-qualified-api:
 
-Choosing the common or qualified API
-------------------------------------
+Common API and Numba-CUDA-MLIR extensions
+-----------------------------------------
 
 The common API is imported with:
 
@@ -79,8 +83,9 @@ The common API is imported with:
 ``cuda.coop`` expresses operations through a common vocabulary of groups,
 numeric values, ``ThreadData``, and ``TempStorage``. The kernel
 compiler uses its registered backend to implement those calls. Start here
-when these operations cover your kernel's needs. Numba-CUDA-MLIR is the first
-backend; CUTLASS support is planned.
+when these operations cover your kernel's needs. The CUTLASS backend uses
+the same common API inside CuTe kernels, with the supported operations and
+restrictions described in its :doc:`Programming Guide <../coop_cutlass>`.
 
 The qualified import selects the Numba-CUDA-MLIR API explicitly:
 
@@ -97,7 +102,8 @@ In a program that uses only the qualified API, importing it as ``coop`` is
 also fine.
 
 The qualified API accepts Numba-specific payloads and adds controls to
-several operations:
+several operations. This table describes those extensions for
+Numba-CUDA-MLIR:
 
 .. list-table::
    :header-rows: 1
@@ -148,6 +154,16 @@ several operations:
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
+
+.. note::
+
+   Numba local arrays, the ``local`` and ``shared`` namespaces, Python device
+   callbacks, and stateful Scan prefix callbacks belong to the
+   Numba-CUDA-MLIR integration. Some qualified controls, such as Scan
+   aggregate output and block scatter, are also available in CUTLASS.
+   Check the selected backend's guide before carrying a qualified call
+   between compilers. Merge Sort, Radix Sort/Rank, and TopK are implemented
+   in Numba-CUDA-MLIR; their CUTLASS implementations are still planned.
 
 For example, suppose you need both the exclusive sum and each tile's total.
 The qualified Scan can produce both in one call. Here it also consumes an
@@ -468,6 +484,11 @@ elements from the array's beginning. ``valid_items`` counts elements in
 the valid prefix of the selected group's tile. Both must be uniform within
 that group.
 
+Runtime ``valid_items`` and ``offset`` accept signed integers through 64 bits
+and unsigned integers through 32 bits. Boolean, floating-point, and
+``uint64`` runtime controls are rejected. Static offsets must be nonnegative;
+for runtime offsets, the caller must ensure this precondition.
+
 For a block, a tile holds ``block_threads * items_per_thread`` elements.
 For a physical or logical warp, it holds
 ``warp_width * items_per_thread`` elements. Clamp the valid count to that
@@ -563,6 +584,9 @@ block. For width ``G`` and ``K`` items per thread, this origin is
 ``(linear_thread_rank // G) * G * K``. The explicit ``offset`` is added
 after that origin. In a multi-block traversal, pass the block's global
 tile origin as ``offset``.
+
+Runtime offsets must leave enough signed 64-bit range for the last group's
+origin in the block. Static offsets are checked during planning.
 
 The valid count still belongs to each individual group. Compute it using
 both the block origin and the group's origin:
@@ -1125,7 +1149,7 @@ static parameters, and import order first. The :doc:`API reference
 <../coop_api>` records exact signatures; the :doc:`overview <../coop>`
 collects operation restrictions and configuration. For generated-source
 diagnostics and the compiler integration, see the
-:doc:`Developer Overview <developer_overview>`.
+:doc:`Numba-CUDA-MLIR Developer Guide <developer_overview>`.
 
 
 Launch resource bounds

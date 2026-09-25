@@ -1,15 +1,111 @@
+.. Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+..
+.. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 .. _coop-cutlass:
+.. _cuda.coop.cutlass.programming_guide:
+.. _cuda-coop-cutlass-cute-dsl-integration:
 
-``cuda.coop.cutlass``: CuTe DSL integration
-===========================================
+CUTLASS Programming Guide
+=========================
 
-The CUTLASS backend provides group queries and synchronization, Load and
-Store, built-in Reduce, Scan, and Sum, Exchange, and block Shuffle inside
-CuTe DSL kernels.
-It uses the same group-first calls and in-place
-payload contract as :mod:`cuda.coop`: ``load`` fills an existing
-``ThreadData`` and returns ``None``; ``store`` leaves its input payload
-unchanged. Reductions return a scalar and preserve their input payload.
+Use ``cuda.coop`` inside a CuTe kernel to load a tile, reduce or scan its
+values, rearrange items between threads, and store the result. The CUTLASS
+backend implements these primitives with CUB and CUDAX.
+
+Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
+object and returns ``None``; ``store`` writes its items to memory without
+changing them. The examples below show the same kernel using the common API
+and the CUTLASS-qualified API.
+
+The :doc:`overview <coop>` introduces the shared concepts, installation, and
+primitive families. This guide covers writing CuTe kernels; the
+:doc:`CUTLASS Developer Guide <coop/cutlass_developer_guide>` explains how the
+compiler integration works. For Numba kernels, see the
+:doc:`Numba-CUDA-MLIR Programming Guide <coop/programming_guide>` and
+:doc:`Numba-CUDA-MLIR Developer Guide <coop/developer_overview>`.
+
+.. _coop-cutlass-api-choice:
+
+.. _choosing-the-portable-or-qualified-api:
+
+Choosing the common or qualified API
+------------------------------------
+
+Start with ``from cuda import coop`` for the common API. Use
+``import cuda.coop.cutlass as coop`` when you need the extra controls in the
+table below, such as scatter ranks for Exchange or a Scan aggregate.
+Both imports call the same implementation inside a CuTe kernel.
+
+.. list-table:: Common and CUTLASS-qualified APIs
+   :header-rows: 1
+   :widths: 22 38 40
+
+   * - Feature
+     - Common ``cuda.coop``
+     - Qualified ``cuda.coop.cutlass``
+   * - Payloads
+     - Fixed per-thread ``ThreadData``; Load fills it in place.
+     - Adds CuTe register-tensor and vector conversions, described in
+       :ref:`coop-cutlass-register-payloads`.
+   * - Operator selection
+     - Built-in operator names such as ``"sum"`` and ``"max"``.
+     - Also accepts recognized ``operator`` and NumPy aliases. Arbitrary
+       Python callbacks remain unsupported.
+   * - Scan
+     - Block and scalar Warp Scan with the shared initial-value and
+       algorithm controls.
+     - Adds Warp ``valid_items`` and writable ``aggregate_output`` to all
+       five Scan spellings; see :ref:`coop-cutlass-scan`.
+   * - Exchange
+     - Blocked/striped conversions for block and supported warp groups.
+     - Adds block warp-striped conversions, scatter ranks and flags, and
+       ``warp_time_slicing``; see :ref:`coop-cutlass-exchange`.
+   * - Shuffle
+     - Block array Up/Down with unit distance.
+     - Adds scalar Offset/Rotate with checked integer distances; see
+       :ref:`coop-cutlass-shuffle`.
+
+.. _coop-cutlass-differences:
+
+.. _cutlass-specific-behavior-and-current-limits:
+
+CuTe values and supported features
+----------------------------------
+
+Use the qualified ``ThreadData`` to work with CuTe register tensors.
+``ThreadData.from_register_tensor(fragment)`` copies a fragment into a
+payload you can pass to ``store`` or another primitive.
+``values.to_register_tensor()`` converts a payload back to a CuTe register
+tensor. See :ref:`coop-cutlass-register-payloads`.
+
+Group queries return CuTe scalars. For example, ``block.rank()`` returns a
+``cutlass.Uint32`` that you can use in pointer arithmetic or a condition
+inside the kernel. Use ``block.rank_as(cutlass.Int32)`` when you need a signed
+rank.
+
+All threads in the group must call the primitive, even when ``valid_items``
+selects a short tile or only rank zero uses the result. The sections below
+describe the requirements for block, warp, and mapped groups.
+
+Reduce and Scan support the built-in operators listed below. Custom
+operators and Scan prefix callbacks are not yet supported. The shared
+:ref:`coverage table <coop-backends>` lists the available primitives and
+planned additions, including Merge Sort, Radix Sort/Rank, and TopK.
+
+.. _coop-cutlass-mixed-backends:
+
+Mixing kernels from both compilers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CUTLASS and Numba-CUDA-MLIR kernels can run in the same process. Use the
+selected device's primary CUDA context before allocating memory or launching
+kernels with either runtime. Numba-CUDA-MLIR requires this context; it rejects
+a context created independently by another runtime.
+
+Synchronize a kernel's work before the other runtime reads its output. Pass
+data between kernels through device memory; ``ThreadData`` and CuTe register
+tensors are local to the kernel that uses them.
 
 Runtime requirements
 --------------------
@@ -24,12 +120,11 @@ CUTLASS environment also needs NumPy, ``cuda-pathfinder>=1.2.3``, and
 ``typing_extensions>=4.12.0`` for runtime discovery and type declarations,
 alongside a compatible CuTe compiler and its dependencies.
 
-A compatible CuTe compiler must provide scoped trace finalization, active
-compiler-environment ownership, exact launch dimensions and flags, and
-external NVIDIA LTO-IR linking. Successful import checks the Python
-capabilities; compiling and running a kernel also requires a working NVRTC
-and terminal linker. Importing :mod:`cuda.coop` alone does not load CUTLASS
-or initialize CUDA bindings.
+The CuTe compiler must support linking external NVIDIA LTO-IR into a kernel,
+and NVRTC must be available to compile the CUB and CUDAX functions. See the
+:ref:`developer guide's compiler requirements <coop-cutlass-compiler-requirements>`
+for the required CuTe integration hooks. Importing :mod:`cuda.coop` alone does
+not load CUTLASS or initialize CUDA bindings.
 
 Activation and example
 ----------------------
@@ -49,13 +144,11 @@ available when automatic registration is disabled. Importing
 ``cuda.coop.cutlass`` also registers the backend. For convenience, importing
 ``cuda.coop`` after ``cutlass`` activates it automatically.
 
-The active CuTe compiler selects the backend while tracing a kernel. A
-CUTLASS installation alone does not make portable operations callable on the
-host. A failed optional activation reports the missing capability and leaves
-the portable namespace available.
+After registration, call the primitives inside ``@cute.kernel`` or a
+``@cute.jit`` function called by that kernel.
 
 This example loads two adjacent items per thread and stores a partial tile in
-the same blocked layout. ``module`` selects the portable or qualified API. The
+the same blocked layout. ``module`` selects the common or qualified API. The
 full example defines the tile dimensions and checks the output against a CPU
 reference. :download:`Download the example
 <../../python/cuda_coop/examples/cutlass/block_load_store.py>` to run it with a
@@ -66,12 +159,12 @@ compatible compiler:
    :start-after: docs: start cutlass-block-load-store
    :end-before: docs: end cutlass-block-load-store
 
-Block Load and Store use the exact launch dimensions supplied by CuTe,
-including multidimensional blocks. ``offset`` selects the beginning of the
-block's tile and ``valid_items`` specifies the number of valid items in that
-tile. Load may fill its out-of-bounds items with ``oob_default``. Without that default,
-initialize any items that the valid prefix will not overwrite before reading
-them. All threads in the block must call the operation with uniform controls.
+Block Load and Store support one-, two-, and three-dimensional blocks.
+``offset`` selects the beginning of the block's tile and ``valid_items``
+specifies the number of valid items in that tile. Load may fill its
+out-of-bounds items with ``oob_default``. Without that default, initialize
+any items that the valid prefix will not overwrite before reading them.
+All threads in the block must call the primitive with uniform controls.
 
 Block algorithms
 ----------------
@@ -110,8 +203,8 @@ The two warp-transpose block algorithms require a block size divisible by 32.
 ``vectorize`` uses vector accesses when the type, item count, and address
 alignment permit them, with direct accesses as a fallback.
 
-Direct, striped, and vectorized operations emit no storage pointer or reuse
-barrier, including when passed a ``TempStorage`` descriptor.
+Direct, striped, and vectorized Load/Store use no shared scratch and need no
+scratch-reuse barrier, even when passed a ``TempStorage`` descriptor.
 ``ThreadData(alignment=...)`` requests a minimum payload alignment; it does
 not change the logical item layout.
 
@@ -120,10 +213,10 @@ Block scratch and reuse
 
 Transpose algorithms allocate scratch implicitly unless passed
 ``temp_storage``. Construct one ``TempStorage`` inside the kernel to share
-capacity across calls. An omitted size is determined from the operations'
-exact C++ storage layouts; an explicit byte capacity must accommodate all
-uses. ``alignment`` is a minimum: the allocation also satisfies the C++
-operations' alignment requirements.
+capacity across calls. An omitted size lets the compiler allocate enough
+storage for all uses; an explicit byte capacity must accommodate them.
+``alignment`` is a minimum: the allocation also satisfies each primitive's
+alignment requirements.
 
 ``sharing="shared"`` reuses one slice across call sites. With
 ``sharing="exclusive"``, distinct call sites receive separate slices.
@@ -148,7 +241,7 @@ Physical Warp Load and Store
 
 ``this_warp()`` selects the calling thread's complete 32-lane warp. The block
 size must be divisible by 32, and all lanes in each participating warp must
-call the operation with uniform controls. Different warps may use different
+call the primitive with uniform controls. Different warps may use different
 ``valid_items``, ``oob_default``, and ``offset`` values.
 
 The four warp algorithms use the same layouts as their block counterparts:
@@ -197,7 +290,7 @@ Blocked layout uses tile index ``(t % W) * I + i``; striped layout uses
 items. Default filling and preservation of initialized invalid items follow
 the same rules as physical Warp Load.
 
-Every member of a participating logical group must reach its collective with
+Every member of a participating logical group must call the primitive with
 uniform controls. Complete sibling groups may take different control-flow
 paths or use different offsets and valid counts. Transpose reuse
 synchronization is masked to the participating logical group. Explicit
@@ -240,7 +333,7 @@ groups. Every participating member must reach the synchronization;
 ``sync_aligned()`` additionally requires an aligned, converged group.
 Synchronization of mapped groups of physical warps and grid groups is
 unsupported. Queries and synchronization consume the exact dimensions and
-launch flags supplied by the compiler. Cluster operations require consistent
+launch flags supplied by the compiler. Cluster primitives require consistent
 cluster dimensions and launch mode; grid queries also require exact grid
 dimensions.
 
@@ -251,12 +344,12 @@ Built-in Reduce and Sum
 or fixed per-thread ``ThreadData`` payload. Full-group reductions support
 thread, physical and logical warp, block, mapped groups of physical warps,
 and cluster groups. Grid reductions are unsupported. All members of a
-participating group must invoke the collective.
+participating group must call the primitive.
 
 For a mapped group of physical warps, every thread in the enclosing block
 must reach the reduction, including nonmembers of a non-exhaustive partition:
-its collective setup synchronizes the parent block. Restrict use of the
-result to participating members; do not guard the collective itself with
+setting up the reduction synchronizes the parent block. Restrict use of the
+result to participating members; do not guard the reduction itself with
 ``is_member()``.
 
 The built-in operators are sum, product, minimum, maximum, bitwise AND,
@@ -268,13 +361,13 @@ unsupported.
 
 With the default ``broadcast=True``, every group member may use the scalar
 result. With ``broadcast=False``, only group rank zero may use it; the other
-members must still call the collective. Nonmembers of a non-exhaustive mapped
+members must still call the primitive. Nonmembers of a non-exhaustive mapped
 group have no defined result. The input payload remains unchanged.
 
-Full-group operations without algorithm controls use CUDAX. An explicit block
+Full-group reductions without algorithm controls use CUDAX. An explicit block
 algorithm or ``valid_items`` selects CUB and requires ``broadcast=False``:
 
-.. list-table:: Direct reduction controls
+.. list-table:: Reduction controls
    :header-rows: 1
 
    * - Group and input
@@ -304,12 +397,14 @@ and a scalar valid-prefix sum whose result is read only at block rank zero.
    :start-after: docs: start cutlass-reduce
    :end-before: docs: end cutlass-reduce
 
+.. _coop-cutlass-scan:
+
 Built-in Scan
 -------------
 
 ``scan``, ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
 ``inclusive_sum`` support block, physical warp, and logical warp groups. Block
-operations accept scalars and fixed multi-item payloads; warp operations
+primitives accept scalars and fixed multi-item payloads; warp primitives
 accept one scalar per lane. A ``ThreadData(1, ...)`` remains an array payload
 and is not accepted by Warp Scan. Input values are preserved. A scalar input
 returns a scalar; a block payload returns a fresh ``ThreadData`` with the same
@@ -320,7 +415,7 @@ signed or unsigned 8-, 16-, 32-, or 64-bit integers, or 32- or 64-bit floats;
 bitwise operators require integers. ``scan`` defaults to exclusive Sum.
 Exclusive Sum starts from typed zero unless ``scan`` or ``exclusive_scan``
 supplies ``initial_value``. Other exclusive operators require that initial
-value. Inclusive operations do not accept an initial value.
+value. Inclusive scans do not accept an initial value.
 
 The initial value must be uniform within the group. A typed value must match
 the input dtype exactly. Python numeric literals must be finite and
@@ -333,7 +428,7 @@ algorithms use scratch and accept ``temp_storage`` with the size, alignment,
 sharing, and synchronization rules described above. One descriptor can be
 reused between Scan and Load/Store. Warp Scan manages independent scratch per
 group and rejects algorithm selectors and explicit storage. Every member of
-each participating group must reach its collective, including on repeated
+each participating group must call the primitive, including on repeated
 calls and loop iterations.
 
 The qualified CUTLASS API adds two controls to all five Scan spellings:
@@ -354,7 +449,7 @@ The qualified CUTLASS API adds two controls to all five Scan spellings:
 
 For a partial warp scan, the aggregate includes only the valid prefix and is
 available even on lanes outside that prefix. A zero count is invalid. The
-portable namespace does not expose these two keywords. The qualified backend
+common API does not expose these two keywords. The qualified backend
 also accepts CuTe register tensors for block Scan and returns ``ThreadData``;
 use its conversion methods when a register-tensor result is needed.
 
@@ -366,6 +461,8 @@ use its conversion methods when a register-tensor result is needed.
    :start-after: docs: start cutlass-scan
    :end-before: docs: end cutlass-scan
 
+.. _coop-cutlass-exchange:
+
 Exchange layouts and scatter
 ----------------------------
 
@@ -375,7 +472,7 @@ across a block, physical warp, or logical warp. It returns a fresh
 payloads are unsupported. Values may use the ten numeric dtypes supported by
 Scan.
 
-The portable modes are ``striped_to_blocked`` (the default) and
+The common API modes are ``striped_to_blocked`` (the default) and
 ``blocked_to_striped``. For group rank ``t``, item index ``i``, group size ``G``,
 and ``I`` items per thread, blocked layout holds tile index ``t * I + i``;
 striped layout holds ``t + i * G``. Exchange changes which thread holds each
@@ -384,7 +481,7 @@ item without reading or writing global memory.
 Physical and logical Warp Exchange use the same complete-warp launch and
 participation requirements as Warp Load and Store, including logical widths
 1, 2, 4, 8, 16, and 32. Every member of a participating group must invoke the
-collective; complete sibling groups may take different control-flow paths.
+primitive; complete sibling groups may take different control-flow paths.
 Each group has independent scratch and masked reuse synchronization. Block
 Exchange requires every block thread to participate.
 
@@ -394,7 +491,7 @@ The qualified API adds these block-only modes:
    :header-rows: 1
 
    * - Mode
-     - Additional contract
+     - Additional requirements
    * - ``warp_striped_to_blocked``, ``blocked_to_warp_striped``
      - Convert between blocked layout and a striped layout within each
        physical warp. The block size must be divisible by 32.
@@ -410,7 +507,7 @@ signed or unsigned integer dtype; Boolean flags are unsupported. Each
 auxiliary payload must have the same item count as ``values``. The caller
 must ensure that participating ranks are unique and within the tile range.
 Destination slots that receive no item are undefined. Guarded and flagged
-operations still require every block thread to participate, and preserve
+scatters still require every block thread to participate, and preserve
 values, ranks, and flags.
 
 ``warp_time_slicing=True`` lets block layout conversions and ordinary
@@ -420,6 +517,8 @@ blocks with incomplete physical-warp tails. Scratch and trailing reuse
 synchronization are managed by the backend; Exchange does not accept
 ``temp_storage``.
 
+.. _coop-cutlass-shuffle:
+
 Block Shuffle
 -------------
 
@@ -427,7 +526,7 @@ Block Shuffle
 by one item: output item ``j`` receives input item ``j + 1``. With
 ``mode="up"``, it receives item ``j - 1``. The final Down item and first Up
 item are undefined; repair or exclude that boundary before reading it. These
-portable array operations require ``distance=1`` and return a fresh
+array primitives in the common API require ``distance=1`` and return a fresh
 ``ThreadData``, preserving the input.
 
 The qualified API also accepts a scalar per thread with ``mode="offset"``
@@ -456,6 +555,8 @@ the layout and shift against an independent CPU reference.
    :start-after: docs: start cutlass-exchange-shuffle
    :end-before: docs: end cutlass-exchange-shuffle
 
+.. _coop-cutlass-register-payloads:
+
 Qualified register payloads
 ---------------------------
 
@@ -482,7 +583,3 @@ producer or tensor adapter loses the intended unsigned element type, use
    # Inside a CuTe kernel, with a register-memory fragment:
    values = coop.ThreadData.from_register_tensor(fragment)
    coop.store(coop.this_block(), destination, values)
-
-Keep compiler-owned payloads within their originating DSL. Separate kernels
-may use CUTLASS and Numba-CUDA-MLIR in the same process; their register values
-and type systems are not interchangeable.

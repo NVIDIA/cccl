@@ -14,8 +14,8 @@ Terms
 
    backend
       The integration that lets a kernel compiler recognize ``cuda.coop``
-      calls and generate CUDA code for them. Numba-CUDA-MLIR is the first
-      supported backend. See :ref:`registration <coop-backend-registration>`.
+      calls and generate CUDA code for them. The current integrations target
+      Numba-CUDA-MLIR and CUTLASS / CuTe DSL. See :ref:`registration <coop-backend-registration>`.
 
    blocked
       A layout in which each thread owns consecutive elements of a
@@ -32,7 +32,7 @@ Terms
       ``reduce``, or ``exclusive_sum``. Each primitive defines which threads
       participate, how it uses their data, and where its results are
       available. See
-      :ref:`participation and synchronization <coop-participation>`.
+      :ref:`participation and synchronization <coop-common-participation>`.
 
    family
       A group of related :term:`primitives <primitive>` that share semantics
@@ -46,7 +46,7 @@ Terms
       The values contributed or received by one thread. ``ThreadData(K)``
       describes a fixed-size payload of ``K`` items. Some operations also
       accept scalars or backend-specific arrays. See
-      :ref:`thread data <coop-thread-data>`.
+      :ref:`thread data <coop-common-payloads>`.
 
    batch
       One independent reduction in :func:`cuda.coop.reduce_batched`.
@@ -128,11 +128,12 @@ Terms
       It describes operations on thread groups, values, and storage.
       Support for particular operations and argument types depends on the
       backend. Qualified APIs provide backend-specific extensions. See
-      :ref:`choosing an API <coop-programming-api-choice>`.
+      :ref:`choosing an API <coop-api-namespaces>`.
 
    qualified API
-      A backend's namespace, such as ``cuda.coop.numba_mlir``. It provides
-      the common operations and compiler-specific extensions. See
+      A backend's namespace: ``cuda.coop.numba_mlir`` or
+      ``cuda.coop.cutlass``. It provides the supported common operations
+      and compiler-specific extensions. See
       :ref:`namespace choices <coop-faq-namespaces>`.
 
    striped
@@ -151,7 +152,7 @@ Terms
    thread group
       The threads participating in a primitive, such as a block, a physical
       warp, or a logical group within a warp. A thread's rank identifies its
-      position within that group. See :ref:`groups <coop-thread-groups>`.
+      position within that group. See :ref:`groups <coop-common-groups>`.
 
    tile
       The sequence of values processed by one group in an operation. With
@@ -223,7 +224,8 @@ Load with a direct Store without conversion changes the output order.
 Follow the values in the :doc:`Load <visualizations/load>` and
 :doc:`Store <visualizations/store>` visualizations. :doc:`Exchange
 <visualizations/exchange>` converts between layouts; the
-:ref:`programming guide <coop-data-layouts>` shows how layout affects Scan.
+:ref:`shared layout discussion <coop-common-layouts>` explains how layout
+affects Scan.
 
 .. _coop-glossary-decoding:
 

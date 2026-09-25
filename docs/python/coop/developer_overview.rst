@@ -4,22 +4,28 @@
 
 .. _cuda.coop.developer_overview:
 
-``cuda.coop`` Developer Overview
-================================
+Numba-CUDA-MLIR Developer Guide
+===============================
 
 ``cuda.coop`` makes CUB and CUDAX cooperative primitives callable inside a
 Python GPU kernel. The Python compiler compiles the surrounding kernel;
 ``cuda.coop`` generates the C++ device functions for its primitive calls.
 The two are linked together before the kernel runs.
 
-This overview follows a call through the Numba-CUDA-MLIR implementation. It
+This guide follows a call through the Numba-CUDA-MLIR implementation. It
 assumes some familiarity with CUDA threads, blocks, and shared memory. The
-:doc:`Programming Guide <programming_guide>` covers writing kernels and
-the :doc:`overview <../coop>` covers installation and supported operations;
-the focus here is how the implementation works and where to change it.
+:doc:`Numba-CUDA-MLIR Programming Guide <programming_guide>` covers writing
+kernels, and the :doc:`shared overview <../coop>` introduces the concepts
+and installation choices. The focus here is how the Numba-CUDA-MLIR
+implementation works and where to change it.
 For a hands-on tour, follow the :ref:`cuda.coop.debugger_walkthrough`.
 
-This overview describes the Numba-CUDA-MLIR 0.5.x integration.
+The :doc:`CUTLASS Developer Guide <cutlass_developer_guide>` follows the CuTe
+compiler integration over the same shared core. Its :doc:`Programming Guide
+<../coop_cutlass>` describes the supported CuTe operations and qualified
+controls. Compiler hooks, payload representation, and finalization differ
+between the two backends; this guide describes the Numba-CUDA-MLIR 0.5.x
+implementation.
 
 A tile copy
 -----------
@@ -626,6 +632,14 @@ as local-array payloads where supported. Type support is still checked by
 each primitive. An ABI helper for aggregate values does not imply that
 public Load, Reduce, or Scan accepts arbitrary structures. The current
 common payload APIs require their supported numeric dtypes.
+
+These payload conversions and the Python callback compilation described
+below are Numba-CUDA-MLIR-specific. CUTLASS materializes ``ThreadData`` from
+CuTe scalar values and handles register-tensor conversion in its qualified
+namespace. Its current Reduce and Scan implementations accept built-in
+operators; Python device callbacks and stateful Scan prefixes are not
+supported. See :ref:`coop-programming-api-choice` for the Numba-qualified
+API comparison.
 
 Shared memory and reuse
 -----------------------

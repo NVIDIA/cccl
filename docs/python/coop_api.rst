@@ -15,7 +15,9 @@ Common API
 
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi``
-files are authoritative for overload and result typing.
+files are authoritative for overload and result typing. See
+:ref:`backend coverage <coop-backends>` for implemented families; a common
+entry point does not imply support in every compiler.
 
 .. currentmodule:: cuda.coop
 
@@ -29,8 +31,8 @@ See :ref:`registering a backend <coop-backend-registration>`.
 Thread groups
 ^^^^^^^^^^^^^
 
-See :ref:`thread groups <coop-thread-groups>` and
-:ref:`participation and synchronization <coop-participation>` for the shared
+See :ref:`thread groups <coop-common-groups>` and
+:ref:`participation and synchronization <coop-common-participation>` for the shared
 execution model. A descriptor's availability does not imply that every
 primitive supports that group.
 
@@ -85,7 +87,7 @@ Memory operations
 Reduction
 ^^^^^^^^^
 
-See :ref:`reduction and result ownership <coop-reductions>`.
+See :ref:`reduction and result ownership <coop-common-results>`.
 
 .. autofunction:: reduce
 .. autofunction:: sum
@@ -94,7 +96,8 @@ See :ref:`reduction and result ownership <coop-reductions>`.
 Scan
 ^^^^
 
-See :ref:`scan operators and prefixes <coop-scans>`.
+See Scan in the :ref:`Numba guide <coop-scans>` and
+:ref:`CUTLASS guide <coop-cutlass-scan>`.
 
 .. autofunction:: scan
 .. autofunction:: exclusive_sum
@@ -105,7 +108,7 @@ See :ref:`scan operators and prefixes <coop-scans>`.
 Data rearrangement
 ^^^^^^^^^^^^^^^^^^
 
-See :ref:`blocked and striped layouts <coop-data-layouts>`.
+See :ref:`blocked and striped layouts <coop-common-layouts>`.
 
 .. autofunction:: exchange
 .. autofunction:: shuffle
@@ -113,7 +116,7 @@ See :ref:`blocked and striped layouts <coop-data-layouts>`.
 Comparison sorting
 ^^^^^^^^^^^^^^^^^^
 
-See :ref:`sorting keys and associated values <coop-merge-sort>`.
+See :ref:`the Numba Merge Sort examples <coop-merge-sort>`.
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
@@ -121,7 +124,7 @@ See :ref:`sorting keys and associated values <coop-merge-sort>`.
 Radix sorting and ranking
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-See :ref:`radix sorting and digit ranks <coop-radix>`.
+See :ref:`the Numba Radix Sort and Rank examples <coop-radix>`.
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
@@ -130,7 +133,7 @@ See :ref:`radix sorting and digit ranks <coop-radix>`.
 Top-k selection
 ^^^^^^^^^^^^^^^
 
-See :ref:`selecting the smallest or largest keys <coop-topk>`.
+See :ref:`the Numba TopK examples <coop-topk>`.
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys
@@ -169,7 +172,12 @@ Numba-CUDA-MLIR-qualified API
 .. py:module:: cuda.coop.numba_mlir
 
 Use this module for the extensions below. Shared parameters and behavior
-follow the :ref:`Common API <coop-common-api>`.
+follow the :ref:`Common API <coop-common-api>`. The
+:ref:`comparison table <coop-programming-api-choice>` in the
+:doc:`Numba-CUDA-MLIR Programming Guide <coop/programming_guide>` explains
+when to choose qualified calls. The
+:doc:`Numba-CUDA-MLIR Developer Guide <coop/developer_overview>` follows
+their compiler implementation.
 
 .. code-block:: python
 
@@ -251,16 +259,37 @@ CUTLASS-qualified API
 
 .. py:module:: cuda.coop.cutlass
 
-The qualified CUTLASS surface provides hierarchy queries and supported group
-synchronization, Block and Warp ``load``/``store``, built-in Reduce and Scan,
-Block and Warp Exchange, and Block Shuffle. Warp operations include supported
-logical subgroups. Load returns
-``None`` and fills its destination payload; the other operations preserve their
-input payloads. ``ThreadData`` adds conversions to and from CuTe
-register-memory tensors and immutable register values. See
-:doc:`coop_cutlass` for algorithms, result ownership, runtime requirements,
-and executable examples. Qualified Scan adds valid-prefix and aggregate-output
-controls. Qualified Exchange adds block warp-striped layouts and scatter;
-qualified Shuffle adds scalar Offset and Rotate. Custom operators and Scan
-prefix callbacks are not supported. The installed ``.pyi`` files declare the
-supported signatures.
+Shared parameters and behavior follow the
+:ref:`Common API <coop-common-api>`. The
+:ref:`comparison table <coop-cutlass-api-choice>` in the
+:doc:`CUTLASS Programming Guide <coop_cutlass>` describes the extensions
+below and provides executable examples. See the
+:doc:`CUTLASS Developer Guide <coop/cutlass_developer_guide>` for compiler
+ownership, providers, linking, and storage allocation.
+
+.. list-table:: CUTLASS extensions
+   :header-rows: 1
+   :widths: 24 76
+
+   * - API
+     - Qualified behavior
+   * - ``ThreadData``
+     - Conversions to and from CuTe register tensors and immutable register
+       values; see :ref:`register payloads <coop-cutlass-register-payloads>`.
+   * - Reduce and Scan operators
+     - Recognized ``operator`` and NumPy aliases for built-in operators.
+       Arbitrary device callbacks are unsupported.
+   * - Scan and Sum
+     - Warp valid-prefix and writable aggregate-output controls; see
+       :ref:`Scan <coop-cutlass-scan>`.
+   * - Exchange
+     - Block warp-striped layouts, scatter ranks and flags, and
+       ``warp_time_slicing``; see :ref:`Exchange <coop-cutlass-exchange>`.
+   * - Shuffle
+     - Scalar Offset and Rotate modes with integer distances; see
+       :ref:`Shuffle <coop-cutlass-shuffle>`.
+
+Custom operators and Scan prefix callbacks are not supported. See
+:ref:`CUTLASS-specific behavior and limits <coop-cutlass-differences>` and
+:ref:`backend coverage <coop-backends>` before selecting a family. The
+installed ``.pyi`` files declare supported signatures.
