@@ -564,8 +564,8 @@ class _ProvenanceRewrite:
         alignment = existing.alignment
         if alignment is None:
             alignment = observed.alignment
-        elif observed.alignment is not None and alignment != observed.alignment:
-            alignment = None
+        elif observed.alignment is not None:
+            alignment = max(alignment, observed.alignment)
         return _ThreadDataSpec(
             items_per_thread=items_per_thread,
             dtype=dtype,
