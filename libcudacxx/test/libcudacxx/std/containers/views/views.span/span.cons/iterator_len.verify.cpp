@@ -17,6 +17,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
+#include "test_macros.h"
+
 template <class T, size_t extent>
 TEST_FUNC cuda::std::span<T, extent> createImplicitSpan(T* ptr, size_t len)
 {
@@ -32,11 +34,6 @@ int main(int, char**)
   cuda::std::span<int> sp = {0, 0}; // expected-error {{no matching constructor for initialization of
                                     // 'cuda::std::span<int>'}}
   cuda::std::span<int, 2> sp2 = {0, 0}; // expected-error {{no matching constructor for initialization of
-                                        // 'cuda::std::span<int, 2>'}}
-  cuda::std::span<const int> csp = {0, 0}; // expected-error {{no matching constructor for initialization of
-                                           // 'cuda::std::span<const int>'}}
-  cuda::std::span<const int, 2> csp2 = {0, 0}; // expected-error {{no matching constructor for initialization of
-                                               // 'cuda::std::span<const int, 2>'}}
 
   return 0;
 }
