@@ -6,9 +6,11 @@
 
 from __future__ import annotations
 
+import operator
 from typing import Literal
 
 import numpy as np
+from cutlass import Int16, Int32, Uint8, Uint16, Uint32, Uint64
 from typing_extensions import assert_type
 
 import cuda.coop.cutlass as cutlass_coop
@@ -137,3 +139,62 @@ def check_cutlass_logical_warp_surface(source: object, destination: object) -> N
 
     mapped = cutlass_coop.this_block().group_by(2, exhaustive=False)
     assert_type(mapped, cutlass_coop.ThreadGroup[Literal["warps_within_block"]])
+
+
+def check_cutlass_hierarchy_surface() -> None:
+    thread = cutlass_coop.this_thread()
+    block = cutlass_coop.this_block()
+    cluster = cutlass_coop.this_cluster()
+    grid = cutlass_coop.this_grid()
+    assert_type(thread, cutlass_coop.ThreadGroup[Literal["thread"]])
+    assert_type(cluster, cutlass_coop.ThreadGroup[Literal["cluster"]])
+    assert_type(grid, cutlass_coop.ThreadGroup[Literal["grid"]])
+    assert_type(block.rank(), Uint32 | Uint64)
+    assert_type(block.count("warp"), Uint32 | Uint64)
+    assert_type(grid.rank(), Uint32 | Uint64)
+    assert_type(block.rank_as(np.int64), np.int64)
+    assert_type(block.count_as(int), int)
+    assert_type(block.rank_as(Int16), Int16)
+    assert_type(block.count_as(Uint16), Uint16)
+    assert_type(block.rank_as(), Uint32 | Uint64)
+    assert_type(block.is_member(), Uint8)
+    assert_type(thread.sync(), None)
+    assert_type(block.sync_aligned(), None)
+    logical = cutlass_coop.this_warp().group_by(8)
+    assert_type(logical.rank("warp"), Uint32 | Uint64)
+    assert_type(logical.count_as(Uint32, "thread"), Uint32)
+    assert_type(logical.sync(), None)
+    mapped = block.group_by(2, exhaustive=False)
+    assert_type(mapped.rank_as(Int32, "block"), Int32)
+    assert_type(mapped.is_member(), Uint8)
+
+
+def check_cutlass_reduce_surface(scalar: Uint32) -> None:
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(2, np.int32)
+    assert_type(cutlass_coop.reduce(block, values), np.int32)
+    assert_type(cutlass_coop.sum(block, values), np.int32)
+    assert_type(cutlass_coop.reduce(block, scalar, binary_op="max"), Uint32)
+    assert_type(cutlass_coop.sum(block, scalar), Uint32)
+    assert_type(common_coop.sum(block, scalar), Uint32)
+    assert_type(cutlass_coop.sum(common_coop.this_block(), scalar), Uint32)
+    assert_type(cutlass_coop.reduce(block, scalar, binary_op=operator.add), Uint32)
+    assert_type(cutlass_coop.reduce(block, values, binary_op=np.maximum), np.int32)
+    assert_type(
+        cutlass_coop.sum(block, scalar, broadcast=False, valid_items=17), Uint32
+    )
+    assert_type(
+        cutlass_coop.reduce(block, values, broadcast=False, algorithm="raking"),
+        np.int32,
+    )
+    assert_type(
+        cutlass_coop.sum(
+            cutlass_coop.this_warp().group_by(8), scalar, broadcast=False, valid_items=7
+        ),
+        Uint32,
+    )
+    assert_type(cutlass_coop.sum(cutlass_coop.this_thread(), scalar), Uint32)
+    assert_type(cutlass_coop.sum(block.group_by(2), values), np.int32)
+    assert_type(
+        cutlass_coop.sum(cutlass_coop.this_cluster(), values, broadcast=False), np.int32
+    )
