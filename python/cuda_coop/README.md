@@ -73,17 +73,15 @@ Use `numba_coop` alongside common calls. In a program using only this backend,
 can replace the name used for Numba's `cuda.jit`.
 
 Shared operations retain the common signatures, string selectors, and
-inference rules. The backend namespace adds Numba local-array payloads, memory
-namespaces, and operation-specific controls such as Scan prefix callbacks.
+inference rules. The backend namespace adds Numba local-array payloads and
+memory namespaces.
 Both namespaces accept `ThreadData(..., alignment=None)`: use a compile-time
 positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
 or Store arrays.
 
-The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
-namespace choices and temporary storage. The
-[Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
-explains terms and concepts, including blocked and striped layouts.
+The [overview](https://nvidia.github.io/cccl/unstable/python/coop.html) explains
+groups, data layouts, and temporary storage.
 
 ## Configuration
 
