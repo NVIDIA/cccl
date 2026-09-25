@@ -36,6 +36,12 @@ from .reduce import (
     make_block_reduce_spec,
     normalize_block_reduce_algorithm,
 )
+from .scan import (
+    BlockScanAlgorithm,
+    BlockScanSpec,
+    make_block_scan_spec,
+    normalize_block_scan_algorithm,
+)
 from .shuffle import (
     BlockShuffleMode,
     BlockShuffleSemantics,
@@ -62,6 +68,8 @@ __all__ = [
     "BlockReduceSemantics",
     "BlockReduceSpec",
     "BlockReduceValueKind",
+    "BlockScanAlgorithm",
+    "BlockScanSpec",
     "BlockShuffleMode",
     "BlockShuffleSemantics",
     "BlockShuffleSpec",
@@ -75,10 +83,12 @@ __all__ = [
     "make_block_load_store_spec",
     "make_block_reduce_semantics",
     "make_block_reduce_spec",
+    "make_block_scan_spec",
     "make_block_shuffle_semantics",
     "make_block_shuffle_spec",
     "make_block_store_spec",
     "normalize_block_dim",
     "normalize_block_reduce_algorithm",
+    "normalize_block_scan_algorithm",
     "normalize_positive_int",
 ]
