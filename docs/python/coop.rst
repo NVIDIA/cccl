@@ -82,7 +82,7 @@ select another source checkout or ``cuda-coop`` header bundle.
 .. _coop-numba-validation:
 
 Numba-CUDA-MLIR validation scope
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The package supports Python 3.10 through 3.14. The CI matrix configures these
 parts of that range:
@@ -133,7 +133,7 @@ compiler hooks and does not repair dispatcher context state.
 .. _coop-backend-registration:
 
 Registering a backend
---------------------
+---------------------
 
 Call :func:`cuda.coop.register` on the host before compiling kernels to
 select the backend explicitly:
