@@ -465,6 +465,39 @@ def _maximum(left, right):
 _device_maximum = cuda.jit(device=True)(_maximum)
 
 
+def test_distinct_constant_arrays_do_not_reuse_a_cached_callback():
+    def make_kernel(offset):
+        table = np.zeros(2000, dtype=np.int32)
+        table[1000] = offset
+
+        @cuda.jit(device=True)
+        def add(left, right):
+            return left + right + table[1000]
+
+        @cuda.jit
+        def kernel(source, observed):
+            thread = cuda.threadIdx.x
+            result = qualified_coop.reduce(
+                qualified_coop.this_block(),
+                source[thread],
+                binary_op=add,
+                broadcast=False,
+            )
+            if thread == 0:
+                observed[0] = result
+
+        return kernel
+
+    source = np.ones(_BLOCK_THREADS, dtype=np.int32)
+    # Both callbacks compile in one process. Their arrays have identical
+    # truncated representations, but differ in a captured constant element.
+    for offset in (0, 1):
+        observed = np.full(1, -1, dtype=np.int32)
+        make_kernel(offset)[1, _BLOCK_THREADS](source, observed)
+        expected = _BLOCK_THREADS + (_BLOCK_THREADS - 1) * offset
+        np.testing.assert_array_equal(observed, np.full_like(observed, expected))
+
+
 @pytest.mark.parametrize("inline", [True, False])
 def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(inline):
     helper = cuda.jit(device=True, inline=inline)(_maximum)
