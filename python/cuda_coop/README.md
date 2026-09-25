@@ -43,9 +43,11 @@ Python 3.10 through 3.14 is supported. The current backend integration requires
 `numba-cuda-mlir>=0.5.0,<0.6`.
 
 Backend compiler and runtime CI is configured for Linux x86-64 with Python 3.14:
-CUDA 13 in pull requests and CUDA 12 in the nightly matrix. Linux host
-contracts cover Python 3.10 and 3.14. Windows checks build and import the
-universal wheel and verify its headers; they do not execute the compiler
+CUDA 13 in pull requests and CUDA 12 in the nightly matrix. The nightly
+matrix also configures H100 runtime tests with serial synchronization race
+checking under CUDA 13. Linux host contracts cover Python 3.10 and 3.14.
+Windows checks build and import the universal wheel and verify its headers;
+they do not execute the compiler
 backend. Other combinations need separate runtime qualification. See the
 [validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
 for coverage and hardware requirements.
