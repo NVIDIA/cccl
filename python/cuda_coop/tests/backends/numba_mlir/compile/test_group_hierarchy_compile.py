@@ -50,12 +50,15 @@ def test_production_kernel_compiles_physical_and_mapped_group_methods(
         block = portable_coop.this_block()
         grid = qualified_coop.this_grid()
         lanes = qualified_coop.this_warp().group_by(8)
+        partial_lanes = qualified_coop.this_warp().group_by(3, exhaustive=False)
         warps = portable_coop.this_block().group_by(2)
 
         thread.sync()
         warp.sync_aligned()
         lanes.sync()
         lanes.sync_aligned()
+        partial_lanes.sync()
+        partial_lanes.sync_aligned()
         block.sync()
 
         output[0 * _BLOCK_THREADS + thread_index] = thread.rank("block")
