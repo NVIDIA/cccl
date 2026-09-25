@@ -4,6 +4,7 @@
 
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
@@ -30,6 +31,65 @@ def _callback(helper):
         return helper(left, right)
 
     return apply
+
+
+def _array_callback(table):
+    def apply(left, right):
+        return left + right + table[1000]
+
+    return apply
+
+
+def test_captured_arrays_use_all_contents_independently_of_print_options():
+    from cuda.coop.numba_mlir._semantic import _numba_semantic_token
+
+    first = np.zeros(2000, dtype=np.int32)
+    second = first.copy()
+    second[1000] = 1
+    assert repr(first) == repr(second)
+    first_token = _numba_semantic_token(_array_callback(first))
+    second_token = _numba_semantic_token(_array_callback(second))
+    assert first_token != second_token
+    assert first_token == _numba_semantic_token(_array_callback(first.copy()))
+    with np.printoptions(threshold=1, precision=0):
+        assert first_token == _numba_semantic_token(_array_callback(first))
+        assert second_token == _numba_semantic_token(_array_callback(second))
+
+
+@pytest.mark.parametrize(
+    "other",
+    [
+        np.zeros(8, dtype=np.float32),
+        np.zeros((2, 4), dtype=np.int32),
+        np.zeros(16, dtype=np.int32)[::2],
+        np.zeros(8, dtype=np.int32)[::-1],
+    ],
+    ids=["dtype", "shape", "strided", "reversed"],
+)
+def test_array_identity_preserves_dtype_shape_and_strides(other):
+    from cuda.coop.numba_mlir._semantic import _numba_semantic_token
+
+    first = np.zeros(8, dtype=np.int32)
+    assert first.tobytes() == other.tobytes()
+    assert _numba_semantic_token(first) != _numba_semantic_token(other)
+
+
+def test_array_identity_preserves_record_fields():
+    from cuda.coop.numba_mlir._semantic import _numba_semantic_token
+
+    first = np.zeros(1, dtype=[("value", np.int32, (2,))])
+    second = np.zeros(1, dtype=[("value", np.float32, (2,))])
+    assert first.dtype.str == second.dtype.str
+    assert first.tobytes() == second.tobytes()
+    assert _numba_semantic_token(first) != _numba_semantic_token(second)
+
+
+@pytest.mark.parametrize("dtype", [object, [("value", object)]])
+def test_array_identity_rejects_object_dtypes(dtype):
+    from cuda.coop.numba_mlir._semantic import _numba_semantic_token
+
+    with pytest.raises(TypeError, match="NumPy arrays with object dtypes"):
+        _numba_semantic_token(_array_callback(np.zeros(2000, dtype=dtype)))
 
 
 @pytest.mark.parametrize("location", ("global", "closure", "two_helpers"))
