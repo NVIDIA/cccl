@@ -1990,14 +1990,14 @@ inline void test_pop_prologue_graph_child_embed()
   const cudaGraph_t outer = cuda_try<cudaGraphCreate>(0);
   SCOPE(exit)
   {
-    cuda_safe_call(cudaGraphDestroy(outer));
+    cuda_safe_call<cudaGraphDestroy>(outer);
   };
   ::std::ignore = cuda_try<cudaGraphAddChildGraphNode>(outer, nullptr, 0, body);
 
   const cudaGraphExec_t outer_exec = cuda_try<cudaGraphInstantiateWithFlags>(outer, 0);
   SCOPE(exit)
   {
-    cuda_safe_call(cudaGraphExecDestroy(outer_exec));
+    cuda_safe_call<cudaGraphExecDestroy>(outer_exec);
   };
 
   // Order the outer launch behind the nested context's freeze/get events:
@@ -2006,13 +2006,13 @@ inline void test_pop_prologue_graph_child_embed()
   const cudaStream_t launch_stream = cuda_try<cudaStreamCreate>();
   SCOPE(exit)
   {
-    cuda_safe_call(cudaStreamDestroy(launch_stream));
+    cuda_safe_call<cudaStreamDestroy>(launch_stream);
   };
   // cudaEventCreate is an overload set; the flags form is the same call with the default flags.
   const cudaEvent_t dep_a = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
   SCOPE(exit)
   {
-    cuda_safe_call(cudaEventDestroy(dep_a));
+    cuda_safe_call<cudaEventDestroy>(dep_a);
   };
   cuda_try<cudaEventRecord>(dep_a, handle.stream());
   cuda_try<cudaStreamWaitEvent>(launch_stream, dep_a, 0);
