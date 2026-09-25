@@ -801,6 +801,7 @@ UNITTEST("cuda_try location capture")
   }
 
   // Reference parameters keep their value category through the wrapper.
+  // NOLINTNEXTLINE(misc-const-correctness) -- mutated through the int& parameter the test propagates
   int v = 0;
   cuda_try<test_lvalue_ref_param>(v);
   EXPECT(v == 5);
