@@ -19,39 +19,44 @@ using namespace cuda::experimental::stf;
 
 int main()
 {
-  async_resources_handle handle;
-  for (size_t i = 0; i < 10; i++)
+  cudaStream_t stream = cuda_try<cudaStreamCreate>();
   {
-    graph_ctx ctx(handle);
+    async_resources_handle handle;
+    for (size_t i = 0; i < 10; i++)
+    {
+      graph_ctx ctx(stream, handle);
 
-    // If i is a multiple of 3 we enable the cache, the first iteration will fill the cache
-    ctx.set_graph_cache_policy([i]() {
-      return (i % 3) == 0;
-    });
+      // If i is a multiple of 3 we enable the cache, the first iteration will fill the cache
+      ctx.set_graph_cache_policy([i]() {
+        return (i % 3) == 0;
+      });
 
-    auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-    ctx.launch(lA.write())->*[] _CCCL_DEVICE(auto t, slice<size_t> A) {
-      for (auto i : t.apply_partition(shape(A)))
+      auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
+      ctx.launch(lA.write())->*[] _CCCL_DEVICE(auto t, slice<size_t> A) {
+        for (auto i : t.apply_partition(shape(A)))
+        {
+          A(i) = 2 * i;
+        }
+      };
+      ctx.finalize();
+      cuda_try(cudaStreamSynchronize(stream));
+
+      // Query statistics about the graph context : the first iteration needs to
+      // instantiate the graph, then we will reuse graphs saved in the handle.
+      auto* st = ctx.graph_get_cache_stat();
+
+      // For the first iteration, or non multiple of 3 we have to instantiate, otherwise we should have a cache hit
+      if (i == 0 || (i % 3) != 0)
       {
-        A(i) = 2 * i;
+        EXPECT(st->instantiate_cnt == 1);
+        EXPECT(st->update_cnt == 0);
       }
-    };
-    ctx.finalize();
-
-    // Query statistics about the graph context : the first iteration needs to
-    // instantiate the graph, then we will reuse graphs saved in the handle.
-    auto* st = ctx.graph_get_cache_stat();
-
-    // For the first iteration, or non multiple of 3 we have to instantiate, otherwise we should have a cache hit
-    if (i == 0 || (i % 3) != 0)
-    {
-      EXPECT(st->instantiate_cnt == 1);
-      EXPECT(st->update_cnt == 0);
-    }
-    else
-    {
-      EXPECT(st->instantiate_cnt == 0);
-      EXPECT(st->update_cnt == 1);
+      else
+      {
+        EXPECT(st->instantiate_cnt == 0);
+        EXPECT(st->update_cnt == 1);
+      }
     }
   }
+  cuda_try(cudaStreamDestroy(stream));
 }
