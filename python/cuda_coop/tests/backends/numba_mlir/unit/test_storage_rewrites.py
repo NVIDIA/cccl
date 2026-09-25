@@ -257,6 +257,54 @@ def test_thread_data_rewrite_uses_alignment(alignment, module):
 
 @pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
 @pytest.mark.parametrize(
+    ("first_alignment", "second_alignment"),
+    [(16, 32), (32, 16), (None, 32), (32, None)],
+)
+def test_merged_thread_data_preserves_minimum_alignment(
+    module, first_alignment, second_alignment
+):
+    def kernel(flag):
+        if flag:
+            data = module.ThreadData(2, types.int32, alignment=first_alignment)
+        else:
+            data = module.ThreadData(2, types.int32, alignment=second_alignment)
+        return data[0]
+
+    func_ir, _ = _rewrite(kernel)
+
+    assert _call_targets(func_ir).count(cuda.local.array) == 2
+    definitions = {
+        stmt.target.name: stmt.value
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+    }
+    calls = [
+        stmt.value
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+        and isinstance(stmt.value, ir.Expr)
+        and stmt.value.op == "call"
+    ]
+    calls = [
+        call
+        for call, target in zip(calls, _call_targets(func_ir), strict=True)
+        if target is cuda.local.array
+    ]
+    assert len(calls) == 2
+    for call, required_alignment in zip(
+        calls, (first_alignment, second_alignment), strict=True
+    ):
+        if required_alignment is None:
+            continue
+        alignment_refs = [value for name, value in call.kws if name == "alignment"]
+        assert len(alignment_refs) == 1
+        assert definitions[alignment_refs[0].name].value >= required_alignment
+
+
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+@pytest.mark.parametrize(
     ("alignment", "message"),
     [
         (True, "alignment must be an integer or None"),
