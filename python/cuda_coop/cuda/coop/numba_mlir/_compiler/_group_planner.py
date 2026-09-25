@@ -592,9 +592,8 @@ class _GroupCallPlanner:
         if definition.op in {"getitem", "static_getitem"}:
             index = getattr(definition, "index", None)
             if isinstance(index, ir.Var):
-                try:
-                    index = self._constant(index)
-                except GroupRewriteError:
+                resolved, index = self._try_constant(index)
+                if not resolved:
                     return False
             if isinstance(index, Integral) and (not isinstance(index, bool)):
                 return self._is_array_tuple_item(
@@ -821,9 +820,8 @@ class _GroupCallPlanner:
         if definition.op in {"getitem", "static_getitem"}:
             index = getattr(definition, "index", None)
             if isinstance(index, ir.Var):
-                try:
-                    index = self._constant(index)
-                except GroupRewriteError:
+                resolved, index = self._try_constant(index)
+                if not resolved:
                     return None
             if isinstance(index, Integral) and (not isinstance(index, bool)):
                 return self._array_extent_tuple_item(
