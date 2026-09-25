@@ -109,8 +109,10 @@ positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
 or Store arrays.
 
-The [overview](https://nvidia.github.io/cccl/unstable/python/coop.html) explains
-groups, data layouts, and temporary storage.
+The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
+namespace choices and temporary storage. The
+[Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
+explains terms and concepts, including blocked and striped layouts.
 
 ## Primitive families
 
