@@ -228,7 +228,7 @@ Follow the values in the :doc:`Load <visualizations/load>` and
 .. _coop-glossary-decoding:
 
 Run positions, windows, and scratch
-----------------------------------
+-----------------------------------
 
 Run Length Decode first prepares a table of run values and starting
 positions in shared scratch. A window offset then selects where to read

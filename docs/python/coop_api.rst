@@ -62,7 +62,7 @@ primitive supports that group.
    Alias for :class:`ThreadHierarchy`.
 
 Payloads and temporary storage
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autofunction:: ThreadData
 

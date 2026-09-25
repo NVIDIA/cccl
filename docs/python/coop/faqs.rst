@@ -131,7 +131,7 @@ See :ref:`backend registration <coop-backend-registration>`.
 .. _coop-faq-topk-order:
 
 Does TopK return sorted results?
--------------------------------
+--------------------------------
 
 No. It selects the smallest or largest keys and places them in a blocked
 output prefix without promising their order. Only the first
@@ -143,7 +143,7 @@ See :ref:`the TopK example <coop-topk>`.
 .. _coop-faq-global-sort:
 
 Does sorting each block sort the whole array?
---------------------------------------------
+---------------------------------------------
 
 Each call sorts only the selected group's tile. Several blocks therefore
 produce independently sorted tiles. A globally sorted array requires an
@@ -153,7 +153,7 @@ likewise sort each participating group's tile independently.
 .. _coop-faq-neighbor-operations:
 
 When should I use Adjacent Difference or Discontinuity?
------------------------------------------------------
+-------------------------------------------------------
 
 Use :func:`cuda.coop.adjacent_difference` to compute a value from each item
 and its neighbor, such as the delta between successive samples. Use
@@ -170,7 +170,7 @@ use separate input and output arrays.
 .. _coop-faq-histogram-padding:
 
 Can I zero-pad a partial Histogram tile?
---------------------------------------
+----------------------------------------
 
 Every input sample contributes to a bin, including a padded zero. A
 zero-padded load therefore adds extra counts to bin zero. Histogram has
@@ -184,7 +184,7 @@ the striped layout. See the :doc:`Histogram explorer <visualizations/histogram>`
 .. _coop-faq-histogram-accumulation:
 
 Does Histogram retain counters between calls?
---------------------------------------------
+---------------------------------------------
 
 Each call returns fresh counts and preserves its samples. For repeated
 tiles within a kernel, keep an accumulator payload and add the returned
@@ -201,7 +201,7 @@ operation, so neither a parent object nor retained counters in
 .. _coop-faq-rld-lifecycle:
 
 Why do windowed and bulk Run Length Decode use different calls?
--------------------------------------------------------------
+---------------------------------------------------------------
 
 :func:`cuda.coop.run_length_decode` returns a fixed-size payload for the
 window beginning at ``decoded_window_offset``. Use it when the kernel
@@ -224,7 +224,7 @@ not decoder state. See :ref:`run positions and windows
 .. _coop-faq-rld-padding:
 
 How do I pad run inputs and recognize the end of decoded output?
---------------------------------------------------------------
+----------------------------------------------------------------
 
 Use a positive prefix of run lengths followed by zeros. An all-zero tile
 represents an empty sequence; an interior zero followed by a positive
@@ -241,7 +241,7 @@ of the destination unchanged.
 .. _coop-faq-batched-reduce:
 
 How does Batched Warp Reduction differ from ordinary Reduce?
------------------------------------------------------------
+------------------------------------------------------------
 
 Ordinary ``reduce(group, values)`` combines the group's payload items
 into one aggregate. ``reduce_batched(warp, values)`` reduces each local
