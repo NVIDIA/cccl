@@ -5,9 +5,9 @@
 
 ``cuda.coop`` provides cooperative CUDA primitives for Python kernel DSLs.
 The initial backend integrates with Numba-CUDA-MLIR and supports Load, Store,
-Exchange, and Shuffle across blocks, complete physical warps, and power-of-two
-logical warps. Its portable descriptors and planning records let primitive
-families share one dispatch, storage, and compilation model.
+and Exchange across blocks, complete physical warps, and power-of-two logical
+warps, plus block Shuffle. Its portable descriptors and planning records let
+primitive families share one dispatch, storage, and compilation model.
 
 Installation
 ------------
