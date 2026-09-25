@@ -84,13 +84,15 @@ def _builtins_path(directory: Path, major: int, minor: int) -> Path:
 def _write_complete_toolkit(
     root: Path,
     encoded_version: int,
+    *,
+    library_dir_name: str = "lib",
 ) -> dict[str, Path]:
     major = encoded_version // 1000
     minor = (encoded_version % 1000) // 10
     include_dir = root / "include"
-    lib_dir = root / "lib"
+    lib_dir = root / library_dir_name
     _write_cuda_header(include_dir, encoded_version)
-    lib_dir.mkdir()
+    lib_dir.mkdir(parents=True)
     paths = {
         "root": root,
         "include": include_dir,
@@ -262,6 +264,33 @@ def test_preload_loads_split_wheel_set_from_one_nvidia_anchor(
     assert libraries.nvrtc_builtins_path == str(paths["builtins"])
     assert libraries.nvjitlink_path == str(paths["nvjitlink"])
     assert libraries.toolkit_version == (12, 9)
+
+
+@pytest.mark.parametrize("library_dir_name", ("bin", "bin/x64"))
+def test_windows_toolkit_layout(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    library_dir_name: str,
+) -> None:
+    monkeypatch.setattr(_toolkit, "os", SimpleNamespace(name="nt"))
+    paths = _write_complete_toolkit(
+        tmp_path / "Library",
+        13000,
+        library_dir_name=library_dir_name,
+    )
+
+    candidates, diagnostic = _toolkit._toolkit_root_candidates(
+        paths["include"],
+        major=13,
+        minor=0,
+    )
+
+    assert diagnostic == ""
+    assert candidates == _toolkit._ToolkitRootCandidates(
+        toolkit_root=paths["root"].resolve(),
+        nvrtc_pairs=((paths["nvrtc"], paths["builtins"]),),
+        nvjitlink=(paths["nvjitlink"],),
+    )
 
 
 @pytest.mark.parametrize(
