@@ -6,6 +6,7 @@
 
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
@@ -62,6 +63,60 @@ def test_invalid_sentinel(default):
 
     def kernel():
         keys = coop.ThreadData(2, types.int32)
+        return coop.merge_sort_keys(
+            coop.this_block(), keys, valid_items=2, oob_default=default
+        )
+
+    with pytest.raises((TypeError, ValueError), match="oob_default"):
+        _plan(kernel)
+
+
+@pytest.mark.parametrize("dtype_name", ["float32", "float64"])
+@pytest.mark.parametrize("typed", [False, True])
+@pytest.mark.parametrize("descending", [False, True])
+def test_static_infinite_sentinel(dtype_name, typed, descending):
+    from numba_cuda_mlir import types
+
+    from cuda import coop
+
+    dtype = getattr(types, dtype_name)
+    default = -float("inf") if descending else float("inf")
+    if typed:
+        default = np.dtype(dtype_name).type(default)
+
+    def kernel():
+        keys = coop.ThreadData(2, dtype)
+        return coop.merge_sort_keys(
+            coop.this_block(),
+            keys,
+            descending=descending,
+            valid_items=2,
+            oob_default=default,
+        )
+
+    _plan(kernel)
+
+
+@pytest.mark.parametrize(
+    "dtype_name,default",
+    [
+        ("int32", float("inf")),
+        ("float32", np.float64("inf")),
+        ("float32", float("nan")),
+        ("float32", np.float32("nan")),
+        ("float32", True),
+        ("float32", 1e40),
+    ],
+)
+def test_static_sentinel_retains_scalar_validation(dtype_name, default):
+    from numba_cuda_mlir import types
+
+    from cuda import coop
+
+    dtype = getattr(types, dtype_name)
+
+    def kernel():
+        keys = coop.ThreadData(2, dtype)
         return coop.merge_sort_keys(
             coop.this_block(), keys, valid_items=2, oob_default=default
         )
