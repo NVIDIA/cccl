@@ -58,7 +58,7 @@ def run_length_decode(
     Returns
     -------
     ThreadDataLike
-        The fresh value payload described by the portable operation; optional
+        The fresh value payload described by the common operation; optional
         auxiliary outputs are updated in place. Outputs must not overlap one
         another or either run input.
     """

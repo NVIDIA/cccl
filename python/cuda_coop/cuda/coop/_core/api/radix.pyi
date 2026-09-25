@@ -10,10 +10,10 @@ import numpy
 from typing_extensions import TypeVar
 
 from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     CompilerIntegerLike,
     IntegerValue,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
@@ -25,11 +25,11 @@ _IntegerKey: TypeAlias = (
 )
 _KeyT = TypeVar("_KeyT", bound=_IntegerKey)
 _RankKeyT = TypeVar("_RankKeyT", bound=_IntegerKey)
-_ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
 
 def radix_sort_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
     begin_bit: IntegerValue = 0,
@@ -39,8 +39,8 @@ def radix_sort_keys(
 ) -> ThreadDataLike[_KeyT]: ...
 def radix_sort_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT],
-    values: PortableThreadDataLike[_ValueT],
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
     begin_bit: IntegerValue = 0,
@@ -50,7 +50,7 @@ def radix_sort_pairs(
 ) -> tuple[ThreadDataLike[_KeyT], ThreadDataLike[_ValueT]]: ...
 def radix_rank(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_RankKeyT],
+    keys: CommonThreadDataLike[_RankKeyT],
     /,
     *,
     begin_bit: int = 0,

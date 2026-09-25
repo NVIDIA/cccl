@@ -2,24 +2,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for portable cooperative Exchange."""
+"""Typing contract for common cooperative Exchange."""
 
 from typing_extensions import TypeVar
 
 from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     ExchangeMode,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     ThreadDataLike,
 )
 
 from .thread_group import MemoryGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 def exchange(
     group: MemoryGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: ExchangeMode = "striped_to_blocked",

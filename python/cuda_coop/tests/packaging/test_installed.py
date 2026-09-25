@@ -83,7 +83,7 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
         assert "StatefulFunction" not in coop.__all__
         assert not hasattr(coop, "StatefulFunction")
 
-        portable_scan_parameters = {
+        common_scan_parameters = {
             "scan": (
                 "group",
                 "value",
@@ -111,10 +111,10 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             "exclusive_sum": ("group", "value", "algorithm", "temp_storage"),
             "inclusive_sum": ("group", "value", "algorithm", "temp_storage"),
         }
-        for name, portable_parameters in portable_scan_parameters.items():
+        for name, common_parameters in common_scan_parameters.items():
             assert (
                 tuple(inspect.signature(getattr(coop, name)).parameters)
-                == portable_parameters
+                == common_parameters
             )
 
         paths = resolve_include_paths(

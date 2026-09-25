@@ -9,10 +9,10 @@ from typing import Generic, Protocol
 
 from typing_extensions import TypeVar
 
-from .._typing import PortableNumericScalar, ThreadDataLike
+from .._typing import CommonNumericScalar, ThreadDataLike
 
-_StateT = TypeVar("_StateT", bound=PortableNumericScalar)
-_ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
+_StateT = TypeVar("_StateT", bound=CommonNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
 
 class _StatefulFunctor(Protocol[_ValueT]):
     def __call__(self, block_aggregate: _ValueT, /) -> _ValueT: ...

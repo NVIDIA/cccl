@@ -51,12 +51,12 @@ def _compile(kernel, *arg_types, block=(32, 1, 1)):
     )
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", (None, types.int32), ids=("inferred", "explicit"))
 def test_load_return_cannot_be_used_as_a_store_payload(qualified, dtype):
-    from cuda import coop as portable_coop
+    from cuda import coop as common_coop
 
-    module = coop if qualified else portable_coop
+    module = coop if qualified else common_coop
 
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
@@ -102,7 +102,7 @@ def test_none_alias_reports_descriptor_error_before_type_inference():
         _compile(kernel, types.int32[::1], types.int32[::1])
 
 
-def test_standalone_collective_helper_reports_inline_requirement():
+def test_standalone_primitive_helper_reports_inline_requirement():
     @cuda.jit(device=True, inline="never")
     def standalone(destination, value):
         coop.store(coop.this_block(), destination, value)

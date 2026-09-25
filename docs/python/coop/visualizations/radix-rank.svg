@@ -1,0 +1,89 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" role="img" aria-labelledby="title desc">
+<title id="title">One radix digit returns ranks without moving input keys</title>
+<desc id="desc">Input keys 35, 18, 33, 2, 35, 17, 1, 18 remain in their original slots. Their low-four-bit digits are 3, 2, 1, 2, 3, 1, 1, 2. Per-key ranks are 6, 3, 0, 4, 7, 1, 2, 5 in those same slots. Digits one, two, and three have counts three, three, and two and start at zero, three, and six.</desc>
+<rect width="1000" height="400" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif" fill="#172b3a">
+<text x="24" y="32" font-size="15">INPUT: unsigned keys, blocked and unchanged</text>
+<text x="70" y="55" text-anchor="middle" font-size="12">T0</text>
+<rect x="24" y="65" width="92" height="42" rx="6" fill="#e2f0cb" stroke="#68798b"/>
+<text x="70" y="93" text-anchor="middle" font-size="19">35</text>
+<text x="192" y="55" text-anchor="middle" font-size="12">T1</text>
+<rect x="146" y="65" width="92" height="42" rx="6" fill="#d3eff6" stroke="#68798b"/>
+<text x="192" y="93" text-anchor="middle" font-size="19">18</text>
+<text x="314" y="55" text-anchor="middle" font-size="12">T2</text>
+<rect x="268" y="65" width="92" height="42" rx="6" fill="#fff0c9" stroke="#68798b"/>
+<text x="314" y="93" text-anchor="middle" font-size="19">33</text>
+<text x="436" y="55" text-anchor="middle" font-size="12">T3</text>
+<rect x="390" y="65" width="92" height="42" rx="6" fill="#f8d9e7" stroke="#68798b"/>
+<text x="436" y="93" text-anchor="middle" font-size="19">2</text>
+<text x="558" y="55" text-anchor="middle" font-size="12">T4</text>
+<rect x="512" y="65" width="92" height="42" rx="6" fill="#e7dff4" stroke="#68798b"/>
+<text x="558" y="93" text-anchor="middle" font-size="19">35</text>
+<text x="680" y="55" text-anchor="middle" font-size="12">T5</text>
+<rect x="634" y="65" width="92" height="42" rx="6" fill="#ffe3cf" stroke="#68798b"/>
+<text x="680" y="93" text-anchor="middle" font-size="19">17</text>
+<text x="802" y="55" text-anchor="middle" font-size="12">T6</text>
+<rect x="756" y="65" width="92" height="42" rx="6" fill="#d0eee8" stroke="#68798b"/>
+<text x="802" y="93" text-anchor="middle" font-size="19">1</text>
+<text x="924" y="55" text-anchor="middle" font-size="12">T7</text>
+<rect x="878" y="65" width="92" height="42" rx="6" fill="#e0e7ef" stroke="#68798b"/>
+<text x="924" y="93" text-anchor="middle" font-size="19">18</text>
+<text x="24" y="144" font-size="15">SELECTED DIGIT: bits [0, 4)</text>
+<text x="70" y="167" text-anchor="middle" font-size="12">T0</text>
+<rect x="24" y="177" width="92" height="42" rx="6" fill="#e2f0cb" stroke="#68798b"/>
+<text x="70" y="205" text-anchor="middle" font-size="19">3</text>
+<text x="192" y="167" text-anchor="middle" font-size="12">T1</text>
+<rect x="146" y="177" width="92" height="42" rx="6" fill="#d3eff6" stroke="#68798b"/>
+<text x="192" y="205" text-anchor="middle" font-size="19">2</text>
+<text x="314" y="167" text-anchor="middle" font-size="12">T2</text>
+<rect x="268" y="177" width="92" height="42" rx="6" fill="#fff0c9" stroke="#68798b"/>
+<text x="314" y="205" text-anchor="middle" font-size="19">1</text>
+<text x="436" y="167" text-anchor="middle" font-size="12">T3</text>
+<rect x="390" y="177" width="92" height="42" rx="6" fill="#f8d9e7" stroke="#68798b"/>
+<text x="436" y="205" text-anchor="middle" font-size="19">2</text>
+<text x="558" y="167" text-anchor="middle" font-size="12">T4</text>
+<rect x="512" y="177" width="92" height="42" rx="6" fill="#e7dff4" stroke="#68798b"/>
+<text x="558" y="205" text-anchor="middle" font-size="19">3</text>
+<text x="680" y="167" text-anchor="middle" font-size="12">T5</text>
+<rect x="634" y="177" width="92" height="42" rx="6" fill="#ffe3cf" stroke="#68798b"/>
+<text x="680" y="205" text-anchor="middle" font-size="19">1</text>
+<text x="802" y="167" text-anchor="middle" font-size="12">T6</text>
+<rect x="756" y="177" width="92" height="42" rx="6" fill="#d0eee8" stroke="#68798b"/>
+<text x="802" y="205" text-anchor="middle" font-size="19">1</text>
+<text x="924" y="167" text-anchor="middle" font-size="12">T7</text>
+<rect x="878" y="177" width="92" height="42" rx="6" fill="#e0e7ef" stroke="#68798b"/>
+<text x="924" y="205" text-anchor="middle" font-size="19">2</text>
+<text x="24" y="256" font-size="15">RETURNED int32 RANKS: destinations kept at original input slots</text>
+<text x="70" y="279" text-anchor="middle" font-size="12">T0</text>
+<rect x="24" y="289" width="92" height="42" rx="6" fill="#e2f0cb" stroke="#68798b"/>
+<text x="70" y="317" text-anchor="middle" font-size="19">6</text>
+<text x="192" y="279" text-anchor="middle" font-size="12">T1</text>
+<rect x="146" y="289" width="92" height="42" rx="6" fill="#d3eff6" stroke="#68798b"/>
+<text x="192" y="317" text-anchor="middle" font-size="19">3</text>
+<text x="314" y="279" text-anchor="middle" font-size="12">T2</text>
+<rect x="268" y="289" width="92" height="42" rx="6" fill="#fff0c9" stroke="#68798b"/>
+<text x="314" y="317" text-anchor="middle" font-size="19">0</text>
+<text x="436" y="279" text-anchor="middle" font-size="12">T3</text>
+<rect x="390" y="289" width="92" height="42" rx="6" fill="#f8d9e7" stroke="#68798b"/>
+<text x="436" y="317" text-anchor="middle" font-size="19">4</text>
+<text x="558" y="279" text-anchor="middle" font-size="12">T4</text>
+<rect x="512" y="289" width="92" height="42" rx="6" fill="#e7dff4" stroke="#68798b"/>
+<text x="558" y="317" text-anchor="middle" font-size="19">7</text>
+<text x="680" y="279" text-anchor="middle" font-size="12">T5</text>
+<rect x="634" y="289" width="92" height="42" rx="6" fill="#ffe3cf" stroke="#68798b"/>
+<text x="680" y="317" text-anchor="middle" font-size="19">1</text>
+<text x="802" y="279" text-anchor="middle" font-size="12">T6</text>
+<rect x="756" y="289" width="92" height="42" rx="6" fill="#d0eee8" stroke="#68798b"/>
+<text x="802" y="317" text-anchor="middle" font-size="19">2</text>
+<text x="924" y="279" text-anchor="middle" font-size="12">T7</text>
+<rect x="878" y="289" width="92" height="42" rx="6" fill="#e0e7ef" stroke="#68798b"/>
+<text x="924" y="317" text-anchor="middle" font-size="19">5</text>
+<text x="24" y="366" font-size="14">Digit counts: 1 has 3, 2 has 3, 3 has 2. Bin starts: 1 starts at 0, 2 at 3, 3 at 6.</text>
+<text x="24" y="387" font-size="14">Rank = bin start + number of earlier input keys with the same digit. No keys are scattered.</text>
+</g>
+</svg>

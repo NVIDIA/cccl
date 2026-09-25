@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for portable CUDA thread groups and hierarchy."""
+"""Typing contract for common CUDA thread groups and hierarchy."""
 
 from typing import Callable, Generic, Literal, TypeAlias, overload
 
@@ -347,4 +347,4 @@ def this_cluster() -> ThreadGroup[Literal["cluster"]]:
     """Describe the current thread-block cluster."""
 
 def this_grid() -> ThreadGroup[Literal["grid"]]:
-    """Describe the current grid; grid collectives are not in the portable API."""
+    """Describe the current grid; grid primitives are not in the common API."""

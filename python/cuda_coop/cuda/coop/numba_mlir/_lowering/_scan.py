@@ -98,7 +98,7 @@ def normalize_scan_operation(scan_op: Any) -> str | None:
 
 
 def validate_scan_operator_dtype(scan_op: Any, dtype: Any) -> Any:
-    """Validate a Scan operator against the portable numeric dtype profile."""
+    """Validate a Scan operator against the common API's numeric dtype profile."""
 
     dtype = _validate_common_numeric_dtype(
         dtype,

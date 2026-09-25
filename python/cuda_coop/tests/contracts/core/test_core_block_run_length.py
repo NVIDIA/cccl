@@ -72,7 +72,7 @@ def test_bulk_returns_total_and_keeps_output_pointers_explicit():
 
 
 @pytest.mark.parametrize("bulk", [False, True])
-def test_portable_run_inputs_accept_readonly_payloads_and_reject_float_lengths(
+def test_common_run_inputs_accept_readonly_payloads_and_reject_float_lengths(
     monkeypatch, bulk
 ):
     from importlib import import_module

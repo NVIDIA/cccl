@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable root-backend selection and dispatch state.
+"""Common root-backend selection and dispatch state.
 
 Compiler integrations activate one qualified backend through this module while
-family frontends validate the portable profile before delegation. It owns no
+family frontends validate the common profile before delegation. It owns no
 primitive semantics, provider rendering, or compiler cache state.
 """
 
@@ -34,50 +34,48 @@ _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
 
 
 @dataclass(frozen=True)
-class _PortableGroupOperation:
+class _CommonGroupOperation:
     name: str
     group_kinds: tuple[str, ...]
     function: Callable[..., Any]
 
 
-_PORTABLE_GROUP_OPERATIONS_BY_NAME: dict[str, _PortableGroupOperation] = {}
-_PORTABLE_GROUP_OPERATIONS_BY_FUNCTION: dict[
-    Callable[..., Any], _PortableGroupOperation
+_COMMON_GROUP_OPERATIONS_BY_NAME: dict[str, _CommonGroupOperation] = {}
+_COMMON_GROUP_OPERATIONS_BY_FUNCTION: dict[
+    Callable[..., Any], _CommonGroupOperation
 ] = {}
 
 
-def _portable_group_operation(
+def _common_group_operation(
     name: str,
     *,
     group_kinds: tuple[str, ...],
 ) -> Callable[[_CallableT], _CallableT]:
-    """Register one portable group overload by exact callable identity."""
+    """Register one common group overload by exact callable identity."""
 
     if not name or not group_kinds:
-        raise ValueError("portable group operations require a name and group kinds")
+        raise ValueError("common group operations require a name and group kinds")
 
     def decorate(function: _CallableT) -> _CallableT:
-        registration = _PortableGroupOperation(name, tuple(group_kinds), function)
-        existing = _PORTABLE_GROUP_OPERATIONS_BY_NAME.get(name)
+        registration = _CommonGroupOperation(name, tuple(group_kinds), function)
+        existing = _COMMON_GROUP_OPERATIONS_BY_NAME.get(name)
         if existing is not None and existing != registration:
-            raise RuntimeError(
-                f"portable group operation {name!r} is already registered"
-            )
-        existing_function = _PORTABLE_GROUP_OPERATIONS_BY_FUNCTION.get(function)
+            raise RuntimeError(f"common group operation {name!r} is already registered")
+        existing_function = _COMMON_GROUP_OPERATIONS_BY_FUNCTION.get(function)
         if existing_function is not None and existing_function != registration:
             raise RuntimeError(
-                f"portable group marker {function!r} is already registered"
+                f"common group marker {function!r} is already registered"
             )
-        _PORTABLE_GROUP_OPERATIONS_BY_NAME[name] = registration
-        _PORTABLE_GROUP_OPERATIONS_BY_FUNCTION[function] = registration
+        _COMMON_GROUP_OPERATIONS_BY_NAME[name] = registration
+        _COMMON_GROUP_OPERATIONS_BY_FUNCTION[function] = registration
         function.__cuda_coop_backend_member__ = name
         return function
 
     return decorate
 
 
-def _portable_group_operation_name(function: Any) -> str | None:
-    registration = _PORTABLE_GROUP_OPERATIONS_BY_FUNCTION.get(function)
+def _common_group_operation_name(function: Any) -> str | None:
+    registration = _COMMON_GROUP_OPERATIONS_BY_FUNCTION.get(function)
     return None if registration is None else registration.name
 
 
@@ -150,7 +148,7 @@ def _backend_member(name: str) -> Any:
         raise UnsupportedCoopBackendOperationError(module_name, name) from exc
 
 
-def _portable_selector(
+def _common_selector(
     operation: str,
     parameter: str,
     value: Any,
@@ -180,31 +178,31 @@ def _portable_selector(
     return token
 
 
-def _portable_group_name(kind: str) -> str:
-    """Return the portable API spelling for one internal group kind."""
+def _common_group_name(kind: str) -> str:
+    """Return the common API spelling for one internal group kind."""
 
     return "physical_warp" if kind == "warp" else kind
 
 
-def _validate_portable_operation_group(
+def _validate_common_operation_group(
     operation: str,
     group: Any,
 ) -> None:
-    """Enforce the portable group matrix for a common-root call."""
+    """Enforce the common group matrix for a common-root call."""
 
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"cuda.coop.{operation} group must be a ThreadGroup")
-    registration = _PORTABLE_GROUP_OPERATIONS_BY_NAME.get(operation)
+    registration = _COMMON_GROUP_OPERATIONS_BY_NAME.get(operation)
     if registration is None:
         raise UnsupportedCoopBackendOperationError("cuda.coop", operation)
     supported = registration.group_kinds
     if group.kind in supported:
         return
-    group_name = _portable_group_name(group.kind)
-    supported_names = ", ".join(map(_portable_group_name, supported))
+    group_name = _common_group_name(group.kind)
+    supported_names = ", ".join(map(_common_group_name, supported))
     raise NotImplementedError(
         f"cuda.coop.{operation} does not support group kind {group_name!r} in "
-        f"the portable API; supported group kinds: {supported_names}; use a "
+        f"the common API; supported group kinds: {supported_names}; use a "
         "backend-qualified import for backend-specific group support"
     )
 
@@ -214,7 +212,7 @@ def _group_primitive_marker(
     *args: Any,
     **kwargs: Any,
 ) -> Any:
-    if operation not in _PORTABLE_GROUP_OPERATIONS_BY_NAME:
+    if operation not in _COMMON_GROUP_OPERATIONS_BY_NAME:
         raise UnsupportedCoopBackendOperationError("cuda.coop", operation)
     if _backend_module_name() is None:
         del args, kwargs
@@ -222,7 +220,7 @@ def _group_primitive_marker(
             f"cuda.coop.{operation} requires compiler-owned activation or a "
             "qualified backend import before compilation"
         )
-    _validate_portable_operation_group(operation, args[0] if args else None)
+    _validate_common_operation_group(operation, args[0] if args else None)
     with _common_root_operation_scope(operation):
         return _backend_member(operation)(*args, **kwargs)
 
