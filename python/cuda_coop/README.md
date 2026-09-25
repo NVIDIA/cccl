@@ -42,6 +42,21 @@ selected CUDA major version.
 Python 3.10 through 3.14 is supported. The current backend integration requires
 `numba-cuda-mlir>=0.5.0,<0.6`.
 
+Backend compiler and runtime CI is configured for Linux x86-64 with Python 3.14:
+CUDA 13 in pull requests and CUDA 12 in the nightly matrix. Linux host
+contracts cover Python 3.10 and 3.14. Windows checks build and import the
+universal wheel and verify its headers; they do not execute the compiler
+backend. Other combinations need separate runtime qualification. See the
+[validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
+for coverage and hardware requirements.
+
+With Numba-CUDA-MLIR 0.5.0 through 0.5.3, keep a compiled kernel's dispatcher
+and configured launch callables in their original CUDA context. Reuse on
+another device or after context teardown is not qualified because cached
+architecture or launch state can belong to the original context. The upstream
+[context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
+must be released and qualified before relying on that reuse.
+
 ## Backend registration and imports
 
 Register the backend on the host before compiling kernels:
