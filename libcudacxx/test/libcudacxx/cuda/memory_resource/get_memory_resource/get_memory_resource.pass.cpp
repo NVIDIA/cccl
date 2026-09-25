@@ -56,6 +56,40 @@ struct test_resource
   int _val = 0;
 };
 
+struct derived_resource
+    : test_resource
+    , cuda::mr::memory_resource_base<derived_resource>
+{};
+
+using get_memory_resource_list = cuda::execution::property_key_list<cuda::mr::get_memory_resource_t>;
+
+static_assert(cuda::std::execution::__detail::__has_property_keys<derived_resource>);
+static_assert(!cuda::std::execution::__detail::__has_property_keys<cuda::mr::any_resource<>>);
+static_assert(!cuda::std::execution::__detail::__has_property_keys<cuda::mr::any_synchronous_resource<>>);
+static_assert(cuda::std::execution::__detail::__has_property_keys<cuda::mr::resource_ref<>>);
+static_assert(!cuda::std::execution::__detail::__has_property_keys<cuda::mr::synchronous_resource_ref<>>);
+static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<derived_resource>, get_memory_resource_list>);
+static_assert(
+  cuda::std::is_same_v<cuda::execution::property_keys_t<cuda::mr::resource_ref<>>, get_memory_resource_list>);
+
+using owning_any_env      = cuda::std::execution::env<cuda::mr::any_resource<>>;
+using owning_resource_env = cuda::std::execution::env<derived_resource>;
+using resource_env        = cuda::std::execution::env<cuda::mr::resource_ref<>>;
+static_assert(
+  cuda::std::is_same_v<cuda::execution::property_keys_t<owning_any_env>, cuda::execution::property_key_list<>>);
+static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<owning_resource_env>, get_memory_resource_list>);
+static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<resource_env>, get_memory_resource_list>);
+
+static_assert(cuda::std::execution::__queryable_with<const derived_resource&, cuda::mr::get_memory_resource_t>);
+static_assert(cuda::std::execution::__queryable_with<const cuda::mr::resource_ref<>&, cuda::mr::get_memory_resource_t>);
+
+using resource_ref = cuda::mr::resource_ref<>;
+static_assert(
+  cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<resource_ref&>())), resource_ref&>);
+static_assert(cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<const resource_ref&>())),
+                                   resource_ref>);
+static_assert(!cuda::std::is_invocable_v<cuda::mr::get_memory_resource_t, const derived_resource&>);
+
 TEST_HOST_DEVICE_FUNC void test()
 {
   test_resource invalid_resource{42};
@@ -315,9 +349,21 @@ TEST_HOST_DEVICE_FUNC void test()
   }
 }
 
+void test_resource_ref()
+{
+  test_resource resource{};
+
+  cuda::mr::resource_ref<> resource_ref{resource};
+  const auto& const_resource_ref = resource_ref;
+  auto queried_resource_ref      = cuda::mr::get_memory_resource(const_resource_ref);
+  static_assert(cuda::std::is_same_v<decltype(queried_resource_ref), cuda::mr::resource_ref<>>);
+  assert(queried_resource_ref == resource_ref);
+}
+
 int main(int argc, char** argv)
 {
   test();
+  NV_IF_TARGET(NV_IS_HOST, (test_resource_ref();))
 
   return 0;
 }

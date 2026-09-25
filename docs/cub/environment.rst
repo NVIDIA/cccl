@@ -59,11 +59,10 @@ pass to many different algorithms:
 Building an environment
 -----------------------
 
-.. list explicitly what types are valid environments
 Some types are already valid environments on their own and can be passed directly to an
-algorithm. The most common case is a stream: ``cuda::stream_ref`` (or a raw
-``cudaStream_t``) passed as the last argument is treated as an environment containing
-just that stream.
+algorithm. The most common case is ``cuda::stream_ref``, which advertises an environment
+containing just the stream. Query-providing objects such as a raw ``cudaStream_t`` can also
+be passed directly where the algorithm accepts them.
 
 .. literalinclude:: ../../cub/test/catch2_test_device_reduce_env_api.cu
    :language: c++
@@ -91,6 +90,59 @@ composes a stream, a memory pool for temporary storage, and a determinism requir
 
 The same ``env`` object can be passed to multiple algorithm calls without rebuilding it each
 time, see :ref:`cub-environment-reuse`.
+
+
+Advertised query metadata and custom environments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use ``cuda::execution::property_keys_t<T>`` to obtain the query expressions advertised by an
+environment. ``cuda::std::execution::prop``, ``cuda::std::execution::env``,
+``cuda::stream_ref``, ``cuda::mr::memory_resource_base`` derivatives, and ``cuda::mr::resource_ref`` provide this
+metadata automatically.
+User-defined environments can customize the alias by defining
+``cuda::std::remove_cvref_t<T>::property_keys`` as a
+``cuda::execution::property_key_list`` specialization. ``cuda::std::execution::env``
+concatenates the discoverable lists of its components.
+
+A query with no additional arguments can be listed directly. Use
+``cuda::execution::property_query`` to describe a query that takes additional
+arguments:
+
+.. code-block:: c++
+
+   struct custom_env {
+     using property_keys = cuda::execution::property_key_list<
+       cuda::get_stream_t,
+       cuda::execution::property_query<custom_query_t, int>>;
+
+     cuda::stream_ref query(cuda::get_stream_t) const noexcept;
+     int query(custom_query_t, int) const noexcept;
+   };
+
+Each query expression in the list must be accepted by a const environment.
+
+Use ``cuda::checked_env`` to explicitly check that an environment accepts a chosen set of query
+expressions. The returned adaptor records that validated set as public ``property_keys`` metadata
+and forwards queries to the original object. Because the adaptor supplies its own metadata, it can
+also describe a type that cannot be modified or replace an existing advertised query list:
+
+.. code-block:: c++
+
+   third_party_env original;
+   auto env = cuda::checked_env<
+     cuda::get_stream_t,
+     cuda::mr::get_memory_resource_t>(original);
+
+   cub::DeviceReduce::Sum(d_input, d_output, num_items, env);
+
+The wrapper stores its argument by value. Pass ``cuda::std::ref(original)`` to store a
+reference instead.
+
+``cub::DeviceReduce`` is currently the pilot consumer of advertised query metadata. It
+validates every advertised expression and uses the advertised list to decide which supported
+properties to consume. An unmarked object passed to ``DeviceReduce`` must provide at least a
+stream or a memory resource. Other CUB device-wide algorithms retain their existing
+callability-based property lookup until the diagnostic protocol is adopted by them.
 
 
 How to use environments
@@ -283,8 +335,10 @@ is passed at all):
      - CUB's built-in selector, returning architecture-tuned defaults for the current
        device.
 
-Missing properties never cause an error. The algorithm simply falls back to its default for
-that property.
+An environment may omit any property; the algorithm falls back to the corresponding default.
+An advertised query expression that cannot be invoked is an error in implementations that
+validate advertised metadata. ``DeviceReduce`` also rejects an unmarked object that
+provides neither a stream nor a memory resource.
 
 ..
    TODO(gonidelis): link to the developer-facing environments page (queries, CPOs, prop,
