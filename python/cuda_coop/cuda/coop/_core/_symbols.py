@@ -13,6 +13,7 @@ import inspect
 import math
 import os
 import re
+import struct
 import sys
 import sysconfig
 from collections import defaultdict
@@ -654,7 +655,7 @@ def _semantic_token(value: Any, state: _TokenState) -> Any:
         return type(value).__module__, type(value).__qualname__, value.value
     if isinstance(value, float):
         if math.isnan(value):
-            return "float", "nan"
+            return "float", "nan", struct.pack(">d", value).hex()
         return "float", value.hex()
     if value is None or isinstance(value, (bool, int, str, bytes)):
         return value
