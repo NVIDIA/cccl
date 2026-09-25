@@ -70,7 +70,7 @@ def _group_topology(
         index = "linear_thread_rank"
         thread_rank = "0"
         execution_scope = SynchronizationScope.NONE
-    elif kind in {"warp", "threads_within_warp"}:
+    elif kind == "warp":
         if block_threads is None:
             raise ValueError("warp contracts require exact block dimensions")
         if block_threads % group_size != 0:
@@ -79,14 +79,41 @@ def _group_topology(
         index = f"linear_thread_rank / {group_size}"
         thread_rank = f"linear_thread_rank % {group_size}"
         execution_scope = SynchronizationScope.WARP
+    elif kind == "threads_within_warp":
+        if block_threads is None:
+            raise ValueError("warp contracts require exact block dimensions")
+        mapping = resolved_group.mapping
+        assert mapping is not None
+        groups_per_warp = resolved_group.groups_per_parent
+        assert groups_per_warp is not None
+        instances = (block_threads // 32) * groups_per_warp
+        if resolved_group.complete_membership is True:
+            index = f"linear_thread_rank / {group_size}"
+            thread_rank = f"linear_thread_rank % {group_size}"
+        else:
+            index = (
+                f"(linear_thread_rank / 32) * {groups_per_warp} + "
+                f"((linear_thread_rank % 32) / {group_size})"
+            )
+            thread_rank = f"(linear_thread_rank % 32) % {group_size}"
+        execution_scope = SynchronizationScope.WARP
     elif kind == "warps_within_block":
         if block_threads is None:
             raise ValueError("mapped block contracts require exact block dimensions")
-        if block_threads % group_size != 0:
-            raise ValueError("group width must divide the enclosing block size")
-        instances = block_threads // group_size
-        index = f"linear_thread_rank / {group_size}"
-        thread_rank = f"linear_thread_rank % {group_size}"
+        mapping = resolved_group.mapping
+        assert mapping is not None
+        groups_per_block = resolved_group.groups_per_parent
+        assert groups_per_block is not None
+        instances = groups_per_block
+        if resolved_group.complete_membership is True:
+            index = f"linear_thread_rank / {group_size}"
+            thread_rank = f"linear_thread_rank % {group_size}"
+        else:
+            index = f"(linear_thread_rank / 32) / {mapping.count}"
+            thread_rank = (
+                f"((linear_thread_rank / 32) % {mapping.count}) * 32 + "
+                "(linear_thread_rank % 32)"
+            )
         execution_scope = (
             SynchronizationScope.WARP
             if group_size == 32
