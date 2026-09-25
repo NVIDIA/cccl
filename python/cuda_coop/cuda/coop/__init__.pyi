@@ -6,7 +6,9 @@
 
 from typing import Literal
 
+from ._core.api.exchange import exchange
 from ._core.api.load_store import load, store
+from ._core.api.shuffle import shuffle
 from ._core.api.temp_storage import TempStorage, TempStorageLike
 from ._core.api.thread_data import ThreadData, ThreadDataLike
 from ._core.api.thread_group import (
@@ -33,8 +35,10 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "__version__",
+    "exchange",
     "load",
     "register",
+    "shuffle",
     "store",
     "this_block",
     "this_cluster",

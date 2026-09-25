@@ -50,6 +50,25 @@ WarpLoadStoreAlgorithm: TypeAlias = Literal[
     "transpose",
 ]
 LoadStoreAlgorithm: TypeAlias = BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm
+ExchangeMode: TypeAlias = Literal[
+    "striped_to_blocked",
+    "blocked_to_striped",
+]
+BlockExchangeMode: TypeAlias = (
+    ExchangeMode
+    | Literal[
+        "warp_striped_to_blocked",
+        "blocked_to_warp_striped",
+        "scatter_to_blocked",
+        "scatter_to_striped",
+        "scatter_to_striped_guarded",
+        "scatter_to_striped_flagged",
+    ]
+)
+WarpExchangeMode: TypeAlias = ExchangeMode
+PortableShuffleMode: TypeAlias = Literal["down", "up"]
+ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
+ShuffleMode: TypeAlias = PortableShuffleMode | ScalarShuffleMode
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
@@ -88,6 +107,8 @@ ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
 )
 IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
+SignedIntegerScalar: TypeAlias = int | numpy.signedinteger[Any] | CompilerIntegerLike
+IntegralScalar: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
 TraceInteger: TypeAlias = int | numpy.integer[Any]
 ValidItems: TypeAlias = IntegerValue
 
@@ -133,12 +154,18 @@ class TempStorageLike(Protocol):
     sharing: TempStorageSharing
 
 __all__ = [
+    "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "ExchangeMode",
     "LoadStoreAlgorithm",
+    "PortableShuffleMode",
+    "ScalarShuffleMode",
+    "ShuffleMode",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
     "WarpLoadStoreAlgorithm",
+    "WarpExchangeMode",
 ]
