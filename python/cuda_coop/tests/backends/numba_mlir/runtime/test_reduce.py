@@ -478,8 +478,8 @@ def test_distinct_constant_arrays_do_not_reuse_a_cached_callback():
         @cuda.jit
         def kernel(source, observed):
             thread = cuda.threadIdx.x
-            result = qualified_coop.reduce(
-                qualified_coop.this_block(),
+            result = numba_coop.reduce(
+                numba_coop.this_block(),
                 source[thread],
                 binary_op=add,
                 broadcast=False,
@@ -508,8 +508,8 @@ def test_numpy_scalar_nan_sign_does_not_reuse_a_cached_callback():
         @cuda.jit
         def kernel(source, observed):
             thread = cuda.threadIdx.x
-            result = qualified_coop.reduce(
-                qualified_coop.this_block(),
+            result = numba_coop.reduce(
+                numba_coop.this_block(),
                 source[thread],
                 binary_op=add,
                 broadcast=False,
