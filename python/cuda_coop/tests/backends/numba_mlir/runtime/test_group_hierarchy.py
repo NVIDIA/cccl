@@ -49,7 +49,7 @@ from numba_cuda_mlir import cuda
 from cuda import coop
 from cuda.coop.numba_mlir._compiler import _nvrtc
 
-assert Path(coop.__file__).resolve() == Path({str(Path(portable_coop.__file__).resolve())!r})
+assert Path(coop.__file__).resolve() == Path({str(Path(common_coop.__file__).resolve())!r})
 compile_provider = _nvrtc.compile
 injected = []
 
