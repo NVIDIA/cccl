@@ -79,6 +79,7 @@ def test_portable_run_inputs_accept_readonly_payloads_and_reject_float_lengths(
 
     import numpy as np
 
+    from cuda import coop
     from cuda.coop._core import this_block
     from tests.contracts.core.test_core_group_load_store import _ReadonlyThreadData
 
@@ -88,7 +89,7 @@ def test_portable_run_inputs_accept_readonly_payloads_and_reject_float_lengths(
     monkeypatch.setattr(
         api, "_group_primitive_marker", lambda *args, **kwargs: calls.append(args)
     )
-    operation = api.run_length_decode_into if bulk else api.run_length_decode
+    operation = coop.run_length_decode_into if bulk else coop.run_length_decode
     args = (_ReadonlyThreadData(dtype=np.int16), _ReadonlyThreadData(dtype=np.uint64))
     with dispatch._compiler_scope("test.backend"):
         operation(
@@ -97,7 +98,10 @@ def test_portable_run_inputs_accept_readonly_payloads_and_reject_float_lengths(
             *([object()] if bulk else []),
             decoded_items_per_thread=4,
         )
-        with pytest.raises(TypeError, match="run_lengths"):
+        with pytest.raises(
+            TypeError,
+            match=rf"cuda\.coop\.{operation.__name__} supports run_lengths dtypes",
+        ):
             operation(
                 this_block(),
                 args[0],
