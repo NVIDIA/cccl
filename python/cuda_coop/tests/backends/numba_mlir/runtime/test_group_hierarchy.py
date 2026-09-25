@@ -7,6 +7,10 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -32,6 +36,50 @@ _BLOCKS = 2
 _BLOCK_THREADS = 96
 _THREADS = _BLOCKS * _BLOCK_THREADS
 _QUERY_FIELDS = 19
+
+
+@pytest.mark.parametrize("operation", ("sync", "sync_aligned"))
+def test_partial_mapped_group_sync_excludes_nonmembers(operation):
+    # Assertions make a nonmember synchronization fail deterministically.
+    # Run in a child because a regression would poison its CUDA context.
+    script = f"""
+import numpy as np
+from pathlib import Path
+from numba_cuda_mlir import cuda
+from cuda import coop
+from cuda.coop.numba_mlir._compiler import _nvrtc
+
+assert Path(coop.__file__).resolve() == Path({str(Path(portable_coop.__file__).resolve())!r})
+compile_provider = _nvrtc.compile
+injected = []
+
+def with_assertions(**kwargs):
+    if "group.{operation}();" in kwargs.get("cpp", ""):
+        kwargs["cpp"] = "#define CCCL_ENABLE_ASSERTIONS\\n" + kwargs["cpp"]
+        injected.append(True)
+    return compile_provider(**kwargs)
+
+_nvrtc.compile = with_assertions
+
+@cuda.jit
+def kernel(output):
+    group = coop.this_warp().group_by(3, exhaustive=False)
+    group.{operation}()
+    output[cuda.threadIdx.x] = group.is_member()
+
+output = np.full(32, -1, dtype=np.int32)
+kernel[1, 32](output)
+cuda.synchronize()
+assert injected, "group synchronization assertions were not enabled"
+np.testing.assert_array_equal(output, np.array([1] * 30 + [0, 0]))
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 @cuda.jit
