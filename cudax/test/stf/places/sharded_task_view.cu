@@ -116,8 +116,8 @@ int main()
   t1.set_symbol("saxpy+add+sum");
   t1->*[&](auto, auto dX, auto dY) {
     auto& t = t1;
-    auto vX = sh::task_view<double>(t, 0, dX);
-    auto vY = sh::task_view<double>(t, 1, dY);
+    auto vX = sh::task_view(t, 0, dX);
+    auto vY = sh::task_view(t, 1, dY);
     EXPECT(vX.num_shards() == P);
     EXPECT(vY.num_shards() == P);
     EXPECT(vX.size() == N);
@@ -166,7 +166,7 @@ int main()
   t2->*[&](auto, auto dX) {
     auto& t = t2;
     contract_ok &= expect_throw("replicated argument", [&] {
-      (void) sh::task_view<double>(t, 0, dX);
+      (void) sh::task_view(t, 0, dX);
     });
   };
 
@@ -183,7 +183,7 @@ int main()
     t4->*[&](auto, auto dX) {
       auto& t = t4;
       contract_ok &= expect_throw("composite over another grid", [&] {
-        (void) sh::task_view<double>(t, 0, dX);
+        (void) sh::task_view(t, 0, dX);
       });
     };
   }
@@ -196,7 +196,7 @@ int main()
   t5.set_symbol("single");
   t5->*[&](auto, auto dX) {
     auto& t = t5;
-    auto vX = sh::task_view<double>(t, 0, dX);
+    auto vX = sh::task_view(t, 0, dX);
     EXPECT(vX.num_shards() == 1);
     EXPECT(vX.shard(0).size == N);
     auto envs  = sh::task_envs(t, vX);

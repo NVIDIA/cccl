@@ -45,6 +45,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <cuda/experimental/__places/localized_array.cuh>
@@ -212,8 +213,9 @@ template <class _Tp>
 
 /**
  * @brief The sharded view of the @p dep_index-th argument of @p t, whose
- * instance in the body is @p inst (an mdspan-like slice: `data_handle()`,
- * `size()`, `rank()`).
+ * instance in the body is @p inst (an mdspan-like slice: `element_type`,
+ * `data_handle()`, `size()`, `rank()`). The element type is deduced from the
+ * instance.
  *
  * | instance's data place                 | result                              |
  * |---------------------------------------|-------------------------------------|
@@ -227,9 +229,12 @@ template <class _Tp>
  * PROTOTYPE: const-ness of read-only instances is dropped (`sharded_array`
  * has no const-element form yet).
  */
-template <class _Tp, class _Task, class _Slice>
-[[nodiscard]] sharded_array<_Tp> task_view(_Task& t, size_t dep_index, const _Slice& inst, const char* what = "sharded::task_view")
+template <class _Task, class _Slice>
+[[nodiscard]] auto task_view(_Task& t, size_t dep_index, const _Slice& inst, const char* what = "sharded::task_view")
 {
+  // The element type comes from the instance (a read-only instance is
+  // `slice<const T>`; the view drops the const, see above).
+  using _Tp = ::cuda::std::remove_const_t<typename _Slice::element_type>;
   using ::std::to_string;
   static_assert(_Slice::rank() == 1,
                 "sharded::task_view: only rank-1 instances have a contiguous per-place view (column blocks need "

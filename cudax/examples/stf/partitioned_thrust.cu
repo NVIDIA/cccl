@@ -83,21 +83,23 @@ int main()
   const size_t N     = 4 * 1024 * 1024;
   const double alpha = 3.14;
 
-  ::std::vector<double> X(N), Y(N);
-  for (size_t i = 0; i < N; i++)
-  {
-    X[i] = X0(i);
-    Y[i] = Y0(i);
-  }
-
   stream_ctx ctx;
 
-  auto lX = ctx.logical_data(make_slice(X.data(), N)).set_symbol("X");
-  auto lY = ctx.logical_data(make_slice(Y.data(), N)).set_symbol("Y");
+  // Logical data from shapes: no host buffers, the instances are born on the
+  // composite place below.
+  auto lX = ctx.logical_data(shape_of<slice<double>>(N)).set_symbol("X");
+  auto lY = ctx.logical_data(shape_of<slice<double>>(N)).set_symbol("Y");
 
   // The composite data place: blocked over the grid. This is the only place
   // the geometry is stated; the task body reads it back from the argument.
   auto dist = data_place::composite(blocked_partition(), grid);
+
+  // Initialize on the grid: each place fills its own part of X and Y.
+  ctx.parallel_for(blocked_partition(), grid, lX.shape(), lX.write(dist), lY.write(dist))
+      ->*[] _CCCL_DEVICE(size_t i, auto x, auto y) {
+            x(i) = sin((double) i);
+            y(i) = cos((double) i);
+          };
 
   double sum = 0.0;
 
@@ -106,8 +108,8 @@ int main()
   t->*[&](auto, auto dX, auto dY) {
     // The sharded view of argument 0 and 1: one shard per place, at the cut
     // `dist` applied, executed by that place on the task's stream for it.
-    auto vX = sh::task_view<double>(t, 0, dX);
-    auto vY = sh::task_view<double>(t, 1, dY);
+    auto vX = sh::task_view(t, 0, dX);
+    auto vY = sh::task_view(t, 1, dY);
 
     for (size_t g = 0; g < vY.num_shards(); g++)
     {
@@ -137,22 +139,32 @@ int main()
     sum = sh::sum(vY, envs, call_env);
   };
 
+  // Verify in a host callback: STF brings Y to the host after the task.
+  bool ok = true;
+  ctx.host_launch(lY.read())->*[&](auto hY) {
+    double sum_ref = 0.0;
+    for (size_t i = 0; i < N; i++)
+    {
+      const double expected = Y0(i) + (alpha + 1.0) * X0(i);
+      if (fabs(hY(i) - expected) > 1e-9)
+      {
+        fprintf(stderr, "Verification FAILED at %zu: %f vs %f\n", i, hY(i), expected);
+        ok = false;
+        return;
+      }
+      sum_ref += expected;
+    }
+    if (fabs(sum - sum_ref) > 1e-6 * fabs(sum_ref))
+    {
+      fprintf(stderr, "Sum FAILED: %f vs %f\n", sum, sum_ref);
+      ok = false;
+    }
+  };
+
   ctx.finalize();
 
-  double sum_ref = 0.0;
-  for (size_t i = 0; i < N; i++)
+  if (!ok)
   {
-    const double expected = Y0(i) + (alpha + 1.0) * X0(i);
-    if (fabs(Y[i] - expected) > 1e-9)
-    {
-      fprintf(stderr, "Verification FAILED at %zu: %f vs %f\n", i, Y[i], expected);
-      return 1;
-    }
-    sum_ref += expected;
-  }
-  if (fabs(sum - sum_ref) > 1e-6 * fabs(sum_ref))
-  {
-    fprintf(stderr, "Sum FAILED: %f vs %f\n", sum, sum_ref);
     return 1;
   }
 
