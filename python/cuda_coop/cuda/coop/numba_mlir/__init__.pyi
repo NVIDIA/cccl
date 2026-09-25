@@ -55,6 +55,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",

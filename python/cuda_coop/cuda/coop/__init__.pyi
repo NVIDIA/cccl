@@ -53,6 +53,8 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "__version__",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
