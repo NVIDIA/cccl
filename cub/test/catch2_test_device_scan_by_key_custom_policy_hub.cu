@@ -47,7 +47,7 @@ CUB_TEST("DispatchScanByKey::Dispatch: custom policy hub", "[scan_by_key][device
   using accum_t   = cuda::std::__accumulator_t<scan_op_t, value_t, value_t>;
 
   c2h::device_vector<key_t> d_keys{1, 1, 23, 2, 2, 1, 35, 2, 4, 67, 8, 2, 6, 8, 434, 6, 8};
-  c2h::device_vector<value_t> d_values{3, 4, 1, 2, 3, 5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+  c2h::device_vector<value_t> d_values{3, 4, 1, 2, 3, 5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
   c2h::device_vector<value_t> d_out(d_values.size());
 
   c2h::host_vector<value_t> expected(d_values.size());
