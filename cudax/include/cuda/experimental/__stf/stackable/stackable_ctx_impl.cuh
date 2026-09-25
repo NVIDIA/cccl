@@ -1031,7 +1031,27 @@ public:
     // This method assumes that the mutex is already acquired in exclusive mode
     // The event_list correspond to the prereqs after we have finalized (eg.
     // launch a graph in a stream, or the child node)
-    void _pop_epilogue(event_list& finalize_prereqs)
+    // Runs a step of a state transition that must complete even if the step fails: the first
+    // failure is kept in `first_error` (rethrown by the caller once the transition is done), later
+    // ones are dropped. `defer` hands back the in-flight exception as an exception_ptr.
+    template <typename Step>
+    static void complete_step(::std::exception_ptr& first_error, Step&& step)
+    {
+      ::std::exception_ptr e = on_throw(exception_policies::defer) << [&]() -> ::std::exception_ptr {
+        step();
+        return {};
+      };
+      if (e && !first_error)
+      {
+        first_error = e;
+      }
+    }
+
+    // The second half of every pop. Completes the transition whatever its steps report, so the
+    // parent context is left consistent (data unfrozen, node gone, head moved); a failure along the
+    // way lands in `first_error` for the caller to rethrow. See the error-handling contract on
+    // stackable_ctx::pop().
+    void _pop_epilogue(event_list& finalize_prereqs, ::std::exception_ptr& first_error)
     {
       int head_offset = get_head_offset();
 
@@ -1065,7 +1085,10 @@ public:
       for (auto& d_impl : current_node->pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
-        d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
+        // Every pushed data gets unfrozen even if one of them fails to.
+        complete_step(first_error, [&] {
+          d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
+        });
       }
 
       // Composite (localized) allocations cached by the popped context must
@@ -1076,8 +1099,10 @@ public:
       // reused or released once the parent has synchronized with the nested
       // work (the dangling-event registration below guarantees the parent's
       // fence/finalize waits on the body graph).
-      parent_ctx.get_backend().get_composite_cache().import_from(
-        mv(current_ctx.get_backend().get_composite_cache()), finalize_prereqs);
+      complete_step(first_error, [&] {
+        parent_ctx.get_backend().get_composite_cache().import_from(
+          mv(current_ctx.get_backend().get_composite_cache()), finalize_prereqs);
+      });
 
       // Forward the body graph's completion event into the parent context.
       //
@@ -1103,14 +1128,19 @@ public:
       // Destroy the resources used in the wrapper allocator (if any)
       if (current_node->clear_adapters)
       {
+        // clear() deallocates through cuda_try; a failing adapter must not stop the others.
         if (current_node->alloc_adapters)
         {
-          current_node->alloc_adapters->clear();
+          complete_step(first_error, [&] {
+            current_node->alloc_adapters->clear();
+          });
         }
 
         for (auto& a : current_node->retained_adapters)
         {
-          a->clear();
+          complete_step(first_error, [&] {
+            a->clear();
+          });
         }
       }
       else
@@ -1151,15 +1181,22 @@ public:
 
       _pop_prologue();
 
-      // Polymorphic finalization - no conditionals needed!
       int head_offset    = get_head_offset();
       auto& current_node = *nodes[head_offset];
 
-      // Use polymorphic dispatch for context-specific finalization
-      event_list finalize_prereqs = current_node.finalize();
-
-      // Release all resources acquired for the push now that we have executed the graph
-      _pop_epilogue(finalize_prereqs);
+      // The node's finalize() is where asynchronous errors from the nested work surface (at its
+      // synchronize). The pop completes regardless and the error is rethrown at the end, so the
+      // caller gets it together with a consistent context rather than a half-popped one.
+      ::std::exception_ptr first_error;
+      event_list finalize_prereqs;
+      complete_step(first_error, [&] {
+        finalize_prereqs = current_node.finalize();
+      });
+      _pop_epilogue(finalize_prereqs, first_error);
+      if (first_error)
+      {
+        ::std::rethrow_exception(first_error);
+      }
     }
 
     // Result of pop_prologue_impl() used by stackable_ctx::pop_prologue() to
@@ -1219,20 +1256,34 @@ public:
     {
       auto lock = acquire_exclusive_lock();
 
-      int node_offset             = pending_epilogue_node_offset_;
-      graph_ctx_node* gnode       = pending_graph_node_();
-      event_list finalize_prereqs = gnode->finalize_after_launch();
+      int node_offset       = pending_epilogue_node_offset_;
+      graph_ctx_node* gnode = pending_graph_node_();
+
+      // finalize_after_launch() synchronizes the support stream, which is where asynchronous
+      // errors from the launched graph surface. The epilogue completes regardless: the node is
+      // destroyed, the data unfrozen, every handle invalidated, and only then is the first error
+      // rethrown. (After a failed synchronize there is no nested work left for the parent to be
+      // ordered behind, so an empty prerequisite list is the right one.)
+      ::std::exception_ptr first_error;
+      event_list finalize_prereqs;
+      complete_step(first_error, [&] {
+        finalize_prereqs = gnode->finalize_after_launch();
+      });
 
       // Head must still be the prepared node for _pop_epilogue to find the
       // right children / parent.
       _CCCL_ASSERT(get_head_offset() == node_offset, "pop_epilogue called from wrong thread or head was changed");
 
-      _pop_epilogue(finalize_prereqs);
+      _pop_epilogue(finalize_prereqs, first_error);
 
       // Drop the shared token - every outstanding launchable_graph_handle
       // holds only a weak_ptr, so this invalidates them atomically.
       pending_epilogue_token_.reset();
       pending_epilogue_node_offset_ = -1;
+      if (first_error)
+      {
+        ::std::rethrow_exception(first_error);
+      }
     }
 
     /**
@@ -1577,6 +1628,16 @@ public:
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
+  //! \brief Terminate the current nested level and get back to the previous one.
+  //!
+  //! Error-handling contract, shared by pop(), pop_epilogue() and the RAII scopes: a function that
+  //! *begins* a level (push(), pop_prologue()) may throw and leaves nothing behind; a function that
+  //! *ends* one completes the transition whatever its steps report (data is unfrozen, the node is
+  //! destroyed, the head moves back to the parent) and then rethrows the first failure, so the
+  //! caller receives the error together with a consistent context. Asynchronous device errors
+  //! surface here, at the synchronize inside the nested finalize, which is why this is the
+  //! function most worth catching around. The RAII scopes call pop() from a destructor, where a
+  //! throw has nowhere to go: they report the error and abort.
   void pop()
   {
     pimpl->pop();
@@ -1604,7 +1665,8 @@ public:
   //!
   //! Releases resources, unfreezes any data that was pushed into the nested
   //! context, and destroys the node. Invalidates every launchable_graph_handle
-  //! that was produced by the matching pop_prologue().
+  //! that was produced by the matching pop_prologue(). Completes even if a step
+  //! fails and then rethrows the first failure; see the contract on pop().
   void pop_epilogue()
   {
     pimpl->pop_epilogue_impl();

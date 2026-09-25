@@ -991,12 +991,16 @@ public:
     ctx_.push(loc);
   }
 
-  // A push() that cannot be matched by its pop() leaves the context stack inconsistent, so
-  // terminating is the intended outcome.
-  // NOLINTNEXTLINE(bugprone-exception-escape)
+  // pop() completes the level's teardown and then rethrows the first failure it met (typically an
+  // asynchronous device error surfacing at the synchronize). A destructor cannot pass that on, so
+  // the policy here is to report it and end the program, rather than let it become a silent
+  // std::terminate.
   ~graph_scope_guard()
   {
-    ctx_.pop();
+    ON_THROW(abort)
+    {
+      ctx_.pop();
+    };
   }
 
   graph_scope_guard(const graph_scope_guard&)            = delete;
@@ -1102,10 +1106,14 @@ public:
     // If no one ever called launch()/exec()/stream()/graph(): we still ran push()
     // in the constructor, so we must match it with a prologue+epilogue
     // pair to tear the node down cleanly. finalize_after_launch handles
-    // the no-launch case correctly.
-    ensure_prepared_();
-
-    ctx_.pop_epilogue();
+    // the no-launch case correctly. Both calls can throw (pop_epilogue completes the teardown
+    // and then rethrows the first failure); this function is noexcept and runs from the
+    // destructor, so the failure is reported and the program ends.
+    ON_THROW(abort)
+    {
+      ensure_prepared_();
+      ctx_.pop_epilogue();
+    };
     released_ = true;
   }
 
@@ -1314,12 +1322,14 @@ public:
     ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
   }
 
-  // As with graph_scope_guard, a push_while() that cannot be matched by its pop() leaves the
-  // context stack inconsistent, so terminating is the intended outcome.
-  // NOLINTNEXTLINE(bugprone-exception-escape)
+  // As with graph_scope_guard: pop() rethrows the first failure of a completed teardown, and a
+  // destructor can only report it and end the program.
   ~while_graph_scope_guard()
   {
-    ctx_.pop();
+    ON_THROW(abort)
+    {
+      ctx_.pop();
+    };
   }
 
   cudaGraphConditionalHandle cond_handle() const
