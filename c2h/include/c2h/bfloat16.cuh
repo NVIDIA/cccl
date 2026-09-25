@@ -37,9 +37,8 @@ struct bfloat16_t
 
   /// Constructor from __nv_bfloat16
   __host__ __device__ __forceinline__ explicit bfloat16_t(const __nv_bfloat16& other)
-  {
-    __x = reinterpret_cast<const uint16_t&>(other);
-  }
+      : __x(reinterpret_cast<const uint16_t&>(other))
+  {}
 
   /// Constructor from integer
   __host__ __device__ __forceinline__ explicit bfloat16_t(int a)
