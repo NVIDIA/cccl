@@ -1033,9 +1033,9 @@ public:
     // launch a graph in a stream, or the child node)
     // The second half of every pop. Completes the transition whatever its steps report, so the
     // parent context is left consistent (data unfrozen, node gone, head moved); a failure along the
-    // way lands in `first_error` for the caller to rethrow. See the error-handling contract on
+    // way lands in `err` for the caller to act on. See the error-handling contract on
     // stackable_ctx::pop().
-    void _pop_epilogue(event_list& finalize_prereqs, first_error& err)
+    void _pop_epilogue(event_list& finalize_prereqs, ::std::exception_ptr& err)
     {
       int head_offset = get_head_offset();
 
@@ -1173,7 +1173,7 @@ public:
       // The node's finalize() is where asynchronous errors from the nested work surface (at its
       // synchronize). The pop completes regardless, and the policy decides at the end, so the
       // caller gets the error together with a consistent context rather than a half-popped one.
-      first_error err;
+      ::std::exception_ptr err;
       event_list finalize_prereqs;
       err |= [&] {
         finalize_prereqs = current_node.finalize();
@@ -1194,7 +1194,7 @@ public:
       if (err)
       {
         on_throw(policy) << [&] {
-          err.rethrow();
+          ::std::rethrow_exception(err);
         };
       }
     }
@@ -1264,7 +1264,7 @@ public:
       // records the completion event. It is where asynchronous errors from the launched graph
       // surface. The epilogue completes regardless: the node is destroyed, the data unfrozen,
       // every handle invalidated, and only then does the policy act on the first failure.
-      first_error err;
+      ::std::exception_ptr err;
       event_list finalize_prereqs;
       err |= [&] {
         finalize_prereqs = gnode->finalize_after_launch();
@@ -1293,7 +1293,7 @@ public:
       if (err)
       {
         on_throw(policy) << [&] {
-          err.rethrow();
+          ::std::rethrow_exception(err);
         };
       }
     }

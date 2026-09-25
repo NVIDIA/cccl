@@ -179,7 +179,7 @@ public:
 
     const cudaStream_t stream = adapter_state->stream;
 
-    first_error err;
+    ::std::exception_ptr err;
     bool synchronized = false;
     for (const auto& b : adapter_state->to_free)
     {
@@ -199,7 +199,7 @@ public:
     cleared_or_moved = true;
     if (err)
     {
-      err.rethrow();
+      ::std::rethrow_exception(err);
     }
   }
 
