@@ -449,10 +449,10 @@ aggregate excludes an exclusive initial value. Warp forms also accept
 ``valid_items`` to scan the first N lanes by group rank, with
 ``1 <= N <= warp_width``; only those N result lanes are defined. The initial
 value and ``valid_items`` must be uniform across all participating members.
-Invalid runtime values execute a device trap before CUB's integer argument is
-formed and invalidate the current CUDA context. Block Scan rejects
-``valid_items``. These two controls are intentionally absent from the portable
-root API.
+An out-of-range runtime ``valid_items`` value triggers a device trap before
+CUB's integer argument is formed and invalidates the current CUDA context.
+Block Scan rejects ``valid_items``. These two controls are intentionally absent
+from the portable root API.
 
 All Scan forms use CUB temporary storage. Block calls may use compiler-owned,
 caller-owned, or dynamic shared storage and append ``syncthreads`` unless a

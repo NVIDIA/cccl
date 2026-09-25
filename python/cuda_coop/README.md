@@ -433,9 +433,9 @@ qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
 `ThreadData` or local array populated with the group aggregate. Warp forms also
 accept `valid_items`, which selects the first N lanes by group rank and requires
 `1 <= N <= warp_width`; only those N result lanes are defined. The initial
-value and `valid_items` must be uniform across participating members. Invalid
-runtime values execute a deterministic device trap before CUB's 32-bit
-parameter is formed, invalidating the current CUDA context.
+value and `valid_items` must be uniform across participating members. An
+out-of-range runtime `valid_items` value triggers a deterministic device trap
+before CUB's 32-bit parameter is formed, invalidating the current CUDA context.
 
 All Scan providers use CUB temporary storage. Block calls may use implicit,
 caller-owned, or dynamic `TempStorage` and append a block reuse barrier unless
