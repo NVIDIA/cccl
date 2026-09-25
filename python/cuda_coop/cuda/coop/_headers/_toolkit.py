@@ -99,7 +99,10 @@ def _toolkit_version(
 
 def _library_dirs(root: Path) -> tuple[Path, ...]:
     result: list[Path] = []
-    for name in ("lib", "lib64", "bin"):
+    names = ("lib", "lib64", "bin")
+    if os.name == "nt":
+        names += ("bin/x64",)
+    for name in names:
         candidate = root / name
         if candidate.is_dir():
             result.append(candidate)
