@@ -570,6 +570,14 @@ class ThreadData:
                 ("dtype", "_dtype", "element_type"),
             )
 
+        from cutlass import cute
+
+        if isinstance(vector, cute.TensorSSA):
+            # Indexing may cache a layout operation in the current IR region.
+            # A fresh view prevents this conversion from leaving region-local
+            # metadata on a caller's value that also lives outside the region.
+            vector = vector.reshape(vector.shape)
+
         try:
             values = tuple(vector[idx] for idx in range(items_per_thread))
         except Exception as exc:

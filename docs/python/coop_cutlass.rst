@@ -923,6 +923,38 @@ CuTe register tensors and immutable register vectors, returning fresh
    :end-before: docs: end cutlass-neighbors
    :dedent: 4
 
+.. _coop-cutlass-histogram:
+
+Counting samples into bins
+--------------------------
+
+``histogram`` takes integer bin indices and returns fresh per-thread
+counters. Use a complete one-dimensional block and initialize every sample
+to an index in ``[0, bins)``. Samples may be uint8, int32, uint32, int64, or
+uint64; counters independently use int32, uint32, int64, or uint64.
+
+Each thread receives ``bins_per_thread`` counters in striped order: thread
+``t`` owns bins ``t + i * block_size``. The output capacity must cover every
+bin, and slots beyond ``bins`` contain zero. Use striped Store to write the
+counters in bin order, as in this tested example:
+
+.. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_histogram.py
+   :language: python
+   :start-after: docs: start cutlass-histogram
+   :end-before: docs: end cutlass-histogram
+   :dedent: 4
+
+Both ``algorithm="atomic"`` and ``algorithm="sort"`` preserve the input.
+Each call initializes fresh counters, including when calls share an
+explicit ``TempStorage`` descriptor. Add the returned counters yourself to
+accumulate several tiles, choosing a wide enough counter dtype. There is no
+``valid_items`` control: padding contributes counts just like other input.
+
+Qualified calls also accept CuTe register tensors, immutable vectors, and
+CuTe counter dtype selectors. The result is always fresh ``ThreadData``.
+See the :doc:`Histogram explorer <coop/visualizations/histogram>` for the
+shared ownership and accumulation rules.
+
 .. _coop-cutlass-checking:
 
 Checking and tuning a kernel

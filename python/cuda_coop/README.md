@@ -163,8 +163,8 @@ explains terms and concepts, including blocked and striped layouts.
 | Run Length Decode | `run_length_decode`, `run_length_decode_into` |
 
 Both backends implement Load/Store, Reduce/Sum, Scan, Exchange/Shuffle,
-Merge Sort, Radix Sort/Rank, TopK, Adjacent Difference, and Discontinuity.
-Histogram, Run Length Decode, and Batched Warp Reduction are currently
+Merge Sort, Radix Sort/Rank, TopK, Adjacent Difference, Discontinuity, and
+Histogram. Run Length Decode and Batched Warp Reduction are currently
 implemented only by Numba-CUDA-MLIR.
 
 Each operation documents its supported groups and result ownership in the

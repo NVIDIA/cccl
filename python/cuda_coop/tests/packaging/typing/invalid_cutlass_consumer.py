@@ -330,3 +330,15 @@ cutlass_coop.discontinuity(block, values, mode="up")  # expected-error: [call-ov
 cutlass_coop.discontinuity(  # expected-error: [call-overload]
     block, values, flag_op=callback
 )
+
+cutlass_coop.histogram(warp, values, bins=32)  # expected-error: [arg-type]
+cutlass_coop.histogram(block, scalar, bins=32)  # expected-error: [call-overload]
+cutlass_coop.histogram(
+    block,
+    values,
+    bins=32,
+    counter_dtype=np.float32,  # expected-error: [arg-type]
+)
+cutlass_coop.histogram(  # expected-error: [call-overload]
+    block, values, bins=32, algorithm="other"
+)

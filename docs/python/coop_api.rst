@@ -349,3 +349,8 @@ Neighbor comparisons
 
 .. autofunction:: adjacent_difference
 .. autofunction:: discontinuity
+
+Histogram
+^^^^^^^^^
+
+.. autofunction:: histogram
