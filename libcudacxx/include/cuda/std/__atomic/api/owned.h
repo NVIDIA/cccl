@@ -55,6 +55,28 @@ struct __atomic_common
 };
 
 template <typename _Tp, typename _Sco>
+struct __atomic_extended_floating_point
+{
+  _CCCL_HOST_DEVICE_API constexpr __atomic_extended_floating_point(_Tp __v)
+      : __a(__v)
+  {}
+
+  _CCCL_HIDE_FROM_ABI constexpr __atomic_extended_floating_point() = default;
+
+  __atomic_storage_t<_Tp> __a;
+
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
+
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, volatile)
+};
+
+template <typename _Tp, typename _Sco>
 struct __atomic_arithmetic
 {
   _CCCL_HOST_DEVICE_API constexpr __atomic_arithmetic(_Tp __v)
@@ -74,6 +96,9 @@ struct __atomic_arithmetic
 
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, )
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile)
+
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, volatile)
 };
 
 template <typename _Tp, typename _Sco>
@@ -99,6 +124,9 @@ struct __atomic_bitwise
 
   _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, )
   _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, volatile)
+
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, volatile)
 };
 
 template <typename _Tp, typename _Sco>
@@ -121,15 +149,22 @@ struct __atomic_pointer
 
   _LIBCUDACXX_ATOMIC_POINTER_IMPL(, )
   _LIBCUDACXX_ATOMIC_POINTER_IMPL(, volatile)
+
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(, volatile)
 };
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
-using __atomic_impl = _If<
-  is_pointer_v<_Tp>,
-  __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
-  _If<is_floating_point_v<_Tp>,
-      __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
-      _If<is_integral_v<_Tp>, __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>, __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
+using __atomic_impl =
+  _If<is_pointer_v<_Tp>,
+      __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
+      _If<is_floating_point_v<_Tp>,
+          __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
+          _If<is_integral_v<_Tp>,
+              __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>,
+              _If<__atomic_is_minmax_extended_floating_point_v<_Tp>,
+                  __atomic_extended_floating_point<_Tp, __scope_to_tag<_Sco>>,
+                  __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>>;
 
 #undef _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT
 
