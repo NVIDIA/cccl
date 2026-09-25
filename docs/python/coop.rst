@@ -94,8 +94,9 @@ parts of that range:
    * - Environment
      - Automated checks
    * - Linux x86-64, Python 3.14, CUDA 13
-     - Installed-wheel compilation with GPUs hidden and GPU runtime tests
-       in pull requests
+     - Installed-wheel compilation with GPUs hidden and L4 runtime tests
+       in pull requests; H100 runtime tests with serial synchronization
+       race checking in the nightly matrix
    * - Linux x86-64, Python 3.14, CUDA 12
      - Installed-wheel compilation and GPU runtime tests in the nightly matrix
    * - Linux x86-64, Python 3.10 and 3.14
