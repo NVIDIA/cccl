@@ -61,7 +61,9 @@ def histogram(
     Each call starts from zero, even when scratch is reused. Accumulate
     returned counters explicitly to count several tiles. There is no
     ``valid_items`` control; padding contributes samples. The complete
-    contract is shared with :func:`cuda.coop.histogram`.
+    contract is shared with :func:`cuda.coop.histogram`. See the
+    :doc:`Histogram visualization <coop/visualizations/histogram>` for sample
+    and counter layouts.
     """
     if not isinstance(group, ThreadGroup):
         raise TypeError("cuda.coop.cutlass.histogram group must be a ThreadGroup")

@@ -80,6 +80,11 @@ def adjacent_difference(
         Fresh values with the input dtype, extent, and minimum alignment.
         Invalid suffix items and a boundary without an external neighbor
         retain their input values. Only built-in subtraction is supported.
+
+    Notes
+    -----
+    See the :doc:`Adjacent Difference visualization
+    <coop/visualizations/adjacent-difference>` for tile boundaries.
     """
     return _neighbors(
         group,
@@ -115,6 +120,11 @@ def discontinuity(
     cuda.coop.cutlass.ThreadData or tuple of ThreadData
         Fresh int32 heads or tails, or ``(heads, tails)``. Each result has the
         input extent and minimum alignment. The input remains unchanged.
+
+    Notes
+    -----
+    See the :doc:`Discontinuity visualization
+    <coop/visualizations/discontinuity>` for head and tail flags.
     """
     return _neighbors(
         group,

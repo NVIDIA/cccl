@@ -47,8 +47,8 @@ arbitrary padding can alter the final valid tail flag.
 
 Every member of the complete block must call the operation. Warp groups
 are unsupported. The functions infer dtype and per-thread extent from
-``ThreadData``. See :doc:`programming_guide` for group participation and
-:ref:`temporary storage <coop-temp-storage>` for caller-owned scratch.
+``ThreadData``. See :ref:`group participation <coop-common-participation>`
+and :ref:`temporary storage <coop-common-storage>` for the shared contracts.
 Both operations can use automatic scratch or an explicit ``TempStorage``.
 
 CuTe register payloads
@@ -77,5 +77,7 @@ or last tail remains one regardless of the predicate. Returned flags have
 
 The common and qualified references are
 :func:`cuda.coop.adjacent_difference`, :func:`cuda.coop.discontinuity`,
-:func:`cuda.coop.numba_mlir.adjacent_difference`, and
-:func:`cuda.coop.numba_mlir.discontinuity`.
+:func:`cuda.coop.numba_mlir.adjacent_difference`,
+:func:`cuda.coop.numba_mlir.discontinuity`,
+:func:`cuda.coop.cutlass.adjacent_difference`, and
+:func:`cuda.coop.cutlass.discontinuity`.

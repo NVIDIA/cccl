@@ -14,10 +14,10 @@ FAQs
 Why are there common and backend-qualified namespaces?
 ------------------------------------------------------
 
-``cuda.coop`` provides the common API for cooperative operations. A kernel
-compiler's backend implements those calls. Use this namespace for code that
-shares group, ``ThreadData``, and built-in operator contracts across compilers.
-Register the compiler your kernel uses on the host:
+``cuda.coop`` provides the contract shared by Numba-CUDA-MLIR and CUTLASS.
+Both backends implement its kernel operations. Use this namespace for code
+that shares group, ``ThreadData``, and built-in operator contracts across
+compilers. Register the compiler your kernel uses on the host:
 
 .. code-block:: python
 
@@ -34,9 +34,10 @@ For CuTe kernels, register ``"cutlass"`` instead:
    coop.register("cutlass")
 
 The qualified namespaces, ``cuda.coop.numba_mlir`` and
-``cuda.coop.cutlass``, add features specific to their compiler. Numba's
-extensions include local-array payloads and device callbacks. CUTLASS adds
-CuTe register-tensor conversions. Both add operation-specific controls;
+``cuda.coop.cutlass``, each include all common kernel operations and add
+features specific to their compiler. Numba's extensions include local-array
+payloads and device callbacks. CUTLASS adds CuTe register-tensor conversions.
+Both add operation-specific controls;
 see the :ref:`Numba comparison <coop-programming-api-choice>` and
 :ref:`CUTLASS comparison <coop-cutlass-api-choice>`.
 
@@ -44,8 +45,8 @@ Importing a qualified namespace also registers its backend. Common and
 qualified calls for the same compiler can appear in one kernel and follow
 the shared contracts. Kernel launch syntax and other DSL code still need
 adaptation when moving between compilers; compiler-owned payloads cannot
-cross that boundary. The :ref:`coverage table <coop-backends>` lists which
-families each backend currently implements.
+cross that boundary. The :ref:`coverage table <coop-backends>` lists the
+families implemented by both backends.
 
 .. _i-only-use-numba-cuda-mlir-can-i-import-its-namespace-as-coop:
 .. _coop-faq-numba-only:
@@ -129,10 +130,8 @@ See the :ref:`shared storage model <coop-common-storage>`,
 Numba's restrictions on combining cooperative backing with user static or
 dynamic shared arrays are specific to that backend.
 Both backends also accept explicit block scratch for Adjacent Difference,
-Discontinuity, and Histogram. Numba additionally supports both Run Length
-Decode forms. CUTLASS does not yet implement those forms or
-Batched Warp Reduction; see
-:ref:`backend coverage <coop-backends>`.
+Discontinuity, Histogram, and both Run Length Decode forms. Batched Warp
+Reduction manages its own resources and accepts no explicit descriptor.
 
 .. _coop-faq-installed-extra:
 
@@ -301,9 +300,9 @@ missing or incompatible backend at setup time. The switch
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` disables only automatic probing;
 explicit registration and qualified imports still work.
 
-Check the selected backend's :ref:`coverage <coop-backends>`, launch shape,
-dtypes, and participation requirements. An API name alone does not establish
-support for that compiler. In a process using both DSLs, keep Numba values
+Check the operation's launch shape, dtype, and participation requirements.
+Both backends implement the common contract; qualified extensions follow
+their compiler's guide. In a process using both DSLs, keep Numba values
 inside Numba kernels and CuTe values inside CuTe kernels.
 
 For provider compilation errors, verify the toolkit and matching CCCL

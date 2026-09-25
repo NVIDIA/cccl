@@ -51,8 +51,8 @@ sorting the full tile. Blocks can compare neighboring items with
 with :doc:`Run Length Decode <coop/visualizations/run-length-decode>`.
 :doc:`Batched Warp Reduction <coop/visualizations/reduce-batched>` computes
 an independent reduction for each per-thread payload slot.
-The compiler integrations use CUB and CUDAX; see
-:ref:`backend coverage <coop-backends>` for the families each implements.
+Both compiler integrations implement these common operations using CUB and
+CUDAX; see :ref:`backend coverage <coop-backends>`.
 
 This overview introduces the shared API and execution model. Choose a
 programming guide to write kernels, or a developer guide to work on the
@@ -82,9 +82,10 @@ the :doc:`API reference <coop_api>`.
 Backend coverage
 ----------------
 
-A common API name does not imply that every backend implements it. The
-current integrations provide the following families; group shapes, dtypes,
-and qualified controls have the limits described in each programming guide.
+The common API is the contract shared by Numba-CUDA-MLIR and CUTLASS. Both
+implement every common primitive below, with the documented groups, dtypes,
+and result rules. Their qualified APIs add compiler-specific payloads and
+controls, described in the programming guides.
 
 .. list-table:: Current primitive families
    :header-rows: 1
@@ -122,10 +123,10 @@ and qualified controls have the limits described in each programming guide.
      - Available
    * - Run Length Decode, windowed and bulk
      - Available
-     - Not implemented
+     - Available
    * - Batched Warp Reduction
      - Available
-     - Not implemented
+     - Available
 
 .. _block-prefix-callbacks:
 
@@ -155,9 +156,9 @@ across supported DSLs. Calls inside a kernel are compiler markers; they are not
 host-side implementations of those operations.
 
 The qualified namespaces, ``cuda.coop.numba_mlir`` and
-``cuda.coop.cutlass``, expose the shared operations and their backend's
-extensions. A program using one compiler can use its qualified namespace
-alone. CUTLASS-only code can use ``import cuda.coop.cutlass as coop``. Use
+``cuda.coop.cutlass``, each include all common kernel operations and their
+backend's extensions. A program using one compiler can use its qualified
+namespace alone. CUTLASS-only code can use ``import cuda.coop.cutlass as coop``. Use
 ``numba_coop`` and ``cutlass_coop`` when a module contains both DSLs.
 Common and qualified calls can appear in the same kernel when they belong
 to its compiler. The comparisons in the
@@ -489,9 +490,10 @@ storage. With ``auto_sync=False``, the kernel must provide the required
 barrier before reuse, including across iterations. A scratch reuse barrier
 does not replace synchronization for the kernel's own shared data.
 
-Warp operations use independent scratch per physical or logical group and
-the appropriate warp mask. Explicit storage support and user shared-memory
-restrictions vary by family and backend. See
+Warp operations that need scratch keep independent storage per physical or
+logical group and use the appropriate warp mask. Each primitive documents
+whether it accepts explicit storage. Rules for combining cooperative scratch
+with the kernel's own shared memory depend on the compiler. See
 :ref:`Numba storage <coop-temp-storage>`, the
 :ref:`CUTLASS storage <coop-cutlass-storage>`, and the
 :ref:`storage FAQ <coop-faq-temp-storage>` for examples and limits.

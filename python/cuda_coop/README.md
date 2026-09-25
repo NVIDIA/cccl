@@ -103,10 +103,11 @@ compiler. Use explicit registration when a dependency or earlier notebook cell
 already imported `cuda.coop`. Both integrations can be registered in one
 process; common calls select the backend from the active compiler context.
 
-The common API in `cuda.coop` describes operations independently of a compiler.
-Its public entry points live in `cuda/coop/_core/api/`; the private `_core`
-package also contains shared implementation. A common spelling does not
-guarantee that every backend supports the operation.
+The common API in `cuda.coop` is the contract shared by Numba-CUDA-MLIR and
+CUTLASS. Both implement every common kernel operation with the documented
+groups, dtypes, and result rules. Its public entry points live in
+`cuda/coop/_core/api/`; the private `_core` package also contains shared
+implementation.
 
 For CUTLASS-only code, use the qualified namespace directly:
 
@@ -130,9 +131,10 @@ common calls and the longer aliases for qualified calls; application code
 need not import both namespaces for one backend. Aliasing dotted imports also
 avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 
-Both qualified APIs retain shared signatures, string selectors, and inference
-rules. Numba-CUDA-MLIR adds local-array payloads, memory namespaces, and device
-callbacks. CUTLASS adds CuTe register conversions and qualified controls such
+Each qualified API includes all common kernel operations, preserving their
+signatures, string selectors, and inference rules. Numba-CUDA-MLIR adds
+local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
+CuTe register conversions and qualified controls such
 as warp Scan aggregates and scalar Shuffle. Custom operators and Scan prefix
 callbacks are currently supported only by Numba-CUDA-MLIR.
 
@@ -162,10 +164,9 @@ explains terms and concepts, including blocked and striped layouts.
 | Counting | `histogram` |
 | Run Length Decode | `run_length_decode`, `run_length_decode_into` |
 
-Both backends implement Load/Store, Reduce/Sum, Scan, Exchange/Shuffle,
-Merge Sort, Radix Sort/Rank, TopK, Adjacent Difference, Discontinuity, and
-Histogram. Run Length Decode and Batched Warp Reduction are currently
-implemented only by Numba-CUDA-MLIR.
+Both backends implement every family in this table through the common API.
+Their qualified APIs include those operations and add the extensions
+documented in each programming guide.
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).

@@ -864,6 +864,41 @@ payload conversion.
    :start-after: docs: start cutlass-topk
    :end-before: docs: end cutlass-topk
 
+.. _coop-cutlass-reduce-batched:
+
+Batched Warp Reduction
+-----------------------
+
+``reduce_batched(warp, values)`` reduces each per-thread payload slot across
+the warp independently. A payload with three features produces three
+aggregates, rather than combining all features into one sum. Physical warps
+and logical widths of 1, 2, 4, 8, 16, and 32 are supported. Every member of the
+selected warp participates; other logical warps may take another branch.
+
+The batch count ``B`` is the positive compile-time extent of each lane's input
+payload. For ``B`` batches and ``W`` lanes, each returned ``ThreadData`` has
+``ceil(B / W)`` slots. With ``output_layout="striped"``, slot ``i`` in lane
+``r`` holds batch ``r + i * W``. With ``"blocked"``, it holds batch
+``r * ceil(B / W) + i``. Guard reads and stores when the batch index reaches
+``B``. Inputs remain unchanged, and the result retains their element type.
+
+The common form accepts readable ``ThreadData`` payloads and built-in
+operator strings. The qualified form additionally accepts CuTe register
+payloads and the built-in aliases supported by qualified Reduce. There is
+no ``temp_storage`` argument: the CUB provider uses register exchanges and
+needs no shared scratch or trailing storage-reuse barrier.
+
+:download:`Download the feature-sum example
+<../../python/cuda_coop/examples/cutlass/reduce_batched.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/reduce_batched.py
+   :language: python
+   :start-after: docs: start cutlass-reduce-batched
+   :end-before: docs: end cutlass-reduce-batched
+
+See the :doc:`Batched Warp Reduction visualization
+<coop/visualizations/reduce-batched>` for the batch-to-lane mapping.
+
 .. _coop-cutlass-register-payloads:
 
 Qualified register payloads

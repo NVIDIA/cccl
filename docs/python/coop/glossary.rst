@@ -126,16 +126,17 @@ Terms
 
          <span id="term-portable-API"></span>
 
-      The backend-independent API exposed through ``from cuda import coop``.
-      It describes operations on thread groups, values, and storage.
-      Support for particular operations and argument types depends on the
-      backend. Qualified APIs provide backend-specific extensions. See
+      The contract shared by Numba-CUDA-MLIR and CUTLASS, exposed through
+      ``from cuda import coop``. Both implement its kernel operations on
+      thread groups, values, and storage with the documented argument and
+      result rules. Qualified APIs add compiler-specific extensions. See
       :ref:`choosing an API <coop-api-namespaces>`.
 
    qualified API
       A backend's namespace: ``cuda.coop.numba_mlir`` or
-      ``cuda.coop.cutlass``. It provides the supported common operations
-      and compiler-specific extensions. See
+      ``cuda.coop.cutlass``. Each includes all common kernel operations and
+      compiler-specific extensions. Host registration uses
+      ``cuda.coop.register`` or occurs when importing the qualified namespace. See
       :ref:`namespace choices <coop-faq-namespaces>`.
 
    striped

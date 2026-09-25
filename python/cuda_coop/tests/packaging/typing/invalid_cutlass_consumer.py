@@ -32,6 +32,11 @@ def callback(left: Int32, right: Int32) -> Int32:
 
 scalar = Int32(1)
 values = cutlass_coop.ThreadData(2, np.int32)
+cutlass_coop.reduce_batched(block, values)  # expected-error: [arg-type]
+cutlass_coop.reduce_batched(warp, scalar)  # expected-error: [call-overload]
+cutlass_coop.reduce_batched(  # expected-error: [call-overload]
+    warp, values, output_layout="other"
+)
 cutlass_coop.reduce(block, scalar, binary_op=callback)  # expected-error: [arg-type]
 cutlass_coop.sum(block, scalar, valid_items=7)  # expected-error: [call-overload]
 cutlass_coop.sum(  # expected-error: [call-overload]

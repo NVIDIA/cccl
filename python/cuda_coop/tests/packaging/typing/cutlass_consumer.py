@@ -173,6 +173,16 @@ def check_cutlass_hierarchy_surface() -> None:
 def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(2, np.int32)
+    assert_type(
+        cutlass_coop.reduce_batched(cutlass_coop.this_warp(), values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.reduce_batched(
+            cutlass_coop.this_warp().group_by(8), values, output_layout="blocked"
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
     assert_type(cutlass_coop.reduce(block, values), np.int32)
     assert_type(cutlass_coop.sum(block, values), np.int32)
     assert_type(cutlass_coop.reduce(block, scalar, binary_op="max"), Uint32)

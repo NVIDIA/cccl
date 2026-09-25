@@ -33,9 +33,6 @@ def reduce_batched(
 ) -> ThreadDataLike[Any]:
     """Reduce each payload slot independently across the selected warp.
 
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
-
     Parameters
     ----------
     group : ThreadGroup
@@ -68,12 +65,13 @@ def reduce_batched(
     Notes
     -----
     Each batch reduces independently; input slots are not combined with
-    one another. The Numba-CUDA-MLIR backend supports complete physical
-    warps and logical warps of 1, 2, 4, 8, or 16 threads. The compiler manages
-    scratch per warp; this operation has no ``temp_storage`` argument.
+    one another. Both backends support complete physical
+    warps and logical warps of 1, 2, 4, 8, 16, or 32 threads. The compiler manages
+    any provider storage; this operation has no ``temp_storage`` argument.
 
     Use :func:`cuda.coop.numba_mlir.reduce_batched` for a custom stateless
-    device operator. The CUB counterpart is ``cub::WarpReduceBatched``.
+    device operator, or :func:`cuda.coop.cutlass.reduce_batched` for CuTe
+    register payloads. The CUB counterpart is ``cub::WarpReduceBatched``.
     """
 
     output_layout = _common_selector(

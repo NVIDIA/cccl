@@ -64,10 +64,9 @@ cute.make_layout(element_count))``. The programming guides provide complete
 :doc:`Numba <../programming_guide>` and :doc:`CuTe <../../coop_cutlass>`
 launch and memory examples.
 
-The diagrams describe each primitive independently of its compiler. Check
-:ref:`backend coverage <coop-backends>` before using a family: Adjacent
-Difference, Discontinuity, Histogram, Run Length Decode, and Batched Warp
-Reduction currently require Numba-CUDA-MLIR. Qualified controls are
-identified on each page. Custom device operators and Scan prefix callbacks
-also require Numba-CUDA-MLIR; CuTe supports built-in operators and its
-qualified register-payload conversions.
+The diagrams describe the common contracts implemented by both
+Numba-CUDA-MLIR and CUTLASS. Qualified controls are identified on each page.
+Custom device operators and Scan prefix callbacks are Numba-qualified
+extensions. CuTe supports built-in operators and qualified register-payload
+conversions; see :ref:`backend coverage <coop-backends>` and the programming
+guides for their respective extensions.
