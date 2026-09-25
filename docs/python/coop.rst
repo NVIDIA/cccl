@@ -116,7 +116,7 @@ and qualified controls have the limits described in each programming guide.
      - Available
    * - Adjacent Difference and Discontinuity
      - Available
-     - Not implemented
+     - Available
    * - Histogram
      - Available
      - Not implemented

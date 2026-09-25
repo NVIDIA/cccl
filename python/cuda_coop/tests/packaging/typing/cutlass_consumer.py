@@ -659,3 +659,30 @@ def check_cutlass_topk_surface() -> None:
         cutlass_coop.topk_max_keys(common_coop.this_block(), keys, k=7),
         cutlass_coop.ThreadData[np.float32],
     )
+
+
+def check_cutlass_neighbors() -> None:
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(3, np.int32)
+    storage = cutlass_coop.TempStorage(alignment=16)
+    assert_type(
+        cutlass_coop.adjacent_difference(
+            block, values, valid_items=17, temp_storage=storage
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.adjacent_difference(block, values.to_register_tensor()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.discontinuity(block, values), cutlass_coop.ThreadData[Int32]
+    )
+    assert_type(
+        cutlass_coop.discontinuity(block, values, mode="heads_and_tails"),
+        tuple[cutlass_coop.ThreadData[Int32], cutlass_coop.ThreadData[Int32]],
+    )
+    assert_type(
+        cutlass_coop.discontinuity(block, values.to_tensor_ssa(), mode="tails"),
+        cutlass_coop.ThreadData[Int32],
+    )

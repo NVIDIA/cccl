@@ -343,3 +343,9 @@ Top-k selection
 .. autofunction:: topk_max_keys
 .. autofunction:: topk_min_pairs
 .. autofunction:: topk_max_pairs
+
+Neighbor comparisons
+^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: adjacent_difference
+.. autofunction:: discontinuity

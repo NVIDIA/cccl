@@ -323,3 +323,10 @@ common.topk_max_pairs(
     values.to_tensor_ssa(),  # expected-error: [arg-type]
     k=1,
 )
+
+cutlass_coop.adjacent_difference(warp, values)  # expected-error: [arg-type]
+cutlass_coop.adjacent_difference(block, scalar)  # expected-error: [call-overload]
+cutlass_coop.discontinuity(block, values, mode="up")  # expected-error: [call-overload]
+cutlass_coop.discontinuity(  # expected-error: [call-overload]
+    block, values, flag_op=callback
+)

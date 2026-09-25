@@ -13,9 +13,38 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
+from cuda import coop
 from cuda.coop import cutlass as cutlass_coop
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
+
+
+@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "algorithm",
+    (
+        " DIRECT ",
+        " STRIPED ",
+        " VECTORIZE ",
+        " TRANSPOSE ",
+        " WARP-TRANSPOSE ",
+        " WARP-TRANSPOSE-TIMESLICED ",
+    ),
+)
+def test_algorithm_selector_spellings(api, algorithm):
+    @cute.kernel
+    def kernel(memory: cute.Pointer):
+        group = api.this_block()
+        payload = api.ThreadData(2, dtype=cutlass.Int32)
+        api.load(group, memory, payload, algorithm=algorithm)
+        api.store(group, memory, payload, algorithm=algorithm)
+
+    @cute.jit
+    def launch(memory: cute.Pointer):
+        kernel(memory).launch(grid=1, block=32)
+
+    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    assert cute.compile[(GPUArch("sm_80"),)](launch, pointer) is not None
 
 
 @pytest.mark.parametrize(
