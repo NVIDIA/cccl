@@ -24,7 +24,7 @@ from .thread_group import (
 )
 
 # Descriptor constructors and group factories do not use the family
-# registration decorator. Compiler rewrites recognize their exact exported
+# registration decorator. The Numba rewrite recognizes their exact exported
 # identity plus this tag, which rejects same-named impostor callables.
 for _member_name in (
     "TempStorage",
