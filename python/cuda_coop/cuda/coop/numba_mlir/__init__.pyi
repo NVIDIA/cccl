@@ -63,6 +63,7 @@ __all__ = [
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
+    "histogram",
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
