@@ -24,16 +24,16 @@ struct transform_tuple
   using InputTuple  = typename cuda::std::tuple<IndexType, ValueType>;
   using OutputTuple = typename cuda::std::tuple<bool, ValueType, ValueType>;
 
-  IndexType n, N;
+  IndexType n, n_padded;
 
-  transform_tuple(IndexType n, IndexType N)
+  transform_tuple(IndexType n, IndexType n_padded)
       : n(n)
-      , N(N)
+      , n_padded(n_padded)
   {}
 
   __host__ __device__ OutputTuple operator()(const InputTuple& t) const
   {
-    const bool is_valid = (cuda::std::get<0>(t) % N) < n;
+    const bool is_valid = (cuda::std::get<0>(t) % n_padded) < n;
     return OutputTuple(is_valid, cuda::std::get<1>(t), cuda::std::get<1>(t));
   }
 };
@@ -66,21 +66,21 @@ struct reduce_tuple
 
 int main()
 {
-  const int M = 10; // number of rows
-  const int n = 11; // number of columns excluding padding
-  const int N = 16; // number of columns including padding
+  const int M        = 10; // number of rows
+  const int n        = 11; // number of columns excluding padding
+  const int n_padded = 16; // number of columns including padding
 
   thrust::default_random_engine rng(12345);
   thrust::uniform_real_distribution<float> dist(0.0f, 1.0f);
 
-  thrust::device_vector<float> data(M * N, -1);
+  thrust::device_vector<float> data(M * n_padded, -1);
 
   // initialize valid values in grid
   for (int i = 0; i < M; i++)
   {
     for (int j = 0; j < n; j++)
     {
-      data[static_cast<std::size_t>(i) * N + j] = dist(rng);
+      data[static_cast<std::size_t>(i) * n_padded + j] = dist(rng);
     }
   }
 
@@ -90,9 +90,9 @@ int main()
   for (int i = 0; i < M; i++)
   {
     std::cout << " ";
-    for (int j = 0; j < N; j++)
+    for (int j = 0; j < n_padded; j++)
     {
-      std::cout << data[(static_cast<std::size_t>(i) * N) + j] << " ";
+      std::cout << data[(static_cast<std::size_t>(i) * n_padded) + j] << " ";
     }
     std::cout << "\n";
   }
@@ -102,7 +102,7 @@ int main()
   using result_type = cuda::std::tuple<bool, float, float>;
 
   result_type init(true, FLT_MAX, -FLT_MAX); // initial value
-  const transform_tuple<int, float> unary_op(n, N); // transformation operator
+  const transform_tuple<int, float> unary_op(n, n_padded); // transformation operator
   const reduce_tuple<int, float> binary_op; // reduction operator
 
   result_type result = thrust::transform_reduce(

@@ -424,30 +424,30 @@ template <>
 class zip_function<sum_five>
 {
 private:
-  sum_five __fun_;
+  sum_five fun;
 
 public:
   zip_function() = default;
 
   _CCCL_HOST_DEVICE zip_function(sum_five&& func) noexcept
-      : __fun_(::cuda::std::move(func))
+      : fun(::cuda::std::move(func))
   {}
 
   template <typename Tuple>
   _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& tuple) const noexcept
   {
     // not calling func, just return a default ctored element, so we would get a wrong result if we were called
-    return decltype(::cuda::std::apply(__fun_, ::cuda::std::forward<Tuple>(tuple))){};
+    return decltype(::cuda::std::apply(fun, ::cuda::std::forward<Tuple>(tuple))){};
   }
 
   _CCCL_HOST_DEVICE sum_five& __fun() noexcept
   {
-    return __fun_;
+    return fun;
   }
 
   _CCCL_HOST_DEVICE const sum_five& __fun() const noexcept
   {
-    return __fun_;
+    return fun;
   }
 };
 _CCCL_END_NAMESPACE_CUDA

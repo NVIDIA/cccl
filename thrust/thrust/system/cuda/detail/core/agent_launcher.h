@@ -39,14 +39,14 @@ namespace cuda_cub::core::detail
 {
 #  if _CCCL_DEVICE_COMPILATION()
 template <class Agent, class... Args>
-_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::block_threads) _kernel_agent(Args... args)
 {
   extern __shared__ char shmem[];
   Agent::entry(args..., shmem);
 }
 
 template <class Agent, class... Args>
-_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::block_threads)
   _kernel_agent_vshmem(char* vshmem, Args... args)
 {
   extern __shared__ char shmem[];
@@ -76,10 +76,10 @@ struct AgentLauncher : Agent
   bool has_shmem;
   size_t shmem_size;
 
-  static constexpr int MAX_SHMEM_PER_BLOCK = 48 * 1024;
+  static constexpr int max_shmem_per_block = 48 * 1024;
 
-  using has_enough_shmem_t = typename has_enough_shmem<Agent, MAX_SHMEM_PER_BLOCK>::type;
-  using shm1               = has_enough_shmem<Agent, MAX_SHMEM_PER_BLOCK>;
+  using has_enough_shmem_t = typename has_enough_shmem<Agent, max_shmem_per_block>::type;
+  using shm1               = has_enough_shmem<Agent, max_shmem_per_block>;
 
   template <class Size>
   THRUST_RUNTIME_FUNCTION AgentLauncher(AgentPlan plan_, Size count_, cudaStream_t stream_, char const* name_)

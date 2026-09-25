@@ -403,19 +403,19 @@ struct object_with_non_trivial_ctor
 {
   // This struct will only properly assign if its `magic` member is
   // set to this certain number.
-  static constexpr int MAGIC = 923390;
+  static constexpr int expected_magic = 923390;
 
   int field;
   int magic;
 
   _CCCL_HOST_DEVICE object_with_non_trivial_ctor()
   {
-    magic = MAGIC;
+    magic = expected_magic;
     field = 0;
   }
   _CCCL_HOST_DEVICE object_with_non_trivial_ctor(int f)
   {
-    magic = MAGIC;
+    magic = expected_magic;
     field = f;
   }
 
@@ -427,7 +427,7 @@ struct object_with_non_trivial_ctor
   {
     // To really copy over x's field value, require we have magic value set.
     // If copy_if copies to uninitialized bits, the field will rarely be 923390.
-    if (magic == MAGIC)
+    if (magic == expected_magic)
     {
       field = x.field;
     }

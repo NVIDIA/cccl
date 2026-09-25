@@ -138,10 +138,10 @@ struct RadixEncoder<double>
 template <unsigned int RadixBits, typename KeyType>
 struct bucket_functor
 {
-  using Encoder                    = RadixEncoder<KeyType>;
-  using EncodedType                = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
-  using result_type                = size_t;
-  static const EncodedType BitMask = static_cast<EncodedType>((1 << RadixBits) - 1);
+  using Encoder                     = RadixEncoder<KeyType>;
+  using EncodedType                 = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
+  using result_type                 = size_t;
+  static const EncodedType bit_mask = static_cast<EncodedType>((1 << RadixBits) - 1);
 
   Encoder encode;
   EncodedType bit_shift;
@@ -158,7 +158,7 @@ struct bucket_functor
     const EncodedType x = encode(key);
 
     // note that we mutate the histogram here
-    return histogram[(x >> bit_shift) & BitMask]++;
+    return histogram[(x >> bit_shift) & bit_mask]++;
   }
 };
 

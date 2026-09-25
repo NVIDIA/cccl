@@ -41,13 +41,13 @@ struct typelist;
 
 struct sm52
 {
-  static constexpr int ver      = 520;
-  static constexpr int warpSize = 32;
+  static constexpr int ver       = 520;
+  static constexpr int warp_size = 32;
 };
 struct sm60
 {
-  static constexpr int ver      = 600;
-  static constexpr int warpSize = 32;
+  static constexpr int ver       = 600;
+  static constexpr int warp_size = 32;
 };
 
 // list of sm, checked from left to right order
@@ -233,9 +233,9 @@ struct AgentPlan
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
   AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = nullptr)
-      : threads_per_block(PtxPlan::BLOCK_THREADS)
-      , items_per_thread(PtxPlan::ITEMS_PER_THREAD)
-      , items_per_tile(PtxPlan::ITEMS_PER_TILE)
+      : threads_per_block(PtxPlan::block_threads)
+      , items_per_thread(PtxPlan::items_per_thread)
+      , items_per_tile(PtxPlan::items_per_tile)
       , shared_memory_size(temp_storage_size<PtxPlan>::value)
       , grid_size(0)
   {}
@@ -360,35 +360,35 @@ struct get_arch<Plan<Arch>>
 template <class T>
 class cuda_optional
 {
-  cudaError_t status_{cudaSuccess};
-  T value_{};
+  cudaError_t err{cudaSuccess};
+  T val{};
 
 public:
   cuda_optional() = default;
 
   _CCCL_HOST_DEVICE cuda_optional(T v, cudaError_t status = cudaSuccess)
-      : status_(status)
-      , value_(v)
+      : err(status)
+      , val(v)
   {}
 
   bool _CCCL_HOST_DEVICE isValid() const
   {
-    return cudaSuccess == status_;
+    return cudaSuccess == err;
   }
 
   cudaError_t _CCCL_HOST_DEVICE status() const
   {
-    return status_;
+    return err;
   }
 
   _CCCL_HOST_DEVICE T const& value() const
   {
-    return value_;
+    return val;
   }
 
   _CCCL_HOST_DEVICE operator T const&() const
   {
-    return value_;
+    return val;
   }
 };
 
@@ -465,9 +465,9 @@ struct uninitialized
 {
   using DeviceWord = typename cub::UnitWord<T>::DeviceWord;
 
-  static constexpr int WORDS = sizeof(T) / sizeof(DeviceWord);
+  static constexpr int words = sizeof(T) / sizeof(DeviceWord);
 
-  DeviceWord storage[WORDS];
+  DeviceWord storage[words];
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& get()
   {
