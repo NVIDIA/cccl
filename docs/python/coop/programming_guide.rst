@@ -27,9 +27,9 @@ Keep a compiled kernel in its original CUDA context; see the
 :ref:`device and context-lifetime limitation <coop-numba-context-lifetime>`
 before reusing a dispatcher across devices or recreated contexts.
 
-*This guide describes the experimental Numba-CUDA-MLIR API in the current
-PR stack. Operation support varies by group and backend. The examples below
-use block and warp operations supported by that stack.*
+This guide describes the experimental Numba-CUDA-MLIR 0.5.x API.
+Operation support varies by group and backend. The examples below use
+supported block and warp operations.
 
 A first kernel: prefix sums within tiles
 ---------------------------------------
