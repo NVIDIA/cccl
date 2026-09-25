@@ -46,7 +46,7 @@ covered by CI. Before reusing compiled kernels, check the
 :ref:`disk-cache behavior <coop-numba-kernel-cache>`.
 
 A first kernel: prefix sums within tiles
----------------------------------------
+----------------------------------------
 
 An exclusive prefix sum gives each element the sum of earlier elements.
 For ``[3, 1, 4, 2]``, the result is ``[0, 3, 4, 8]``.
@@ -81,7 +81,7 @@ its own input and result check.
 .. _coop-programming-api-choice:
 
 Choosing the common or qualified API
------------------------------------
+------------------------------------
 
 The common API is imported with:
 
@@ -402,7 +402,7 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 .. _coop-thread-data:
 
 ``ThreadData``: the part of a tile owned by one thread
-----------------------------------------------------
+------------------------------------------------------
 
 ``coop.ThreadData(2, dtype=np.int32)`` gives each thread two integer slots.
 With 128 threads, the group owns 256 values. Each thread
@@ -517,7 +517,7 @@ to payload storage; alignment of the input and output arrays remains a
 separate property.
 
 Load, operate, store
--------------------
+--------------------
 
 Load and Store accept one-dimensional contiguous arrays. ``offset`` counts
 elements from the array's beginning. ``valid_items`` counts elements in
@@ -681,7 +681,7 @@ allocation. Its contents are opaque; keep application values in
      - Compiler-owned block scratch and reuse synchronization
 
 Reusing scratch across operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This version of a tile scan shares one descriptor between the transpose
 Load, Scan, and transpose Store:
@@ -700,7 +700,7 @@ The loaded values and the returned prefixes remain in their per-thread
 payloads while scratch is reused.
 
 Capacity, alignment, and lifetime
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``TempStorage()`` defaults to ``sharing="shared"`` with automatic reuse
 synchronization. ``size_in_bytes=None`` and ``alignment=None`` let the
@@ -765,7 +765,7 @@ for the kernels above; use an explicit capacity when you have a reason to
 reserve that amount of shared memory.
 
 Helpers and compile-time values
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Device helpers containing primitives must be inlined into the kernel so the
 planner can resolve their groups, descriptors, and launch dimensions. Default
@@ -831,7 +831,7 @@ compiler-managed scratch.
 .. _coop-scans:
 
 Scan operators and carrying a prefix
------------------------------------
+------------------------------------
 
 An inclusive scan includes the current element; an exclusive scan starts
 with an initial value and excludes the current element. For sum, the
@@ -876,7 +876,7 @@ combines two numeric scalars, even when a thread owns several items.
 .. _coop-prefix-callbacks:
 
 Several tiles in one block
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A Block Scan prefix callback supplies the prefix preceding a tile. A
 stateful callback can also update a running total for the next tile. The
@@ -918,7 +918,7 @@ device-wide scan or design the additional inter-block algorithm explicitly.
 .. _coop-merge-sort:
 
 Sorting keys and associated values
----------------------------------
+----------------------------------
 
 :func:`~cuda.coop.merge_sort_keys` orders a group's keys.
 :func:`~cuda.coop.merge_sort_pairs` moves an associated value with each key,
@@ -971,7 +971,7 @@ than combining it with ``descending=True``.
 .. _coop-radix:
 
 Radix sorting and digit ranks
-----------------------------
+-----------------------------
 
 :func:`~cuda.coop.radix_sort_keys` and :func:`~cuda.coop.radix_sort_pairs`
 sort a block's full tile by key bits. They accept blocked input, return
@@ -1040,7 +1040,7 @@ Radix Rank uses compiler-owned scratch.
 .. _coop-topk:
 
 Selecting the smallest or largest keys
--------------------------------------
+--------------------------------------
 
 :func:`~cuda.coop.topk_max_keys` selects a block's largest keys, and
 :func:`~cuda.coop.topk_min_keys` selects its smallest keys. The pair variants
@@ -1143,7 +1143,7 @@ adds samples to bin zero; see :ref:`the padding FAQ
 .. _coop-run-length-decode:
 
 Expanding runs into values
--------------------------
+--------------------------
 
 :func:`cuda.coop.run_length_decode` expands matching per-thread run-value
 and run-length payloads into a fresh blocked output window. Run lengths
@@ -1171,7 +1171,7 @@ boundary.
 .. _coop-batched-reductions:
 
 Reducing independent batches within a warp
------------------------------------------
+------------------------------------------
 
 :func:`cuda.coop.reduce_batched` treats each local input slot as a separate
 batch. With three items per lane, it reduces three batches across the
@@ -1190,7 +1190,7 @@ complete example. The :ref:`batched reduction FAQ <coop-faq-batched-reduce>`
 compares this operation with ordinary Reduce.
 
 Checking and tuning a kernel
----------------------------
+----------------------------
 
 Check results before comparing algorithms. Useful cases include one full
 tile, several tiles, a single valid element in the final tile, and an empty

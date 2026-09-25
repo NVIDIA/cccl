@@ -17,7 +17,7 @@ for complete kernels and launch examples.
 .. _coop-backend-registration:
 
 Registering a backend
---------------------
+---------------------
 
 Call :func:`cuda.coop.register` on the host before compiling kernels to
 select the backend explicitly:

@@ -69,7 +69,7 @@ All 128 threads execute both calls. There is one kernel launch. Neither
 .. _cuda.coop.calling_conventions:
 
 Positional operands and keyword-only options
--------------------------------------------
+--------------------------------------------
 
 Primitive calls take the participating group first, followed by their data
 operands. These arguments are positional-only. Options such as
@@ -106,7 +106,7 @@ When extending an API, keep the operand order consistent and use
 keyword-only parameters for additional options.
 
 Calling CUB from the kernel
---------------------------
+---------------------------
 
 For this fixed example, the C++ work is small. The Load can be expressed as:
 
@@ -176,7 +176,7 @@ kernel's other primitive calls matter to compilation.
 .. _cuda.coop.generated_shims:
 
 Kernels and their generated C++
-------------------------------
+-------------------------------
 
 .. raw:: html
 
@@ -226,7 +226,7 @@ and the set of emitted overloads can change with the compiler, toolkit, and
 source checkout.
 
 Capturing the source yourself
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 From the CCCL repository root, in an environment with the Numba-CUDA-MLIR
 dependencies installed:
@@ -301,7 +301,7 @@ the ABI status. The Store wrapper uses the same pointer conversion and calls
 ``Store``.
 
 Transpose with a shared scratch descriptor
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. grid:: 1 1 2 2
    :gutter: 3
@@ -336,7 +336,7 @@ also contains ``_alloc`` variants with local ``__shared__`` storage and
 ``__syncthreads()``; those are separate entry points.
 
 Scan with a Python device operator
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. grid:: 1 1 2 2
    :gutter: 3
@@ -371,7 +371,7 @@ Although this Python call omits ``temp_storage``, the planner can supply
 compiler-owned scratch through the same pointer-taking interface.
 
 Recovering the specialization
-----------------------------
+-----------------------------
 
 The fixed C++ example supplied all its template arguments by hand. In the
 Python kernel, some of that information is in the call, some comes from
@@ -459,7 +459,7 @@ CUB's integer parameter. A failed check traps on the device. Callers must
 also provide enough memory for the selected tile and offset.
 
 From Python syntax to an external call
--------------------------------------
+--------------------------------------
 
 The integration registers one whole-function planner,
 ``CoopWholeFunctionPlanner`` in ``_compiler/_planner.py``. It inspects and
@@ -617,7 +617,7 @@ The Block and Warp Load/Store specialization factories return this
 and operation metadata.
 
 Payloads, layouts, and results
------------------------------
+------------------------------
 
 ``ThreadData`` becomes a fixed local array in Numba-CUDA-MLIR. Its extent
 must be known at compile time. The compiler may keep its elements in

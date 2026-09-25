@@ -63,7 +63,7 @@ primitive supports that group.
    Alias for :class:`ThreadHierarchy`.
 
 Payloads and temporary storage
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``ThreadData`` constructs the per-thread payload supplied to a primitive;
 thread-group descriptors describe the participating threads.
