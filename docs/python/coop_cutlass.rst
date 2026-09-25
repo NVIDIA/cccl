@@ -10,7 +10,7 @@ CUTLASS Programming Guide
 =========================
 
 Use ``cuda.coop`` inside a CuTe kernel to load a tile, reduce or scan its
-values, rearrange or sort items, and store the result. The CUTLASS
+values, rearrange, sort, or select items, and store the result. The CUTLASS
 backend implements these primitives with CUB and CUDAX.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
@@ -73,6 +73,10 @@ Both imports call the same implementation inside a CuTe kernel.
      - Block payloads with 32- or 64-bit integer keys.
      - Adds scalar and register-tensor inputs, floating-point Sort keys,
        striped Sort results, and Rank bin prefixes; see :ref:`coop-cutlass-radix`.
+   * - TopK
+     - Block minimum or maximum keys/pairs with common count and scratch controls.
+     - Also accepts CuTe register tensors and returns fresh ``ThreadData``;
+       see :ref:`coop-cutlass-topk`.
 
 .. _coop-cutlass-differences:
 
@@ -98,8 +102,8 @@ describe the requirements for block, warp, and mapped groups.
 
 Reduce and Scan support the built-in operators listed below. Custom
 operators and Scan prefix callbacks are not yet supported. The shared
-:ref:`coverage table <coop-backends>` lists the available primitives and
-planned additions, including TopK.
+:ref:`coverage table <coop-backends>` lists the implemented primitive families
+and their backend support.
 
 .. _coop-cutlass-mixed-backends:
 
@@ -703,6 +707,57 @@ pair order, the signed-key transformation, ranks, and input preservation.
    :language: python
    :start-after: docs: start cutlass-radix
    :end-before: docs: end cutlass-radix
+
+.. _coop-cutlass-topk:
+
+TopK selection
+--------------
+
+``topk_min_keys`` and ``topk_max_keys`` select a tile's smallest or largest
+keys. ``topk_min_pairs`` and ``topk_max_pairs`` also carry each selected value
+with its key. Controls follow the :func:`common TopK contract
+<cuda.coop.topk_min_keys>`: provide ``k``, optionally limit the input with
+``valid_items``, and optionally supply ``temp_storage``.
+
+TopK requires a complete one-dimensional block and fixed per-thread payloads
+in blocked order. All threads participate with uniform counts and extents.
+For tile capacity ``N = block_threads * items_per_thread``, both counts lie in
+``[0, N]``; omitted ``valid_items`` means ``N``. Runtime counts may be signed
+integers up to 64 bits or unsigned integers up to 32 bits. Invalid runtime
+counts trap before narrowing.
+
+Only the first ``min(k, valid_items)`` blocked output positions are defined.
+Results are unsorted, and selection and ordering among equal keys are
+unspecified. If either count is zero, no result positions are defined.
+Restrict Store to the defined prefix; do not read or store the remaining
+positions.
+
+Keys and values may use signed or unsigned 8-, 16-, 32-, or 64-bit integers,
+or 32- or 64-bit floats. Pair extents must match; their dtypes may differ.
+Readable inputs need not support mutation. TopK preserves both inputs and
+returns fresh ``ThreadData`` with the original dtypes and extents. Signed
+floating-point zeros compare equally while retaining their original bits;
+NaNs have no guaranteed numeric ordering.
+
+The qualified API additionally accepts CuTe register tensors and immutable
+register values, including mixed register-tensor and ``ThreadData`` pairs.
+Its results remain ``ThreadData``, and its controls match the common API.
+Scalar inputs are unsupported. Block scratch follows the size, alignment,
+sharing, and reuse synchronization rules described above.
+
+The :doc:`TopK visualization <coop/visualizations/topk>` shows the selected
+prefix. This example selects the smallest keys and largest pairs from a
+partial tile, reusing scratch and preserving both original payloads. Its CPU
+checks compare selected multisets and pair identities without assuming
+output order or stable ties. The qualified path also demonstrates register
+payload conversion.
+:download:`Download the TopK example
+<../../python/cuda_coop/examples/cutlass/topk.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/topk.py
+   :language: python
+   :start-after: docs: start cutlass-topk
+   :end-before: docs: end cutlass-topk
 
 .. _coop-cutlass-register-payloads:
 

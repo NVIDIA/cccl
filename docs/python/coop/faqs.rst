@@ -97,8 +97,7 @@ kernel provides the required barriers itself, including across loop
 iterations. Separate slices do not remove the need to protect reuse.
 
 Both backends accept explicit descriptors for block transpose-family
-Load/Store and Block Scan. Numba also accepts them for Block Merge Sort,
-Block Radix Sort, and TopK; those families are not yet available in CUTLASS.
+Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, and TopK.
 Warp operations use compiler-owned storage and reject explicit descriptors.
 See the :ref:`shared storage model <coop-common-storage>`,
 :ref:`Numba storage rules <coop-temp-storage>`, and the

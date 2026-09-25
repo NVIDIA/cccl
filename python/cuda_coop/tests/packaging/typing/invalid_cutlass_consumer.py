@@ -270,3 +270,56 @@ cutlass_coop.radix_rank(  # expected-error: [call-overload]
 common.radix_sort_keys(  # expected-error: [type-var]
     block, cutlass_coop.ThreadData(2, np.float32)
 )
+
+cutlass_coop.topk_min_keys(warp, values, k=1)  # expected-error: [arg-type]
+cutlass_coop.topk_max_pairs(logical, values, values, k=1)  # expected-error: [arg-type]
+cutlass_coop.topk_min_keys(block, values)  # expected-error: [call-overload]
+cutlass_coop.topk_max_keys(block, scalar, k=1)  # expected-error: [call-overload]
+cutlass_coop.topk_min_pairs(  # expected-error: [call-overload]
+    block, values, scalar, k=1
+)
+cutlass_coop.topk_max_pairs(  # expected-error: [call-overload]
+    block, scalar, values, k=1
+)
+cutlass_coop.topk_min_keys(block, values, 1)  # expected-error: [call-overload]
+cutlass_coop.topk_max_keys(  # expected-error: [call-overload]
+    group=block, keys=values, k=1
+)
+cutlass_coop.topk_min_keys(
+    block,
+    values,
+    k=np.uint64(1),  # expected-error: [arg-type]
+)
+cutlass_coop.topk_max_keys(  # expected-error: [call-overload]
+    block, values, k=Float32(1)
+)
+cutlass_coop.topk_min_pairs(
+    block,
+    values,
+    values,
+    k=1,
+    valid_items=np.uint64(3),  # expected-error: [arg-type]
+)
+cutlass_coop.topk_max_pairs(  # expected-error: [call-overload]
+    block, values, values, k=1, valid_items=1.5
+)
+cutlass_coop.topk_min_keys(  # expected-error: [call-overload]
+    block, values, k=1, algorithm="radix"
+)
+cutlass_coop.topk_max_keys(  # expected-error: [call-overload]
+    block, values, k=1, descending=True
+)
+cutlass_coop.topk_min_pairs(  # expected-error: [call-overload]
+    block, values, values, k=1, compare_op=callback
+)
+common.topk_min_keys(
+    block,
+    values.to_register_tensor(),  # expected-error: [arg-type]
+    k=1,
+)
+common.topk_max_pairs(
+    block,
+    values,
+    values.to_tensor_ssa(),  # expected-error: [arg-type]
+    k=1,
+)

@@ -256,24 +256,3 @@ def test_register_retry(failure):
         assert _dispatch._backend_module_name() is None
         """
     )
-
-
-@pytest.mark.skipif(not _CUTLASS_AVAILABLE, reason="requires CUTLASS DSL")
-@pytest.mark.parametrize("operation", ("topk_min_keys",))
-def test_unimplemented_family(operation):
-    from cuda import coop
-    from cuda.coop._core.api._dispatch import (
-        UnsupportedCoopBackendOperationError,
-        _compiler_scope,
-    )
-
-    coop.register("cutlass")
-    with _compiler_scope("cuda.coop.cutlass"):
-        group = coop.this_block()
-        values = coop.ThreadData(2, dtype=int)
-        values[0], values[1] = 1, 2
-        with pytest.raises(UnsupportedCoopBackendOperationError) as caught:
-            getattr(coop, operation)(group, values, k=1)
-    assert caught.value.operation == operation
-    assert caught.value.backend_module == "cuda.coop.cutlass"
-    assert caught.value.reason_code == "cuda-coop-backend-operation-unavailable"
