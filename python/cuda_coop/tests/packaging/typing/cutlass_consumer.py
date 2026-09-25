@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Strict consumer of qualified CUTLASS Block and Warp Load/Store."""
+"""Strict consumer of the qualified CUTLASS primitive API."""
 
 from __future__ import annotations
 
@@ -277,5 +277,117 @@ def check_cutlass_scan_surface(scalar: Uint32) -> None:
     )
     assert_type(
         cutlass_coop.exclusive_sum(block, values.to_tensor_ssa()),
+        cutlass_coop.ThreadData[Any],
+    )
+
+
+def check_cutlass_exchange_surface() -> None:
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(3, np.float32)
+    ranks = cutlass_coop.ThreadData(3, Int16)
+    flags = cutlass_coop.ThreadData(3, Uint64)
+    for mode in (
+        "striped_to_blocked",
+        "blocked_to_striped",
+        "warp_striped_to_blocked",
+        "blocked_to_warp_striped",
+    ):
+        assert_type(
+            cutlass_coop.exchange(block, values, mode=mode),
+            cutlass_coop.ThreadData[np.float32],
+        )
+        assert_type(
+            cutlass_coop.exchange(block, values, mode=mode, warp_time_slicing=True),
+            cutlass_coop.ThreadData[np.float32],
+        )
+    for scatter_mode in ("scatter_to_blocked", "scatter_to_striped"):
+        assert_type(
+            cutlass_coop.exchange(
+                block, values, mode=scatter_mode, ranks=ranks, warp_time_slicing=True
+            ),
+            cutlass_coop.ThreadData[np.float32],
+        )
+    assert_type(
+        cutlass_coop.exchange(
+            block, values, mode="scatter_to_striped_guarded", ranks=ranks
+        ),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    assert_type(
+        cutlass_coop.exchange(
+            block,
+            values,
+            mode="scatter_to_striped_flagged",
+            ranks=ranks,
+            valid_flags=flags,
+        ),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    assert_type(
+        cutlass_coop.exchange(cutlass_coop.this_warp(), values),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    for width in (1, 2, 4, 8, 16, 32):
+        logical = cutlass_coop.this_warp().group_by(width)
+        assert_type(
+            cutlass_coop.exchange(logical, values), cutlass_coop.ThreadData[np.float32]
+        )
+    assert_type(
+        cutlass_coop.exchange(common_coop.this_block(), values),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    common_coop.exchange(block, values)
+    assert_type(
+        cutlass_coop.exchange(block, values.to_tensor_ssa()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.exchange(
+            block,
+            values.to_register_tensor(),
+            mode="scatter_to_striped_flagged",
+            ranks=ranks.to_tensor_ssa(),
+            valid_flags=flags.to_register_tensor(),
+        ),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.exchange(
+            block,
+            values,
+            mode="scatter_to_blocked",
+            ranks=cutlass_coop.ThreadData(3, np.int8),
+        ),
+        cutlass_coop.ThreadData[np.float32],
+    )
+
+
+def check_cutlass_shuffle_surface(scalar: Uint32) -> None:
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(3, np.int32)
+    assert_type(cutlass_coop.shuffle(block, values), cutlass_coop.ThreadData[np.int32])
+    assert_type(
+        cutlass_coop.shuffle(block, values, mode="up"),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(cutlass_coop.shuffle(block, scalar, mode="offset", distance=-2), Uint32)
+    assert_type(
+        cutlass_coop.shuffle(block, scalar, mode="rotate", distance=Int16(2)), Uint32
+    )
+    assert_type(
+        cutlass_coop.shuffle(block, scalar, mode="rotate", distance=np.uint32(2)),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.shuffle(common_coop.this_block(), values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    common_coop.shuffle(block, values)
+    assert_type(
+        cutlass_coop.shuffle(block, values.to_register_tensor()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.shuffle(block, values.to_tensor_ssa(), mode="up"),
         cutlass_coop.ThreadData[Any],
     )
