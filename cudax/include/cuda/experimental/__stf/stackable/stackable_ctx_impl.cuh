@@ -1031,27 +1031,11 @@ public:
     // This method assumes that the mutex is already acquired in exclusive mode
     // The event_list correspond to the prereqs after we have finalized (eg.
     // launch a graph in a stream, or the child node)
-    // Runs a step of a state transition that must complete even if the step fails: the first
-    // failure is kept in `first_error` (rethrown by the caller once the transition is done), later
-    // ones are dropped. `defer` hands back the in-flight exception as an exception_ptr.
-    template <typename Step>
-    static void complete_step(::std::exception_ptr& first_error, Step&& step)
-    {
-      ::std::exception_ptr e = on_throw(exception_policies::defer) << [&]() -> ::std::exception_ptr {
-        step();
-        return {};
-      };
-      if (e && !first_error)
-      {
-        first_error = e;
-      }
-    }
-
     // The second half of every pop. Completes the transition whatever its steps report, so the
     // parent context is left consistent (data unfrozen, node gone, head moved); a failure along the
     // way lands in `first_error` for the caller to rethrow. See the error-handling contract on
     // stackable_ctx::pop().
-    void _pop_epilogue(event_list& finalize_prereqs, ::std::exception_ptr& first_error)
+    void _pop_epilogue(event_list& finalize_prereqs, first_error& err)
     {
       int head_offset = get_head_offset();
 
@@ -1086,9 +1070,9 @@ public:
       {
         _CCCL_ASSERT(d_impl, "invalid value");
         // Every pushed data gets unfrozen even if one of them fails to.
-        complete_step(first_error, [&] {
+        err |= [&] {
           d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
-        });
+        };
       }
 
       // Composite (localized) allocations cached by the popped context must
@@ -1099,10 +1083,10 @@ public:
       // reused or released once the parent has synchronized with the nested
       // work (the dangling-event registration below guarantees the parent's
       // fence/finalize waits on the body graph).
-      complete_step(first_error, [&] {
+      err |= [&] {
         parent_ctx.get_backend().get_composite_cache().import_from(
           mv(current_ctx.get_backend().get_composite_cache()), finalize_prereqs);
-      });
+      };
 
       // Forward the body graph's completion event into the parent context.
       //
@@ -1128,19 +1112,29 @@ public:
       // Destroy the resources used in the wrapper allocator (if any)
       if (current_node->clear_adapters)
       {
-        // clear() deallocates through cuda_try; a failing adapter must not stop the others.
+        // clear() deallocates through cuda_try, and a failing adapter must not stop the others.
+        // An adapter whose clear() failed is still uncleared, and destroying it with the node
+        // would trip its assertion; nothing below this level can retry, so it is abandoned (its
+        // buffers leak, deliberately) and the failure is reported through the pop's policy.
+        auto clear_or_abandon = [&](const ::std::shared_ptr<stream_adapter>& adapter) {
+          first_error step;
+          step |= [&] {
+            adapter->clear();
+          };
+          if (step)
+          {
+            adapter->abandon();
+            err |= step.get();
+          }
+        };
         if (current_node->alloc_adapters)
         {
-          complete_step(first_error, [&] {
-            current_node->alloc_adapters->clear();
-          });
+          clear_or_abandon(current_node->alloc_adapters);
         }
 
         for (auto& a : current_node->retained_adapters)
         {
-          complete_step(first_error, [&] {
-            a->clear();
-          });
+          clear_or_abandon(a);
         }
       }
       else
@@ -1171,7 +1165,8 @@ public:
     /**
      * @brief Terminate the current nested level and get back to the previous one
      */
-    void pop()
+    template <typename Policy>
+    void pop(Policy policy)
     {
       auto lock = acquire_exclusive_lock();
 
@@ -1185,17 +1180,31 @@ public:
       auto& current_node = *nodes[head_offset];
 
       // The node's finalize() is where asynchronous errors from the nested work surface (at its
-      // synchronize). The pop completes regardless and the error is rethrown at the end, so the
-      // caller gets it together with a consistent context rather than a half-popped one.
-      ::std::exception_ptr first_error;
+      // synchronize). The pop completes regardless, and the policy decides at the end, so the
+      // caller gets the error together with a consistent context rather than a half-popped one.
+      first_error err;
       event_list finalize_prereqs;
-      complete_step(first_error, [&] {
+      err |= [&] {
         finalize_prereqs = current_node.finalize();
-      });
-      _pop_epilogue(finalize_prereqs, first_error);
-      if (first_error)
+      };
+      if (err)
       {
-        ::std::rethrow_exception(first_error);
+        // Without the finalize events the parent cannot be ordered behind the nested work, so
+        // replace ordering by completion: wait for the support stream. If that fails too, the
+        // device is gone and there is nothing left to race with.
+        if (auto* gnode = dynamic_cast<graph_ctx_node*>(&current_node); gnode && !gnode->is_nested())
+        {
+          err |= [&] {
+            cuda_try<cudaStreamSynchronize>(gnode->support_stream);
+          };
+        }
+      }
+      _pop_epilogue(finalize_prereqs, err);
+      if (err)
+      {
+        on_throw(policy) << [&] {
+          err.rethrow();
+        };
       }
     }
 
@@ -1252,37 +1261,49 @@ public:
      * launchable_graph_handle that was produced by the matching
      * pop_prologue().
      */
-    void pop_epilogue_impl()
+    template <typename Policy>
+    void pop_epilogue_impl(Policy policy)
     {
       auto lock = acquire_exclusive_lock();
 
       int node_offset       = pending_epilogue_node_offset_;
       graph_ctx_node* gnode = pending_graph_node_();
 
-      // finalize_after_launch() synchronizes the support stream, which is where asynchronous
-      // errors from the launched graph surface. The epilogue completes regardless: the node is
-      // destroyed, the data unfrozen, every handle invalidated, and only then is the first error
-      // rethrown. (After a failed synchronize there is no nested work left for the parent to be
-      // ordered behind, so an empty prerequisite list is the right one.)
-      ::std::exception_ptr first_error;
+      // finalize_after_launch() synchronizes the support stream, releases the nested resources and
+      // records the completion event. It is where asynchronous errors from the launched graph
+      // surface. The epilogue completes regardless: the node is destroyed, the data unfrozen,
+      // every handle invalidated, and only then does the policy act on the first failure.
+      first_error err;
       event_list finalize_prereqs;
-      complete_step(first_error, [&] {
+      err |= [&] {
         finalize_prereqs = gnode->finalize_after_launch();
-      });
+      };
+      if (err)
+      {
+        // The failure may have been the event record after a successful synchronize, in which
+        // case the launched graph may still be running. Replace ordering by completion: wait for
+        // the support stream before the parent unfreezes anything. If that fails too, the device
+        // is gone and there is nothing left to race with.
+        err |= [&] {
+          cuda_try<cudaStreamSynchronize>(gnode->support_stream);
+        };
+      }
 
       // Head must still be the prepared node for _pop_epilogue to find the
       // right children / parent.
       _CCCL_ASSERT(get_head_offset() == node_offset, "pop_epilogue called from wrong thread or head was changed");
 
-      _pop_epilogue(finalize_prereqs, first_error);
+      _pop_epilogue(finalize_prereqs, err);
 
       // Drop the shared token - every outstanding launchable_graph_handle
       // holds only a weak_ptr, so this invalidates them atomically.
       pending_epilogue_token_.reset();
       pending_epilogue_node_offset_ = -1;
-      if (first_error)
+      if (err)
       {
-        ::std::rethrow_exception(first_error);
+        on_throw(policy) << [&] {
+          err.rethrow();
+        };
       }
     }
 
@@ -1636,11 +1657,16 @@ public:
   //! destroyed, the head moves back to the parent) and then rethrows the first failure, so the
   //! caller receives the error together with a consistent context. Asynchronous device errors
   //! surface here, at the synchronize inside the nested finalize, which is why this is the
-  //! function most worth catching around. The RAII scopes call pop() from a destructor, where a
-  //! throw has nowhere to go: they report the error and abort.
-  void pop()
+  //! function most worth catching around.
+  //!
+  //! `policy` decides what happens to that first failure once the level is gone: the default,
+  //! `rethrow`, propagates it with its type intact; `abort` reports and ends the program, which
+  //! is what the RAII scopes pass since they call pop() from a destructor; `notify` reports and
+  //! lets the program continue. See exception_policy.cuh for the full set.
+  template <typename Policy = exception_policies::rethrow_t>
+  void pop(Policy policy = {})
   {
-    pimpl->pop();
+    pimpl->pop(policy);
   }
 
   //! \brief First phase of a re-launchable pop.
@@ -1666,10 +1692,11 @@ public:
   //! Releases resources, unfreezes any data that was pushed into the nested
   //! context, and destroys the node. Invalidates every launchable_graph_handle
   //! that was produced by the matching pop_prologue(). Completes even if a step
-  //! fails and then rethrows the first failure; see the contract on pop().
-  void pop_epilogue()
+  //! fails, then hands the first failure to `policy`; see the contract on pop().
+  template <typename Policy = exception_policies::rethrow_t>
+  void pop_epilogue(Policy policy = {})
   {
-    pimpl->pop_epilogue_impl();
+    pimpl->pop_epilogue_impl(policy);
   }
 
 private:

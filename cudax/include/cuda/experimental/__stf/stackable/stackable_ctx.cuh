@@ -991,16 +991,11 @@ public:
     ctx_.push(loc);
   }
 
-  // pop() completes the level's teardown and then rethrows the first failure it met (typically an
-  // asynchronous device error surfacing at the synchronize). A destructor cannot pass that on, so
-  // the policy here is to report it and end the program, rather than let it become a silent
-  // std::terminate.
+  // pop() completes the level's teardown whatever its steps report; a destructor cannot pass the
+  // first failure on, so the policy is to report it and end the program.
   ~graph_scope_guard()
   {
-    ON_THROW(abort)
-    {
-      ctx_.pop();
-    };
+    ctx_.pop(exception_policies::abort);
   }
 
   graph_scope_guard(const graph_scope_guard&)            = delete;
@@ -1106,14 +1101,13 @@ public:
     // If no one ever called launch()/exec()/stream()/graph(): we still ran push()
     // in the constructor, so we must match it with a prologue+epilogue
     // pair to tear the node down cleanly. finalize_after_launch handles
-    // the no-launch case correctly. Both calls can throw (pop_epilogue completes the teardown
-    // and then rethrows the first failure); this function is noexcept and runs from the
-    // destructor, so the failure is reported and the program ends.
+    // the no-launch case correctly. This function is noexcept and runs from the destructor, so
+    // a failure in either step is reported and the program ends.
     ON_THROW(abort)
     {
       ensure_prepared_();
-      ctx_.pop_epilogue();
     };
+    ctx_.pop_epilogue(exception_policies::abort);
     released_ = true;
   }
 
@@ -1322,14 +1316,10 @@ public:
     ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
   }
 
-  // As with graph_scope_guard: pop() rethrows the first failure of a completed teardown, and a
-  // destructor can only report it and end the program.
+  // As with graph_scope_guard: a destructor can only report the first failure and end the program.
   ~while_graph_scope_guard()
   {
-    ON_THROW(abort)
-    {
-      ctx_.pop();
-    };
+    ctx_.pop(exception_policies::abort);
   }
 
   cudaGraphConditionalHandle cond_handle() const

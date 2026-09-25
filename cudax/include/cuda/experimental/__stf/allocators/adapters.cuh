@@ -164,6 +164,20 @@ public:
   }
 
   /**
+   * @brief Gives up on freeing the buffers after a failed clear(): they leak, on purpose.
+   *
+   * clear() leaves the adapter uncleared when a deallocation or the stream synchronize fails,
+   * so that a caller may retry. A caller that cannot retry (the owning context is being torn
+   * down) calls this instead of letting the destructor's assertion fire. The buffers may still
+   * be referenced by device work that never completed, so leaking them is the conservative
+   * outcome; the failure itself is reported through the caller's exception policy.
+   */
+  void abandon() noexcept
+  {
+    cleared_or_moved = true;
+  }
+
+  /**
    * @brief Free resources allocated by the stream_adapter object
    */
   void clear()

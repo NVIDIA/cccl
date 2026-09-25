@@ -65,6 +65,7 @@
 #include <limits>
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -2600,7 +2601,122 @@ auto on_throw(_Reaction&& __reaction,
   }()                                                               \
     << [&]()
 
+/**
+ * @brief The first failure of a multi-step operation, kept for the end.
+ *
+ * A function that ends something (a pop, a finalize, a release) must complete its state
+ * transition whatever its individual steps report, and only then act on the failure. This
+ * class is the slot for that: `e |= step;` runs `step`; if it throws and `e` is empty, `e`
+ * keeps the exception; later failures are counted in `dropped()`, not kept, since in practice
+ * they are echoes of the first (an asynchronous CUDA fault surfaces again at every later
+ * synchronize). At the end, `e.rethrow()` propagates the cause with its type intact, or a
+ * policy decides: `if (e) on_throw(policy) << [&] { e.rethrow(); };`.
+ *
+ * `|=` reads as the algebra's `|`: first claim. The left operand keeps its failure if it has
+ * one. Implemented on @ref exception_policies::defer_t "defer", so it inherits the header's
+ * behaviour when exceptions are disabled. Nothing is allocated unless a step fails.
+ */
+class first_error
+{
+public:
+  first_error() = default;
+
+  //! @brief True once a step has failed.
+  explicit operator bool() const noexcept
+  {
+    return static_cast<bool>(__first_);
+  }
+
+  //! @brief Failures after the first, which were not kept.
+  unsigned dropped() const noexcept
+  {
+    return __dropped_;
+  }
+
+  //! @brief The kept failure, or an empty pointer.
+  ::std::exception_ptr get() const noexcept
+  {
+    return __first_;
+  }
+
+  //! @brief Rethrows the kept failure. Precondition: one was kept.
+  [[noreturn]] void rethrow() const
+  {
+    _CCCL_ASSERT(__first_, "first_error::rethrow(): no failure was kept");
+    ::std::rethrow_exception(__first_);
+  }
+
+  //! @brief Keeps `__e` if nothing is kept yet, else counts it. An empty pointer is a no-op.
+  first_error& operator|=(::std::exception_ptr __e) noexcept
+  {
+    if (__e)
+    {
+      if (__first_)
+      {
+        ++__dropped_;
+      }
+      else
+      {
+        __first_ = ::cuda::std::move(__e);
+      }
+    }
+    return *this;
+  }
+
+private:
+  ::std::exception_ptr __first_;
+  unsigned __dropped_ = 0;
+};
+
+/**
+ * @brief Runs `__step`; if it throws, the exception goes to `__e` (kept if first, counted
+ * otherwise) and control continues. The step is the sequence of a complete-then-report
+ * transition; see @ref first_error.
+ */
+template <class _Fn, ::cuda::std::enable_if_t<::cuda::std::is_invocable_v<_Fn&>, int> = 0>
+first_error& operator|=(first_error& __e, _Fn&& __step) noexcept
+{
+  return __e |= on_throw(exception_policies::defer) << [&]() -> ::std::exception_ptr {
+    __step();
+    return {};
+  };
+}
+
 #ifdef UNITTESTED_FILE
+UNITTEST("first_error")
+{
+  using namespace cuda::experimental::stf;
+  first_error e;
+  EXPECT(!e);
+  e |= [] {}; // a step that succeeds leaves the slot empty
+  EXPECT(!e);
+  e |= [] {
+    throw ::std::runtime_error("first");
+  };
+  e |= [] {
+    throw ::std::runtime_error("second");
+  };
+  e |= [] {}; // success after a failure changes nothing
+  EXPECT(static_cast<bool>(e));
+  EXPECT(e.dropped() == 1u);
+  bool rethrown = false;
+  try
+  {
+    e.rethrow();
+  }
+  catch (const ::std::runtime_error& x)
+  {
+    rethrown = ::std::string(x.what()) == "first";
+  }
+  EXPECT(rethrown);
+  // The policy algebra decides the terminal action: here, report and resume.
+  ::std::ostringstream log;
+  on_throw(exception_policies::notify(log)) << [&] {
+    e.rethrow();
+  };
+  EXPECT(log.str().find("first") != ::std::string::npos);
+};
+
 UNITTEST("nullval")
 {
   using namespace cuda::experimental::stf;
