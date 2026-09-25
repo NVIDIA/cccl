@@ -71,6 +71,14 @@ from .block import (
     normalize_block_reduce_algorithm,
     normalize_block_scan_algorithm,
 )
+from .block.merge_sort import (
+    BlockMergeSortPayload,
+    BlockMergeSortSemantics,
+    BlockMergeSortSpec,
+    BlockMergeSortTilePolicy,
+    make_block_merge_sort_semantics,
+    make_block_merge_sort_spec,
+)
 from .group import (
     ArgumentPrecondition,
     CudaxCallDescription,
@@ -107,6 +115,9 @@ from .group import (
     make_group_primitive_call,
     plan_group_primitive,
     resolve_thread_group,
+)
+from .group.merge_sort import (
+    GroupMergeSortSemantics,
 )
 from .launch import (
     Dim3,
@@ -161,8 +172,25 @@ from .warp import (
     make_warp_reduce_spec,
     make_warp_scan_spec,
 )
+from .warp.merge_sort import (
+    WarpMergeSortPayload,
+    WarpMergeSortSpec,
+    WarpMergeSortTilePolicy,
+    make_warp_merge_sort_spec,
+)
 
 __all__ = [
+    "GroupMergeSortSemantics",
+    "WarpMergeSortPayload",
+    "WarpMergeSortTilePolicy",
+    "WarpMergeSortSpec",
+    "make_warp_merge_sort_spec",
+    "BlockMergeSortPayload",
+    "BlockMergeSortTilePolicy",
+    "BlockMergeSortSemantics",
+    "BlockMergeSortSpec",
+    "make_block_merge_sort_semantics",
+    "make_block_merge_sort_spec",
     "COMPLETE_WARP_GROUP_KINDS",
     "CoopCompilerContextRequiredError",
     "FLOAT32",

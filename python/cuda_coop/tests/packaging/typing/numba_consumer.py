@@ -554,3 +554,27 @@ def check_numba_surface(
         ),
         np.int32,
     )
+
+
+def check_merge_sort_surface() -> None:
+    keys = coop.ThreadData(3, np.int32)
+    values = coop.ThreadData(3, np.float64)
+
+    def compare(left: np.int32, right: np.int32) -> np.bool_:
+        return left > right
+
+    assert_type(
+        coop.merge_sort_keys(coop.this_block(), keys, compare_op=compare),
+        coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        coop.merge_sort_pairs(
+            coop.this_warp().group_by(8),
+            keys,
+            values,
+            valid_items=23,
+            oob_default=-1000,
+            compare_op=compare,
+        ),
+        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
+    )
