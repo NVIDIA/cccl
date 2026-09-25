@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import math
 from types import SimpleNamespace
 
 import numpy as np
@@ -90,6 +91,42 @@ def test_array_identity_rejects_object_dtypes(dtype):
 
     with pytest.raises(TypeError, match="NumPy arrays with object dtypes"):
         _numba_semantic_token(_array_callback(np.zeros(2000, dtype=dtype)))
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_numpy_scalar_callback_identity_preserves_nan_sign(dtype):
+    from cuda.coop.numba_mlir._semantic import _numba_semantic_token
+
+    def callback(captured):
+        def apply(left, right):
+            return left + right + math.copysign(1.0, captured)
+
+        return apply
+
+    first = callback(dtype("nan"))
+    second = callback(-dtype("nan"))
+    assert first(2, 3) == 6
+    assert second(2, 3) == 4
+    assert _numba_semantic_token(first) != _numba_semantic_token(second)
+
+
+def test_numpy_scalar_identity_preserves_dtype_and_nan_payload():
+    from cuda.coop.numba_mlir._semantic import _numba_semantic_token
+
+    assert _numba_semantic_token(np.int32(0)) != _numba_semantic_token(np.uint32(0))
+    first = np.uint32(0x7FC00000).view(np.float32)
+    second = np.uint32(0x7FC00001).view(np.float32)
+    assert np.isnan(first) and np.isnan(second)
+    assert _numba_semantic_token(first) != _numba_semantic_token(second)
+    assert _numba_semantic_token(first) == _numba_semantic_token(first.copy())
+
+
+def test_numpy_scalar_identity_rejects_object_fields():
+    from cuda.coop.numba_mlir._semantic import _numba_semantic_token
+
+    value = np.zeros((), dtype=[("value", object)])[()]
+    with pytest.raises(TypeError, match="NumPy scalars with object dtypes"):
+        _numba_semantic_token(value)
 
 
 @pytest.mark.parametrize("location", ("global", "closure", "two_helpers"))
