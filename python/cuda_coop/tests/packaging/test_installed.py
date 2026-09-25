@@ -197,6 +197,9 @@ def test_isolated_cutlass_backend_uses_installed_modules(tmp_path: Path) -> None
         assert callable(coop.load) and callable(cutlass_coop.load)
         assert "this_warp" in cutlass_coop.__all__
         assert cutlass_coop.this_warp().kind == "warp"
+        logical = cutlass_coop.this_warp().group_by(8)
+        assert isinstance(logical, cutlass_coop.ThreadGroup)
+        assert logical.kind == "threads_within_warp"
         assert "cuda.coop.cutlass" in _dispatch._COMPILER_CONTEXT_PROBES
         assert _dispatch._backend_module_name() is None
         """
