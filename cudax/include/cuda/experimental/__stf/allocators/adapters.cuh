@@ -164,21 +164,13 @@ public:
   }
 
   /**
-   * @brief Gives up on freeing the buffers after a failed clear(): they leak, on purpose.
-   *
-   * clear() leaves the adapter uncleared when a deallocation or the stream synchronize fails,
-   * so that a caller may retry. A caller that cannot retry (the owning context is being torn
-   * down) calls this instead of letting the destructor's assertion fire. The buffers may still
-   * be referenced by device work that never completed, so leaking them is the conservative
-   * outcome; the failure itself is reported through the caller's exception policy.
-   */
-  void abandon() noexcept
-  {
-    cleared_or_moved = true;
-  }
-
-  /**
    * @brief Free resources allocated by the stream_adapter object
+   *
+   * clear() ends the adapter, so it follows the contract of ending functions: every buffer is
+   * deallocated whatever the earlier steps reported (the one synchronize that non-stream-ordered
+   * buffers need is a step like any other), the adapter is then marked cleared, and the first
+   * failure is rethrown. A buffer whose deallocation failed leaks, deliberately: device work that
+   * never completed may still reference it, and there is no retry a caller could sensibly make.
    */
   void clear()
   {
@@ -187,42 +179,28 @@ public:
 
     const cudaStream_t stream = adapter_state->stream;
 
-    // Deallocate buffers one at a time, popping from the back. If any CUDA
-    // call below throws, ``to_free`` still holds the un-deallocated entries
-    // and ``cleared_or_moved`` stays false, so the caller can recover (catch
-    // and retry, or let the destructor's assertion fire with accurate state).
-    // Order across buffers does not matter because each ``raw_buffer`` is
-    // independent.
-    //
-    // Subtlety: we do not call ``cuda_try(cudaStreamSynchronize(...))`` here
-    // because we want the just-popped buffer's ``deallocate`` to run even on
-    // sync failure -- losing the descriptor without freeing would leak. We
-    // capture the sync status, do the deallocation, then surface the sync
-    // error via ``cuda_try(cudaStreamSynchronize_result)`` afterwards. We
-    // deliberately do not wrap that in a SCOPE guard: ``data_place_*::
-    // deallocate`` itself can throw (it uses ``cuda_try`` internally for
-    // ``cudaFreeHost`` / ``cudaFree`` / ``cudaFreeAsync``), and SCOPE bodies
-    // are ``noexcept``, so a deallocate-throw during unwinding would call
-    // ``std::terminate``.
-    bool cudaStreamSynchronize_was_called = false;
-    while (!adapter_state->to_free.empty())
+    first_error err;
+    bool synchronized = false;
+    for (const auto& b : adapter_state->to_free)
     {
-      const auto b = mv(adapter_state->to_free.back());
-      adapter_state->to_free.pop_back();
-
-      cudaError_t cudaStreamSynchronize_result = cudaSuccess;
-      if (!cudaStreamSynchronize_was_called && !b.memory_node.allocation_is_stream_ordered())
+      // Buffers that are not stream-ordered need the stream drained first; once is enough.
+      if (!synchronized && !b.memory_node.allocation_is_stream_ordered())
       {
-        cudaStreamSynchronize_result     = cudaStreamSynchronize(stream);
-        cudaStreamSynchronize_was_called = true;
+        err |= [&] {
+          cuda_try<cudaStreamSynchronize>(stream);
+        };
+        synchronized = true;
       }
-
-      // The following two lines may throw, in which case we're left in steady state
-      b.memory_node.deallocate(b.ptr, b.sz, stream);
-      cuda_try(cudaStreamSynchronize_result);
+      err |= [&] {
+        b.memory_node.deallocate(b.ptr, b.sz, stream);
+      };
     }
-
+    adapter_state->to_free.clear();
     cleared_or_moved = true;
+    if (err)
+    {
+      err.rethrow();
+    }
   }
 
   /**

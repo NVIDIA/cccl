@@ -1112,29 +1112,20 @@ public:
       // Destroy the resources used in the wrapper allocator (if any)
       if (current_node->clear_adapters)
       {
-        // clear() deallocates through cuda_try, and a failing adapter must not stop the others.
-        // An adapter whose clear() failed is still uncleared, and destroying it with the node
-        // would trip its assertion; nothing below this level can retry, so it is abandoned (its
-        // buffers leak, deliberately) and the failure is reported through the pop's policy.
-        auto clear_or_abandon = [&](const ::std::shared_ptr<stream_adapter>& adapter) {
-          first_error step;
-          step |= [&] {
-            adapter->clear();
-          };
-          if (step)
-          {
-            adapter->abandon();
-            err |= step.get();
-          }
-        };
+        // clear() completes and then reports, like this function; a failing adapter is cleared
+        // (its unfreed buffers leak) and does not stop the others.
         if (current_node->alloc_adapters)
         {
-          clear_or_abandon(current_node->alloc_adapters);
+          err |= [&] {
+            current_node->alloc_adapters->clear();
+          };
         }
 
         for (auto& a : current_node->retained_adapters)
         {
-          clear_or_abandon(a);
+          err |= [&] {
+            a->clear();
+          };
         }
       }
       else
