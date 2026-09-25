@@ -10,6 +10,7 @@ not own semantic lowering, provider rendering, or backend compiler state.
 """
 
 from .exchange import exchange  # noqa: F401
+from .histogram import histogram as histogram
 from .load_store import load, store  # noqa: F401
 from .merge_sort import merge_sort_keys as merge_sort_keys
 from .merge_sort import merge_sort_pairs as merge_sort_pairs
@@ -78,6 +79,7 @@ __all__ = [
     "exclusive_sum",
     "inclusive_scan",
     "inclusive_sum",
+    "histogram",
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
