@@ -85,6 +85,26 @@ def _sentinel(dtype: np.dtype) -> object:
 @pytest.mark.parametrize(
     "module", (root_coop, qualified_coop), ids=("portable", "qualified")
 )
+def test_runtime_payload_index_reuses_one_specialization(module):
+    @cuda.jit
+    def kernel(source, destination, index):
+        payload = module.ThreadData(_ITEMS_PER_THREAD)
+        group = module.this_block()
+        module.load(group, source, payload)
+        module.store(group, destination, payload[index])
+
+    source = np.arange(_TILE_ITEMS, dtype=np.int32)
+    destination = np.full(_THREADS, -1, dtype=np.int32)
+    for index in range(_ITEMS_PER_THREAD):
+        kernel[1, _THREADS](source, destination, index)
+        cuda.synchronize()
+        np.testing.assert_array_equal(destination, source[index::_ITEMS_PER_THREAD])
+        assert len(kernel._launch_config_overloads) == 1
+
+
+@pytest.mark.parametrize(
+    "module", (root_coop, qualified_coop), ids=("portable", "qualified")
+)
 @pytest.mark.parametrize("dtype", (None, types.int32), ids=("inferred", "explicit"))
 @pytest.mark.parametrize("scope", ("block", "warp", "logical-warp"))
 def test_load_mutates_original_payload_and_returns_none(module, dtype, scope):
