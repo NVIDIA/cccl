@@ -49,6 +49,7 @@ _REQUIRED_PACKAGE_MEMBERS = {
     "cuda/coop/numba_mlir/_lowering/_radix.py",
     "cuda/coop/__init__.py",
     "cuda/coop/__init__.pyi",
+    "cuda/coop/_registration.py",
     "cuda/coop/_typing.pyi",
     "cuda/coop/py.typed",
     "cuda/coop/_core/api/__init__.pyi",
@@ -83,6 +84,22 @@ _REQUIRED_PACKAGE_MEMBERS = {
     "cuda/coop/_core/warp/reduce.py",
     "cuda/coop/_core/warp/reduce_batched.py",
     "cuda/coop/_core/warp/scan.py",
+    "cuda/coop/cutlass/__init__.py",
+    "cuda/coop/cutlass/__init__.pyi",
+    "cuda/coop/cutlass/py.typed",
+    "cuda/coop/cutlass/_compiler/_activation.py",
+    "cuda/coop/cutlass/_compiler/_bundle.py",
+    "cuda/coop/cutlass/_compiler/_finalize.py",
+    "cuda/coop/cutlass/_compiler/_launch.py",
+    "cuda/coop/cutlass/_compiler/_nvrtc.py",
+    "cuda/coop/cutlass/_compiler/_runtime.py",
+    "cuda/coop/cutlass/_group_load_store.py",
+    "cuda/coop/cutlass/_group_load_store.pyi",
+    "cuda/coop/cutlass/_lowering/_load_store.py",
+    "cuda/coop/cutlass/_thread_data.py",
+    "cuda/coop/cutlass/_thread_data.pyi",
+    "cuda/coop/cutlass/_thread_group.py",
+    "cuda/coop/cutlass/_thread_group.pyi",
     "cuda/coop/numba_mlir/__init__.py",
     "cuda/coop/numba_mlir/__init__.pyi",
     "cuda/coop/numba_mlir/_compiler/_group_exchange.py",
@@ -251,7 +268,6 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
             name for name in names if name.startswith("cuda/coop/_core/warp/")
         }
         assert warp_members == _ALLOWED_WARP_PACKAGE_MEMBERS
-        assert not any(name.startswith("cuda/coop/cutlass/") for name in names)
         assert "cuda/__init__.py" not in names
 
         native_suffixes = {".a", ".dll", ".dylib", ".exe", ".lib", ".pyd", ".so"}

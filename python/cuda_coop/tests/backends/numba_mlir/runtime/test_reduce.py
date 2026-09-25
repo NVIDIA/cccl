@@ -21,11 +21,11 @@ if not cuda.is_available():
 
 from numba_cuda_mlir import types
 
-import cuda.coop.numba_mlir as qualified_coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop as root_coop
 
-assert qualified_coop.__file__ is not None
-_QUALIFIED_COOP_ORIGIN = Path(qualified_coop.__file__).resolve()
+assert numba_coop.__file__ is not None
+_QUALIFIED_COOP_ORIGIN = Path(numba_coop.__file__).resolve()
 _SAFE_PATH_FLAG = "-P" if sys.version_info >= (3, 11) else "-I"
 _COMPUTE_CAPABILITY = cuda.get_current_device().compute_capability
 _HAS_THREAD_BLOCK_CLUSTERS = int(_COMPUTE_CAPABILITY[0]) >= 9
@@ -71,22 +71,22 @@ def _hierarchy_scalar_reductions(source, observed):
     observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(
         root_coop.this_thread(), value
     )
-    observed[1 * _BLOCK_THREADS + thread] = qualified_coop.sum(
-        qualified_coop.this_thread(), value
+    observed[1 * _BLOCK_THREADS + thread] = numba_coop.sum(
+        numba_coop.this_thread(), value
     )
     observed[2 * _BLOCK_THREADS + thread] = root_coop.reduce(
         root_coop.this_warp(), value, binary_op="max"
     )
-    observed[3 * _BLOCK_THREADS + thread] = qualified_coop.reduce(
-        qualified_coop.this_warp(), value, binary_op="max"
+    observed[3 * _BLOCK_THREADS + thread] = numba_coop.reduce(
+        numba_coop.this_warp(), value, binary_op="max"
     )
     observed[4 * _BLOCK_THREADS + thread] = root_coop.sum(logical_warp, value)
-    observed[5 * _BLOCK_THREADS + thread] = qualified_coop.sum(
-        qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS), value
+    observed[5 * _BLOCK_THREADS + thread] = numba_coop.sum(
+        numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS), value
     )
     observed[6 * _BLOCK_THREADS + thread] = root_coop.sum(root_coop.this_block(), value)
-    observed[7 * _BLOCK_THREADS + thread] = qualified_coop.sum(
-        qualified_coop.this_block(), value
+    observed[7 * _BLOCK_THREADS + thread] = numba_coop.sum(
+        numba_coop.this_block(), value
     )
 
 
@@ -98,8 +98,8 @@ def _mapped_scalar_reductions(warps_per_group):
         mapped_warps = root_coop.this_block().group_by(warps_per_group)
 
         observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(mapped_warps, value)
-        observed[1 * _BLOCK_THREADS + thread] = qualified_coop.sum(
-            qualified_coop.this_block().group_by(warps_per_group), value
+        observed[1 * _BLOCK_THREADS + thread] = numba_coop.sum(
+            numba_coop.this_block().group_by(warps_per_group), value
         )
 
     return kernel
@@ -198,17 +198,17 @@ def _mixed_thread_data_builtins(source, observed, preserved):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
     common_sum = root_coop.sum(root_coop.this_block(), payload)
-    qualified_maximum = qualified_coop.reduce(
-        qualified_coop.this_block(), payload, binary_op="max"
+    qualified_maximum = numba_coop.reduce(
+        numba_coop.this_block(), payload, binary_op="max"
     )
-    qualified_xor = qualified_coop.reduce(
-        qualified_coop.this_block(), payload, binary_op="bit_xor"
+    qualified_xor = numba_coop.reduce(
+        numba_coop.this_block(), payload, binary_op="bit_xor"
     )
-    qualified_or = qualified_coop.reduce(
-        qualified_coop.this_block(), payload, binary_op="bit_or"
+    qualified_or = numba_coop.reduce(
+        numba_coop.this_block(), payload, binary_op="bit_or"
     )
-    qualified_scalar_minimum = qualified_coop.reduce(
-        qualified_coop.this_block(), source[thread], binary_op="min"
+    qualified_scalar_minimum = numba_coop.reduce(
+        numba_coop.this_block(), source[thread], binary_op="min"
     )
 
     observed[0 * _BLOCK_THREADS + thread] = common_sum
@@ -265,7 +265,7 @@ def _qualified_local_array_root_sum(source, output, preserved):
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
-    total = qualified_coop.sum(qualified_coop.this_block(), payload, broadcast=False)
+    total = numba_coop.sum(numba_coop.this_block(), payload, broadcast=False)
     if thread == 0:
         output[0] = total
     for item in range(_ITEMS_PER_THREAD):
@@ -295,8 +295,8 @@ def test_qualified_local_array_reduction_returns_only_at_the_block_root():
 def _cluster_reductions(source, observed):
     thread = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     observed[thread] = root_coop.sum(root_coop.this_cluster(), source[thread])
-    observed[source.size + thread] = qualified_coop.reduce(
-        qualified_coop.this_cluster(), source[thread], binary_op="max"
+    observed[source.size + thread] = numba_coop.reduce(
+        numba_coop.this_cluster(), source[thread], binary_op="max"
     )
 
 
@@ -344,8 +344,8 @@ def _cub_valid_prefixes(
     if thread == 0:
         block_output[0] = block_total
 
-    warp_maximum = qualified_coop.reduce(
-        qualified_coop.this_warp(),
+    warp_maximum = numba_coop.reduce(
+        numba_coop.this_warp(),
         source[thread],
         binary_op="max",
         broadcast=False,
@@ -415,8 +415,8 @@ def _cub_deterministic_algorithms(source, output, preserved):
         broadcast=False,
         algorithm="raking",
     )
-    warp_reductions_maximum = qualified_coop.reduce(
-        qualified_coop.this_block(),
+    warp_reductions_maximum = numba_coop.reduce(
+        numba_coop.this_block(),
         source[thread],
         binary_op="max",
         broadcast=False,
@@ -478,8 +478,8 @@ def test_distinct_constant_arrays_do_not_reuse_a_cached_callback():
         @cuda.jit
         def kernel(source, observed):
             thread = cuda.threadIdx.x
-            result = qualified_coop.reduce(
-                qualified_coop.this_block(),
+            result = numba_coop.reduce(
+                numba_coop.this_block(),
                 source[thread],
                 binary_op=add,
                 broadcast=False,
@@ -508,8 +508,8 @@ def test_numpy_scalar_nan_sign_does_not_reuse_a_cached_callback():
         @cuda.jit
         def kernel(source, observed):
             thread = cuda.threadIdx.x
-            result = qualified_coop.reduce(
-                qualified_coop.this_block(),
+            result = numba_coop.reduce(
+                numba_coop.this_block(),
                 source[thread],
                 binary_op=add,
                 broadcast=False,
@@ -540,8 +540,8 @@ def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(inline)
     def kernel(source, observed):
         thread = cuda.threadIdx.x
         value = source[thread]
-        result = qualified_coop.reduce(
-            qualified_coop.this_block(),
+        result = numba_coop.reduce(
+            numba_coop.this_block(),
             value,
             binary_op=maximum,
             broadcast=False,
@@ -567,8 +567,8 @@ def _stateless_callback_reductions(
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
-    block_maximum = qualified_coop.reduce(
-        qualified_coop.this_block(),
+    block_maximum = numba_coop.reduce(
+        numba_coop.this_block(),
         payload,
         binary_op=_device_maximum,
         broadcast=False,
@@ -576,8 +576,8 @@ def _stateless_callback_reductions(
     if thread == 0:
         block_output[0] = block_maximum
 
-    logical_maximum = qualified_coop.reduce(
-        qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
+    logical_maximum = numba_coop.reduce(
+        numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
         source[thread * _ITEMS_PER_THREAD],
         binary_op=_device_maximum,
         broadcast=False,

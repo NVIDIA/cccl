@@ -368,7 +368,7 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda as compiler_cuda
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop
 
     fixed_device = SimpleNamespace(compute_capability=_FIXED_COMPUTE_CAPABILITY)
@@ -400,15 +400,15 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
     @compiler_cuda.jit(chip="sm_90")
     def storage_bearing(source, destination):
         thread = compiler_cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(2, dtype=types.int32)
-        qualified_coop.load(
-            qualified_coop.this_block(),
+        payload = numba_coop.ThreadData(2, dtype=types.int32)
+        numba_coop.load(
+            numba_coop.this_block(),
             source,
             payload,
             algorithm="warp_transpose_timesliced",
         )
-        qualified_coop.store(
-            qualified_coop.this_block(),
+        numba_coop.store(
+            numba_coop.this_block(),
             destination,
             payload,
             algorithm="warp_transpose_timesliced",

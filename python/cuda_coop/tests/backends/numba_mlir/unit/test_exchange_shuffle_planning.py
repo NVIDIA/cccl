@@ -128,10 +128,10 @@ def test_exchange_and_shuffle_register_declarative_result_and_rewrite_contracts(
 
 
 def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
-    import cuda.coop.numba_mlir as qualified
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common
 
-    assert tuple(signature(qualified.shuffle).parameters) == (
+    assert tuple(signature(numba_coop.shuffle).parameters) == (
         "group",
         "value",
         "mode",
@@ -183,11 +183,11 @@ def test_public_modes_reject_non_plain_strings_before_provider(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as qualified
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common
     from cuda.coop.numba_mlir._compiler import _group_exchange, _group_shuffle
 
-    coop = common if api == "common" else qualified
+    coop = common if api == "common" else numba_coop
     mode = (
         SimpleNamespace(value=valid_mode)
         if mode_kind == "value_object"
@@ -328,14 +328,14 @@ def test_qualified_array_shuffle_rejects_enum_and_impostor_distance(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_shuffle
 
     def shuffle(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = numba_coop.ThreadData(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        return coop.shuffle(coop.this_block(), items, distance=distance)
+        return numba_coop.shuffle(numba_coop.this_block(), items, distance=distance)
 
     monkeypatch.setattr(
         _group_shuffle._ShufflePlanning,
@@ -366,30 +366,30 @@ def test_exchange_selects_fixed_arity_provider(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._lowering import _exchange
 
     uses_ranks = mode.startswith("scatter_to_")
     uses_flags = mode == "scatter_to_striped_flagged"
     group = {
-        "block": coop.this_block(),
-        "warp": coop.this_warp(),
-        "logical_warp": coop.this_warp().group_by(8),
+        "block": numba_coop.this_block(),
+        "warp": numba_coop.this_warp(),
+        "logical_warp": numba_coop.this_warp().group_by(8),
     }[group_kind]
 
     if uses_flags:
 
         def exchange(value):
-            items = coop.ThreadData(2, dtype=types.int32)
+            items = numba_coop.ThreadData(2, dtype=types.int32)
             items[0] = value
             items[1] = value
-            ranks = coop.ThreadData(2, dtype=types.int32)
+            ranks = numba_coop.ThreadData(2, dtype=types.int32)
             ranks[0] = 0
             ranks[1] = 1
-            flags = coop.ThreadData(2, dtype=types.uint8)
+            flags = numba_coop.ThreadData(2, dtype=types.uint8)
             flags[0] = 1
             flags[1] = 1
-            return coop.exchange(
+            return numba_coop.exchange(
                 group,
                 items,
                 mode=mode,
@@ -400,21 +400,21 @@ def test_exchange_selects_fixed_arity_provider(
     elif uses_ranks:
 
         def exchange(value):
-            items = coop.ThreadData(2, dtype=types.int32)
+            items = numba_coop.ThreadData(2, dtype=types.int32)
             items[0] = value
             items[1] = value
-            ranks = coop.ThreadData(2, dtype=types.int32)
+            ranks = numba_coop.ThreadData(2, dtype=types.int32)
             ranks[0] = 0
             ranks[1] = 1
-            return coop.exchange(group, items, mode=mode, ranks=ranks)
+            return numba_coop.exchange(group, items, mode=mode, ranks=ranks)
 
     else:
 
         def exchange(value):
-            items = coop.ThreadData(2, dtype=types.int32)
+            items = numba_coop.ThreadData(2, dtype=types.int32)
             items[0] = value
             items[1] = value
-            return coop.exchange(group, items, mode=mode)
+            return numba_coop.exchange(group, items, mode=mode)
 
     func_ir, planner = _plan(exchange, arg_types=(types.int32,))
     assert planner.run()
@@ -430,21 +430,21 @@ def test_warp_exchange_rejects_block_only_scatter_before_provider(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_exchange
 
-    group = coop.this_warp()
+    group = numba_coop.this_warp()
     if logical_width is not None:
         group = group.group_by(logical_width)
 
     def exchange(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = numba_coop.ThreadData(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        ranks = coop.ThreadData(2, dtype=types.int32)
+        ranks = numba_coop.ThreadData(2, dtype=types.int32)
         ranks[0] = 0
         ranks[1] = 1
-        return coop.exchange(
+        return numba_coop.exchange(
             group,
             items,
             mode="scatter_to_striped",
@@ -480,21 +480,21 @@ def test_exchange_rejects_invalid_ranks_before_provider(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_exchange
 
     rank_type = getattr(types, rank_dtype)
 
     def exchange(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = numba_coop.ThreadData(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        ranks = coop.ThreadData(
+        ranks = numba_coop.ThreadData(
             items_per_thread,
             dtype=rank_type,
         )
-        return coop.exchange(
-            coop.this_block(),
+        return numba_coop.exchange(
+            numba_coop.this_block(),
             items,
             mode="scatter_to_blocked",
             ranks=ranks,
@@ -528,21 +528,21 @@ def test_exchange_rejects_invalid_flags_before_provider(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_exchange
 
     flag_type = getattr(types, flag_dtype)
 
     def exchange(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = numba_coop.ThreadData(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        ranks = coop.ThreadData(2, dtype=types.int32)
+        ranks = numba_coop.ThreadData(2, dtype=types.int32)
         ranks[0] = 0
         ranks[1] = 1
-        flags = coop.ThreadData(items_per_thread, dtype=flag_type)
-        return coop.exchange(
-            coop.this_block(),
+        flags = numba_coop.ThreadData(items_per_thread, dtype=flag_type)
+        return numba_coop.exchange(
+            numba_coop.this_block(),
             items,
             mode="scatter_to_striped_flagged",
             ranks=ranks,
@@ -578,15 +578,15 @@ def test_shuffle_selects_scalar_or_array_provider(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._lowering import _shuffle
 
     if kind == "scalar":
         if runtime_distance:
 
             def shuffle(value, distance):
-                return coop.shuffle(
-                    coop.this_block(),
+                return numba_coop.shuffle(
+                    numba_coop.this_block(),
                     value,
                     mode=mode,
                     distance=distance,
@@ -596,8 +596,8 @@ def test_shuffle_selects_scalar_or_array_provider(
 
             def shuffle(value, distance):
                 del distance
-                return coop.shuffle(
-                    coop.this_block(),
+                return numba_coop.shuffle(
+                    numba_coop.this_block(),
                     value,
                     mode=mode,
                     distance=3,
@@ -607,10 +607,10 @@ def test_shuffle_selects_scalar_or_array_provider(
 
         def shuffle(value, distance):
             del distance
-            items = coop.ThreadData(2, dtype=types.int32)
+            items = numba_coop.ThreadData(2, dtype=types.int32)
             items[0] = value
             items[1] = value
-            return coop.shuffle(coop.this_block(), items, mode=mode)
+            return numba_coop.shuffle(numba_coop.this_block(), items, mode=mode)
 
     func_ir, planner = _plan(
         shuffle,
@@ -631,12 +631,12 @@ def test_shuffle_selects_scalar_or_array_provider(
 def test_static_rotate_bounds_reject_before_provider(monkeypatch, distance):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_shuffle
 
     def shuffle(value):
-        return coop.shuffle(
-            coop.this_block(),
+        return numba_coop.shuffle(
+            numba_coop.this_block(),
             value,
             mode="rotate",
             distance=distance,
@@ -700,12 +700,12 @@ def test_shuffle_planner_rejects_invalid_runtime_distance_before_cast(
 ):
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler import _group_shuffle
 
     def shuffle(value, distance):
-        return coop.shuffle(
-            coop.this_block(),
+        return numba_coop.shuffle(
+            numba_coop.this_block(),
             value,
             mode="offset",
             distance=distance,
@@ -729,20 +729,20 @@ def test_shuffle_planner_rejects_invalid_runtime_distance_before_cast(
 def test_planned_exchange_and_shuffle_calls_match_before_inference():
     from numba_cuda_mlir import types
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     def flagged(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = numba_coop.ThreadData(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        ranks = coop.ThreadData(2, dtype=types.int32)
+        ranks = numba_coop.ThreadData(2, dtype=types.int32)
         ranks[0] = 0
         ranks[1] = 1
-        flags = coop.ThreadData(2, dtype=types.uint8)
+        flags = numba_coop.ThreadData(2, dtype=types.uint8)
         flags[0] = 1
         flags[1] = 1
-        return coop.exchange(
-            coop.this_block(),
+        return numba_coop.exchange(
+            numba_coop.this_block(),
             items,
             mode="scatter_to_striped_flagged",
             ranks=ranks,
@@ -750,18 +750,18 @@ def test_planned_exchange_and_shuffle_calls_match_before_inference():
         )
 
     def scalar(value, distance):
-        return coop.shuffle(
-            coop.this_block(),
+        return numba_coop.shuffle(
+            numba_coop.this_block(),
             value,
             mode="offset",
             distance=distance,
         )
 
     def array(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = numba_coop.ThreadData(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        return coop.shuffle(coop.this_block(), items, mode="down")
+        return numba_coop.shuffle(numba_coop.this_block(), items, mode="down")
 
     for function, arg_types in (
         (flagged, (types.int32,)),

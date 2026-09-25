@@ -109,7 +109,7 @@ _COMPILE_PROBE = textwrap.dedent(
         for path in include_paths.cccl
     )
 
-    qualified_coop = sys.modules["cuda.coop.numba_mlir"]
+    numba_coop = sys.modules["cuda.coop.numba_mlir"]
     public_reduce_module = "cuda.coop.numba_mlir._group_reduce"
     compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
     public_scan_module = "cuda.coop.numba_mlir._group_scan"
@@ -135,14 +135,14 @@ _COMPILE_PROBE = textwrap.dedent(
         "shuffle",
         "sum",
         *scan_names,
-    } <= set(qualified_coop.__all__)
-    assert "BlockScanAlgorithm" not in qualified_coop.__all__
-    assert not hasattr(qualified_coop, "BlockScanAlgorithm")
-    assert callable(qualified_coop.exchange)
-    assert callable(qualified_coop.shuffle)
-    assert callable(qualified_coop.reduce)
-    assert callable(qualified_coop.sum)
-    assert all(callable(getattr(qualified_coop, name)) for name in scan_names)
+    } <= set(numba_coop.__all__)
+    assert "BlockScanAlgorithm" not in numba_coop.__all__
+    assert not hasattr(numba_coop, "BlockScanAlgorithm")
+    assert callable(numba_coop.exchange)
+    assert callable(numba_coop.shuffle)
+    assert callable(numba_coop.reduce)
+    assert callable(numba_coop.sum)
+    assert all(callable(getattr(numba_coop, name)) for name in scan_names)
     assert public_reduce_module in sys.modules
     assert compiler_reduce_module not in sys.modules
     assert public_scan_module in sys.modules
@@ -184,7 +184,7 @@ _COMPILE_PROBE = textwrap.dedent(
         "inclusive_sum": ("group", "value", "algorithm", "temp_storage"),
     }
     for name, common_parameters in common_scan_parameters.items():
-        qualified_scan = getattr(qualified_coop, name)
+        qualified_scan = getattr(numba_coop, name)
         assert qualified_scan.__module__ == public_scan_module
         qualified_parameters = inspect.signature(
             qualified_scan
@@ -216,7 +216,7 @@ _COMPILE_PROBE = textwrap.dedent(
     assert stateful_spec_file.is_relative_to(distribution_root)
     assert not stateful_spec_file.is_relative_to(source_root)
 
-    StatefulFunction = qualified_coop.StatefulFunction
+    StatefulFunction = numba_coop.StatefulFunction
     assert stateful_function_module in sys.modules
     stateful_module = sys.modules[stateful_function_module]
     stateful_module_file = Path(stateful_module.__file__).resolve()

@@ -31,6 +31,7 @@ _ACTIVE_COMMON_ROOT_OPERATION: ContextVar[str | None] = ContextVar(
     default=None,
 )
 _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
+_COMPILER_CONTEXT_PROBES: dict[str, Callable[[], bool]] = {}
 
 
 @dataclass(frozen=True)
@@ -107,10 +108,45 @@ def _compiler_scope(backend_module: str) -> Iterator[None]:
         _ACTIVE_BACKEND_MODULE.reset(token)
 
 
+def _register_compiler_context_probe(
+    backend_module: str, probe: Callable[[], bool]
+) -> None:
+    """Register an initialized backend's compiler-environment ownership probe.
+
+    Tracing compilers without a trace-entry hook can expose their active
+    environment instead. Probes must inspect that environment without importing
+    runtimes or selecting a backend merely because it is installed.
+    """
+
+    if not isinstance(backend_module, str) or not backend_module.strip():
+        raise ValueError("backend_module must be a non-empty string")
+    if not callable(probe):
+        raise TypeError("compiler context probe must be callable")
+    _COMPILER_CONTEXT_PROBES[backend_module] = probe
+
+
 def _backend_module_name() -> str | None:
     """Return the compiler-owned backend active in the current trace."""
 
-    return _ACTIVE_BACKEND_MODULE.get()
+    explicit = _ACTIVE_BACKEND_MODULE.get()
+    if explicit is not None:
+        return explicit
+    active = None
+    for module_name, probe in tuple(_COMPILER_CONTEXT_PROBES.items()):
+        try:
+            owns_environment = probe()
+        except Exception as exc:
+            raise CoopCompilerContextRequiredError(
+                f"Cannot inspect the compiler environment for {module_name!r}"
+            ) from exc
+        if owns_environment:
+            if active is not None:
+                raise CoopCompilerContextRequiredError(
+                    f"Multiple backends own the current compiler environment: "
+                    f"{active!r} and {module_name!r}"
+                )
+            active = module_name
+    return active
 
 
 @contextmanager

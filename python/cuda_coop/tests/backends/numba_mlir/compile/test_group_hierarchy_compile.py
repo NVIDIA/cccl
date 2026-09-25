@@ -39,18 +39,18 @@ def test_production_kernel_compiles_physical_and_mapped_group_methods(
 ) -> None:
     cuda = _production_compile_environment(monkeypatch)
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common_coop
 
     @cuda.jit(chip="sm_90")
     def kernel(output):
         thread_index = cuda.threadIdx.x
         thread = common_coop.this_thread()
-        warp = qualified_coop.this_warp()
+        warp = numba_coop.this_warp()
         block = common_coop.this_block()
-        grid = qualified_coop.this_grid()
-        lanes = qualified_coop.this_warp().group_by(8)
-        partial_lanes = qualified_coop.this_warp().group_by(3, exhaustive=False)
+        grid = numba_coop.this_grid()
+        lanes = numba_coop.this_warp().group_by(8)
+        partial_lanes = numba_coop.this_warp().group_by(3, exhaustive=False)
         warps = common_coop.this_block().group_by(2)
 
         thread.sync()
@@ -110,11 +110,11 @@ def test_production_kernel_compiles_cluster_queries_and_synchronization(
 ) -> None:
     cuda = _production_compile_environment(monkeypatch)
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(chip="sm_90")
     def kernel(output):
-        cluster = coop.this_cluster()
+        cluster = numba_coop.this_cluster()
         cluster.sync()
         output[cuda.threadIdx.x] = cluster.rank("block")
         output[_BLOCK_THREADS + cuda.threadIdx.x] = cluster.count("grid")
@@ -214,11 +214,11 @@ def test_exact_launch_infers_bounds_without_overriding_user_options(
     monkeypatch, block, options, maximum
 ):
     cuda = _production_compile_environment(monkeypatch)
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(device=True)
     def rank():
-        return coop.this_block().rank()
+        return numba_coop.this_block().rank()
 
     @cuda.jit(chip="sm_90", **options)
     def kernel(output):
@@ -246,11 +246,11 @@ def test_exact_launch_infers_bounds_without_overriding_user_options(
 
 def test_launch_bounds_follow_each_exact_specialization(monkeypatch):
     cuda = _production_compile_environment(monkeypatch)
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(chip="sm_90")
     def kernel(output):
-        output[coop.this_block().rank()] = cuda.blockDim.x
+        output[numba_coop.this_block().rank()] = cuda.blockDim.x
 
     results = []
     for block in ((32, 1, 1), (8, 8, 1), (4, 4, 4)):
@@ -272,12 +272,12 @@ def test_launch_bounds_follow_each_exact_specialization(monkeypatch):
 
 def test_exact_launch_exceeding_explicit_bounds_is_attributable(monkeypatch):
     cuda = _production_compile_environment(monkeypatch)
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler._group_planner import GroupRewriteError
 
     @cuda.jit(chip="sm_90", launch_bounds=32)
     def kernel(output):
-        output[coop.this_block().rank()] = 1
+        output[numba_coop.this_block().rank()] = 1
 
     key = (
         ("grid", (1, 1, 1)),

@@ -20,7 +20,7 @@ if not cuda.is_available():
 
 from numba_cuda_mlir import types
 
-import cuda.coop.numba_mlir as qualified_coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop as common_coop
 
 pytestmark = [
@@ -86,9 +86,9 @@ np.testing.assert_array_equal(output, np.array([1] * 30 + [0, 0]))
 def _group_query_kernel(output):
     block_thread = cuda.threadIdx.x
     thread = common_coop.this_thread()
-    warp = qualified_coop.this_warp()
+    warp = numba_coop.this_warp()
     block = common_coop.this_block()
-    lanes = qualified_coop.this_warp().group_by(8)
+    lanes = numba_coop.this_warp().group_by(8)
     warps = common_coop.this_block().group_by(2, exhaustive=False)
 
     thread.sync()
