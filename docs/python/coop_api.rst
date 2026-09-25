@@ -25,8 +25,9 @@ Numba-CUDA-MLIR-qualified API
 .. py:module:: cuda.coop.numba_mlir
 
 The qualified module provides matching Block, physical Warp, and logical Warp
-Load, Store, and Exchange entry points plus block Shuffle, group descriptors,
-``ThreadData``, and ``TempStorage``. It additionally exposes backend memory namespaces. Both constructors accept the portable
+Load, Store, and Exchange entry points, block Shuffle, and ``reduce`` and
+``sum`` for their supported groups. It also provides group descriptors,
+``ThreadData``, ``TempStorage``, and backend memory namespaces. Both constructors accept the portable
 ``alignment`` keyword for minimum payload storage alignment. Portable and qualified calls use the
 same lowercase string selectors. Block Load and Store support ``direct``,
 ``striped``, ``vectorize``, ``transpose``, ``warp_transpose``, and
