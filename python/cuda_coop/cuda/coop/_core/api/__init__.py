@@ -17,6 +17,8 @@ from .merge_sort import merge_sort_pairs as merge_sort_pairs
 from .neighbors import adjacent_difference, discontinuity  # noqa: F401
 from .radix import radix_rank, radix_sort_keys, radix_sort_pairs  # noqa: F401
 from .reduce import reduce, sum  # noqa: F401
+from .run_length import run_length_decode as run_length_decode
+from .run_length import run_length_decode_into as run_length_decode_into
 from .scan import (  # noqa: F401
     exclusive_scan,
     exclusive_sum,
@@ -87,6 +89,8 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
+    "run_length_decode_into",
     "scan",
     "shuffle",
     "store",

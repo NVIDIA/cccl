@@ -67,6 +67,7 @@ from .reduce import (
     make_block_reduce_spec,
     normalize_block_reduce_algorithm,
 )
+from .run_length import BlockRunLengthDecodeSpec, make_block_run_length_decode_spec
 from .scan import (
     BlockScanAlgorithm,
     BlockScanSpec,
@@ -119,6 +120,8 @@ __all__ = [
     "BlockShuffleSemantics",
     "BlockShuffleSpec",
     "BlockTopKSpec",
+    "BlockRunLengthDecodeSpec",
+    "make_block_run_length_decode_spec",
     "BlockShuffleValueKind",
     "BlockStoreAlgorithm",
     "RadixBitRange",
