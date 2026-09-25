@@ -252,3 +252,16 @@ def check_topk_surface() -> None:
         coop.topk_max_pairs(block, keys, values, k=7, temp_storage=coop.TempStorage()),
         tuple[coop.ThreadDataLike[np.int16], coop.ThreadDataLike[np.float64]],
     )
+
+
+def check_neighbor_results() -> None:
+    block = coop.this_block()
+    values = coop.ThreadData(3, np.float64)
+    assert_type(
+        coop.adjacent_difference(block, values), coop.ThreadDataLike[np.float64]
+    )
+    assert_type(coop.discontinuity(block, values), coop.ThreadDataLike[np.int32])
+    assert_type(
+        coop.discontinuity(block, values, mode="heads_and_tails"),
+        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.int32]],
+    )

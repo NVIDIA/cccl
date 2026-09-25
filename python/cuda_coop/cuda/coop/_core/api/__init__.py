@@ -13,6 +13,7 @@ from .exchange import exchange  # noqa: F401
 from .load_store import load, store  # noqa: F401
 from .merge_sort import merge_sort_keys as merge_sort_keys
 from .merge_sort import merge_sort_pairs as merge_sort_pairs
+from .neighbors import adjacent_difference, discontinuity  # noqa: F401
 from .radix import radix_rank, radix_sort_keys, radix_sort_pairs  # noqa: F401
 from .reduce import reduce, sum  # noqa: F401
 from .scan import (  # noqa: F401
@@ -58,6 +59,8 @@ for _member_name in (
 del _member_name
 
 __all__ = [
+    "adjacent_difference",
+    "discontinuity",
     "Hierarchy",
     "TempStorage",
     "TempStorageLike",

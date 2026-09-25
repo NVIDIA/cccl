@@ -123,12 +123,16 @@ class GroupResultSource:
     dtype_parameter: str | None
     array_parameter: str | None
     fixed_dtype: Any = None
+    dtype_keyword: str | None = None
+    extent_resolver: Callable[[Any, Any], int | None] | None = None
 
     def __post_init__(self) -> None:
-        for name in ("dtype_parameter", "array_parameter"):
+        for name in ("dtype_parameter", "array_parameter", "dtype_keyword"):
             value = getattr(self, name)
             if value is not None and (not isinstance(value, str) or not value):
                 raise ValueError(f"{name} must be a non-empty string or None")
+        if self.extent_resolver is not None and not callable(self.extent_resolver):
+            raise TypeError("extent_resolver must be callable or None")
 
 
 @dataclass(frozen=True)
@@ -138,6 +142,7 @@ class GroupPrimitiveRegistration:
     lower: Callable[..., list[Any]]
     results: tuple[GroupResultSource, ...] = ()
     validate_common_arguments: Callable[..., None] | None = None
+    result_resolver: Callable[[Any, Any], tuple[GroupResultSource, ...]] | None = None
 
     def __post_init__(self) -> None:
         if not callable(self.lower):
@@ -145,6 +150,8 @@ class GroupPrimitiveRegistration:
         object.__setattr__(self, "results", tuple(self.results))
         if any(not isinstance(result, GroupResultSource) for result in self.results):
             raise TypeError("results must contain GroupResultSource records")
+        if self.result_resolver is not None and not callable(self.result_resolver):
+            raise TypeError("result_resolver must be callable or None")
         if self.validate_common_arguments is not None and not callable(
             self.validate_common_arguments
         ):
@@ -380,6 +387,7 @@ def register_group_primitive(
     lower: Callable[..., list[Any]],
     results: tuple[GroupResultSource, ...] = (),
     validate_common_arguments: Callable[..., None] | None = None,
+    result_resolver: Callable[[Any, Any], tuple[GroupResultSource, ...]] | None = None,
 ) -> None:
     """Register the post-inlining planner for one public operation."""
 
@@ -387,6 +395,7 @@ def register_group_primitive(
         lower=lower,
         results=results,
         validate_common_arguments=validate_common_arguments,
+        result_resolver=result_resolver,
     )
     existing = _GROUP_PRIMITIVES.get(operation)
     if existing is not None and existing != registration:
