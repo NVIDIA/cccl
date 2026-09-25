@@ -89,6 +89,40 @@ def _expected_diagnostics(consumer: Path) -> set[tuple[int, str]]:
     }
 
 
+def _literal_exports(path: Path) -> set[str]:
+    module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    declaration = next(
+        node.value
+        for node in module.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "__all__"
+            for target in node.targets
+        )
+    )
+    return {
+        ast.literal_eval(item)
+        for item in declaration.elts
+        if not isinstance(item, ast.Starred)
+    }
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    ("__init__.pyi", "_core/api/__init__.pyi", "numba_mlir/__init__.pyi"),
+    ids=("root", "core", "qualified"),
+)
+def test_public_stub_exports_match_runtime(relative_path: str) -> None:
+    package_root = _package_stub_source()
+    stub = package_root / relative_path
+    runtime_exports = _literal_exports(stub.with_suffix(".py"))
+    if relative_path == "__init__.pyi":
+        # The root expands the common API exports without importing a compiler.
+        runtime_exports |= _literal_exports(package_root / "_core/api/__init__.py")
+
+    assert _literal_exports(stub) == runtime_exports
+
+
 @pytest.mark.parametrize(
     "relative_path",
     ("_core/api/thread_group.pyi", "numba_mlir/_thread_group.pyi"),
