@@ -144,6 +144,7 @@ struct fixed_grid_deterministic_reduce_t
       stream,
       cuda::std::identity{},
       fixed_deterministic_reduce_policy_selector_t{},
+      {},
       fixed_grid_factory_t{});
   }
 };
