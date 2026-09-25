@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 # ruff: noqa: E402
 
+import math
 import os
+import struct
 import subprocess
 import sys
 import textwrap
@@ -473,6 +475,33 @@ def test_semantic_token_namespaces_string_enums():
 
 def test_semantic_token_normalizes_nan_values():
     assert semantic_token(float("nan")) == semantic_token(float("nan"))
+
+
+def test_semantic_token_preserves_nan_sign_and_payload():
+    representations = ("7ff8000000000001", "7ff8000000000002", "fff8000000000001")
+    values = [struct.unpack(">d", bytes.fromhex(bits))[0] for bits in representations]
+    assert all(math.isnan(value) for value in values)
+    assert len({semantic_token(value) for value in values}) == len(values)
+    for bits, value in zip(representations, values):
+        assert semantic_token(value) == semantic_token(
+            struct.unpack(">d", bytes.fromhex(bits))[0]
+        )
+
+
+def test_semantic_token_distinguishes_callbacks_observing_nan_sign():
+    def make_op(sign):
+        captured = math.copysign(float("nan"), sign)
+
+        def op(left, right):
+            return left + right + math.copysign(1.0, captured)
+
+        return op
+
+    positive, negative = make_op(1.0), make_op(-1.0)
+    assert positive(2.0, 3.0) == 6.0
+    assert negative(2.0, 3.0) == 4.0
+    assert semantic_token(positive) != semantic_token(negative)
+    assert semantic_token(positive) == semantic_token(make_op(1.0))
 
 
 def test_semantic_token_preserves_signed_zero():
