@@ -116,7 +116,8 @@ See :ref:`blocked and striped layouts <coop-common-layouts>`.
 Comparison sorting
 ^^^^^^^^^^^^^^^^^^
 
-See :ref:`the Numba Merge Sort examples <coop-merge-sort>`.
+See the :ref:`Numba <coop-merge-sort>` and
+:ref:`CUTLASS <coop-cutlass-merge-sort>` Merge Sort examples.
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
@@ -288,6 +289,10 @@ ownership, providers, linking, and storage allocation.
    * - Shuffle
      - Scalar Offset and Rotate modes with integer distances; see
        :ref:`Shuffle <coop-cutlass-shuffle>`.
+   * - Merge Sort
+     - CuTe register-tensor inputs return fresh ``ThreadData`` payloads;
+       controls otherwise follow the common API. See
+       :ref:`Merge Sort <coop-cutlass-merge-sort>`.
 
 Custom operators and Scan prefix callbacks are not supported. See
 :ref:`CUTLASS-specific behavior and limits <coop-cutlass-differences>` and

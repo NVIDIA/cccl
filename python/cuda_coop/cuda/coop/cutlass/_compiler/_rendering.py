@@ -133,7 +133,7 @@ def render_bundle_source(requests):
             definitions[definition.name] = definition.code
     lines = [
         *bundle_include_lines(requests),
-        *(definitions[name] for name in sorted(definitions)),
+        *definitions.values(),
         'extern "C" {',
     ]
     for request in requests:

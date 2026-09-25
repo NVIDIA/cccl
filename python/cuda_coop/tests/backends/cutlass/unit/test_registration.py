@@ -260,7 +260,7 @@ def test_register_retry(failure):
 
 @pytest.mark.skipif(not _CUTLASS_AVAILABLE, reason="requires CUTLASS DSL")
 @pytest.mark.parametrize(
-    "operation", ("merge_sort_keys", "radix_sort_keys", "radix_rank", "topk_min_keys")
+    "operation", ("radix_sort_keys", "radix_rank", "topk_min_keys")
 )
 def test_unimplemented_family(operation):
     from cuda import coop

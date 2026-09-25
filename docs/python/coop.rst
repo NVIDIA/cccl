@@ -106,7 +106,7 @@ and qualified controls have the limits described in each programming guide.
      - Available
    * - Merge Sort, keys and pairs
      - Available
-     - Planned; unavailable
+     - Available
    * - Radix Sort, keys and pairs; Radix Rank
      - Available
      - Planned; unavailable
@@ -408,8 +408,9 @@ Check the operation's group and algorithm contract before consuming a result.
 
 Sorting and selection operate on one group's tile. Sorting each block does
 not sort a whole array. TopK defines an unordered selected prefix; the
-remaining payload positions are not output. These families currently use
-the Numba backend; see :ref:`backend coverage <coop-backends>`.
+remaining payload positions are not output. See
+:ref:`backend coverage <coop-backends>` for the available sorting and
+selection families.
 
 .. _coop-common-storage:
 .. _temporary-storage:
