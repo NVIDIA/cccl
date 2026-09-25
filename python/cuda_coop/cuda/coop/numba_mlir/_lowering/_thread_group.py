@@ -253,6 +253,15 @@ def make_group_method_invocable(
         lines = [
             f'extern "C" __device__ void {symbol}() {{',
             *_group_prelude(group),
+            *(
+                (
+                    "  if (!::cuda::gpu_thread.is_part_of(group)) {",
+                    "    return;",
+                    "  }",
+                )
+                if group.mapping is not None and group.complete_membership is False
+                else ()
+            ),
             f"  group.{operation}();",
             "}",
         ]
