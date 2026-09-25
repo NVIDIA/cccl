@@ -175,6 +175,14 @@ bool test_empty_tensor_null_data()
   assert(host_mdspan.size() == 0);
   assert(host_mdspan.empty());
   assert(host_mdspan.data_handle() == nullptr);
+
+  auto host_mdspan_right = cuda::to_host_mdspan<int, 2, cuda::std::layout_right>(tensor);
+
+  assert(host_mdspan_right.extent(0) == 0);
+  assert(host_mdspan_right.extent(1) == 3);
+  assert(host_mdspan_right.size() == 0);
+  assert(host_mdspan_right.empty());
+  assert(host_mdspan_right.data_handle() == nullptr);
   return true;
 }
 
