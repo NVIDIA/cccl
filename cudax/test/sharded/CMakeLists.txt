@@ -20,6 +20,7 @@ set(
   algorithms/segmented_reduce.cu
   algorithms/sort.cu
   algorithms/mgmn_adapter.cu
+  algorithms/repeated_places.cu
   algorithms/mgmn_std_execution.cu
   algorithms/legacy_parity.cu
   algorithms/engine_parity.cu
