@@ -180,20 +180,35 @@ public:
     const cudaStream_t stream = adapter_state->stream;
 
     ::std::exception_ptr err;
+    // Buffers that are not stream-ordered need the stream drained before they are freed; once
+    // is enough. If that synchronize fails, completion of the work that may still reference them
+    // is unknown, so those buffers are leaked rather than freed under running work; the
+    // stream-ordered ones are still released, since the stream orders their release itself.
     bool synchronized = false;
+    bool drained      = false;
     for (const auto& b : adapter_state->to_free)
     {
-      // Buffers that are not stream-ordered need the stream drained first; once is enough.
-      if (!synchronized && !b.memory_node.allocation_is_stream_ordered())
+      if (b.memory_node.allocation_is_stream_ordered())
       {
         err |= [&] {
-          cuda_try<cudaStreamSynchronize>(stream);
+          b.memory_node.deallocate(b.ptr, b.sz, stream);
         };
-        synchronized = true;
+        continue;
       }
-      err |= [&] {
-        b.memory_node.deallocate(b.ptr, b.sz, stream);
-      };
+      if (!synchronized)
+      {
+        synchronized = true;
+        err |= [&] {
+          cuda_try<cudaStreamSynchronize>(stream);
+          drained = true;
+        };
+      }
+      if (drained)
+      {
+        err |= [&] {
+          b.memory_node.deallocate(b.ptr, b.sz, stream);
+        };
+      }
     }
     adapter_state->to_free.clear();
     cleared_or_moved = true;

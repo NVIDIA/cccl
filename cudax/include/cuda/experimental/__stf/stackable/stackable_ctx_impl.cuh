@@ -774,6 +774,16 @@ public:
         return graph;
       }
 
+      // The parent's dependency on this nested node, built from host objects only. When
+      // finalize_nested() fails part-way the child node is already in the parent graph, so the
+      // parent can still be ordered behind it, whatever else went wrong.
+      event_list nested_output_event() const
+      {
+        _CCCL_ASSERT(nested_graph, "nested_output_event is for nested graph nodes");
+        auto& parent_ctx = parent_ctx_node->ctx;
+        return event_list(reserved::graph_event(output_node, parent_ctx.stage(), parent_ctx.graph()));
+      }
+
     private:
       // Nested graph finalization path - kept separate from the split
       // prologue/launch/epilogue helpers to keep the non-nested path clean.
@@ -1180,14 +1190,25 @@ public:
       };
       if (err)
       {
-        // Without the finalize events the parent cannot be ordered behind the nested work, so
-        // replace ordering by completion: wait for the support stream. If that fails too, the
-        // device is gone and there is nothing left to race with.
-        if (auto* gnode = dynamic_cast<graph_ctx_node*>(&current_node); gnode && !gnode->is_nested())
+        // Without the finalize events the parent cannot be ordered behind the nested work. For a
+        // nested node the child is already in the parent graph, so its output event can still be
+        // built from host objects; for a top-level node replace ordering by completion and wait
+        // for the support stream. If that fails too, the device is gone and nothing is left to
+        // race with.
+        if (auto* gnode = dynamic_cast<graph_ctx_node*>(&current_node))
         {
-          err |= [&] {
-            cuda_try<cudaStreamSynchronize>(gnode->support_stream);
-          };
+          if (gnode->is_nested())
+          {
+            err |= [&] {
+              finalize_prereqs = gnode->nested_output_event();
+            };
+          }
+          else
+          {
+            err |= [&] {
+              cuda_try<cudaStreamSynchronize>(gnode->support_stream);
+            };
+          }
         }
       }
       _pop_epilogue(finalize_prereqs, err);
