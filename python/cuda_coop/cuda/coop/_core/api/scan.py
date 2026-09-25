@@ -170,13 +170,13 @@ def scan(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating threads; see :ref:`thread groups <coop-thread-groups>`.
+        Participating threads; see :ref:`thread groups <coop-common-groups>`.
         Supports blocks and physical or logical warps. Warp scans require
         an enclosing block size divisible by 32. All group members must
         execute the primitive together.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. Payloads have the same item count and dtype in each thread.
         A block scans payloads in blocked order: all items from thread zero,
         then all items from thread one, and so on. Scalar inputs follow
@@ -190,7 +190,9 @@ def scan(
         Compile-time operator: ``"sum"``, ``"multiplies"``, ``"min"``,
         ``"max"``, ``"bit_and"``, ``"bit_or"``, or ``"bit_xor"``.
         ``None`` selects sum. Bitwise operators require integer values.
-        Use a backend-qualified API for custom operators.
+        :func:`cuda.coop.numba_mlir.scan` also accepts custom operators.
+        :func:`cuda.coop.cutlass.scan` accepts recognized Python and NumPy
+        aliases for built-ins, but no custom operators or prefix callbacks.
     initial_value : numeric scalar, optional
         First output of an exclusive scan, combined with every subsequent
         prefix. Defaults to zero for sum; required for other exclusive
@@ -205,7 +207,7 @@ def scan(
         ``"warp_scans"`` combines warp scans and requires a block size
         divisible by 32. Warp groups require ``None``.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for a block scan.
+        :ref:`Scratch descriptor <coop-common-storage>` for a block scan.
         ``None`` uses automatic scratch and reuse synchronization. Warp
         scans require ``None`` and use automatic storage for each group.
 
@@ -240,6 +242,11 @@ def scan(
         :start-after: # scan-example-begin
         :end-before: # scan-example-end
         :dedent: 4
+
+    For a CuTe block scan with shared scratch, see
+    :ref:`CUTLASS Scan <coop-cutlass-scan>`. Both qualified APIs add built-in
+    operator aliases and aggregate outputs; only Numba-CUDA-MLIR supports
+    custom operators and prefix callbacks.
     """
 
     mode = _common_selector(
@@ -285,11 +292,11 @@ def exclusive_sum(
     ----------
     group : cuda.coop.ThreadGroup
         Block or physical/logical warp whose members execute the primitive
-        together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
+        together; see :ref:`thread groups <coop-common-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
@@ -300,7 +307,7 @@ def exclusive_sum(
         Warp groups require ``None``. See :func:`cuda.coop.scan` for the
         algorithm choices.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for blocks. ``None``
+        :ref:`Scratch descriptor <coop-common-storage>` for blocks. ``None``
         uses automatic scratch and reuse synchronization. Warp groups
         require ``None``.
 
@@ -333,6 +340,10 @@ def exclusive_sum(
         :start-after: # exclusive-sum-example-begin
         :end-before: # exclusive-sum-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS Scan example <coop-cutlass-scan>` shows the CuTe
+    block form. Its explicit seed can be omitted for an exclusive sum
+    starting at zero.
     """
 
     algorithm = _common_selector(
@@ -372,11 +383,11 @@ def inclusive_sum(
     ----------
     group : cuda.coop.ThreadGroup
         Block or physical/logical warp whose members execute the primitive
-        together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
+        together; see :ref:`thread groups <coop-common-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
@@ -387,7 +398,7 @@ def inclusive_sum(
         Warp groups require ``None``. See :func:`cuda.coop.scan` for the
         algorithm choices.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for blocks. ``None``
+        :ref:`Scratch descriptor <coop-common-storage>` for blocks. ``None``
         uses automatic scratch and reuse synchronization. Warp groups
         require ``None``.
 
@@ -421,6 +432,10 @@ def inclusive_sum(
         :start-after: # inclusive-sum-example-begin
         :end-before: # inclusive-sum-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS Scan example <coop-cutlass-scan>` uses the same
+    Load/Scan/Store composition in CuTe. Use ``inclusive_sum`` without an
+    ``initial_value`` to include the current item.
     """
 
     algorithm = _common_selector(
@@ -462,11 +477,11 @@ def exclusive_scan(
     ----------
     group : cuda.coop.ThreadGroup
         Block or physical/logical warp whose members execute the primitive
-        together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
+        together; see :ref:`thread groups <coop-common-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
@@ -474,7 +489,9 @@ def exclusive_scan(
         Compile-time operator: ``"sum"``, ``"multiplies"``, ``"min"``,
         ``"max"``, ``"bit_and"``, ``"bit_or"``, or ``"bit_xor"``.
         ``None`` selects sum. Bitwise operators require integer values.
-        Use a backend-qualified API for custom operators.
+        :func:`cuda.coop.numba_mlir.scan` also accepts custom operators.
+        :func:`cuda.coop.cutlass.scan` accepts recognized Python and NumPy
+        aliases for built-ins, but no custom operators or prefix callbacks.
     initial_value : numeric scalar, optional
         First output of each group, combined with every subsequent prefix.
         Defaults to zero for sum; required for all other operators. Must
@@ -488,7 +505,7 @@ def exclusive_scan(
         Warp groups require ``None``. See :func:`cuda.coop.scan` for the
         algorithm choices.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for blocks. ``None``
+        :ref:`Scratch descriptor <coop-common-storage>` for blocks. ``None``
         uses automatic scratch and reuse synchronization. Warp groups
         require ``None``.
 
@@ -523,6 +540,11 @@ def exclusive_scan(
         :start-after: # exclusive-scan-example-begin
         :end-before: # exclusive-scan-example-end
         :dedent: 4
+
+    For an exclusive scan with an initial value in CuTe, see
+    :ref:`CUTLASS Scan <coop-cutlass-scan>`. The qualified
+    :func:`cuda.coop.cutlass.exclusive_scan` reference also shows a partial
+    logical warp with an aggregate output.
     """
 
     algorithm = _common_selector(
@@ -563,11 +585,11 @@ def inclusive_scan(
     ----------
     group : cuda.coop.ThreadGroup
         Block or physical/logical warp whose members execute the primitive
-        together; see :ref:`thread groups <coop-thread-groups>`. Warp scans
+        together; see :ref:`thread groups <coop-common-groups>`. Warp scans
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-thread-data>`; warps accept one scalar
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
         per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
@@ -575,7 +597,9 @@ def inclusive_scan(
         Compile-time operator: ``"sum"``, ``"multiplies"``, ``"min"``,
         ``"max"``, ``"bit_and"``, ``"bit_or"``, or ``"bit_xor"``.
         ``None`` selects sum. Bitwise operators require integer values.
-        Use a backend-qualified API for custom operators.
+        :func:`cuda.coop.numba_mlir.scan` also accepts custom operators.
+        :func:`cuda.coop.cutlass.scan` accepts recognized Python and NumPy
+        aliases for built-ins, but no custom operators or prefix callbacks.
     algorithm : str, optional
         Compile-time block algorithm: ``"raking"``, ``"raking_memoize"``,
         or ``"warp_scans"``; ``None`` selects ``"raking"``. The
@@ -583,7 +607,7 @@ def inclusive_scan(
         Warp groups require ``None``. See :func:`cuda.coop.scan` for the
         algorithm choices.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for blocks. ``None``
+        :ref:`Scratch descriptor <coop-common-storage>` for blocks. ``None``
         uses automatic scratch and reuse synchronization. Warp groups
         require ``None``.
 
@@ -616,6 +640,10 @@ def inclusive_scan(
         :start-after: # inclusive-scan-example-begin
         :end-before: # inclusive-scan-example-end
         :dedent: 4
+
+    CuTe kernels use the same logical-warp descriptor. See
+    :func:`cuda.coop.cutlass.inclusive_scan` for qualified controls and
+    :ref:`CUTLASS Scan <coop-cutlass-scan>` for the executable block example.
     """
 
     algorithm = _common_selector(

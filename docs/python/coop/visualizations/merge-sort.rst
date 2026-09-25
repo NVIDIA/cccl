@@ -77,13 +77,14 @@ descending order. The explorer chooses a suitable sentinel for its integer
 inputs. The displayed ``?`` does not promise a particular tail value.
 
 Load only valid inputs and store only defined outputs. A sentinel does not
-make an out-of-bounds memory access valid. See :ref:`coop-merge-sort` for the
-partial-tile contract and :doc:`../../coop_api` for parameter details.
+make an out-of-bounds memory access valid. See the
+:ref:`Numba <coop-merge-sort>` and :ref:`CUTLASS <coop-cutlass-merge-sort>`
+guides for partial-tile examples and :doc:`../../coop_api` for parameter details.
 
 Using Merge Sort in a kernel
 ----------------------------
 
-This tested example sorts 128 keys in one block of 64 threads. Each thread
+This Numba example sorts 128 keys in one block of 64 threads. Each thread
 owns two keys and two original-position values. The checks verify both key
 order and the association between each returned key and its original index.
 
@@ -93,12 +94,28 @@ order and the association between each returned key and its original index.
    :end-before: # merge-sort-example-end
    :dedent: 4
 
+This CuTe example sorts a partial tile with 64 threads and three items per
+thread. ``module`` selects the common or CUTLASS-qualified API. It checks
+both key order and pair association while preserving the original inputs.
+:download:`Download the complete CuTe example
+<../../../../python/cuda_coop/examples/cutlass/merge_sort.py>` for constants,
+launch setup, and host checks.
+
+.. literalinclude:: ../../../../python/cuda_coop/examples/cutlass/merge_sort.py
+   :language: python
+   :start-after: # docs: start cutlass-merge-sort
+   :end-before: # docs: end cutlass-merge-sort
+   :dedent: 4
+
 Use ``descending=True`` to reverse the order. The common API accepts numeric
 ``ThreadData`` payloads. The qualified namespace,
 ``import cuda.coop.numba_mlir as numba_coop``, also accepts fixed local arrays
 and a stateless ``compare_op`` implementing a strict weak ordering. A custom
 comparator supplies its own direction and cannot be combined with
-``descending=True``.
+``descending=True``. The CUTLASS-qualified
+:func:`cuda.coop.cutlass.merge_sort_keys` and
+:func:`cuda.coop.cutlass.merge_sort_pairs` accept CuTe register payloads and
+built-in ascending or descending order; custom comparators are unsupported.
 
 Only block calls accept explicit ``temp_storage``. Keep its default
 synchronization when reusing scratch between calls; see

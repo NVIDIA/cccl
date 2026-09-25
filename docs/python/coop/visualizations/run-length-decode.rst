@@ -6,6 +6,9 @@
 Run Length Decode
 =================
 
+These primitives are currently implemented by Numba-CUDA-MLIR. CUTLASS
+does not yet implement them; see :ref:`backend coverage <coop-backends>`.
+
 Run Length Decode expands each run value by its length. Values ``[7, 9]``
 with lengths ``[3, 2]`` describe the stream ``[7, 7, 7, 9, 9]``.
 :func:`cuda.coop.run_length_decode` returns one window of that stream as a

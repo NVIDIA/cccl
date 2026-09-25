@@ -6,6 +6,9 @@
 Batched Warp Reduction
 ======================
 
+These primitives are currently implemented by Numba-CUDA-MLIR. CUTLASS
+does not yet implement them; see :ref:`backend coverage <coop-backends>`.
+
 :func:`cuda.coop.reduce_batched` reduces several independent batches across
 a warp. Each thread contributes one item to each batch: local slot zero
 belongs to batch zero, slot one to batch one, and so on. The result has

@@ -28,3 +28,46 @@ do not predict GPU performance.
    merge-sort
    radix
    topk
+
+.. _coop-visualization-kernels:
+
+Using the kernel fragments
+---------------------------
+
+The common-API fragments on the Load, Store, Exchange, Shuffle, Reduce,
+and Scan pages run under either integration. They use
+``from cuda import coop`` and ``import numpy as np``. Register the backend on the host before compiling;
+see :ref:`backend registration <coop-backend-registration>`. The fragments
+assume one-dimensional blocks and use these local index names:
+
+.. list-table:: DSL setup
+   :header-rows: 1
+
+   * - Kernel compiler
+     - Imports and decorator
+     - ``block_index``
+     - ``thread_rank``
+   * - Numba-CUDA-MLIR
+     - ``from numba_cuda_mlir import cuda``; ``@cuda.jit``
+     - ``cuda.blockIdx.x``
+     - ``cuda.threadIdx.x``
+   * - CUTLASS / CuTe DSL
+     - ``from cutlass import cute``; ``@cute.kernel``
+     - ``cute.arch.block_idx()[0]``
+     - ``cute.arch.thread_idx()[0]``
+
+For example, set ``block_index`` from the appropriate intrinsic inside your
+kernel before a fragment computes its tile offset. Numba examples index
+device arrays directly. In CuTe, pass global-memory pointers to Load/Store;
+for scalar indexing, wrap them in ``cute.make_tensor(pointer,
+cute.make_layout(element_count))``. The programming guides provide complete
+:doc:`Numba <../programming_guide>` and :doc:`CuTe <../../coop_cutlass>`
+launch and memory examples.
+
+The diagrams describe each primitive independently of its compiler. Check
+:ref:`backend coverage <coop-backends>` before using a family: Adjacent
+Difference, Discontinuity, Histogram, Run Length Decode, and Batched Warp
+Reduction currently require Numba-CUDA-MLIR. Qualified controls are
+identified on each page. Custom device operators and Scan prefix callbacks
+also require Numba-CUDA-MLIR; CuTe supports built-in operators and its
+qualified register-payload conversions.

@@ -147,9 +147,10 @@ def _auto_register_known_dsls() -> tuple[str, ...]:
     """Enable compatible runtimes that the application already imported.
 
     Merely importing cuda.coop must remain host-only and must not import CUDA
-    bindings. Applications that import Numba-CUDA-MLIR first get automatic
-    activation; applications that import cuda.coop first can call
-    cuda.coop.register("numba-cuda-mlir") to activate explicitly.
+    bindings. Applications that import Numba-CUDA-MLIR or CUTLASS first get
+    automatic activation of a compatible integration. Applications that import
+    cuda.coop first can call cuda.coop.register("numba-cuda-mlir") or
+    cuda.coop.register("cutlass") explicitly.
     """
 
     if _auto_registration_disabled():

@@ -86,14 +86,15 @@ retain the ordering already established by less significant bits.
 ``descending=True`` reverses digit ordering while preserving the input
 order of ties; it does not reverse a finished ascending array.
 
-The current Numba-CUDA-MLIR provider specializes CUB ``BlockRadixSort``
+Both backends use the shared CUB ``BlockRadixSort`` specialization
 with four bits per pass. A final pass may use fewer bits. This is an
 implementation choice, not an argument to ``radix_sort_keys`` or
 ``radix_sort_pairs``. The picture shows ranks and ownership changes, not
 the exact CUB instruction sequence or shared-memory layout.
 
 The common sort calls return blocked output. The qualified calls in
-``cuda.coop.numba_mlir`` also accept ``blocked_to_striped=True``. With
+``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass`` also accept
+``blocked_to_striped=True``. With
 ``T`` block threads, sorted position ``p`` then belongs to thread
 ``p % T``, slot ``p // T``. Intermediate digit passes still use blocked
 ownership. Keys and values use the same output layout; select a matching
@@ -119,8 +120,9 @@ The unsigned explorer does not model these floating-point cases.
 Common calls accept ``ThreadData`` keys with ``int32``, ``uint32``,
 ``int64``, or ``uint64`` dtype. Associated values may use the common
 numeric dtypes and must have the same extent as the keys. Qualified calls
-also accept scalar and local-array payloads; floating-point keys are
-supported for Sort, while Rank requires integral keys.
+also accept scalars. Numba-qualified calls accept fixed local arrays;
+CUTLASS-qualified calls accept CuTe register tensors and ``TensorSSA``.
+Floating-point keys are supported for Sort, while Rank requires integral keys.
 
 Sort's bit bounds may be block-uniform runtime integers and must satisfy
 ``0 <= begin_bit < end_bit <= key_width``. Omitting ``end_bit`` selects the
@@ -140,14 +142,15 @@ synchronizes its scratch automatically.
 The qualified Rank call can additionally write ``exclusive_digit_prefix``.
 That side output describes digit bins and has its own per-thread extent,
 separate from the returned per-key ranks. See
-:func:`cuda.coop.numba_mlir.radix_rank` for its layout and undefined tail
-slots. The explorer's bin rows are mathematical explanations, not an
+:func:`cuda.coop.numba_mlir.radix_rank` and
+:func:`cuda.coop.cutlass.radix_rank` for the supported output containers,
+layout, and undefined tail slots. The explorer's bin rows are mathematical explanations, not an
 invocation of that optional output.
 
 Sorting key/value pairs in a kernel
 -----------------------------------
 
-This tested example sorts signed keys and carries their original positions
+This Numba example sorts signed keys and carries their original positions
 as values. The stable host reference checks both ordering and association,
 including ties.
 
@@ -157,10 +160,24 @@ including ties.
    :end-before: # radix-sort-example-end
    :dedent: 4
 
+The CuTe example below covers sorting and ranking in the same kernel. It
+uses 64 threads with two items each, and ``module`` selects the common or
+CUTLASS-qualified API. Its qualified path also checks striped output and
+bin prefixes. :download:`Download the complete CuTe example
+<../../../../python/cuda_coop/examples/cutlass/radix.py>` for setup and host
+checks.
+
+.. literalinclude:: ../../../../python/cuda_coop/examples/cutlass/radix.py
+   :language: python
+   :start-after: # docs: start cutlass-radix
+   :end-before: # docs: end cutlass-radix
+   :dedent: 4
+
 Returning one digit's ranks
 ---------------------------
 
-This tested example selects the low four bits of unsigned keys. The host
+This Numba example selects the low four bits of unsigned keys. The CuTe
+example above also checks ranks against an independent host reference. The host
 reference inverts the stable digit-sort permutation because each rank must
 be returned at its original input position.
 
@@ -170,5 +187,6 @@ be returned at its original input position.
    :end-before: # radix-rank-example-end
    :dedent: 4
 
-See the :doc:`../programming_guide` for backend registration and the
-:doc:`../../coop_api` reference for the common and qualified contracts.
+See the :ref:`Numba <coop-radix>` and :ref:`CUTLASS <coop-cutlass-radix>`
+guides for runtime setup, and the :doc:`../../coop_api` reference for
+common and qualified contracts.

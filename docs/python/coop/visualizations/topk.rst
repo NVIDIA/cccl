@@ -80,7 +80,7 @@ you need an ordered result. See :ref:`the TopK ordering FAQ
 Using TopK in a kernel
 ----------------------
 
-This tested example selects eight largest keys from 93 valid inputs in a
+This Numba example selects eight largest keys from 93 valid inputs in a
 128-item tile. Each value is the key's original position. The kernel uses
 64 threads and two items per thread; the host verifies membership and
 pair association without depending on output order.
@@ -96,18 +96,34 @@ must store only ``min(k, valid_items)`` results, using that value as
 Store's ``valid_items``. The result payloads retain the input extent, so
 their size alone does not tell you which slots are safe to read.
 
+The CuTe example below selects both minimum keys and maximum pairs. It uses
+64 threads, two items per thread, ``k=31``, and ``valid_items=93``. ``module``
+selects the common or CUTLASS-qualified API; the qualified path converts
+register payloads explicitly. :download:`Download the complete CuTe example
+<../../../../python/cuda_coop/examples/cutlass/topk.py>` for setup and the
+order-independent host checks.
+
+.. literalinclude:: ../../../../python/cuda_coop/examples/cutlass/topk.py
+   :language: python
+   :start-after: # docs: start cutlass-topk
+   :end-before: # docs: end cutlass-topk
+   :dedent: 4
+
 Common TopK calls accept numeric ``ThreadData`` payloads in blocked order.
 The qualified :func:`cuda.coop.numba_mlir.topk_max_pairs` API also accepts
 fixed local arrays; its :func:`~cuda.coop.numba_mlir.topk_min_pairs`,
 :func:`~cuda.coop.numba_mlir.topk_min_keys`, and
 :func:`~cuda.coop.numba_mlir.topk_max_keys` variants have the same selection
-contract. The current backend supports complete one-dimensional blocks;
-Warp and logical-warp TopK are unsupported.
+contract. The four :func:`CUTLASS-qualified variants
+<cuda.coop.cutlass.topk_max_pairs>` accept CuTe register tensors and
+``TensorSSA`` inputs. Both backends require complete one-dimensional blocks;
+warp and logical-warp TopK are unsupported.
 
 Scratch is allocated automatically, or supplied through ``temp_storage``.
 Follow the descriptor's synchronization requirements before reusing it.
-See :doc:`../programming_guide` for scratch reuse and the API reference
-for supported dtypes and runtime count types. The explorer omits
+See the :ref:`Numba <coop-topk>` and :ref:`CUTLASS <coop-cutlass-topk>`
+guides for scratch reuse and the API reference for supported dtypes and
+runtime count types. The explorer omits
 floating-point special values: positive and negative zero compare as
 equal while retaining their original bits, and NaNs have no guaranteed
 numeric ordering.

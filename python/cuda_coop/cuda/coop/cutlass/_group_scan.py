@@ -40,24 +40,68 @@ def scan(
     valid_items=None,
     aggregate_output=None,
 ):
-    """Compute built-in prefixes in linear group order, preserving the input.
+    """Scan register values with optional valid-prefix and aggregate controls.
 
-    Blocks accept scalars or fixed per-thread payloads in blocked order;
-    physical and logical warps accept scalars. Every group member participates.
-    A payload input returns a fresh payload of the same extent and dtype.
-    Exclusive Sum defaults to zero; other exclusive operators require a seed.
-    Inclusive scans reject a seed. Typed seeds must match the input dtype;
-    Python literals must be finite and representable.
+    Extends :func:`cuda.coop.scan` with the operand forms and controls below.
+    Group requirements, scan order, modes, algorithms, and temporary storage
+    follow the common function.
 
-    The qualified ``valid_items`` control selects a prefix of warp lanes from
-    one through group size. Only those lanes have defined scan results; all
-    lanes must still participate. ``aggregate_output`` is a writable one-item
-    ThreadData receiving the input aggregate on every member, excluding the
-    seed and any invalid tail. These two controls are backend-qualified.
+    Parameters
+    ----------
+    value : numeric scalar, ThreadData, CuTe register tensor, or TensorSSA
+        Blocks accept scalars or fixed-size per-thread payloads in blocked
+        order. Register tensors and ``TensorSSA`` values are converted with
+        :meth:`cuda.coop.cutlass.ThreadData.from_payload`. All members must use
+        the same dtype and extent. Physical and logical warps accept scalars
+        only, including when each thread would otherwise hold one item.
+    scan_op : str or built-in alias, optional
+        Compile-time operator, default sum. Supports ``"sum"``,
+        ``"multiplies"``, ``"min"``, ``"max"``, ``"bit_and"``, ``"bit_or"``,
+        and ``"bit_xor"``, and corresponding ``operator`` or NumPy aliases
+        such as ``operator.add`` and ``numpy.maximum``. Bitwise operators
+        require an integer dtype. Custom device functions are not supported.
+    initial_value : numeric scalar, optional
+        Starting value for exclusive mode. Sum defaults to zero; other
+        operators require an explicit value. A typed CuTe or NumPy scalar
+        must match the input dtype. Python literals must be finite and
+        representable in that dtype. Inclusive mode requires ``None``.
+    valid_items : int or CuTe integer scalar, optional
+        Warp-only count of contributing lanes, from one through the group
+        size, uniform within the group. ``None`` includes every lane. All
+        lanes participate, but only ranks below this count have defined scan
+        results. The enclosing block must contain complete physical warps.
+        Blocks require ``None``.
+    aggregate_output : ThreadData, optional
+        Writable one-item payload receiving the input aggregate on every
+        member. Its dtype must match the input, or may be omitted for
+        inference. The aggregate excludes ``initial_value`` and lanes beyond
+        ``valid_items``. CuTe register tensors and ``TensorSSA`` values are
+        not accepted as this output argument. ``None`` omits the aggregate.
 
-    Only blocks accept algorithm selection and explicit TempStorage. Its
-    automatic trailing barrier protects scratch reuse unless disabled by the
-    caller. Custom operators and prefix callbacks are not supported.
+    Returns
+    -------
+    CuTe numeric scalar or cuda.coop.cutlass.ThreadData
+        This thread's prefixes with the input dtype. Scalar input returns a
+        CuTe scalar; payload input returns a new writable ``ThreadData`` with
+        the input extent and alignment. The input remains unchanged.
+        With ``valid_items``, read only valid lanes. ``aggregate_output`` is
+        written separately, including on lanes outside the valid prefix.
+
+    Notes
+    -----
+    Only blocks accept ``algorithm`` and explicit ``temp_storage``. Automatic
+    trailing synchronization protects scratch reuse; disabling it on a
+    :class:`cuda.coop.TempStorage` requires explicit block barriers.
+    Prefix callbacks and callback state are not supported.
+
+    See Also
+    --------
+    cuda.coop.scan
+        Shared scan order, algorithms, and storage contract.
+    cuda.coop.cutlass.exclusive_scan
+        Executable example of a partial logical warp and aggregate output.
+    :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
+        C++ scan, sum, and aggregate overloads.
     """
     from ._compiler._launch import current_kernel_launch_facts
     from ._operators import normalize_operator
@@ -120,7 +164,33 @@ def exclusive_scan(
     valid_items=None,
     aggregate_output=None,
 ):
-    """Return exclusive prefixes using the contracts of :func:`scan`."""
+    """Return exclusive prefixes with an optional initial value and aggregate.
+
+    Extends :func:`cuda.coop.exclusive_scan` with the parameters and return
+    behavior of :func:`cuda.coop.cutlass.scan`, with exclusive mode fixed.
+    Sum starts from zero unless ``initial_value`` is supplied; other built-in
+    operators require it. ``aggregate_output`` receives the input aggregate
+    without that initial value.
+
+    Returns
+    -------
+    CuTe numeric scalar or cuda.coop.cutlass.ThreadData
+        Prefix before each input item, with the input dtype. Payload input
+        produces a fresh payload. For a partial warp, only ranks below
+        ``valid_items`` have defined prefixes.
+
+    Examples
+    --------
+    Scan five lanes of each eight-lane logical warp, starting from seven.
+    Every lane participates and receives the aggregate. Only valid lanes
+    write their prefixes. ``operator.add`` selects the built-in sum.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+        :language: python
+        :start-after: # qualified-exclusive-scan-example-begin
+        :end-before: # qualified-exclusive-scan-example-end
+        :dedent: 4
+    """
     return scan(
         group,
         value,
@@ -145,7 +215,27 @@ def inclusive_scan(
     valid_items=None,
     aggregate_output=None,
 ):
-    """Return inclusive prefixes using the contracts of :func:`scan`."""
+    """Return inclusive prefixes with a built-in operator.
+
+    Extends :func:`cuda.coop.inclusive_scan` with the parameters and return
+    behavior of :func:`cuda.coop.cutlass.scan`, with inclusive mode fixed.
+    Each prefix includes its current item. This function has no
+    ``initial_value`` parameter. The qualified ``valid_items`` and
+    ``aggregate_output`` controls follow :func:`cuda.coop.cutlass.scan`.
+
+    Returns
+    -------
+    CuTe numeric scalar or cuda.coop.cutlass.ThreadData
+        Inclusive prefixes with the input dtype. Payload input produces a
+        fresh payload and remains unchanged. Read only valid lanes when
+        ``valid_items`` is supplied.
+
+    See Also
+    --------
+    cuda.coop.cutlass.exclusive_scan
+        Partial-warp example. To include each current item, replace the call
+        with ``inclusive_scan`` and remove ``initial_value``.
+    """
     return scan(
         group,
         value,
@@ -168,7 +258,28 @@ def exclusive_sum(
     valid_items=None,
     aggregate_output=None,
 ):
-    """Return exclusive sums starting at zero, with qualified prefix controls."""
+    """Return exclusive sums starting from zero.
+
+    Extends :func:`cuda.coop.exclusive_sum` with the parameters and return
+    behavior of :func:`cuda.coop.cutlass.scan`, with exclusive mode and sum
+    fixed. Use :func:`cuda.coop.cutlass.exclusive_scan` for an explicit
+    ``initial_value`` or a different built-in operator. The qualified
+    ``valid_items`` and ``aggregate_output`` controls are available here too.
+
+    Returns
+    -------
+    CuTe numeric scalar or cuda.coop.cutlass.ThreadData
+        Sum of the items preceding each input item, with the input dtype.
+        Payload input produces a fresh payload and remains unchanged. Read
+        only valid lanes when ``valid_items`` is supplied.
+
+    See Also
+    --------
+    cuda.coop.cutlass.exclusive_scan
+        Partial-warp example. For an exclusive sum starting at zero, replace
+        the call with ``exclusive_sum`` and omit ``scan_op`` and
+        ``initial_value``.
+    """
     return scan(
         group,
         value,
@@ -190,7 +301,28 @@ def inclusive_sum(
     valid_items=None,
     aggregate_output=None,
 ):
-    """Return inclusive sums using the contracts of :func:`scan`."""
+    """Return inclusive sums, including each current item.
+
+    Extends :func:`cuda.coop.inclusive_sum` with the parameters and return
+    behavior of :func:`cuda.coop.cutlass.scan`, with inclusive mode and sum
+    fixed. The qualified ``valid_items`` and ``aggregate_output`` controls
+    follow that function.
+
+    Returns
+    -------
+    CuTe numeric scalar or cuda.coop.cutlass.ThreadData
+        Sum through each input item, with the input dtype. Payload input
+        produces a fresh payload and remains unchanged. Read only valid
+        lanes when ``valid_items`` is supplied.
+
+    See Also
+    --------
+    cuda.coop.cutlass.inclusive_scan
+        Inclusive prefixes with other built-in operators.
+    cuda.coop.cutlass.exclusive_scan
+        Partial-warp example. For an inclusive sum, replace the call with
+        ``inclusive_sum`` and omit ``scan_op`` and ``initial_value``.
+    """
     return scan(
         group,
         value,

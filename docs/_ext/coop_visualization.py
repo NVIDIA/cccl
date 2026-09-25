@@ -58,7 +58,11 @@ _API_VISUALIZATIONS = (
 
 def add_api_visualization_link(app, what, name, obj, options, lines):
     module, _, function = name.rpartition(".")
-    if what != "function" or module not in {"cuda.coop", "cuda.coop.numba_mlir"}:
+    if what != "function" or module not in {
+        "cuda.coop",
+        "cuda.coop.numba_mlir",
+        "cuda.coop.cutlass",
+    }:
         return
     visualization = _API_VISUALIZATIONS.get(function)
     if visualization is not None:
@@ -121,8 +125,8 @@ def setup(app):
     app.connect("autodoc-process-docstring", add_api_visualization_link)
     app.connect("html-page-context", add_visualization_assets)
     return {
-        "version": "8",
-        "env_version": 7,
+        "version": "9",
+        "env_version": 8,
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }

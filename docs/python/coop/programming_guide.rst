@@ -98,8 +98,8 @@ The qualified import selects the Numba-CUDA-MLIR API explicitly:
 
 Both imports can be used in the same program. This guide uses ``coop`` for
 common calls and ``numba_coop`` for qualified calls so the choice is visible.
-In a program that uses only the qualified API, importing it as ``coop`` is
-also fine.
+Use these aliases in programs that use only one API too, so each call
+identifies the API it uses.
 
 The qualified API accepts Numba-specific payloads and adds controls to
 several operations. This table describes those extensions for
@@ -1167,3 +1167,7 @@ Explicit bounds retain their meaning and must admit the exact launch. The
 inferred bound does not change the block dimensions or the kernel's launch
 specialization. Lower register use can require spilling, so this behavior does
 not imply a performance improvement.
+
+The :ref:`CUTLASS launch requirements <coop-cutlass-launch-facts>` describe
+how CuTe supplies exact group dimensions. Launch configuration and compiler
+resource controls belong to the DSL compiling each kernel.

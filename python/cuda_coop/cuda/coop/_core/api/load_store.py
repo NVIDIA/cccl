@@ -150,7 +150,7 @@ def load(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating threads; see :ref:`thread groups <coop-thread-groups>`.
+        Participating threads; see :ref:`thread groups <coop-common-groups>`.
         Supports blocks and physical or logical warps. Warp loads require
         an enclosing block size divisible by 32.
     source : array
@@ -159,7 +159,7 @@ def load(
         infers its dtype from this array. The array must contain all elements
         selected by ``offset`` and ``valid_items``.
     output : cuda.coop.ThreadDataLike
-        Writable :ref:`per-thread payload <coop-thread-data>`.
+        Writable :ref:`per-thread payload <coop-common-payloads>`.
         Load populates this payload in place. The group's tile contains
         ``group_size * items_per_thread`` elements.
     algorithm : str, optional
@@ -189,7 +189,7 @@ def load(
         ``(linear_thread_rank // group_size) * tile_size`` automatically;
         do not include that within-block group offset a second time.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for block
+        :ref:`Scratch descriptor <coop-common-storage>` for block
         transpose-family algorithms. ``None`` uses automatic scratch.
         Direct, striped, and vectorized loads need no shared scratch.
         Warp loads require ``None``.
@@ -216,9 +216,12 @@ def load(
         :end-before: # example-end
         :dedent: 4
 
-    The qualified import activates the Numba-CUDA-MLIR backend even if another
-    module imported ``cuda.coop`` first. Use the qualified
-    ``cuda.coop.<backend>`` API for backend-specific behavior.
+    Importing ``cuda.coop.numba_mlir`` or ``cuda.coop.cutlass`` activates that
+    integration even if another module imported ``cuda.coop`` first. Use the
+    aliases ``numba_coop`` and ``cutlass_coop`` for qualified calls.
+
+    For CuTe pointers and register payloads, see the executable
+    :ref:`CUTLASS Load and Store example <coop-cutlass-load-store>`.
     """
 
     algorithm = _common_selector(
@@ -276,7 +279,7 @@ def store(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating threads; see :ref:`thread groups <coop-thread-groups>`.
+        Participating threads; see :ref:`thread groups <coop-common-groups>`.
         Supports blocks and physical or logical warps. Warp stores require
         an enclosing block size divisible by 32.
     destination : array
@@ -284,7 +287,7 @@ def store(
         memory, with the same element dtype as ``value``. It must contain
         every element selected by ``offset`` and ``valid_items``.
     value : numeric scalar or cuda.coop.ThreadDataLike
-        This thread's value or readable :ref:`payload <coop-thread-data>`.
+        This thread's value or readable :ref:`payload <coop-common-payloads>`.
         Initialize every item that will be stored. The tile contains
         ``group_size * items_per_thread`` elements, with one item per thread
         for a scalar. Store preserves the input, including when its algorithm
@@ -296,7 +299,7 @@ def store(
         use vector accesses or shared-memory rearrangement, respectively.
         Blocks additionally support ``"warp_transpose"`` and
         ``"warp_transpose_timesliced"``, both requiring a block size divisible
-        by 32. See :ref:`data layouts <coop-data-layouts>` before pairing
+        by 32. See :ref:`data layouts <coop-common-layouts>` before pairing
         different Load and Store algorithms.
     valid_items : int or integer scalar, optional
         Number of valid elements in the group's tile, uniform across the
@@ -309,7 +312,7 @@ def store(
         origin automatically, using the same addressing rule as
         :func:`cuda.coop.load`.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for block
+        :ref:`Scratch descriptor <coop-common-storage>` for block
         transpose-family algorithms. ``None`` uses automatic scratch.
         Direct, striped, and vectorized stores need no shared scratch.
         Warp stores require ``None``.
@@ -336,8 +339,11 @@ def store(
         :end-before: # example-end
         :dedent: 4
 
-    See :ref:`participation and synchronization <coop-participation>` for
+    See :ref:`participation and synchronization <coop-common-participation>` for
     control-flow requirements at primitive calls.
+
+    For a CuTe kernel with partial stores and element offsets, see
+    :ref:`CUTLASS Load and Store <coop-cutlass-load-store>`.
     """
 
     algorithm = _common_selector(

@@ -190,13 +190,13 @@ def reduce(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating :ref:`thread group <coop-thread-groups>`. Supports a
+        Participating :ref:`thread group <coop-common-groups>`. Supports a
         single thread, physical or logical warp, block, mapped group of warps,
         or cluster. Grid reductions are unsupported. Every member must call
         the primitive, including members excluded by ``valid_items``.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's contribution. A :ref:`per-thread payload
-        <coop-thread-data>` contributes all its elements to the same scalar
+        <coop-common-payloads>` contributes all its elements to the same scalar
         reduction; its dtype and fixed extent must agree across the group.
         Input values are preserved. Supported dtypes are signed and unsigned
         8-, 16-, 32-, and 64-bit integers, ``float32``, and ``float64``.
@@ -205,8 +205,9 @@ def reduce(
         ``"min"``, ``"max"``, ``"bit_and"``, ``"bit_or"``, or ``"bit_xor"``.
         ``None`` selects sum. Bitwise operators require integer values.
         Operator aliases include ``"+"``, ``"*"``, ``"&"``, ``"|"``, and
-        ``"^"``. Use the qualified ``cuda.coop.<backend>`` API for custom
-        operators where supported.
+        ``"^"``. :func:`cuda.coop.numba_mlir.reduce` also accepts custom
+        operators. :func:`cuda.coop.cutlass.reduce` accepts recognized Python
+        and NumPy aliases for built-in operators, but no custom callbacks.
     broadcast : bool, optional
         Compile-time flag, default ``True``. Return the result to every group
         member. With ``False``, only group rank zero has a defined result;
@@ -233,7 +234,7 @@ def reduce(
     -----
     The reduction can regroup operations, so floating-point results can differ
     from a sequential fold. This call manages any required
-    :ref:`temporary storage <coop-temp-storage>` automatically.
+    :ref:`temporary storage <coop-common-storage>` automatically.
 
     See Also
     --------
@@ -252,6 +253,9 @@ def reduce(
         :start-after: # reduce-example-begin
         :end-before: # reduce-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS reduction example <coop-cutlass-reduce>` covers CuTe
+    block and logical-warp reductions, valid prefixes, and result ownership.
     """
 
     algorithm = _common_reduce_algorithm("reduce", algorithm)
@@ -297,13 +301,13 @@ def sum(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating :ref:`thread group <coop-thread-groups>`. Supports a
+        Participating :ref:`thread group <coop-common-groups>`. Supports a
         single thread, physical or logical warp, block, mapped group of warps,
         or cluster. Grid reductions are unsupported. Every member must call
         the primitive.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's contribution. A :ref:`per-thread payload
-        <coop-thread-data>` contributes all its elements; its dtype and fixed
+        <coop-common-payloads>` contributes all its elements; its dtype and fixed
         extent must agree across the group. Input values are preserved.
         Supports signed and unsigned 8-, 16-, 32-, and 64-bit integers,
         ``float32``, and ``float64``.
@@ -335,7 +339,7 @@ def sum(
     -----
     Floating-point addition can be regrouped, so the result can differ from a
     sequential sum. The implementation manages any required
-    :ref:`temporary storage <coop-temp-storage>` automatically.
+    :ref:`temporary storage <coop-common-storage>` automatically.
 
     See Also
     --------
@@ -353,6 +357,9 @@ def sum(
         :start-after: # sum-example-begin
         :end-before: # sum-example-end
         :dedent: 4
+
+    For CuTe payload sums and a scalar valid-prefix sum, see
+    :ref:`CUTLASS Reduce and Sum <coop-cutlass-reduce>`.
     """
 
     algorithm = _common_reduce_algorithm("sum", algorithm)

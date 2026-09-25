@@ -12,18 +12,66 @@ from ._thread_data import _coerce_thread_payload
 
 
 def shuffle(group, value, /, *, mode="down", distance=1):
-    """Return a shifted payload or another block member's scalar.
+    """Shift register payloads or select another block member's scalar.
 
-    Fixed payloads support unit ``up`` and ``down`` shifts in blocked order;
-    the first or last result item, respectively, is undefined. The input is
-    preserved and the result is a fresh payload with the same dtype and extent.
+    See :func:`cuda.coop.shuffle` for the shared block participation rules,
+    dtypes, and unit ``"up"``/``"down"`` shifts. The qualified API adds CuTe
+    register payloads and scalar offset or rotate calls.
 
-    Qualified scalar ``offset`` and ``rotate`` select rank ``r + distance``.
-    Offset accepts signed 32-bit distances, including zero and negative values;
-    out-of-block results are undefined. Rotate wraps within the block and
-    requires ``1 <= distance < block_size``. Runtime distances may differ
-    between members. Every block member must call the primitive. Scratch and
-    its trailing reuse barrier are managed automatically.
+    Parameters
+    ----------
+    value : numeric scalar, ThreadData, CuTe register tensor, or TensorSSA
+        Fixed-size payloads may be ``ThreadData``, CuTe register tensors, or
+        ``TensorSSA`` values. The latter two are converted with
+        :meth:`cuda.coop.cutlass.ThreadData.from_payload`. For scalar offset or
+        rotate modes, each thread supplies one numeric scalar.
+    mode : str, optional
+        Compile-time mode, default ``"down"``. Payloads support only ``"up"``
+        and ``"down"``; the first or last item of the block tile, respectively,
+        is undefined. Scalars require ``"offset"`` or ``"rotate"``: rank ``r``
+        receives the value from rank ``r + distance``. Offset results are
+        undefined when that source is outside the block; rotate wraps the
+        source rank modulo the block size.
+    distance : int or CuTe integer scalar, optional
+        Default ``1``. Payload shifts require a compile-time unit distance.
+        Scalar modes accept compile-time or runtime distances, which may
+        differ between threads. Offset distances must fit a signed 32-bit
+        integer and may be zero or negative. Rotate requires at least two
+        threads and ``1 <= distance < block_size``. A runtime distance may
+        have a signed integer dtype up to 64 bits or an unsigned integer dtype
+        up to 32 bits, but its value must remain in the mode's allowed range.
+
+    Returns
+    -------
+    CuTe numeric scalar or cuda.coop.cutlass.ThreadData
+        Scalar input produces a CuTe scalar with the input dtype. Payload
+        input produces a new writable ``ThreadData`` with the input dtype,
+        extent, and requested alignment. The input remains unchanged.
+        Observe the chosen mode's boundary rules before reading the result.
+
+    Notes
+    -----
+    Scratch allocation and trailing synchronization are automatic. Every
+    block member must call, including threads with out-of-range offset
+    sources. Warp and logical-warp groups are not supported.
+
+    See Also
+    --------
+    cuda.coop.shuffle
+        Shared array shift contract and executable example.
+    :cpp:struct:`cub::BlockShuffle`
+        C++ shift, offset, and rotate primitive.
+
+    Examples
+    --------
+    Rotate one scalar per thread by seven positions in a 64-thread block,
+    including wraparound.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+        :language: python
+        :start-after: # qualified-rotate-example-begin
+        :end-before: # qualified-rotate-example-end
+        :dedent: 4
     """
     if not isinstance(group, ThreadGroup):
         raise TypeError("cuda.coop.cutlass.shuffle group must be a ThreadGroup")

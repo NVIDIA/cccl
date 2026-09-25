@@ -28,7 +28,7 @@ def TempStorage(
 
     Construct the descriptor inside the kernel and pass it as
     ``temp_storage`` to operations that accept explicit block scratch.
-    See :ref:`temporary storage <coop-temp-storage>` for supported operations,
+    See :ref:`temporary storage <coop-common-storage>` for supported operations,
     allocation lifetime, and launch-time shared-memory requirements.
 
     Parameters
@@ -71,6 +71,10 @@ def TempStorage(
         :start-after: # temp-storage-example-begin
         :end-before: # temp-storage-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS storage example <coop-cutlass-storage>` demonstrates
+    the same shared/exclusive policies and automatic or explicit reuse
+    synchronization in a CuTe kernel.
     """
 
     alignment = _normalize_alignment(alignment)

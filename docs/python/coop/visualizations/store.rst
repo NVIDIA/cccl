@@ -67,16 +67,16 @@ stores; the diagram does not impose a serial global-memory store schedule.
 Using Store in a kernel
 -----------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel, with
-``cuda`` imported from ``numba_cuda_mlir``, ``numpy as np``, and
-``cuda.coop as coop``. Launch with 128 threads and provide at least 256
+This common-API fragment works in either DSL with the
+:ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
+128 threads and provide at least 256
 source and destination elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
    items = coop.ThreadData(2, dtype=np.int32)
-   offset = cuda.blockIdx.x * 256
+   offset = block_index * 256
    coop.load(block, source, items, algorithm="direct", offset=offset)
    coop.store(block, destination, items, algorithm="transpose", offset=offset)
    # The block's 256 values are written in their original logical order.
@@ -85,5 +85,6 @@ source and destination elements for each block.
 For a partial final tile, pass ``valid_items`` to limit the stored prefix;
 memory beyond that prefix remains untouched. Supply a matching valid count
 when loading the input tile. See :func:`cuda.coop.store` for the parameter
-contract and the :doc:`../programming_guide` for backend activation and
-thread groups.
+contract and the :doc:`Numba <../programming_guide>` and
+:ref:`CUTLASS <coop-cutlass-load-store>` Load/Store examples for launches
+and partial tiles.

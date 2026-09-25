@@ -163,6 +163,13 @@ def radix_sort_keys(
     and ``cuda.coop.cutlass`` calls also support floating-point keys, scalar
     payloads, and striped output. Numba-CUDA-MLIR additionally accepts local
     arrays; CUTLASS accepts CuTe register tensors.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.radix_sort_keys
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.radix_sort_keys
+        CuTe payloads and qualified controls.
     """
     _validate(
         "radix_sort_keys",
@@ -236,6 +243,13 @@ def radix_sort_pairs(
     ``SortDescending``. Both qualified backends also support floating-point
     keys, scalar payloads, and striped output. Numba-CUDA-MLIR additionally
     accepts local arrays; CUTLASS accepts CuTe register tensors.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.radix_sort_pairs
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.radix_sort_pairs
+        CuTe payloads and qualified controls.
     """
     _validate(
         "radix_sort_pairs",
@@ -307,6 +321,13 @@ def radix_rank(
     exclusive digit prefixes into a caller-provided output payload.
     Numba-CUDA-MLIR additionally accepts local arrays; CUTLASS accepts CuTe
     register tensors.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.radix_rank
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.radix_rank
+        CuTe payloads and qualified controls.
     """
     _validate(
         "radix_rank",
