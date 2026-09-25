@@ -36,8 +36,9 @@ an independent reduction for each per-thread payload slot.
 
 The common ``cuda.coop`` API describes those operations independently of a
 kernel compiler. Numba-CUDA-MLIR is the first supported backend. The optional
-:doc:`CUTLASS backend <coop_cutlass>` currently implements Block Load and
-Store. The backend namespace adds features specific to its compiler. See :ref:`Which namespace should I use? <coop-faq-namespaces>`.
+:doc:`CUTLASS backend <coop_cutlass>` currently implements Block and physical
+Warp Load and Store. The backend namespace adds features specific to its
+compiler. See :ref:`Which namespace should I use? <coop-faq-namespaces>`.
 
 Start with the :doc:`Programming Guide <coop/programming_guide>` to write a
 kernel. The :doc:`Visualizations <coop/visualizations/index>` show where each

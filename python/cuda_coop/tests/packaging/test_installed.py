@@ -134,8 +134,10 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
                 "cub/block/block_shuffle.cuh",
                 "cub/block/block_store.cuh",
                 "cub/warp/warp_exchange.cuh",
+                "cub/warp/warp_load.cuh",
                 "cub/warp/warp_reduce.cuh",
                 "cub/warp/warp_scan.cuh",
+                "cub/warp/warp_store.cuh",
                 "cuda/experimental/coop/algorithm",
                 "cuda/experimental/coop/group",
                 "thrust/detail/raw_pointer_cast.h",
@@ -193,6 +195,8 @@ def test_isolated_cutlass_backend_uses_installed_modules(tmp_path: Path) -> None
                     name, origin, distribution_root
                 )
         assert callable(coop.load) and callable(cutlass_coop.load)
+        assert "this_warp" in cutlass_coop.__all__
+        assert cutlass_coop.this_warp().kind == "warp"
         assert "cuda.coop.cutlass" in _dispatch._COMPILER_CONTEXT_PROBES
         assert _dispatch._backend_module_name() is None
         """
