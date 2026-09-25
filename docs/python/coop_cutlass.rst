@@ -4,7 +4,7 @@
 ===========================================
 
 The CUTLASS backend provides group queries and synchronization, Load and
-Store, and built-in Reduce and Sum inside CuTe DSL kernels.
+Store, and built-in Reduce, Scan, and Sum inside CuTe DSL kernels.
 It uses the same group-first calls and in-place
 payload contract as :mod:`cuda.coop`: ``load`` fills an existing
 ``ThreadData`` and returns ``None``; ``store`` leaves its input payload
@@ -302,6 +302,68 @@ and a scalar valid-prefix sum whose result is read only at block rank zero.
    :language: python
    :start-after: docs: start cutlass-reduce
    :end-before: docs: end cutlass-reduce
+
+Built-in Scan
+-------------
+
+``scan``, ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
+``inclusive_sum`` support block, physical warp, and logical warp groups. Block
+operations accept scalars and fixed multi-item payloads; warp operations
+accept one scalar per lane. A ``ThreadData(1, ...)`` remains an array payload
+and is not accepted by Warp Scan. Input values are preserved. A scalar input
+returns a scalar; a block payload returns a fresh ``ThreadData`` with the same
+dtype and extent in blocked order.
+
+Scan supports the same seven built-in operators as Reduce. Values may be
+signed or unsigned 8-, 16-, 32-, or 64-bit integers, or 32- or 64-bit floats;
+bitwise operators require integers. ``scan`` defaults to exclusive Sum.
+Exclusive Sum starts from typed zero unless ``scan`` or ``exclusive_scan``
+supplies ``initial_value``. Other exclusive operators require that initial
+value. Inclusive operations do not accept an initial value.
+
+The initial value must be uniform within the group. A typed value must match
+the input dtype exactly. Python numeric literals must be finite and
+representable in that dtype; integer input requires an integer literal.
+Custom operators, prefix callbacks, and callback state are unsupported.
+
+The block algorithms are ``raking`` (the default), ``raking_memoize``, and
+``warp_scans``. The last requires a block size divisible by 32. All block Scan
+algorithms use scratch and accept ``temp_storage`` with the size, alignment,
+sharing, and synchronization rules described above. One descriptor can be
+reused between Scan and Load/Store. Warp Scan manages independent scratch per
+group and rejects algorithm selectors and explicit storage. Every member of
+each participating group must reach its collective, including on repeated
+calls and loop iterations.
+
+The qualified CUTLASS API adds two controls to all five Scan spellings:
+
+.. list-table:: Qualified Scan controls
+   :header-rows: 1
+
+   * - Keyword
+     - Contract
+   * - ``valid_items``
+     - Warp-only valid prefix of one through the group width, uniform within
+       the group. Every lane participates; only lanes below the count have
+       defined scan results.
+   * - ``aggregate_output``
+     - Writable one-element ``ThreadData`` in the input dtype, inferred if
+       omitted from the descriptor. Receives the aggregate of input values,
+       excluding the initial value, at every group member.
+
+For a partial warp scan, the aggregate includes only the valid prefix and is
+available even on lanes outside that prefix. A zero count is invalid. The
+portable namespace does not expose these two keywords. The qualified backend
+also accepts CuTe register tensors for block Scan and returns ``ThreadData``;
+use its conversion methods when a register-tensor result is needed.
+
+:download:`Download the Scan example
+<../../python/cuda_coop/examples/cutlass/scan.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/scan.py
+   :language: python
+   :start-after: docs: start cutlass-scan
+   :end-before: docs: end cutlass-scan
 
 Qualified register payloads
 ---------------------------

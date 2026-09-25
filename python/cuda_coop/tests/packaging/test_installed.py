@@ -213,6 +213,23 @@ def test_isolated_cutlass_backend_uses_installed_modules(tmp_path: Path) -> None
         assert tuple(inspect.signature(cutlass_coop.sum).parameters) == (
             "group", "value", "broadcast", "valid_items", "algorithm"
         )
+        scan_names = {
+            "scan", "exclusive_scan", "inclusive_scan", "exclusive_sum", "inclusive_sum"
+        }
+        assert scan_names <= set(cutlass_coop.__all__)
+        for name in scan_names:
+            common_parameters = tuple(inspect.signature(getattr(coop, name)).parameters)
+            parameters = inspect.signature(getattr(cutlass_coop, name)).parameters
+            assert tuple(parameters) == common_parameters + (
+                "valid_items", "aggregate_output"
+            )
+            for index, parameter in enumerate(parameters.values()):
+                expected = (
+                    inspect.Parameter.POSITIONAL_ONLY
+                    if index < 2
+                    else inspect.Parameter.KEYWORD_ONLY
+                )
+                assert parameter.kind is expected
         assert "cuda.coop.cutlass" in _dispatch._COMPILER_CONTEXT_PROBES
         assert _dispatch._backend_module_name() is None
         """
