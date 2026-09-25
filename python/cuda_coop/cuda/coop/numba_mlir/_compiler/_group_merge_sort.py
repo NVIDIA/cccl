@@ -4,8 +4,10 @@
 
 """Family-local Merge Sort group planning and input-preserving lowering."""
 
+import math
 from dataclasses import replace
 
+import numpy as np
 from numba_cuda_mlir import types
 
 from cuda.coop._core import (
@@ -71,6 +73,18 @@ def _cast(context, statements, inst, value, dtype, name):
     return result
 
 
+def _coerce_static_sentinel(value, dtype, *, operation):
+    if (type(value) is float or isinstance(value, np.floating)) and math.isinf(value):
+        # Validate the scalar dtype before preserving an infinite sorting bound.
+        zero = coerce_static_scalar(
+            type(value)(0), dtype, operation=operation, parameter="oob_default"
+        )
+        return type(zero)(value)
+    return coerce_static_scalar(
+        value, dtype, operation=operation, parameter="oob_default"
+    )
+
+
 def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root):
     from .._lowering import _merge_sort
 
@@ -107,8 +121,8 @@ def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root)
     if partial:
         binding = context.planning_binding(sentinel_raw)
         if binding.kind is BindingKind.STATIC:
-            sentinel = coerce_static_scalar(
-                binding.value, key_dtype, operation=operation, parameter="oob_default"
+            sentinel = _coerce_static_sentinel(
+                binding.value, key_dtype, operation=operation
             )
         else:
             sentinel_dtype = _validate_common_numeric_dtype(

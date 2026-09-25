@@ -200,6 +200,66 @@ def test_partial_key_types(dtype):
     _run(dtype=dtype, partial=True)
 
 
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize("typed", [False, True])
+@pytest.mark.parametrize("descending", [False, True])
+@pytest.mark.parametrize("pairs", [False, True])
+@pytest.mark.parametrize("qualified", [False, True])
+def test_static_infinite_sentinel(dtype, typed, descending, pairs, qualified):
+    api = numba_coop if qualified else coop
+    sentinel = -float("inf") if descending else float("inf")
+    if typed:
+        sentinel = dtype(sentinel)
+    count = 119
+
+    @cuda.jit
+    def kernel(source, output, associations, preserved):
+        thread = cuda.threadIdx.x
+        keys = api.ThreadData(2, dtype)
+        values = api.ThreadData(2, np.int64)
+        for item in range(2):
+            index = thread * 2 + item
+            keys[item] = source[index]
+            values[item] = index
+        if pairs:
+            result, result_values = api.merge_sort_pairs(
+                api.this_block(),
+                keys,
+                values,
+                descending=descending,
+                valid_items=count,
+                oob_default=sentinel,
+            )
+            for item in range(2):
+                associations[thread * 2 + item] = result_values[item]
+        else:
+            result = api.merge_sort_keys(
+                api.this_block(),
+                keys,
+                descending=descending,
+                valid_items=count,
+                oob_default=sentinel,
+            )
+        for item in range(2):
+            output[thread * 2 + item] = result[item]
+            preserved[thread * 2 + item] = keys[item]
+
+    source = (((np.arange(128) * 17) % 47) - 23).astype(dtype)
+    source[:2] = [np.finfo(dtype).min, np.finfo(dtype).max]
+    output = np.empty_like(source)
+    associations = np.full(128, -1, dtype=np.int64)
+    preserved = np.empty_like(source)
+    kernel[1, 64](source, output, associations, preserved)
+    expected = np.sort(source[:count])
+    if descending:
+        expected = expected[::-1]
+    np.testing.assert_array_equal(output[:count], expected)
+    np.testing.assert_array_equal(preserved, source)
+    if pairs:
+        np.testing.assert_array_equal(np.sort(associations[:count]), np.arange(count))
+        np.testing.assert_array_equal(output[:count], source[associations[:count]])
+
+
 def test_multidimensional_block_and_reused_scratch():
     _run(block_dim=(8, 4, 2), scratch=True, descending=True)
 
