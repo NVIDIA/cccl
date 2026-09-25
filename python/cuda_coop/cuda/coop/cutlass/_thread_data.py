@@ -817,7 +817,7 @@ def _coerce_thread_payload(
         ) from exc
 
 
-def _snapshot_readable_payload(value, *, name, primitive):
+def _snapshot_readable_payload(value, *, name, primitive, allow_scalar=False):
     """Read the common payload interface without requiring writable inputs."""
 
     from cuda.coop._core.api._dispatch import _common_root_operation_name
@@ -844,7 +844,7 @@ def _snapshot_readable_payload(value, *, name, primitive):
     value = _coerce_thread_payload(
         value, scope=_ROOT_SCOPE, primitive_name=primitive, arg_name=name
     )
-    if not isinstance(value, ThreadData):
+    if not isinstance(value, ThreadData) and not allow_scalar:
         raise TypeError(
             f"{_ROOT_SCOPE}.{primitive} {name} must be a fixed-size ThreadData"
         )

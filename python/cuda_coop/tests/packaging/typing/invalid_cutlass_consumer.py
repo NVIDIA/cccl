@@ -191,3 +191,82 @@ common.merge_sort_keys(  # expected-error: [call-overload]
 common.merge_sort_pairs(  # expected-error: [call-overload]
     block, values, values.to_tensor_ssa()
 )
+
+cutlass_coop.radix_sort_keys(warp, values)  # expected-error: [arg-type]
+cutlass_coop.radix_rank(logical, values)  # expected-error: [arg-type]
+cutlass_coop.radix_sort_pairs(  # expected-error: [call-overload]
+    block, scalar, values
+)
+cutlass_coop.radix_sort_pairs(  # expected-error: [call-overload]
+    block, values, scalar
+)
+cutlass_coop.radix_sort_keys(  # expected-error: [type-var]
+    block, cutlass_coop.ThreadData(2, np.int16)
+)
+cutlass_coop.radix_sort_keys(  # expected-error: [type-var]
+    block, cutlass_coop.ThreadData(2, np.complex64)
+)
+cutlass_coop.radix_rank(  # expected-error: [type-var]
+    block, cutlass_coop.ThreadData(2, np.float32)
+)
+cutlass_coop.radix_rank(block, Float32(1))  # expected-error: [call-overload]
+cutlass_coop.radix_sort_keys(  # expected-error: [call-overload]
+    block, values, valid_items=3
+)
+cutlass_coop.radix_sort_pairs(  # expected-error: [call-overload]
+    block, values, values, algorithm="radix"
+)
+cutlass_coop.radix_sort_keys(
+    block,
+    values,
+    begin_bit=np.uint64(0),  # expected-error: [arg-type]
+)
+cutlass_coop.radix_rank(  # expected-error: [call-overload]
+    block, values, begin_bit=Int32(1)
+)
+cutlass_coop.radix_rank(  # expected-error: [call-overload]
+    block, values, temp_storage=cutlass_coop.TempStorage()
+)
+cutlass_coop.radix_rank(  # expected-error: [call-overload]
+    block, values, blocked_to_striped=True
+)
+cutlass_coop.radix_rank(
+    block,
+    values,
+    exclusive_digit_prefix=cutlass_coop.ThreadData(  # expected-error: [arg-type]
+        1, np.uint32
+    ),
+)
+cutlass_coop.radix_rank(  # expected-error: [call-overload]
+    block, values, exclusive_digit_prefix=scalar
+)
+cutlass_coop.radix_sort_keys(  # expected-error: [call-overload]
+    group=block, keys=values
+)
+cutlass_coop.radix_rank(block, values, 0, 4)  # expected-error: [call-overload]
+common.radix_sort_keys(  # expected-error: [call-arg]
+    block, values, blocked_to_striped=True
+)
+common.radix_rank(  # expected-error: [call-arg]
+    block, values, exclusive_digit_prefix=values
+)
+common.radix_sort_keys(block, scalar)  # expected-error: [arg-type]
+
+
+class _ReadOnlyPrefix:
+    items_per_thread: int = 1
+    dtype: object | None = Int32
+
+    def __len__(self) -> int:
+        return 1
+
+    def __getitem__(self, index: int, /) -> Int32:
+        return Int32(index)
+
+
+cutlass_coop.radix_rank(  # expected-error: [call-overload]
+    block, values, exclusive_digit_prefix=_ReadOnlyPrefix()
+)
+common.radix_sort_keys(  # expected-error: [type-var]
+    block, cutlass_coop.ThreadData(2, np.float32)
+)

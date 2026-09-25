@@ -109,7 +109,7 @@ and qualified controls have the limits described in each programming guide.
      - Available
    * - Radix Sort, keys and pairs; Radix Rank
      - Available
-     - Planned; unavailable
+     - Available
    * - TopK, minimum and maximum keys or pairs
      - Available
      - Planned; unavailable

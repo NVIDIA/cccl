@@ -69,6 +69,10 @@ Both imports call the same implementation inside a CuTe kernel.
      - Built-in ascending/descending keys or pairs, including partial tiles.
      - Also accepts CuTe register tensors and returns fresh ``ThreadData``;
        see :ref:`coop-cutlass-merge-sort`. Custom comparators are unsupported.
+   * - Radix Sort and Rank
+     - Block payloads with 32- or 64-bit integer keys.
+     - Adds scalar and register-tensor inputs, floating-point Sort keys,
+       striped Sort results, and Rank bin prefixes; see :ref:`coop-cutlass-radix`.
 
 .. _coop-cutlass-differences:
 
@@ -95,7 +99,7 @@ describe the requirements for block, warp, and mapped groups.
 Reduce and Scan support the built-in operators listed below. Custom
 operators and Scan prefix callbacks are not yet supported. The shared
 :ref:`coverage table <coop-backends>` lists the available primitives and
-planned additions, including Radix Sort/Rank and TopK.
+planned additions, including TopK.
 
 .. _coop-cutlass-mixed-backends:
 
@@ -612,6 +616,93 @@ key/value association against independent CPU references.
    :language: python
    :start-after: docs: start cutlass-merge-sort
    :end-before: docs: end cutlass-merge-sort
+
+.. _coop-cutlass-radix:
+
+Radix Sort and Rank
+-------------------
+
+``radix_sort_keys(block, keys, ...)`` returns sorted keys, and
+``radix_sort_pairs(block, keys, values, ...)`` returns sorted keys and their
+associated values. ``radix_rank(block, keys, ...)`` instead returns each
+input item's position in the order of a selected digit. It preserves the
+input arrangement; use the returned ranks when assigning destinations.
+All three primitives preserve their inputs. Equal selected digits retain
+flattened blocked input order in both ascending and descending modes.
+
+These primitives require a complete physical block, including multidimensional
+blocks. Every block thread participates with identical controls and per-thread
+extents. A block tile contains at most 65,535 items. Warp and mapped groups
+are unsupported. Inputs use blocked layout,
+and array results are fresh ``ThreadData`` payloads with the same item count.
+Read-only inputs are accepted. Sort preserves the key and value dtypes;
+Rank returns signed ``cutlass.Int32`` values. The
+:doc:`Radix visualization <coop/visualizations/radix>` illustrates the relation
+between digits, ranks, and sorted positions.
+
+The common API accepts payloads of ``int32``, ``uint32``, ``int64``, or
+``uint64`` keys. Pair values may use any of the ten numeric dtypes supported
+by Scan; key and value extents must match. The qualified API additionally
+accepts scalars and CuTe register tensors. Scalar pairs require two scalars;
+array pairs require two arrays. Scalar inputs produce scalar results.
+Register-tensor inputs produce ``ThreadData`` results.
+
+Sort intervals and output layout
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sort uses the half-open transformed-bit interval ``[begin_bit, end_bit)``.
+The default begin is zero, and the default end is the key width, including
+when begin is nonzero. Bounds must satisfy
+``0 <= begin_bit < end_bit <= key_width``. They may be runtime signed integers
+up to 64 bits or unsigned integers up to 32 bits; invalid runtime bounds trap
+before narrowing. ``descending`` is a compile-time Boolean.
+
+Signed integer keys invert their sign bit before selecting digits. Qualified
+Sort also accepts ``float32`` and ``float64`` keys. Floating keys invert all
+bits when negative and only the sign bit when nonnegative. Negative and
+positive zero compare equivalently; NaNs follow transformed-bit ordering.
+Returned keys retain their original bit representations.
+
+Results use blocked layout by default. Qualified Sort's compile-time
+``blocked_to_striped=True`` maps item ``i`` at thread ``t`` to sorted index
+``i * block_threads + t``. This applies to both outputs of a pair sort.
+Match the Store algorithm to this register layout when writing a contiguous
+sorted tile. Sort accepts ``temp_storage`` with the size, alignment, sharing,
+and synchronization rules described above. It does not accept a valid count,
+comparison callback, or algorithm selector.
+
+Rank digits and bin prefixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Rank keys are always 32- or 64-bit integers, including through the qualified
+API. Signed keys invert the sign bit before digit extraction. Its bounds
+and ``radix_bits`` must be compile-time integers, selecting one through eight
+bits within the key width. Omitted ``end_bit`` means ``begin_bit + radix_bits``,
+or ``begin_bit + 4`` when both controls are omitted. An explicit end and width
+must describe the same interval. Defaults do not clamp to the key width.
+Rank manages scratch and reuse synchronization automatically and does not
+accept ``temp_storage``.
+
+Qualified Rank adds ``exclusive_digit_prefix``, a writable signed Int32
+``ThreadData`` output distinct from the keys. Its dtype may be inferred.
+For digit width ``R`` and block size ``T``, each thread supplies
+``P = max(1, ceil(2**R / T))`` slots. Slot ``i`` of thread ``t`` owns bin
+``t * P + i`` in both directions. Each prefix counts keys with smaller digits
+in ascending mode or greater digits in descending mode. Slots beyond the
+number of bins are undefined and must not be read. These bin counts are
+separate from the returned per-item ranks.
+
+This example sorts full signed keys, orders pairs by their transformed high
+digit, and computes that digit's inverse ranks. The qualified path also uses
+striped Sort output and descending bin prefixes. CPU checks verify stable
+pair order, the signed-key transformation, ranks, and input preservation.
+:download:`Download the Radix Sort and Rank example
+<../../python/cuda_coop/examples/cutlass/radix.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/radix.py
+   :language: python
+   :start-after: docs: start cutlass-radix
+   :end-before: docs: end cutlass-radix
 
 .. _coop-cutlass-register-payloads:
 
