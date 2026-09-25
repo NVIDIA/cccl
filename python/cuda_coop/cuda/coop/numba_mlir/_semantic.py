@@ -39,6 +39,18 @@ def _numpy_dtype_identity(dtype):
 
 
 def _normalize_numba_semantic_value(value):
+    if isinstance(value, np.generic):
+        if value.dtype.hasobject:
+            raise TypeError(
+                "cuda.coop.numba_mlir callback constants cannot contain "
+                "NumPy scalars with object dtypes"
+            )
+        # Scalar repr loses observable bits, such as a NaN's sign and payload.
+        return (
+            "numba-cuda-mlir-numpy-scalar-v1",
+            _numpy_dtype_identity(value.dtype),
+            value.tobytes(),
+        )
     if isinstance(value, np.ndarray):
         if value.dtype.hasobject:
             raise TypeError(
