@@ -363,13 +363,14 @@ main() {
           exit 2
         fi
 
+        local suffix=""
         if ${cuda_ext:-false}; then
-          cuda_suffix="ext"
+          suffix+="ext"
         fi
         if ${tidy_ext:-false}; then
-          cuda_suffix="tidy"
+          suffix+="tidy"
         fi
-        path=".devcontainer/cuda${cuda_version}${cuda_suffix:-}-${host_compiler}"
+        path=".devcontainer/cuda${cuda_version}${suffix:-}-${host_compiler}"
         if [[ ! -f "${path}/devcontainer.json" ]]; then
             echo "Unknown CUDA [${cuda_version}] compiler [${host_compiler}] combination"
             echo "Requested devcontainer ${path}/devcontainer.json does not exist"

@@ -711,7 +711,7 @@ host_compilers:
 #   - These jobs are automatically added if needed:
 #     - Eg. "jobs: ['test']" in the workflow def will also create the required 'build' jobs.
 # - gpu: Whether the job requires a GPU runner. Default is false.
-# - cuda_ext: Whether the job requires a devcontainer with extra CUDA libraries. Default is false.
+# - ext: Devcontainer extensions [cuda, tidy]. Defaults to the project's ext; [] disables extensions.
 # - invoke:
 #   - Map the job type to the script invocation spec:
 #     - prefix: The script invocation prefix. Default is the job name.
@@ -786,7 +786,7 @@ jobs:
 
   # Only used for generating devcontainers. No scripts actually exist for these:
   dc:     { gpu: false }
-  dc_ext: { gpu: false, cuda_ext: true }
+  dc_ext: { gpu: false, ext: [cuda] }
 
 codegen_targets:
   atomics-ptx: { name: 'Atomics PTX', cmake_target: 'libcudacxx.test.atomics.ptx' }
@@ -899,7 +899,7 @@ projects:
   tidy:
     name: 'clang-tidy'
     stds: [17]
-    tidy_ext: true
+    ext: [tidy]
 
 # name -> Display name for generated job labels.
 # runner -> GPU/driver/count segment of the GHA runner label.

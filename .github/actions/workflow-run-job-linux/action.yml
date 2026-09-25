@@ -195,7 +195,7 @@ runs:
         if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+ext ]]; then
           cuda_ext_request="--cuda-ext"
         fi
-        if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+tidy ]]; then
+        if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+(ext)?tidy ]]; then
           tidy_ext_request="--tidy-ext"
         fi
 

@@ -198,12 +198,10 @@ make_compiler_entry() {
     local compiler_version="$2"
     local compiler_exe="$3"
     local cuda_version="$4"
-    local cuda_ext="$5"
-    local internal="${6:-false}"
+    local internal="${5:-false}"
     echo "{
         \"cuda\": \"$cuda_version\",
-        \"cuda_ext\": $cuda_ext,
-        \"tidy_ext\": false,
+        \"ext\": [],
         \"compiler_name\": \"$compiler_name\",
         \"compiler_exe\": \"$compiler_exe\",
         \"compiler_version\": \"$compiler_version\",
@@ -211,21 +209,21 @@ make_compiler_entry() {
     }" | jq -c '.'
 }
 
-cuda99_8_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.8" "false" "true")
+cuda99_8_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.8" "true")
 readonly cuda99_8_gcc
-cuda99_9_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.9" "false" "true")
+cuda99_9_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.9" "true")
 readonly cuda99_9_gcc
-cuda99_8_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.8" "false" "true")
+cuda99_8_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.8" "true")
 readonly cuda99_8_llvm
-cuda99_9_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.9" "false" "true")
+cuda99_9_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.9" "true")
 readonly cuda99_9_llvm
 
 readonly all_comb="$combinations $cuda99_9_gcc $cuda99_8_gcc $cuda99_9_llvm $cuda99_8_llvm"
 # For each unique combination
 for combination in $all_comb; do
     cuda_version=$(echo "$combination" | jq -r '.cuda')
-    cuda_ext=$(echo "$combination" | jq -r '.cuda_ext')
-    tidy_ext=$(echo "$combination" | jq -r '.tidy_ext')
+    cuda_ext=$(echo "$combination" | jq -r '.ext | index("cuda") != null')
+    tidy_ext=$(echo "$combination" | jq -r '.ext | index("tidy") != null')
     compiler_name=$(echo "$combination" | jq -r '.compiler_name')
     compiler_exe=$(echo "$combination" | jq -r '.compiler_exe')
     compiler_version=$(echo "$combination" | jq -r '.compiler_version')
