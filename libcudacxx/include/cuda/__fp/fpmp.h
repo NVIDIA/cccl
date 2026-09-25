@@ -193,6 +193,12 @@
 #include <cuda/__fp/fpmp_impl_cvt.h>
 #include <cuda/__fp/fpmp_impl_divsqrt.h>
 #include <cuda/__fp/fpmp_impl_muladd.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

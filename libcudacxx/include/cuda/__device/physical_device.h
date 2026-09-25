@@ -29,7 +29,6 @@
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__utility/call_once.h>
 #  include <cuda/__utility/raw_storage.h>
-#  include <cuda/std/__cstddef/byte.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__memory/unique_ptr.h>

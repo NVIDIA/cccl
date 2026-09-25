@@ -27,7 +27,6 @@
 #include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

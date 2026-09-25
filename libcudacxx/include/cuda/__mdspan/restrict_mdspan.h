@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/span.h>
+#include <cuda/std/__mdspan/mdspan.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -33,7 +34,6 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/delegate_constructors.h>
-#include <cuda/std/mdspan>
 
 #include <cuda/std/__cccl/prologue.h>
 

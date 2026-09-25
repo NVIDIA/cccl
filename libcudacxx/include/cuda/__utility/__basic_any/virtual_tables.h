@@ -26,10 +26,8 @@
 #include <cuda/__utility/__basic_any/rtti.h>
 #include <cuda/__utility/__basic_any/virtual_functions.h>
 #include <cuda/__utility/__basic_any/virtual_ptrs.h>
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
 #include <cuda/std/__utility/typeid.h>
-
-#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

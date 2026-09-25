@@ -34,9 +34,9 @@
     Included (under _CCCL_FPMP_USE_LIB) by <cuda/__fp/fpmp_math.h>.
 */
 
-#include <cuda/__fp/fpmp.h>
+#include <cuda/__fp/fpmp.h> // IWYU pragma: keep
 #include <cuda/std/cassert>
-#include <cuda/std/cmath>
+#include <cuda/std/cmath> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

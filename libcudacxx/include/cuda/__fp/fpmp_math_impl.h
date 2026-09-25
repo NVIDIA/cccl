@@ -37,9 +37,8 @@
 */
 
 #include <cuda/__fp/fpmp.h>
-#include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/cassert>
-#include <cuda/std/cmath>
+#include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
+#include <cuda/std/cmath> // IWYU pragma: keep
 
 /*
 // fp128 math functions fallback to system implementation enabling
