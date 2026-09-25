@@ -82,9 +82,7 @@ def _sentinel(dtype: np.dtype) -> object:
     return dtype.type(211 if dtype.kind == "u" else -101)
 
 
-@pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("common", "qualified")
-)
+@pytest.mark.parametrize("module", (root_coop, numba_coop), ids=("common", "qualified"))
 def test_runtime_payload_index_reuses_one_specialization(module):
     @cuda.jit
     def kernel(source, destination, index):

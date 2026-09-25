@@ -53,7 +53,7 @@ def _compile(kernel, *arg_types):
     return result
 
 
-@pytest.mark.parametrize("coop", (root_coop, qualified_coop), ids=("root", "qualified"))
+@pytest.mark.parametrize("coop", (root_coop, numba_coop), ids=("root", "qualified"))
 def test_store_compiles_a_runtime_payload_index(coop):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination, index):

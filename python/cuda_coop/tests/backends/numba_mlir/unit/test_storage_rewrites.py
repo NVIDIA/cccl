@@ -303,7 +303,7 @@ def test_merged_thread_data_preserves_minimum_alignment(
         assert definitions[alignment_refs[0].name].value >= required_alignment
 
 
-@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+@pytest.mark.parametrize("module", (common_coop, numba_coop), ids=("root", "qualified"))
 @pytest.mark.parametrize(
     ("alignment", "message"),
     [
