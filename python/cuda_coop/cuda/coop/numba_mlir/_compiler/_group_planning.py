@@ -369,6 +369,8 @@ class GroupPlanningContext:
         if resolved is None:
             return None
         result, bound = resolved
+        if result.fixed_dtype is not None:
+            return result.fixed_dtype
         if result.dtype_parameter is None:
             return None
         return self.dtype(bound.arguments[result.dtype_parameter], seen=seen)
@@ -557,6 +559,11 @@ class GroupPlanningContext:
                     return normalize_dtype_param(dtype)
             return None
         if function is _typed_group_payload_like and definition.args:
+            if (
+                len(definition.args) >= 3
+                and self.constant(definition.args[2]) == "int32"
+            ):
+                return types.int32
             return self.dtype(definition.args[0], seen=seen)
         result_dtype = self._result_dtype(definition, index=None, seen=seen)
         if result_dtype is not None:
