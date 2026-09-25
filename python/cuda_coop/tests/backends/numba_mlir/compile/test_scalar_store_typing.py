@@ -54,6 +54,18 @@ def _compile(kernel, *arg_types):
 
 
 @pytest.mark.parametrize("coop", (root_coop, qualified_coop), ids=("root", "qualified"))
+def test_store_compiles_a_runtime_payload_index(coop):
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination, index):
+        payload = coop.ThreadData(2)
+        group = coop.this_block()
+        coop.load(group, source, payload)
+        coop.store(group, destination, payload[index])
+
+    _compile(kernel, types.int32[::1], types.int32[::1], types.int64)
+
+
+@pytest.mark.parametrize("coop", (root_coop, qualified_coop), ids=("root", "qualified"))
 @pytest.mark.parametrize("expression", ("abs", "min", "loop"))
 @pytest.mark.parametrize("matching", (False, True), ids=("mismatch", "exact"))
 def test_store_checks_actual_expression_dtype(coop, expression, matching):
