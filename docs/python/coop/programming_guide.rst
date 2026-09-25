@@ -21,7 +21,11 @@ This guide assumes you have written a CUDA kernel and know how threads,
 blocks, and device arrays work. The examples use Numba-CUDA-MLIR. The
 :doc:`installation instructions <../coop>` describe the matching
 ``cuda-coop`` extra; the current backend requires
-``numba-cuda-mlir>=0.5.0,<0.6``.
+``numba-cuda-mlir>=0.5.0,<0.6``. Check the
+:ref:`validation scope <coop-numba-validation>` for environment coverage.
+Keep a compiled kernel in its original CUDA context; see the
+:ref:`device and context-lifetime limitation <coop-numba-context-lifetime>`
+before reusing a dispatcher across devices or recreated contexts.
 
 *This guide describes the experimental Numba-CUDA-MLIR API in the current
 PR stack. Operation support varies by group and backend. The examples below
@@ -35,49 +39,12 @@ exclusive sum of ``[3, 1, 4, 2]``, the result is ``[0, 3, 4, 8]``.
 The kernel below computes a separate exclusive sum for each tile of 256
 elements. Each block has 128 threads, with two elements per thread.
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-first-kernel
-
-   import numpy as np
-   from numba_cuda_mlir import cuda, types
-
-   from cuda import coop
-
-
-   @cuda.jit
-   def scan_tiles(source, destination, count):
-       block = coop.this_block()
-       items = coop.ThreadData(2, dtype=np.int32)
-       tile_size = cuda.blockDim.x * 2
-       offset = cuda.blockIdx.x * tile_size
-       valid = min(max(count - offset, 0), tile_size)
-
-       coop.load(
-           block,
-           source,
-           items,
-           offset=offset,
-           valid_items=valid,
-           oob_default=0,
-       )
-       prefixes = coop.exclusive_sum(block, items)
-       coop.store(
-           block, destination, prefixes, offset=offset, valid_items=valid
-       )
-
-
-   source = (np.arange(785) % 7).astype(np.int32)
-   d_source = cuda.to_device(source)
-   d_destination = cuda.device_array_like(d_source)
-   blocks = (source.size + 255) // 256
-   scan_tiles[blocks, 128](d_source, d_destination, source.size)
-   result = d_destination.copy_to_host()
-
-   expected = np.empty_like(source)
-   for start in range(0, source.size, 256):
-       tile = source[start : start + 256]
-       expected[start : start + tile.size] = np.cumsum(tile) - tile
-   np.testing.assert_array_equal(result, expected)
+   :start-after: # coop-pg-first-kernel-begin
+   :end-before: # coop-pg-first-kernel-end
+   :dedent: 4
 
 All threads in a block execute the Load, Scan, and Store. The final block
 still launches 128 threads even though its tile has only 17 valid elements.
@@ -117,10 +84,12 @@ backend; CUTLASS support is planned.
 
 The qualified import selects the Numba-CUDA-MLIR API explicitly:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-qualified-import
-
-   import cuda.coop.numba_mlir as numba_coop
+   :start-after: # coop-pg-qualified-import-begin
+   :end-before: # coop-pg-qualified-import-end
+   :dedent: 4
 
 Both imports can be used in the same program. This guide uses ``coop`` for
 common calls and ``numba_coop`` for qualified calls so the choice is visible.
@@ -184,35 +153,12 @@ For example, suppose you need both the exclusive sum and each tile's total.
 The qualified Scan can produce both in one call. Here it also consumes an
 existing Numba local array:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-qualified-scan
-
-   @cuda.jit
-   def scan_tiles_with_totals(source, destination, totals):
-       block = numba_coop.this_block()
-       items = cuda.local.array(2, dtype=types.int32)
-       aggregate = numba_coop.ThreadData(1, dtype=np.int32)
-       offset = cuda.blockIdx.x * cuda.blockDim.x * 2
-
-       numba_coop.load(block, source, items, offset=offset)
-       prefixes = numba_coop.exclusive_sum(
-           block, items, aggregate_output=aggregate
-       )
-       numba_coop.store(block, destination, prefixes, offset=offset)
-       if block.rank() == 0:
-           totals[cuda.blockIdx.x] = aggregate[0]
-
-
-   source = (np.arange(512) % 11).astype(np.int32)
-   destination = np.empty_like(source)
-   totals = np.empty(2, dtype=np.int32)
-   scan_tiles_with_totals[2, 128](source, destination, totals)
-   cuda.synchronize()
-
-   tiles = source.reshape(2, 256)
-   expected = np.cumsum(tiles, axis=1) - tiles
-   np.testing.assert_array_equal(destination.reshape(2, 256), expected)
-   np.testing.assert_array_equal(totals, tiles.sum(axis=1))
+   :start-after: # coop-pg-qualified-scan-begin
+   :end-before: # coop-pg-qualified-scan-end
+   :dedent: 4
 
 This version assumes full tiles. The NumPy arrays in this and subsequent
 small examples use Numba's host-array transfer support at the launch boundary.
@@ -360,23 +306,12 @@ Independent scans within eight-lane groups
 Suppose each row has eight values. One logical warp can scan each row,
 giving four independent row scans per physical warp:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-row-scan
-
-   @cuda.jit
-   def scan_rows(source, destination):
-       row_group = coop.this_warp().group_by(8)
-       index = cuda.grid(1)
-       destination[index] = coop.inclusive_sum(row_group, source[index])
-
-
-   source = (np.arange(256) % 5).astype(np.int32)
-   destination = np.empty_like(source)
-   scan_rows[2, 128](source, destination)
-   cuda.synchronize()
-   np.testing.assert_array_equal(
-       destination.reshape(32, 8), np.cumsum(source.reshape(32, 8), axis=1)
-   )
+   :start-after: # coop-pg-row-scan-begin
+   :end-before: # coop-pg-row-scan-end
+   :dedent: 4
 
 Warp Scan accepts one scalar per lane. Block Scan also accepts multiple
 items per thread. The row example has exactly enough threads for the input;
@@ -594,24 +529,12 @@ An explicit layout conversion
 This kernel loads striped data, exchanges it into blocked order, and then
 computes the inclusive sum in the original array order:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-exchange
-
-   @cuda.jit
-   def scan_striped_input(source, destination):
-       block = coop.this_block()
-       items = coop.ThreadData(2, dtype=np.int32)
-       coop.load(block, source, items, algorithm="striped")
-       blocked = coop.exchange(block, items, mode="striped_to_blocked")
-       prefixes = coop.inclusive_sum(block, blocked)
-       coop.store(block, destination, prefixes, algorithm="direct")
-
-
-   source = (np.arange(256) % 13).astype(np.int32)
-   destination = np.empty_like(source)
-   scan_striped_input[1, 128](source, destination)
-   cuda.synchronize()
-   np.testing.assert_array_equal(destination, np.cumsum(source))
+   :start-after: # coop-pg-exchange-begin
+   :end-before: # coop-pg-exchange-end
+   :dedent: 4
 
 The common Exchange API also supports ``blocked_to_striped``. Qualified
 block scatter modes let you supply destination ranks for finer control.
@@ -644,35 +567,12 @@ tile origin as ``offset``.
 The valid count still belongs to each individual group. Compute it using
 both the block origin and the group's origin:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-warp-copy
-
-   @cuda.jit
-   def copy_warp_tiles(source, destination, count):
-       group = coop.this_warp().group_by(8)
-       items = coop.ThreadData(2, dtype=np.int32)
-       block_origin = cuda.blockIdx.x * cuda.blockDim.x * 2
-       group_origin = (cuda.threadIdx.x // 8) * 16
-       valid = min(max(count - block_origin - group_origin, 0), 16)
-
-       coop.load(
-           group,
-           source,
-           items,
-           offset=block_origin,
-           valid_items=valid,
-           oob_default=0,
-       )
-       coop.store(
-           group, destination, items, offset=block_origin, valid_items=valid
-       )
-
-
-   source = np.arange(531, dtype=np.int32)
-   destination = np.full_like(source, -1)
-   copy_warp_tiles[3, 128](source, destination, source.size)
-   cuda.synchronize()
-   np.testing.assert_array_equal(destination, source)
+   :start-after: # coop-pg-warp-copy-begin
+   :end-before: # coop-pg-warp-copy-end
+   :dedent: 4
 
 Adding ``group_origin`` to ``offset`` here would count it twice. This
 automatic origin applies to Warp Load and Store; ordinary array indexing
@@ -728,33 +628,12 @@ Reusing scratch across operations
 This version of a tile scan shares one descriptor between the transpose
 Load, Scan, and transpose Store:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-shared-scratch
-
-   @cuda.jit
-   def scan_with_shared_scratch(source, destination):
-       block = coop.this_block()
-       scratch = coop.TempStorage()
-       items = coop.ThreadData(2, dtype=np.int32)
-
-       coop.load(
-           block, source, items, algorithm="transpose", temp_storage=scratch
-       )
-       prefixes = coop.exclusive_sum(block, items, temp_storage=scratch)
-       coop.store(
-           block,
-           destination,
-           prefixes,
-           algorithm="transpose",
-           temp_storage=scratch,
-       )
-
-
-   source = (np.arange(256) % 7).astype(np.int32)
-   destination = np.empty_like(source)
-   scan_with_shared_scratch[1, 128](source, destination)
-   cuda.synchronize()
-   np.testing.assert_array_equal(destination, np.cumsum(source) - source)
+   :start-after: # coop-pg-shared-scratch-begin
+   :end-before: # coop-pg-shared-scratch-end
+   :dedent: 4
 
 The planner sizes and aligns the shared allocation for its uses. The Load
 finishes using scratch before Scan reuses it, and Scan finishes before
@@ -783,41 +662,12 @@ of ``auto_sync``.
 example, this kernel uses explicit block barriers after each storage-using
 call, including between loop iterations:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-manual-scratch
-
-   @cuda.jit
-   def copy_tiles_with_manual_sync(source, destination):
-       block = coop.this_block()
-       scratch = coop.TempStorage(auto_sync=False)
-       items = coop.ThreadData(2, dtype=np.int32)
-       for tile in range(2):
-           offset = tile * cuda.blockDim.x * 2
-           coop.load(
-               block,
-               source,
-               items,
-               offset=offset,
-               algorithm="transpose",
-               temp_storage=scratch,
-           )
-           block.sync()
-           coop.store(
-               block,
-               destination,
-               items,
-               offset=offset,
-               algorithm="transpose",
-               temp_storage=scratch,
-           )
-           block.sync()
-
-
-   source = np.arange(512, dtype=np.int32)
-   destination = np.empty_like(source)
-   copy_tiles_with_manual_sync[1, 128](source, destination)
-   cuda.synchronize()
-   np.testing.assert_array_equal(destination, source)
+   :start-after: # coop-pg-manual-scratch-begin
+   :end-before: # coop-pg-manual-scratch-end
+   :dedent: 4
 
 Automatic synchronization is easier to maintain. Disable it only when you
 can account for each reuse and have a reason to place barriers yourself.
@@ -887,38 +737,12 @@ contribute and which group members receive a defined result.
 
 This kernel writes one sum per block, including a partial final tile:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-reduce
-
-   @cuda.jit
-   def tile_sums(source, totals, count):
-       block = coop.this_block()
-       items = coop.ThreadData(2, dtype=np.int32)
-       tile_size = cuda.blockDim.x * 2
-       offset = cuda.blockIdx.x * tile_size
-       valid = min(max(count - offset, 0), tile_size)
-       coop.load(
-           block,
-           source,
-           items,
-           offset=offset,
-           valid_items=valid,
-           oob_default=0,
-       )
-       total = coop.sum(block, items, broadcast=False)
-       if block.rank() == 0:
-           totals[cuda.blockIdx.x] = total
-
-
-   source = (np.arange(785) % 17).astype(np.int32)
-   totals = np.empty(4, dtype=np.int32)
-   tile_sums[4, 128](source, totals, source.size)
-   cuda.synchronize()
-   expected = [
-       source[start : start + 256].sum()
-       for start in range(0, source.size, 256)
-   ]
-   np.testing.assert_array_equal(totals, expected)
+   :start-after: # coop-pg-reduce-begin
+   :end-before: # coop-pg-reduce-end
+   :dedent: 4
 
 The group-rank test surrounds only the result write. Moving the reduction
 into that branch would leave the other threads out of a primitive.
@@ -966,30 +790,12 @@ A custom operator
 Use a qualified call to pass a device function. For instance, the
 following explicit maximum operator computes a running maximum:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-custom-scan
-
-   @cuda.jit(device=True)
-   def maximum(left, right):
-       if left > right:
-           return left
-       return right
-
-
-   @cuda.jit
-   def running_maximum(source, destination):
-       block = numba_coop.this_block()
-       items = numba_coop.ThreadData(2, dtype=np.int32)
-       numba_coop.load(block, source, items)
-       result = numba_coop.inclusive_scan(block, items, scan_op=maximum)
-       numba_coop.store(block, destination, result)
-
-
-   source = ((np.arange(256) * 17) % 113 - 51).astype(np.int32)
-   destination = np.empty_like(source)
-   running_maximum[1, 128](source, destination)
-   cuda.synchronize()
-   np.testing.assert_array_equal(destination, np.maximum.accumulate(source))
+   :start-after: # coop-pg-custom-scan-begin
+   :end-before: # coop-pg-custom-scan-end
+   :dedent: 4
 
 For maximum alone, the common ``scan_op="max"`` already suffices. The
 device function shows where to put an application's own associative
@@ -1007,45 +813,12 @@ stateful callback can also update a running total for the next tile. The
 following kernel scans 384 values using one block and three successive
 128-element tiles:
 
-.. code-block:: python
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
    :name: coop-pg-prefix-callback
-
-   @cuda.jit(device=True)
-   def carry_total(state, tile_total):
-       previous = state[0]
-       state[0] = previous + tile_total
-       return previous
-
-
-   running_prefix = numba_coop.StatefulFunction(carry_total, types.int64)
-
-
-   @cuda.jit
-   def scan_successive_tiles(source, destination, final_total):
-       block = numba_coop.this_block()
-       state = numba_coop.ThreadData(1, dtype=types.int64)
-       state[0] = types.int64(0)
-       scratch = numba_coop.TempStorage()
-       for tile in range(3):
-           index = tile * cuda.blockDim.x + cuda.threadIdx.x
-           destination[index] = numba_coop.exclusive_sum(
-               block,
-               source[index],
-               state,
-               prefix_op=running_prefix,
-               temp_storage=scratch,
-           )
-       if block.rank() == 0:
-           final_total[0] = state[0]
-
-
-   source = (np.arange(384) % 9).astype(np.int32)
-   destination = np.empty_like(source)
-   final_total = np.empty(1, dtype=np.int64)
-   scan_successive_tiles[1, 128](source, destination, final_total)
-   cuda.synchronize()
-   np.testing.assert_array_equal(destination, np.cumsum(source) - source)
-   np.testing.assert_array_equal(final_total, [source.sum()])
+   :start-after: # coop-pg-prefix-callback-begin
+   :end-before: # coop-pg-prefix-callback-end
+   :dedent: 4
 
 The callback receives the state first and the tile aggregate second. It
 returns the old total as the tile's prefix and saves the new total for the

@@ -70,13 +70,64 @@ For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
 Both commands install the same ``cuda-coop`` wheel with the same DSL
 integrations. The extra only adds the dependency requirements declared in
 ``pyproject.toml`` so pip installs the supported Numba-CUDA-MLIR stack for
-CUDA 13. The current integration requires ``numba-cuda-mlir>=0.5.0,<0.6``.
+the selected CUDA major version. The current integration requires
+``numba-cuda-mlir>=0.5.0,<0.6``.
 Installing an extra does not register a backend in a running Python process;
 see :ref:`installation versus registration <coop-faq-installed-extra>`.
 
 Installed-wheel compilation uses the bundled CCCL headers. Development from a
 CCCL source checkout uses its matching headers. ``CUDA_COOP_CCCL_ROOT`` can
 select another source checkout or ``cuda-coop`` header bundle.
+
+.. _coop-numba-validation:
+
+Numba-CUDA-MLIR validation scope
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The package supports Python 3.10 through 3.14. The CI matrix configures these
+parts of that range:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 64
+
+   * - Environment
+     - Automated checks
+   * - Linux x86-64, Python 3.14, CUDA 13
+     - Installed-wheel compilation with GPUs hidden and GPU runtime tests
+       in pull requests
+   * - Linux x86-64, Python 3.14, CUDA 12
+     - Installed-wheel compilation and GPU runtime tests in the nightly matrix
+   * - Linux x86-64, Python 3.10 and 3.14
+     - Common API host contracts and wheel packaging
+   * - Windows x86-64, Python 3.10 and 3.14
+     - Universal-wheel build, base import, and bundled-header checks
+
+The Windows checks do not compile or launch Numba-CUDA-MLIR kernels. Other
+Python versions and platform combinations need separate backend runtime
+qualification. Dependency bounds allow releases in the supported series;
+they do not mean that every patch release in that series has been tested.
+Thread-block clusters require a CC 9.0+ GPU, and synchronization race
+checking requires Compute Sanitizer. A runtime job that skips those tests
+does not qualify those features.
+
+.. _coop-numba-context-lifetime:
+
+CUDA devices and context lifetime
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With Numba-CUDA-MLIR 0.5.0 through 0.5.3, select the CUDA device before a
+kernel's first compilation and keep its dispatcher and configured launch
+callables in that CUDA context. Reusing them on another device or after
+destroying and recreating the context is not qualified: the compiler can
+reuse architecture, compiled overload, or launch state from the original
+context. This also applies to kernels that use ``cuda.coop``.
+
+The upstream `context-isolation fix
+<https://github.com/NVIDIA/numba-cuda-mlir/pull/314>`_ must be released and
+qualified with this integration before relying on that reuse. Switching
+devices does not require re-registering ``cuda.coop``; registration installs
+compiler hooks and does not repair dispatcher context state.
 
 .. _coop-backend-registration:
 

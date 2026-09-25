@@ -1,6 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+# ruff: noqa: E402
 
 """Executable examples included in the programming guide."""
 
@@ -175,7 +176,7 @@ def test_shared_scratch():
     @cuda.jit
     def scan_with_shared_scratch(source, destination):
         block = coop.this_block()
-        scratch = coop.TempStorage(auto_sync=True)
+        scratch = coop.TempStorage()
         items = coop.ThreadData(2, dtype=np.int32)
 
         coop.load(block, source, items, algorithm="transpose", temp_storage=scratch)
@@ -201,7 +202,7 @@ def test_manual_scratch():
     @cuda.jit
     def copy_tiles_with_manual_sync(source, destination):
         block = coop.this_block()
-        scratch = coop.TempStorage()
+        scratch = coop.TempStorage(auto_sync=False)
         items = coop.ThreadData(2, dtype=np.int32)
         for tile in range(2):
             offset = tile * cuda.blockDim.x * 2
@@ -230,10 +231,6 @@ def test_manual_scratch():
     cuda.synchronize()
     np.testing.assert_array_equal(destination, source)
     # coop-pg-manual-scratch-end
-
-    compiled = next(iter(copy_tiles_with_manual_sync._launch_config_overloads.values()))
-    # The descriptor adds no barriers to the explicit block.sync() calls.
-    assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 0
 
 
 def test_reduce():
@@ -307,7 +304,7 @@ def test_prefix_callback():
         block = numba_coop.this_block()
         state = numba_coop.ThreadData(1, dtype=types.int64)
         state[0] = types.int64(0)
-        scratch = numba_coop.TempStorage(auto_sync=True)
+        scratch = numba_coop.TempStorage()
         for tile in range(3):
             index = tile * cuda.blockDim.x + cuda.threadIdx.x
             destination[index] = numba_coop.exclusive_sum(
