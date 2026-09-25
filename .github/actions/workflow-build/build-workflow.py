@@ -570,7 +570,7 @@ def generate_dispatch_job_image(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
     ctk_suffix = "ext" if job_info["cuda_ext"] else ""
     if get_project(matrix_job["project"]).get("tidy_ext"):
-        ctk_suffix = "tidy"
+        ctk_suffix += "tidy"
 
     if is_windows(matrix_job):
         return f"{image_repo}:{version_prefix}{host_compiler}-cuda{ctk}{ctk_suffix}"

@@ -33,16 +33,22 @@ update_devcontainer() {
     local internal="${10}"
     local tidy_ext="${11:-false}"
 
-    local cuda_suffix=""
+    local suffix=""
+    # Use += on the suffix here to handle potential future devcontainers that contain both
+    # the extra cuda libs as well as the LLVM libs for clang-tidy.
+    #
+    # Currently there is no such container, so the later launch stage will error out with
+    # no-such-file when it tries to load the container file, so perhaps we should error
+    # out with A Very Useful Error Message here (or in options parsing) instead.
     if $cuda_ext; then
-        cuda_suffix="ext"
+        suffix+="ext"
     fi
     if $tidy_ext; then
-        cuda_suffix="tidy"
+        suffix+="tidy"
     fi
 
     # NVHPC SDK comes with its own bundled toolkit
-    local toolkit_name="-cuda${cuda_version}${cuda_suffix}"
+    local toolkit_name="-cuda${cuda_version}${suffix}"
     if [[ "$compiler_name" == "nvhpc" ]]; then
         toolkit_name=""
     fi
@@ -84,15 +90,21 @@ make_name() {
     local compiler_version="$4"
     local tidy_ext="${5:-false}"
 
-    local cuda_suffix=""
+    local suffix=""
+    # Use += on the suffix here to handle potential future devcontainers that contain both
+    # the extra cuda libs as well as the LLVM libs for clang-tidy.
+    #
+    # Currently there is no such container, so the later launch stage will error out with
+    # no-such-file when it tries to load the container file, so perhaps we should error
+    # out with A Very Useful Error Message here (or in options parsing above) instead.
     if $cuda_ext; then
-        cuda_suffix="ext"
+        suffix+="ext"
     fi
     if $tidy_ext; then
-        cuda_suffix="tidy"
+        suffix+="tidy"
     fi
 
-    echo "cuda${cuda_version}${cuda_suffix}-${compiler_name}${compiler_version}"
+    echo "cuda${cuda_version}${suffix}-${compiler_name}${compiler_version}"
 }
 
 CLEAN=false
