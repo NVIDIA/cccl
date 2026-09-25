@@ -69,7 +69,7 @@ All 128 threads execute both calls. There is one kernel launch. Neither
 .. _cuda.coop.calling_conventions:
 
 Positional operands and keyword-only options
--------------------------------------------
+--------------------------------------------
 
 Primitive calls take the participating group first, followed by their data
 operands. These arguments are positional-only. Options such as
@@ -107,7 +107,7 @@ When extending an API, keep the operand order consistent and use
 keyword-only parameters for additional options.
 
 Calling CUB from the kernel
---------------------------
+---------------------------
 
 For this fixed example, the C++ work is small. The Load can be expressed as:
 
@@ -177,7 +177,7 @@ matter to compilation.
 .. _cuda.coop.generated_shims:
 
 Kernels and their generated C++
-------------------------------
+-------------------------------
 
 .. raw:: html
 
@@ -227,7 +227,7 @@ and the set of emitted overloads can change with the compiler, toolkit, and
 source checkout.
 
 Capturing the source yourself
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 From the CCCL repository root, in an environment with the Numba-CUDA-MLIR
 dependencies installed:
@@ -297,7 +297,7 @@ the ABI status. The Store wrapper uses the same pointer conversion and calls
 ``Store``.
 
 Transpose with a shared scratch descriptor
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. grid:: 1 1 2 2
    :gutter: 3
@@ -332,7 +332,7 @@ also contains ``_alloc`` variants with local ``__shared__`` storage and
 ``__syncthreads()``; those are separate entry points.
 
 Scan with a Python device operator
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. grid:: 1 1 2 2
    :gutter: 3
@@ -367,7 +367,7 @@ Although this Python call omits ``temp_storage``, the planner can supply
 compiler-owned scratch through the same pointer-taking interface.
 
 Recovering the specialization
-----------------------------
+-----------------------------
 
 The fixed C++ example supplied all its template arguments by hand. In the
 Python kernel, some of that information is in the call, some comes from
@@ -455,7 +455,7 @@ CUB's integer parameter. A failed check traps on the device. Callers must
 also provide enough memory for the selected tile and offset.
 
 From Python syntax to an external call
--------------------------------------
+--------------------------------------
 
 The integration uses two whole-function planners and a before-inference
 rewrite to inspect and modify the compiler's intermediate representation
@@ -572,7 +572,7 @@ same public operation can therefore have different implementation and
 storage contracts depending on its arguments.
 
 Payloads, layouts, and results
------------------------------
+------------------------------
 
 ``ThreadData`` becomes a fixed local array in Numba-CUDA-MLIR. Its extent
 must be known at compile time. The compiler may keep its elements in
@@ -889,7 +889,7 @@ Python code doing the compilation. GPU threads execute the compiled kernel;
 the Python debugger cannot stop inside that device execution.
 
 An example to debug
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 Open ``docs/python/coop/debugger_walkthrough.py`` in your checkout, or
 :download:`download the example <debugger_walkthrough.py>`. It needs no
@@ -1003,7 +1003,7 @@ inside the checkout you opened. The ``@cuda.jit`` decorator has made a
 dispatcher; this first launch will trigger compilation for its arguments.
 
 Fast-forward to the Numba hooks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Paths from here through the provider steps are relative to
 ``python/cuda_coop/cuda/coop/numba_mlir/``.
@@ -1078,7 +1078,7 @@ Continue to the same stops for Store. Its template selects
 The public calls now have private provider calls carrying those choices.
 
 Generate and compile the C++ providers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Set a breakpoint on ``rewrite = CoopSinglePhaseRewrite(...)`` in
 ``CoopWholeFunctionPlanner.run()`` in ``_compiler/_rewrite.py``. Continue
@@ -1121,7 +1121,7 @@ also saves the generated ``.cu`` source in ``build/coop-debug-sources``.
 Open that file for a more convenient view of the complete source.
 
 Materialize the payload and device calls
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Set a breakpoint in ``CoopSinglePhaseRewrite.apply()`` in
 ``_compiler/_rewrite.py`` on
@@ -1156,7 +1156,7 @@ syntax. Later compilation decides whether that local array's values can
 live in registers.
 
 Hand the call and link inputs to Numba
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Before continuing from ``apply()``, put a breakpoint in
 ``Algorithm.codegen_method()`` in ``_types.py`` on
@@ -1186,7 +1186,7 @@ belongs to Numba-CUDA-MLIR, so use its installed source path rather than
 looking for it under CCCL.
 
 Finish the launch and observe reuse
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Disable the compiler breakpoints and set a breakpoint on the second
 ``copy_tile[1, 128](source, destination)`` in the example. Continue.
@@ -1205,7 +1205,7 @@ source while paused also does not replace the function already loaded
 into that process.
 
 A second pass: shared scratch and synchronization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Replace just the kernel in the example with this version. Before restarting,
 set the two additional storage breakpoints listed below:
@@ -1254,7 +1254,7 @@ synchronization in addition to the per-thread ``items`` array.
 IR makes their different lifetimes and uses concrete.
 
 If a breakpoint does not stop
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * Check ``coop.__file__`` at the first launch and confirm the breakpoint
   belongs to that checkout. An older installed wheel or another worktree
