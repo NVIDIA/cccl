@@ -50,7 +50,7 @@ def test_production_kernel_compiles_physical_and_mapped_group_methods(
         block = common_coop.this_block()
         grid = numba_coop.this_grid()
         lanes = numba_coop.this_warp().group_by(8)
-        partial_lanes = qualified_coop.this_warp().group_by(3, exhaustive=False)
+        partial_lanes = numba_coop.this_warp().group_by(3, exhaustive=False)
         warps = common_coop.this_block().group_by(2)
 
         thread.sync()
