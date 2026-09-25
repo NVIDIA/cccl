@@ -37,8 +37,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__find_if)
 struct __fn
 {
-  template <class _Ip, class _Sp, class _Pred, class _Proj>
-  _CCCL_API static constexpr _Ip __find_if_impl(_Ip __first, _Sp __last, _Pred& __pred, _Proj& __proj)
+  template <class _Iter, class _Sp, class _Pred, class _Proj>
+  _CCCL_API static constexpr _Iter __find_if_impl(_Iter __first, _Sp __last, _Pred& __pred, _Proj& __proj)
   {
     for (; __first != __last; ++__first)
     {
@@ -50,11 +50,11 @@ struct __fn
     return __first;
   }
 
-  _CCCL_TEMPLATE(class _Ip, class _Sp, class _Pred, class _Proj = identity)
-  _CCCL_REQUIRES(input_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip> _CCCL_AND
-                   indirect_unary_predicate<_Pred, projected<_Ip, _Proj>>)
-  [[nodiscard]] _CCCL_API constexpr _Ip
-  _CCCL_STATIC_CALL_OPERATOR(_Ip __first, _Sp __last, _Pred __pred, _Proj __proj = {})
+  _CCCL_TEMPLATE(class _Iter, class _Sp, class _Pred, class _Proj = identity)
+  _CCCL_REQUIRES(input_iterator<_Iter> _CCCL_AND sentinel_for<_Sp, _Iter> _CCCL_AND
+                   indirect_unary_predicate<_Pred, projected<_Iter, _Proj>>)
+  [[nodiscard]] _CCCL_API constexpr _Iter
+  _CCCL_STATIC_CALL_OPERATOR(_Iter __first, _Sp __last, _Pred __pred, _Proj __proj = {})
   {
     return __find_if_impl(::cuda::std::move(__first), ::cuda::std::move(__last), __pred, __proj);
   }
