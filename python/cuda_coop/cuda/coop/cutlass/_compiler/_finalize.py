@@ -60,11 +60,27 @@ def _trace_finalize_hook(dsl, module, function_name):
     arch = _target.resolve_nvrtc_arch(
         ROOT_SCOPE, lambda: _target.configured_gpu_arch(lambda: dsl)
     )
-    path = _bundle.compile_bundle_source(
-        source,
-        arch=arch,
-        required_headers=tuple(_rendering.registered_bundle_headers().values()),
-    )
+    headers = tuple(_rendering.registered_bundle_headers().values())
+    probes = _rendering.bundle_scratch_layout_probes(requests)
+    if probes:
+        from . import _storage
+
+        compilation = _bundle.compile_bundle_source_with_layouts(
+            source,
+            arch=arch,
+            required_headers=headers,
+            layout_probes=tuple(probes.values()),
+        )
+        plans = _storage.plan_deferred_temp_storage_events(
+            session.deferred_temp_storage_event_list(),
+            compilation.layouts,
+        )
+        _storage.materialize_deferred_temp_storage_plans(plans)
+        path = compilation.path
+    else:
+        path = _bundle.compile_bundle_source(
+            source, arch=arch, required_headers=headers
+        )
     _bundle.append_link_library_attr(module, path)
 
 

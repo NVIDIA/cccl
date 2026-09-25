@@ -13,7 +13,7 @@ from numbers import Integral, Real
 from typing import Any
 
 from cutlass._mlir.dialects import llvm
-from cutlass.base_dsl.typing import Int32, Int64
+from cutlass.base_dsl.typing import Int32, Int64, Uint32
 from cutlass.cute.ffi import ffi
 
 from cuda.coop._core import (
@@ -58,17 +58,26 @@ class _CubLoadStoreRequest:
             raise TypeError("Load/Store requires a shared AlgorithmSpec")
         if self.operation.dtype is not self.value_type:
             raise TypeError("Load/Store provider dtype does not match its plan")
-        if self.operation.algorithm is not GroupLoadStoreAlgorithm.DIRECT:
-            raise NotImplementedError("CUTLASS Load/Store currently supports DIRECT")
         if self.plan.result is not None:
             raise ValueError("Load/Store operates in place and has no result contract")
-        if self.plan.temp_storage.ownership is not StorageOwnership.NONE:
-            raise ValueError("DIRECT Load/Store requires a storage-free plan")
-        if (
+        if not self.uses_scratch and (
             self.plan.synchronization.storage_reuse_barrier
             is not SynchronizationScope.NONE
         ):
-            raise ValueError("DIRECT Load/Store must not introduce a reuse barrier")
+            raise ValueError(
+                "storage-free Load/Store must not introduce a reuse barrier"
+            )
+        if (
+            self.uses_scratch
+            and self.plan.synchronization.storage_reuse_barrier
+            not in {
+                SynchronizationScope.BLOCK,
+                SynchronizationScope.NONE,
+            }
+        ):
+            raise ValueError(
+                "block Load/Store requires block-scoped reuse synchronization"
+            )
         if self.operation.oob_default.kind is BindingKind.STATIC:
             _validate_static_oob_default(
                 self.operation.oob_default.value, self.value_type
@@ -92,6 +101,22 @@ class _CubLoadStoreRequest:
     @property
     def block_dim(self):
         return self.plan.participation.exact_block_dim
+
+    @property
+    def uses_scratch(self):
+        return self.plan.temp_storage.ownership is not StorageOwnership.NONE
+
+    @property
+    def cpp_type(self):
+        arguments = ", ".join(
+            _render_template_argument(self, name, value)
+            for name, value in self.implementation.ordered_template_arguments
+        )
+        return f"::cub::{self.implementation.struct_name}<{arguments}>"
+
+    @property
+    def scratch_requirement_key(self):
+        return ("cub_load_store_layout", self.implementation.semantic_key)
 
     @property
     def semantic_key(self):
@@ -130,16 +155,35 @@ def _render_cub_load_store(request):
         params.append(f"{spec.cpp_type} oob_default")
     if operation.offset.kind is BindingKind.RUNTIME:
         params.append("long long offset")
+    if request.uses_scratch:
+        params.extend(
+            (
+                "unsigned int temp_storage_smem_addr",
+                "int temp_storage_bytes",
+                "int temp_storage_auto_sync",
+            )
+        )
     if is_load:
         params.append(f"{spec.cpp_type}* result_items")
-    template_arguments = ", ".join(
-        _render_template_argument(request, name, value)
-        for name, value in request.implementation.ordered_template_arguments
-    )
     lines = [
         f"void {request.symbol_name}({', '.join(params)}) {{",
-        f"  using implementation_type = ::cub::{request.implementation.struct_name}<{template_arguments}>;",
+        f"  using implementation_type = {request.cpp_type};",
     ]
+    storage = ""
+    if request.uses_scratch:
+        lines.extend(
+            [
+                "  using storage_type = typename implementation_type::TempStorage;",
+                "  if (temp_storage_bytes < sizeof(storage_type) ||",
+                "      (temp_storage_smem_addr & (alignof(storage_type) - 1)) != 0) {",
+                '    asm volatile("trap;");',
+                "  }",
+                "  unsigned long long generic_addr;",
+                '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : "l"(static_cast<unsigned long long>(temp_storage_smem_addr)));',
+                "  auto& storage = *reinterpret_cast<storage_type*>(generic_addr);",
+            ]
+        )
+        storage = "storage"
     if operation.valid_items.kind is BindingKind.RUNTIME:
         count = request.plan.resolved_group.static_size * operation.items_per_thread
         lines.append(
@@ -175,13 +219,15 @@ def _render_cub_load_store(request):
         if expression is not None:
             args.append(expression)
     lines.append(
-        f"  implementation_type().{request.implementation.method_name}({', '.join(args)});"
+        f"  implementation_type({storage}).{request.implementation.method_name}({', '.join(args)});"
     )
     if is_load:
         lines.extend(
             f"  result_items[{i}] = items[{i}];"
             for i in range(operation.items_per_thread)
         )
+    if request.uses_scratch:
+        lines.append("  if (temp_storage_auto_sync != 0) { __syncthreads(); }")
     return [*lines, "}"]
 
 
@@ -196,6 +242,7 @@ def _make_request(
     valid_items_binding,
     oob_default_binding,
     offset_binding,
+    temp_storage=None,
 ):
     plan = _make_group_load_store_plan(
         group=group,
@@ -207,6 +254,7 @@ def _make_request(
         valid_items=valid_items_binding,
         oob_default=oob_default_binding,
         offset=offset_binding,
+        temp_storage=temp_storage,
     ).require_supported()
     return _CubLoadStoreRequest(plan, value_type)
 
@@ -224,6 +272,7 @@ def provider_load(
     oob_default_binding,
     offset,
     offset_binding,
+    temp_storage=None,
 ):
     value_type = _resolve_memory_type(source, primitive_name="load")
     if output.dtype is not None and _resolve_type(output.dtype) is not value_type:
@@ -238,6 +287,7 @@ def provider_load(
         valid_items_binding=valid_items_binding,
         oob_default_binding=oob_default_binding,
         offset_binding=offset_binding,
+        temp_storage=temp_storage,
     )
     pointer = _memory_pointer(
         source,
@@ -258,15 +308,17 @@ def provider_load(
     snapshot = _state.snapshot_active_session_state()
     try:
         _state.register_request(request)
+        scratch_types, scratch_args = _scratch_arguments(request, temp_storage)
         ffi(
             name=request.symbol_name,
             params_types=[
                 llvm.PointerType.get(0),
                 *runtime_types,
+                *scratch_types,
                 llvm.PointerType.get(0),
             ],
             return_type=None,
-        )(pointer, *runtime_args, result.iterator.llvm_ptr)
+        )(pointer, *runtime_args, *scratch_args, result.iterator.llvm_ptr)
         output.dtype = value_type
         for i in range(output.items_per_thread):
             output[i] = result[i]
@@ -286,6 +338,7 @@ def provider_store(
     valid_items_binding,
     offset,
     offset_binding,
+    temp_storage=None,
 ):
     if isinstance(value, ThreadData):
         value_type, values = _types.resolve_thread_data_value_type(
@@ -313,6 +366,7 @@ def provider_store(
         valid_items_binding=valid_items_binding,
         oob_default_binding=ArgumentBinding.omitted(),
         offset_binding=offset_binding,
+        temp_storage=temp_storage,
     )
     pointer = _memory_pointer(
         destination,
@@ -329,15 +383,17 @@ def provider_store(
     snapshot = _state.snapshot_active_session_state()
     try:
         _state.register_request(request)
+        scratch_types, scratch_args = _scratch_arguments(request, temp_storage)
         ffi(
             name=request.symbol_name,
             params_types=[
                 llvm.PointerType.get(0),
                 *([value_type] * len(values)),
                 *runtime_types,
+                *scratch_types,
             ],
             return_type=None,
-        )(pointer, *values, *runtime_args)
+        )(pointer, *values, *runtime_args, *scratch_args)
     except BaseException:
         _state.restore_active_session_state(snapshot)
         raise
@@ -379,6 +435,7 @@ def _make_group_load_store_plan(
     oob_default: ArgumentBinding,
     offset: ArgumentBinding,
     source: str = "cutlass_root",
+    temp_storage=None,
 ) -> GroupLoweringPlan:
     """Build the canonical shared-core plan for group Load or Store."""
 
@@ -390,6 +447,17 @@ def _make_group_load_store_plan(
         valid_items=valid_items,
         oob_default=oob_default,
         offset=offset,
+        storage_ownership=(
+            StorageOwnership.IMPLEMENTATION
+            if temp_storage is None
+            else StorageOwnership.CALLER
+        ),
+        storage_sharing=None if temp_storage is None else temp_storage.sharing,
+        storage_size_in_bytes=None
+        if temp_storage is None
+        else temp_storage.size_in_bytes,
+        storage_alignment=None if temp_storage is None else temp_storage.alignment,
+        storage_auto_sync=True if temp_storage is None else temp_storage.auto_sync,
     )
     call = make_group_primitive_call(group, operation, source=source)
     return plan_group_primitive(call, launch)
@@ -699,9 +767,39 @@ def _required_static_elements(request: _CubLoadStoreRequest) -> int | None:
     return offset + (group_instances - 1) * tile_items + valid_items
 
 
+def _scratch_arguments(request, temp_storage):
+    if not request.uses_scratch:
+        return (), ()
+    from .._compiler._storage import register_deferred_temp_storage_event
+    from .._temp_storage import TempStorage
+
+    if temp_storage is None:
+        temp_storage = TempStorage()
+    elif not isinstance(temp_storage, TempStorage):
+        raise TypeError(
+            "cuda.coop.cutlass Load/Store scratch must be CUTLASS TempStorage"
+        )
+    arguments = register_deferred_temp_storage_event(
+        temp_storage,
+        primitive_name=request.operation_kind.value,
+        requirement_key=request.scratch_requirement_key,
+    )
+    return (Uint32, Int32, Int32), arguments
+
+
+def _scratch_layout_probe(request):
+    if not request.uses_scratch:
+        return None
+    return _rendering.make_scratch_layout_probe(
+        request.scratch_requirement_key,
+        f"typename {request.cpp_type}::TempStorage",
+    )
+
+
 _rendering.register_bundle_renderer(
     "cub_group_load_store",
     render=_render_cub_load_store,
+    scratch_layout_probe=_scratch_layout_probe,
     include_lines=(
         "#include <cub/block/block_load.cuh>",
         "#include <cub/block/block_store.cuh>",

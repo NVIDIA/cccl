@@ -29,8 +29,6 @@ def _resolve_group(group, algorithm, temp_storage, operation):
             f"{_SCOPE}.{operation} currently supports block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
-    if algorithm is not GroupLoadStoreAlgorithm.DIRECT:
-        raise NotImplementedError(f"{_SCOPE}.{operation} currently supports DIRECT")
     if temp_storage is not None:
         _validate_common_temp_storage(operation, temp_storage)
     from ._compiler._launch import current_kernel_launch_facts
@@ -55,8 +53,8 @@ def load(
     """Load a contiguous block tile into a writable per-thread payload.
 
     The payload is populated in place. Beyond ``valid_items``, initialized
-    slots keep their values unless ``oob_default`` is supplied. DIRECT requires
-    no shared scratch or synchronization. ``offset`` is measured in elements.
+    slots keep their values unless ``oob_default`` is supplied. DIRECT, STRIPED,
+    and VECTORIZE require no shared scratch or synchronization. ``offset`` is measured in elements.
     """
 
     if not isinstance(output, ThreadData):
@@ -78,6 +76,7 @@ def load(
         oob_default_binding=_classify_oob_default(oob_default),
         offset=offset,
         offset_binding=_classify_integer_binding(offset, name="offset"),
+        temp_storage=temp_storage,
     )
 
 
@@ -95,7 +94,8 @@ def store(
     """Store per-thread values into a contiguous block tile.
 
     ``valid_items`` limits the written prefix; ``offset`` is in elements.
-    The value dtype must match the destination. DIRECT needs no shared scratch.
+    The value dtype must match the destination. Transpose algorithms use shared
+    scratch; an optional TempStorage descriptor controls allocation and reuse.
     """
 
     group, launch, algorithm = _resolve_group(group, algorithm, temp_storage, "store")
@@ -111,6 +111,7 @@ def store(
         valid_items_binding=_classify_integer_binding(valid_items, name="valid_items"),
         offset=offset,
         offset_binding=_classify_integer_binding(offset, name="offset"),
+        temp_storage=temp_storage,
     )
 
 
