@@ -1,0 +1,45 @@
+name: Check documentation links
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-links:
+    name: Check documentation links
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Find changed documentation files
+        id: changed-files
+        shell: bash --noprofile --norc -euo pipefail
+        run: |
+          git diff --name-only --diff-filter=ACMR \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}" \
+            -- '*.md' '*.rst' > changed-files.txt
+
+          echo "Changed documentation files:"
+          cat changed-files.txt
+
+          if [[ -s changed-files.txt ]]; then
+            echo "has_files=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "has_files=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Check links
+        if: steps.changed-files.outputs.has_files == 'true'
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --verbose --no-progress --config .github/lychee.toml --files-from changed-files.txt
+          fail: true
+          token: ${{ secrets.GITHUB_TOKEN }}

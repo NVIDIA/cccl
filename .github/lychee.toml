@@ -1,0 +1,14 @@
+# Lychee configuration for CCCL documentation link checking.
+
+# Accept successful responses, redirects and HTTP 403 responses.
+# Some websites reject automated requests even when the reference page exists.
+accept = ["200", "206", "301", "302", "307", "308", "403"]
+
+# Retry temporary connection errors.
+max_retries = 2
+
+# Give remote servers a reasonable amount of time to respond.
+timeout = 20
+
+# Follow redirects.
+max_redirects = 10
