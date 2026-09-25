@@ -19,10 +19,7 @@ the :doc:`overview <../coop>` covers installation and supported operations;
 the focus here is how the implementation works and where to change it.
 For a hands-on tour, follow the :ref:`cuda.coop.debugger_walkthrough`.
 
-*Draft scope: this describes the current Numba-CUDA-MLIR 0.5.x integration,
-including the Reduce and Scan work in the*
-`PR stack ending at #11217 <https://github.com/NVIDIA/cccl/pull/11217>`_.
-*Those changes are still under review.*
+This overview describes the Numba-CUDA-MLIR 0.5.x integration.
 
 A tile copy
 -----------
@@ -864,11 +861,6 @@ uses ``XDG_CACHE_HOME/cccl`` on POSIX, falling back to ``~/.cache/cccl``;
 on Windows it uses ``LOCALAPPDATA\cccl``, falling back to
 ``~\AppData\Local\cccl``. Unset, empty, or relative base directories use
 the fallback. These settings are read at backend cache import.
-
-The provider cache uses ``$XDG_CACHE_HOME/cccl`` on POSIX systems, falling
-back to ``~/.cache/cccl``. On Windows it uses ``%LOCALAPPDATA%\cccl``, with
-``~\AppData\Local\cccl`` as the fallback. Cache configuration is read when
-the backend cache module is imported.
 
 A provider cache key must identify the code being compiled: the operation,
 dtype, shape, static arguments, wrapper ABI, target architecture, compiler
