@@ -970,7 +970,7 @@ make_locality_domain_grid(int dev_id, locality_domain_sm_split split = locality_
   return make_grid(mv(domains));
 }
 
-//! Single-device sugar over make_locality_domain_grid; see all_devices() for the device-level analogue
+//! Single-device grid; see all_devices() for the device-level analogue
 inline exec_place exec_place::locality_domains(int dev_id, locality_domain_sm_split split)
 {
   return make_locality_domain_grid(dev_id, split);

@@ -32,6 +32,8 @@
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh>
 #include <cuda/experimental/__places/partitions/cyclic_shape.cuh>
 #include <cuda/experimental/__places/partitions/tiled_partition.cuh>
+#include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__places/place_partition.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__places/stream_pool.cuh>
+#include <cuda/experimental/__places/stream_scope.cuh>
