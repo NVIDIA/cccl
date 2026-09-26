@@ -82,7 +82,6 @@ public:
   handle(handle&)                  = default;
   handle(const handle&)            = default;
   handle(handle&&)                 = default;
-  handle& operator=(handle&)       = default;
   handle& operator=(const handle&) = default;
   handle& operator=(handle&&)      = default;
   /// @}
@@ -280,7 +279,7 @@ UNITTEST("Weak handle")
   public:
     int a;
   };
-  handle<test> h(42);
+  const handle<test> h(42);
   EXPECT(h->a == 42);
   auto w = h.weak();
   handle<test>::if_valid(w, [](handle<test> x) {

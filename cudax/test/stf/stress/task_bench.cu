@@ -13,6 +13,8 @@
 
 #include <cstdlib> // For rand() and srand()
 #include <numeric> // accumulate
+#include <random>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -78,7 +80,7 @@ bool skip_task(test_id id, int t, int i, int /*W*/)
       {
         return false;
       }
-      int stride = 1 << (t);
+      const int stride = 1 << (t);
       return (i % stride != 0);
     }
     default:
@@ -126,7 +128,7 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
       {
         if (t < 32)
         {
-          int two_t1 = 1 << (t - 1);
+          const int two_t1 = 1 << (t - 1);
           if (i - two_t1 >= 0)
           {
             res.push_back(i - two_t1);
@@ -150,7 +152,7 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
     case TREE:
       // D(t,i) = (t <= log2(W)) {i - 2^(-t)W(i mod 2^(-t+1)W)} else {i, i + 2^(t-1)*W^-1}
       {
-        int stride = 1 << (t - 1);
+        const int stride = 1 << (t - 1);
         res.push_back(i);
         if (i + stride < W)
         {
@@ -166,9 +168,10 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
       //     if (r < 0.5)
       //         res.push_back(j);
       // }
+      static ::std::mt19937 gen(0); // deterministic, as the unseeded rand() was
       for (int k = 0; k < 2; k++)
       {
-        res.push_back(rand() % W);
+        res.push_back(static_cast<int>(gen() % W));
       }
       break;
     default:
@@ -224,13 +227,13 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
       {
         for (size_t i = 0; i < width; i++)
         {
-          if (!skip_task(id, t, i, width))
+          if (!skip_task(id, static_cast<int>(t), static_cast<int>(i), static_cast<int>(width)))
           {
             auto tsk = ctx.task();
             tsk.add_deps(data[(t % b) * width + i].rw());
 
-            auto deps = input_deps(id, t, i, width);
-            for (int d : deps)
+            auto deps = input_deps(id, static_cast<int>(t), static_cast<int>(i), static_cast<int>(width));
+            for (const int d : deps)
             {
               tsk.add_deps(data[((t - 1 + b) % b) * width + d].read());
               deps_cnt++;
@@ -248,20 +251,20 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
     ctx.change_stage(); // for better DOT rendering
     stop = std::chrono::steady_clock::now();
 
-    std::chrono::duration<double> duration = stop - start;
-    tv.push_back(duration.count() * 1000000.0 / (task_cnt));
+    const std::chrono::duration<double> duration = stop - start;
+    tv.push_back(duration.count() * 1000000.0 / static_cast<double>((task_cnt)));
   }
 
   // Compute the mean (average)
-  double sum  = ::std::accumulate(tv.begin(), tv.end(), 0.0);
-  double mean = sum / tv.size();
+  const double sum  = ::std::accumulate(tv.begin(), tv.end(), 0.0);
+  const double mean = sum / static_cast<double>(tv.size());
 
   // Compute the standard deviation
-  double sq_sum            = ::std::accumulate(tv.begin(), tv.end(), 0.0, [mean](double acc, double val) {
+  const double sq_sum            = ::std::accumulate(tv.begin(), tv.end(), 0.0, [mean](double acc, double val) {
     return acc + std::pow(val - mean, 2);
   });
-  double variance          = sq_sum / tv.size();
-  double standardDeviation = ::std::sqrt(variance);
+  const double variance          = sq_sum / static_cast<double>(tv.size());
+  const double standardDeviation = ::std::sqrt(variance);
 
   fprintf(stderr,
           "[%s] Elapsed: %.3lf+-%.4lf us per task (%zu tasks, %zu deps, %lf deps/task (avg)\n",
@@ -270,7 +273,7 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
           standardDeviation,
           task_cnt,
           deps_cnt,
-          (1.0 * deps_cnt) / task_cnt);
+          (1.0 * static_cast<double>(deps_cnt)) / static_cast<double>(task_cnt));
 }
 
 int main(int argc, char** argv)
@@ -280,25 +283,25 @@ int main(int argc, char** argv)
   size_t width = 8;
   if (argc > 1)
   {
-    width = atol(argv[1]);
+    width = ::std::stol(argv[1]);
   }
 
   size_t nsteps = width;
   if (argc > 2)
   {
-    nsteps = atol(argv[2]);
+    nsteps = ::std::stol(argv[2]);
   }
 
   size_t repeat_cnt = 10;
   if (argc > 3)
   {
-    repeat_cnt = atol(argv[3]);
+    repeat_cnt = ::std::stol(argv[3]);
   }
 
   int id = -1; // all
   if (argc > 4)
   {
-    id = atoi(argv[4]);
+    id = ::std::stoi(argv[4]);
   }
 
   if (id == -1)

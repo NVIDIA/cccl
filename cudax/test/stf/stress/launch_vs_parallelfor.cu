@@ -13,8 +13,9 @@
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 #include <cuda/experimental/stf.cuh>
 
-#include <stdio.h>
-#include <time.h>
+#include <cstdio>
+#include <ctime>
+#include <string>
 
 #define MAX_ITER 200
 
@@ -27,12 +28,12 @@ int main(int argc, char** argv)
   int N0 = 128;
   if (argc > 2)
   {
-    N0 = atoi(argv[2]);
+    N0 = ::std::stoi(argv[2]);
   }
 
   // fprintf(stderr, "Using %d...\n", N0);
 
-  size_t N = size_t(N0) * 1024 * 1024;
+  const size_t N = size_t(N0) * 1024 * 1024;
 
 #if 0
     auto number_devices = 1;

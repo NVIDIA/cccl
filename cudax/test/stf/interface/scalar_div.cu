@@ -38,7 +38,7 @@ public:
   scalar(Ctx* ctx, bool is_tmp = false)
       : ctx(ctx)
   {
-    size_t s = sizeof(double);
+    const size_t s = sizeof(double);
 
     if (is_tmp)
     {
@@ -102,13 +102,13 @@ template <typename Ctx>
 void run()
 {
   Ctx ctx;
-  scalar a(&ctx);
-  scalar b(&ctx);
+  const scalar a(&ctx);
+  const scalar b(&ctx);
 
   *a.h_addr = 42.0;
   *b.h_addr = 12.3;
 
-  scalar c = (-a) / b;
+  const scalar c = (-a) / b;
 
   ctx.host_launch(c.handle.read())->*[](auto x) {
     EXPECT(fabs(*x.data_handle() - (-42.0) / 12.3) < 0.001);

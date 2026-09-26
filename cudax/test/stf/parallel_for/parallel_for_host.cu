@@ -16,6 +16,7 @@ int main()
 {
   context ctx;
 
+  // NOLINTNEXTLINE(misc-const-correctness) -- the test is about capturing it; a const literal makes the capture unused
   int nqpoints = 3;
   auto ltoken  = ctx.token();
 

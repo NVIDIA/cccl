@@ -37,8 +37,8 @@ int main()
 
   for (size_t i = 0; i < N; i++)
   {
-    X[i] = X0(i);
-    Y[i] = Y0(i);
+    X[i] = X0(static_cast<int>(i));
+    Y[i] = Y0(static_cast<int>(i));
   }
 
   double alpha = 3.14;

@@ -85,7 +85,8 @@ inline void* allocateHostMemory(size_t sz)
     // the next call).
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try<cudaFreeHost>(entry);
@@ -123,7 +124,8 @@ inline void* allocateManagedMemory(size_t sz)
     // leaks at most the in-flight pointer, never causes a double-free.
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try(cudaFree(entry));
@@ -148,6 +150,7 @@ inline void deallocateHostMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::host_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -187,6 +190,7 @@ inline void deallocateManagedMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::managed_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -246,6 +250,7 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -276,6 +281,7 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -308,6 +314,7 @@ inline cudaGraphNode_t deallocateHostMemory(
       },
     .userData = args.get()};
   const auto result = cuda_try<cudaGraphAddHostNode>(graph, pDependencies, numDependencies, &params);
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
   return result;
 }
