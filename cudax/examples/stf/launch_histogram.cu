@@ -17,6 +17,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 __host__ __device__ double X0(int i)
@@ -28,20 +30,20 @@ int main(int argc, char** argv)
 {
   stream_ctx ctx;
 
-  double lower_level          = -1.0;
-  double upper_level          = 1.0;
+  const double lower_level    = -1.0;
+  const double upper_level    = 1.0;
   constexpr size_t num_levels = 21;
 
   size_t N = 128 * 1024UL;
   if (argc > 1)
   {
-    N = size_t(atoll(argv[1]));
+    N = size_t(::std::stoll(argv[1]));
   }
 
   int check = 1;
   if (argc > 2)
   {
-    check = atoi(argv[2]);
+    check = ::std::stoi(argv[2]);
   }
 
   // fprintf(stderr, "SIZE %s\n", pretty_print_bytes(N * sizeof(double)).c_str());
@@ -51,7 +53,7 @@ int main(int argc, char** argv)
 
   for (size_t i = 0; i < N; i++)
   {
-    X[i] = X0(i);
+    X[i] = X0(static_cast<int>(i));
   }
 
   // If we were to register each part one by one, there could be pages which
@@ -80,9 +82,9 @@ int main(int argc, char** argv)
   auto spec = con<8>(con(BLOCK_THREADS, mem((num_levels - 1) * sizeof(size_t))));
 
   ctx.launch(spec, where, lX.read(), lhisto.write())->*[=] _CCCL_DEVICE(auto th, auto x, auto histo) {
-    size_t block_id = th.rank(0);
+    const size_t block_id = th.rank(0);
 
-    slice<size_t> smem_hist = th.template storage<size_t>(1);
+    const slice<size_t> smem_hist = th.template storage<size_t>(1);
     assert(smem_hist.size() == (num_levels - 1));
 
     /* Thread local histogram */
@@ -103,10 +105,10 @@ int main(int argc, char** argv)
 
     for (size_t i = th.rank(); i < x.size(); i += th.size())
     {
-      double xi = x(i);
+      const double xi = x(i);
       if (xi >= lower_level && xi < upper_level)
       {
-        size_t bin = size_t(((num_levels - 1) * (xi - lower_level)) / (upper_level - lower_level));
+        const size_t bin = size_t(((num_levels - 1) * (xi - lower_level)) / (upper_level - lower_level));
         local_hist[bin]++;
       }
     }
@@ -145,17 +147,17 @@ int main(int argc, char** argv)
   {
     // fprintf(stderr, "Checking result...\n");
     size_t refhist[num_levels - 1];
-    for (size_t i = 0; i < num_levels - 1; i++)
+    for (auto& h : refhist)
     {
-      refhist[i] = 0;
+      h = 0;
     }
 
     for (size_t i = 0; i < N; i++)
     {
-      double xi = X[i];
+      const double xi = X[i];
       if (xi >= lower_level && xi < upper_level)
       {
-        size_t bin = size_t(((num_levels - 1) * (xi - lower_level)) / (upper_level - lower_level));
+        const size_t bin = size_t(((num_levels - 1) * (xi - lower_level)) / (upper_level - lower_level));
         refhist[bin]++;
       }
     }

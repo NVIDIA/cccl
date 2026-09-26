@@ -801,6 +801,7 @@ UNITTEST("cuda_try location capture")
   }
 
   // Reference parameters keep their value category through the wrapper.
+  // NOLINTNEXTLINE(misc-const-correctness) -- mutated through the int& parameter the test propagates
   int v = 0;
   cuda_try<test_lvalue_ref_param>(v);
   EXPECT(v == 5);
@@ -825,6 +826,7 @@ UNITTEST("cuda_safe_call2")
       a2bce6d11e8033f5c8d9c9442849656c, \
       f(::cuda::std::forward<decltype(a2bce6d11e8033f5c8d9c9442849656c)>(a2bce6d11e8033f5c8d9c9442849656c)...))
 // Unused, keep for later
+// NOLINTNEXTLINE(readability-identifier-naming) -- deliberately unpronounceable, see the note above
 #  define ba7b8453f262e429575e23dcb2192b33(a, fun_of_a)                   \
     [&](auto&&... a) noexcept(noexcept(fun_of_a)) -> decltype(fun_of_a) { \
       return fun_of_a;                                                    \
@@ -835,6 +837,7 @@ UNITTEST("cuda_safe_call2")
     a838e9c10e0ded64dff84e7b679d2342( \
       (fun), a2bce6d11e8033f5c8d9c9442849656c, cca0b395150985cb1c6ab3f8032edafa, fef8664203d67fe27b0434c87ce346fb)
 // Unused, keep for later
+// NOLINTNEXTLINE(readability-identifier-naming) -- deliberately unpronounceable, see the note above
 #  define a838e9c10e0ded64dff84e7b679d2342(f, a, status, result)                         \
     [&](auto&&... a) {                                                                   \
       if constexpr (::cuda::std::is_invocable_v<decltype(OVERLOADS(f)), decltype(a)...>) \
