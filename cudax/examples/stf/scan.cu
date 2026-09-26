@@ -19,6 +19,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 __host__ __device__ double X0(int i)
@@ -68,13 +70,13 @@ int main(int argc, char** argv)
   size_t nmb = 128;
   if (argc > 1)
   {
-    nmb = atoi(argv[1]);
+    nmb = ::std::stoi(argv[1]);
   }
 
   int check = 0;
   if (argc > 2)
   {
-    check = atoi(argv[2]);
+    check = ::std::stoi(argv[2]);
   }
 
   const size_t N = nmb * 1024ULL * 1024ULL;
@@ -82,7 +84,7 @@ int main(int argc, char** argv)
   const int ndevs      = cuda_try<cudaGetDeviceCount>();
   const size_t NBLOCKS = 2 * ndevs;
 
-  size_t BLOCK_SIZE = (N + NBLOCKS - 1) / NBLOCKS;
+  const size_t BLOCK_SIZE = (N + NBLOCKS - 1) / NBLOCKS;
 
   auto fixed_alloc = block_allocator<fixed_size_allocator>(ctx, BLOCK_SIZE * sizeof(double));
   ctx.set_allocator(fixed_alloc);
@@ -103,9 +105,9 @@ int main(int argc, char** argv)
 
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    size_t start = b * BLOCK_SIZE;
-    size_t end   = std::min(start + BLOCK_SIZE, N);
-    lX[b]        = ctx.logical_data(&X[start], {end - start}).set_symbol("X_" + std::to_string(b));
+    const size_t start = b * BLOCK_SIZE;
+    const size_t end   = std::min(start + BLOCK_SIZE, N);
+    lX[b]              = ctx.logical_data(&X[start], end - start).set_symbol("X_" + std::to_string(b));
 
     // No need to move this back to the host if we do not check the result
     if (!check)
@@ -116,10 +118,10 @@ int main(int argc, char** argv)
 
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    cuda_safe_call(cudaSetDevice(b % ndevs));
-    size_t start = b * BLOCK_SIZE;
+    cuda_safe_call(cudaSetDevice(static_cast<int>(b % ndevs)));
+    const size_t start = b * BLOCK_SIZE;
     ctx.parallel_for(lX[b].shape(), lX[b].write())->*[=] _CCCL_DEVICE(size_t i, auto lx) {
-      lx(i) = X0(i + start);
+      lx(i) = X0(static_cast<int>(i + start));
     };
   }
 
@@ -142,8 +144,8 @@ int main(int argc, char** argv)
     // Scan each block
     for (size_t b = 0; b < NBLOCKS; b++)
     {
-      cuda_safe_call(cudaSetDevice(b % ndevs));
-      scan(ctx, lX[b], data_place::device(b % ndevs));
+      cuda_safe_call(cudaSetDevice(static_cast<int>(b % ndevs)));
+      scan(ctx, lX[b], data_place::device(static_cast<int>(b % ndevs)));
     }
 
     for (size_t b = 0; b < NBLOCKS; b++)
@@ -152,7 +154,7 @@ int main(int argc, char** argv)
 
       ctx.parallel_for(exec_place::device(0),
                        box({b, b + 1}),
-                       lX[b].read(data_place::device(b % ndevs)),
+                       lX[b].read(data_place::device(static_cast<int>(b % ndevs))),
                        laux.rw(data_place::managed()))
           .set_symbol("store sum X_" + std::to_string(b))
           ->*[] _CCCL_DEVICE(size_t ind, auto Xb, auto aux) {
@@ -166,7 +168,7 @@ int main(int argc, char** argv)
     // Add partial sum of Xi to X(i+1)
     for (size_t b = 1; b < NBLOCKS; b++)
     {
-      cuda_safe_call(cudaSetDevice(b % ndevs));
+      cuda_safe_call(cudaSetDevice(static_cast<int>(b % ndevs)));
       ctx.parallel_for(lX[b].shape(), lX[b].rw(), laux.read(data_place::managed()))
           .set_symbol("add X_" + std::to_string(b))
           ->*[=] _CCCL_DEVICE(size_t i, auto Xb, auto aux) {

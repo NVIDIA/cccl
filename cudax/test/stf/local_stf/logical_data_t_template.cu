@@ -26,8 +26,8 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void scale_kernel(size_t n, T factor, T* data)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (size_t i = tid; i < n; i += nthreads)
   {
@@ -254,7 +254,7 @@ void run_stackable_tests()
 
     // Enter nested context
     {
-      stackable_ctx::graph_scope_guard scope{ctx};
+      const stackable_ctx::graph_scope_guard scope{ctx};
 
       // Scale in nested context
       scale_data(ctx, data, 2);
