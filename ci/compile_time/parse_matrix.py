@@ -167,7 +167,6 @@ def validate_config(
     return {
         "id": config_id,
         "name": require_string(require_field(data, "name", where), f"{where}.name"),
-        "gpu": require_string(require_field(data, "gpu", where), f"{where}.gpu"),
         "launch_args": require_string(
             require_field(data, "launch_args", where), f"{where}.launch_args"
         ),
@@ -193,7 +192,6 @@ def matrix_entry(config: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": config_id,
         "name": config["name"],
-        "gpu": config["gpu"],
         "launch_args": config["launch_args"],
         "baseline_ref": config["baseline_ref"],
         "preset": config["preset"],
