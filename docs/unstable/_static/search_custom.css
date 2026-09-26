@@ -1,0 +1,41 @@
+.cccl-search-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.72em;
+  line-height: normal;
+  list-style: none;
+  padding: 0;
+}
+
+.cccl-search-breadcrumbs .breadcrumb-item {
+  align-items: center;
+  display: flex;
+  font-weight: 700;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.cccl-search-breadcrumbs .breadcrumb-item a {
+  color: var(--pst-color-text-muted);
+  margin: 0.1875rem;
+  overflow-x: hidden;
+  text-decoration: none;
+  text-overflow: ellipsis;
+}
+
+.cccl-search-breadcrumbs .breadcrumb-item a:hover {
+  color: var(--pst-color-link-hover);
+  text-decoration: underline;
+  text-decoration-skip-ink: none;
+  text-decoration-thickness: max(3px, 0.1875rem, 0.12em);
+  text-underline-offset: 0.1578em;
+}
+
+.cccl-search-breadcrumbs .breadcrumb-item + .breadcrumb-item::before {
+  color: var(--pst-color-text-muted);
+  content: var(--pst-breadcrumb-divider);
+  font: var(--fa-font-solid);
+  font-size: 0.8rem;
+  padding: 0 0.5rem;
+}
