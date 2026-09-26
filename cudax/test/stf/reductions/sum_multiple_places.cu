@@ -54,7 +54,7 @@ int main()
 
   // Check result
   ctx.host_launch(var_handle.read())->*[&](auto var) {
-    int expected = 42 + (N * (N - 1)) / 2 * (ndevs + 1);
+    const int expected = 42 + (N * (N - 1)) / 2 * (ndevs + 1);
     EXPECT(var(0) == expected);
   };
 

@@ -70,6 +70,8 @@ struct with_location
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::decay_t<U>, with_location>
                                        && ::cuda::std::is_constructible_v<T, U&&>,
                                      int> = 0>
+  // Constrained above; the check only recognizes std::enable_if, not cuda::std::enable_if_t.
+  // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
   constexpr with_location(U&& payload, ::cuda::std::source_location loc = ::cuda::std::source_location::current())
       : payload(::cuda::std::forward<U>(payload))
       , loc(loc)
@@ -171,6 +173,7 @@ UNITTEST("with_location")
   };
   consume_value(widget{42});
 
+  // NOLINTNEXTLINE(misc-const-correctness) -- bound to with_location<widget&> and mutated below
   widget live{7};
   auto consume_lref = [](with_location<widget&> w) {
     EXPECT(w.payload.x == 7);

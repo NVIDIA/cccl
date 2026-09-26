@@ -16,8 +16,8 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void scal(size_t n, T a, T* x)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (size_t ind = tid; ind < n; ind += nthreads)
   {
@@ -44,8 +44,8 @@ void run()
 
   auto handle_X = ctx.logical_data(X);
 
-  double alpha = 2.0;
-  int niter    = 4;
+  double alpha    = 2.0;
+  const int niter = 4;
   for (int iter = 0; iter < niter; iter++)
   {
     ctx.task(handle_X.rw())->*[&](cudaStream_t s, auto sX) {

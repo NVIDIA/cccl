@@ -21,8 +21,8 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void diff_cnt(int n, T* x, T* y, int* delta)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < n; ind += nthreads)
   {
@@ -77,8 +77,8 @@ int main()
 
   for (size_t ind = 0; ind < N; ind++)
   {
-    X[ind] = 1.0 * ind;
-    Y[ind] = 2.0 * ind - 3.0;
+    X[ind] = 1.0 * static_cast<double>(ind);
+    Y[ind] = 2.0 * static_cast<double>(ind) - 3.0;
   }
 
   run<stream_ctx>(X, Y);

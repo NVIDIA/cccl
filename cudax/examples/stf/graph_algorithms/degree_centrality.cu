@@ -42,7 +42,7 @@ int main()
   // edges in CSR format
   std::vector<int> nonzeros = {1, 2, 3, 6, 0, 3, 4, 5, 6, 7, 8, 0, 0, 1, 1, 1, 0, 1, 1, 1};
   // output degrees for each vertex
-  int num_vertices = offsets.size() - 1;
+  const int num_vertices = static_cast<int>(offsets.size() - 1);
   std::vector<int> degrees(num_vertices, 0);
 
   auto loffsets  = ctx.logical_data(&offsets[0], offsets.size());

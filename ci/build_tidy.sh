@@ -11,12 +11,6 @@ PRESET="all-tidy"
 CMAKE_OPTIONS=("-DCMAKE_CXX_STANDARD=${CXX_STANDARD}" "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}")
 # Clang does not understand -G, passed by all-dev-debug which all-tidy derives from
 CMAKE_OPTIONS+=("-DCMAKE_CUDA_FLAGS=")
-# TODO(jfaibussowit)
-#
-# STF seems to trip clang-cuda up pretty heavily. It's unclear whether this is because STF
-# hasn't been compiled against clang-cuda before or whether it's an issue with clang-cuda
-# itself.
-CMAKE_OPTIONS+=("-Dcudax_ENABLE_CUDASTF=OFF")
 
 # todo(dabayer): Re-enable OpenMP thrust builds for clang-tidy.
 CMAKE_OPTIONS+=("-DTHRUST_MULTICONFIG_ENABLE_SYSTEM_OMP=OFF")

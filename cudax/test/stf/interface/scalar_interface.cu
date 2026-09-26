@@ -22,13 +22,13 @@ using namespace cuda::experimental::stf;
 void test_shape_from_scalar_view()
 {
   double x = 0;
-  scalar_view<double> sv(&x);
-  shape_of<scalar_view<double>> s = shape(sv);
+  const scalar_view<double> sv(&x);
+  const shape_of<scalar_view<double>> s = shape(sv);
   EXPECT(s.size() == sizeof(double));
 
   size_t n = 0;
-  scalar_view<size_t> sv_n(&n);
-  shape_of<scalar_view<size_t>> s_n = shape(sv_n);
+  const scalar_view<size_t> sv_n(&n);
+  const shape_of<scalar_view<size_t>> s_n = shape(sv_n);
   EXPECT(s_n.size() == sizeof(size_t));
 }
 

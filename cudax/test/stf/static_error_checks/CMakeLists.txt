@@ -22,7 +22,13 @@ function(cudax_stf_add_static_assert_test target_name_var source)
 
   set(test_target cudax.tests.stf.error.${filename})
 
-  cccl_add_executable(${test_target} SOURCES ${source} NO_METATARGETS)
+  # These TUs fail to compile on purpose; there is nothing for clang-tidy to check.
+  cccl_add_executable(
+    ${test_target}
+    SOURCES ${source}
+    NO_METATARGETS
+    NO_CLANG_TIDY
+  )
   cudax_stf_configure_target(${test_target} ${ARGN})
   target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
   cccl_add_xfail_compile_target_test(

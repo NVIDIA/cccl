@@ -18,6 +18,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <iostream>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -30,19 +31,20 @@ _CCCL_DEVICE double atomicMax(double* address, double val)
   do
   {
     assumed = old;
-    old     = atomicCAS(address_as_ull, assumed, __double_as_longlong(fmax(val, __longlong_as_double(assumed))));
+    old     = atomicCAS(
+      address_as_ull, assumed, __double_as_longlong(fmax(val, __longlong_as_double(static_cast<long long>(assumed)))));
 
     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
   } while (assumed != old);
 
-  return __longlong_as_double(old);
+  return __longlong_as_double(static_cast<long long>(old));
 }
 
 template <typename thread_hierarchy_t>
 _CCCL_DEVICE double reduce_max(thread_hierarchy_t& t, double local_max)
 {
-  auto ti             = t.inner();
-  slice<double> error = t.template storage<double>(0);
+  auto ti                   = t.inner();
+  const slice<double> error = t.template storage<double>(0);
 
   error(0) = 0.0;
   t.sync();
@@ -80,18 +82,18 @@ int main(int argc, char** argv)
 
   if (argc > 2)
   {
-    n = atol(argv[1]);
-    m = atol(argv[2]);
+    n = ::std::stol(argv[1]);
+    m = ::std::stol(argv[2]);
   }
 
   if (argc > 3)
   {
-    iter_max = atoi(argv[3]);
+    iter_max = ::std::stoi(argv[3]);
   }
 
   if (argc > 4)
   {
-    tol = atof(argv[4]);
+    tol = ::std::stod(argv[4]);
   }
 
   auto lA    = ctx.logical_data(shape_of<slice<double, 2>>(m, n));
@@ -128,7 +130,7 @@ int main(int argc, char** argv)
       }
 
       // compute the overall maximum error
-      double error = reduce_max(t, local_error);
+      const double error = reduce_max(t, local_error);
 
       /* Fill A with the new values */
       for (auto [i, j] : t.apply_partition(shape(A)))
