@@ -191,10 +191,13 @@ using predefined_op_list = c2h::type_list<cuda::std::plus<>, cuda::maximum<>, cu
 using predefined_min_max_op_list = c2h::type_list<cuda::maximum<>, cuda::minimum<>>;
 
 // clang-format off
-using unsigned_type_list = c2h::type_list<
+using bitwise_type_list = c2h::type_list<
+  int32_t,
   uint32_t,
+  int64_t,
   uint64_t
 #if TEST_INT128()
+  , __int128_t
   , __uint128_t
 #endif // TEST_INT128()
 >;
@@ -325,10 +328,10 @@ CUB_TEST("WarpReduce::Max/Min, floating-point redux types",
   }
 }
 
-CUB_TEST("WarpReduce::Reduce, unsigned bitwise types",
+CUB_TEST("WarpReduce::Reduce, bitwise types",
          "[reduce][warp][predefined_op][redux]",
          CUB_SMALL,
-         unsigned_type_list,
+         bitwise_type_list,
          bitwise_op_list,
          logical_warp_threads)
 {
@@ -392,10 +395,10 @@ CUB_TEST("WarpReduce::Sum/Max/Min Partial",
   verify_results(h_out, d_out);
 }
 
-CUB_TEST("WarpReduce::Reduce, unsigned bitwise types, partial",
+CUB_TEST("WarpReduce::Reduce, bitwise types, partial",
          "[reduce][warp][predefined_op][redux][partial]",
          CUB_SMALL,
-         unsigned_type_list,
+         bitwise_type_list,
          bitwise_op_list,
          logical_warp_threads)
 {

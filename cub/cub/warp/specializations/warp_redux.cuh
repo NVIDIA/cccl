@@ -27,7 +27,7 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstdint>
 
@@ -45,7 +45,7 @@ inline constexpr bool is_warp_redux_op_supported_sm80 =
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_bitwise_large_supported =
-  ::cuda::std::is_unsigned_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_std_bitwise_v<ReduceOp, T>;
+  ::cuda::std::is_integral_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_std_bitwise_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_min_max_f32_supported =
@@ -105,20 +105,22 @@ template <typename T, typename ReductionOp>
 warp_redux_bitwise_large(const T input, const ::cuda::std::uint32_t mask, ReductionOp reduction_op)
 {
   static_assert(is_warp_redux_bitwise_large_supported<ReductionOp, T>, "Reduction operator not supported");
+  using unsigned_t          = ::cuda::std::make_unsigned_t<T>; // avoid signed shift UB
   constexpr int chunk_bits  = 32; // 32 bits
   constexpr int num_chunks  = sizeof(T) / sizeof(unsigned);
   const auto generalized_op = cub::detail::generalize_operator(reduction_op); // map bit_and<uint64_t> to bit_and<>
+  const auto uinput         = static_cast<unsigned_t>(input);
   // do not use bit_cast/memcpy to avoid potential performance issues
-  T output{};
+  unsigned_t output{};
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int chunk = 0; chunk < num_chunks; ++chunk)
   {
     const int shift    = chunk * chunk_bits;
-    const auto value   = static_cast<unsigned>(input >> shift);
+    const auto value   = static_cast<unsigned>(uinput >> shift);
     const auto reduced = cub::detail::warp_redux_sm80(value, mask, generalized_op);
-    output |= static_cast<T>(reduced) << shift;
+    output |= static_cast<unsigned_t>(reduced) << shift;
   }
-  return output;
+  return static_cast<T>(output);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
