@@ -991,12 +991,11 @@ public:
     ctx_.push(loc);
   }
 
-  // A push() that cannot be matched by its pop() leaves the context stack inconsistent, so
-  // terminating is the intended outcome.
-  // NOLINTNEXTLINE(bugprone-exception-escape)
+  // pop() completes the level's teardown whatever its steps report; a destructor cannot pass the
+  // first failure on, so the policy is to report it and end the program.
   ~graph_scope_guard()
   {
-    ctx_.pop();
+    ctx_.pop(exception_policies::abort);
   }
 
   graph_scope_guard(const graph_scope_guard&)            = delete;
@@ -1102,10 +1101,13 @@ public:
     // If no one ever called launch()/exec()/stream()/graph(): we still ran push()
     // in the constructor, so we must match it with a prologue+epilogue
     // pair to tear the node down cleanly. finalize_after_launch handles
-    // the no-launch case correctly.
-    ensure_prepared_();
-
-    ctx_.pop_epilogue();
+    // the no-launch case correctly. This function is noexcept and runs from the destructor, so
+    // a failure in either step is reported and the program ends.
+    ON_THROW(abort)
+    {
+      ensure_prepared_();
+    };
+    ctx_.pop_epilogue(exception_policies::abort);
     released_ = true;
   }
 
@@ -1314,12 +1316,10 @@ public:
     ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
   }
 
-  // As with graph_scope_guard, a push_while() that cannot be matched by its pop() leaves the
-  // context stack inconsistent, so terminating is the intended outcome.
-  // NOLINTNEXTLINE(bugprone-exception-escape)
+  // As with graph_scope_guard: a destructor can only report the first failure and end the program.
   ~while_graph_scope_guard()
   {
-    ctx_.pop();
+    ctx_.pop(exception_policies::abort);
   }
 
   cudaGraphConditionalHandle cond_handle() const
@@ -1527,6 +1527,12 @@ static __global__ void kernel_check_value(T* addr, T val)
 UNITTEST("stackable host_launch")
 {
   stackable_ctx ctx;
+  // Finalized by a guard, for pedantry's sake. SCOPE(success), since finalize() may throw: a failing
+  // step leaves the context alone and its own exception propagates.
+  SCOPE(success)
+  {
+    ctx.finalize();
+  };
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.push();
   lA.push(access_mode::write, data_place::current_device());
@@ -1537,7 +1543,6 @@ UNITTEST("stackable host_launch")
     _CCCL_ASSERT(a(0) == 42, "invalid value");
   };
   ctx.pop();
-  ctx.finalize();
 };
 
 UNITTEST("graph_scope basic RAII")
@@ -1726,27 +1731,34 @@ UNITTEST("graph_scope iterative pattern")
 UNITTEST("stackable task on exec_place::host()")
 {
   stackable_ctx ctx;
+  // Finalized by a guard, for pedantry's sake. SCOPE(success), since finalize() may throw: a failing
+  // step leaves the context alone and its own exception propagates.
+  SCOPE(success)
+  {
+    ctx.finalize();
+  };
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.task(exec_place::host(), lA.write())->*[](cudaStream_t stream, auto) {
-    // cuda_safe_call (not cuda_try) on purpose: this lambda body is invoked from
-    // the STF runtime under host-task dispatch, where exception safety has not
-    // been audited. An abort here is preferable to an unannotated throw escaping
-    // into the runtime.
-    cuda_safe_call(cudaStreamSynchronize(stream));
+    // A throw here unwinds through operator->*'s fail path, which is exception-safe: end() is
+    // nothrow and the guards were hardened in #11187/#11224.
+    cuda_try<cudaStreamSynchronize>(stream);
   };
-  ctx.finalize();
 };
 
 UNITTEST("stackable task with set_symbol and set_exec_place")
 {
   stackable_ctx ctx;
+  // Finalized by a guard, for pedantry's sake. SCOPE(success), since finalize() may throw: a failing
+  // step leaves the context alone and its own exception propagates.
+  SCOPE(success)
+  {
+    ctx.finalize();
+  };
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.task(lA.write()).set_symbol("task").set_exec_place(exec_place::host())->*[](cudaStream_t stream, auto) {
-    // Same rationale as the previous test: keep cuda_safe_call inside this
-    // host-task lambda until the dispatch path is audited for exception safety.
-    cuda_safe_call(cudaStreamSynchronize(stream));
+    // Same as the previous test: the host-task dispatch path is exception-safe.
+    cuda_try<cudaStreamSynchronize>(stream);
   };
-  ctx.finalize();
 };
 
 inline void test_pop_prologue_repeated_launch()
@@ -1826,7 +1838,7 @@ inline void test_pop_prologue_manual_exec_launch()
   cudaStream_t s     = handle.stream();
   for (int k = 0; k < N; ++k)
   {
-    cuda_safe_call(cudaGraphLaunch(ex, s));
+    cuda_try<cudaGraphLaunch>(ex, s);
   }
 
   ctx.pop_epilogue();
@@ -1965,35 +1977,42 @@ inline void test_pop_prologue_graph_child_embed()
   cudaGraph_t body = handle.graph();
 
   // Build an outer graph that embeds `body` as a child node.
-  cudaGraph_t outer = nullptr;
-  cuda_safe_call(cudaGraphCreate(&outer, 0));
-  cudaGraphNode_t child{};
-  cuda_safe_call(cudaGraphAddChildGraphNode(&child, outer, nullptr, 0, body));
+  const cudaGraph_t outer = cuda_try<cudaGraphCreate>(0);
+  SCOPE(exit)
+  {
+    cuda_safe_call<cudaGraphDestroy>(outer);
+  };
+  ::std::ignore = cuda_try<cudaGraphAddChildGraphNode>(outer, nullptr, 0, body);
 
-  cudaGraphExec_t outer_exec = nullptr;
-  cuda_safe_call(cudaGraphInstantiateWithFlags(&outer_exec, outer, 0));
+  const cudaGraphExec_t outer_exec = cuda_try<cudaGraphInstantiateWithFlags>(outer, 0);
+  SCOPE(exit)
+  {
+    cuda_safe_call<cudaGraphExecDestroy>(outer_exec);
+  };
 
   // Order the outer launch behind the nested context's freeze/get events:
   // record an event on handle.stream() (where graph() injected dep A) and make
   // our launch stream wait on it before launching the embedded child.
-  cudaStream_t launch_stream = nullptr;
-  cuda_safe_call(cudaStreamCreate(&launch_stream));
-  cudaEvent_t dep_a = nullptr;
-  cuda_safe_call(cudaEventCreate(&dep_a));
-  cuda_safe_call(cudaEventRecord(dep_a, handle.stream()));
-  cuda_safe_call(cudaStreamWaitEvent(launch_stream, dep_a, 0));
+  const cudaStream_t launch_stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
+  {
+    cuda_safe_call<cudaStreamDestroy>(launch_stream);
+  };
+  // cudaEventCreate is an overload set; the flags form is the same call with the default flags.
+  const cudaEvent_t dep_a = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+  SCOPE(exit)
+  {
+    cuda_safe_call<cudaEventDestroy>(dep_a);
+  };
+  cuda_try<cudaEventRecord>(dep_a, handle.stream());
+  cuda_try<cudaStreamWaitEvent>(launch_stream, dep_a, 0);
 
-  cuda_safe_call(cudaGraphLaunch(outer_exec, launch_stream));
+  cuda_try<cudaGraphLaunch>(outer_exec, launch_stream);
 
   // The embedded child must finish before pop_epilogue() unfreezes the data.
-  cuda_safe_call(cudaStreamSynchronize(launch_stream));
+  cuda_try<cudaStreamSynchronize>(launch_stream);
 
   ctx.pop_epilogue();
-
-  cuda_safe_call(cudaGraphExecDestroy(outer_exec));
-  cuda_safe_call(cudaGraphDestroy(outer));
-  cuda_safe_call(cudaEventDestroy(dep_a));
-  cuda_safe_call(cudaStreamDestroy(launch_stream));
 
   ctx.host_launch(lA.read())->*[](auto a) {
     for (size_t i = 0; i < a.size(); ++i)

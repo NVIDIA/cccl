@@ -65,6 +65,7 @@
 #include <limits>
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -2608,7 +2609,73 @@ auto on_throw(_Reaction&& __reaction,
   }()                                                               \
     << [&]()
 
+/**
+ * @brief Runs `__step`; if it throws, the exception is kept in `__first` unless one is already
+ * there, and control continues.
+ *
+ * This is the spelling for a function that *ends* something (a pop, a finalize, a release):
+ * such a function must complete its state transition whatever its individual steps report,
+ * and only then act on the failure. Write each step as `e |= [&] { ... };` on a
+ * `std::exception_ptr e;`, and finish with the algebra deciding what the failure becomes:
+ * `if (e) on_throw(policy) << [&] { std::rethrow_exception(e); };`. Later failures are dropped;
+ * in practice they are echoes of the first (an asynchronous CUDA fault surfaces again at every
+ * later synchronize). `|=` reads as the algebra's `|`: first claim, the left operand keeps its
+ * failure if it has one. Implemented on @ref exception_policies::defer_t "defer", so it
+ * inherits the header's behaviour when exceptions are disabled. Nothing is allocated unless a
+ * step fails.
+ *
+ * Lookup: the operator lives in this namespace and is found through the closure type's
+ * associated namespace, so it works unqualified wherever the lambda is written inside
+ * `cuda::experimental::stf`; user code elsewhere names it with
+ * `using cuda::experimental::stf::operator|=;`.
+ */
+template <class _Fn, ::cuda::std::enable_if_t<::cuda::std::is_invocable_v<_Fn&>, int> = 0>
+::std::exception_ptr& operator|=(::std::exception_ptr& __first, _Fn&& __step) noexcept
+{
+  ::std::exception_ptr __e = on_throw(exception_policies::defer) << [&]() -> ::std::exception_ptr {
+    __step();
+    return {};
+  };
+  if (!__first)
+  {
+    __first = ::cuda::std::move(__e);
+  }
+  return __first;
+}
+
 #ifdef UNITTESTED_FILE
+UNITTEST("exception_ptr |= step")
+{
+  using namespace cuda::experimental::stf;
+  ::std::exception_ptr e;
+  e |= [] {}; // a step that succeeds leaves the slot empty
+  EXPECT(!e);
+  e |= [] {
+    throw ::std::runtime_error("first");
+  };
+  e |= [] {
+    throw ::std::runtime_error("second"); // dropped: the slot already has its failure
+  };
+  e |= [] {}; // success after a failure changes nothing
+  EXPECT(static_cast<bool>(e));
+  bool rethrown = false;
+  try
+  {
+    ::std::rethrow_exception(e);
+  }
+  catch (const ::std::runtime_error& x)
+  {
+    rethrown = ::std::string(x.what()) == "first";
+  }
+  EXPECT(rethrown);
+  // The policy algebra decides the terminal action: here, report and resume.
+  ::std::ostringstream log;
+  on_throw(exception_policies::notify(log)) << [&] {
+    ::std::rethrow_exception(e);
+  };
+  EXPECT(log.str().find("first") != ::std::string::npos);
+};
+
 UNITTEST("nullval")
 {
   using namespace cuda::experimental::stf;
