@@ -981,7 +981,9 @@ inline auto capture(::std::shared_ptr<::std::string> __target)
 }
 
 //! @brief Capture an exception of dynamic type exactly `_E` into `*__target`; decline otherwise.
-template <class _E, ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<::std::exception, _E>, int> = 0>
+template <
+  class _E,
+  ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<::std::exception, _E> && !::cuda::std::is_const_v<_E>, int> = 0>
 auto capture(_E* __target)
 {
   _CCCL_ASSERT(__target != nullptr, "capture requires a non-null target");
@@ -989,7 +991,9 @@ auto capture(_E* __target)
 }
 
 //! @brief See @ref capture. Shared-ownership form.
-template <class _E, ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<::std::exception, _E>, int> = 0>
+template <
+  class _E,
+  ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<::std::exception, _E> && !::cuda::std::is_const_v<_E>, int> = 0>
 auto capture(::std::shared_ptr<_E> __target)
 {
   _CCCL_ASSERT(__target, "capture requires a non-null target");
