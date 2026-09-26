@@ -57,7 +57,8 @@ test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case
   }
 }
 
-// nvcc 12.0 doesn't support these two special cases in a constexpr context
+// nvcc 12.0 doesn't support 1 / -1 and -1 / 1 in a constexpr context.
+// 1 / -2 and -1 / 2 go through the same branches of div_overflow and are kept with them.
 template <typename Lhs, typename Rhs, typename Result>
 TEST_FUNC constexpr void test_nvcc_12_0_special_cases()
 {
@@ -70,6 +71,16 @@ TEST_FUNC constexpr void test_nvcc_12_0_special_cases()
   if constexpr (cuda::std::is_signed_v<Lhs>)
   {
     test_div_overflow<Result>(Lhs{-1}, Rhs{1}, cuda::std::is_unsigned_v<Result>);
+  }
+  // 1 / -2 -> quotient is 0, should never overflow
+  if constexpr (cuda::std::is_signed_v<Rhs>)
+  {
+    test_div_overflow<Result>(Lhs{1}, Rhs{-2}, false, true, Result{0});
+  }
+  // -1 / 2 -> quotient is 0, should never overflow
+  if constexpr (cuda::std::is_signed_v<Lhs>)
+  {
+    test_div_overflow<Result>(Lhs{-1}, Rhs{2}, false, true, Result{0});
   }
 }
 
@@ -96,10 +107,11 @@ TEST_FUNC constexpr void test_type()
   // 2. 1 / 1 -> should not overflow
   test_div_overflow<Result>(Lhs{1}, Rhs{1}, false);
 
-  // nvcc 12.0 doesn't support these two special cases in a constexpr context
+  // nvcc 12.0 doesn't support 1 / -1 and -1 / 1 in a constexpr context
 #if _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
   // 3. 1 / -1 -> should overflow if the destination type is unsigned
   // 4. -1 / 1 -> should overflow if the destination type is unsigned
+  //    1 / -2 and -1 / 2 -> quotient is 0, should never overflow
   test_nvcc_12_0_special_cases<Lhs, Rhs, Result>();
 #endif // _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
   if (!cuda::std::__cccl_default_is_constant_evaluated())
