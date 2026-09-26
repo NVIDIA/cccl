@@ -50,7 +50,7 @@ int main()
 
   auto where = exec_place::repeat(exec_place::current_device(), 8);
 
-  double alpha       = 3.14;
+  const double alpha = 3.14;
   const size_t NITER = 5;
 
   /* Compute Y = Y + alpha X */

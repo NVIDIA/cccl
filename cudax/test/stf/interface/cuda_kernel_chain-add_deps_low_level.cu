@@ -54,7 +54,7 @@ int main()
 
   const double alpha = 3.14;
   const double beta  = 4.5;
-  double gamma       = -4.1;
+  const double gamma = -4.1;
 
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);

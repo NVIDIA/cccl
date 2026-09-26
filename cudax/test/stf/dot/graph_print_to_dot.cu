@@ -33,7 +33,7 @@ int main()
   const auto r = ::std::random_device{}();
 
   char filename[64];
-  snprintf(filename, 64, "output_%d.dot", r);
+  snprintf(filename, 64, "output_%u.dot", r);
   // fprintf(stderr, "filename %s\n", filename);
 
   graph_ctx ctx;

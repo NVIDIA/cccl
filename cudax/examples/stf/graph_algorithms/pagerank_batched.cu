@@ -136,7 +136,7 @@ int main()
   std::vector<int> nonzeros = {1, 2, 3, 6, 0, 3, 4, 5, 6, 7, 8, 0, 0, 1, 1, 1, 0, 1, 1, 1};
 
   const int num_vertices        = static_cast<int>(offsets.size() - 1);
-  float init_rank               = 1.0f / static_cast<float>(num_vertices);
+  const float init_rank         = 1.0f / static_cast<float>(num_vertices);
   const float tolerance         = 1e-6f;
   const int NITER               = 100;
   const int num_personalization = 4;

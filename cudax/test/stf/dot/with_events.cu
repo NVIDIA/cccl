@@ -31,7 +31,7 @@ int main()
   const auto r = ::std::random_device{}();
 
   char filename[64];
-  snprintf(filename, 64, "output_%d.dot", r);
+  snprintf(filename, 64, "output_%u.dot", r);
   // fprintf(stderr, "filename %s\n", filename);
   setenv("CUDASTF_DOT_FILE", filename, 1);
   setenv("CUDASTF_DOT_IGNORE_PREREQS", "0", 1);
