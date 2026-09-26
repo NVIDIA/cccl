@@ -15,6 +15,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 using vector_t  = logical_data<slice<double>>;
@@ -50,8 +52,8 @@ void SPMV(context_t& ctx, csr_matrix& a, vector_t& x, vector_t& y)
 {
   ctx.parallel_for(y.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.read(), y.write())
       ->*[] _CCCL_DEVICE(size_t row, auto da_val, auto da_col, auto da_row, auto dx, auto dy) {
-            int row_start = da_row(row);
-            int row_end   = da_row(row + 1);
+            const int row_start = da_row(row);
+            const int row_end   = da_row(row + 1);
 
             double sum = 0.0;
             for (int elt = row_start; elt < row_end; elt++)
@@ -87,7 +89,7 @@ void genTridiag(size_t* I, size_t* J, double* val, size_t N, size_t nz)
       I[1] = 2;
     }
 
-    start        = (i - 1) * 3 + 2;
+    start        = static_cast<int>((i - 1) * 3 + 2);
     J[start]     = i - 1;
     J[start + 1] = i;
 
@@ -138,7 +140,7 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B)
   auto rsold = ctx.logical_data(shape_of<scalar_view<double>>());
   DOT(ctx, R, R, rsold);
 
-  const int MAXITER = X.shape().size();
+  const int MAXITER = static_cast<int>(X.shape().size());
   for (int k = 0; k < MAXITER; k++)
   {
     // Ap = A*P
@@ -153,14 +155,14 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B)
     // x = x + alpha * p;
     ctx.parallel_for(X.shape(), X.rw(), rsold.read(), pAp.read(), P.read())
         ->*[] _CCCL_DEVICE(size_t i, auto dX, auto drsold, auto dpAp, auto dP) {
-              double alpha = (*drsold / *dpAp);
+              const double alpha = (*drsold / *dpAp);
               dX(i) += alpha * dP(i);
             };
 
     // r = r - alpha * Ap;
     ctx.parallel_for(R.shape(), R.rw(), rsold.read(), pAp.read(), Ap.read())
         ->*[] _CCCL_DEVICE(size_t i, auto dR, auto drsold, auto dpAp, auto dAp) {
-              double alpha = (*drsold / *dpAp);
+              const double alpha = (*drsold / *dpAp);
               dR(i) -= alpha * dAp(i);
             };
 
@@ -170,7 +172,7 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B)
 
     // Read the residual on the CPU, and halt the iterative process if we have converged
     // (note that this will block the submission of tasks)
-    double err = ctx.wait(rsnew);
+    const double err = ctx.wait(rsnew);
     fprintf(stderr, "iter %d : residual %e\n", k, err);
     if (err < 1e-10)
     {
@@ -200,11 +202,11 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    N = atoi(argv[1]);
+    N = ::std::stoi(argv[1]);
     fprintf(stderr, "N = %zu\n", N);
   }
 
-  size_t nz = (N - 2) * 3 + 4;
+  const size_t nz = (N - 2) * 3 + 4;
 
   size_t* row_offsets;
   size_t* column_indices;

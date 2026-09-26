@@ -59,6 +59,7 @@ int main()
 
   ::std::vector<::std::thread> threads;
   // Launch threads
+  threads.reserve(10);
   for (int i = 0; i < 10; ++i)
   {
     threads.emplace_back(mytask, ctx, i);

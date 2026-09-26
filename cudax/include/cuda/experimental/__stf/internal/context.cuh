@@ -1100,7 +1100,7 @@ UNITTEST("context")
 
 UNITTEST("context from existing contexts")
 {
-  stream_ctx ctx;
+  const stream_ctx ctx;
   context unified_ctx = ctx;
   unified_ctx.finalize();
 };
@@ -1122,8 +1122,8 @@ UNITTEST("context to make generic code")
 
 UNITTEST("context to make select backend at runtime")
 {
-  bool test   = true;
-  context ctx = test ? context(graph_ctx()) : context(stream_ctx());
+  const bool test = true;
+  context ctx     = test ? context(graph_ctx()) : context(stream_ctx());
   ctx.finalize();
 };
 
@@ -1131,7 +1131,7 @@ UNITTEST("context to make select backend at runtime (2)")
 {
   // stream_ctx by default
   context ctx;
-  bool test = true;
+  const bool test = true;
   if (test)
   {
     ctx = graph_ctx();
@@ -1236,7 +1236,7 @@ UNITTEST("context with arguments")
     cuda_safe_call(cudaStreamDestroy(stream));
   };
 
-  async_resources_handle h;
+  const async_resources_handle h;
 
   context ctx(h);
   ctx.finalize();

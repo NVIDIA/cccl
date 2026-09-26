@@ -107,9 +107,9 @@ void test_stream_write_back()
 {
   const size_t N = 64;
   double X[N];
-  for (size_t i = 0; i < N; i++)
+  for (auto& x : X)
   {
-    X[i] = 0.0;
+    x = 0.0;
   }
 
   stream_ctx ctx;
@@ -153,9 +153,9 @@ void test_stream_chained()
 {
   const size_t N = 64;
   double X[N];
-  for (size_t i = 0; i < N; i++)
+  for (auto& x : X)
   {
-    X[i] = 1.0;
+    x = 1.0;
   }
 
   stream_ctx ctx;
@@ -282,9 +282,9 @@ void test_graph_write_back()
 {
   const size_t N = 64;
   double X[N];
-  for (size_t i = 0; i < N; i++)
+  for (auto& x : X)
   {
-    X[i] = 0.0;
+    x = 0.0;
   }
 
   graph_ctx ctx;
@@ -328,9 +328,9 @@ void test_graph_chained()
 {
   const size_t N = 64;
   double X[N];
-  for (size_t i = 0; i < N; i++)
+  for (auto& x : X)
   {
-    X[i] = 1.0;
+    x = 1.0;
   }
 
   graph_ctx ctx;

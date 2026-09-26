@@ -381,7 +381,7 @@ public:
       {
         res *= get_extent(d);
       }
-      return res;
+      return static_cast<::std::ptrdiff_t>(res);
     }
   }
 
@@ -441,13 +441,13 @@ public:
       else
       {
         // Increment current with carry to next dimension
-        for (size_t i : each(0, dimensions))
+        for (const size_t i : each(0, dimensions))
         {
           _CCCL_ASSERT(current[i] < iterated.get_end(i), "Attempt to increment past the end.");
           if (++current[i] < iterated.get_end(i))
           {
             // Found the new posish, now reset all lower dimensions to "zero"
-            for (size_t j : each(0, i))
+            for (const size_t j : each(0, i))
             {
               current[j] = iterated.get_begin(j);
             }
@@ -501,7 +501,7 @@ public:
   // Overload the equality operator to check if two shapes are equal
   _CCCL_HOST_DEVICE bool operator==(const box& rhs) const
   {
-    for (size_t i : each(0, dimensions))
+    for (const size_t i : each(0, dimensions))
     {
       if (get_begin(i) != rhs.get_begin(i) || get_end(i) != rhs.get_end(i))
       {
@@ -661,7 +661,7 @@ UNITTEST("pos4 large values")
   const ssize_t large_positive = 5000000000LL; // 5 billion
   const ssize_t large_negative = -3000000000LL; // -3 billion
 
-  pos4 p(large_positive, large_negative, large_positive + 1000, large_negative - 1000);
+  const pos4 p(large_positive, large_negative, large_positive + 1000, large_negative - 1000);
 
   EXPECT(p.x == large_positive);
   EXPECT(p.y == large_negative);
@@ -684,7 +684,7 @@ UNITTEST("dim4 large values")
   // Test that dim4 can handle values larger than uint32 max (2^32-1 = 4,294,967,295)
   const size_t large_value = 6000000000ULL; // 6 billion
 
-  dim4 d(large_value, large_value + 1000, large_value + 2000, large_value + 3000);
+  const dim4 d(large_value, large_value + 1000, large_value + 2000, large_value + 3000);
 
   EXPECT(d.x == large_value);
   EXPECT(d.y == large_value + 1000);
@@ -706,7 +706,7 @@ UNITTEST("dim4 very large total size")
 {
   // Test dimensions that would exceed 2^32 when multiplied
   // 2000 * 2000 * 2000 * 64 = 1,024,000,000,000 = ~1T elements (2^40)
-  dim4 d(2000, 2000, 2000, 64);
+  const dim4 d(2000, 2000, 2000, 64);
 
   const size_t expected_size = 2000ULL * 2000ULL * 2000ULL * 64ULL;
   EXPECT(d.size() == expected_size);
@@ -716,30 +716,30 @@ UNITTEST("pos4 dim4 interaction")
 {
   // Test get_index with large coordinates
   const size_t large_dim = 100000; // 100K per dimension
-  dim4 d(large_dim, large_dim, large_dim, large_dim);
+  const dim4 d(large_dim, large_dim, large_dim, large_dim);
 
   // Test position in the middle
-  pos4 p(50000, 50000, 50000, 50000);
-  size_t index = d.get_index(p);
+  const pos4 p(50000, 50000, 50000, 50000);
+  const size_t index = d.get_index(p);
 
   // Verify index calculation
   const size_t expected = 50000 + large_dim * (50000 + large_dim * (50000 + 50000 * large_dim));
   EXPECT(index == expected);
 
   // Test near the boundaries
-  pos4 p_max(static_cast<ssize_t>(large_dim - 1),
-             static_cast<ssize_t>(large_dim - 1),
-             static_cast<ssize_t>(large_dim - 1),
-             static_cast<ssize_t>(large_dim - 1));
-  size_t max_index = d.get_index(p_max);
+  const pos4 p_max(static_cast<ssize_t>(large_dim - 1),
+                   static_cast<ssize_t>(large_dim - 1),
+                   static_cast<ssize_t>(large_dim - 1),
+                   static_cast<ssize_t>(large_dim - 1));
+  const size_t max_index = d.get_index(p_max);
   EXPECT(max_index < d.size());
 };
 
 UNITTEST("dim4 comparison operators")
 {
-  dim4 d1(1000, 2000, 3000, 4000);
-  dim4 d2(1000, 2000, 3000, 4000);
-  dim4 d3(1000, 2000, 3000, 4001);
+  const dim4 d1(1000, 2000, 3000, 4000);
+  const dim4 d2(1000, 2000, 3000, 4000);
+  const dim4 d3(1000, 2000, 3000, 4001);
 
   // Test equality
   EXPECT(d1 == d2);
@@ -752,9 +752,9 @@ UNITTEST("dim4 comparison operators")
 
 UNITTEST("pos4 comparison operators")
 {
-  pos4 p1(1000, -2000, 3000, -4000);
-  pos4 p2(1000, -2000, 3000, -4000);
-  pos4 p3(1000, -2000, 3000, -3999);
+  const pos4 p1(1000, -2000, 3000, -4000);
+  const pos4 p2(1000, -2000, 3000, -4000);
+  const pos4 p3(1000, -2000, 3000, -3999);
 
   // Test equality
   EXPECT(p1 == p2);

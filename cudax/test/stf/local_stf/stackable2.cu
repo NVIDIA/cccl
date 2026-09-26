@@ -26,7 +26,7 @@ int main()
   int array[1024];
   for (size_t i = 0; i < 1024; i++)
   {
-    array[i] = 1 + i * i;
+    array[i] = static_cast<int>(1 + i * i);
   }
 
   auto lA = ctx.logical_data(array).set_symbol("A");
@@ -34,7 +34,7 @@ int main()
   // repeat : {tmp = a; tmp*=2; a+=tmp}
   for (size_t iter = 0; iter < 10; iter++)
   {
-    stackable_ctx::graph_scope_guard graph{ctx}; // RAII: automatic push/pop (lock_guard style)
+    const stackable_ctx::graph_scope_guard graph{ctx}; // RAII: automatic push/pop (lock_guard style)
 
     auto tmp = ctx.logical_data(lA.shape()).set_symbol("tmp");
 
@@ -63,7 +63,7 @@ int main()
 
   for (size_t i = 0; i < 1024; i++)
   {
-    int expected = pow3_10 * (1 + static_cast<int>(i * i));
+    const int expected = pow3_10 * (1 + static_cast<int>(i * i));
     EXPECT(array[i] == expected);
   }
 }

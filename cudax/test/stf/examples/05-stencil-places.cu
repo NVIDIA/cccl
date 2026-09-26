@@ -11,12 +11,14 @@
 #include <cuda/experimental/__places/partitions/tiled_partition.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 template <typename T>
 __global__ void stencil_kernel(slice<T> Un, slice<const T> Un1)
 {
-  size_t N = Un.extent(0);
+  const size_t N = Un.extent(0);
   for (size_t i = threadIdx.x + blockIdx.x * blockDim.x; i < N; i += blockDim.x * gridDim.x)
   {
     Un(i) = 0.9 * Un1(i) + 0.05 * Un1((i + N - 1) % N) + 0.05 * Un1((i + 1) % N);
@@ -33,12 +35,12 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    NITER = atoi(argv[1]);
+    NITER = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    NBLOCKS = atoi(argv[2]);
+    NBLOCKS = ::std::stoi(argv[2]);
   }
 
   const size_t TOTAL_SIZE = NBLOCKS * BLOCK_SIZE;

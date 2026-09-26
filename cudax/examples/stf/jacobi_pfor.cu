@@ -18,6 +18,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <iostream>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -32,18 +33,18 @@ int main(int argc, char** argv)
 
   if (argc > 2)
   {
-    n = atol(argv[1]);
-    m = atol(argv[2]);
+    n = ::std::stol(argv[1]);
+    m = ::std::stol(argv[2]);
   }
 
   if (argc > 3)
   {
-    tol = atof(argv[3]);
+    tol = ::std::stod(argv[3]);
   }
 
   if (argc > 4)
   {
-    iter_max = atoi(argv[4]);
+    iter_max = ::std::stoi(argv[4]);
   }
 
   auto lA    = ctx.logical_data(shape_of<slice<double, 2>>(m, n));
@@ -83,7 +84,7 @@ int main(int argc, char** argv)
 
   cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
-  double final_residual = ctx.wait(lresidual);
+  const double final_residual = ctx.wait(lresidual);
 
   printf("Converged after %ld iterations, residual = %lf\n", iter, final_residual);
 

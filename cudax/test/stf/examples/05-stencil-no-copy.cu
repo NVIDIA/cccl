@@ -10,6 +10,8 @@
 
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 /*
@@ -67,15 +69,15 @@ __global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T*
 {
   for (size_t idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
   {
-    size_t idx2 = idx + ghost_size;
-    array[idx2] = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
+    const size_t idx2 = idx + ghost_size;
+    array[idx2]       = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
   }
 }
 
 template <typename T>
 void stencil(stream_ctx& ctx, data_block<T>& bn, data_block<T>& bn1)
 {
-  int dev = bn.dev_id;
+  const int dev = bn.dev_id;
 
   auto t = ctx.task(exec_place::device(dev), bn.handle.rw(), bn1.handle.read());
   t->*[&](cudaStream_t stream, auto bn_array, auto bn1_array) {
@@ -106,7 +108,7 @@ void copy_task(
 {
   auto t = ctx.task(exec_place::device(dst_dev), dst.rw(), src.read(data_place::device(src_dev)));
   t->*[&](cudaStream_t stream, auto dst_array, auto src_array) {
-    int nblocks = (cnt > 64) ? 32 : 1;
+    const int nblocks = (cnt > 64) ? 32 : 1;
     copy_kernel<T>
       <<<nblocks, 64, 0, stream>>>(cnt, dst_array.data_handle() + offset_dst, src_array.data_handle() + offset_src);
   };
@@ -116,8 +118,8 @@ void copy_task(
 template <typename T>
 void update_halo(stream_ctx& ctx, data_block<T>& bn, data_block<T>& left, data_block<T>& right)
 {
-  size_t gs = bn.ghost_size;
-  size_t bs = bn.block_size;
+  const size_t gs = bn.ghost_size;
+  const size_t bs = bn.block_size;
 
   // Copy the bn.ghost_size last computed items in "left" (outside the halo)
   copy_task<T>(ctx, gs, bn.handle, 0, bn.dev_id, left.handle, bs, left.dev_id);
@@ -130,10 +132,10 @@ void update_halo(stream_ctx& ctx, data_block<T>& bn, data_block<T>& left, data_b
 template <typename T>
 void copy_inner(stream_ctx& ctx, data_block<T>& bn1, data_block<T>& bn)
 {
-  size_t gs = bn.ghost_size;
-  size_t bs = bn.block_size;
+  const size_t gs = bn.ghost_size;
+  const size_t bs = bn.block_size;
 
-  int dev_id = bn.dev_id;
+  const int dev_id = bn.dev_id;
 
   // Copy the bn.ghost_size last computed items in "left" (outside the halo)
   copy_task<T>(ctx, bs, bn1.handle, gs, dev_id, bn.handle, gs, dev_id);
@@ -152,12 +154,12 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    NITER = atoi(argv[1]);
+    NITER = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    NBLOCKS = atoi(argv[2]);
+    NBLOCKS = ::std::stoi(argv[2]);
   }
 
   const size_t GHOST_SIZE = 1;
@@ -176,8 +178,8 @@ int main(int argc, char** argv)
   // Create blocks and allocates host data
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    size_t beg = b * BLOCK_SIZE;
-    size_t end = (b + 1) * BLOCK_SIZE;
+    const size_t beg = b * BLOCK_SIZE;
+    const size_t end = (b + 1) * BLOCK_SIZE;
 
     Un.emplace_back(ctx, beg, end, 1ull);
     Un1.emplace_back(ctx, beg, end, 1ull);
@@ -185,8 +187,8 @@ int main(int argc, char** argv)
 
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    Un[b].dev_id  = b % ndevs;
-    Un1[b].dev_id = b % ndevs;
+    Un[b].dev_id  = static_cast<int>(b % ndevs);
+    Un1[b].dev_id = static_cast<int>(b % ndevs);
   }
 
   // Fill blocks with initial values. For the sake of simplicity, we are
@@ -201,7 +203,7 @@ int main(int argc, char** argv)
       cuda_safe_call(cudaStreamSynchronize(stream));
       for (size_t local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)
       {
-        double val                                     = U0[(beg + local_idx + TOTAL_SIZE) % TOTAL_SIZE];
+        const double val                               = U0[(beg + local_idx + TOTAL_SIZE) % TOTAL_SIZE];
         Un1_vals.data_handle()[local_idx + GHOST_SIZE] = val;
         Un_vals.data_handle()[local_idx + GHOST_SIZE]  = val;
       }
@@ -249,7 +251,7 @@ int main(int argc, char** argv)
     sum += check_sum(ctx, Un[b]);
   }
 
-  double err = fabs(sum - 1.0);
+  const double err = fabs(sum - 1.0);
   EXPECT(err < 0.0001);
 
   ctx.finalize();

@@ -669,6 +669,7 @@ struct backoff_t
 
     // maybe_unused: like __cap above, __left is referenced only inside
     // _CCCL_CATCH_ALL, so CTK <= 12.9's cudafe reports #177 without it.
+    // NOLINTNEXTLINE(misc-const-correctness) -- decremented in the catch arm, which some instantiations never reach
     for ([[maybe_unused]] int __left = __n_;;)
     {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds{__sleep});
@@ -1435,13 +1436,12 @@ constexpr bool __value_preserving_impl()
 {
   using _F = typename __integral_base<::cuda::std::remove_cvref_t<_From>>::type;
   using _T = ::cuda::std::remove_cvref_t<_To>;
-  if constexpr (!::cuda::std::is_arithmetic_v<_F> || !::cuda::std::is_arithmetic_v<_T>)
+  if constexpr (!::cuda::std::is_arithmetic_v<_F> || !::cuda::std::is_arithmetic_v<_T>
+                || ::cuda::std::is_floating_point_v<_T>)
   {
-    return true; // non-arithmetic pairs: the is_convertible baseline is the whole law
-  }
-  else if constexpr (::cuda::std::is_floating_point_v<_T>)
-  {
-    return true; // precision loss is tolerated where range loss is not
+    // Non-arithmetic pairs: the is_convertible baseline is the whole law. A floating target:
+    // precision loss is tolerated where range loss is not.
+    return true;
   }
   else if constexpr (::cuda::std::is_floating_point_v<_F>)
   {
@@ -1558,10 +1558,14 @@ __on_throw_policy(_R, ::cuda::std::source_location) -> __on_throw_policy<_R>;
 template <class _Reaction, class _Fn>
 // A resuming chain reads neither exception nor location in some instantiations; gcc 9 flags the
 // unread policy without the attribute.
+// In clang-tidy's device pass _CCCL_TRY/_CCCL_CATCH expand to no handler, so bugprone-exception-escape
+// sees the callable's throw escape this runner in every instantiation whose policy makes it noexcept.
+// NOLINTNEXTLINE(bugprone-exception-escape)
 decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept(
   __exception_path_nothrow_v<_Reaction, _Fn> && __on_enter_nothrow_v<_Reaction>)
 {
-  // Bind as a non-const lvalue: a hook may invoke it again later.
+  // Bind as a non-const lvalue: a hook may invoke it again later, and a mutable callable needs it.
+  // NOLINTNEXTLINE(misc-const-correctness)
   _Fn& __f = __fn;
 
   // A `noexcept` callable puts the policy out of reach: an exception raised inside it ends the
@@ -2321,12 +2325,13 @@ private:
         if (const _Stored* __p = ::std::any_cast<_Stored>(&__box))
         {
           if constexpr (::cuda::std::is_floating_point_v<typename detail::__integral_base<_T>::type>)
-          {
+          { // NOLINT(bugprone-branch-clone) -- same body as the fits() arm, for a different reason
             __out = static_cast<_T>(*__p); // anything -> floating: by fiat
             __hit = true;
           }
           else if constexpr (::cuda::std::is_floating_point_v<_Stored>)
-          {
+          { // NOLINT(bugprone-branch-clone) -- same outcome as the last arm for a different reason; one arm is
+            // constexpr
             __found_lossy = true; // floating never converts to integral
           }
           else if (__fits(*__p))
@@ -2335,7 +2340,7 @@ private:
             __hit = true;
           }
           else
-          {
+          { // NOLINT(bugprone-branch-clone)
             __found_lossy = true; // right category, unrepresentable value
           }
         }
@@ -2396,7 +2401,10 @@ public:
   exception_sink& operator=(exception_sink&&) noexcept = default;
   exception_sink& operator=(const exception_sink& __other)
   {
-    __p_.reset(__other.__p_->clone());
+    if (this != &__other)
+    {
+      __p_.reset(__other.__p_->clone());
+    }
     return *this;
   }
 
@@ -2763,9 +2771,9 @@ UNITTEST("circuit_breaker")
   EXPECT(__gated);
 
   // The erased form carries the gate through: sinks re-erase, gates survive.
-  *budget                      = 0;
-  pol::exception_sink __erased = pol::type_erase(pol::circuit_breaker(budget) & pol::subst(-1));
-  __gated                      = false;
+  *budget                            = 0;
+  const pol::exception_sink __erased = pol::type_erase(pol::circuit_breaker(budget) & pol::subst(-1));
+  __gated                            = false;
   _CCCL_TRY
   {
     on_throw(__erased) << flaky;
@@ -2965,7 +2973,7 @@ UNITTEST("on_throw")
   on_throw(notify(log), site) << [] {
     throw 42;
   };
-  ::rewind(log);
+  EXPECT(::fseek(log, 0, SEEK_SET) == 0);
   char message[1024]{};
   char expected[1024]{};
   EXPECT(::fgets(message, sizeof(message), log));
@@ -3402,6 +3410,7 @@ UNITTEST("re-running policies")
     bool escaped = false;
     try
     {
+      // NOLINTNEXTLINE(misc-redundant-expression) -- p | p is what this test exercises
       on_throw(retry | retry) << [&]() -> int {
         ++calls;
         throw ::std::runtime_error("always");
@@ -4201,7 +4210,7 @@ UNITTEST("type erasure")
   }
   // One sink object serves callables of different result types (passthrough).
   {
-    exception_sink r = type_erase(retry * 2);
+    const exception_sink r = type_erase(retry * 2);
     {
       int calls   = 0;
       const int x = on_throw(r) << [&]() -> int {
@@ -4357,7 +4366,7 @@ UNITTEST("type erasure")
         return ::std::any(21);
       }
     };
-    exception_sink custom{::std::unique_ptr<exception_sink::sink_base>(new halving_sink())};
+    const exception_sink custom{::std::unique_ptr<exception_sink::sink_base>(new halving_sink())};
     const int x = on_throw(custom) << []() -> int {
       throw ::std::runtime_error("x");
     };
@@ -4541,6 +4550,9 @@ void invoke_body(F& f, bool failing)
 template <class F>
 void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false) noexcept
 {
+  // The body may throw; that is what the abort policy is for. In clang-tidy's device pass the policy's
+  // catch is erased, so the check sees the throw escape this noexcept function.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   on_throw(exception_policies::abort, loc) << [&] {
     invoke_body(f, failing);
   };
@@ -4562,7 +4574,7 @@ auto operator->*(with_location<exit> where, F&& f)
         , loc(loc)
     {}
     result(result&) = delete;
-    result(result&& rhs)
+    result(result&& rhs) noexcept(::cuda::std::is_nothrow_move_constructible_v<F>)
         : f(mv(rhs.f))
         , loc(rhs.loc)
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
@@ -4616,7 +4628,7 @@ auto operator->*(with_location<fail> where, F&& f)
         , exceptions(exceptions)
     {}
     result(result&) = delete;
-    result(result&& rhs)
+    result(result&& rhs) noexcept(::cuda::std::is_nothrow_move_constructible_v<F>)
         : f(mv(rhs.f))
         , loc(rhs.loc)
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
@@ -4657,7 +4669,7 @@ auto operator->*(success, F&& f)
         , exceptions(exceptions)
     {}
     result(result&) = delete;
-    result(result&& rhs)
+    result(result&& rhs) noexcept(::cuda::std::is_nothrow_move_constructible_v<F>)
         : f(mv(rhs.f))
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}

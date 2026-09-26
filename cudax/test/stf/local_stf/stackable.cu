@@ -26,7 +26,7 @@ int main()
   int array[1024];
   for (size_t i = 0; i < 1024; i++)
   {
-    array[i] = 1 + i * i;
+    array[i] = static_cast<int>(1 + i * i);
   }
 
   auto lC = sctx.logical_data(array);
@@ -43,7 +43,7 @@ int main()
 
   /* Create nested graph */
   {
-    stackable_ctx::graph_scope_guard scope{sctx};
+    const stackable_ctx::graph_scope_guard scope{sctx};
 
     auto lB = sctx.logical_data(shape_of<slice<int>>(512));
     lB.set_symbol("B");
@@ -74,7 +74,7 @@ int main()
 
   // Do the same check in another graph
   {
-    stackable_ctx::graph_scope_guard scope{sctx};
+    const stackable_ctx::graph_scope_guard scope{sctx};
     lA2.push(access_mode::read);
     sctx.host_launch(lA2.read())->*[](auto a2) {
       for (size_t i = 0; i < a2.size(); i++)
