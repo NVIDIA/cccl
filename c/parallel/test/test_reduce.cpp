@@ -477,6 +477,82 @@ C2H_TEST("Reduce accumulator type is influenced by initial value", "[reduce]")
   REQUIRE(output == expected);
 }
 
+#ifndef CCCL_C_PARALLEL_V2
+// v1 generates a single JIT type named storage_t that stands in for both the
+// input item type and the accumulator, so the two must share a layout. v2
+// compiles real C++ types and has no cccl_device_reduce_compile at all.
+struct wide_pair
+{
+  float value;
+  int64_t index;
+}; // 16 bytes, 8-byte aligned
+
+struct narrow_pair
+{
+  float value;
+  int32_t index;
+}; // 8 bytes, 4-byte aligned
+
+C2H_TEST("Reduce compile rejects an input item type that does not match the accumulator layout", "[reduce]")
+{
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  operation_t op = make_operation("op",
+                                  R"(struct narrow_pair { float value; int index; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
+  narrow_pair* lhs = static_cast<narrow_pair*>(lhs_ptr);
+  narrow_pair* rhs = static_cast<narrow_pair*>(rhs_ptr);
+  *static_cast<narrow_pair*>(out_ptr) = lhs->value < rhs->value ? *lhs : *rhs;
+})");
+
+  pointer_t<wide_pair> input_ptr(1);
+  pointer_t<narrow_pair> output_ptr(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_ERROR_INVALID_VALUE
+    == cccl_device_reduce_build(
+      &build,
+      input_ptr,
+      output_ptr,
+      op,
+      get_type_info<narrow_pair>(),
+      cccl_init_kind_t::CCCL_VALUE_INIT,
+      CCCL_RUN_TO_RUN,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  // A primitive input has no conversion to the generated `storage_t`, so it
+  // must be rejected even when nothing about its size or alignment collides.
+  // int64_t is (8, 8) against narrow_pair's (8, 4): sizes equal and not less
+  // aligned, so only the primitive-type clause can reject this.
+  pointer_t<int64_t> primitive_input_ptr(1);
+
+  BuildResultT primitive_build{};
+  REQUIRE(
+    CUDA_ERROR_INVALID_VALUE
+    == cccl_device_reduce_build(
+      &primitive_build,
+      primitive_input_ptr,
+      output_ptr,
+      op,
+      get_type_info<narrow_pair>(),
+      cccl_init_kind_t::CCCL_VALUE_INIT,
+      CCCL_RUN_TO_RUN,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+}
+#endif // CCCL_C_PARALLEL_V2
+
 C2H_TEST("Reduce works with large inputs", "[reduce]")
 {
   const size_t num_items = 1ull << 33;
