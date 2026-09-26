@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
 
 import numpy as np
 
@@ -22,24 +22,52 @@ def is_device_array(obj: object) -> bool:
     return hasattr(obj, "__cuda_array_interface__")
 
 
+# Perf: This cache holds the pointer accessor functions for all types we have seen.
+# This avoids try..except chains or repeated attribute lookups for the same type.
+_DATA_POINTER_ACCESSOR_CACHE: dict[type, Callable[[DeviceArrayLike], int]] = {}
+
+
 def get_data_pointer(arr: DeviceArrayLike) -> int:
+    try:
+        accessor = _DATA_POINTER_ACCESSOR_CACHE[type(arr)]
+    except KeyError:
+        pass
+    else:
+        try:
+            return accessor(arr)
+        except AttributeError:
+            # If a cached accessor fails for this instance, evict it and fall back to full
+            # re-selection, so one inconsistent instance can't permanently break
+            # every other instance of the same type.
+            _DATA_POINTER_ACCESSOR_CACHE.pop(type(arr), None)
+
     # TODO: these are fast paths for CuPy and PyTorch until
     # we have a more general solution.
 
     # Fast path for PyTorch (arr.data_ptr())
     try:
-        return arr.data_ptr()  # type: ignore
+        ptr = arr.data_ptr()  # type: ignore
     except AttributeError:
         pass
+    else:
+        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data_ptr()
+        return ptr
 
     # Fast path for CuPy (arr.data.ptr)
     try:
-        return arr.data.ptr  # type: ignore
+        ptr = arr.data.ptr  # type: ignore
     except AttributeError:
         pass
+    else:
+        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data.ptr
+        return ptr
 
     # Fall back to __cuda_array_interface__
-    return arr.__cuda_array_interface__["data"][0]
+    ptr = arr.__cuda_array_interface__["data"][0]
+    _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.__cuda_array_interface__[
+        "data"
+    ][0]
+    return ptr
 
 
 def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
