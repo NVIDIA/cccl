@@ -808,17 +808,23 @@ struct AgentRle
       LengthOffsetPair warp_exclusive_in_tile;
       LengthOffsetPair thread_exclusive_in_warp;
 
-      if constexpr (is_streaming_invocation)
-      {
-        // If this is a streaming invocation, we need to incorporate the run-length of the previous partition's last run
-        if (!streaming_context.first_partition && threadIdx.x == 0)
-        {
-          lengths_and_num_runs[0].value += streaming_context.prefix();
-        }
-      }
-
       WarpScanAllocations(
         tile_aggregate, warp_aggregate, warp_exclusive_in_tile, thread_exclusive_in_warp, lengths_and_num_runs);
+
+      if constexpr (is_streaming_invocation)
+      {
+        // Seed the scan with the run-length of the previous partition's last run. Adding it to the first item instead
+        // loses it when that item starts a new run.
+        if (!streaming_context.first_partition)
+        {
+          LengthOffsetPair prefix;
+          prefix.key   = 0;
+          prefix.value = streaming_context.prefix();
+
+          warp_exclusive_in_tile = scan_op(prefix, warp_exclusive_in_tile);
+          tile_aggregate         = scan_op(prefix, tile_aggregate);
+        }
+      }
 
       // Update tile status if this is not the last tile
       if (!LastTile && (threadIdx.x == 0))
