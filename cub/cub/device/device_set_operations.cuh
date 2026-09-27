@@ -269,10 +269,8 @@ private:
     && ::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>;
 
 public:
-  //! @rst
-  //! Computes the set difference ``keys1 \ keys2`` of two sorted key sequences, writing the number of emitted keys to
-  //! ``d_num_selected_out``.
-  //! @endrst
+  //! Computes the set difference `keys1 \ keys2` of two sorted key sequences, writing the number of emitted keys to
+  //! `d_num_selected_out`.
   template <
     typename KeyIteratorIn1,
     typename KeyIteratorIn2,
@@ -282,7 +280,7 @@ public:
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t SetDifference(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetDifference(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -308,11 +306,9 @@ public:
       env);
   }
 
-  //! @rst
   //! Environment-based overload of @ref SetDifference that allocates the temporary storage from the memory resource
-  //! provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from
-  //! ``env``.
-  //! @endrst
+  //! provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also queried from
+  //! `env`.
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -336,10 +332,8 @@ public:
       d_keys_in1, num_keys1, d_keys_in2, num_keys2, d_keys_out, d_num_selected_out, compare_op, env);
   }
 
-  //! @rst
-  //! Computes the set intersection ``keys1 ∩ keys2`` of two sorted key sequences, writing the number of emitted keys to
-  //! ``d_num_selected_out``.
-  //! @endrst
+  //! Computes the set intersection `keys1 ∩ keys2` of two sorted key sequences, writing the number of emitted keys to
+  //! `d_num_selected_out`.
   template <
     typename KeyIteratorIn1,
     typename KeyIteratorIn2,
@@ -349,7 +343,7 @@ public:
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t SetIntersection(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetIntersection(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -375,11 +369,9 @@ public:
       env);
   }
 
-  //! @rst
   //! Environment-based overload of @ref SetIntersection that allocates the temporary storage from the memory resource
-  //! provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from
-  //! ``env``.
-  //! @endrst
+  //! provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also queried from
+  //! `env`.
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -403,10 +395,8 @@ public:
       d_keys_in1, num_keys1, d_keys_in2, num_keys2, d_keys_out, d_num_selected_out, compare_op, env);
   }
 
-  //! @rst
-  //! Computes the set symmetric difference ``keys1 △ keys2`` of two sorted key sequences, writing the number of emitted
-  //! keys to ``d_num_selected_out``.
-  //! @endrst
+  //! Computes the set symmetric difference `keys1 △ keys2` of two sorted key sequences, writing the number of emitted
+  //! keys to `d_num_selected_out`.
   template <
     typename KeyIteratorIn1,
     typename KeyIteratorIn2,
@@ -416,7 +406,7 @@ public:
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifference(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifference(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -442,11 +432,9 @@ public:
       env);
   }
 
-  //! @rst
   //! Environment-based overload of @ref SetSymmetricDifference that allocates the temporary storage from the memory
-  //! resource provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also
-  //! queried from ``env``.
-  //! @endrst
+  //! resource provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also
+  //! queried from `env`.
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -470,10 +458,8 @@ public:
       d_keys_in1, num_keys1, d_keys_in2, num_keys2, d_keys_out, d_num_selected_out, compare_op, env);
   }
 
-  //! @rst
-  //! Computes the set union ``keys1 ∪ keys2`` of two sorted key sequences, writing the number of emitted keys to
-  //! ``d_num_selected_out``.
-  //! @endrst
+  //! Computes the set union `keys1 ∪ keys2` of two sorted key sequences, writing the number of emitted keys to
+  //! `d_num_selected_out`.
   template <
     typename KeyIteratorIn1,
     typename KeyIteratorIn2,
@@ -483,7 +469,7 @@ public:
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t SetUnion(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetUnion(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -509,10 +495,8 @@ public:
       env);
   }
 
-  //! @rst
   //! Environment-based overload of @ref SetUnion that allocates the temporary storage from the memory resource provided
-  //! by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from ``env``.
-  //! @endrst
+  //! by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also queried from `env`.
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -536,10 +520,8 @@ public:
       d_keys_in1, num_keys1, d_keys_in2, num_keys2, d_keys_out, d_num_selected_out, compare_op, env);
   }
 
-  //! @rst
   //! Key-value variant of @ref SetDifference. Keys present in the output are accompanied by the value from the first
   //! input sequence.
-  //! @endrst
   template <
     typename KeyIteratorIn1,
     typename ValueIteratorIn1,
@@ -552,7 +534,7 @@ public:
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t SetDifferencePairs(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetDifferencePairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -584,12 +566,10 @@ public:
       env);
   }
 
-  //! @rst
   //! Environment-based overload of @ref SetDifferencePairs that allocates the temporary storage from the memory
-  //! resource provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also
+  //! resource provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also
   //! queried from
-  //! ``env``.
-  //! @endrst
+  //! `env`.
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -629,10 +609,8 @@ public:
       env);
   }
 
-  //! @rst
   //! Key-value variant of @ref SetIntersection. Keys present in the output are accompanied by the value from the first
   //! input sequence.
-  //! @endrst
   template <
     typename KeyIteratorIn1,
     typename ValueIteratorIn1,
@@ -645,7 +623,7 @@ public:
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t SetIntersectionPairs(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetIntersectionPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -677,11 +655,9 @@ public:
       env);
   }
 
-  //! @rst
   //! Environment-based overload of @ref SetIntersectionPairs that allocates the temporary storage from the memory
-  //! resource provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also
-  //! queried from ``env``.
-  //! @endrst
+  //! resource provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also
+  //! queried from `env`.
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -721,10 +697,8 @@ public:
       env);
   }
 
-  //! @rst
   //! Key-value variant of @ref SetSymmetricDifference. Keys taken from the first input carry the value from the first
   //! input; keys taken from the second input carry the value from the second input.
-  //! @endrst
   template <
     typename KeyIteratorIn1,
     typename ValueIteratorIn1,
@@ -737,7 +711,7 @@ public:
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifferencePairs(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifferencePairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -769,11 +743,9 @@ public:
       env);
   }
 
-  //! @rst
   //! Environment-based overload of @ref SetSymmetricDifferencePairs that allocates the temporary storage from the
-  //! memory resource provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are
-  //! also queried from ``env``.
-  //! @endrst
+  //! memory resource provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are
+  //! also queried from `env`.
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -813,9 +785,7 @@ public:
       env);
   }
 
-  //! @rst
   //! Key-value variant of @ref SetUnion. In case of a tie, the key and value are taken from the first input sequence.
-  //! @endrst
   template <
     typename KeyIteratorIn1,
     typename ValueIteratorIn1,
@@ -828,7 +798,7 @@ public:
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t SetUnionPairs(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetUnionPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -860,11 +830,9 @@ public:
       env);
   }
 
-  //! @rst
   //! Environment-based overload of @ref SetUnionPairs that allocates the temporary storage from the memory resource
-  //! provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from
-  //! ``env``.
-  //! @endrst
+  //! provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also queried from
+  //! `env`.
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
