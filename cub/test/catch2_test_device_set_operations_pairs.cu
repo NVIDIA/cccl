@@ -68,7 +68,9 @@ void test_pairs(LaunchT launch, StdOp std_op, bool values_from_first_input_only)
          size2,
          thrust::raw_pointer_cast(keys_out_d.data()),
          thrust::raw_pointer_cast(values_out_d.data()),
-         thrust::raw_pointer_cast(num_selected_d.data()));
+         thrust::raw_pointer_cast(num_selected_d.data()),
+         // pass the comparator explicitly so the stream argument injected under graph capture lines up
+         cuda::std::less<>{});
 
   c2h::host_vector<key_t> reference_keys;
   std_op(keys1_h.begin(), keys1_h.end(), keys2_h.begin(), keys2_h.end(), std::back_inserter(reference_keys));

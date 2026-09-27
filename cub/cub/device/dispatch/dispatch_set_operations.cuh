@@ -98,7 +98,6 @@ __launch_bounds__(
     const ::cuda::std::pair<Offset, Offset>* partitions,
     NumSelectedIteratorT d_num_selected_out,
     ScanTileState<Offset> tile_state,
-    Offset num_tiles,
     vsmem_t global_temp_storage)
 {
   using SetOpPolicyT =
@@ -135,8 +134,7 @@ __launch_bounds__(
     compare_op,
     set_op,
     partitions,
-    d_num_selected_out,
-    num_tiles};
+    d_num_selected_out};
   agent();
 
   vsmem_helper_t::discard_temp_storage(storage);
@@ -314,7 +312,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                 partitions,
                 d_num_selected_out,
                 tile_state,
-                num_tiles,
                 vsmem_t{allocations[2]})))
       {
         return error;

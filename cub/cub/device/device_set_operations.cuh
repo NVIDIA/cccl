@@ -273,13 +273,15 @@ public:
   //! Computes the set difference ``keys1 \ keys2`` of two sorted key sequences, writing the number of emitted keys to
   //! ``d_num_selected_out``.
   //! @endrst
-  template <typename KeyIteratorIn1,
-            typename KeyIteratorIn2,
-            typename KeyIteratorOut,
-            typename NumSelectedIteratorT,
-            typename OffsetT,
-            typename CompareOp = ::cuda::std::less<>,
-            typename EnvT      = ::cuda::std::execution::env<>>
+  template <
+    typename KeyIteratorIn1,
+    typename KeyIteratorIn2,
+    typename KeyIteratorOut,
+    typename NumSelectedIteratorT,
+    typename OffsetT,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SetDifference(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -338,13 +340,15 @@ public:
   //! Computes the set intersection ``keys1 ∩ keys2`` of two sorted key sequences, writing the number of emitted keys to
   //! ``d_num_selected_out``.
   //! @endrst
-  template <typename KeyIteratorIn1,
-            typename KeyIteratorIn2,
-            typename KeyIteratorOut,
-            typename NumSelectedIteratorT,
-            typename OffsetT,
-            typename CompareOp = ::cuda::std::less<>,
-            typename EnvT      = ::cuda::std::execution::env<>>
+  template <
+    typename KeyIteratorIn1,
+    typename KeyIteratorIn2,
+    typename KeyIteratorOut,
+    typename NumSelectedIteratorT,
+    typename OffsetT,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SetIntersection(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -403,13 +407,15 @@ public:
   //! Computes the set symmetric difference ``keys1 △ keys2`` of two sorted key sequences, writing the number of emitted
   //! keys to ``d_num_selected_out``.
   //! @endrst
-  template <typename KeyIteratorIn1,
-            typename KeyIteratorIn2,
-            typename KeyIteratorOut,
-            typename NumSelectedIteratorT,
-            typename OffsetT,
-            typename CompareOp = ::cuda::std::less<>,
-            typename EnvT      = ::cuda::std::execution::env<>>
+  template <
+    typename KeyIteratorIn1,
+    typename KeyIteratorIn2,
+    typename KeyIteratorOut,
+    typename NumSelectedIteratorT,
+    typename OffsetT,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifference(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -468,13 +474,15 @@ public:
   //! Computes the set union ``keys1 ∪ keys2`` of two sorted key sequences, writing the number of emitted keys to
   //! ``d_num_selected_out``.
   //! @endrst
-  template <typename KeyIteratorIn1,
-            typename KeyIteratorIn2,
-            typename KeyIteratorOut,
-            typename NumSelectedIteratorT,
-            typename OffsetT,
-            typename CompareOp = ::cuda::std::less<>,
-            typename EnvT      = ::cuda::std::execution::env<>>
+  template <
+    typename KeyIteratorIn1,
+    typename KeyIteratorIn2,
+    typename KeyIteratorOut,
+    typename NumSelectedIteratorT,
+    typename OffsetT,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SetUnion(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -532,16 +540,18 @@ public:
   //! Key-value variant of @ref SetDifference. Keys present in the output are accompanied by the value from the first
   //! input sequence.
   //! @endrst
-  template <typename KeyIteratorIn1,
-            typename ValueIteratorIn1,
-            typename KeyIteratorIn2,
-            typename ValueIteratorIn2,
-            typename KeyIteratorOut,
-            typename ValueIteratorOut,
-            typename NumSelectedIteratorT,
-            typename OffsetT,
-            typename CompareOp = ::cuda::std::less<>,
-            typename EnvT      = ::cuda::std::execution::env<>>
+  template <
+    typename KeyIteratorIn1,
+    typename ValueIteratorIn1,
+    typename KeyIteratorIn2,
+    typename ValueIteratorIn2,
+    typename KeyIteratorOut,
+    typename ValueIteratorOut,
+    typename NumSelectedIteratorT,
+    typename OffsetT,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SetDifferencePairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -623,16 +633,18 @@ public:
   //! Key-value variant of @ref SetIntersection. Keys present in the output are accompanied by the value from the first
   //! input sequence.
   //! @endrst
-  template <typename KeyIteratorIn1,
-            typename ValueIteratorIn1,
-            typename KeyIteratorIn2,
-            typename ValueIteratorIn2,
-            typename KeyIteratorOut,
-            typename ValueIteratorOut,
-            typename NumSelectedIteratorT,
-            typename OffsetT,
-            typename CompareOp = ::cuda::std::less<>,
-            typename EnvT      = ::cuda::std::execution::env<>>
+  template <
+    typename KeyIteratorIn1,
+    typename ValueIteratorIn1,
+    typename KeyIteratorIn2,
+    typename ValueIteratorIn2,
+    typename KeyIteratorOut,
+    typename ValueIteratorOut,
+    typename NumSelectedIteratorT,
+    typename OffsetT,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SetIntersectionPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -713,16 +725,18 @@ public:
   //! Key-value variant of @ref SetSymmetricDifference. Keys taken from the first input carry the value from the first
   //! input; keys taken from the second input carry the value from the second input.
   //! @endrst
-  template <typename KeyIteratorIn1,
-            typename ValueIteratorIn1,
-            typename KeyIteratorIn2,
-            typename ValueIteratorIn2,
-            typename KeyIteratorOut,
-            typename ValueIteratorOut,
-            typename NumSelectedIteratorT,
-            typename OffsetT,
-            typename CompareOp = ::cuda::std::less<>,
-            typename EnvT      = ::cuda::std::execution::env<>>
+  template <
+    typename KeyIteratorIn1,
+    typename ValueIteratorIn1,
+    typename KeyIteratorIn2,
+    typename ValueIteratorIn2,
+    typename KeyIteratorOut,
+    typename ValueIteratorOut,
+    typename NumSelectedIteratorT,
+    typename OffsetT,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifferencePairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -802,16 +816,18 @@ public:
   //! @rst
   //! Key-value variant of @ref SetUnion. In case of a tie, the key and value are taken from the first input sequence.
   //! @endrst
-  template <typename KeyIteratorIn1,
-            typename ValueIteratorIn1,
-            typename KeyIteratorIn2,
-            typename ValueIteratorIn2,
-            typename KeyIteratorOut,
-            typename ValueIteratorOut,
-            typename NumSelectedIteratorT,
-            typename OffsetT,
-            typename CompareOp = ::cuda::std::less<>,
-            typename EnvT      = ::cuda::std::execution::env<>>
+  template <
+    typename KeyIteratorIn1,
+    typename ValueIteratorIn1,
+    typename KeyIteratorIn2,
+    typename ValueIteratorIn2,
+    typename KeyIteratorOut,
+    typename ValueIteratorOut,
+    typename NumSelectedIteratorT,
+    typename OffsetT,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SetUnionPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
