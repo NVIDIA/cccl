@@ -14,7 +14,6 @@
 #endif // no system header
 
 #include <cub/agent/single_pass_scan_operators.cuh> // ScanTileState, TilePrefixCallbackOp
-#include <cub/block/block_merge_sort.cuh> // cub::MergePath
 #include <cub/block/block_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
@@ -38,11 +37,48 @@ template <bool UpperBound, typename IntT, typename Offset, typename It, typename
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 binary_search_iteration(It data, Offset& begin, Offset& end, T key, int shift, CompareOp compare_op)
 {
-  const IntT scale     = (IntT{1} << shift) - 1;
-  const Offset mid     = (begin + scale * end) >> shift;
-  const T key2         = data[mid];
-  const bool pred      = UpperBound ? !compare_op(key, key2) : compare_op(key2, key);
-  (pred ? begin : end) = pred ? mid + 1 : mid;
+  const IntT scale = (IntT{1} << shift) - 1;
+  const Offset mid = (begin + scale * end) >> shift;
+  const T key2     = data[mid];
+  const bool pred  = UpperBound ? !compare_op(key, key2) : compare_op(key2, key);
+  if (pred)
+  {
+    begin = mid + 1;
+  }
+  else
+  {
+    end = mid;
+  }
+}
+
+// Intersects the diagonal @p diag with the (lower- or upper-bound) merge path of two sorted sequences. Returns the
+// number of elements taken from the first sequence; the number taken from the second is @p diag minus the result.
+template <bool UpperBound, typename Offset, typename It1, typename It2, typename CompareOp>
+_CCCL_DEVICE _CCCL_FORCEINLINE Offset
+merge_path(It1 a, Offset a_count, It2 b, Offset b_count, Offset diag, CompareOp compare_op)
+{
+  using key_t  = it_value_t<It1>;
+  Offset begin = (::cuda::std::max) (Offset{0}, diag - b_count);
+  Offset end   = (::cuda::std::min) (diag, a_count);
+  while (begin < end)
+  {
+    // FIXME(set-ops): this midpoint can overflow for very large ranges and should use an overflow-safe form such as
+    // cub::MidPoint (begin + (end - begin) / 2). It is kept as `(begin + end) >> 1` to match the SASS of the original
+    // Thrust implementation; switching to the safe form introduces SASS changes.
+    const Offset mid  = (begin + end) >> 1;
+    const key_t a_key = a[mid];
+    const key_t b_key = b[diag - 1 - mid];
+    const bool pred   = UpperBound ? compare_op(a_key, b_key) : !compare_op(b_key, a_key);
+    if (pred)
+    {
+      begin = mid + 1;
+    }
+    else
+    {
+      end = mid;
+    }
+  }
+  return begin;
 }
 
 // Unbiased binary search returning the number of elements in [0, count) ordered before @p key (lower bound) or not
@@ -92,18 +128,17 @@ biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compar
   return begin;
 }
 
-//! Duplicate-aware variant of the merge path. In addition to intersecting the diagonal @p diag with the merge path
-//! (like @ref cub::MergePath), it evenly distributes runs of equal keys between the two input sequences so that set
-//! operations observe consistent multiplicities. Returns the pair (index into @p keys1, index into @p keys2); the
-//! second component may be incremented by one (the "star") to break ties on the boundary of an equal-key run.
+//! Duplicate-aware variant of the merge path. In addition to intersecting the diagonal @p diag with the merge path, it
+//! evenly distributes runs of equal keys between the two input sequences so that set operations observe consistent
+//! multiplicities. Returns the pair (index into @p keys1, index into @p keys2); the second component may be incremented
+//! by one (the "star") to break ties on the boundary of an equal-key run.
 template <typename It1, typename It2, typename Offset, typename IntT, typename CompareOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset>
 balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, IntT levels, CompareOp compare_op)
 {
   using key_t = it_value_t<It1>;
 
-  // cub::MergePath computes the lower-bound merge path (it advances keys1 whenever !compare(keys2, keys1)).
-  Offset index1 = cub::MergePath(keys1, keys2, num_keys1, num_keys2, diag, compare_op);
+  Offset index1 = merge_path<false>(keys1, num_keys1, keys2, num_keys2, diag, compare_op);
   Offset index2 = diag - index1;
 
   bool star = false;
@@ -464,7 +499,6 @@ struct agent_set_op
   SetOp set_op;
   const ::cuda::std::pair<Offset, Offset>* partitions;
   NumSelectedIteratorT output_count;
-  Offset num_tiles;
 
   //---------------------------------------------------------------------
   // Utility functions
@@ -679,7 +713,8 @@ struct agent_set_op
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
   {
-    const Offset tile_idx = static_cast<Offset>(blockIdx.x);
+    const int tile_idx  = static_cast<int>(blockIdx.x);
+    const int num_tiles = static_cast<int>(gridDim.x);
     if (tile_idx < num_tiles - 1)
     {
       consume_tile<false>(tile_idx);

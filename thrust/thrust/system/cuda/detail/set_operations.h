@@ -27,8 +27,6 @@
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/__cmath/round_up.h>
-#  include <cuda/__stream/get_stream.h>
-#  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -42,9 +40,9 @@ namespace detail
 {
 // Runs a cub::DeviceSetOps algorithm and returns the past-the-end output iterators. The specific operation (and whether
 // it is keys-only or key-value) is fully described by @p cub_device_api, which is invoked as
-// `cub_device_api(d_temp_storage, temp_storage_bytes, num_keys1, num_keys2, env, d_num_selected)`; this helper owns the
-// shared temporary-storage allocation, output-count read-back, and iterator advancement. The offset type passed to the
-// CUB API is selected dynamically (32 vs 64 bit) from the input sizes via THRUST_DOUBLE_INDEX_TYPE_DISPATCH.
+// `cub_device_api(d_temp_storage, temp_storage_bytes, num_keys1, num_keys2, stream, d_num_selected)`; this helper owns
+// the shared temporary-storage allocation, output-count read-back, and iterator advancement. The offset type passed to
+// the CUB API is selected dynamically (32 vs 64 bit) from the input sizes via THRUST_DOUBLE_INDEX_TYPE_DISPATCH.
 template <typename Derived,
           typename KeysIt1,
           typename KeysIt2,
@@ -63,9 +61,9 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
 {
   using diff_t = thrust::detail::it_difference_t<KeysOutputIt>;
 
-  const auto num_keys1 = ::cuda::std::distance(keys1_first, keys1_last);
-  const auto num_keys2 = ::cuda::std::distance(keys2_first, keys2_last);
-  const auto env       = ::cuda::std::execution::env{::cuda::stream_ref{cuda_cub::stream(policy)}};
+  const auto num_keys1      = ::cuda::std::distance(keys1_first, keys1_last);
+  const auto num_keys2      = ::cuda::std::distance(keys2_first, keys2_last);
+  const cudaStream_t stream = cuda_cub::stream(policy);
 
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
@@ -76,7 +74,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
     cub_device_api,
     num_keys1,
     num_keys2,
-    (nullptr, temp_storage_bytes, num_keys1_fixed, num_keys2_fixed, env, static_cast<diff_t*>(nullptr)));
+    (nullptr, temp_storage_bytes, num_keys1_fixed, num_keys2_fixed, stream, static_cast<diff_t*>(nullptr)));
   cuda_cub::throw_on_error(status, "set_operations failed on 1st step");
 
   // Allocate the algorithm's temporary storage followed by a single slot holding the output count in one allocation.
@@ -91,7 +89,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
     cub_device_api,
     num_keys1,
     num_keys2,
-    (static_cast<void*>(tmp.data().get()), temp_storage_bytes, num_keys1_fixed, num_keys2_fixed, env, d_num_selected));
+    (static_cast<void*>(tmp.data().get()), temp_storage_bytes, num_keys1_fixed, num_keys2_fixed, stream, d_num_selected));
   cuda_cub::throw_on_error(status, "set_operations failed on 2nd step");
   cuda_cub::throw_on_error(cuda_cub::synchronize(policy), "set_operations failed to synchronize");
 
@@ -127,9 +125,9 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
         items2_last,
         result,
         null_,
-        [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, const auto& env, auto* d_count) {
+        [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
           return cub::DeviceSetOps::SetDifference(
-            d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, env);
+            d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, stream);
         });
       result = tmp.first;
     }),
@@ -179,9 +177,9 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
         items2_last,
         result,
         null_,
-        [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, const auto& env, auto* d_count) {
+        [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
           return cub::DeviceSetOps::SetIntersection(
-            d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, env);
+            d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, stream);
         });
       result = tmp.first;
     }),
@@ -231,9 +229,9 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
         items2_last,
         result,
         null_,
-        [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, const auto& env, auto* d_count) {
+        [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
           return cub::DeviceSetOps::SetSymmetricDifference(
-            d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, env);
+            d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, stream);
         });
       result = tmp.first;
     }),
@@ -283,9 +281,9 @@ OutputIt _CCCL_HOST_DEVICE set_union(
         items2_last,
         result,
         null_,
-        [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, const auto& env, auto* d_count) {
+        [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
           return cub::DeviceSetOps::SetUnion(
-            d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, env);
+            d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, stream);
         });
       result = tmp.first;
     }),
@@ -349,7 +347,7 @@ template <class Derived,
                           keys2_last,
                           keys_result,
                           items_result,
-                          [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, const auto& env, auto* d_count) {
+                          [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
                             return cub::DeviceSetOps::SetDifferencePairs(
                               d_temp,
                               temp_bytes,
@@ -363,7 +361,7 @@ template <class Derived,
                               items_result,
                               d_count,
                               compare_op,
-                              env);
+                              stream);
                           });
                       }),
                       ({
@@ -440,7 +438,7 @@ template <class Derived,
                           keys2_last,
                           keys_result,
                           items_result,
-                          [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, const auto& env, auto* d_count) {
+                          [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
                             return cub::DeviceSetOps::SetIntersectionPairs(
                               d_temp,
                               temp_bytes,
@@ -454,7 +452,7 @@ template <class Derived,
                               items_result,
                               d_count,
                               compare_op,
-                              env);
+                              stream);
                           });
                       }),
                       ({
@@ -529,7 +527,7 @@ template <class Derived,
                           keys2_last,
                           keys_result,
                           items_result,
-                          [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, const auto& env, auto* d_count) {
+                          [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
                             return cub::DeviceSetOps::SetSymmetricDifferencePairs(
                               d_temp,
                               temp_bytes,
@@ -543,7 +541,7 @@ template <class Derived,
                               items_result,
                               d_count,
                               compare_op,
-                              env);
+                              stream);
                           });
                       }),
                       ({
@@ -621,7 +619,7 @@ template <class Derived,
                           keys2_last,
                           keys_result,
                           items_result,
-                          [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, const auto& env, auto* d_count) {
+                          [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
                             return cub::DeviceSetOps::SetUnionPairs(
                               d_temp,
                               temp_bytes,
@@ -635,7 +633,7 @@ template <class Derived,
                               items_result,
                               d_count,
                               compare_op,
-                              env);
+                              stream);
                           });
                       }),
                       ({
