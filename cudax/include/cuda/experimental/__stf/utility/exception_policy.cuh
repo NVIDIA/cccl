@@ -929,7 +929,9 @@ struct capture_t
         bool __stored = false;
         _CCCL_TRY
         {
-          __t      = static_cast<const _Held&>(*__e);
+          // dynamic_cast, not static_cast: the exact-type check above guarantees success, and
+          // unlike static_cast it is well-formed when std::exception is a virtual base of _Held.
+          __t      = dynamic_cast<const _Held&>(*__e);
           __stored = true;
         }
         _CCCL_CATCH_ALL
@@ -4341,6 +4343,23 @@ UNITTEST("capture")
     EXPECT(v == -3);
     EXPECT(::std::string_view{err.what()} == "unset");
     EXPECT(!!last);
+  }
+  // ...and a type with std::exception as a VIRTUAL base stores too (static_cast could not
+  // downcast across a virtual base; the typed path uses dynamic_cast).
+  {
+    struct virt_error : virtual ::std::exception
+    {
+      explicit virt_error(int c)
+          : code(c)
+      {}
+      int code;
+    };
+    virt_error err{0};
+    const int v = on_throw(capture(&err) & subst(-4)) << []() -> int {
+      throw virt_error{42};
+    };
+    EXPECT(v == -4);
+    EXPECT(err.code == 42);
   }
   // shared_ptr form shares one target across policy copies.
   {
