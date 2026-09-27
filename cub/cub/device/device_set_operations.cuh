@@ -306,9 +306,20 @@ public:
       env);
   }
 
+  //! @rst
   //! Environment-based overload of @ref SetDifference that allocates the temporary storage from the memory resource
-  //! provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also queried from
-  //! `env`.
+  //! provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from
+  //! ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-difference-env
+  //!     :end-before: example-end set-difference-env
+  //!
+  //! @endrst
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -369,9 +380,20 @@ public:
       env);
   }
 
+  //! @rst
   //! Environment-based overload of @ref SetIntersection that allocates the temporary storage from the memory resource
-  //! provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also queried from
-  //! `env`.
+  //! provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from
+  //! ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-intersection-env
+  //!     :end-before: example-end set-intersection-env
+  //!
+  //! @endrst
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -432,9 +454,20 @@ public:
       env);
   }
 
+  //! @rst
   //! Environment-based overload of @ref SetSymmetricDifference that allocates the temporary storage from the memory
-  //! resource provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also
-  //! queried from `env`.
+  //! resource provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also
+  //! queried from ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-symmetric-difference-env
+  //!     :end-before: example-end set-symmetric-difference-env
+  //!
+  //! @endrst
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -495,8 +528,19 @@ public:
       env);
   }
 
+  //! @rst
   //! Environment-based overload of @ref SetUnion that allocates the temporary storage from the memory resource provided
-  //! by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also queried from `env`.
+  //! by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-union-env
+  //!     :end-before: example-end set-union-env
+  //!
+  //! @endrst
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -566,10 +610,21 @@ public:
       env);
   }
 
+  //! @rst
   //! Environment-based overload of @ref SetDifferencePairs that allocates the temporary storage from the memory
-  //! resource provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also
+  //! resource provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also
   //! queried from
-  //! `env`.
+  //! ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-difference-pairs-env
+  //!     :end-before: example-end set-difference-pairs-env
+  //!
+  //! @endrst
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -655,9 +710,20 @@ public:
       env);
   }
 
+  //! @rst
   //! Environment-based overload of @ref SetIntersectionPairs that allocates the temporary storage from the memory
-  //! resource provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also
-  //! queried from `env`.
+  //! resource provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also
+  //! queried from ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-intersection-pairs-env
+  //!     :end-before: example-end set-intersection-pairs-env
+  //!
+  //! @endrst
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -743,9 +809,20 @@ public:
       env);
   }
 
+  //! @rst
   //! Environment-based overload of @ref SetSymmetricDifferencePairs that allocates the temporary storage from the
-  //! memory resource provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are
-  //! also queried from `env`.
+  //! memory resource provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are
+  //! also queried from ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-symmetric-difference-pairs-env
+  //!     :end-before: example-end set-symmetric-difference-pairs-env
+  //!
+  //! @endrst
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -830,9 +907,20 @@ public:
       env);
   }
 
+  //! @rst
   //! Environment-based overload of @ref SetUnionPairs that allocates the temporary storage from the memory resource
-  //! provided by `env` (default: `cuda::mr::device_memory_resource`). The stream and tuning are also queried from
-  //! `env`.
+  //! provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from
+  //! ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-union-pairs-env
+  //!     :end-before: example-end set-union-pairs-env
+  //!
+  //! @endrst
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
