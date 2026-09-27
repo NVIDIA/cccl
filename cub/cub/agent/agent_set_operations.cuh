@@ -588,19 +588,23 @@ struct agent_set_op
     const ::cuda::std::pair<Offset, Offset> partition_beg = partitions[tile_idx + 0];
     const ::cuda::std::pair<Offset, Offset> partition_end = partitions[tile_idx + 1];
 
-    const int num_keys1 = static_cast<int>(partition_end.first - partition_beg.first);
-    const int num_keys2 = static_cast<int>(partition_end.second - partition_beg.second);
+    const Offset keys1_beg = partition_beg.first;
+    const Offset keys1_end = partition_end.first;
+    const Offset keys2_beg = partition_beg.second;
+    const Offset keys2_end = partition_end.second;
+
+    const int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
+    const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
     // Load both key ranges into shared memory, laid out as [keys1 | keys2].
     const auto keys1_load = detail::try_make_cache_modified_iterator<LOAD_MODIFIER>(keys1_in);
     const auto keys2_load = detail::try_make_cache_modified_iterator<LOAD_MODIFIER>(keys2_in);
     key_type keys_loc[ITEMS_PER_THREAD];
-    gmem_to_reg<!IsLastTile>(
-      keys_loc, keys1_load + partition_beg.first, keys2_load + partition_beg.second, num_keys1, num_keys2);
+    gmem_to_reg<!IsLastTile>(keys_loc, keys1_load + keys1_beg, keys2_load + keys2_beg, num_keys1, num_keys2);
     reg_to_shared(&storage.load_storage.keys_shared[0], keys_loc);
     __syncthreads();
 
-    const int diag_loc = (::cuda::std::min) (ITEMS_PER_THREAD * static_cast<int>(threadIdx.x), num_keys1 + num_keys2);
+    const int diag_loc = (::cuda::std::min<int>) (ITEMS_PER_THREAD * threadIdx.x, num_keys1 + num_keys2);
 
     const ::cuda::std::pair<int, int> partition_loc = balanced_path(
       &storage.load_storage.keys_shared[0],
@@ -679,8 +683,7 @@ struct agent_set_op
       const auto values1_load = detail::try_make_cache_modified_iterator<LOAD_MODIFIER>(values1_in);
       const auto values2_load = detail::try_make_cache_modified_iterator<LOAD_MODIFIER>(values2_in);
       value_type values_loc[ITEMS_PER_THREAD];
-      gmem_to_reg<!IsLastTile>(
-        values_loc, values1_load + partition_beg.first, values2_load + partition_beg.second, num_keys1, num_keys2);
+      gmem_to_reg<!IsLastTile>(values_loc, values1_load + keys1_beg, values2_load + keys2_beg, num_keys1, num_keys2);
       __syncthreads();
 
       reg_to_shared(&storage.load_storage.values_shared[0], values_loc);
