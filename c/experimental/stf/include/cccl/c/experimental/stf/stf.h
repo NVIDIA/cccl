@@ -94,6 +94,52 @@ typedef enum stf_access_mode
 
 //! \}
 
+//! \defgroup Errors Error reporting
+//! \brief How failures cross the C boundary.
+//!
+//! The library is implemented in C++ and reports failures with exceptions. No exception ever
+//! leaves an \c stf_* entry point: each entry catches, records the failure for the calling
+//! thread, and returns a failure value. The failure value is \c NULL for handle- and
+//! pointer-returning entries, an \c stf_error_t code for entries that have no other result, and
+//! a documented sentinel otherwise.
+//!
+//! Every entry resets the calling thread's last error to \c STF_SUCCESS when it starts, so after
+//! a call whose failure value is ambiguous (for example a predicate returning 0), callers can
+//! consult stf_get_last_error() to tell "no" from "failed".
+//! \{
+
+//! \brief Failure category recorded by an \c stf_* entry point.
+//!
+//! The category is derived from the C++ exception type; stf_get_last_error_message() has the
+//! exception's full text.
+typedef enum stf_error_t
+{
+  STF_SUCCESS                = 0, //!< No failure
+  STF_ERROR_INVALID_ARGUMENT = 1, //!< A precondition on an argument was violated (\c std::invalid_argument, \c
+                                  //!< std::out_of_range, \c std::domain_error)
+  STF_ERROR_CUDA = 2, //!< A CUDA runtime or driver call failed (\c cuda_exception); the runtime's pending error is
+                      //!< consumed
+  STF_ERROR_OUT_OF_MEMORY = 3, //!< Host allocation failed (\c std::bad_alloc)
+  STF_ERROR_RUNTIME       = 4, //!< Any other \c std::exception
+  STF_ERROR_UNKNOWN       = 5 //!< An exception not derived from \c std::exception
+} stf_error_t;
+
+//! \brief Category of the last failure recorded on the calling thread, or \c STF_SUCCESS.
+//!
+//! Reset to \c STF_SUCCESS at the start of every \c stf_* entry point.
+stf_error_t stf_get_last_error(void);
+
+//! \brief Message of the last failure recorded on the calling thread; the empty string if none.
+//!
+//! The pointer is owned by the library and stays valid until the next failing \c stf_* call on
+//! this thread (or stf_clear_last_error()). Copy it if it must outlive that.
+const char* stf_get_last_error_message(void);
+
+//! \brief Reset the calling thread's last error to \c STF_SUCCESS with an empty message.
+void stf_clear_last_error(void);
+
+//! \}
+
 //! \defgroup Places Opaque execution and data places
 //! \brief Heap-allocated handles wrapping C++ \c exec_place and \c data_place.
 //! Callers own handles: every successful \c stf_*_place_* factory or \c *_clone allocates;
@@ -168,7 +214,7 @@ stf_exec_place_handle stf_exec_place_current_device(void);
 //! green contexts converted with cuCtxFromGreenCtx (such as the ones produced by
 //! cuda.core in Python). \p dev_id is the device ordinal of the context, or -1 to
 //! derive it from the context. \p ctx must not be NULL. Returns NULL on failure
-//! (invalid context, allocation failure), with a diagnostic printed to stderr.
+//! (invalid device, allocation failure); see stf_get_last_error_message().
 stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id);
 
 //! \brief Create a green-context helper for \p dev_id with \p sm_count SMs per green context.
@@ -176,7 +222,7 @@ stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id);
 stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id);
 
 //! \brief Destroy a green-context helper handle.
-void stf_green_context_helper_destroy(stf_green_context_helper_handle h);
+stf_error_t stf_green_context_helper_destroy(stf_green_context_helper_handle h);
 
 //! \brief Number of green contexts created by \p h.
 size_t stf_green_context_helper_get_count(stf_green_context_helper_handle h);
@@ -188,7 +234,7 @@ int stf_green_context_helper_get_device_id(stf_green_context_helper_handle h);
 stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h);
 
 //! \brief Release an execution place handle (including grids from stf_exec_place_grid_*).
-void stf_exec_place_destroy(stf_exec_place_handle h);
+stf_error_t stf_exec_place_destroy(stf_exec_place_handle h);
 
 //! \return Non-zero if this place is host execution.
 int stf_exec_place_is_host(stf_exec_place_handle h);
@@ -197,13 +243,13 @@ int stf_exec_place_is_host(stf_exec_place_handle h);
 int stf_exec_place_is_device(stf_exec_place_handle h);
 
 //! \brief Writes grid dimensions into \p out_dims (all scalars are 1x1x1x1 for non-grid places).
-void stf_exec_place_get_dims(stf_exec_place_handle h, stf_dim4* out_dims);
+stf_error_t stf_exec_place_get_dims(stf_exec_place_handle h, stf_dim4* out_dims);
 
 //! \brief Number of sub-places in the grid (1 for scalar places).
 size_t stf_exec_place_size(stf_exec_place_handle h);
 
 //! \brief Sets the affine data place used when logical data uses affine placement with this exec grid.
-void stf_exec_place_set_affine_data_place(stf_exec_place_handle h, stf_data_place_handle affine_dplace);
+stf_error_t stf_exec_place_set_affine_data_place(stf_exec_place_handle h, stf_data_place_handle affine_dplace);
 
 //! \brief Build a grid of device execution places from device IDs (one scalar place per ID).
 stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count);
@@ -229,16 +275,17 @@ stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, co
 stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis);
 
 //! \brief Same as stf_exec_place_destroy (grids are exec_place handles).
-void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
+stf_error_t stf_exec_place_grid_destroy(stf_exec_place_handle grid);
 
 //! \brief Activate the sub-place at linear index \p idx (0 for scalar places).
 //! Saves the current CUDA context; call stf_exec_place_scope_exit to restore.
-//! \return Opaque scope handle, or NULL on failure (including when \p idx is out of bounds).
+//! \return Opaque scope handle, or NULL on failure (including when \p idx is out of bounds,
+//!         reported as \c STF_ERROR_INVALID_ARGUMENT).
 stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle place, size_t idx);
 
 //! \brief Restore the CUDA context saved by stf_exec_place_scope_enter and destroy the scope.
 //! \p scope may be NULL (no-op).
-void stf_exec_place_scope_exit(stf_exec_place_scope_handle scope);
+stf_error_t stf_exec_place_scope_exit(stf_exec_place_scope_handle scope);
 
 //! \brief Get the affine data_place associated with this exec_place.
 //! Caller must stf_data_place_destroy the result.
@@ -255,7 +302,7 @@ stf_exec_place_resources_handle stf_exec_place_resources_create(void);
 //! For handles returned by stf_ctx_get_place_resources(), this releases only
 //! the C handle wrapper and leaves the context-owned resources untouched.
 //! \p h may be NULL.
-void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h);
+stf_error_t stf_exec_place_resources_destroy(stf_exec_place_resources_handle h);
 
 //! \brief Pick a CUDA stream for \p h from the pools owned by \p res.
 //!
@@ -266,21 +313,21 @@ void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h);
 CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation);
 
 //! \brief Get the sub-place at linear index \p idx.
-//! For scalar places, \p idx must be 0. Returns NULL if \p idx is out of bounds.
+//! For scalar places, \p idx must be 0. Returns NULL if \p idx is out of bounds
+//! (\c STF_ERROR_INVALID_ARGUMENT).
 //! Caller must stf_exec_place_destroy the result.
 stf_exec_place_handle stf_exec_place_get_place(stf_exec_place_handle h, size_t idx);
 
 //! \brief Create an exec_place from green-context helper \p helper and view index \p idx.
 //! If \p use_green_ctx_data_place is non-zero, set the affine data_place to a green-context data place.
-//! Returns NULL on failure or if \p idx is out of range.
+//! Returns NULL on failure, if \p idx is out of range, or before CUDA 12.4.
 stf_exec_place_handle
 stf_exec_place_green_ctx(stf_green_context_helper_handle helper, size_t idx, int use_green_ctx_data_place);
 
 //! \brief Initialize the machine singleton (P2P access, memory pool setup, topology).
-//! Safe to call multiple times; only the first call has effect. Any C++ exception
-//! raised during initialization is caught and reported to stderr (never propagated
-//! across the C boundary).
-void stf_machine_init(void);
+//! Safe to call multiple times; only the first call has effect. A failure during
+//! initialization is reported through the returned code and stf_get_last_error_message().
+stf_error_t stf_machine_init(void);
 
 //! \brief Host (CPU/pinned) data placement.
 stf_data_place_handle stf_data_place_host(void);
@@ -303,8 +350,8 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
 //! \brief Number of locality domains of a device. Never 0 for a valid
 //! device: without native locality-domain support (pre-13.4 toolkit, or a
 //! driver that cannot answer the query) the device reports a single domain
-//! covering the whole device. Returns 0 only on error (invalid device;
-//! detail on stderr).
+//! covering the whole device. Returns 0 only on error (invalid device); the
+//! detail is available through stf_get_last_error_message().
 uint32_t stf_locality_domain_count(int dev_id);
 
 //! \brief SM split methods for locality-domain execution places.
@@ -337,7 +384,7 @@ typedef enum stf_locality_domain_sm_split
 stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id);
 
 //! \brief Like \ref stf_exec_place_locality_domain with an explicit SM
-//! split method. Returns NULL on an invalid \p split value.
+//! split method. Returns NULL on an invalid \p split value (\c STF_ERROR_INVALID_ARGUMENT).
 stf_exec_place_handle
 stf_exec_place_locality_domain_split(int dev_id, int domain_id, stf_locality_domain_sm_split split);
 
@@ -348,7 +395,7 @@ stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id);
 
 //! \brief Like \ref stf_exec_place_locality_domain_grid with an explicit SM
 //! split method applied to every place of the grid. Returns NULL on an
-//! invalid \p split value.
+//! invalid \p split value (\c STF_ERROR_INVALID_ARGUMENT).
 stf_exec_place_handle stf_exec_place_locality_domain_grid_split(int dev_id, stf_locality_domain_sm_split split);
 
 //! \brief Data place whose allocations are localized to one locality
@@ -385,14 +432,14 @@ stf_get_executor_fn stf_partition_fn_blocked(int dim);
 stf_get_executor_fn stf_partition_fn_cyclic(void);
 
 //! \brief Create a data_place from green-context helper \p helper and view index \p idx.
-//! Returns NULL on failure or if \p idx is out of range.
+//! Returns NULL on failure, if \p idx is out of range, or before CUDA 12.4.
 stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx);
 
 //! \brief Deep copy (caller must stf_data_place_destroy).
 stf_data_place_handle stf_data_place_clone(stf_data_place_handle h);
 
 //! \brief Release a data place handle.
-void stf_data_place_destroy(stf_data_place_handle h);
+stf_error_t stf_data_place_destroy(stf_data_place_handle h);
 
 //! \brief Device ordinal from \c data_place_interface::get_device_ordinal() (see C++ docs for sentinel values).
 int stf_data_place_get_device_ordinal(stf_data_place_handle h);
@@ -431,7 +478,7 @@ void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStrea
 //! \param ptr    Pointer returned by stf_data_place_allocate()
 //! \param size   Size of the original allocation in bytes
 //! \param stream CUDA stream for stream-ordered deallocation (may be NULL)
-void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream);
+stf_error_t stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream);
 
 //! \brief Query whether allocations on this place are stream-ordered.
 //!
@@ -630,7 +677,7 @@ stf_async_resources_handle stf_async_resources_create(void);
 //!      underlying CUDA resources (stream pools, cached executable graphs)
 //!      and does not itself synchronize any caller stream.
 
-void stf_async_resources_destroy(stf_async_resources_handle h);
+stf_error_t stf_async_resources_destroy(stf_async_resources_handle h);
 
 //! \brief Backend selector for stf_ctx_create_ex()
 typedef enum stf_backend_kind
@@ -746,7 +793,7 @@ stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts);
 //! \see stf_ctx_create(), stf_ctx_create_graph(), stf_ctx_create_ex(),
 //!      stf_fence()
 
-void stf_ctx_finalize(stf_ctx_handle ctx);
+stf_error_t stf_ctx_finalize(stf_ctx_handle ctx);
 
 //! \brief Borrow the per-place stream-pool registry embedded in \p ctx.
 //!
@@ -795,7 +842,7 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 //! \param ld    Logical data handle to read
 //! \param out   Destination host buffer
 //! \param size  Size of the destination buffer in bytes
-//! \return 0 on success, non-zero on error
+//! \return \c STF_SUCCESS, or the failure category (NULL arguments are \c STF_ERROR_INVALID_ARGUMENT)
 //!
 //! \pre  ctx and ld must be valid handles; out must not be NULL
 //! \pre  The first min(size, data_size) bytes of out must not overlap the
@@ -812,7 +859,7 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 //!
 //! \see stf_fence(), stf_ctx_finalize()
 
-int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size);
+stf_error_t stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size);
 
 //! \}
 
@@ -924,7 +971,7 @@ stf_logical_data_with_place(stf_ctx_handle ctx, void* addr, size_t sz, stf_data_
 //!
 //! \see stf_task_set_symbol()
 
-void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
+stf_error_t stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
 
 //!
 //! \brief Destroy logical data handle
@@ -948,7 +995,7 @@ void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
 //!
 //! \see stf_logical_data(), stf_logical_data_empty()
 
-void stf_logical_data_destroy(stf_logical_data_handle ld);
+stf_error_t stf_logical_data_destroy(stf_logical_data_handle ld);
 
 //!
 //! \brief Create empty logical data (temporary)
@@ -1061,7 +1108,7 @@ stf_task_handle stf_task_create(stf_ctx_handle ctx);
 //!
 //! \see stf_exec_place_device(), stf_exec_place_host()
 
-void stf_task_set_exec_place(stf_task_handle t, stf_exec_place_handle exec_p);
+stf_error_t stf_task_set_exec_place(stf_task_handle t, stf_exec_place_handle exec_p);
 
 //!
 //! \brief Set symbolic name for task
@@ -1085,7 +1132,7 @@ void stf_task_set_exec_place(stf_task_handle t, stf_exec_place_handle exec_p);
 //!
 //! \see stf_logical_data_set_symbol()
 
-void stf_task_set_symbol(stf_task_handle t, const char* symbol);
+stf_error_t stf_task_set_symbol(stf_task_handle t, const char* symbol);
 
 //!
 //! \brief Add data dependency to task
@@ -1111,7 +1158,7 @@ void stf_task_set_symbol(stf_task_handle t, const char* symbol);
 //!
 //! \see stf_task_add_dep_with_dplace(), stf_task_get()
 
-void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
+stf_error_t stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
 
 //!
 //! \brief Add data dependency with explicit data placement
@@ -1139,7 +1186,7 @@ void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_
 //!
 //! \see stf_task_add_dep(), stf_data_place_device(), stf_data_place_host()
 
-void stf_task_add_dep_with_dplace(
+stf_error_t stf_task_add_dep_with_dplace(
   stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle data_p);
 
 //!
@@ -1169,7 +1216,7 @@ void stf_task_add_dep_with_dplace(
 //!
 //! \see stf_task_end(), stf_task_get_custream(), stf_task_get()
 
-void stf_task_start(stf_task_handle t);
+stf_error_t stf_task_start(stf_task_handle t);
 
 //!
 //! \brief End task execution
@@ -1196,7 +1243,7 @@ void stf_task_start(stf_task_handle t);
 //!
 //! \see stf_task_start()
 
-void stf_task_end(stf_task_handle t);
+stf_error_t stf_task_end(stf_task_handle t);
 
 //!
 //! \brief Get CUDA stream for task
@@ -1318,7 +1365,7 @@ void* stf_task_get(stf_task_handle t, int submitted_index);
 //!
 //! \see stf_task_create()
 
-void stf_task_destroy(stf_task_handle t);
+stf_error_t stf_task_destroy(stf_task_handle t);
 
 //!
 //! \brief Enable graph capture for task (advanced)
@@ -1332,7 +1379,7 @@ void stf_task_destroy(stf_task_handle t);
 //!
 //! \note Used internally for CUDA graph backend optimization
 
-void stf_task_enable_capture(stf_task_handle t);
+stf_error_t stf_task_enable_capture(stf_task_handle t);
 
 //! \brief Get grid dimensions of a task's exec place
 //!
@@ -1436,7 +1483,7 @@ stf_cuda_kernel_handle stf_cuda_kernel_create(stf_ctx_handle ctx);
 //!
 //! \see stf_exec_place_device(), stf_task_set_exec_place()
 
-void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place_handle exec_p);
+stf_error_t stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place_handle exec_p);
 
 //!
 //! \brief Set symbolic name for kernel
@@ -1451,7 +1498,7 @@ void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place_han
 //!
 //! \see stf_task_set_symbol(), stf_logical_data_set_symbol()
 
-void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol);
+stf_error_t stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol);
 
 //!
 //! \brief Add data dependency to kernel
@@ -1468,7 +1515,7 @@ void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol);
 //!
 //! \see stf_task_add_dep()
 
-void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m);
+stf_error_t stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m);
 
 //!
 //! \brief Start kernel execution
@@ -1483,7 +1530,7 @@ void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle l
 //!
 //! \see stf_cuda_kernel_add_desc(), stf_cuda_kernel_end()
 
-void stf_cuda_kernel_start(stf_cuda_kernel_handle k);
+stf_error_t stf_cuda_kernel_start(stf_cuda_kernel_handle k);
 
 //!
 //! \brief Add CUDA kernel launch description (driver API)
@@ -1506,7 +1553,7 @@ void stf_cuda_kernel_start(stf_cuda_kernel_handle k);
 //!
 //! \see stf_cuda_kernel_add_desc()
 
-void stf_cuda_kernel_add_desc_cufunc(
+stf_error_t stf_cuda_kernel_add_desc_cufunc(
   stf_cuda_kernel_handle k,
   CUfunction cufunc,
   dim3 grid_dim_,
@@ -1573,7 +1620,11 @@ static inline cudaError_t stf_cuda_kernel_add_desc(
     return res;
   }
 
-  stf_cuda_kernel_add_desc_cufunc(k, cufunc, grid_dim_, block_dim_, shared_mem_, arg_cnt, args);
+  // The STF failure detail, if any, is available through stf_get_last_error_message().
+  if (stf_cuda_kernel_add_desc_cufunc(k, cufunc, grid_dim_, block_dim_, shared_mem_, arg_cnt, args) != STF_SUCCESS)
+  {
+    return cudaErrorUnknown;
+  }
   return cudaSuccess;
 }
 
@@ -1608,7 +1659,7 @@ void* stf_cuda_kernel_get_arg(stf_cuda_kernel_handle k, int index);
 //!
 //! \see stf_cuda_kernel_start()
 
-void stf_cuda_kernel_end(stf_cuda_kernel_handle k);
+stf_error_t stf_cuda_kernel_end(stf_cuda_kernel_handle k);
 
 //!
 //! \brief Destroy kernel handle
@@ -1624,7 +1675,7 @@ void stf_cuda_kernel_end(stf_cuda_kernel_handle k);
 //!
 //! \see stf_cuda_kernel_create()
 
-void stf_cuda_kernel_destroy(stf_cuda_kernel_handle k);
+stf_error_t stf_cuda_kernel_destroy(stf_cuda_kernel_handle k);
 
 //! \}
 
@@ -1656,13 +1707,13 @@ stf_host_launch_handle stf_host_launch_create(stf_ctx_handle ctx);
 //! \param m Access mode (STF_READ, STF_WRITE, STF_RW)
 //!
 //! \see stf_task_add_dep()
-void stf_host_launch_add_dep(stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m);
+stf_error_t stf_host_launch_add_dep(stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m);
 
 //! \brief Set the debug symbol for a host launch scope
 //!
 //! \param h Host launch handle
 //! \param symbol Null-terminated string
-void stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol);
+stf_error_t stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol);
 
 //! \brief Copy user data into the host launch scope
 //!
@@ -1675,7 +1726,7 @@ void stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol);
 //! \param data Pointer to user data
 //! \param size Size of user data in bytes
 //! \param dtor Optional destructor for the copied data (may be NULL)
-void stf_host_launch_set_user_data(stf_host_launch_handle h, const void* data, size_t size, void (*dtor)(void*));
+stf_error_t stf_host_launch_set_user_data(stf_host_launch_handle h, const void* data, size_t size, void (*dtor)(void*));
 
 //! \brief Submit the host callback and finalize the scope
 //!
@@ -1687,14 +1738,14 @@ void stf_host_launch_set_user_data(stf_host_launch_handle h, const void* data, s
 //! \param callback Function pointer invoked on the host
 //!
 //! \see stf_host_launch_create()
-void stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback);
+stf_error_t stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback);
 
 //! \brief Destroy a host launch handle
 //!
 //! \param h Host launch handle
 //!
 //! \see stf_host_launch_create()
-void stf_host_launch_destroy(stf_host_launch_handle h);
+stf_error_t stf_host_launch_destroy(stf_host_launch_handle h);
 
 //! \brief Get the raw data pointer for a dependency
 //!
@@ -1805,7 +1856,7 @@ stf_ctx_handle stf_stackable_ctx_create(void);
 //! \param ctx Stackable context handle (must have been popped back to the root).
 //!
 //! \see stf_stackable_ctx_create()
-void stf_stackable_ctx_finalize(stf_ctx_handle ctx);
+stf_error_t stf_stackable_ctx_finalize(stf_ctx_handle ctx);
 
 //! \brief Get a fence stream for a stackable context (must be at root level).
 //!
@@ -1826,7 +1877,7 @@ cudaStream_t stf_stackable_ctx_fence(stf_ctx_handle ctx);
 //! \param ctx Stackable context handle
 //!
 //! \see stf_stackable_pop()
-void stf_stackable_push_graph(stf_ctx_handle ctx);
+stf_error_t stf_stackable_push_graph(stf_ctx_handle ctx);
 
 //! \brief Pop the innermost graph scope (must match \c stf_stackable_push_graph()).
 //!
@@ -1834,7 +1885,7 @@ void stf_stackable_push_graph(stf_ctx_handle ctx);
 //! while/repeat scopes instead.
 //!
 //! \param ctx Stackable context handle
-void stf_stackable_pop(stf_ctx_handle ctx);
+stf_error_t stf_stackable_pop(stf_ctx_handle ctx);
 
 //! \brief Opaque handle for a re-launchable graph produced by
 //!        \c stf_stackable_pop_prologue().
@@ -1866,8 +1917,8 @@ typedef struct stf_launchable_graph_handle_t* stf_launchable_graph_handle;
 //!
 //! \param ctx Stackable context handle (must not be NULL).
 //! \return Launchable graph handle (non-NULL on success; NULL only on
-//!         heap-allocation failure, in which case an explanatory message
-//!         is printed to stderr). Release with \c stf_launchable_graph_destroy().
+//!         failure; see stf_get_last_error_message()). Release with
+//!         \c stf_launchable_graph_destroy().
 //!
 //! \see stf_stackable_pop_epilogue()
 //! \see stf_launchable_graph_launch()
@@ -1884,7 +1935,7 @@ stf_launchable_graph_handle stf_stackable_pop_prologue(stf_ctx_handle ctx);
 //! \param ctx Stackable context handle (must not be NULL).
 //!
 //! \see stf_stackable_pop_prologue()
-void stf_stackable_pop_epilogue(stf_ctx_handle ctx);
+stf_error_t stf_stackable_pop_epilogue(stf_ctx_handle ctx);
 
 //! \brief Launch the graph once.
 //!
@@ -1895,7 +1946,7 @@ void stf_stackable_pop_epilogue(stf_ctx_handle ctx);
 //! \c stf_stackable_pop_epilogue().
 //!
 //! \param h Launchable graph handle (must not be NULL).
-void stf_launchable_graph_launch(stf_launchable_graph_handle h);
+stf_error_t stf_launchable_graph_launch(stf_launchable_graph_handle h);
 
 //! \brief Return the underlying \c cudaGraphExec_t for advanced use
 //!        (e.g. launching on a user-supplied stream).
@@ -1957,7 +2008,7 @@ cudaGraph_t stf_launchable_graph_graph(stf_launchable_graph_handle h);
 //! \c stf_stackable_pop_epilogue()). NULL is a no-op.
 //!
 //! \param h Launchable graph handle (or NULL).
-void stf_launchable_graph_destroy(stf_launchable_graph_handle h);
+stf_error_t stf_launchable_graph_destroy(stf_launchable_graph_handle h);
 
 //! \brief Opaque handle for a shared-ownership, storable launchable graph.
 //!
@@ -1991,9 +2042,9 @@ typedef struct stf_launchable_graph_shared_t* stf_launchable_graph_shared;
 //! same underlying graph; the epilogue runs when the last copy is freed.
 //!
 //! \param ctx Stackable context handle (must not be NULL).
-//! \param out Receives the new shared handle on success (non-NULL).
-//! \return Zero on success, non-zero on allocation failure.
-int stf_stackable_pop_prologue_shared(stf_ctx_handle ctx, stf_launchable_graph_shared* out);
+//! \param out Receives the new shared handle on success (non-NULL); NULL on failure.
+//! \return \c STF_SUCCESS, or the failure category.
+stf_error_t stf_stackable_pop_prologue_shared(stf_ctx_handle ctx, stf_launchable_graph_shared* out);
 
 //! \brief Duplicate a shared launchable-graph handle (bumps the shared count).
 //!
@@ -2001,9 +2052,9 @@ int stf_stackable_pop_prologue_shared(stf_ctx_handle ctx, stf_launchable_graph_s
 //! \c stf_launchable_graph_shared_free(). Aborts if \p h is NULL.
 //!
 //! \param h Shared handle to duplicate (must not be NULL).
-//! \param out Receives the duplicated handle on success (non-NULL).
-//! \return Zero on success, non-zero on allocation failure.
-int stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_launchable_graph_shared* out);
+//! \param out Receives the duplicated handle on success (non-NULL); NULL on failure.
+//! \return \c STF_SUCCESS, or the failure category.
+stf_error_t stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_launchable_graph_shared* out);
 
 //! \brief Release one shared reference. When this was the last one,
 //!        runs \c stf_stackable_pop_epilogue() automatically.
@@ -2020,7 +2071,7 @@ int stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_launchabl
 //!          unfreeze will race the still-executing child graph.
 //!
 //! \param h Shared handle (or NULL).
-void stf_launchable_graph_shared_free(stf_launchable_graph_shared h);
+stf_error_t stf_launchable_graph_shared_free(stf_launchable_graph_shared h);
 
 //! \brief Query whether the shared handle still refers to a live graph.
 //!
@@ -2030,7 +2081,7 @@ void stf_launchable_graph_shared_free(stf_launchable_graph_shared h);
 int stf_launchable_graph_shared_valid(stf_launchable_graph_shared h);
 
 //! \brief Launch the graph once. Aborts if \p h is NULL or invalid.
-void stf_launchable_graph_shared_launch(stf_launchable_graph_shared h);
+stf_error_t stf_launchable_graph_shared_launch(stf_launchable_graph_shared h);
 
 //! \brief Return the executable graph. Triggers lazy instantiation on the first
 //!        call and orders the support stream behind the nested context's
@@ -2108,7 +2159,7 @@ stf_while_scope_handle stf_stackable_push_while(stf_ctx_handle ctx);
 //! \brief Pop (destroy) a while-loop scope opened by \c stf_stackable_push_while().
 //!
 //! \param scope While scope handle (NULL is a no-op).
-void stf_stackable_pop_while(stf_while_scope_handle scope);
+stf_error_t stf_stackable_pop_while(stf_while_scope_handle scope);
 
 //! \brief Get the underlying \c cudaGraphConditionalHandle as a 64-bit integer.
 //!
@@ -2127,15 +2178,15 @@ uint64_t stf_while_scope_get_cond_handle(stf_while_scope_handle scope);
 //! The user only has to fill the body between push and pop.
 //!
 //! \param ctx   Stackable context handle
-//! \param count Number of iterations (must be > 0)
-//! \return Repeat-scope handle, or NULL on allocation failure (release with
+//! \param count Number of iterations (must be > 0; 0 is \c STF_ERROR_INVALID_ARGUMENT)
+//! \return Repeat-scope handle, or NULL on failure (release with
 //!         \c stf_stackable_pop_repeat()).
 stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t count);
 
 //! \brief Pop (destroy) a repeat scope opened by \c stf_stackable_push_repeat().
 //!
 //! \param scope Repeat scope handle (NULL is a no-op).
-void stf_stackable_pop_repeat(stf_repeat_scope_handle scope);
+stf_error_t stf_stackable_pop_repeat(stf_repeat_scope_handle scope);
 
 //! \brief Comparison operator for built-in while conditions.
 typedef enum stf_compare_op
@@ -2167,7 +2218,7 @@ typedef enum stf_dtype
 //! \param op        Comparison operator
 //! \param threshold Right-hand side compared against the scalar
 //! \param dtype     Element type of \p ld
-void stf_stackable_while_cond_scalar(
+stf_error_t stf_stackable_while_cond_scalar(
   stf_ctx_handle ctx,
   stf_while_scope_handle scope,
   stf_logical_data_handle ld,
@@ -2213,7 +2264,7 @@ typedef struct stf_while_cond_term
 //! \param terms    Array of \p n_terms comparison terms
 //! \param n_terms  Number of terms (1 to \c STF_WHILE_COND_MAX_TERMS)
 //! \param combiner How the term results are combined
-void stf_stackable_while_cond_multi(
+stf_error_t stf_stackable_while_cond_multi(
   stf_ctx_handle ctx,
   stf_while_scope_handle scope,
   const stf_while_cond_term* terms,
@@ -2251,10 +2302,10 @@ stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handl
 stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx);
 
 //! \brief Set the symbolic name of stackable logical data (debug / DOT output).
-void stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
+stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
 
 //! \brief Mark stackable logical data as read-only (enables concurrent reads across scopes).
-void stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld);
+stf_error_t stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld);
 
 //! \brief Explicitly import (push) a stackable logical data into the current
 //!        (innermost) scope with the given access mode and, optionally, data
@@ -2277,16 +2328,16 @@ void stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld);
 //! \param ld     Stackable logical data handle.
 //! \param m      Desired access mode in the current scope.
 //! \param dplace Optional data place; pass \c NULL for the default placement.
-void stf_stackable_logical_data_push(stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle dplace);
+stf_error_t stf_stackable_logical_data_push(stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle dplace);
 
 //! \brief Destroy stackable logical data created by \c stf_stackable_logical_data*().
-void stf_stackable_logical_data_destroy(stf_logical_data_handle ld);
+stf_error_t stf_stackable_logical_data_destroy(stf_logical_data_handle ld);
 
 //! \brief Destroy a stackable token created by \c stf_stackable_token().
 //!
 //! Tokens use a \c void_interface internally, so they require a dedicated
 //! destroyer that knows the right C++ pointee type.
-void stf_stackable_token_destroy(stf_logical_data_handle ld);
+stf_error_t stf_stackable_token_destroy(stf_logical_data_handle ld);
 
 //! \brief Create a task on the head (innermost) scope of a stackable context.
 //!
@@ -2311,10 +2362,11 @@ stf_task_handle stf_stackable_task_create(stf_ctx_handle ctx);
 //! \param t   Task handle returned by \c stf_stackable_task_create().
 //! \param ld  Stackable logical data handle.
 //! \param m   Access mode.
-void stf_stackable_task_add_dep(stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
+stf_error_t
+stf_stackable_task_add_dep(stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
 
 //! \brief Variant of \c stf_stackable_task_add_dep() with an explicit data place.
-void stf_stackable_task_add_dep_with_dplace(
+stf_error_t stf_stackable_task_add_dep_with_dplace(
   stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle data_p);
 
 //! \brief Create a host launch scope on the head (innermost) scope of a stackable context.
@@ -2328,17 +2380,17 @@ void stf_stackable_task_add_dep_with_dplace(
 stf_host_launch_handle stf_stackable_host_launch_create(stf_ctx_handle ctx);
 
 //! \brief Add a dependency to a stackable host launch scope (auto-pushes data).
-void stf_stackable_host_launch_add_dep(
+stf_error_t stf_stackable_host_launch_add_dep(
   stf_ctx_handle ctx, stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m);
 
 //! \brief Submit the host callback on a stackable host launch scope.
 //!
 //! Equivalent to \c stf_host_launch_submit() but matched to
 //! \c stf_stackable_host_launch_create() / \c stf_stackable_host_launch_destroy().
-void stf_stackable_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback);
+stf_error_t stf_stackable_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback);
 
 //! \brief Destroy a stackable host launch handle.
-void stf_stackable_host_launch_destroy(stf_host_launch_handle h);
+stf_error_t stf_stackable_host_launch_destroy(stf_host_launch_handle h);
 
 //! \}
 

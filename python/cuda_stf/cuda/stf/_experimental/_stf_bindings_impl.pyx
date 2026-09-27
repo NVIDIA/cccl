@@ -66,13 +66,28 @@ cdef extern from "<cuda_runtime.h>":
 
 cdef extern from "cccl/c/experimental/stf/stf.h":
     #
+    # Error reporting: every entry catches C++ exceptions, records them for the
+    # calling thread and returns a failure value (NULL handle / stf_error_t).
+    #
+    ctypedef enum stf_error_t:
+        STF_SUCCESS
+        STF_ERROR_INVALID_ARGUMENT
+        STF_ERROR_CUDA
+        STF_ERROR_OUT_OF_MEMORY
+        STF_ERROR_RUNTIME
+        STF_ERROR_UNKNOWN
+    stf_error_t stf_get_last_error() nogil
+    const char* stf_get_last_error_message() nogil
+    void stf_clear_last_error() nogil
+
+    #
     # Contexts
     #
     ctypedef struct stf_ctx_handle_t
     ctypedef stf_ctx_handle_t* stf_ctx_handle
     stf_ctx_handle stf_ctx_create()
     stf_ctx_handle stf_ctx_create_graph()
-    void stf_ctx_finalize(stf_ctx_handle ctx) nogil
+    stf_error_t stf_ctx_finalize(stf_ctx_handle ctx) nogil
     CUstream stf_fence(stf_ctx_handle ctx) nogil
 
     #
@@ -81,7 +96,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef struct stf_async_resources_opaque_t
     ctypedef stf_async_resources_opaque_t* stf_async_resources_handle
     stf_async_resources_handle stf_async_resources_create()
-    void stf_async_resources_destroy(stf_async_resources_handle h)
+    stf_error_t stf_async_resources_destroy(stf_async_resources_handle h)
 
     ctypedef enum stf_backend_kind:
         STF_BACKEND_STREAM
@@ -128,43 +143,43 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_exec_place_handle stf_exec_place_current_device()
     stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id)
     stf_green_context_helper_handle stf_green_context_helper_create(int sm_count, int dev_id)
-    void stf_green_context_helper_destroy(stf_green_context_helper_handle h)
+    stf_error_t stf_green_context_helper_destroy(stf_green_context_helper_handle h)
     size_t stf_green_context_helper_get_count(stf_green_context_helper_handle h)
     int stf_green_context_helper_get_device_id(stf_green_context_helper_handle h)
     stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h)
-    void stf_exec_place_destroy(stf_exec_place_handle h)
+    stf_error_t stf_exec_place_destroy(stf_exec_place_handle h)
     int stf_exec_place_is_host(stf_exec_place_handle h)
     int stf_exec_place_is_device(stf_exec_place_handle h)
 
     # Grid introspection
-    void stf_exec_place_get_dims(stf_exec_place_handle h, stf_dim4* out_dims)
+    stf_error_t stf_exec_place_get_dims(stf_exec_place_handle h, stf_dim4* out_dims)
     size_t stf_exec_place_size(stf_exec_place_handle h)
-    void stf_exec_place_set_affine_data_place(stf_exec_place_handle h, stf_data_place_handle affine_dplace)
+    stf_error_t stf_exec_place_set_affine_data_place(stf_exec_place_handle h, stf_data_place_handle affine_dplace)
 
     # Grid factories
     stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
     stf_exec_place_handle stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, const stf_dim4* grid_dims)
     stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, const stf_dim4* grid_dims)
     stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis)
-    void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
+    stf_error_t stf_exec_place_grid_destroy(stf_exec_place_handle grid)
 
     # exec_place_scope
     ctypedef struct stf_exec_place_scope_opaque_t
     ctypedef stf_exec_place_scope_opaque_t* stf_exec_place_scope_handle
     stf_exec_place_scope_handle stf_exec_place_scope_enter(stf_exec_place_handle place, size_t idx)
-    void stf_exec_place_scope_exit(stf_exec_place_scope_handle scope)
+    stf_error_t stf_exec_place_scope_exit(stf_exec_place_scope_handle scope)
 
     # Place accessors
     stf_data_place_handle stf_exec_place_get_affine_data_place(stf_exec_place_handle h)
     ctypedef struct stf_exec_place_resources_opaque_t
     ctypedef stf_exec_place_resources_opaque_t* stf_exec_place_resources_handle
     stf_exec_place_resources_handle stf_exec_place_resources_create()
-    void stf_exec_place_resources_destroy(stf_exec_place_resources_handle h)
+    stf_error_t stf_exec_place_resources_destroy(stf_exec_place_resources_handle h)
     stf_exec_place_resources_handle stf_ctx_get_place_resources(stf_ctx_handle ctx)
     CUstream stf_exec_place_pick_stream(stf_exec_place_resources_handle res, stf_exec_place_handle h, int for_computation)
     stf_exec_place_handle stf_exec_place_get_place(stf_exec_place_handle h, size_t idx)
     stf_exec_place_handle stf_exec_place_green_ctx(stf_green_context_helper_handle helper, size_t idx, int use_green_ctx_data_place)
-    void stf_machine_init()
+    stf_error_t stf_machine_init()
 
     #
     # Data places (functions using the forward-declared handle)
@@ -193,11 +208,11 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_get_executor_fn stf_partition_fn_blocked(int dim)
     stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
     stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
-    void stf_data_place_destroy(stf_data_place_handle h)
+    stf_error_t stf_data_place_destroy(stf_data_place_handle h)
     int stf_data_place_get_device_ordinal(stf_data_place_handle h)
     const char* stf_data_place_to_string(stf_data_place_handle h)
     void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream)
-    void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
+    stf_error_t stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
     int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
 
     #
@@ -205,11 +220,11 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     #
     ctypedef struct stf_logical_data_handle_t
     ctypedef stf_logical_data_handle_t* stf_logical_data_handle
-    int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size) nogil
+    stf_error_t stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size_t size) nogil
     stf_logical_data_handle stf_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)
     stf_logical_data_handle stf_logical_data_with_place(stf_ctx_handle ctx, void* addr, size_t sz, stf_data_place_handle dplace)
-    void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
-    void stf_logical_data_destroy(stf_logical_data_handle ld)
+    stf_error_t stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
+    stf_error_t stf_logical_data_destroy(stf_logical_data_handle ld)
     stf_logical_data_handle stf_logical_data_empty(stf_ctx_handle ctx, size_t length)
     stf_logical_data_handle stf_token(stf_ctx_handle ctx)
 
@@ -219,18 +234,18 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef struct stf_task_handle_t
     ctypedef stf_task_handle_t* stf_task_handle
     stf_task_handle stf_task_create(stf_ctx_handle ctx)
-    void stf_task_set_exec_place(stf_task_handle t, stf_exec_place_handle exec_p)
-    void stf_task_set_symbol(stf_task_handle t, const char* symbol)
-    void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m)
-    void stf_task_add_dep_with_dplace(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle data_p)
-    void stf_task_start(stf_task_handle t)
-    void stf_task_end(stf_task_handle t)
-    void stf_task_enable_capture(stf_task_handle t)
+    stf_error_t stf_task_set_exec_place(stf_task_handle t, stf_exec_place_handle exec_p)
+    stf_error_t stf_task_set_symbol(stf_task_handle t, const char* symbol)
+    stf_error_t stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m)
+    stf_error_t stf_task_add_dep_with_dplace(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle data_p)
+    stf_error_t stf_task_start(stf_task_handle t)
+    stf_error_t stf_task_end(stf_task_handle t)
+    stf_error_t stf_task_enable_capture(stf_task_handle t)
     CUstream stf_task_get_custream(stf_task_handle t)
     int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)
     int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream)
     void* stf_task_get(stf_task_handle t, int submitted_index)
-    void stf_task_destroy(stf_task_handle t)
+    stf_error_t stf_task_destroy(stf_task_handle t)
 
     cdef enum stf_access_mode:
         STF_NONE
@@ -244,14 +259,14 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef struct stf_cuda_kernel_handle_t
     ctypedef stf_cuda_kernel_handle_t* stf_cuda_kernel_handle
     stf_cuda_kernel_handle stf_cuda_kernel_create(stf_ctx_handle ctx)
-    void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place_handle exec_p)
-    void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol)
-    void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m)
-    void stf_cuda_kernel_start(stf_cuda_kernel_handle k)
+    stf_error_t stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place_handle exec_p)
+    stf_error_t stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol)
+    stf_error_t stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m)
+    stf_error_t stf_cuda_kernel_start(stf_cuda_kernel_handle k)
     void* stf_cuda_kernel_get_arg(stf_cuda_kernel_handle k, int index)
-    void stf_cuda_kernel_add_desc_cufunc(stf_cuda_kernel_handle k, CUfunction cufunc, dim3 grid_dim_, dim3 block_dim_, size_t shared_mem_, int arg_cnt, const void** args)
-    void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
-    void stf_cuda_kernel_destroy(stf_cuda_kernel_handle k)
+    stf_error_t stf_cuda_kernel_add_desc_cufunc(stf_cuda_kernel_handle k, CUfunction cufunc, dim3 grid_dim_, dim3 block_dim_, size_t shared_mem_, int arg_cnt, const void** args)
+    stf_error_t stf_cuda_kernel_end(stf_cuda_kernel_handle k)
+    stf_error_t stf_cuda_kernel_destroy(stf_cuda_kernel_handle k)
 
     #
     # Host launch
@@ -263,11 +278,11 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef void (*stf_host_callback_fn)(stf_host_launch_deps_handle deps) noexcept
 
     stf_host_launch_handle stf_host_launch_create(stf_ctx_handle ctx)
-    void stf_host_launch_add_dep(stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m)
-    void stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol)
-    void stf_host_launch_set_user_data(stf_host_launch_handle h, const void* data, size_t size, void (*dtor)(void*))
-    void stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback)
-    void stf_host_launch_destroy(stf_host_launch_handle h)
+    stf_error_t stf_host_launch_add_dep(stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m)
+    stf_error_t stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol)
+    stf_error_t stf_host_launch_set_user_data(stf_host_launch_handle h, const void* data, size_t size, void (*dtor)(void*))
+    stf_error_t stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback)
+    stf_error_t stf_host_launch_destroy(stf_host_launch_handle h)
     void* stf_host_launch_deps_get(stf_host_launch_deps_handle deps, size_t index)
     size_t stf_host_launch_deps_get_size(stf_host_launch_deps_handle deps, size_t index)
     size_t stf_host_launch_deps_size(stf_host_launch_deps_handle deps)
@@ -280,10 +295,10 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     # their own opaque handles.
     #
     stf_ctx_handle stf_stackable_ctx_create()
-    void stf_stackable_ctx_finalize(stf_ctx_handle ctx) nogil
+    stf_error_t stf_stackable_ctx_finalize(stf_ctx_handle ctx) nogil
     CUstream stf_stackable_ctx_fence(stf_ctx_handle ctx) nogil
-    void stf_stackable_push_graph(stf_ctx_handle ctx)
-    void stf_stackable_pop(stf_ctx_handle ctx)
+    stf_error_t stf_stackable_push_graph(stf_ctx_handle ctx)
+    stf_error_t stf_stackable_pop(stf_ctx_handle ctx)
 
     ctypedef struct stf_while_scope_handle_t
     ctypedef stf_while_scope_handle_t* stf_while_scope_handle
@@ -291,30 +306,30 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef stf_repeat_scope_handle_t* stf_repeat_scope_handle
 
     stf_while_scope_handle stf_stackable_push_while(stf_ctx_handle ctx)
-    void stf_stackable_pop_while(stf_while_scope_handle scope)
+    stf_error_t stf_stackable_pop_while(stf_while_scope_handle scope)
     uint64_t stf_while_scope_get_cond_handle(stf_while_scope_handle scope)
     stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t count)
-    void stf_stackable_pop_repeat(stf_repeat_scope_handle scope)
+    stf_error_t stf_stackable_pop_repeat(stf_repeat_scope_handle scope)
 
     ctypedef struct stf_launchable_graph_handle_t
     ctypedef stf_launchable_graph_handle_t* stf_launchable_graph_handle
 
     stf_launchable_graph_handle stf_stackable_pop_prologue(stf_ctx_handle ctx)
-    void stf_stackable_pop_epilogue(stf_ctx_handle ctx)
-    void stf_launchable_graph_launch(stf_launchable_graph_handle h) nogil
+    stf_error_t stf_stackable_pop_epilogue(stf_ctx_handle ctx)
+    stf_error_t stf_launchable_graph_launch(stf_launchable_graph_handle h) nogil
     cudaGraphExec_t stf_launchable_graph_exec(stf_launchable_graph_handle h)
     cudaStream_t stf_launchable_graph_stream(stf_launchable_graph_handle h)
     cudaGraph_t stf_launchable_graph_graph(stf_launchable_graph_handle h)
-    void stf_launchable_graph_destroy(stf_launchable_graph_handle h)
+    stf_error_t stf_launchable_graph_destroy(stf_launchable_graph_handle h)
 
     ctypedef struct stf_launchable_graph_shared_t
     ctypedef stf_launchable_graph_shared_t* stf_launchable_graph_shared
 
-    int stf_stackable_pop_prologue_shared(stf_ctx_handle ctx, stf_launchable_graph_shared* out)
-    int stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_launchable_graph_shared* out)
-    void stf_launchable_graph_shared_free(stf_launchable_graph_shared h) nogil
+    stf_error_t stf_stackable_pop_prologue_shared(stf_ctx_handle ctx, stf_launchable_graph_shared* out)
+    stf_error_t stf_launchable_graph_shared_dup(stf_launchable_graph_shared h, stf_launchable_graph_shared* out)
+    stf_error_t stf_launchable_graph_shared_free(stf_launchable_graph_shared h) nogil
     int stf_launchable_graph_shared_valid(stf_launchable_graph_shared h)
-    void stf_launchable_graph_shared_launch(stf_launchable_graph_shared h) nogil
+    stf_error_t stf_launchable_graph_shared_launch(stf_launchable_graph_shared h) nogil
     cudaGraphExec_t stf_launchable_graph_shared_exec(stf_launchable_graph_shared h)
     cudaStream_t stf_launchable_graph_shared_stream(stf_launchable_graph_shared h)
     cudaGraph_t stf_launchable_graph_shared_graph(stf_launchable_graph_shared h)
@@ -331,7 +346,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         STF_DTYPE_INT32
         STF_DTYPE_INT64
 
-    void stf_stackable_while_cond_scalar(
+    stf_error_t stf_stackable_while_cond_scalar(
         stf_ctx_handle ctx,
         stf_while_scope_handle scope,
         stf_logical_data_handle ld,
@@ -355,7 +370,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         stf_dtype dtype
         int negate
 
-    void stf_stackable_while_cond_multi(
+    stf_error_t stf_stackable_while_cond_multi(
         stf_ctx_handle ctx,
         stf_while_scope_handle scope,
         const stf_while_cond_term* terms,
@@ -368,29 +383,92 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_logical_data_handle stf_stackable_logical_data_empty(stf_ctx_handle ctx, size_t length)
     stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handle ctx, size_t length)
     stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx)
-    void stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
-    void stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld)
-    void stf_stackable_logical_data_push(
+    stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
+    stf_error_t stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld)
+    stf_error_t stf_stackable_logical_data_push(
         stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle dplace)
-    void stf_stackable_logical_data_destroy(stf_logical_data_handle ld)
-    void stf_stackable_token_destroy(stf_logical_data_handle ld)
+    stf_error_t stf_stackable_logical_data_destroy(stf_logical_data_handle ld)
+    stf_error_t stf_stackable_token_destroy(stf_logical_data_handle ld)
 
     stf_task_handle stf_stackable_task_create(stf_ctx_handle ctx)
     void stf_stackable_task_add_dep(
         stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m)
-    void stf_stackable_task_add_dep_with_dplace(
+    stf_error_t stf_stackable_task_add_dep_with_dplace(
         stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle data_p)
 
     stf_host_launch_handle stf_stackable_host_launch_create(stf_ctx_handle ctx)
-    void stf_stackable_host_launch_add_dep(
+    stf_error_t stf_stackable_host_launch_add_dep(
         stf_ctx_handle ctx, stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m)
-    void stf_stackable_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback)
-    void stf_stackable_host_launch_destroy(stf_host_launch_handle h)
+    stf_error_t stf_stackable_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback)
+    stf_error_t stf_stackable_host_launch_destroy(stf_host_launch_handle h)
 
 # ctypes mirror structs for the partition mapper callback.
 # The C API uses an out-pointer signature for stf_get_executor_fn:
 #   void (*)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
 # This is directly representable as a ctypes CFUNCTYPE.
+
+# ---------------------------------------------------------------------------
+# Error translation
+# ---------------------------------------------------------------------------
+#
+# The C library never lets a C++ exception escape: each entry records the
+# failure for the calling thread and returns a failure value. ``_check`` and
+# ``_raise_last_error`` turn that record back into a Python exception carrying
+# the original C++ message.
+
+class STFError(RuntimeError):
+    """A failure reported by the CUDASTF library.
+
+    ``code`` is the ``stf_error_t`` category recorded by the C library (or
+    ``None`` when the failure was detected on the Python side); the message
+    carries the text of the underlying C++ exception.
+    """
+
+    def __init__(self, message, code=None):
+        super().__init__(message)
+        self.code = code
+
+
+class STFInvalidArgument(STFError, ValueError):
+    """A precondition on an argument was violated (``STF_ERROR_INVALID_ARGUMENT``)."""
+
+
+class STFCudaError(STFError):
+    """A CUDA runtime or driver call failed inside STF (``STF_ERROR_CUDA``)."""
+
+
+class STFMemoryError(STFError, MemoryError):
+    """A host allocation failed inside STF (``STF_ERROR_OUT_OF_MEMORY``)."""
+
+
+cdef object _last_error_exception(str context):
+    cdef stf_error_t code = stf_get_last_error()
+    cdef bytes raw = stf_get_last_error_message()
+    cdef str detail = raw.decode("utf-8", "replace")
+    message = f"{context}: {detail}" if detail else context
+    if code == STF_SUCCESS:
+        return STFError(message)
+    if code == STF_ERROR_INVALID_ARGUMENT:
+        return STFInvalidArgument(message, int(code))
+    if code == STF_ERROR_CUDA:
+        return STFCudaError(message, int(code))
+    if code == STF_ERROR_OUT_OF_MEMORY:
+        return STFMemoryError(message, int(code))
+    return STFError(message, int(code))
+
+
+cdef int _raise_last_error(str context) except -1:
+    """Raise the exception matching the C library's last error for this thread."""
+    raise _last_error_exception(context)
+
+
+cdef int _check(stf_error_t err, str context) except -1:
+    """Raise if an ``stf_error_t``-returning entry reported a failure."""
+    if err != STF_SUCCESS:
+        _raise_last_error(context)
+    return 0
+
+
 class _mapper_pos4(ctypes.Structure):
     _fields_ = [("x", ctypes.c_int64), ("y", ctypes.c_int64),
                 ("z", ctypes.c_int64), ("t", ctypes.c_int64)]
@@ -891,7 +969,7 @@ cdef class logical_data:
 
             self._ld = stf_logical_data_with_place(ctx._ctx, <void*><uintptr_t>data_ptr, self._len, dplace._h)
             if self._ld == NULL:
-                raise RuntimeError("failed to create logical_data from CUDA array interface")
+                _raise_last_error("failed to create logical_data from CUDA array interface")
 
         else:
             # Fallback to Python buffer protocol; require C-contiguous memory
@@ -918,7 +996,7 @@ cdef class logical_data:
                 self._readonly = bool(self._view.readonly)
                 self._ld = stf_logical_data_with_place(ctx._ctx, self._view.buf, self._view.len, dplace._h)
                 if self._ld == NULL:
-                    raise RuntimeError("failed to create logical_data from buffer")
+                    _raise_last_error("failed to create logical_data from buffer")
             except:
                 PyBuffer_Release(&self._view)
                 self._has_view = False
@@ -930,7 +1008,7 @@ cdef class logical_data:
 
 
     def set_symbol(self, str name):
-        stf_logical_data_set_symbol(self._ld, name.encode())
+        _check(stf_logical_data_set_symbol(self._ld, name.encode()), "stf_logical_data_set_symbol")
         self._symbol = name  # Store locally for retrieval
 
     @property
@@ -1000,12 +1078,12 @@ cdef class logical_data:
         as this object.
         """
         if self._ld == NULL:
-            raise RuntimeError("source logical_data handle is NULL")
+            _raise_last_error("source logical_data handle is NULL")
 
         cdef logical_data out = logical_data.__new__(logical_data)
         out._ld = stf_logical_data_empty(self._ctx, self._len)
         if out._ld == NULL:
-            raise RuntimeError("failed to create empty logical_data")
+            _raise_last_error("failed to create empty logical_data")
         out._ctx   = self._ctx
         out._dtype = self._dtype
         out._shape = self._shape
@@ -1032,7 +1110,7 @@ cdef class logical_data:
         out._alive = ctx._alive
         out._ld = stf_token(ctx._ctx)
         if out._ld == NULL:
-            raise RuntimeError("failed to create STF token")
+            _raise_last_error("failed to create STF token")
 
         return out
 
@@ -1057,7 +1135,7 @@ cdef class logical_data:
         out._alive = ctx._alive
         out._ld = stf_logical_data_empty(ctx._ctx, out._len)
         if out._ld == NULL:
-            raise RuntimeError("failed to create logical_data from shape")
+            _raise_last_error("failed to create logical_data from shape")
 
         if name is not None:
             out.set_symbol(name)
@@ -1079,16 +1157,9 @@ class dep:
         # place, the next replicated read re-broadcasts. Validate here so
         # the error is a Python exception at dependency construction rather
         # than a C++ exception at task creation.
-        if (
-            dplace is not None
-            and mode != AccessMode.READ.value
-            and isinstance(dplace, data_place)
-            and stf_data_place_is_replicated((<data_place>dplace)._h)
-        ):
-            raise ValueError(
-                "replicated data places only support read access (mutate the "
-                "data at another place; the next replicated read re-broadcasts)"
-            )
+        # Access-mode rules (for example: replicated data places are read-only)
+        # are enforced by the C++ library when the dependency is registered,
+        # and surface as STFInvalidArgument (a ValueError) with its message.
         self.ld   = ld
         self.mode = mode
         self.dplace = dplace  # can be None or a data place
@@ -1148,7 +1219,7 @@ def machine_init():
 
     Safe to call multiple times; only the first invocation has effect.
     """
-    stf_machine_init()
+    _check(stf_machine_init(), "stf_machine_init")
 
 
 class CudaStream(int):
@@ -1213,7 +1284,7 @@ cdef class green_context_helper:
             raise ValueError("sm_count must be a positive integer")
         self._h = stf_green_context_helper_create(sm_count, dev_id)
         if self._h == NULL:
-            raise RuntimeError(
+            _raise_last_error(
                 f"failed to create green_context_helper(sm_count={sm_count}, dev_id={dev_id})"
             )
 
@@ -1276,7 +1347,7 @@ cdef class exec_place_resources:
             return
         self._h = stf_exec_place_resources_create()
         if self._h == NULL:
-            raise RuntimeError("failed to create exec_place_resources")
+            _raise_last_error("failed to create exec_place_resources")
 
     @staticmethod
     cdef exec_place_resources _borrow_from(stf_exec_place_resources_handle h):
@@ -1372,7 +1443,7 @@ cdef class exec_place:
         cdef exec_place p = exec_place.__new__(exec_place)
         p._h = stf_exec_place_device(dev_id)
         if p._h == NULL:
-            raise RuntimeError(f"failed to create exec_place for device {dev_id}")
+            _raise_last_error(f"failed to create exec_place for device {dev_id}")
         return p
 
     @staticmethod
@@ -1401,7 +1472,7 @@ cdef class exec_place:
         cdef exec_place p = exec_place.__new__(exec_place)
         p._h = stf_exec_place_locality_domain_split(dev_id, domain_id, split)
         if p._h == NULL:
-            raise RuntimeError("failed to create locality-domain exec place")
+            _raise_last_error("failed to create locality-domain exec place")
         return p
 
     @staticmethod
@@ -1409,7 +1480,7 @@ cdef class exec_place:
         cdef exec_place p = exec_place.__new__(exec_place)
         p._h = stf_exec_place_host()
         if p._h == NULL:
-            raise RuntimeError("failed to create host exec_place")
+            _raise_last_error("failed to create host exec_place")
         return p
 
     @staticmethod
@@ -1417,7 +1488,7 @@ cdef class exec_place:
         cdef exec_place p = exec_place.__new__(exec_place)
         p._h = stf_exec_place_current_device()
         if p._h == NULL:
-            raise RuntimeError("failed to create current_device exec_place")
+            _raise_last_error("failed to create current_device exec_place")
         return p
 
     @staticmethod
@@ -1430,7 +1501,7 @@ cdef class exec_place:
             1 if use_green_ctx_data_place else 0,
         )
         if p._h == NULL:
-            raise RuntimeError(f"failed to create green_ctx exec_place for index {view._idx}")
+            _raise_last_error(f"failed to create green_ctx exec_place for index {view._idx}")
         # The C++ place references the green-context helper but does not own it;
         # retain the view (which retains the helper) for this place's lifetime.
         p._add_owner(view)
@@ -1465,7 +1536,7 @@ cdef class exec_place:
         cdef exec_place p = exec_place.__new__(exec_place)
         p._h = stf_exec_place_cuda_context(<CUcontext>ctx_value, dev_id)
         if p._h == NULL:
-            raise RuntimeError(f"failed to create exec_place from CUcontext {ctx_value:#x}")
+            _raise_last_error(f"failed to create exec_place from CUcontext {ctx_value:#x}")
         p._keep_alive = ctx
         return p
 
@@ -1507,7 +1578,7 @@ cdef class exec_place:
         """Grid dimensions as a C-order tuple. Scalar places return ``(1,)``;
         grids return a tuple of their grid rank (see exec_place_grid)."""
         cdef stf_dim4 d
-        stf_exec_place_get_dims(self._h, &d)
+        _check(stf_exec_place_get_dims(self._h, &d), "stf_exec_place_get_dims")
         return _native_to_public((d.x, d.y, d.z, d.t), _exec_place_grid_rank(self))
 
     @property
@@ -1526,21 +1597,21 @@ cdef class exec_place:
         Dependencies using ``data_place.affine()`` will resolve to ``dplace``
         when this exec place is used as the task's execution place.
         """
-        stf_exec_place_set_affine_data_place(self._h, dplace._h)
+        _check(stf_exec_place_set_affine_data_place(self._h, dplace._h), "stf_exec_place_set_affine_data_place")
         # The place now references the affine data place; keep it alive.
         self._add_owner(dplace)
 
     def __enter__(self):
         if self._h == NULL:
-            raise RuntimeError("exec_place handle is null")
+            _raise_last_error("exec_place handle is null")
         self._scope = stf_exec_place_scope_enter(self._h, 0)
         if self._scope == NULL:
-            raise RuntimeError("failed to activate exec_place scope")
+            _raise_last_error("failed to activate exec_place scope")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._scope != NULL:
-            stf_exec_place_scope_exit(self._scope)
+            _check(stf_exec_place_scope_exit(self._scope), "stf_exec_place_scope_exit")
             self._scope = NULL
         return False
 
@@ -1549,7 +1620,7 @@ cdef class exec_place:
         """Return the data_place associated with this exec_place."""
         cdef stf_data_place_handle dh = stf_exec_place_get_affine_data_place(self._h)
         if dh == NULL:
-            raise RuntimeError("failed to get affine data_place")
+            _raise_last_error("failed to get affine data_place")
         cdef data_place dp = data_place.__new__(data_place)
         dp._h = dh
         # The affine data place may reference this exec place's owned state.
@@ -1724,7 +1795,7 @@ cdef class exec_place_grid(exec_place):
             affine = data_place.__new__(data_place)
             affine._h = stf_data_place_composite(g._h, stf_partition_fn_blocked(0))
             if affine._h == NULL:
-                raise RuntimeError("failed to create the default blocked affine")
+                _raise_last_error("failed to create the default blocked affine")
             affine._add_owner(g)
             g.set_affine_data_place(affine)
             g._mapper_keep_alive = affine
@@ -1743,7 +1814,7 @@ cdef class exec_place_grid(exec_place):
         cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
         g._h = stf_exec_place_locality_domain_grid_split(dev_id, split)
         if g._h == NULL:
-            raise RuntimeError("failed to create locality-domain grid")
+            _raise_last_error("failed to create locality-domain grid")
         return g
 
     @staticmethod
@@ -1767,7 +1838,7 @@ cdef class exec_place_grid(exec_place):
         cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
         g._h = stf_exec_place_grid_from_devices(c_ids, n)
         if g._h == NULL:
-            raise RuntimeError("failed to create exec_place grid from devices")
+            _raise_last_error("failed to create exec_place grid from devices")
         return g
 
     @staticmethod
@@ -1824,7 +1895,7 @@ cdef class exec_place_grid(exec_place):
             g._grid_rank = 1
 
         if g._h == NULL:
-            raise RuntimeError("failed to create exec_place grid")
+            _raise_last_error("failed to create exec_place grid")
 
         # The grid references each sub-place handle but does not own it; retain
         # the Python sub-place objects so their handles outlive the grid.
@@ -1876,7 +1947,7 @@ cdef class data_place:
         cdef data_place p = data_place.__new__(data_place)
         p._h = stf_data_place_device(dev_id)
         if p._h == NULL:
-            raise RuntimeError(f"failed to create data_place for device {dev_id}")
+            _raise_last_error(f"failed to create data_place for device {dev_id}")
         return p
 
     @staticmethod
@@ -1887,7 +1958,7 @@ cdef class data_place:
         cdef data_place p = data_place.__new__(data_place)
         p._h = stf_data_place_locality_domain(dev_id, domain_id)
         if p._h == NULL:
-            raise RuntimeError("failed to create locality-domain data place")
+            _raise_last_error("failed to create locality-domain data place")
         return p
 
     @staticmethod
@@ -1895,7 +1966,7 @@ cdef class data_place:
         cdef data_place p = data_place.__new__(data_place)
         p._h = stf_data_place_host()
         if p._h == NULL:
-            raise RuntimeError("failed to create host data_place")
+            _raise_last_error("failed to create host data_place")
         return p
 
     @staticmethod
@@ -1903,7 +1974,7 @@ cdef class data_place:
         cdef data_place p = data_place.__new__(data_place)
         p._h = stf_data_place_managed()
         if p._h == NULL:
-            raise RuntimeError("failed to create managed data_place")
+            _raise_last_error("failed to create managed data_place")
         return p
 
     @staticmethod
@@ -1911,7 +1982,7 @@ cdef class data_place:
         cdef data_place p = data_place.__new__(data_place)
         p._h = stf_data_place_affine()
         if p._h == NULL:
-            raise RuntimeError("failed to create affine data_place")
+            _raise_last_error("failed to create affine data_place")
         return p
 
     @staticmethod
@@ -1927,7 +1998,7 @@ cdef class data_place:
             p._h = stf_data_place_replicated(grid._h)
             p._add_owner(grid)
         if p._h == NULL:
-            raise RuntimeError("failed to create replicated data_place")
+            _raise_last_error("failed to create replicated data_place")
         return p
 
     @staticmethod
@@ -1935,7 +2006,7 @@ cdef class data_place:
         cdef data_place p = data_place.__new__(data_place)
         p._h = stf_data_place_current_device()
         if p._h == NULL:
-            raise RuntimeError("failed to create current_device data_place")
+            _raise_last_error("failed to create current_device data_place")
         return p
 
     @staticmethod
@@ -1944,7 +2015,7 @@ cdef class data_place:
         cdef data_place p = data_place.__new__(data_place)
         p._h = stf_data_place_green_ctx(helper._h, view._idx)
         if p._h == NULL:
-            raise RuntimeError(f"failed to create green_ctx data_place for index {view._idx}")
+            _raise_last_error(f"failed to create green_ctx data_place for index {view._idx}")
         # Retain the view (hence the green-context helper) referenced by the place.
         p._add_owner(view)
         return p
@@ -2000,7 +2071,7 @@ cdef class data_place:
         cdef uintptr_t ptr_val = state.c_ptr
         p._h = stf_data_place_composite(grid._h, <stf_get_executor_fn>ptr_val)
         if p._h == NULL:
-            raise RuntimeError("failed to create composite data_place")
+            _raise_last_error("failed to create composite data_place")
         # The composite place references the grid's sub-place handles and the
         # ctypes mapper closure; retain both for this place's lifetime.
         p._add_owner(grid)
@@ -2046,7 +2117,7 @@ cdef class data_place:
         cdef cudaStream_t s = <cudaStream_t>s_val
         cdef void* ptr = stf_data_place_allocate(self._h, <ptrdiff_t>nbytes, s)
         if ptr == NULL:
-            raise MemoryError(f"data_place.allocate failed for {nbytes} bytes")
+            _raise_last_error(f"data_place.allocate failed for {nbytes} bytes")
         return <uintptr_t>ptr
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, stream=None):
@@ -2063,7 +2134,7 @@ cdef class data_place:
         """
         cdef uintptr_t s_val = _get_stream_pointer(stream)
         cdef cudaStream_t s = <cudaStream_t>s_val
-        stf_data_place_deallocate(self._h, <void*>ptr, nbytes, s)
+        _check(stf_data_place_deallocate(self._h, <void*>ptr, nbytes, s), "stf_data_place_deallocate")
 
     @property
     def allocation_is_stream_ordered(self):
@@ -2137,7 +2208,7 @@ cdef class task:
     def __cinit__(self, context ctx):
         self._t = stf_task_create(ctx._ctx)
         if self._t == NULL:
-            raise RuntimeError("failed to create STF task")
+            _raise_last_error("failed to create STF task")
         self._ctx = ctx._ctx
         self._lds_args = []
         self._owners = []
@@ -2157,9 +2228,9 @@ cdef class task:
 
     def start(self):
         # This is ignored if this is not a graph task
-        stf_task_enable_capture(self._t)
+        _check(stf_task_enable_capture(self._t), "stf_task_enable_capture")
 
-        stf_task_start(self._t)
+        _check(stf_task_start(self._t), "stf_task_start")
         # If a composite partition mapper failed during placement, the ctypes
         # callback could not raise; surface it now and end the started task so
         # we do not execute with mis-placed data.
@@ -2168,13 +2239,13 @@ cdef class task:
                 _raise_first_mapper_error(self._mapper_states)
             except BaseException:
                 try:
-                    stf_task_end(self._t)
+                    _check(stf_task_end(self._t), "stf_task_end")
                 except Exception:
                     pass
                 raise
 
     def end(self):
-        stf_task_end(self._t)
+        _check(stf_task_end(self._t), "stf_task_end")
 
     def add_dep(self, object d):
         """
@@ -2197,12 +2268,12 @@ cdef class task:
             raise ValueError("dep logical_data belongs to a different context")
 
         if d.dplace is None:
-            stf_task_add_dep(self._t, ldata._ld, mode_ce)
+            _check(stf_task_add_dep(self._t, ldata._ld, mode_ce), "stf_task_add_dep")
         else:
             if not isinstance(d.dplace, data_place):
                 raise TypeError("dep data_place override must be a data_place")
             dp = <data_place> d.dplace
-            stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, dp._h)
+            _check(stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, dp._h), "stf_task_add_dep_with_dplace")
             # Retain the override data place for the task's lifetime.
             self._owners.append(dp)
             _collect_mapper_states_from(dp, self._mapper_states, set())
@@ -2210,14 +2281,14 @@ cdef class task:
         self._lds_args.append(ldata)
 
     def set_symbol(self, str name):
-        stf_task_set_symbol(self._t, name.encode())
+        _check(stf_task_set_symbol(self._t, name.encode()), "stf_task_set_symbol")
 
     def set_exec_place(self, object exec_p):
         if not isinstance(exec_p, exec_place):
             raise TypeError("set_exec_place expects an exec_place argument")
 
         cdef exec_place ep = <exec_place> exec_p
-        stf_task_set_exec_place(self._t, ep._h)
+        _check(stf_task_set_exec_place(self._t, ep._h), "stf_task_set_exec_place")
         self._grid_rank = _exec_place_grid_rank(ep)
         # Retain the exec place (and its owner chain) for the task's lifetime.
         self._owners.append(ep)
@@ -2374,7 +2445,7 @@ cdef class cuda_kernel:
     def __cinit__(self, context ctx):
         self._k = stf_cuda_kernel_create(ctx._ctx)
         if self._k == NULL:
-            raise RuntimeError("failed to create STF cuda_kernel")
+            _raise_last_error("failed to create STF cuda_kernel")
         self._ctx = ctx._ctx
         self._lds_args = []
         self._arg_holders = []
@@ -2393,19 +2464,19 @@ cdef class cuda_kernel:
         self._k = NULL
 
     def start(self):
-        stf_cuda_kernel_start(self._k)
+        _check(stf_cuda_kernel_start(self._k), "stf_cuda_kernel_start")
         if self._mapper_states:
             try:
                 _raise_first_mapper_error(self._mapper_states)
             except BaseException:
                 try:
-                    stf_cuda_kernel_end(self._k)
+                    _check(stf_cuda_kernel_end(self._k), "stf_cuda_kernel_end")
                 except Exception:
                     pass
                 raise
 
     def end(self):
-        stf_cuda_kernel_end(self._k)
+        _check(stf_cuda_kernel_end(self._k), "stf_cuda_kernel_end")
         self._arg_holders.clear()
 
     def add_dep(self, object d):
@@ -2422,17 +2493,17 @@ cdef class cuda_kernel:
         if ldata._ctx != self._ctx:
             raise ValueError("dep logical_data belongs to a different context")
 
-        stf_cuda_kernel_add_dep(self._k, ldata._ld, mode_ce)
+        _check(stf_cuda_kernel_add_dep(self._k, ldata._ld, mode_ce), "stf_cuda_kernel_add_dep")
         self._lds_args.append(ldata)
 
     def set_symbol(self, str name):
-        stf_cuda_kernel_set_symbol(self._k, name.encode())
+        _check(stf_cuda_kernel_set_symbol(self._k, name.encode()), "stf_cuda_kernel_set_symbol")
 
     def set_exec_place(self, object exec_p):
         if not isinstance(exec_p, exec_place):
             raise TypeError("set_exec_place expects an exec_place argument")
         cdef exec_place ep = <exec_place>exec_p
-        stf_cuda_kernel_set_exec_place(self._k, ep._h)
+        _check(stf_cuda_kernel_set_exec_place(self._k, ep._h), "stf_cuda_kernel_set_exec_place")
         # Retain the exec place (and its owner chain) for the kernel's lifetime.
         self._owners.append(ep)
         _collect_mapper_states_from(ep, self._mapper_states, set())
@@ -2493,10 +2564,10 @@ cdef class cuda_kernel:
         holder = ParamHolder(tuple(args))
         cdef const void** raw_args = <const void**><uintptr_t>(holder.ptr)
 
-        stf_cuda_kernel_add_desc_cufunc(
+        _check(stf_cuda_kernel_add_desc_cufunc(
             self._k, <CUfunction>func_handle,
             grid_dim, block_dim, shmem,
-            <int>len(args), raw_args)
+            <int>len(args), raw_args), "stf_cuda_kernel_add_desc_cufunc")
 
         self._arg_holders.append(holder)
 
@@ -2581,7 +2652,7 @@ cdef class async_resources:
     def __cinit__(self):
         self._h = stf_async_resources_create()
         if self._h == NULL:
-            raise RuntimeError("failed to create stf async_resources handle")
+            _raise_last_error("failed to create stf async_resources handle")
 
     def __dealloc__(self):
         if self._h != NULL:
@@ -2760,10 +2831,11 @@ cdef class context:
         cdef stf_ctx_handle h = self._ctx
         cdef bint was_blocking = not self._has_stream
         self._pin = None
+        cdef stf_error_t err = STF_SUCCESS
         if h != NULL:
             self._ctx = NULL
             with nogil:
-                stf_ctx_finalize(h)
+                err = stf_ctx_finalize(h)
         else:
             self._ctx = NULL
 
@@ -2783,6 +2855,8 @@ cdef class context:
 
         if pin is not None:
             pin.release()
+
+        _check(err, "stf_ctx_finalize")
 
         # For non-caller-stream contexts stf_ctx_finalize blocks, so any
         # host_launch callback has run: surface its exception. Caller-stream
@@ -2809,7 +2883,7 @@ cdef class context:
         standalone places-layer calls within one context's lifetime.
         """
         if self._ctx == NULL:
-            raise RuntimeError("context has been finalized")
+            _raise_last_error("context has been finalized")
         cdef stf_exec_place_resources_handle h = stf_ctx_get_place_resources(self._ctx)
         return exec_place_resources._borrow_from(h)
 
@@ -2838,7 +2912,7 @@ cdef class context:
         >>> ctx.finalize()
         """
         if self._ctx == NULL:
-            raise RuntimeError("context handle is NULL")
+            _raise_last_error("context handle is NULL")
         cdef CUstream s
         with nogil:
             s = stf_fence(self._ctx)
@@ -2871,7 +2945,7 @@ cdef class context:
         >>> ctx.finalize()
         """
         if self._ctx == NULL:
-            raise RuntimeError("context handle is NULL")
+            _raise_last_error("context handle is NULL")
         if not isinstance(ld, logical_data):
             raise TypeError("wait() requires a logical_data object")
         cdef logical_data ldata = <logical_data>ld
@@ -2883,14 +2957,13 @@ cdef class context:
         PyObject_GetBuffer(buf, &pybuf, PyBUF_WRITABLE | PyBUF_C_CONTIGUOUS)
         cdef void* ptr = pybuf.buf
         cdef size_t sz = <size_t>pybuf.len
-        cdef int rc
+        cdef stf_error_t rc
         try:
             with nogil:
                 rc = stf_ctx_wait(self._ctx, ldata._ld, ptr, sz)
         finally:
             PyBuffer_Release(&pybuf)
-        if rc != 0:
-            raise RuntimeError("stf_ctx_wait failed")
+        _check(rc, "stf_ctx_wait")
         # wait() blocks until the data is ready, so any host_launch callback
         # ordered before it has run; surface a captured exception if present.
         self.check_errors()
@@ -3213,16 +3286,16 @@ cdef class context:
         try:
             if symbol is not None:
                 sym_bytes = symbol.encode("utf-8")
-                stf_host_launch_set_symbol(h, sym_bytes)
+                _check(stf_host_launch_set_symbol(h, sym_bytes), "stf_host_launch_set_symbol")
             for d in deps:
                 ldata = <logical_data>d.ld
                 mode_ce = <int>d.mode
-                stf_host_launch_add_dep(h, ldata._ld, <stf_access_mode>mode_ce)
-            stf_host_launch_set_user_data(
-                h, &payload_ptr, sizeof(PyObject*), _python_payload_destructor)
-            stf_host_launch_submit(h, _host_launch_trampoline)
+                _check(stf_host_launch_add_dep(h, ldata._ld, <stf_access_mode>mode_ce), "stf_host_launch_add_dep")
+            _check(stf_host_launch_set_user_data(
+                h, &payload_ptr, sizeof(PyObject*), _python_payload_destructor), "stf_host_launch_set_user_data")
+            _check(stf_host_launch_submit(h, _host_launch_trampoline), "stf_host_launch_submit")
         finally:
-            stf_host_launch_destroy(h)
+            _check(stf_host_launch_destroy(h), "stf_host_launch_destroy")
 
 
 # ===========================================================================
@@ -3295,7 +3368,7 @@ cdef class stackable_logical_data:
             self._has_view = False
 
     def set_symbol(self, str name):
-        stf_stackable_logical_data_set_symbol(self._ld, name.encode())
+        _check(stf_stackable_logical_data_set_symbol(self._ld, name.encode()), "stf_stackable_logical_data_set_symbol")
         self._symbol = name
 
     @property
@@ -3347,7 +3420,7 @@ cdef class stackable_logical_data:
 
     def set_read_only(self):
         """Mark this logical data as read-only (enables concurrent reads across scopes)."""
-        stf_stackable_logical_data_set_read_only(self._ld)
+        _check(stf_stackable_logical_data_set_read_only(self._ld), "stf_stackable_logical_data_set_read_only")
         # STF-level read-only data may never be written again; reflect that
         # in the Python-side flag so write()/rw()/push(WRITE|RW) fail with a
         # clear error instead of tripping a (release-mode compiled-out)
@@ -3383,7 +3456,7 @@ cdef class stackable_logical_data:
         cdef stf_data_place_handle dh = NULL
         if dplace is not None:
             dh = dplace._h
-        stf_stackable_logical_data_push(self._ld, <stf_access_mode>m, dh)
+        _check(stf_stackable_logical_data_push(self._ld, <stf_access_mode>m, dh), "stf_stackable_logical_data_push")
 
     @property
     def readonly(self):
@@ -3413,7 +3486,7 @@ cdef class stackable_logical_data:
         cdef stackable_logical_data out = stackable_logical_data.__new__(stackable_logical_data)
         out._ld = stf_stackable_logical_data_empty(self._ctx, self._len)
         if out._ld == NULL:
-            raise RuntimeError("failed to create empty stackable_logical_data")
+            _raise_last_error("failed to create empty stackable_logical_data")
         out._ctx   = self._ctx
         out._dtype = self._dtype
         out._shape = self._shape
@@ -3444,7 +3517,7 @@ cdef class stackable_task:
     def __cinit__(self, stackable_context ctx):
         self._t = stf_stackable_task_create(ctx._ctx)
         if self._t == NULL:
-            raise RuntimeError("failed to create STF stackable task")
+            _raise_last_error("failed to create STF stackable task")
         self._ctx = ctx._ctx
         self._lds_args = []
         self._owners = []
@@ -3462,20 +3535,20 @@ cdef class stackable_task:
         self._t = NULL
 
     def start(self):
-        stf_task_enable_capture(self._t)
-        stf_task_start(self._t)
+        _check(stf_task_enable_capture(self._t), "stf_task_enable_capture")
+        _check(stf_task_start(self._t), "stf_task_start")
         if self._mapper_states:
             try:
                 _raise_first_mapper_error(self._mapper_states)
             except BaseException:
                 try:
-                    stf_task_end(self._t)
+                    _check(stf_task_end(self._t), "stf_task_end")
                 except Exception:
                     pass
                 raise
 
     def end(self):
-        stf_task_end(self._t)
+        _check(stf_task_end(self._t), "stf_task_end")
 
     def add_dep(self, object d):
         if not isinstance(d, dep):
@@ -3500,8 +3573,8 @@ cdef class stackable_task:
             if not isinstance(d.dplace, data_place):
                 raise TypeError("dep data_place override must be a data_place")
             dp = <data_place> d.dplace
-            stf_stackable_task_add_dep_with_dplace(
-                self._ctx, self._t, ldata._ld, mode_ce, dp._h)
+            _check(stf_stackable_task_add_dep_with_dplace(
+                self._ctx, self._t, ldata._ld, mode_ce, dp._h), "stf_stackable_task_add_dep_with_dplace")
             # Retain the override data place for the task's lifetime.
             self._owners.append(dp)
             _collect_mapper_states_from(dp, self._mapper_states, set())
@@ -3509,13 +3582,13 @@ cdef class stackable_task:
         self._lds_args.append(ldata)
 
     def set_symbol(self, str name):
-        stf_task_set_symbol(self._t, name.encode())
+        _check(stf_task_set_symbol(self._t, name.encode()), "stf_task_set_symbol")
 
     def set_exec_place(self, object exec_p):
         if not isinstance(exec_p, exec_place):
             raise TypeError("set_exec_place expects an exec_place argument")
         cdef exec_place ep = <exec_place> exec_p
-        stf_task_set_exec_place(self._t, ep._h)
+        _check(stf_task_set_exec_place(self._t, ep._h), "stf_task_set_exec_place")
         # Retain the exec place (and its owner chain) for the task's lifetime.
         self._owners.append(ep)
         _collect_mapper_states_from(ep, self._mapper_states, set())
@@ -3565,23 +3638,23 @@ cdef class stackable_task:
 cdef uintptr_t _push_while_impl(stf_ctx_handle ctx) except? 0:
     cdef stf_while_scope_handle scope = stf_stackable_push_while(ctx)
     if scope == NULL:
-        raise RuntimeError("stf_stackable_push_while failed")
+        _raise_last_error("stf_stackable_push_while failed")
     return <uintptr_t>scope
 
 cdef uint64_t _get_cond_handle_impl(uintptr_t scope_ptr):
     return stf_while_scope_get_cond_handle(<stf_while_scope_handle>scope_ptr)
 
 cdef _pop_while_impl(uintptr_t scope_ptr):
-    stf_stackable_pop_while(<stf_while_scope_handle>scope_ptr)
+    _check(stf_stackable_pop_while(<stf_while_scope_handle>scope_ptr), "stf_stackable_pop_while")
 
 cdef uintptr_t _push_repeat_impl(stf_ctx_handle ctx, size_t count) except? 0:
     cdef stf_repeat_scope_handle scope = stf_stackable_push_repeat(ctx, count)
     if scope == NULL:
-        raise RuntimeError("stf_stackable_push_repeat failed")
+        _raise_last_error("stf_stackable_push_repeat failed")
     return <uintptr_t>scope
 
 cdef _pop_repeat_impl(uintptr_t scope_ptr):
-    stf_stackable_pop_repeat(<stf_repeat_scope_handle>scope_ptr)
+    _check(stf_stackable_pop_repeat(<stf_repeat_scope_handle>scope_ptr), "stf_stackable_pop_repeat")
 
 cdef _while_cond_multi_impl(stf_ctx_handle ctx, uintptr_t scope_ptr,
                              list leaves, str combiner_str):
@@ -3606,27 +3679,29 @@ cdef _while_cond_multi_impl(stf_ctx_handle ctx, uintptr_t scope_ptr,
         terms[i].threshold = <double>leaf._threshold
         terms[i].dtype = <stf_dtype>_cond_dtype_code(sld._dtype)
         terms[i].negate = 1 if leaf._negate else 0
-    stf_stackable_while_cond_multi(
+    _check(stf_stackable_while_cond_multi(
         ctx,
         <stf_while_scope_handle>scope_ptr,
         terms,
         n,
-        STF_COND_ALL if combiner_str == "all" else STF_COND_ANY)
+        STF_COND_ALL if combiner_str == "all" else STF_COND_ANY), "stf_stackable_while_cond_multi")
 
 
 cdef uintptr_t _pop_prologue_impl(stf_ctx_handle ctx) except? 0:
     cdef stf_launchable_graph_handle h = stf_stackable_pop_prologue(ctx)
     if h == NULL:
-        raise RuntimeError("stf_stackable_pop_prologue failed")
+        _raise_last_error("stf_stackable_pop_prologue failed")
     return <uintptr_t>h
 
 cdef _pop_epilogue_impl(stf_ctx_handle ctx):
-    stf_stackable_pop_epilogue(ctx)
+    _check(stf_stackable_pop_epilogue(ctx), "stf_stackable_pop_epilogue")
 
 cdef _launchable_launch_impl(uintptr_t h):
     cdef stf_launchable_graph_handle handle = <stf_launchable_graph_handle>h
+    cdef stf_error_t err
     with nogil:
-        stf_launchable_graph_launch(handle)
+        err = stf_launchable_graph_launch(handle)
+    _check(err, "stf_launchable_graph_launch")
 
 cdef uintptr_t _launchable_exec_impl(uintptr_t h):
     return <uintptr_t>stf_launchable_graph_exec(<stf_launchable_graph_handle>h)
@@ -3638,23 +3713,19 @@ cdef uintptr_t _launchable_graph_impl(uintptr_t h):
     return <uintptr_t>stf_launchable_graph_graph(<stf_launchable_graph_handle>h)
 
 cdef _launchable_destroy_impl(uintptr_t h):
-    stf_launchable_graph_destroy(<stf_launchable_graph_handle>h)
+    _check(stf_launchable_graph_destroy(<stf_launchable_graph_handle>h), "stf_launchable_graph_destroy")
 
 
 # ---- Shared-ownership flavor -----------------------------------------------
 
 cdef uintptr_t _pop_prologue_shared_impl(stf_ctx_handle ctx) except? 0:
     cdef stf_launchable_graph_shared h = NULL
-    cdef int rc = stf_stackable_pop_prologue_shared(ctx, &h)
-    if rc != 0 or h == NULL:
-        raise RuntimeError("stf_stackable_pop_prologue_shared failed")
+    _check(stf_stackable_pop_prologue_shared(ctx, &h), "stf_stackable_pop_prologue_shared")
     return <uintptr_t>h
 
 cdef uintptr_t _launchable_shared_dup_impl(uintptr_t h) except? 0:
     cdef stf_launchable_graph_shared out = NULL
-    cdef int rc = stf_launchable_graph_shared_dup(<stf_launchable_graph_shared>h, &out)
-    if rc != 0 or out == NULL:
-        raise RuntimeError("stf_launchable_graph_shared_dup failed")
+    _check(stf_launchable_graph_shared_dup(<stf_launchable_graph_shared>h, &out), "stf_launchable_graph_shared_dup")
     return <uintptr_t>out
 
 cdef int _launchable_shared_valid_impl(uintptr_t h):
@@ -3662,8 +3733,10 @@ cdef int _launchable_shared_valid_impl(uintptr_t h):
 
 cdef _launchable_shared_launch_impl(uintptr_t h):
     cdef stf_launchable_graph_shared handle = <stf_launchable_graph_shared>h
+    cdef stf_error_t err
     with nogil:
-        stf_launchable_graph_shared_launch(handle)
+        err = stf_launchable_graph_shared_launch(handle)
+    _check(err, "stf_launchable_graph_shared_launch")
 
 cdef uintptr_t _launchable_shared_exec_impl(uintptr_t h):
     return <uintptr_t>stf_launchable_graph_shared_exec(<stf_launchable_graph_shared>h)
@@ -3761,10 +3834,12 @@ cdef class LaunchableGraph:
         """
         cdef uintptr_t h = self._h
         self._h = 0
+        cdef stf_error_t err = STF_SUCCESS
         if h != 0:
             with nogil:
-                stf_launchable_graph_shared_free(<stf_launchable_graph_shared>h)
+                err = stf_launchable_graph_shared_free(<stf_launchable_graph_shared>h)
         self._release_scope()
+        _check(err, "stf_launchable_graph_shared_free")
 
     def _check_valid(self):
         if self._h == 0:
@@ -3824,13 +3899,13 @@ class _GraphScope:
         self._ctx = ctx
 
     def __enter__(self):
-        stf_stackable_push_graph((<stackable_context>self._ctx)._ctx)
+        _check(stf_stackable_push_graph((<stackable_context>self._ctx)._ctx), "stf_stackable_push_graph")
         (<stackable_context>self._ctx)._scope_opened()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
-            stf_stackable_pop((<stackable_context>self._ctx)._ctx)
+            _check(stf_stackable_pop((<stackable_context>self._ctx)._ctx), "stf_stackable_pop")
         finally:
             (<stackable_context>self._ctx)._scope_closed()
         return False
@@ -3861,7 +3936,7 @@ class _LaunchableGraphScope:
         self._h = 0
 
     def __enter__(self):
-        stf_stackable_push_graph((<stackable_context>self._ctx)._ctx)
+        _check(stf_stackable_push_graph((<stackable_context>self._ctx)._ctx), "stf_stackable_push_graph")
         (<stackable_context>self._ctx)._scope_opened()
         return self
 
@@ -4250,12 +4325,15 @@ cdef class stackable_context:
         cdef stf_ctx_handle h = self._ctx
         self._pin = None
         self._ctx = NULL
+        cdef stf_error_t err = STF_SUCCESS
         if h != NULL:
             with nogil:
-                stf_stackable_ctx_finalize(h)
+                err = stf_stackable_ctx_finalize(h)
 
         if pin is not None:
             pin.release()
+
+        _check(err, "stf_stackable_ctx_finalize")
 
         # stf_stackable_ctx_finalize blocks, so any host_launch callback has
         # run by now; surface the first captured exception to the caller.
@@ -4271,7 +4349,7 @@ cdef class stackable_context:
     def fence(self):
         """Return the fence CUDA stream as a Python int. Must be at root level."""
         if self._ctx == NULL:
-            raise RuntimeError("stackable_context handle is NULL")
+            _raise_last_error("stackable_context handle is NULL")
         cdef CUstream s
         with nogil:
             s = stf_stackable_ctx_fence(self._ctx)
@@ -4333,7 +4411,7 @@ cdef class stackable_context:
                 raise
 
         if out._ld == NULL:
-            raise RuntimeError("failed to create stackable_logical_data")
+            _raise_last_error("failed to create stackable_logical_data")
 
         # A read-only source can never be written, so mark it read-only at
         # the STF level too: nested scopes then auto-import it with READ
@@ -4341,7 +4419,7 @@ cdef class stackable_context:
         # prevents a pop/finalize write-back into memory the exporter
         # declared immutable.
         if out._readonly:
-            stf_stackable_logical_data_set_read_only(out._ld)
+            _check(stf_stackable_logical_data_set_read_only(out._ld), "stf_stackable_logical_data_set_read_only")
 
         if name is not None:
             out.set_symbol(name)
@@ -4374,7 +4452,7 @@ cdef class stackable_context:
         else:
             out._ld = stf_stackable_logical_data_empty(self._ctx, out._len)
         if out._ld == NULL:
-            raise RuntimeError("failed to create empty stackable_logical_data")
+            _raise_last_error("failed to create empty stackable_logical_data")
 
         if name is not None:
             out.set_symbol(name)
@@ -4422,7 +4500,7 @@ cdef class stackable_context:
         out._is_token = True
         out._ld = stf_stackable_token(self._ctx)
         if out._ld == NULL:
-            raise RuntimeError("failed to create stackable token")
+            _raise_last_error("failed to create stackable token")
         return out
 
     def task(self, *args, symbol=None):
@@ -4463,12 +4541,12 @@ cdef class stackable_context:
         :class:`LaunchableGraph` from :meth:`pop_prologue_shared` can
         decouple the push from the final release.
         """
-        stf_stackable_push_graph(self._ctx)
+        _check(stf_stackable_push_graph(self._ctx), "stf_stackable_push_graph")
         self._scope_opened()
 
     def pop(self):
         """Pop the innermost graph scope (matches an unmatched :meth:`push`)."""
-        stf_stackable_pop(self._ctx)
+        _check(stf_stackable_pop(self._ctx), "stf_stackable_pop")
         self._scope_closed()
 
     def launchable_graph_scope(self):
@@ -4562,17 +4640,17 @@ cdef class stackable_context:
         try:
             if symbol is not None:
                 sym_bytes = symbol.encode("utf-8")
-                stf_host_launch_set_symbol(h, sym_bytes)
+                _check(stf_host_launch_set_symbol(h, sym_bytes), "stf_host_launch_set_symbol")
             for d in deps:
                 sldata = <stackable_logical_data>d.ld
                 mode_ce = <int>d.mode
-                stf_stackable_host_launch_add_dep(
-                    self._ctx, h, sldata._ld, <stf_access_mode>mode_ce)
-            stf_host_launch_set_user_data(
-                h, &payload_ptr, sizeof(PyObject*), _python_payload_destructor)
-            stf_stackable_host_launch_submit(h, _host_launch_trampoline)
+                _check(stf_stackable_host_launch_add_dep(
+                    self._ctx, h, sldata._ld, <stf_access_mode>mode_ce), "stf_stackable_host_launch_add_dep")
+            _check(stf_host_launch_set_user_data(
+                h, &payload_ptr, sizeof(PyObject*), _python_payload_destructor), "stf_host_launch_set_user_data")
+            _check(stf_stackable_host_launch_submit(h, _host_launch_trampoline), "stf_stackable_host_launch_submit")
         finally:
-            stf_stackable_host_launch_destroy(h)
+            _check(stf_stackable_host_launch_destroy(h), "stf_stackable_host_launch_destroy")
 
 
 # ---------------------------------------------------------------------------
