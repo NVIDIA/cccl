@@ -31,6 +31,40 @@ def callback(left: Int32, right: Int32) -> Int32:
 
 scalar = Int32(1)
 values = cutlass_coop.ThreadData(2, np.int32)
+cutlass_coop.load(
+    cutlass_coop.this_grid(),  # expected-error: [arg-type]
+    object(),
+    values,
+)
+cutlass_coop.store(
+    cutlass_coop.this_thread(),  # expected-error: [arg-type]
+    object(),
+    values,
+)
+cutlass_coop.load(  # expected-error: [call-overload]
+    block, object(), values, algorithm="unknown"
+)
+cutlass_coop.store(  # expected-error: [call-overload]
+    block, object(), values, valid_items=1.5
+)
+cutlass_coop.store(  # expected-error: [call-overload]
+    block, object(), values, offset=1.5
+)
+cutlass_coop.load(  # expected-error: [call-overload]
+    block, object(), values, oob_default=0
+)
+cutlass_coop.load(
+    warp,  # expected-error: [arg-type]
+    object(),
+    values,
+    temp_storage=cutlass_coop.TempStorage(),
+)
+cutlass_coop.store(  # expected-error: [call-overload]
+    warp, object(), values, algorithm="warp_transpose"
+)
+cutlass_coop.store(  # expected-error: [call-overload]
+    block, object(), values.to_register_tensor()
+)
 cutlass_coop.reduce(block, scalar, binary_op=callback)  # expected-error: [arg-type]
 cutlass_coop.sum(block, scalar, valid_items=7)  # expected-error: [call-overload]
 cutlass_coop.sum(  # expected-error: [call-overload]

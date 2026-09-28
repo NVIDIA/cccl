@@ -2,32 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Any
+"""CUTLASS Load/Store share the common call and payload typing contracts."""
 
-from .._core.api import TempStorageLike
-from .._core.api.thread_group import ThreadGroup
-from ._thread_data import ThreadData
-
-def load(
-    group: ThreadGroup,
-    source: Any,
-    output: ThreadData,
-    /,
-    *,
-    algorithm: Any = "direct",
-    valid_items: Any = None,
-    oob_default: Any = None,
-    offset: Any = None,
-    temp_storage: TempStorageLike | None = None,
-) -> None: ...
-def store(
-    group: ThreadGroup,
-    destination: Any,
-    value: Any,
-    /,
-    *,
-    algorithm: Any = "direct",
-    valid_items: Any = None,
-    offset: Any = None,
-    temp_storage: TempStorageLike | None = None,
-) -> None: ...
+from .._core.api.load_store import load as load
+from .._core.api.load_store import store as store
