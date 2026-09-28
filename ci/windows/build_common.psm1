@@ -132,6 +132,18 @@ $env:CTEST_PARALLEL_LEVEL = 1
 $env:CUDAHOSTCXX = $script:HOST_COMPILER
 $env:CXX = $script:HOST_COMPILER
 
+# Kill any build / test steps that exceed this time, otherwise CI jobs may be
+# killed by GHA before they can upload logs / artifacts needed to reproduce the timeout.
+# Only applies when running inside GitHub Actions.
+# Note that this is per-build/test limit, not a total timeout for the entire job.
+if (-not $env:CCCL_CI_COMMAND_TIMEOUT) {
+    # Default to 5.5hrs
+    $CCCL_CI_COMMAND_TIMEOUT = 5.5 * 60 * 60
+} else {
+    $CCCL_CI_COMMAND_TIMEOUT = [int]$env:CCCL_CI_COMMAND_TIMEOUT
+}
+$env:CCCL_CI_COMMAND_TIMEOUT = $CCCL_CI_COMMAND_TIMEOUT
+
 Write-Host "========================================"
 Write-Host "Begin build"
 Write-Host "pwd=$pwd"
@@ -145,6 +157,7 @@ Write-Host "NVCC_VERSION=$NVCC_VERSION"
 Write-Host "PARALLEL_LEVEL=$env:PARALLEL_LEVEL"
 Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
 Write-Host "CTEST_PARALLEL_LEVEL=$env:CTEST_PARALLEL_LEVEL"
+Write-Host "CCCL_CI_COMMAND_TIMEOUT=$env:CCCL_CI_COMMAND_TIMEOUT"
 Write-Host "CCCL_BUILD_INFIX=$env:CCCL_BUILD_INFIX"
 Write-Host "GLOBAL_CMAKE_OPTIONS=$script:GLOBAL_CMAKE_OPTIONS"
 Write-Host "Current commit is:"
@@ -153,6 +166,52 @@ Write-Host "========================================"
 
 cmake --version
 ctest --version
+
+function run_ci_timed_command {
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$CMD
+    )
+
+    if ($env:GITHUB_ACTIONS) {
+        if ((-not ($env:CCCL_CI_COMMAND_TIMEOUT -eq $null)) `
+             -and ([int]$env:CCCL_CI_COMMAND_TIMEOUT -gt 0)) {
+
+            $start = Get-Date
+
+            $job = Start-Job `
+                -ArgumentList @($pwd, $CMD) `
+                -ScriptBlock {
+                    param([string]$cwd, [string]$cmd)
+                    cd $cwd
+                    Invoke-Expression $cmd
+                    return $LastExitCode
+                }
+
+            while ($job.State -eq "Running") {
+                # Display any output gathered so far
+                $job | Receive-Job
+                # Check if we have exceeded the timeout
+                if(((Get-Date) - $start).TotalSeconds -gt $env:CCCL_CI_COMMAND_TIMEOUT) {
+                    Write-Warning "timeout"
+                    Remove-Job -Job $job -Force
+                    return 1
+                }
+            }
+
+            $res = $job | Receive-Job
+            Remove-Job -Job $job -ErrorAction SilentlyContinue
+            return $res
+        }
+
+        Write-Warning "Warning: timeout not found; running without CI timeout."
+    }
+
+    Invoke-Expression $CMD
+
+    return $LastExitCode
+}
 
 function configure_preset {
     Param(
@@ -190,20 +249,20 @@ function configure_preset {
 
     $env:SCCACHE_NO_DIST_COMPILE="1"
 
-    $duration = [math]::Round((Measure-Command { Invoke-Expression $configure_command | Out-Default }).TotalSeconds)
+    $code = 0
 
-    $test_result = $LastExitCode
+    $duration = [math]::Round((Measure-Command { $code = run_ci_timed_command "$configure_command" | Out-Default }).TotalSeconds)
 
     Remove-Item Env:\SCCACHE_NO_DIST_COMPILE
 
-    & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration"
+    & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $code $duration"
 
     If($CURRENT_PATH -ne "windows") {
         popd
     }
 
-    If ($test_result -ne 0) {
-        throw "$step Failed"
+    If ($code -ne 0) {
+        throw "$step failed"
     }
 }
 
@@ -239,13 +298,13 @@ function build_preset {
 
     Write-Host $build_command
 
-    $duration = [math]::Round((Measure-Command { Invoke-Expression $build_command | Out-Default }).TotalSeconds)
+    $code = 0
 
-    $test_result = $LastExitCode
+    $duration = [math]::Round((Measure-Command { $code = run_ci_timed_command "$build_command" | Out-Default }).TotalSeconds)
 
     sccache --show-adv-stats --stats-format=json > "${sccache_json}"
 
-    & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration"
+    & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $code $duration"
 
     sccache --show-adv-stats
 
@@ -253,8 +312,8 @@ function build_preset {
         popd
     }
 
-    If ($test_result -ne 0) {
-        throw "$step Failed"
+    If ($code -ne 0) {
+        throw "$step failed"
     }
 }
 
@@ -286,10 +345,11 @@ function test_preset {
 
     Write-Host $build_command
 
-    $duration = [math]::Round((Measure-Command { Invoke-Expression $test_command | Out-Default }).TotalSeconds)
-    $test_result = $LastExitCode
+    $code = 0
 
-    & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration"
+    $duration = [math]::Round((Measure-Command { $code = run_ci_timed_command "$test_command" | Out-Default }).TotalSeconds)
+
+    & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $code $duration"
 
     sccache --show-adv-stats
 
@@ -297,8 +357,8 @@ function test_preset {
         popd
     }
 
-    If ($test_result -ne 0) {
-         throw "$step Failed"
+    If ($code -ne 0) {
+         throw "$step failed"
     }
 }
 
