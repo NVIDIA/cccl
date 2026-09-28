@@ -182,7 +182,9 @@ def test_public_stubs_pass_strict_consumer_type_checks(
         valid_consumers.append(destination)
 
     mypy_args = _mypy_args(tmp_path / "mypy-cache")
-    if consumer_family == "cutlass":
+    # Common Scan also consumes CUTLASS scalar annotations when available.
+    # Keep generated experimental bindings outside these public API checks.
+    if importlib.util.find_spec("cutlass") is not None:
         mypy_args.extend(["--config-file", str(_CONSUMER_ROOT / "cutlass_mypy.ini")])
     result = _run_mypy(
         mypy_args,

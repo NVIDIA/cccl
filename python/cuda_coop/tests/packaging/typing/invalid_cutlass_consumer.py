@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import numpy as np
-from cutlass import Float32, Int32
+from cutlass import Float32, Float64, Int32, Int64, Uint32
 
 import cuda.coop.cutlass as cutlass_coop
 from cuda import coop as common
@@ -115,6 +115,33 @@ common.scan(  # expected-error: [call-overload]
     block, scalar, aggregate_output=cutlass_coop.ThreadData(1, Int32)
 )
 
-wrong_seed: Int32 = cutlass_coop.exclusive_scan(  # expected-error: [assignment]
+# Discard results so an assignment cannot constrain seed inference.
+cutlass_coop.exclusive_scan(  # expected-error: [misc]
     block, scalar, initial_value=Float32(0)
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    block, scalar, mode="exclusive", initial_value=Int64(0)
+)
+cutlass_coop.exclusive_scan(  # expected-error: [misc]
+    block, values, initial_value=Uint32(0)
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    warp, Float32(1), mode="exclusive", initial_value=np.float64(0)
+)
+common.exclusive_scan(  # expected-error: [misc]
+    block, scalar, initial_value=Int64(0)
+)
+common.scan(  # expected-error: [call-overload]
+    block,
+    cutlass_coop.ThreadData(2, Float32),
+    mode="exclusive",
+    initial_value=Float64(0),
+)
+common.exclusive_scan(  # expected-error: [misc]
+    block,
+    Float32(1),
+    initial_value=np.float64(0),
+)
+common.scan(  # expected-error: [call-overload]
+    warp, scalar, mode="exclusive", initial_value=np.uint32(0)
 )

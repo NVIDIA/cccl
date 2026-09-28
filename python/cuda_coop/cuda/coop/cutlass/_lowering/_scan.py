@@ -619,13 +619,13 @@ _resolve_type = _provider_types.make_provider_type_resolver(
 
 
 def _typed_value(value, value_type, *, name="value", initial=False):
+    if isinstance(value, np.generic):
+        if initial and _provider_types.canonical_dsl_type(value) is not value_type:
+            raise TypeError(
+                "cuda.coop.cutlass.scan initial_value dtype must match value dtype"
+            )
+        value = value.item()
     if initial:
-        if isinstance(value, np.generic):
-            if _provider_types.canonical_dsl_type(value) is not value_type:
-                raise TypeError(
-                    "cuda.coop.cutlass.scan initial_value dtype must match value dtype"
-                )
-            value = value.item()
         if type(value) is float and not math.isfinite(value):
             raise ValueError("cuda.coop.cutlass.scan initial_value must be finite")
     converted = _provider_types.coerce_plain_scalar(
