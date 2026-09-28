@@ -34,7 +34,7 @@ def test_decode_example():
         values[0] = rank + 10
         lengths = coop.ThreadData(1, dtype=cutlass.Uint32)
         lengths[0] = cutlass.Uint32(2)
-        scratch = coop.TempStorage()
+        scratch = coop.TempStorage(auto_sync=True)
         window = coop.run_length_decode(
             block,
             values,
