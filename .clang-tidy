@@ -72,7 +72,6 @@ Checks:
   # Device code requires printf() and friends
   - '-cppcoreguidelines-pro-type-vararg'
   - '-cppcoreguidelines-rvalue-reference-param-not-moved'
-  - '-cppcoreguidelines-virtual-class-destructor'
   - '-cppcoreguidelines-pro-type-member-init'
   # Unions are used far too much in CUB for this to be useful
   - '-cppcoreguidelines-pro-type-union-access'

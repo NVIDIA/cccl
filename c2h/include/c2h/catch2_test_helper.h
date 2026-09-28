@@ -239,6 +239,8 @@ public:
       , m_matcher(matcher)
   {}
 
+  virtual ~QuietMatchExpr() = default;
+
   void streamReconstructedExpression(std::ostream& os) const override
   {
     os << m_matcher.toString();
