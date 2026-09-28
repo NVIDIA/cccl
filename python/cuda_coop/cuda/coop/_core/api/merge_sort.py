@@ -6,18 +6,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import ThreadGroup
+from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _backend_module_name,
     _common_group_operation,
-    _group_primitive_marker,
 )
 from ._payload import (
     TempStorageLike,
     ThreadDataLike,
     _ReadableThreadDataLike,
-    _validate_common_numeric_value,
-    _validate_common_temp_storage,
 )
 
 
@@ -30,8 +26,8 @@ def merge_sort_keys(
     /,
     *,
     descending: bool = False,
-    valid_items: Any = None,
-    oob_default: Any = None,
+    valid_items: object = None,
+    oob_default: object = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[Any]:
     """Return keys sorted across a block or warp in blocked order.
@@ -96,28 +92,8 @@ def merge_sort_keys(
     merge_sort_pairs
     """
 
-    if not isinstance(descending, bool):
-        raise TypeError("descending must be a compile-time bool")
-    if (valid_items is None) != (oob_default is None):
-        raise ValueError("valid_items and oob_default must be provided together")
-    if _backend_module_name() is not None:
-        _validate_common_numeric_value(
-            "merge_sort_keys",
-            "keys",
-            keys,
-            require_thread_data=True,
-            allow_readonly_thread_data=True,
-        )
-        if temp_storage is not None:
-            _validate_common_temp_storage("merge_sort_keys", temp_storage)
-    return _group_primitive_marker(
-        "merge_sort_keys",
-        group,
-        keys,
-        descending=descending,
-        valid_items=valid_items,
-        oob_default=oob_default,
-        temp_storage=temp_storage,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.merge_sort_keys must be called from a supported GPU kernel."
     )
 
 
@@ -131,8 +107,8 @@ def merge_sort_pairs(
     /,
     *,
     descending: bool = False,
-    valid_items: Any = None,
-    oob_default: Any = None,
+    valid_items: object = None,
+    oob_default: object = None,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[ThreadDataLike[Any], ThreadDataLike[Any]]:
     """Return key/value pairs sorted across a block or warp in blocked order.
@@ -201,36 +177,8 @@ def merge_sort_pairs(
     merge_sort_keys
     """
 
-    if not isinstance(descending, bool):
-        raise TypeError("descending must be a compile-time bool")
-    if (valid_items is None) != (oob_default is None):
-        raise ValueError("valid_items and oob_default must be provided together")
-    if _backend_module_name() is not None:
-        _validate_common_numeric_value(
-            "merge_sort_pairs",
-            "keys",
-            keys,
-            require_thread_data=True,
-            allow_readonly_thread_data=True,
-        )
-        _validate_common_numeric_value(
-            "merge_sort_pairs",
-            "values",
-            values,
-            require_thread_data=True,
-            allow_readonly_thread_data=True,
-        )
-        if temp_storage is not None:
-            _validate_common_temp_storage("merge_sort_pairs", temp_storage)
-    return _group_primitive_marker(
-        "merge_sort_pairs",
-        group,
-        keys,
-        values,
-        descending=descending,
-        valid_items=valid_items,
-        oob_default=oob_default,
-        temp_storage=temp_storage,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.merge_sort_pairs must be called from a supported GPU kernel."
     )
 
 

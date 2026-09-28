@@ -54,7 +54,7 @@ def test_temp_storage_example():
     @cuda.jit
     def scan_tiles(source, destination):
         block = coop.this_block()
-        scratch = coop.TempStorage(alignment=16)
+        scratch = coop.TempStorage(alignment=16, auto_sync=True)
         items = coop.ThreadData(2, dtype=np.int32)
         for tile in range(2):
             offset = tile * cuda.blockDim.x * 2
