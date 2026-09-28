@@ -80,7 +80,6 @@ Checks:
   - '-cppcoreguidelines-non-private-member-variables-in-classes'
   - '-cppcoreguidelines-prefer-member-initializer'
   - '-cppcoreguidelines-slicing'
-  - '-cppcoreguidelines-no-malloc'
   - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME
   # TODO(jfaibussowit):
