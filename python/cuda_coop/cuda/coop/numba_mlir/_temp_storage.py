@@ -17,7 +17,7 @@ class TempStorage:
         size_in_bytes=None,
         *,
         alignment=None,
-        auto_sync=None,
+        auto_sync=False,
         sharing="shared",
     ):
         if size_in_bytes is not None:
@@ -45,9 +45,8 @@ class TempStorage:
         self.alignment = alignment
         self.sharing = sharing_value
         # Sharing selects the slice layout; synchronization is independent.
-        # A call site inside a loop reuses its slice under either layout, so
-        # the trailing reuse barrier stays on unless the caller opts out.
-        self.auto_sync = True if auto_sync is None else auto_sync
+        # The caller synchronizes before reuse unless auto_sync=True.
+        self.auto_sync = False if auto_sync is None else auto_sync
 
 
 __all__ = ["TempStorage"]

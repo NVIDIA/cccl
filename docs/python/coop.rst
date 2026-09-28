@@ -350,7 +350,7 @@ For example:
    scratch = coop.TempStorage(
        size_in_bytes=None,
        alignment=None,
-       auto_sync=None,
+       auto_sync=False,
        sharing="shared",
    )
 
@@ -385,17 +385,17 @@ Sharing selects only the slice layout: ``sharing="shared"`` overlaps every call
 that passes the same descriptor on one region, while ``sharing="exclusive"``
 gives each call site its own slice. A call site inside a loop reuses its slice
 under either layout, so ``auto_sync`` is independent of ``sharing`` and
-defaults to ``True`` for both.
+defaults to ``False`` for both.
 
 The synchronization model is deliberately simple. A descriptor names one
 region; distinct descriptors and compiler-owned storage never alias each
-other. With ``auto_sync`` enabled, which is the default, the compiler appends
+other. With ``auto_sync=True``, the compiler appends
 ``cuda.syncthreads()`` for block groups or ``cuda.syncwarp(mask)`` for Warp
 groups immediately after every call that consumes the storage, including the
 last one, and never inserts a barrier before a call. That trailing barrier
 orders reuse of the temporary storage. Its insertion depends on scratch use,
 so arrange explicit barriers for application-owned shared memory. It disappears when
-``auto_sync=False``. With ``auto_sync=False`` the caller issues
+``auto_sync=False`` (the default). The caller issues
 ``cuda.syncthreads()`` between consecutive uses of the descriptor, and a call
 site inside a loop counts as a reuse on every iteration. Compiler-owned storage
 always synchronizes.
