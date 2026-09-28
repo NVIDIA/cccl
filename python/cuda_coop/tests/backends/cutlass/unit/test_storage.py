@@ -82,7 +82,7 @@ def test_exclusive_slices(capacity, requested, auto_sync):
     assert [binding.size_in_bytes for binding in plan.bindings] == [24, 16]
     assert [binding.alignment for binding in plan.bindings] == [8, 16]
     assert all(
-        binding.event.auto_sync is (True if auto_sync is None else auto_sync)
+        binding.event.auto_sync is (False if auto_sync is None else auto_sync)
         for binding in plan.bindings
     )
 
@@ -124,7 +124,7 @@ def test_kernel_and_storage_isolation():
     "changed",
     [
         {"sharing": "exclusive"},
-        {"auto_sync": False},
+        {"auto_sync": True},
         {"capacity_size_in_bytes": 64},
         {"capacity_alignment": 32},
     ],

@@ -260,7 +260,7 @@ def test_storage_reuse_in_runtime_loop(algorithm, capacity, sharing, manual_sync
         storage = cutlass_coop.TempStorage(
             capacity,
             sharing=sharing,
-            auto_sync=False if manual_sync else None,
+            auto_sync=not manual_sync,
             alignment=1,
         )
         for tile in range(tiles):
@@ -309,7 +309,7 @@ def test_storage_reuse_in_runtime_loop(algorithm, capacity, sharing, manual_sync
 def test_requested_storage_alignment_is_a_minimum(api, alignment, sharing):
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer):
-        storage = api.TempStorage(alignment=alignment, sharing=sharing)
+        storage = api.TempStorage(alignment=alignment, sharing=sharing, auto_sync=True)
         payload = api.ThreadData(_ITEMS)
         api.load(
             api.this_block(),
@@ -373,6 +373,7 @@ def test_deferred_storage_preserves_user_shared_memory(api, sharing):
             algorithm="transpose",
             temp_storage=storage,
         )
+        storage.sync()
         api.store(
             api.this_block(),
             destination,
@@ -414,7 +415,9 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
 
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer):
-        storage = cutlass_coop.TempStorage(sharing="shared", alignment=64)
+        storage = cutlass_coop.TempStorage(
+            sharing="shared", alignment=64, auto_sync=True
+        )
         payload = cutlass_coop.ThreadData(_ITEMS)
         cutlass_coop.load(
             cutlass_coop.this_block(),

@@ -19,7 +19,7 @@ class TempStorage:
         size_in_bytes: int | None = None,
         *,
         alignment: int | None = None,
-        auto_sync: bool | None = None,
+        auto_sync: bool | None = False,
         sharing: TempStorageSharing = "shared",
     ) -> None:
         """Configure scratch size, alignment, synchronization, and sharing."""
