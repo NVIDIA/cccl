@@ -236,6 +236,51 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_phase_until()
   concurrent_threads_launch(awaiter, arriver);
 }
 
+TEST_DEVICE_FUNC void test_concurrent_try_wait_conditional_phase_for()
+{
+  cuda::shared_barrier* bar = construct_barrier<11>(2);
+  cuda::std::uint32_t phase = 0;
+  cuda::std::chrono::nanoseconds delay(0);
+
+  execute_on_thread_zero([&] {
+    (void) bar->arrive();
+  });
+
+  auto awaiter = [=] __device__ {
+    while (!bar->try_wait_conditional_phase_for(phase, delay))
+    {
+    }
+  };
+  auto arriver = [=] __device__ {
+    (void) bar->arrive();
+  };
+
+  concurrent_threads_launch(awaiter, arriver);
+}
+
+TEST_DEVICE_FUNC void test_concurrent_try_wait_conditional_phase_until()
+{
+  cuda::shared_barrier* bar = construct_barrier<12>(2);
+  cuda::std::uint32_t phase = 0;
+  cuda::std::chrono::duration<int> delay(0);
+
+  execute_on_thread_zero([&] {
+    (void) bar->arrive();
+  });
+
+  auto awaiter = [=] __device__ {
+    auto until_time = cuda::std::chrono::system_clock::now() + delay;
+    while (!bar->try_wait_conditional_phase_until(phase, until_time))
+    {
+    }
+  };
+  auto arriver = [=] __device__ {
+    (void) bar->arrive();
+  };
+
+  concurrent_threads_launch(awaiter, arriver);
+}
+
 TEST_DEVICE_FUNC void test_shared_memory_barrier_choreography()
 {
   test_concurrent_arrive_and_wait();
@@ -246,6 +291,8 @@ TEST_DEVICE_FUNC void test_shared_memory_barrier_choreography()
   test_concurrent_wait_phase();
   test_concurrent_try_wait_phase_for();
   test_concurrent_try_wait_phase_until();
+  test_concurrent_try_wait_conditional_phase_for();
+  test_concurrent_try_wait_conditional_phase_until();
 }
 
 TEST_DEVICE_FUNC void check_success_status(const cuda::shared_barrier::operation_status& status)
@@ -381,6 +428,9 @@ TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_barrier* bar)
   bar->wait_conditional_phase(0);
   assert(bar->test_wait_conditional_phase(0));
   assert(bar->try_wait_conditional_phase(0));
+  assert(bar->try_wait_conditional_phase_for(0, cuda::std::chrono::nanoseconds(1)));
+  assert(
+    bar->try_wait_conditional_phase_until(0, cuda::std::chrono::system_clock::now() + cuda::std::chrono::seconds(1)));
 
   bar->arrive_and_wait(cuda::ignore_status);
 
@@ -413,7 +463,7 @@ TEST_DEVICE_FUNC void test_shared_barrier_common_extensions()
   test_test_waits(bar);
   test_ignore_status_waits(bar);
   test_status_waits(bar);
-  test_phase_waits(bar);
+  test_phase_waits(construct_barrier<10>(blockDim.x));
 }
 
 TEST_DEVICE_FUNC void test_shared_barrier_sm90_extensions()

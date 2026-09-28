@@ -32,6 +32,8 @@
 #  include <cuda/std/__chrono/time_point.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/cstdint>
 
 #  include <nv/target>
@@ -55,7 +57,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! The object must be placed in local shared memory and initialized with `cuda::init`. Host and non-shared-memory
 //! fallback behavior is not provided by this type.
-class shared_barrier : private ::cuda::__detail::__shared_mbarrier_impl
+class shared_barrier : private ::cuda::__shared_mbarrier_impl
 {
   _CCCL_DEVICE_API friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
     ::cuda::shared_barrier& __b);
@@ -70,8 +72,8 @@ public:
   {
     bool __complete_                     = false;
     bool __report_predicate_             = false;
-    ::cuda::std::uint8_t __report_value_ = 0;
     mutable bool __report_inspected_     = false;
+    ::cuda::std::uint8_t __report_value_ = 0;
 
     _CCCL_HOST_DEVICE_API constexpr operation_status(
       bool __complete, bool __report_predicate, ::cuda::std::uint8_t __report_value) noexcept
@@ -80,8 +82,10 @@ public:
         , __report_value_(__report_value)
     {}
 
-    _CCCL_HOST_DEVICE_API constexpr operation_status(::cuda::__detail::__mbarrier_wait_status __result) noexcept
-        : operation_status(__result.__complete, __result.__report_predicate, __result.__report_value)
+    _CCCL_HOST_DEVICE_API constexpr operation_status(::cuda::__shared_mbarrier_impl::__wait_status __result) noexcept
+        : __complete_(__result.__complete)
+        , __report_predicate_(__result.__report_predicate)
+        , __report_value_(__result.__report_value)
     {}
 
     friend class shared_barrier;
@@ -104,27 +108,26 @@ public:
 
     //! @brief Move-constructs an operation status.
     _CCCL_HOST_DEVICE_API operation_status(operation_status&& __other) noexcept
-        : __complete_(__other.__complete_)
-        , __report_predicate_(__other.__report_predicate_)
-        , __report_value_(__other.__report_value_)
-        , __report_inspected_(__other.__report_inspected_)
-    {
-      __other.__report_predicate_ = false;
-      __other.__report_inspected_ = true;
-    }
+        : __complete_(::cuda::std::exchange(__other.__complete_, false))
+        , __report_predicate_(::cuda::std::exchange(__other.__report_predicate_, false))
+        , __report_inspected_(::cuda::std::exchange(__other.__report_inspected_, true))
+        , __report_value_(::cuda::std::exchange(__other.__report_value_, 0))
+    {}
 
     //! @brief Move-assigns an operation status.
     //!
     //! If this object currently owns an uninspected report, the assignment traps on device.
     _CCCL_HOST_DEVICE_API operation_status& operator=(operation_status&& __other) noexcept
     {
+      if (this == ::cuda::std::addressof(__other))
+      {
+        return *this;
+      }
       __assert_report_inspected();
-      __complete_                 = __other.__complete_;
-      __report_predicate_         = __other.__report_predicate_;
-      __report_value_             = __other.__report_value_;
-      __report_inspected_         = __other.__report_inspected_;
-      __other.__report_predicate_ = false;
-      __other.__report_inspected_ = true;
+      __complete_         = ::cuda::std::exchange(__other.__complete_, false);
+      __report_predicate_ = ::cuda::std::exchange(__other.__report_predicate_, false);
+      __report_inspected_ = ::cuda::std::exchange(__other.__report_inspected_, true);
+      __report_value_     = ::cuda::std::exchange(__other.__report_value_, 0);
       return *this;
     }
 
@@ -149,10 +152,7 @@ public:
     //! If a report is present, this marks the report as inspected.
     [[nodiscard]] _CCCL_HOST_DEVICE_API bool has_report() const noexcept
     {
-      if (__report_predicate_)
-      {
-        __report_inspected_ = true;
-      }
+      __report_inspected_ = __report_predicate_;
       return __report_predicate_;
     }
 
@@ -268,26 +268,6 @@ public:
   public:
     //! @brief Constructs a token with no associated arrival.
     _CCCL_HOST_DEVICE_API constexpr arrival_token() noexcept {}
-
-    _CCCL_HOST_DEVICE_API constexpr arrival_token(const arrival_token& __other) noexcept
-        : __token_(__other.__token_)
-    {}
-
-    _CCCL_HOST_DEVICE_API constexpr arrival_token(arrival_token&& __other) noexcept
-        : __token_(__other.__token_)
-    {}
-
-    _CCCL_HOST_DEVICE_API constexpr arrival_token& operator=(const arrival_token& __other) noexcept
-    {
-      __token_ = __other.__token_;
-      return *this;
-    }
-
-    _CCCL_HOST_DEVICE_API constexpr arrival_token& operator=(arrival_token&& __other) noexcept
-    {
-      __token_ = __other.__token_;
-      return *this;
-    }
   };
 
   //! @brief Constructs an uninitialized `shared_barrier` object.
@@ -301,8 +281,7 @@ public:
 private:
   [[noreturn]] _CCCL_HOST_DEVICE_API static void __unsupported_storage() noexcept
   {
-    _CCCL_ASSERT(false, "shared_barrier requires local shared memory and mbarrier layout v1 support");
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (::cuda::std::terminate();), (::__trap();))
+    _CCCL_VERIFY(false, "shared_barrier requires local shared memory and mbarrier layout v1 support");
     _CCCL_UNREACHABLE();
   }
 
@@ -323,6 +302,11 @@ private:
     return __token.__token_;
   }
 
+  struct __conditional_phase
+  {
+    ::cuda::std::uint32_t __phase;
+  };
+
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assert_supported_storage() const
   {
     if (!::cuda::device::is_object_from(__storage_ref(), ::cuda::device::address_space::shared))
@@ -335,39 +319,181 @@ private:
     }
   }
 
-  template <class _PollFn, class _CompleteFn>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static auto __wait_until_complete(_PollFn __poll, _CompleteFn __complete)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status __poll_test_wait_status(arrival_token __token) const
   {
-    auto __result = __poll();
-    while (!__complete(__result))
-    {
-      __result = __poll();
-    }
-    return __result;
+    return operation_status(__test_wait_status(__token_value(__token)));
   }
 
-  template <class _Rep, class _Period, class _PollFn, class _TestFn, class _CompleteFn>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static auto __try_wait_for_impl(
-    const ::cuda::std::chrono::duration<_Rep, _Period>& __dur, _PollFn __poll, _TestFn __test, _CompleteFn __complete)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
+  __poll_test_wait_status(::cuda::std::uint32_t __phase) const
+  {
+    return operation_status(__test_wait_phase_status(__phase));
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status __poll_try_wait_status(arrival_token __token) const
+  {
+    return operation_status(__try_wait_status(__token_value(__token)));
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
+  __poll_try_wait_status(::cuda::std::uint32_t __phase) const
+  {
+    return operation_status(__try_wait_phase_status(__phase));
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
+  __poll_try_wait_status(arrival_token __token, ::cuda::std::uint32_t __suspend_time_hint) const
+  {
+    return operation_status(__try_wait_status(__token_value(__token), __suspend_time_hint));
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
+  __poll_try_wait_status(::cuda::std::uint32_t __phase, ::cuda::std::uint32_t __suspend_time_hint) const
+  {
+    return operation_status(__try_wait_phase_status(__phase, __suspend_time_hint));
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __poll_test_wait_ignoring_status(arrival_token __token) const
+  {
+    return __test_wait(__token_value(__token));
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __poll_test_wait_ignoring_status(::cuda::std::uint32_t __phase) const
+  {
+    return __test_wait_phase(__phase);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __poll_test_wait_ignoring_status(__conditional_phase __phase) const
+  {
+    return __test_wait_conditional_phase(__phase.__phase);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __poll_try_wait_ignoring_status(arrival_token __token) const
+  {
+    return __try_wait(__token_value(__token));
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __poll_try_wait_ignoring_status(::cuda::std::uint32_t __phase) const
+  {
+    return __try_wait_phase(__phase);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __poll_try_wait_ignoring_status(__conditional_phase __phase) const
+  {
+    return __try_wait_conditional_phase(__phase.__phase);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __poll_try_wait_ignoring_status(arrival_token __token, ::cuda::std::uint32_t __suspend_time_hint) const
+  {
+    return __try_wait(__token_value(__token), __suspend_time_hint);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __poll_try_wait_ignoring_status(::cuda::std::uint32_t __phase, ::cuda::std::uint32_t __suspend_time_hint) const
+  {
+    return __try_wait_phase(__phase, __suspend_time_hint);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __poll_try_wait_ignoring_status(__conditional_phase __phase, ::cuda::std::uint32_t __suspend_time_hint) const
+  {
+    return __try_wait_conditional_phase(__phase.__phase, __suspend_time_hint);
+  }
+
+  template <class _WaitArg>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status __wait_status(_WaitArg __wait_arg) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (auto __result = __poll_try_wait_status(__wait_arg); while (!__result.complete()) {
+                   __result = __poll_try_wait_status(__wait_arg);
+                 } return __result;))
+
+    __unsupported_storage();
+  }
+
+  template <class _WaitArg>
+  _CCCL_HOST_DEVICE_API void __wait_ignoring_status(_WaitArg __wait_arg) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (while (!__poll_try_wait_ignoring_status(__wait_arg)) {} return;))
+
+    __unsupported_storage();
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool __test_wait_ignoring_status(arrival_token __token) const
+  {
+    return test_wait(__token, ignore_status);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool __test_wait_ignoring_status(::cuda::std::uint32_t __phase) const
+  {
+    return test_wait(__phase, ignore_status);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool __test_wait_ignoring_status(__conditional_phase __phase) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __poll_test_wait_ignoring_status(__phase);))
+
+    __unsupported_storage();
+  }
+
+  _CCCL_HOST_DEVICE_API void __wait_conditional_phase(::cuda::std::uint32_t __phase) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (while (!__try_wait_conditional_phase(__phase)) {} return;))
+
+    __unsupported_storage();
+  }
+
+  template <class _WaitArg, class _Rep, class _Period>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  __try_wait_for_status(_WaitArg __wait_arg, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur) const
   {
     const auto __nanosec = ::cuda::std::chrono::duration_cast<::cuda::std::chrono::nanoseconds>(__dur);
-
-    if (__nanosec.count() < 1)
+    if (__nanosec.count() <= 0)
     {
-      return __test();
+      return test_wait(__wait_arg, return_status);
     }
 
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (auto __result = __poll(static_cast<::cuda::std::uint32_t>(__nanosec.count()));
+      (auto __result = __poll_try_wait_status(__wait_arg, static_cast<::cuda::std::uint32_t>(__nanosec.count()));
        const ::cuda::std::chrono::high_resolution_clock::time_point __start =
          ::cuda::std::chrono::high_resolution_clock::now();
        ::cuda::std::chrono::nanoseconds __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-       while (!__complete(__result) && (__nanosec > __elapsed)) {
+       while (!__result.complete() && (__nanosec > __elapsed)) {
          const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-         __result                                = __poll(__wait_nsec);
+         __result                                = __poll_try_wait_status(__wait_arg, __wait_nsec);
          __elapsed                               = ::cuda::std::chrono::high_resolution_clock::now() - __start;
        } return __result;))
+
+    __unsupported_storage();
+  }
+
+  template <class _WaitArg, class _Rep, class _Period>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  __try_wait_for_ignoring_status(_WaitArg __wait_arg, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur) const
+  {
+    const auto __nanosec = ::cuda::std::chrono::duration_cast<::cuda::std::chrono::nanoseconds>(__dur);
+    if (__nanosec.count() <= 0)
+    {
+      return __test_wait_ignoring_status(__wait_arg);
+    }
+
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_90,
+      (bool __complete =
+         __poll_try_wait_ignoring_status(__wait_arg, static_cast<::cuda::std::uint32_t>(__nanosec.count()));
+       const ::cuda::std::chrono::high_resolution_clock::time_point __start =
+         ::cuda::std::chrono::high_resolution_clock::now();
+       ::cuda::std::chrono::nanoseconds __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+       while (!__complete && (__nanosec > __elapsed)) {
+         const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
+         __complete                              = __poll_try_wait_ignoring_status(__wait_arg, __wait_nsec);
+         __elapsed                               = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+       } return __complete;))
 
     __unsupported_storage();
   }
@@ -387,7 +513,7 @@ public:
   //!
   //! @param __b Pointer to a `shared_barrier` object in local shared memory.
   //! @param __expected Expected arrival count for each phase.
-  _CCCL_HOST_DEVICE_API inline friend void init(shared_barrier* __b, ::cuda::std::ptrdiff_t __expected)
+  _CCCL_HOST_DEVICE_API friend void init(shared_barrier* __b, ::cuda::std::ptrdiff_t __expected)
   {
     _CCCL_ASSERT(1 <= __expected, "Expected arrival count must be at least one.");
     _CCCL_ASSERT(__expected <= __max_expected_count(),
@@ -509,13 +635,7 @@ public:
   //! @return Completed operation status for the waited phase.
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status wait(arrival_token __token, return_status_t) const
   {
-    return __wait_until_complete(
-      [&] {
-        return try_wait(__token, return_status);
-      },
-      [](const operation_status& __result) {
-        return __result.complete();
-      });
+    return __wait_status(__token);
   }
 
   //! @brief Waits until an arrival token's phase completes and ignores any status report.
@@ -523,13 +643,7 @@ public:
   //! @param __token Arrival token to wait on.
   _CCCL_HOST_DEVICE_API void wait(arrival_token __token, ignore_status_t) const
   {
-    (void) __wait_until_complete(
-      [&] {
-        return try_wait(__token, ignore_status);
-      },
-      [](bool __complete) {
-        return __complete;
-      });
+    __wait_ignoring_status(__token);
   }
 
   //! @brief Arrives at the barrier and waits for the resulting phase to complete with status.
@@ -612,13 +726,7 @@ public:
   //! @return Completed operation status for the waited phase.
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status wait(::cuda::std::uint32_t __phase, return_status_t) const
   {
-    return __wait_until_complete(
-      [&] {
-        return try_wait(__phase, return_status);
-      },
-      [](const operation_status& __result) {
-        return __result.complete();
-      });
+    return __wait_status(__phase);
   }
 
   //! @brief Waits until a primary phase completes and ignores any status report.
@@ -626,13 +734,7 @@ public:
   //! @param __phase Primary phase value to wait on.
   _CCCL_HOST_DEVICE_API void wait(::cuda::std::uint32_t __phase, ignore_status_t) const
   {
-    (void) __wait_until_complete(
-      [&] {
-        return try_wait(__phase, ignore_status);
-      },
-      [](bool __complete) {
-        return __complete;
-      });
+    __wait_ignoring_status(__phase);
   }
 
   //! @brief Tests whether a conditional phase completed.
@@ -668,13 +770,33 @@ public:
   //! @param __phase Conditional phase value to wait on.
   _CCCL_HOST_DEVICE_API void wait_conditional_phase(::cuda::std::uint32_t __phase) const
   {
-    (void) __wait_until_complete(
-      [&] {
-        return try_wait_conditional_phase(__phase);
-      },
-      [](bool __complete) {
-        return __complete;
-      });
+    __wait_conditional_phase(__phase);
+  }
+
+  //! @brief Tries to wait for a conditional phase to complete before a relative timeout.
+  //!
+  //! If `__dur` is nonpositive, this performs a single `test_wait_conditional_phase` check.
+  //!
+  //! @param __phase Conditional phase value to wait on.
+  //! @param __dur Relative timeout.
+  //! @return `true` if the conditional phase completed before the timeout, otherwise `false`.
+  template <class _Rep, class _Period>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool try_wait_conditional_phase_for(
+    ::cuda::std::uint32_t __phase, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur) const
+  {
+    return __try_wait_for_ignoring_status(__conditional_phase{__phase}, __dur);
+  }
+
+  //! @brief Tries to wait for a conditional phase to complete before an absolute timeout.
+  //!
+  //! @param __phase Conditional phase value to wait on.
+  //! @param __time Absolute timeout.
+  //! @return `true` if the conditional phase completed before the timeout, otherwise `false`.
+  template <class _Clock, class _Duration>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool try_wait_conditional_phase_until(
+    ::cuda::std::uint32_t __phase, const ::cuda::std::chrono::time_point<_Clock, _Duration>& __time) const
+  {
+    return try_wait_conditional_phase_for(__phase, (__time - _Clock::now()));
   }
 
   //! @brief Tries to wait for an arrival token's phase to complete before a relative timeout and returns the status.
@@ -688,17 +810,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   try_wait_for(arrival_token __token, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur, return_status_t) const
   {
-    return __try_wait_for_impl(
-      __dur,
-      [=] _CCCL_DEVICE(::cuda::std::uint32_t __wait_nsec) {
-        return operation_status(__try_wait_status(__token_value(__token), __wait_nsec));
-      },
-      [&] {
-        return test_wait(__token, return_status);
-      },
-      [](const operation_status& __result) {
-        return __result.complete();
-      });
+    return __try_wait_for_status(__token, __dur);
   }
 
   //! @brief Tries to wait for an arrival token's phase to complete before a relative timeout and ignores status.
@@ -712,17 +824,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   try_wait_for(arrival_token __token, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur, ignore_status_t) const
   {
-    return __try_wait_for_impl(
-      __dur,
-      [=] _CCCL_DEVICE(::cuda::std::uint32_t __wait_nsec) {
-        return __try_wait(__token_value(__token), __wait_nsec);
-      },
-      [&] {
-        return test_wait(__token, ignore_status);
-      },
-      [](bool __complete) {
-        return __complete;
-      });
+    return __try_wait_for_ignoring_status(__token, __dur);
   }
 
   //! @brief Tries to wait for an arrival token's phase to complete before an absolute timeout and returns the status.
@@ -760,17 +862,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status try_wait_for(
     ::cuda::std::uint32_t __phase, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur, return_status_t) const
   {
-    return __try_wait_for_impl(
-      __dur,
-      [=] _CCCL_DEVICE(::cuda::std::uint32_t __wait_nsec) {
-        return operation_status(__try_wait_phase_status(__phase, __wait_nsec));
-      },
-      [&] {
-        return test_wait(__phase, return_status);
-      },
-      [](const operation_status& __result) {
-        return __result.complete();
-      });
+    return __try_wait_for_status(__phase, __dur);
   }
 
   //! @brief Tries to wait for a primary phase to complete before a relative timeout and ignores status.
@@ -784,17 +876,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool try_wait_for(
     ::cuda::std::uint32_t __phase, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur, ignore_status_t) const
   {
-    return __try_wait_for_impl(
-      __dur,
-      [=] _CCCL_DEVICE(::cuda::std::uint32_t __wait_nsec) {
-        return __try_wait_phase(__phase, __wait_nsec);
-      },
-      [&] {
-        return test_wait(__phase, ignore_status);
-      },
-      [](bool __complete) {
-        return __complete;
-      });
+    return __try_wait_for_ignoring_status(__phase, __dur);
   }
 
   //! @brief Tries to wait for a primary phase to complete before an absolute timeout and returns the status.
