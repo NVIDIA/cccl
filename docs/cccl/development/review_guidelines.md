@@ -471,6 +471,20 @@ a compile definition, flag, or gating macro to one such file, check every siblin
 structurally similar target for the same addition — adding it to only one silently skips the check
 for the others. Siblings are recognizable by near-identical file names and structure.
 
+## perf.intrinsic-wrapper-codegen-parity (important, new generic wrappers over device intrinsics in libcudacxx/cub)
+
+<!-- provenance:
+  #3907→#10035 (pair auto-inferred as #8391→#10035) cuda::device::warp_shuffle memcpy-punned values through uninitialized locals and recomputed the predicate, inflating register pressure vs raw __shfl intrinsics
+-->
+
+When a diff introduces a generic (any-type) wrapper over a hardware intrinsic (warp shuffle/vote/match,
+atomics), its generated code must be observable somewhere: either a codegen test comparing it against
+the raw intrinsic for common types (e.g. a FileCheck test asserting the expected instruction and no
+local-memory traffic, like the existing atomics/simd codegen tests), or the wrapper is used in kernels
+covered by the benchmark SASS-diff CI job. Inefficiencies like `memcpy` through uninitialized locals
+or recomputing outputs the instruction already produces have no functional symptom, so without one of
+the two, unfavorable codegen in the new public API ships unseen.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
