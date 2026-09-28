@@ -47,7 +47,7 @@ private:
   _Tp* __end_        = nullptr;
   size_t __capacity_ = 0;
 
-  _CCCL_HOST_DEVICE_API static _Tp* __create(size_t __count)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _Tp* __create(size_t __count)
   {
     if (__count == 0)
     {
@@ -85,24 +85,24 @@ public:
 
   //! @brief Move-constructs from another vector, transferring ownership of its storage.
   //! @param[in] __other The vector to move from. After the move it is empty and may only be assigned to or destroyed.
-  _CCCL_HOST_DEVICE_API __simple_vector(__simple_vector&& __other) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __simple_vector(__simple_vector&& __other) noexcept
       : __begin_(::cuda::std::exchange(__other.__begin_, nullptr))
       , __end_(::cuda::std::exchange(__other.__end_, nullptr))
-      , __capacity_(::cuda::std::exchange(__other.__capacity_, 0ull))
+      , __capacity_(::cuda::std::exchange(__other.__capacity_, size_t{0}))
   {}
 
   //! @brief Move-assigns from another vector, destroying this vector's elements and taking ownership of the other
   //! vector's storage.
   //! @param[in] __other The vector to move from. After the move it is empty and may only be assigned to or destroyed.
   //! @return A reference to this vector.
-  _CCCL_HOST_DEVICE_API __simple_vector& operator=(__simple_vector&& __other) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __simple_vector& operator=(__simple_vector&& __other) noexcept
   {
     if (this != ::cuda::std::addressof(__other))
     {
       __destroy();
       __begin_    = ::cuda::std::exchange(__other.__begin_, nullptr);
       __end_      = ::cuda::std::exchange(__other.__end_, nullptr);
-      __capacity_ = ::cuda::std::exchange(__other.__capacity_, 0ull);
+      __capacity_ = ::cuda::std::exchange(__other.__capacity_, size_t{0});
     }
     return *this;
   }
