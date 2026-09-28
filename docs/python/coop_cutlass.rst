@@ -104,6 +104,13 @@ payload you can pass to ``store`` or another primitive.
 ``values.to_register_tensor()`` converts a payload back to a CuTe register
 tensor. See :ref:`coop-cutlass-register-payloads`.
 
+Construct payloads with ``cuda.coop.ThreadData`` or
+``cuda.coop.cutlass.ThreadData`` inside a CuTe kernel. Both create CUTLASS
+payloads that work with common and qualified calls, including writable Scan
+aggregates and Radix Rank prefixes. ``ThreadDataLike`` describes the shared
+interface; implementing that interface in a user class does not register a
+new payload representation with the compiler.
+
 Group queries return CuTe scalars. For example, ``block.rank()`` returns a
 ``cutlass.Uint32`` that you can use in pointer arithmetic or a condition
 inside the kernel. Use ``block.rank_as(cutlass.Int32)`` when you need a signed
