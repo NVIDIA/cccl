@@ -1223,8 +1223,7 @@ struct TilePrefixCallbackOp
   };
 
   // Alias wrapper allowing temporary storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // Type of status word
   using StatusWord = typename ScanTileStateT::StatusWord;

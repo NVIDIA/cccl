@@ -740,8 +740,7 @@ class BlockStore
 
 public:
   //! @smemstorage{BlockStore}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
