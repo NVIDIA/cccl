@@ -23,6 +23,7 @@
 #include <cub/warp/warp_exchange.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
@@ -377,14 +378,14 @@ private:
     struct _TempStorage : WarpExchangeT::TempStorage
     {};
 
-    using TempStorage = Uninitialized<_TempStorage>;
+    using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
     _TempStorage& temp_storage;
 
     int linear_tid;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE LoadInternal(TempStorage& temp_storage, int linear_tid)
-        : temp_storage(temp_storage.Alias())
+        : temp_storage(temp_storage.template __alias<_TempStorage>())
         , linear_tid(linear_tid)
     {}
 
@@ -444,7 +445,7 @@ private:
 
 public:
   /// @smemstorage{WarpLoad}
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -460,7 +461,7 @@ public:
   //! @brief Collective constructor using the specified memory allocation as
   //!        temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpLoad(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(
           IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
   {}

@@ -29,6 +29,7 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/max.h>
@@ -181,7 +182,7 @@ struct AgentRadixSortUpsweep
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Thread fields (aggregate state bundle)
@@ -332,7 +333,7 @@ struct AgentRadixSortUpsweep
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortUpsweep(
     TempStorage& temp_storage, const KeyT* d_keys_in, int current_bit, int num_bits, DecomposerT decomposer = {})
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_keys_in(reinterpret_cast<const bit_ordered_type*>(d_keys_in))
       , current_bit(current_bit)
       , num_bits(num_bits)

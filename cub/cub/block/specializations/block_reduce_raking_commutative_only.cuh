@@ -25,6 +25,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/span>
 
 CUB_NAMESPACE_BEGIN
@@ -96,7 +97,7 @@ struct BlockReduceRakingCommutativeOnly
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   // Thread fields
   _TempStorage& temp_storage;
@@ -104,7 +105,7 @@ struct BlockReduceRakingCommutativeOnly
 
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRakingCommutativeOnly(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 

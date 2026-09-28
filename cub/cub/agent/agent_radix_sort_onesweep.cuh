@@ -25,6 +25,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
@@ -215,7 +216,7 @@ struct AgentRadixSortOnesweep
     };
   };
 
-  using TempStorage = Uninitialized<TempStorage_>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<TempStorage_>;
 
   // thread variables
   TempStorage_& s;
@@ -709,7 +710,7 @@ struct AgentRadixSortOnesweep
     int current_bit,
     int num_bits,
     DecomposerT decomposer = {})
-      : s(temp_storage.Alias())
+      : s(temp_storage.template __alias<TempStorage_>())
       , d_lookback(d_lookback)
       , d_ctrs(d_ctrs)
       , d_bins_out(d_bins_out)

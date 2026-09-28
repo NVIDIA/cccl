@@ -20,6 +20,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
@@ -175,7 +176,7 @@ private:
   uint32_t linear_tid;
 
 public:
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // CONSTRUCTOR
@@ -195,7 +196,7 @@ public:
     ItemT (&run_values)[RunsPerThread],
     RunLengthT (&run_lengths)[RunsPerThread],
     TotalDecodedSizeT& total_decoded_size)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunLengths(run_values, run_lengths, total_decoded_size);
@@ -212,7 +213,7 @@ public:
   template <typename UserRunOffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
     TempStorage& temp_storage, ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunOffsets(run_values, run_offsets);

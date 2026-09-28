@@ -20,6 +20,8 @@
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_store.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
+
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
@@ -196,12 +198,12 @@ public:
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   _TempStorage& storage;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE explicit AgentSubWarpSort(TempStorage& temp_storage)
-      : storage(temp_storage.Alias())
+      : storage(temp_storage.template __alias<_TempStorage>())
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessSegment(

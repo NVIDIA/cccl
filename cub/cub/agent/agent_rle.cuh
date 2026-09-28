@@ -28,6 +28,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -242,7 +243,7 @@ struct AgentRle
         typename WarpScanPairs::TempStorage warp_scan[WARPS];
 
         // Smem needed for sharing warp-wide aggregates
-        Uninitialized<LengthOffsetPair[WARPS]> warp_aggregates;
+        ::cuda::__as_uninitialized_bytes<LengthOffsetPair[WARPS]> warp_aggregates;
 
         // Smem needed for cooperative prefix callback
         typename TilePrefixCallbackOpT::TempStorage prefix;
@@ -268,7 +269,7 @@ struct AgentRle
   };
 
   // Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -320,7 +321,7 @@ struct AgentRle
     EqualityOpT equality_op,
     OffsetT num_items,
     StreamingContext streaming_context)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_in(d_in)
       , d_offsets_out(d_offsets_out)
       , d_lengths_out(d_lengths_out)
@@ -465,7 +466,8 @@ struct AgentRle
       //      number of non-trivial runs starts in this warp
       // `temp_storage.aliasable.scan_storage.warp_aggregates[warp_id].val`:
       //      number of items in the last non-trivial run in this warp
-      temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[warp_id] = thread_inclusive;
+      temp_storage.aliasable.scan_storage.warp_aggregates.template __alias<LengthOffsetPair[WARPS]>()[warp_id] =
+        thread_inclusive;
     }
 
     __syncthreads();
@@ -477,13 +479,14 @@ struct AgentRle
     // `warp_exclusive_in_tile.val`:
     //      number of items in the last non-trivial run in previous warps
     warp_exclusive_in_tile = identity;
-    warp_aggregate         = temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[warp_id];
+    warp_aggregate =
+      temp_storage.aliasable.scan_storage.warp_aggregates.template __alias<LengthOffsetPair[WARPS]>()[warp_id];
 
     // `tile_aggregate.key`:
     //      number of non-trivial runs starts in this CTA
     // `tile_aggregate.val`:
     //      number of items in the last non-trivial run in this CTA
-    tile_aggregate = temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[0];
+    tile_aggregate = temp_storage.aliasable.scan_storage.warp_aggregates.template __alias<LengthOffsetPair[WARPS]>()[0];
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int WARP = 1; WARP < WARPS; ++WARP)
@@ -493,7 +496,9 @@ struct AgentRle
         warp_exclusive_in_tile = tile_aggregate;
       }
 
-      tile_aggregate = scan_op(tile_aggregate, temp_storage.aliasable.scan_storage.warp_aggregates.Alias()[WARP]);
+      tile_aggregate =
+        scan_op(tile_aggregate,
+                temp_storage.aliasable.scan_storage.warp_aggregates.template __alias<LengthOffsetPair[WARPS]>()[WARP]);
     }
 
     // Ensure all threads have read warp aggregates before temp_storage is repurposed in the

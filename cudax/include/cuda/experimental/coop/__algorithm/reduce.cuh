@@ -29,6 +29,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__cstddef/types.h>
@@ -380,7 +381,7 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
   struct _Scratch
   {
     typename _WarpReduce::TempStorage __warp_reduce_[__nwarps_in_block];
-    alignas(_Tp)::cub::Uninitialized<_Tp[__nwarps_in_block]> __values_;
+    alignas(_Tp)::cuda::__as_uninitialized_bytes<_Tp[__nwarps_in_block]> __values_;
   };
   __shared__ _Scratch __scratch;
 
@@ -395,7 +396,7 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
 
   // Physical-warp slots remain unique when independent mappings reuse group
   // ranks or overlap in time.
-  auto& __values = __scratch.__values_.Alias();
+  auto& __values = __scratch.__values_.template __alias<_Tp[__nwarps_in_block]>();
 
   const auto __partial = _WarpReduce{__scratch.__warp_reduce_[__warp_rank_in_block]}.Reduce(__thread_data, __red_fn);
 

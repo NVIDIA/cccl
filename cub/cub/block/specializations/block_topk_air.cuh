@@ -19,6 +19,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
@@ -577,10 +578,10 @@ private:
   }
 
 public:
-  using TempStorage = Uninitialized<TempStorage_>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<TempStorage_>;
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_air(TempStorage& storage)
-      : storage(storage.Alias())
+      : storage(storage.template __alias<TempStorage_>())
       , linear_tid(RowMajorTid(ThreadsPerBlock, 1, 1))
   {}
 

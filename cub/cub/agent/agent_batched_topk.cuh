@@ -24,6 +24,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/argument>
 
 CUB_NAMESPACE_BEGIN
@@ -137,7 +138,7 @@ struct agent_batched_topk_worker_per_segment
     };
   };
 
-  using TempStorage = Uninitialized<TempStorage_>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<TempStorage_>;
 
   // -------------------------------------------------------------------------
   // Members
@@ -170,7 +171,7 @@ struct agent_batched_topk_worker_per_segment
     counters_t* d_counters,
     num_segments_val_t* d_large_segments_ids,
     LargeSegmentTileOffsetT* d_large_segments_tile_offsets)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<TempStorage_>())
       , d_key_segments_it(d_key_segments_it)
       , d_key_segments_out_it(d_key_segments_out_it)
       , d_value_segments_it(d_value_segments_it)

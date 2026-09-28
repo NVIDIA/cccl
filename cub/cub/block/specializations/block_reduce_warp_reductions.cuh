@@ -26,6 +26,7 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
@@ -82,7 +83,7 @@ struct BlockReduceWarpReductions
     T block_prefix;
   };
 
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   // Thread fields
   _TempStorage& temp_storage;
@@ -91,7 +92,7 @@ struct BlockReduceWarpReductions
   int lane_id;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceWarpReductions(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
       , warp_id((warps == 1) ? 0 : linear_tid / warp_threads)
       , lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))

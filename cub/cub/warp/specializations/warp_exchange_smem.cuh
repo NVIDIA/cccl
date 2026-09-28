@@ -23,6 +23,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 
 CUB_NAMESPACE_BEGIN
@@ -59,12 +60,12 @@ class WarpExchangeSmem
   const unsigned int member_mask;
 
 public:
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   WarpExchangeSmem() = delete;
 
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeSmem(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
       , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
       , member_mask(WarpMask<LogicalWarpThreads>(warp_id))

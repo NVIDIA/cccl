@@ -21,6 +21,7 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
@@ -75,7 +76,7 @@ struct AgentBlockSort
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per thread data
@@ -104,7 +105,7 @@ struct AgentBlockSort
     ValueT* items_out_raw_,
     CompareOpT compare_op_)
       : ping(ping_)
-      , storage(storage_.Alias())
+      , storage(storage_.template __alias<_TempStorage>())
       , keys_in(keys_in_)
       , items_in(items_in_)
       , keys_count(keys_count_)
@@ -419,7 +420,7 @@ struct AgentMerge
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per thread data
@@ -655,7 +656,7 @@ struct AgentMerge
     OffsetT* merge_partitions_,
     OffsetT target_merged_tiles_number_)
       : ping(ping_)
-      , storage(storage_.Alias())
+      , storage(storage_.template __alias<_TempStorage>())
       , keys_in_ping(keys_in_ping_)
       , items_in_ping(items_in_ping_)
       , keys_in_pong(keys_in_pong_)

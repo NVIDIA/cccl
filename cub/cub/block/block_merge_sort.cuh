@@ -20,6 +20,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -253,7 +254,7 @@ private:
 
 public:
   /// \smemstorage{BlockMergeSort}
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   BlockMergeSortStrategy() = delete;
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(unsigned int linear_tid)
@@ -262,7 +263,7 @@ public:
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(TempStorage& temp_storage, unsigned int linear_tid)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(linear_tid)
   {}
 

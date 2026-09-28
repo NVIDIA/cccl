@@ -25,6 +25,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -81,7 +82,7 @@ struct WarpReduceSmem
   };
 
   // Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   /******************************************************************************
    * Thread fields
@@ -97,7 +98,7 @@ struct WarpReduceSmem
 
   /// Constructor
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceSmem(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
       , member_mask(WarpMask<LogicalWarpThreads>(::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
   {}

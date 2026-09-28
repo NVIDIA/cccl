@@ -24,6 +24,7 @@
 #include <cub/warp/warp_exchange.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -147,7 +148,7 @@ class BlockExchange
 
 public:
   /// @smemstorage{BlockExchange}
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
 private:
   _TempStorage& temp_storage;
@@ -831,7 +832,7 @@ public:
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockExchange(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
   {}
 
   //! @}

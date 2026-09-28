@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/iterator>
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
@@ -141,4 +142,108 @@ CUB_TEST("Test Uninitialized with overaligned type", "[util][type]", CUB_SMALL)
   STATIC_REQUIRE(alignof(overaligned_type) == 32);
   STATIC_REQUIRE(sizeof(cub::Uninitialized<overaligned_type>) == sizeof(overaligned_type));
   STATIC_REQUIRE(alignof(cub::Uninitialized<overaligned_type>) == alignof(overaligned_type));
+}
+
+struct Bytes3
+{
+  char data[3];
+};
+
+struct alignas(2) Bytes6
+{
+  char data[6];
+};
+
+struct alignas(4) Bytes12
+{
+  char data[12];
+};
+
+struct alignas(4) Bytes16
+{
+  char data[16];
+};
+
+struct alignas(8) Bytes24
+{
+  char data[24];
+};
+
+struct alignas(16) Bytes32
+{
+  char data[32];
+};
+
+struct alignas(8) Overaligned8
+{
+  char value;
+};
+
+struct alignas(16) Overaligned16
+{
+  int value;
+};
+
+struct alignas(32) Overaligned32
+{
+  char data[32];
+};
+
+struct alignas(64) Overaligned64
+{
+  int value;
+};
+
+struct NonTrivialUninitializedPayload
+{
+  int value;
+  NonTrivialUninitializedPayload()
+      : value{1}
+  {}
+};
+
+template <typename T>
+constexpr bool uninitialized_layout_matches()
+{
+  using storage_t = ::cuda::__as_uninitialized_bytes<T>;
+
+  static_assert(sizeof(storage_t) == sizeof(T));
+  static_assert(alignof(storage_t) == alignof(T));
+  static_assert(cuda::std::is_trivially_default_constructible<storage_t>::value);
+  static_assert(cuda::std::is_trivially_copyable<storage_t>::value);
+  static_assert(cuda::std::is_trivially_destructible<storage_t>::value);
+  return true;
+}
+
+CUB_TEST("Test Uninitialized storage word", "[util][type]", CUB_SMALL)
+{
+  STATIC_REQUIRE(uninitialized_layout_matches<unsigned char>());
+  STATIC_REQUIRE(uninitialized_layout_matches<unsigned short>());
+  STATIC_REQUIRE(uninitialized_layout_matches<unsigned int>());
+  STATIC_REQUIRE(uninitialized_layout_matches<unsigned long long>());
+  STATIC_REQUIRE(uninitialized_layout_matches<ulonglong2>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Bytes3>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Bytes6>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Bytes12>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Bytes16>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Bytes24>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Bytes32>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Overaligned8>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Overaligned16>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Overaligned32>());
+  STATIC_REQUIRE(uninitialized_layout_matches<Overaligned64>());
+  STATIC_REQUIRE(uninitialized_layout_matches<char2>());
+  STATIC_REQUIRE(uninitialized_layout_matches<float2>());
+  STATIC_REQUIRE(uninitialized_layout_matches<float4>());
+  STATIC_REQUIRE(uninitialized_layout_matches<NonTrivialUninitializedPayload>());
+
+  cub::Uninitialized<int> value;
+  value.Alias() = 7;
+  CHECK(value.Alias() == 7);
+  value.Alias() = 11;
+  CHECK(value.Alias() == 11);
+
+  ::cuda::__as_uninitialized_bytes<int> raw;
+  raw.template __alias<int>() = 13;
+  CHECK(raw.template __alias<int>() == 13);
 }
