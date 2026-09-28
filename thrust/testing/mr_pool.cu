@@ -151,7 +151,7 @@ private:
 };
 
 template <template <typename> class PoolTemplate>
-void TestPool()
+void test_pool()
 {
   tracked_resource upstream;
 
@@ -230,16 +230,16 @@ void TestPool()
 
 TEST_CASE("TestUnsynchronizedPool", "[mr_pool]")
 {
-  TestPool<thrust::mr::unsynchronized_pool_resource>();
+  test_pool<thrust::mr::unsynchronized_pool_resource>();
 }
 
 TEST_CASE("TestSynchronizedPool", "[mr_pool]")
 {
-  TestPool<thrust::mr::synchronized_pool_resource>();
+  test_pool<thrust::mr::synchronized_pool_resource>();
 }
 
 template <template <typename> class PoolTemplate>
-void TestPoolCachingOversized()
+void test_pool_caching_oversized()
 {
   tracked_resource upstream;
 
@@ -337,16 +337,16 @@ void TestPoolCachingOversized()
 
 TEST_CASE("TestUnsynchronizedPoolCachingOversized", "[mr_pool]")
 {
-  TestPoolCachingOversized<thrust::mr::unsynchronized_pool_resource>();
+  test_pool_caching_oversized<thrust::mr::unsynchronized_pool_resource>();
 }
 
 TEST_CASE("TestSynchronizedPoolCachingOversized", "[mr_pool]")
 {
-  TestPoolCachingOversized<thrust::mr::synchronized_pool_resource>();
+  test_pool_caching_oversized<thrust::mr::synchronized_pool_resource>();
 }
 
 template <template <typename> class PoolTemplate>
-void TestGlobalPool()
+void test_global_pool()
 {
   using Pool = PoolTemplate<thrust::mr::new_delete_resource>;
 
@@ -355,10 +355,10 @@ void TestGlobalPool()
 
 TEST_CASE("TestUnsynchronizedGlobalPool", "[mr_pool]")
 {
-  TestGlobalPool<thrust::mr::unsynchronized_pool_resource>();
+  test_global_pool<thrust::mr::unsynchronized_pool_resource>();
 }
 
 TEST_CASE("TestSynchronizedGlobalPool", "[mr_pool]")
 {
-  TestGlobalPool<thrust::mr::synchronized_pool_resource>();
+  test_global_pool<thrust::mr::synchronized_pool_resource>();
 }
