@@ -955,17 +955,19 @@ in both directions:
   regressions; require a per-size benchmark table from small (~2^16) through large (≥2^28) inputs,
   especially when replacing a previously shipped tuning.
 
-## perf.jit-cache-key-vs-codegen-inputs (important, cuda.compute / c.parallel build-result caching)
+## perf.jit-cache-key-vs-codegen-inputs (important, cuda.compute build-result caching)
 
 <!-- provenance:
   #7657→#9596 (pair auto-inferred as #9475→#9596) histogram build cache keyed on runtime lower/upper level values and exact num_samples, forcing a recompile per distinct bounds (issue #9594)
 -->
 
-When a diff constructs or changes the cache key of a memoized JIT/build result (`@lru_cache`-style
-`_make_*_impl` builders, `cache_build_results` keys), require the key to consist of exactly the inputs
-that affect the generated code: dtypes, iterator kinds, operator identity, regime flags. Flag
-runtime-only kernel arguments in the key — scalar bound/init/seed values, exact element counts — since
-every distinct runtime value then triggers a full recompile, silently destroying cache hit rates.
+When a diff constructs or changes the cache key of a memoized build result (factories decorated with
+`@cache_with_registered_key_functions`, the shared `cache_build_results` cache), require the key to
+consist of exactly the inputs that affect the generated code: dtypes, iterator kinds, operator
+identity, compile-regime flags. Flag runtime kernel arguments in the key — scalar bounds, exact
+element counts — since every distinct runtime value then triggers a full recompile, silently
+destroying cache hit rates; canonicalize them into their compile-relevant form first (dtype,
+32/64-bit-offset flag). Scalars captured by a JIT-compiled operator are deliberately keyed by value.
 Conversely, flag a key that omits a compile-affecting input, which causes wrong-kernel reuse.
 
 ## perf.intrinsic-wrapper-codegen-parity (important, new generic wrappers over device intrinsics in libcudacxx/cub)
