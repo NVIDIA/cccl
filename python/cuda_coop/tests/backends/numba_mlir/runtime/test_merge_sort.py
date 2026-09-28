@@ -86,7 +86,7 @@ def _run(
                     group, keys, payload, compare_op=compare
                 )
             elif scratch:
-                storage = api.TempStorage()
+                storage = api.TempStorage(auto_sync=True)
                 intermediate, inter_values = api.merge_sort_pairs(
                     group, keys, payload, temp_storage=storage
                 )
