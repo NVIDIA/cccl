@@ -34,7 +34,7 @@ int main()
 
   auto lX = ctx.logical_data(X);
 
-  auto fX = lX.freeze(access_mode::rw, data_place::current_device());
+  auto fX = ctx.freeze(lX, access_mode::rw, data_place::current_device());
 
   bool caught = false;
   try
