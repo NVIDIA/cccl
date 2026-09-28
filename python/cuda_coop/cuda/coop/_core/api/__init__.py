@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Import-light portable API organized by cooperative primitive family.
+"""Cooperative operations such as loading and storing a block of values.
 
-Leaf modules own public argument capture and validation; this facade preserves
-the documented root export order and compiler-backend marker contract. It does
-not own semantic lowering, provider rendering, or backend compiler state.
+This module exports the public functions and group descriptions. Compiler
+adapters recognize these functions by identity and lower their kernel calls.
 """
 
 from .load_store import load, store  # noqa: F401

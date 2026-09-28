@@ -80,6 +80,8 @@ _TRANSPOSE_ALGORITHMS = frozenset(
         BlockLoadStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
     }
 )
+# CUB's guarded transpose loads exchange all registers, including invalid
+# items. Restore those destination slots to preserve their original values.
 _PRESERVING_BLOCK_LOAD = TypeDefinition(
     name="cuda_coop_block_load_preserving_invalid",
     code=r"""
