@@ -462,7 +462,6 @@ inline ::std::unique_ptr<scheduler> scheduler::make(const char* schedule_type)
     return ::std::make_unique<heft_scheduler>();
   }
 
-  ::std::cerr << "Invalid CUDASTF_SCHEDULE value '" << schedule_type << "'\n";
-  exit(EXIT_FAILURE);
+  throw ::std::invalid_argument("invalid CUDASTF_SCHEDULE value '" + schedule_type_s + "'");
 }
 } // namespace cuda::experimental::stf::reserved

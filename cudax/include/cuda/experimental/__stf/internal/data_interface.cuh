@@ -428,13 +428,8 @@ private:
   {
     if (typeid(shape_t) != asked_ti)
     {
-      fprintf(stderr,
-              "Shape type mismatch.\nAssumed: %.*s\nActual:  %.*s\n",
-              static_cast<int>(type_name<shape_t>.size()),
-              type_name<shape_t>.data(),
-              static_cast<int>(tname.size()),
-              tname.data());
-      abort();
+      throw ::std::invalid_argument(
+        "shape type mismatch: assumed " + ::std::string(type_name<shape_t>) + ", actual " + ::std::string(tname));
     }
     return &shape;
   }
@@ -444,13 +439,8 @@ private:
     // We pass types where we removed const qualifiers in instance()
     if (ti != typeid(rw_type_of<T>) && ti != typeid(void))
     {
-      fprintf(stderr,
-              "Data interface type mismatch.\nAssumed: %.*s\nActual:  %.*s\n",
-              static_cast<int>(type_name<T>.size()),
-              type_name<T>.data(),
-              static_cast<int>(tname.size()),
-              tname.data());
-      abort();
+      throw ::std::invalid_argument(
+        "data interface type mismatch: assumed " + ::std::string(type_name<T>) + ", actual " + ::std::string(tname));
     }
     return &instance(instance_id);
   }
@@ -461,13 +451,8 @@ private:
     // We pass types where we removed const qualifiers in instance()
     if (ti != typeid(rw_type_of<T>) && ti != typeid(void))
     {
-      fprintf(stderr,
-              "Data interface type mismatch.\nAssumed: %.*s\nActual:  %.*s\n",
-              static_cast<int>(type_name<T>.size()),
-              type_name<T>.data(),
-              static_cast<int>(tname.size()),
-              tname.data());
-      abort();
+      throw ::std::invalid_argument(
+        "data interface type mismatch: assumed " + ::std::string(type_name<T>) + ", actual " + ::std::string(tname));
     }
     return &instance(instance_id);
   }

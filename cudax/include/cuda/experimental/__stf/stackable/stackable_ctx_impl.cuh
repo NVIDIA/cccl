@@ -1352,8 +1352,7 @@ public:
       auto it = head_map.find(::std::this_thread::get_id());
       if (it == head_map.end())
       {
-        fprintf(stderr, "Error: context offset isn't set in this thread\n");
-        abort();
+        throw ::std::logic_error("the calling thread has no active stackable context (no head offset is set)");
       }
       return it->second;
     }
@@ -1826,8 +1825,7 @@ public:
     int offset = get_head_offset();
     if (offset != get_root_offset())
     {
-      fprintf(stderr, "Error: fence() not supported in nested contexts.\n");
-      abort();
+      throw ::std::logic_error("fence() is not supported in nested contexts");
     }
 
     return get_ctx(offset).fence();
@@ -1841,8 +1839,7 @@ public:
     int offset = get_head_offset();
     if (offset != get_root_offset())
     {
-      fprintf(stderr, "Error: wait() not supported in nested contexts.\n");
-      abort();
+      throw ::std::logic_error("wait() is not supported in nested contexts");
     }
 
     // get_ld() returns a logical_data handle by value (a copy), so bind it to a

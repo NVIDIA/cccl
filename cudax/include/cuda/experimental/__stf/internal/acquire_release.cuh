@@ -69,14 +69,38 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   // If there are any extra dependencies to fulfill
   auto result = get_input_events();
 
+  auto& task_deps = pimpl->deps;
+
+  // Validate every dependency before the task touches any of them: a rejected task leaves no
+  // activated place and no reference count behind, so the caller can still use the context.
+  reserved::ensure_task_deps_initialized(task_deps);
+  for (const auto& dep : task_deps)
+  {
+    logical_data_untyped d = dep.get_data();
+    const access_mode mode = dep.get_access_mode();
+
+    // Frozen data can only be accessed read-only, and only if it was frozen read-only: anything
+    // else would modify data possibly being used outside the task.
+    auto [frozen, frozen_mode] = d.is_frozen();
+    if (frozen && !(frozen_mode == access_mode::read && mode == access_mode::read))
+    {
+      throw ::std::logic_error("illegal access on frozen logical data '" + d.get_symbol() + "': frozen with mode "
+                               + access_mode_string(frozen_mode) + ", requested " + access_mode_string(mode));
+    }
+
+    // The logical data and the task must belong to the same context (compared by the addresses
+    // of their context states).
+    if (ctx != d.get_ctx())
+    {
+      throw ::std::invalid_argument("logical data '" + d.get_symbol() + "' does not belong to the context of the task");
+    }
+  }
+
   // Automatically set the appropriate context (device, SM affinity, ...)
   pimpl->saved_place_ctx = exec_place_scope(eplace);
 
-  auto& task_deps = pimpl->deps;
-
   for (auto index : each(task_deps.size()))
   {
-    assert(task_deps[index].get_data().is_initialized());
     // Save index before reordering
     task_deps[index].dependency_index = static_cast<int>(index);
     // Mark up data to avoid them being reclaimed while they are going to be used anyway
@@ -93,28 +117,6 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   {
     logical_data_untyped d = it->get_data();
     access_mode mode       = it->get_access_mode();
-
-    auto [frozen, frozen_mode] = d.is_frozen();
-    if (frozen)
-    {
-      // If we have a frozen data, we can only access it if we are making
-      // a read only access, and if the data was frozen in read only mode.
-      // Otherwise it's a mistake as we would modify some data possibly
-      // being used outside the task
-      if (!(frozen_mode == access_mode::read && mode == access_mode::read))
-      {
-        fprintf(stderr, "Error: illegal access on frozen logical data\n");
-        abort();
-      }
-    }
-
-    // Make sure the context of the logical data and the context of the task match
-    // This is done by comparing the addresses of the context states
-    if (ctx != d.get_ctx())
-    {
-      fprintf(stderr, "Error: mismatch between task context and logical data context\n");
-      abort();
-    }
 
     // We possibly "merge" multiple dependencies. If they have different modes, those are combined.
     // Since logical data are ordered by addresses, "mergeable" deps will be

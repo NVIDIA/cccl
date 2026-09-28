@@ -301,9 +301,10 @@ public:
       }
     }
 
-    // Should not be reached
-    fprintf(stderr, "Error: pointer %p was released, but does not belong to a known pool.\n", ptr);
-    abort();
+    char where[32];
+    snprintf(where, sizeof(where), "%p", ptr);
+    throw ::std::invalid_argument(
+      ::std::string("pointer ") + where + " was released, but does not belong to a known pool");
   }
 
   event_list deinit_pools(backend_ctx_untyped& ctx)

@@ -167,8 +167,7 @@ public:
   // stream then depends on the list of events
   virtual void sync_with_stream(const backend_ctx_untyped&, event_list&, cudaStream_t) const
   {
-    fprintf(stderr, "Unsupported synchronization with stream.\n");
-    abort();
+    throw ::std::logic_error("unsupported synchronization with stream");
   }
 
   // return stream then depends on the list of events
@@ -464,8 +463,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) const
 {
-  fprintf(stderr, "Unsupported synchronization with stream.\n");
-  abort();
+  throw ::std::logic_error("unsupported synchronization with stream");
   return event_list();
 }
 _CCCL_DIAG_POP

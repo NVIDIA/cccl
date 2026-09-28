@@ -918,7 +918,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 //! @return The combined hash value of all elements in the mdspan.
 //!
 //! @note Requires that either `std::hash<E>` or a custom hash function for `E` is defined.
-//!       If neither is available, the function will print an error and terminate the program.
+//!       If neither is available, the function throws `std::logic_error`.
 //! @note If the mdspan is empty, the function returns 0.
 template <typename E, typename X, typename L, typename A, size_t... i>
 size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::cuda::std::index_sequence<i...> = {})
@@ -926,9 +926,8 @@ size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::cuda::std::index_seque
   using Slice = mdspan<E, X, L, A>;
   if constexpr (!reserved::has_std_hash_v<E> && !reserved::has_cudastf_hash_v<E>)
   {
-    fprintf(stderr, "Error: cannot compute data_hash on a mdspan<E, ...> if ::std::hash<E> is not defined.\n");
-    abort();
-    return 0;
+    throw ::std::logic_error("cannot compute data_hash on an mdspan<E, ...> when neither ::std::hash<E> nor a cudastf "
+                             "hash for E is defined");
   }
   else
   {

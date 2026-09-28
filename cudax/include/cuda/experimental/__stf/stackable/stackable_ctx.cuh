@@ -325,11 +325,8 @@ public:
         const access_mode parent_frozen_mode = data().get_frozen_mode(parent_offset);
         if (!access_mode_permits(parent_frozen_mode, m))
         {
-          fprintf(stderr,
-                  "Error: Invalid access mode transition - parent frozen with %s, requesting %s\n",
-                  access_mode_string(parent_frozen_mode),
-                  access_mode_string(m));
-          abort();
+          throw ::std::logic_error(::std::string("invalid access mode transition: parent frozen with ")
+                                   + access_mode_string(parent_frozen_mode) + ", requesting " + access_mode_string(m));
         }
       }
 
@@ -684,11 +681,9 @@ private:
 
       if (!access_mode_permits(existing_frozen_mode, m))
       {
-        fprintf(stderr,
-                "Error: Incompatible access mode - existing frozen mode %s conflicts with requested mode %s\n",
-                access_mode_string(existing_frozen_mode),
-                access_mode_string(m));
-        abort();
+        throw ::std::logic_error(
+          ::std::string("incompatible access mode: existing frozen mode ") + access_mode_string(existing_frozen_mode)
+          + " conflicts with requested mode " + access_mode_string(m));
       }
     }
 

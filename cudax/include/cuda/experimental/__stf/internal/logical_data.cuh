@@ -364,8 +364,7 @@ public:
       // Do not enable write-back on a logical data that was initialized from a shape, for example
       if (reference_instance_id == instance_id_t::invalid)
       {
-        fprintf(stderr, "Error: cannot enable write-back on a logical data with no reference instance.\n");
-        abort();
+        throw ::std::logic_error("cannot enable write-back on a logical data with no reference instance");
       }
     }
 
@@ -2295,12 +2294,28 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
     }
   }
 
-  // This task does not has d in its dependencies
-  fprintf(stderr, "FATAL: could not find this piece of data in the current task.\n");
-  abort();
-
-  return instance_id_t::invalid;
+  // This task does not have d among its dependencies
+  throw ::std::invalid_argument("logical data '" + d.get_symbol() + "' is not a dependency of this task");
 }
+
+namespace reserved
+{
+//! Every dependency of a task must refer to an initialized logical data. A default-constructed
+//! handle is a programming error, reported before the task touches anything.
+inline void ensure_task_deps_initialized(const task_dep_vector_untyped& deps)
+{
+  size_t index = 0;
+  for (const auto& dep : deps)
+  {
+    if (!dep.get_data().is_initialized())
+    {
+      throw ::std::invalid_argument(
+        "dependency number " + ::std::to_string(index) + " is an uninitialized logical data");
+    }
+    ++index;
+  }
+}
+} // namespace reserved
 
 // Don't document this because Doxygen doesn't know `decltype`
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

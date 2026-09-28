@@ -315,20 +315,12 @@ public:
 
       void populate_deps_scheduling_info() override
       {
-        // Error checking copied from acquire() in acquire_release()
-
-        int index        = 0;
         const auto& deps = get_task_deps();
+        reserved::ensure_task_deps_initialized(deps);
         for (const auto& dep : deps)
         {
-          if (!dep.get_data().is_initialized())
-          {
-            fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-            abort();
-          }
           dep.set_symbol(dep.get_data().get_symbol());
           dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());
-          index++;
         }
       }
 
@@ -422,18 +414,12 @@ public:
 
       void populate_deps_scheduling_info() override
       {
-        int index        = 0;
         const auto& deps = get_task_deps();
+        reserved::ensure_task_deps_initialized(deps);
         for (const auto& dep : deps)
         {
-          if (!dep.get_data().is_initialized())
-          {
-            fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-            abort();
-          }
           dep.set_symbol(dep.get_data().get_symbol());
           dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());
-          index++;
         }
       }
 

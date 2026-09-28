@@ -74,8 +74,7 @@ void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& u
     }
     else
     {
-      fprintf(stderr, "Error: invalid CUDASTF_DEFAULT_ALLOCATOR value.\n");
-      abort();
+      throw ::std::invalid_argument("invalid CUDASTF_DEFAULT_ALLOCATOR value '" + default_alloc_str + "'");
     }
   }
   else

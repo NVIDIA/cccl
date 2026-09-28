@@ -817,8 +817,7 @@ public:
       {
         if constexpr (::cuda::std::is_same_v<partitioner_t, null_partition>)
         {
-          fprintf(stderr, "Fatal: Grid execution requires a partitioner.\n");
-          abort();
+          throw ::std::logic_error("grid execution requires a partitioner");
         }
         else
         {
