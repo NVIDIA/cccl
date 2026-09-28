@@ -711,7 +711,7 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
             block,
             Int64(1),
             end_bit=8,
-            exclusive_digit_prefix=cutlass_coop.ThreadData(4, np.int32),
+            exclusive_digit_prefix=common_coop.ThreadData(4, np.int32),
         ),
         Int32,
     )
