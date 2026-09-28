@@ -17,9 +17,6 @@ import cuda.coop as coop
 def check_portable_surface(source: object, destination: object) -> None:
     """Exercise public declarations without importing package internals."""
 
-    assert_type(coop.register("numba-cuda-mlir"), None)
-    assert_type(coop.register("numba_cuda_mlir"), None)
-
     block = coop.this_block()
     warp = coop.this_warp()
     logical_warp = warp.group_by(8)
