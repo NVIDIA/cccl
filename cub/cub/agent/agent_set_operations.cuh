@@ -178,9 +178,9 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
 // Serial set operations
 //
 // Each functor consumes the two per-thread sub-ranges of a shared-memory buffer (interleaved as [keys1 | keys2]) and
-// emits up to ITEMS_PER_THREAD results into @p output, recording the source shared-memory index of each result in
+// emits up to items_per_thread results into @p output, recording the source shared-memory index of each result in
 // @p indices (needed to gather the matching value in the by-key case). The return value is a per-item bitmask marking
-// which of the ITEMS_PER_THREAD slots are live. The shared buffer is over-allocated so the trailing ++begin reads stay
+// which of the items_per_thread slots are live. The shared buffer is over-allocated so the trailing ++begin reads stay
 // in bounds without explicit range checks.
 //---------------------------------------------------------------------
 
@@ -416,24 +416,12 @@ struct serial_set_union
   }
 };
 
-//! The tuning policy governing a single instantiation of @ref agent_set_op.
-template <int BlockThreads,
-          int ItemsPerThread,
-          CacheLoadModifier LoadModifier   = LOAD_LDG,
-          BlockScanAlgorithm ScanAlgorithm = BLOCK_SCAN_WARP_SCANS>
-struct agent_set_op_policy
-{
-  static constexpr int BLOCK_THREADS                 = BlockThreads;
-  static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
-  static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
-};
-
 //! One block consumes one tile. @p partitions holds the merge-path partition boundaries (one per tile plus a trailing
 //! sentinel) computed by the balanced-partition kernel; @p tile_state carries the decoupled look-back scan state used
 //! to place each tile's compacted output. The total number of emitted elements is written to @p output_count by the
-//! last tile.
-template <typename SetOpPolicyT,
+//! last tile. @p PolicyGetter is a nullary callable that returns the @ref SetOpsPolicy tuning policy by value at
+//! constant evaluation.
+template <typename PolicyGetter,
           typename KeysIt1,
           typename KeysIt2,
           typename ValuesIt1,
@@ -452,15 +440,16 @@ struct agent_set_op
 
   using ScanTileStateT = ScanTileState<Offset>;
 
-  static constexpr int BLOCK_THREADS    = SetOpPolicyT::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = SetOpPolicyT::ITEMS_PER_THREAD;
+  static constexpr auto policy          = PolicyGetter{}();
+  static constexpr int block_threads    = policy.threads_per_block;
+  static constexpr int items_per_thread = policy.items_per_thread;
   // One item is left in reserve so the serial set operations can read one past their range without a bounds check.
-  static constexpr int ITEMS_PER_TILE = BLOCK_THREADS * ITEMS_PER_THREAD - 1;
+  static constexpr int items_per_tile = block_threads * items_per_thread - 1;
 
-  static constexpr CacheLoadModifier LOAD_MODIFIER = SetOpPolicyT::LOAD_MODIFIER;
+  static constexpr CacheLoadModifier load_modifier = policy.load_modifier;
 
   using TilePrefixCallbackT = TilePrefixCallbackOp<Offset, ::cuda::std::plus<>, ScanTileStateT>;
-  using BlockScanT          = BlockScan<Offset, BLOCK_THREADS, SetOpPolicyT::SCAN_ALGORITHM>;
+  using BlockScanT          = BlockScan<Offset, block_threads, policy.scan_algorithm>;
 
   union TempStorage
   {
@@ -472,20 +461,16 @@ struct agent_set_op
 
     struct LoadStorage
     {
-      ::cuda::__uninitialized_array<int, BLOCK_THREADS> offset;
+      ::cuda::__uninitialized_array<int, block_threads> offset;
       union
       {
-        // Over-allocated by BLOCK_THREADS items so serial set operations can read one past their range without range
-        // checks (see ITEMS_PER_TILE).
-        ::cuda::__uninitialized_array<key_type, ITEMS_PER_TILE + BLOCK_THREADS> keys_shared;
-        ::cuda::__uninitialized_array<value_type, ITEMS_PER_TILE + BLOCK_THREADS> values_shared;
+        // Over-allocated by block_threads items so serial set operations can read one past their range without range
+        // checks (see items_per_tile).
+        ::cuda::__uninitialized_array<key_type, items_per_tile + block_threads> keys_shared;
+        ::cuda::__uninitialized_array<value_type, items_per_tile + block_threads> values_shared;
       };
     } load_storage;
   };
-
-  //---------------------------------------------------------------------
-  // Per-thread fields
-  //---------------------------------------------------------------------
 
   TempStorage& storage;
   ScanTileStateT& tile_state;
@@ -500,26 +485,22 @@ struct agent_set_op
   const ::cuda::std::pair<Offset, Offset>* partitions;
   NumSelectedIteratorT output_count;
 
-  //---------------------------------------------------------------------
-  // Utility functions
-  //---------------------------------------------------------------------
-
   template <bool IsFullTile, typename T, typename It1, typename It2>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
+  gmem_to_reg(T (&output)[items_per_thread], It1 input1, It2 input2, int count1, int count2)
   {
     if constexpr (IsFullTile)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int item = 0; item < ITEMS_PER_THREAD - 1; ++item)
+      for (int item = 0; item < items_per_thread - 1; ++item)
       {
-        const int idx = BLOCK_THREADS * item + threadIdx.x;
+        const int idx = block_threads * item + threadIdx.x;
         output[item]  = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
       }
 
       // The last item might be a conditional load even for full tiles.
-      const int item = ITEMS_PER_THREAD - 1;
-      const int idx  = BLOCK_THREADS * item + threadIdx.x;
+      const int item = items_per_thread - 1;
+      const int idx  = block_threads * item + threadIdx.x;
       if (idx < count1 + count2)
       {
         output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -528,9 +509,9 @@ struct agent_set_op
     else
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+      for (int item = 0; item < items_per_thread; ++item)
       {
-        const int idx = BLOCK_THREADS * item + threadIdx.x;
+        const int idx = block_threads * item + threadIdx.x;
         if (idx < count1 + count2)
         {
           output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -540,12 +521,12 @@ struct agent_set_op
   }
 
   template <typename T, typename It>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[items_per_thread])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+    for (int item = 0; item < items_per_thread; ++item)
     {
-      const int idx = BLOCK_THREADS * item + threadIdx.x;
+      const int idx = block_threads * item + threadIdx.x;
       output[idx]   = input[item];
     }
   }
@@ -553,7 +534,7 @@ struct agent_set_op
   template <typename OutputIt, typename T, typename SharedIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void scatter(
     OutputIt output,
-    T (&input)[ITEMS_PER_THREAD],
+    T (&input)[items_per_thread],
     SharedIt shared,
     int active_mask,
     Offset thread_output_prefix,
@@ -563,7 +544,7 @@ struct agent_set_op
     int local_scatter_idx = static_cast<int>(thread_output_prefix - tile_output_prefix);
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+    for (int item = 0; item < items_per_thread; ++item)
     {
       if (active_mask & (1 << item))
       {
@@ -572,15 +553,11 @@ struct agent_set_op
     }
     __syncthreads();
 
-    for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += BLOCK_THREADS)
+    for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += block_threads)
     {
       output[tile_output_prefix + item] = shared[item];
     }
   }
-
-  //---------------------------------------------------------------------
-  // Tile processing
-  //---------------------------------------------------------------------
 
   template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(Offset tile_idx)
@@ -597,14 +574,14 @@ struct agent_set_op
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
     // Load both key ranges into shared memory, laid out as [keys1 | keys2].
-    const auto keys1_load = detail::try_make_cache_modified_iterator<LOAD_MODIFIER>(keys1_in);
-    const auto keys2_load = detail::try_make_cache_modified_iterator<LOAD_MODIFIER>(keys2_in);
-    key_type keys_loc[ITEMS_PER_THREAD];
+    const auto keys1_load = detail::try_make_cache_modified_iterator<load_modifier>(keys1_in);
+    const auto keys2_load = detail::try_make_cache_modified_iterator<load_modifier>(keys2_in);
+    key_type keys_loc[items_per_thread];
     gmem_to_reg<!IsLastTile>(keys_loc, keys1_load + keys1_beg, keys2_load + keys2_beg, num_keys1, num_keys2);
     reg_to_shared(&storage.load_storage.keys_shared[0], keys_loc);
     __syncthreads();
 
-    const int diag_loc = (::cuda::std::min<int>) (ITEMS_PER_THREAD * threadIdx.x, num_keys1 + num_keys2);
+    const int diag_loc = (::cuda::std::min<int>) (items_per_thread * threadIdx.x, num_keys1 + num_keys2);
 
     const ::cuda::std::pair<int, int> partition_loc = balanced_path(
       &storage.load_storage.keys_shared[0],
@@ -622,7 +599,7 @@ struct agent_set_op
     // The two 16-bit coordinates are packed into a single int and shifted one slot to the left across the block.
     const int value =
       threadIdx.x == 0 ? (num_keys1 << 16) | num_keys2 : (partition_loc.first << 16) | partition_loc.second;
-    const int dst                    = threadIdx.x == 0 ? BLOCK_THREADS - 1 : static_cast<int>(threadIdx.x) - 1;
+    const int dst                    = threadIdx.x == 0 ? block_threads - 1 : static_cast<int>(threadIdx.x) - 1;
     storage.load_storage.offset[dst] = value;
     __syncthreads();
 
@@ -633,7 +610,7 @@ struct agent_set_op
     const int num_keys2_loc = keys2_end_loc - keys2_beg_loc;
 
     // Perform the serial set operation.
-    int indices[ITEMS_PER_THREAD];
+    int indices[items_per_thread];
     const int active_mask = set_op(
       &storage.load_storage.keys_shared[0],
       keys1_beg_loc,
@@ -680,9 +657,9 @@ struct agent_set_op
 
     if constexpr (HasValues)
     {
-      const auto values1_load = detail::try_make_cache_modified_iterator<LOAD_MODIFIER>(values1_in);
-      const auto values2_load = detail::try_make_cache_modified_iterator<LOAD_MODIFIER>(values2_in);
-      value_type values_loc[ITEMS_PER_THREAD];
+      const auto values1_load = detail::try_make_cache_modified_iterator<load_modifier>(values1_in);
+      const auto values2_load = detail::try_make_cache_modified_iterator<load_modifier>(values2_in);
+      value_type values_loc[items_per_thread];
       gmem_to_reg<!IsLastTile>(values_loc, values1_load + keys1_beg, values2_load + keys2_beg, num_keys1, num_keys2);
       __syncthreads();
 
@@ -690,7 +667,7 @@ struct agent_set_op
       __syncthreads();
 
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+      for (int item = 0; item < items_per_thread; ++item)
       {
         if (active_mask & (1 << item))
         {
