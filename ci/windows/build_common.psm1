@@ -191,7 +191,7 @@ function run_ci_timed_command {
 
             while ($job.State -eq "Running") {
                 # Display any output gathered so far
-                $job | Receive-Job -ErrorAction SilentlyContinue
+                $job | Receive-Job
                 # Check if we have exceeded the timeout
                 if(((Get-Date) - $start).TotalSeconds -gt $env:CCCL_CI_COMMAND_TIMEOUT) {
                     Write-Warning "timeout"
@@ -200,7 +200,7 @@ function run_ci_timed_command {
                 }
             }
 
-            $res = $job | Receive-Job -ErrorAction SilentlyContinue
+            $res = $job | Receive-Job
             Remove-Job -Job $job -ErrorAction SilentlyContinue
             return $res
         }
