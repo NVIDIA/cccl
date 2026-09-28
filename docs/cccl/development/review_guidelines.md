@@ -976,13 +976,13 @@ Conversely, flag a key that omits a compile-affecting input, which causes wrong-
   #3907→#10035 (pair auto-inferred as #8391→#10035) cuda::device::warp_shuffle memcpy-punned values through uninitialized locals and recomputed the predicate, inflating register pressure vs raw __shfl intrinsics
 -->
 
-When a diff adds a generic (any-type) wrapper over a hardware intrinsic (warp shuffle/vote/match,
-atomics) that round-trips values through `memcpy` into local arrays or structs, flag it unless the PR
-ships a codegen comparison (SASS/PTX test) showing parity with the raw intrinsic for common types.
-`memcpy` into uninitialized temporaries and per-32-bit-word loops inflate register pressure with no
-functional symptom, making every consumer slower than hand-written intrinsics. Initialize the
-destination before `memcpy`, prefer `bit_cast`-style punning, and do not recompute outputs the
-instruction already produces (e.g. the shuffle predicate).
+When a diff introduces a generic (any-type) wrapper over a hardware intrinsic (warp shuffle/vote/match,
+atomics), its generated code must be observable somewhere: either a codegen test comparing it against
+the raw intrinsic for common types (e.g. a FileCheck test asserting the expected instruction and no
+local-memory traffic, like the existing atomics/simd codegen tests), or the wrapper is used in kernels
+covered by the benchmark SASS-diff CI job. Inefficiencies like `memcpy` through uninitialized locals
+or recomputing outputs the instruction already produces have no functional symptom, so without one of
+the two, unfavorable codegen in the new public API ships unseen.
 
 ## test.hidden-consumer-of-internal-api (important, python bindings/internal refactors)
 
