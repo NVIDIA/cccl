@@ -1737,7 +1737,8 @@ cdef class exec_place:
         """
         cdef stf_exec_place_handle sub = stf_exec_place_get_place(self._h, idx)
         if sub == NULL:
-            raise IndexError(f"sub-place index {idx} is out of range")
+            # Keep the IndexError contract of a sequence-like accessor, but carry the recorded message.
+            raise IndexError(str(_last_error_exception(f"sub-place index {idx} is out of range")))
         cdef exec_place ep = exec_place.__new__(exec_place)
         ep._h = sub
         # Keep the parent alive: the sub-place may reference parent-owned state.
@@ -1759,10 +1760,12 @@ cdef class exec_place:
         public_grid = _validate_extents(grid_dims, "grid_dims")
         cdef stf_dim4 dims
         _fill_dim4_c_order(public_grid, &dims, u"grid_dims")
+        # Read size() before the failing call: it is itself a C entry and would reset the error record.
+        cdef size_t nplaces = self.size
         cdef stf_exec_place_handle h = stf_exec_place_grid_reshape(self._h, &dims)
         if h == NULL:
-            raise ValueError(
-                f"cannot reshape a grid of {self.size} places to {tuple(grid_dims)!r}"
+            _raise_last_error(
+                f"cannot reshape a grid of {nplaces} places to {tuple(grid_dims)!r}"
             )
         cdef exec_place_grid result = exec_place_grid.__new__(exec_place_grid)
         result._h = h
@@ -1789,10 +1792,7 @@ cdef class exec_place:
             self._h, rank - 1 - last_axis, rank - 1 - first_axis
         )
         if h == NULL:
-            raise ValueError(
-                f"invalid axis range [{first_axis}, {last_axis}]; expected "
-                f"0 <= first_axis <= last_axis < {rank}"
-            )
+            _raise_last_error(f"cannot collapse axes [{first_axis}, {last_axis}]")
         cdef exec_place_grid result = exec_place_grid.__new__(exec_place_grid)
         result._h = h
         result._grid_rank = rank - (last_axis - first_axis)
@@ -5306,7 +5306,7 @@ cdef class stackable_context:
         cdef stf_host_launch_handle h = stf_stackable_host_launch_create(self._ctx)
         if h == NULL:
             Py_XDECREF(<PyObject*>payload)
-            raise RuntimeError("failed to create stackable host_launch")
+            _raise_last_error("failed to create stackable host_launch")
 
         cdef int mode_ce
         try:
