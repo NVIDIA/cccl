@@ -302,7 +302,7 @@ runs:
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           "${extra_launch_args[@]}" \
           ${{ inputs.image }} \
-          powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1" || exit_code=$?
+          powershell -File "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1" || exit_code=$?
 
         { set +x; } 2>/dev/null
         set -e
