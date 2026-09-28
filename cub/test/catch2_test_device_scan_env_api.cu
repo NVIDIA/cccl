@@ -231,7 +231,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]", CU
   REQUIRE(output == expected);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][env]", CUB_SMALL)
+CUB_TEST("cub::DeviceScan::InclusiveScan with init accepts stream environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-env-stream
   auto op     = cuda::std::plus{};
@@ -255,7 +255,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
   REQUIRE(output == expected);
 }
 
-CUB_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]", CUB_SMALL)
+CUB_TEST("cub::DeviceScan::InclusiveScan with init accepts environment", "[scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-scan-init-env
   auto op     = cuda::std::plus{};
