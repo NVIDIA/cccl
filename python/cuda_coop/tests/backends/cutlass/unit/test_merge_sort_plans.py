@@ -60,6 +60,30 @@ def test_invalid_count(count):
         _request(count=count)
 
 
+@pytest.mark.parametrize("dtype", (cutlass.Float32, cutlass.Float64))
+@pytest.mark.parametrize("negative", (False, True))
+@pytest.mark.parametrize("numpy_scalar", (False, True))
+def test_infinite_sentinel(dtype, negative, numpy_scalar):
+    value = float("-inf" if negative else "inf")
+    if numpy_scalar:
+        value = (np.float32 if dtype is cutlass.Float32 else np.float64)(value)
+    result = _merge_sort._typed_value(value, dtype, sentinel=True)
+    assert isinstance(result, dtype)
+    assert result.value == value
+
+
+@pytest.mark.parametrize("value", (float("nan"), np.float32("nan")))
+def test_nan_sentinel_rejected(value):
+    with pytest.raises(ValueError, match="must not be NaN"):
+        _merge_sort._typed_value(value, cutlass.Float32, sentinel=True)
+
+
+@pytest.mark.parametrize("value", (float("inf"), np.float32("inf")))
+def test_infinite_sentinel_requires_matching_float_dtype(value):
+    with pytest.raises(TypeError, match="dtype"):
+        _merge_sort._typed_value(value, cutlass.Int32, sentinel=True)
+
+
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 def test_group_storage(width):
     request = _request(group=this_warp().group_by(width), count=0)

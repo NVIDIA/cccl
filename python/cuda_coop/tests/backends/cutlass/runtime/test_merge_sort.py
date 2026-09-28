@@ -5,6 +5,7 @@
 
 """Independent Merge Sort ordering, association, and preservation oracles."""
 
+import os
 import re
 import shutil
 import subprocess
@@ -27,6 +28,7 @@ from tests.backends.cutlass.support import (
     device_array,
     values_for,
 )
+from tests.support.paths import PACKAGE_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
@@ -65,6 +67,7 @@ def _run(
     capacity=None,
     compile_options=(),
     selected_groups=False,
+    infinite_sentinel=False,
 ):
     key_type, value_type = cutlass_dtype(dtype), cutlass_dtype(value_dtype)
     threads = int(np.prod(block))
@@ -75,6 +78,8 @@ def _run(
     count = tile - 2 if count is None else count
     info = np.finfo(dtype) if np.dtype(dtype).kind == "f" else np.iinfo(dtype)
     sentinel = np.dtype(dtype).type(info.min if descending else info.max).item()
+    if infinite_sentinel:
+        sentinel = float("-inf" if descending else "inf")
 
     @cute.kernel
     def kernel(
@@ -209,6 +214,8 @@ def _run(
         ).launch(grid=1, block=block)
 
     source = values_for(dtype, size, shift=17)
+    if infinite_sentinel:
+        source[::tile] = sentinel
     payload = (np.arange(size) % 101).astype(value_dtype)
     if np.dtype(value_dtype).kind == "f":
         payload += np.dtype(value_dtype).type(0.25)
@@ -301,6 +308,23 @@ def test_partial_key_types(dtype, descending):
 
 
 @pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize("dtype", (np.float32, np.float64))
+@pytest.mark.parametrize("descending", (False, True))
+@pytest.mark.parametrize("width", (8, 64))
+@pytest.mark.parametrize("pairs", (False, True))
+def test_infinite_partial_bound(api, dtype, descending, width, pairs):
+    _run(
+        api,
+        dtype=dtype,
+        descending=descending,
+        width=width,
+        pairs=pairs,
+        partial=True,
+        infinite_sentinel=True,
+    )
+
+
+@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
 def test_readonly_keys_only(api):
     _run(api, pairs=False, readonly="keys", inferred=True)
 
@@ -360,8 +384,13 @@ def test_runtime_count_traps(count):
         f"_run(partial=True, count={count})\n"
         "raise AssertionError('invalid count did not trap')\n"
     )
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
+    )
     completed = subprocess.run(
         [sys.executable, "-B", "-c", script],
+        env=environment,
         capture_output=True,
         text=True,
         timeout=180,
