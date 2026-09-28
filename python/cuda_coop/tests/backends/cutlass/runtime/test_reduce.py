@@ -6,6 +6,7 @@
 """Independent numerical and ownership checks for built-in Reduce and Sum."""
 
 import importlib.util
+import os
 import re
 import shutil
 import subprocess
@@ -476,8 +477,16 @@ with device_array(np.ones({_THREADS}, dtype=np.int32)) as src, device_array(np.z
     print(f"prefix launch status: {{int(status)}}", flush=True)
 raise AssertionError("invalid Reduce prefix did not trap")
 """)
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
+    )
     result = subprocess.run(
-        [sys.executable, str(path)], capture_output=True, text=True, timeout=180
+        [sys.executable, str(path)],
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=180,
     )
     output = result.stdout + result.stderr
     assert result.returncode != 0, output
