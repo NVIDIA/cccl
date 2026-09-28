@@ -38,11 +38,9 @@ namespace cuda_cub
 {
 namespace detail
 {
-// Thin forwarders to the cub::DeviceSetOps APIs, called from the lambdas passed to the set_operations helper below.
-// Their sole purpose is to carry _CCCL_EXEC_CHECK_DISABLE on a *named* function: the cub APIs are `__host__`-only when
-// CDP is disabled, yet they are reached from the `__host__ __device__` set_operations helper, which trips a spurious
-// cross-execution-space diagnostic. nv_exec_check_disable suppresses it here but does not apply to a generic lambda, so
-// the lambdas call these forwarders instead of cub directly.
+// Named forwarders to the cub::DeviceSetOps APIs. They carry _CCCL_EXEC_CHECK_DISABLE, which the generic lambdas below
+// cannot: the cub APIs are __host__-only without CDP but are reached from the __host__ __device__ set_operations
+// helper.
 #  define THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(NAME, CUB_FN)     \
     _CCCL_EXEC_CHECK_DISABLE                                          \
     template <typename... Args>                                       \
@@ -62,11 +60,9 @@ THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_union_pairs, SetUnionPairs)
 
 #  undef THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER
 
-// Runs a cub::DeviceSetOps algorithm and returns the past-the-end output iterators. The specific operation (and whether
-// it is keys-only or key-value) is fully described by @p cub_device_api, which is invoked as
-// `cub_device_api(d_temp_storage, temp_storage_bytes, num_keys1, num_keys2, stream, d_num_selected)`; this helper owns
-// the shared temporary-storage allocation, output-count read-back, and iterator advancement. The offset type passed to
-// the CUB API is selected dynamically (32 vs 64 bit) from the input sizes via THRUST_DOUBLE_INDEX_TYPE_DISPATCH.
+// Runs the cub::DeviceSetOps algorithm selected by @p cub_device_api and returns the past-the-end output iterators.
+// Owns the shared temp-storage allocation, output-count read-back, and iterator advancement. The offset type is chosen
+// dynamically (32 vs 64 bit) from the input sizes via THRUST_DOUBLE_INDEX_TYPE_DISPATCH.
 template <typename Derived,
           typename KeysIt1,
           typename KeysIt2,

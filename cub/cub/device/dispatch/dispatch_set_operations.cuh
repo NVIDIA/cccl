@@ -28,6 +28,7 @@
 #include <cuda/cmath> // cuda::ceil_div
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__execution/env.h> // cuda::std::execution::env, __query_or
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/pair.h>
 
@@ -36,10 +37,6 @@ namespace detail::set_ops
 {
 inline constexpr int init_kernel_threads      = 128;
 inline constexpr int partition_kernel_threads = 256;
-
-// A keys-only invocation passes NullType* for its value iterators; anything else carries associated values.
-template <typename ValuesIt>
-inline constexpr bool has_values = !::cuda::std::is_same_v<it_value_t<ValuesIt>, NullType>;
 
 // Computes the duplicate-aware merge-path partition boundaries at every tile-sized diagonal. One thread per diagonal.
 template <typename KeysIt1, typename KeysIt2, typename Offset, typename CompareOp>
@@ -89,7 +86,7 @@ __launch_bounds__(device_policy_getter<PolicySelector, current_tuning_cc().get()
     ScanTileState<Offset> tile_state,
     vsmem_t global_temp_storage)
 {
-  using AgentT =
+  using agent_t =
     agent_set_op<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
                  KeysIt1,
                  KeysIt2,
@@ -100,16 +97,14 @@ __launch_bounds__(device_policy_getter<PolicySelector, current_tuning_cc().get()
                  Offset,
                  CompareOp,
                  SetOp,
-                 NumSelectedIteratorT,
-                 has_values<ValuesIt1>>;
+                 NumSelectedIteratorT>;
 
-  // Back the agent's temporary storage with native shared memory when it fits, otherwise with global-memory-backed
-  // virtual shared memory.
-  using vsmem_helper_t = vsmem_helper_impl<AgentT>;
+  // Back the agent's temporary storage with shared memory when it fits, otherwise with virtual (global) shared memory.
+  using vsmem_helper_t = vsmem_helper_impl<agent_t>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
   auto& storage = vsmem_helper_t::get_temp_storage(static_temp_storage, global_temp_storage);
 
-  AgentT agent{
+  agent_t agent{
     storage,
     tile_state,
     keys1,
@@ -137,11 +132,8 @@ template <typename KeysIt1,
           typename CompareOp,
           typename SetOp,
           typename NumSelectedIteratorT,
-          typename PolicySelector        = policy_selector_from_types<KeysIt1, ValuesIt1, KeysIt2, ValuesIt2, Offset>,
+          typename TuningEnvT            = ::cuda::std::execution::env<>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-#if _CCCL_HAS_CONCEPTS()
-  requires set_ops_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -157,10 +149,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   SetOp set_op,
   NumSelectedIteratorT d_num_selected_out,
   cudaStream_t stream,
-  PolicySelector policy_selector         = {},
+  const TuningEnvT& tuning_env           = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  using ScanTileStateT = ScanTileState<Offset>;
+  using scan_tile_state_t = ScanTileState<Offset>;
+
+  // Resolve the tuning policy from the (optional) tuning environment, defaulting to the type-derived selector.
+  using default_policy_selector = policy_selector_from_types<KeysIt1, ValuesIt1, KeysIt2, ValuesIt2, Offset>;
+  using default_policy_t        = decltype(default_policy_selector{}(::cuda::compute_capability{}));
+  auto policy_selector = ::cuda::std::execution::__query_or(tuning_env, default_policy_t{}, default_policy_selector{});
+  using policy_selector_t = decltype(policy_selector);
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(set_ops_policy_selector<policy_selector_t>, "invalid policy selector for set-ops dispatch");
+#endif // _CCCL_HAS_CONCEPTS()
 
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
@@ -169,7 +170,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-    using AgentT =
+    using agent_t =
       agent_set_op<decltype(policy_getter),
                    KeysIt1,
                    KeysIt2,
@@ -180,8 +181,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                    Offset,
                    CompareOp,
                    SetOp,
-                   NumSelectedIteratorT,
-                   has_values<ValuesIt1>>;
+                   NumSelectedIteratorT>;
     constexpr auto policy        = decltype(policy_getter){}();
     constexpr int block_threads  = policy.threads_per_block;
     constexpr int items_per_tile = block_threads * policy.items_per_thread - 1;
@@ -189,16 +189,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const Offset keys_total = num_keys1 + num_keys2;
     const Offset num_tiles  = ::cuda::ceil_div(keys_total, Offset{items_per_tile});
 
-    // Temporary storage layout: [0] decoupled look-back tile state, [1] merge-path partitions (one per tile +
-    // sentinel), [2] global-memory-backed virtual shared memory (only used when the agent's temporary storage exceeds
-    // the static shared-memory limit).
+    // Temp storage layout: [0] look-back tile state, [1] merge-path partitions (one per tile + sentinel), [2] virtual
+    // shared memory (only when the agent's temp storage exceeds the static shared-memory limit).
     size_t tile_state_bytes = 0;
-    if (const auto error = CubDebug(ScanTileStateT::AllocationSize(static_cast<int>(num_tiles), tile_state_bytes)))
+    if (const auto error = CubDebug(scan_tile_state_t::AllocationSize(static_cast<int>(num_tiles), tile_state_bytes)))
     {
       return error;
     }
     const size_t partitions_bytes = static_cast<size_t>(num_tiles + 1) * sizeof(::cuda::std::pair<Offset, Offset>);
-    const size_t vsmem_bytes      = static_cast<size_t>(num_tiles) * vsmem_helper_impl<AgentT>::vsmem_per_block;
+    const size_t vsmem_bytes      = static_cast<size_t>(num_tiles) * vsmem_helper_impl<agent_t>::vsmem_per_block;
     void* allocations[3]          = {nullptr, nullptr, nullptr};
     size_t allocation_sizes[3]    = {tile_state_bytes, partitions_bytes, vsmem_bytes};
     if (const auto error =
@@ -212,7 +211,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return cudaSuccess; // query phase: temp_storage_bytes is now populated
     }
 
-    ScanTileStateT tile_state;
+    scan_tile_state_t tile_state;
     if (const auto error = CubDebug(tile_state.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0])))
     {
       return error;
@@ -225,7 +224,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         (::cuda::std::max) (1, static_cast<int>(::cuda::ceil_div(num_tiles, Offset{init_kernel_threads})));
       if (const auto error = CubDebug(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
-              .doit(detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+              .doit(detail::scan::DeviceCompactInitKernel<scan_tile_state_t, NumSelectedIteratorT>,
                     tile_state,
                     static_cast<int>(num_tiles),
                     d_num_selected_out)))
@@ -275,7 +274,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(static_cast<int>(num_tiles), block_threads, 0, stream)
               .doit(
                 device_set_op_sweep_kernel<
-                  PolicySelector,
+                  policy_selector_t,
                   KeysIt1,
                   KeysIt2,
                   ValuesIt1,
