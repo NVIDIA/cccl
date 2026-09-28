@@ -458,6 +458,19 @@ destroying cache hit rates; canonicalize them into their compile-relevant form f
 32/64-bit-offset flag). Scalars captured by a JIT-compiled operator are deliberately keyed by value.
 Conversely, flag a key that omits a compile-affecting input, which causes wrong-kernel reuse.
 
+## test.sibling-config-drift (important, CMake test configuration)
+
+<!-- provenance:
+  #4802→#5242 _CCCL_HEADER_TEST added to the internal-headers test CMake config only, silently skipping the new prologue/epilogue check for public_headers and public_headers_host_only
+-->
+
+CCCL configures near-identical test targets from sibling CMake files, both within a project (the
+libcudacxx header-test trio `libcudacxx/cmake/Libcudacxx*HeaderTesting.cmake`) and across projects
+(`ThrustHeaderTesting.cmake`, `CubHeaderTesting.cmake`, `cudaxHeaderTesting.cmake`). When a diff adds
+a compile definition, flag, or gating macro to one such file, check every sibling defining a
+structurally similar target for the same addition — adding it to only one silently skips the check
+for the others. Siblings are recognizable by near-identical file names and structure.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
