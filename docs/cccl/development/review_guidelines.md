@@ -443,6 +443,34 @@ typed pointer — flag arithmetic performed in the 32-bit type: the element inde
 the byte offset does not, so the multiplication must be widened to 64 bits first (e.g.
 `offset * size_t{sizeof(T)}`).
 
+## perf.jit-cache-key-vs-codegen-inputs (important, cuda.compute build-result caching)
+
+<!-- provenance:
+  #7657→#9596 (pair auto-inferred as #9475→#9596) histogram build cache keyed on runtime lower/upper level values and exact num_samples, forcing a recompile per distinct bounds (issue #9594)
+-->
+
+When a diff constructs or changes the cache key of a memoized build result (factories decorated with
+`@cache_with_registered_key_functions`, the shared `cache_build_results` cache), require the key to
+consist of exactly the inputs that affect the generated code: dtypes, iterator kinds, operator
+identity, compile-regime flags. Flag runtime kernel arguments in the key — scalar bounds, exact
+element counts — since every distinct runtime value then triggers a full recompile, silently
+destroying cache hit rates; canonicalize them into their compile-relevant form first (dtype,
+32/64-bit-offset flag). Scalars captured by a JIT-compiled operator are deliberately keyed by value.
+Conversely, flag a key that omits a compile-affecting input, which causes wrong-kernel reuse.
+
+## test.sibling-config-drift (important, CMake test configuration)
+
+<!-- provenance:
+  #4802→#5242 _CCCL_HEADER_TEST added to the internal-headers test CMake config only, silently skipping the new prologue/epilogue check for public_headers and public_headers_host_only
+-->
+
+CCCL configures near-identical test targets from sibling CMake files, both within a project (the
+libcudacxx header-test trio `libcudacxx/cmake/Libcudacxx*HeaderTesting.cmake`) and across projects
+(`ThrustHeaderTesting.cmake`, `CubHeaderTesting.cmake`, `cudaxHeaderTesting.cmake`). When a diff adds
+a compile definition, flag, or gating macro to one such file, check every sibling defining a
+structurally similar target for the same addition — adding it to only one silently skips the check
+for the others. Siblings are recognizable by near-identical file names and structure.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
@@ -536,6 +564,21 @@ follow-up PR):
 - `cmake/CCCLCheckCudaArchitectures.cmake` — `all-major-cccl`/`all-cccl` resolution, if the new SM
   belongs in default multi-arch builds.
 - Recommended: `ci/matrix.yaml` — new SM number added to at least one `sm:`/`codegen_target` job.
+
+## infra.ci-flag-removal (important, `ci/*.sh`, `ci/matrix.yaml`, and other shared automation/config)
+
+<!-- provenance:
+  #493→#1458 removed -disable-benchmarks / ENABLE_CUB_BENCHMARKS env-var override when refactoring ci/build_cub.sh;
+  #7919→#10057 (via prerequisite #8160) a PR titled "Remove CuPy upper bound" also silently dropped 12.0 from ctk: lists in ci/matrix.yaml, cutting CTK 12.0 python CI coverage unnoticed for months (issue #8156);
+  #4924→#5543 release-wheels.yml simplification dropped the -p "*${comp}*" filter from gh run download, breaking wheel releases (pair auto-inferred as #5541→#5543)
+-->
+
+When a diff changes CI infrastructure — `ci/matrix.yaml`, CI shell scripts, build/test scripts,
+workflow files — and removes or restricts CI coverage in any way (a version dropped from a job row's
+value list, a CLI flag or `${VAR:=default}` override deleted, a job or filter removed), cross-check
+the PR title and description: the removal must be intended and clearly pointed out. If it looks
+accidental — e.g. the PR's stated purpose is unrelated — flag it and have the author confirm the
+removal is intended. A coverage drop produces no CI failure and can go undetected for months.
 
 ## docs.link-resolves (important, diffs adding or changing hyperlinks in docs, comments, or messages)
 
