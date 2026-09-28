@@ -181,54 +181,6 @@ runs:
         cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
         $ErrorActionPreference = 'Stop'
 
-        function Invoke-WithTimeout {
-            param (
-                [Parameter(Mandatory = $true)]
-                [string]$Executable,
-
-                [Parameter(Mandatory = $false)]
-                [string]$Arguments = "",
-
-                [Parameter(Mandatory = $true)]
-                [int]$TimeoutSeconds
-            )
-
-            # 1. Configure the process to inherit the parent console
-            $psi = [System.Diagnostics.ProcessStartInfo]::new()
-            $psi.FileName = $Executable
-            $psi.Arguments = $Arguments
-            $psi.UseShellExecute = $false  # Required to attach to the current console stream
-
-            $process = New-Object System.Diagnostics.Process
-            $process.StartInfo = $psi
-
-            # 2. Start the process
-            if (-not $process.Start()) {
-                throw "Failed to start process: $Executable"
-            }
-
-            # 3. Create an async background timer to enforce the timeout
-            $timeoutMiliseconds = $TimeoutSeconds * 1000
-            $timer = [System.Threading.Tasks.Task]::Delay($timeoutMiliseconds).ContinueWith({
-                param($task)
-                if (-not $process.HasExited) {
-                    Write-Warning "`n[Timeout] Process exceeded $TimeoutSeconds seconds. Terminating..."
-                    try {
-                        # Kills the process and all of its descendants (PowerShell Core 7+)
-                        $process.Kill($true)
-                    } catch {
-                        $process.Kill() # Fallback for Windows PowerShell 5.1
-                    }
-                }
-            })
-
-            # 4. Block foreground thread until the process exits or gets killed
-            $process.WaitForExit()
-
-            # Return the exit code
-            return $process.ExitCode
-        }
-
         # Install latest sccache client
         pushd "C:\tools"
         Remove-Item "C:\tools\sccache" -Force -Recurse
@@ -255,9 +207,8 @@ runs:
         try {
           Write-Host "Executing command: $env:COMMAND"
           Write-Host "In directory: $(Get-Location)"
-          $exitCode = Invoke-WithTimeout -Executable "powershell" -Arguments $env:COMMAND -TimeoutSeconds 19800
-          # Invoke-Expression $env:COMMAND
-          # $exitCode = $LASTEXITCODE
+          Invoke-Expression $env:COMMAND
+          $exitCode = $LASTEXITCODE
           Write-Host "Command finished with exit code $exitCode"
         } catch {
           Write-Host 'Command failed with error'
@@ -307,7 +258,7 @@ runs:
           echo -e "\e[1;34mUsing the build cluster at ${SCCACHE_DIST_URL}\e[0m"
         fi
 
-        exit_code=0
+        docker_exit=0
         set +e
         { set -x; } 2>/dev/null
         docker run \
@@ -319,7 +270,7 @@ runs:
           --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
           --isolation=process \
           ${{ env.ENABLE_GPU }} \
-          --env COMMAND='${{inputs.command}}' \
+          --env COMMAND='& ${{inputs.command}}' \
           --env "ARTIFACT_ARCHIVES=${{env.ARTIFACT_ARCHIVES}}" \
           --env "ARTIFACT_UPLOAD_REGISTERY=${{env.ARTIFACT_UPLOAD_REGISTERY}}" \
           --env "ARTIFACT_UPLOAD_STAGE=${{env.ARTIFACT_UPLOAD_STAGE}}" \
@@ -351,7 +302,9 @@ runs:
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           "${extra_launch_args[@]}" \
           ${{ inputs.image }} \
-          powershell -File "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1" || exit_code=$?
+          powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
+
+        docker_exit=$?
         { set +x; } 2>/dev/null
         set -e
 
@@ -360,7 +313,7 @@ runs:
           printf 'ARTIFACTS=%s\n' "$artifacts" >> "$GITHUB_OUTPUT"
         fi
 
-        exit "$exit_code"
+        exit "$docker_exit"
 
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
