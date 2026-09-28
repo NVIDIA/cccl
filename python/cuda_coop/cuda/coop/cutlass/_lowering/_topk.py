@@ -331,7 +331,9 @@ def provider_topk(
     snapshot = _state.snapshot_active_session_state()
     try:
         _state.register_request(request)
-        descriptor = TempStorage() if temp_storage is None else temp_storage
+        descriptor = (
+            TempStorage(auto_sync=True) if temp_storage is None else temp_storage
+        )
         arguments.extend(
             _storage.register_deferred_temp_storage_event(
                 descriptor,
