@@ -13,36 +13,27 @@ require a GPU kernel.
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Any
 
-from ..._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
-    IntegralScalar,
-    ThreadDataLike,
-)
-from ..thread_group import CoopCompilerContextRequiredError
+from ..thread_group import ThreadGroup
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _group_primitive_marker,
 )
-from .temp_storage import TempStorageLike as TempStorage
-from .thread_group import BlockGroup
-
-_K = TypeVar("_K", bound=CommonNumericScalar)
-
-_V = TypeVar("_V", bound=CommonNumericScalar)
+from ._payload import TempStorageLike, _validate_common_numeric_value
 
 
 @_common_group_operation("topk_min_keys", group_kinds=("block",))
 def topk_min_keys(
-    group: BlockGroup,
-    keys: CommonThreadDataLike[_K],
+    group: ThreadGroup,
+    keys: Any,
     /,
     *,
-    k: IntegralScalar,
-    valid_items: IntegralScalar | None = None,
-    temp_storage: TempStorage | None = None,
-) -> ThreadDataLike[_K]:
+    k: Any,
+    valid_items: object = None,
+    temp_storage: TempStorageLike | None = None,
+) -> Any:
     """Select the smallest keys in a block.
 
     Parameters
@@ -91,36 +82,36 @@ def topk_min_keys(
     signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
     They reject invalid static counts during compilation and trap
     on invalid runtime counts.
-
-    Examples
-    --------
-    Select the smallest and largest eight keys from a partial tile. If
-    fewer than eight keys are valid, store only that many results. The
-    selected keys are unordered.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
-        :language: python
-        :start-after: # topk-keys-example-begin
-        :end-before: # topk-keys-example-end
-        :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_min_keys must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_min_keys",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_min_keys",
+        group,
+        keys,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
 @_common_group_operation("topk_min_pairs", group_kinds=("block",))
 def topk_min_pairs(
-    group: BlockGroup,
-    keys: CommonThreadDataLike[_K],
-    values: CommonThreadDataLike[_V],
+    group: ThreadGroup,
+    keys: Any,
+    values: Any,
     /,
     *,
-    k: IntegralScalar,
-    valid_items: IntegralScalar | None = None,
-    temp_storage: TempStorage | None = None,
-) -> tuple[ThreadDataLike[_K], ThreadDataLike[_V]]:
+    k: Any,
+    valid_items: object = None,
+    temp_storage: TempStorageLike | None = None,
+) -> Any:
     """Select the smallest key/value pairs in a block.
 
     Parameters
@@ -174,35 +165,43 @@ def topk_min_pairs(
     signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
     They reject invalid static counts during compilation and trap
     on invalid runtime counts.
-
-    Examples
-    --------
-    Select the smallest eight keys and their original positions from a
-    partial tile. Each selected position still identifies its key; the
-    selected pairs are unordered.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
-        :language: python
-        :start-after: # topk-min-pairs-example-begin
-        :end-before: # topk-min-pairs-example-end
-        :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_min_pairs must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_min_pairs",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        _validate_common_numeric_value(
+            "topk_min_pairs",
+            "values",
+            values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_min_pairs",
+        group,
+        keys,
+        values,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
 @_common_group_operation("topk_max_keys", group_kinds=("block",))
 def topk_max_keys(
-    group: BlockGroup,
-    keys: CommonThreadDataLike[_K],
+    group: ThreadGroup,
+    keys: Any,
     /,
     *,
-    k: IntegralScalar,
-    valid_items: IntegralScalar | None = None,
-    temp_storage: TempStorage | None = None,
-) -> ThreadDataLike[_K]:
+    k: Any,
+    valid_items: object = None,
+    temp_storage: TempStorageLike | None = None,
+) -> Any:
     """Select the largest keys in a block.
 
     Parameters
@@ -251,36 +250,36 @@ def topk_max_keys(
     signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
     They reject invalid static counts during compilation and trap
     on invalid runtime counts.
-
-    Examples
-    --------
-    Select the smallest and largest eight keys from a partial tile. If
-    fewer than eight keys are valid, store only that many results. The
-    selected keys are unordered.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
-        :language: python
-        :start-after: # topk-keys-example-begin
-        :end-before: # topk-keys-example-end
-        :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_max_keys must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_max_keys",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_max_keys",
+        group,
+        keys,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
 @_common_group_operation("topk_max_pairs", group_kinds=("block",))
 def topk_max_pairs(
-    group: BlockGroup,
-    keys: CommonThreadDataLike[_K],
-    values: CommonThreadDataLike[_V],
+    group: ThreadGroup,
+    keys: Any,
+    values: Any,
     /,
     *,
-    k: IntegralScalar,
-    valid_items: IntegralScalar | None = None,
-    temp_storage: TempStorage | None = None,
-) -> tuple[ThreadDataLike[_K], ThreadDataLike[_V]]:
+    k: Any,
+    valid_items: object = None,
+    temp_storage: TempStorageLike | None = None,
+) -> Any:
     """Select the largest key/value pairs in a block.
 
     Parameters
@@ -334,21 +333,30 @@ def topk_max_pairs(
     signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
     They reject invalid static counts during compilation and trap
     on invalid runtime counts.
-
-    Examples
-    --------
-    Select the largest eight keys and their original positions from a
-    partial tile. Store only the selected prefix; the pairs are unordered.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
-        :language: python
-        :start-after: # topk-example-begin
-        :end-before: # topk-example-end
-        :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_max_pairs must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_max_pairs",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        _validate_common_numeric_value(
+            "topk_max_pairs",
+            "values",
+            values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_max_pairs",
+        group,
+        keys,
+        values,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
