@@ -991,6 +991,11 @@ the two, unfavorable codegen in the new public API ships unseen.
   #6938→#6999 operator-handling/caching refactor broke benchmark scripts calling algorithm.cache_clear() directly
 -->
 
+<!-- note: this would be discovered by CI testing today: benchmark scripts and examples are smoke-run
+  per PR since #9885, closing the second incident; the first would be caught by enabling the SASS
+  check (check_ldl_stl_in_sass in tests/compute/conftest.py, currently hardcoded off in CI) — a CI
+  setup problem, not a review concern -->
+
 Internal surfaces (Cython/C build-result classes, caching decorators, op-handling wrappers) are relied
 on by tooling outside the unit-test tree — SASS/PTX diff harnesses, benchmark scripts, examples — via
 specific attributes, not the public algorithm API. Flag: (1) a new binding class that mirrors existing
