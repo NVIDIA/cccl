@@ -5,6 +5,7 @@
 
 """Independent NumPy oracles for block differences and boundary flags."""
 
+import os
 import re
 import shutil
 import subprocess
@@ -27,6 +28,7 @@ from tests.backends.cutlass.support import (
     device_array,
     values_for,
 )
+from tests.support.paths import PACKAGE_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
@@ -337,8 +339,13 @@ def test_runtime_count_traps(count):
         "from tests.backends.cutlass.runtime.test_neighbors import _run\n"
         + f"_run(count={count})\n"
     )
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
+    )
     completed = subprocess.run(
         [sys.executable, "-B", "-c", script],
+        env=environment,
         capture_output=True,
         text=True,
         timeout=180,
