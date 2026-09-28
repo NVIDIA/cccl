@@ -329,6 +329,7 @@ private:
  * @param stream Stream the task ran on
  * @param dot Per-context DOT tracer
  * @param device Device that executed the task, or -1 if unspecified
+ * @param loc The caller location reported if timing fails
  */
 template <typename task_type, typename dot_type>
 void record_task_timing(
@@ -337,9 +338,10 @@ void record_task_timing(
   cudaEvent_t end_event,
   cudaStream_t stream,
   dot_type& dot,
-  int device = -1)
+  int device                             = -1,
+  const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
-  ON_THROW(notify)
+  ON_THROW(notify, loc)
   {
     cuda_try<cudaEventRecord>(end_event, stream);
     cuda_try<cudaEventSynchronize>(end_event);
