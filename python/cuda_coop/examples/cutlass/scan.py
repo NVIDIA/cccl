@@ -36,7 +36,7 @@ def run_example(api="common"):
     @cute.kernel
     def scan_tiles(source: cute.Pointer, destination: cute.Pointer):
         group = module.this_block()
-        storage = module.TempStorage(sharing="shared", alignment=64)
+        storage = module.TempStorage(sharing="shared", alignment=64, auto_sync=True)
         payload = module.ThreadData(_ITEMS)
         module.load(group, source, payload, algorithm="transpose", temp_storage=storage)
         scanned = module.exclusive_scan(
