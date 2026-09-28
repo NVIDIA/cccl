@@ -72,16 +72,14 @@ Checks:
   # Device code requires printf() and friends
   - '-cppcoreguidelines-pro-type-vararg'
   - '-cppcoreguidelines-rvalue-reference-param-not-moved'
-  - '-cppcoreguidelines-virtual-class-destructor'
   - '-cppcoreguidelines-pro-type-member-init'
+  # Unions are used far too much in CUB for this to be useful
   - '-cppcoreguidelines-pro-type-union-access'
   - '-cppcoreguidelines-pro-type-const-cast'
   - '-cppcoreguidelines-use-enum-class'
   - '-cppcoreguidelines-non-private-member-variables-in-classes'
-  - '-cppcoreguidelines-pro-type-cstyle-cast'
   - '-cppcoreguidelines-prefer-member-initializer'
   - '-cppcoreguidelines-slicing'
-  - '-cppcoreguidelines-no-malloc'
   - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME
   # TODO(jfaibussowit):

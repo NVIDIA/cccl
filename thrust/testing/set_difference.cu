@@ -47,7 +47,7 @@ TEST_CASE("TestSetDifferenceDispatchImplicit", "[set_difference]")
 }
 
 template <typename Vector>
-void TestSetDifferenceSimple()
+void test_set_difference_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -60,10 +60,10 @@ void TestSetDifferenceSimple()
   REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
-DECLARE_VECTOR_UNITTEST(TestSetDifferenceSimple);
+DECLARE_VECTOR_UNITTEST(test_set_difference_simple);
 
 template <typename T>
-void TestSetDifference(const size_t n)
+void test_set_difference(const size_t n)
 {
   size_t sizes[]         = {0, 1, n / 2, n, n + 1, 2 * n};
   const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
@@ -97,10 +97,10 @@ void TestSetDifference(const size_t n)
     REQUIRE(h_result == d_result);
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifference);
+DECLARE_VARIABLE_UNITTEST(test_set_difference);
 
 template <typename T>
-void TestSetDifferenceEquivalentRanges(const size_t n)
+void test_set_difference_equivalent_ranges(const size_t n)
 {
   const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
   thrust::host_vector<T> h_a        = temp;
@@ -125,10 +125,10 @@ void TestSetDifferenceEquivalentRanges(const size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceEquivalentRanges);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_equivalent_ranges);
 
 template <typename T>
-void TestSetDifferenceMultiset(const size_t n)
+void test_set_difference_multiset(const size_t n)
 {
   thrust::host_vector<T> vec = unittest::random_integers<int>(2 * n);
 
@@ -164,12 +164,12 @@ void TestSetDifferenceMultiset(const size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceMultiset);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_multiset);
 
 // FIXME: disabled on Windows, because it causes a failure on the internal CI system in one specific configuration.
 // That failure will be tracked in a new NVBug, this is disabled to unblock submitting all the other changes.
 #if !_CCCL_COMPILER(MSVC)
-void TestSetDifferenceWithBigIndexesHelper(int magnitude)
+void test_set_difference_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(0);
   const thrust::counting_iterator<long long> end        = begin + (1ll << magnitude);
@@ -188,10 +188,10 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 TEST_CASE("TestSetDifferenceWithBigIndexes", "[set_difference]")
 {
 #  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestSetDifferenceWithBigIndexesHelper(30);
-  TestSetDifferenceWithBigIndexesHelper(31);
-  TestSetDifferenceWithBigIndexesHelper(32);
-  TestSetDifferenceWithBigIndexesHelper(33);
+  test_set_difference_with_big_indexes_helper(30);
+  test_set_difference_with_big_indexes_helper(31);
+  test_set_difference_with_big_indexes_helper(32);
+  test_set_difference_with_big_indexes_helper(33);
 #  endif
 }
 
