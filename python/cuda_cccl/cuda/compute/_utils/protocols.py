@@ -50,7 +50,7 @@ def get_data_pointer(arr: DeviceArrayLike) -> int:
     except AttributeError:
         pass
     else:
-        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data_ptr()
+        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data_ptr()  # type: ignore
         return ptr
 
     # Fast path for CuPy (arr.data.ptr)
@@ -59,7 +59,7 @@ def get_data_pointer(arr: DeviceArrayLike) -> int:
     except AttributeError:
         pass
     else:
-        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data.ptr
+        _DATA_POINTER_ACCESSOR_CACHE[type(arr)] = lambda a: a.data.ptr  # type: ignore
         return ptr
 
     # Fall back to __cuda_array_interface__
