@@ -105,7 +105,7 @@ def _algorithm(
 
 
 def _source(algorithm: _types.Algorithm) -> str:
-    source, _support_lto_irs, _storage_symbols, _udf_declarations = (
+    source, _support_lto_irs, _storage_types, _udf_declarations = (
         algorithm._source_code()
     )
     return source
@@ -135,7 +135,16 @@ def _stat_identity(path: Path) -> tuple[int, int, int]:
 def test_direct_load_store_compile_without_temp_storage_or_barriers(
     compile_context: _nvrtc.CompileContext,
     _fixed_current_device: list[tuple[int, int]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    inspect_ptx = _types._ltoir_to_ptx
+    monkeypatch.setattr(
+        _types,
+        "_ltoir_to_ptx",
+        lambda *args, **kwargs: pytest.fail(
+            "storage-free providers need no PTX query"
+        ),
+    )
     algorithms = [
         _algorithm(compile_context, operation="load"),
         _algorithm(compile_context, operation="store"),
@@ -164,10 +173,8 @@ def test_direct_load_store_compile_without_temp_storage_or_barriers(
             f"{algorithm.mangled_name(method)}_alloc__abi"
             for method in algorithm.parameters
         )
-        storage_symbols = algorithm._temp_storage_symbol_names()
         assert all(symbol in source for symbol in explicit_wrappers)
         assert all(symbol not in source for symbol in implicit_wrappers)
-        assert all(symbol not in source for symbol in storage_symbols)
         assert "TempStorage" not in source
         assert "temp_storage" not in source
         assert "__syncthreads" not in source
@@ -185,7 +192,7 @@ def test_direct_load_store_compile_without_temp_storage_or_barriers(
     assert set(_fixed_current_device) == {_FIXED_COMPUTE_CAPABILITY}
 
     cc = 10 * _FIXED_COMPUTE_CAPABILITY[0] + _FIXED_COMPUTE_CAPABILITY[1]
-    ptx = _types._ltoir_to_ptx(ltoir, name="load_store_metadata", cc=cc)
+    ptx = inspect_ptx(ltoir, name="load_store_metadata", cc=cc)
     assert ".version" in ptx
     assert ".shared" not in ptx
     assert "bar.sync" not in ptx
@@ -226,6 +233,75 @@ def test_direct_load_store_compile_without_temp_storage_or_barriers(
     assert all(
         invocable.files == [str(artifact_path)] for invocable in invocables
     )
+
+
+@pytest.mark.parametrize("bundled", (False, True), ids=("single", "bundle"))
+def test_storage_layout_queries_match_cpp_without_metadata_linking(
+    compile_context: _nvrtc.CompileContext,
+    monkeypatch: pytest.MonkeyPatch,
+    bundled: bool,
+) -> None:
+    from cuda.coop.numba_mlir._compiler._artifacts import find_unsigned
+
+    cases = (("direct", 32), ("transpose", 32), ("transpose", 64))
+    algorithms = [
+        _algorithm(compile_context, algorithm=name, block_dim=(threads, 1, 1))
+        for name, threads in cases
+    ]
+    reference_sources = [
+        "#include <cub/block/block_load.cuh>\n#include <cuda/std/cstdint>\n"
+    ]
+    expected_symbols = {}
+    for index, (name, threads) in enumerate(cases):
+        if name != "direct":
+            storage_type = (
+                "typename cub::BlockLoad<::cuda::std::int32_t, "
+                f"{threads}, 2, cub::BLOCK_LOAD_TRANSPOSE>::TempStorage"
+            )
+            size_symbol = f"expected_storage_size_{index}"
+            alignment_symbol = f"expected_storage_alignment_{index}"
+            expected_symbols[index] = (size_symbol, alignment_symbol)
+            reference_sources.append(
+                f"__device__ constexpr unsigned {size_symbol} = "
+                f"sizeof({storage_type});\n"
+                f"__device__ constexpr unsigned {alignment_symbol} = "
+                f"alignof({storage_type});\n"
+            )
+    _, reference_ptx = _nvrtc.compile(
+        cpp="\n".join(reference_sources),
+        cc=90,
+        rdc=True,
+        code="ptx",
+        context=compile_context,
+    )
+    expected_layouts = [
+        tuple(
+            find_unsigned(symbol, reference_ptx)
+            for symbol in expected_symbols[index]
+        )
+        if index in expected_symbols
+        else (0, 1)
+        for index in range(len(algorithms))
+    ]
+    assert expected_layouts[1][0] < expected_layouts[2][0]
+    monkeypatch.setattr(
+        _types,
+        "_ltoir_to_ptx",
+        lambda *args, **kwargs: pytest.fail(
+            "storage metadata must not link to PTX"
+        ),
+    )
+
+    if bundled:
+        assert _types.prepare_ltoir_bundle(algorithms)
+    else:
+        for algorithm in algorithms:
+            assert algorithm.get_lto_ir()
+
+    assert [
+        (algorithm.temp_storage_bytes, algorithm.temp_storage_alignment)
+        for algorithm in algorithms
+    ] == expected_layouts
 
 
 def test_all_block_load_store_algorithms_compile_with_declared_storage(

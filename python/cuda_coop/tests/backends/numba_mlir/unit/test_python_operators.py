@@ -371,10 +371,16 @@ def test_provider_artifacts_include_callback_and_wrapper_ltoir(monkeypatch):
 
     def compile_provider(**kwargs):
         compile_calls.append(kwargs)
-        return object(), b"provider-ltoir"
+        return object(), (b"provider-ltoir", ())
 
-    monkeypatch.setattr(_types.nvrtc, "compile", compile_provider)
-    monkeypatch.setattr(_types, "_ltoir_to_ptx", lambda *args, **kwargs: "")
+    monkeypatch.setattr(_types.nvrtc, "compile_with_layouts", compile_provider)
+    monkeypatch.setattr(
+        _types,
+        "_ltoir_to_ptx",
+        lambda *args, **kwargs: pytest.fail(
+            "provider metadata must not link to PTX"
+        ),
+    )
     monkeypatch.setattr(
         algorithm,
         "_current_provider_compile_identity",
@@ -391,6 +397,7 @@ def test_provider_artifacts_include_callback_and_wrapper_ltoir(monkeypatch):
     ]
     assert algorithm.lto_irs == [b"callback-ltoir", b"provider-ltoir"]
     assert compile_calls[0]["code"] == "lto"
+    assert compile_calls[0]["layout_types"] == ()
     assert operator.forward_decl() in compile_calls[0]["cpp"]
     assert invocable.temp_storage_bytes == 0
     assert invocable.temp_storage_alignment == 1
