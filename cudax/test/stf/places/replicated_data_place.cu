@@ -95,7 +95,7 @@ bool conditional_body_multi_context_supported(green_context_helper& gc)
   cudaGraph_t body = np.conditional.phGraph_out[0];
 
   cudaKernelNodeParams kp{};
-  kp.func           = (void*) probe_noop_kernel;
+  kp.func           = reinterpret_cast<void*>(probe_noop_kernel);
   kp.gridDim        = dim3(1);
   kp.blockDim       = dim3(1);
   kp.sharedMemBytes = 0;
