@@ -764,7 +764,7 @@ def _scratch_arguments(request, temp_storage):
     from .._temp_storage import TempStorage
 
     if temp_storage is None:
-        temp_storage = TempStorage()
+        temp_storage = TempStorage(auto_sync=True)
     elif not isinstance(temp_storage, TempStorage):
         raise TypeError(
             "cuda.coop.cutlass Load/Store scratch must be CUTLASS TempStorage"
