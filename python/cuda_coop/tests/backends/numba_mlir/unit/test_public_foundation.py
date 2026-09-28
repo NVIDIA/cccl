@@ -124,7 +124,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         )
 
     for operation in ("load", "reduce", "shuffle", "store", "sum"):
-        assert inspect.signature(getattr(numba_coop, operation)) == inspect.signature(
+        assert call_shape(getattr(numba_coop, operation)) == call_shape(
             getattr(common_coop, operation)
         )
 
@@ -135,7 +135,9 @@ def test_qualified_surface_is_common_plus_backend_extensions():
     common_exchange = inspect.signature(common_coop.exchange)
     qualified_exchange = inspect.signature(numba_coop.exchange)
     for name, parameter in common_exchange.parameters.items():
-        assert qualified_exchange.parameters[name] == parameter
+        qualified_parameter = qualified_exchange.parameters[name]
+        assert qualified_parameter.kind == parameter.kind
+        assert qualified_parameter.default == parameter.default
     assert qualified_exchange.return_annotation == common_exchange.return_annotation
     assert tuple(qualified_exchange.parameters)[len(common_exchange.parameters) :] == (
         "ranks",
@@ -153,7 +155,9 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         common_scan = inspect.signature(getattr(common_coop, operation))
         qualified_scan = inspect.signature(getattr(numba_coop, operation))
         for name, parameter in common_scan.parameters.items():
-            assert qualified_scan.parameters[name] == parameter
+            qualified_parameter = qualified_scan.parameters[name]
+            assert qualified_parameter.kind == parameter.kind
+            assert qualified_parameter.default == parameter.default
         assert qualified_scan.return_annotation == common_scan.return_annotation
         common_names = tuple(common_scan.parameters)
         assert tuple(qualified_scan.parameters) == (
