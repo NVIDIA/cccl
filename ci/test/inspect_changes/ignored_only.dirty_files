@@ -1,1 +1,3 @@
 docs/index.rst
+README.md
+.github/actions/docs-build/action.yml

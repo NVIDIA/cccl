@@ -1,0 +1,3 @@
+docs/index.rst
+README.md
+libcudacxx/include/cuda/std/algorithm

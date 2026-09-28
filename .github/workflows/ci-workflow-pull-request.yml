@@ -54,6 +54,7 @@ jobs:
       rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
       matx_enabled: ${{ steps.export-flags.outputs.matx_enabled }}
       pytorch_enabled: ${{ steps.export-flags.outputs.pytorch_enabled }}
+      third_party_changes: ${{ steps.inspect-third-party-changes.outputs.HAS_NON_IGNORED_CHANGES }}
       branch_notes_dirt: ${{ steps.branch-notes-dirt.outputs.branch_notes_dirt }}
     steps:
       - name: Export workflow flags
@@ -87,6 +88,13 @@ jobs:
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
           git fetch origin "${BASE_SHA}" -q
           echo "merge_base_sha=$(git merge-base "${BASE_SHA}" "${GITHUB_SHA}")" | tee -a "${GITHUB_OUTPUT}"
+      - name: Inspect changes for third-party tests
+        id: inspect-third-party-changes
+        env:
+          BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
+        run: |
+          # This also runs when the main matrix is disabled with [skip-matrix].
+          ./ci/inspect_changes.py --refs "${BASE_SHA}" "${GITHUB_SHA}"
       - name: Build benchmark dispatch matrix
         id: build-bench-matrix
         run: |
@@ -373,6 +381,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.rapids_enabled == 'true' &&
+        needs.build-workflow.outputs.third_party_changes == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
     secrets: inherit
@@ -390,6 +399,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.matx_enabled == 'true' &&
+        needs.build-workflow.outputs.third_party_changes == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
     secrets: inherit
@@ -404,6 +414,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pytorch_enabled == 'true' &&
+        needs.build-workflow.outputs.third_party_changes == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
     secrets: inherit

@@ -92,8 +92,8 @@ from any project in ``FULL_BUILD`` is added to ``LITE_BUILD``.
 Output
 ------
 
-``inspect_changes.py`` emits two GitHub Actions outputs, each a space-separated
-list of ``matrix_project`` values:
+``inspect_changes.py`` emits two GitHub Actions outputs containing space-separated
+lists of ``matrix_project`` values:
 
 ``FULL_BUILD``
   Projects that build and test their full job set.
@@ -106,6 +106,13 @@ of ``ci/matrix.yaml`` (see :ref:`infra-ci-matrix-yaml`) and keeps only entries
 whose project is in ``FULL_BUILD``, then reads the ``pull_request_lite`` section
 and keeps only entries whose project is in ``LITE_BUILD``, then concatenates the
 two. A project absent from both lists contributes no jobs.
+
+The additional ``HAS_NON_IGNORED_CHANGES`` output is ``true`` if any changed file
+survives the global ignore filter, or ``false`` otherwise. The pull-request workflow
+uses this to skip the optional MatX, PyTorch, and RAPIDS builds for documentation-only
+and other ignored changes. Their own workflows and build scripts belong to the internal
+``third_party`` project, so changes to those files still run third-party tests without
+adding CCCL matrix jobs. The existing third-party skip tags continue to apply.
 
 To see the exact lists for any change, run ``inspect_changes.py`` locally:
 

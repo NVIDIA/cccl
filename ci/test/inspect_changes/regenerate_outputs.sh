@@ -17,5 +17,5 @@ for dirty_file in *.dirty_files; do
   output_file="${test_name}.output"
   echo "Regenerating ${output_file}"
   python "${inspect_changes}" --file "${dirty_file}" \
-    | awk '/^FULL_BUILD=/{print}/^LITE_BUILD=/{print}' > "${output_file}"
+    | awk '/^FULL_BUILD=/{print}/^LITE_BUILD=/{print}/^HAS_NON_IGNORED_CHANGES=/{print}' > "${output_file}"
 done

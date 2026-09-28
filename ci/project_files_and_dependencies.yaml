@@ -221,6 +221,17 @@ projects:
     full_dependencies: []
     include_regexes: ["nvrtcc/"]
 
+  # These files must trigger third-party tests without adding CCCL matrix jobs.
+  third_party:
+    name: "Third-party Tests"
+    include_regexes:
+      - '\.github/workflows/build-matx\.yml'
+      - '\.github/workflows/build-pytorch\.yml'
+      - '\.github/workflows/build-rapids\.yml'
+      - 'ci/matx/'
+      - 'ci/pytorch/'
+      - 'ci/rapids/'
+
   # This is a dummy project, and only really serves to encode dependencies. Any time any
   # of the C/C++ projects are modified, we want to launch one (and only one) clang-tidy
   # job for the whole of CCCL.
@@ -268,9 +279,6 @@ ignore_regexes:
   - '\.github/workflows/bench.*\.yml'
   - '\.github/workflows/compile-time-bench\.yml'
   - '\.github/workflows/build-docs\.yml'
-  - '\.github/workflows/build-matx\.yml'
-  - '\.github/workflows/build-pytorch\.yml'
-  - '\.github/workflows/build-rapids\.yml'
   - '\.github/workflows/git-bisect\.yml'
   - '\.github/workflows/project_automation.*\.yml'
   - '\.github/workflows/release.*\.yml'
@@ -282,8 +290,5 @@ ignore_regexes:
   - 'cccl-version.json'
   - 'ci/bench/'
   - 'ci/bench.+yaml'
-  - 'ci/matx/'
-  - 'ci/pytorch/'
-  - 'ci/rapids/'
   - 'docs/'
   - 'LICENSE'

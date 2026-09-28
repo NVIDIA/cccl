@@ -1,2 +1,3 @@
 FULL_BUILD=python_v2 python_tsan python packaging
 LITE_BUILD=
+HAS_NON_IGNORED_CHANGES=true

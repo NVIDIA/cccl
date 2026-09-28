@@ -591,11 +591,16 @@ def compute_outputs(
     return full_output, lite_output
 
 
-def emit_outputs(full_output: Sequence[str], lite_output: Sequence[str]) -> None:
-    """Write FULL_BUILD/LITE_BUILD strings to stdout and GitHub outputs."""
+def emit_outputs(
+    full_output: Sequence[str],
+    lite_output: Sequence[str],
+    has_non_ignored_changes: bool,
+) -> None:
+    """Write rebuild lists and change detection results to GitHub outputs."""
     print("Github Action Outputs:")
     write_output("FULL_BUILD", " ".join(full_output))
     write_output("LITE_BUILD", " ".join(lite_output))
+    write_output("HAS_NON_IGNORED_CHANGES", str(has_non_ignored_changes).lower())
     print()
 
 
@@ -671,7 +676,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     full_output, lite_output = compute_outputs(config, full_set, lite_set)
 
     print()
-    emit_outputs(full_output, lite_output)
+    emit_outputs(full_output, lite_output, bool(dirty_files))
 
     with SummaryWriter(summary_path) as summary_writer:
         print("::group::Project Change Summary")
