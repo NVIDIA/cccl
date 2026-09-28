@@ -186,3 +186,33 @@ def check_portable_surface(
         coop.ThreadDataLike[np.int16],
     )
     assert_type(coop.inclusive_sum(warp, np.uint32(4)), np.uint32)
+
+
+def check_common_scan_seeds(integer_seed: int, floating_seed: float) -> None:
+    block = coop.this_block()
+    warp = coop.this_warp()
+    values = coop.ThreadData(2, np.int16)
+    assert_type(
+        coop.exclusive_scan(block, np.int32(4), initial_value=np.int32(0)),
+        np.int32,
+    )
+    assert_type(
+        coop.scan(block, values, mode="exclusive", initial_value=np.int16(0)),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.exclusive_scan(warp, np.float64(4), initial_value=np.float64(0)),
+        np.float64,
+    )
+    assert_type(
+        coop.scan(warp, np.float32(4), mode="exclusive", initial_value=0.0),
+        np.float32,
+    )
+    assert_type(
+        coop.exclusive_scan(block, values, initial_value=integer_seed),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.exclusive_scan(warp, np.float32(4), initial_value=floating_seed),
+        np.float32,
+    )

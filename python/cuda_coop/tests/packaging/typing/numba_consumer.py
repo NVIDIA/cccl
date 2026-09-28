@@ -55,6 +55,41 @@ def _select_left_uint16(left: np.uint16, right: np.uint16) -> np.uint16:
     return left
 
 
+def check_numba_scan_seeds(integer_seed: int, floating_seed: float) -> None:
+    block = coop.this_block()
+    warp = coop.this_warp()
+    values = coop.ThreadData(2, np.uint16)
+    assert_type(
+        coop.exclusive_scan(block, values, initial_value=np.uint16(0)),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.scan(warp, np.float64(4), mode="exclusive", initial_value=np.float64(0)),
+        np.float64,
+    )
+    assert_type(
+        coop.exclusive_scan(block, np.int32(4), initial_value=integer_seed),
+        np.int32,
+    )
+    assert_type(
+        coop.scan(block, np.float32(4), mode="exclusive", initial_value=floating_seed),
+        np.float32,
+    )
+    assert_type(
+        coop.exclusive_scan(warp, np.float32(4), initial_value=0.0),
+        np.float32,
+    )
+    assert_type(
+        coop.exclusive_scan(
+            block,
+            np.int32(4),
+            scan_op=_select_left_int32,
+            initial_value=np.int32(0),
+        ),
+        np.int32,
+    )
+
+
 def check_numba_surface(
     source: object,
     destination: object,
