@@ -938,6 +938,12 @@ the inline computation with the shared helper.
   #10923→#10943 unbounded cc>={10,7} Rubin bytes-in-flight captured untested sm_120+
 -->
 
+<!-- note: on the #8611 incident: the PR posted per-size benchmarks that looked uniformly good, but its
+  baseline build apparently measured something different — the untuned reference times were 40-70%
+  slower than untuned main re-measured days later (issue #8688), while the tuned times matched. Against
+  the correct baseline the change was adversarial (I8 regressed 6-15% at 2^24-2^32) and was reverted
+  in #8689. Lesson: verify the benchmark baseline is current main in default configuration. -->
+
 When a diff adds or changes tuning values or the conditions selecting them (`tuning_*.cuh` policy
 selectors, per-arch perf constants), compare the gate's domain against what was actually benchmarked,
 in both directions:
