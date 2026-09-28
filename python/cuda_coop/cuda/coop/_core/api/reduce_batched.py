@@ -8,18 +8,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import ThreadGroup
+from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _backend_module_name,
-    _group_primitive_marker,
     _portable_group_operation,
-    _portable_selector,
 )
 from ._payload import (
     ThreadDataLike,
     _ReadableThreadDataLike,
 )
-from .reduce import _portable_reduce_operator, _validate_portable_reduce_value
 
 
 @_portable_group_operation(
@@ -54,20 +50,8 @@ def reduce_batched(
     result extent may include slots without a corresponding batch.
     """
 
-    output_layout = _portable_selector(
-        "reduce_batched", "output_layout", output_layout, {"striped", "blocked"}
-    )
-    binary_op = _portable_reduce_operator(binary_op)
-    if _backend_module_name() is not None:
-        if not isinstance(value, _ReadableThreadDataLike):
-            raise TypeError("cuda.coop.reduce_batched requires a ThreadData payload")
-        _validate_portable_reduce_value("reduce_batched", value, binary_op)
-    return _group_primitive_marker(
-        "reduce_batched",
-        group,
-        value,
-        binary_op=binary_op,
-        output_layout=output_layout,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.reduce_batched must be called from a supported GPU kernel."
     )
 
 
