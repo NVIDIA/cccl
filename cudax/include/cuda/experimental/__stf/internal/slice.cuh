@@ -902,7 +902,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 //! `std::hash<E>` or a custom hash function, if available. The hash is computed by
 //! traversing the multidimensional array in a dimension-major order and combining the
 //! hash values of each element. If neither a standard nor custom hash is available for
-//! the element type, the function prints an error and aborts.
+//! the element type, the function throws `std::logic_error`.
 //!
 //! The function supports both rank deduction and explicit index sequence specification.
 //! When called without an explicit index sequence, it generates one corresponding to the

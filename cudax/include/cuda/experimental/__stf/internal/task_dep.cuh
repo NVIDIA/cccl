@@ -79,8 +79,12 @@ public:
 
   logical_data_untyped get_data() const;
 
-  //! Whether this dependency refers to a logical data at all: a dependency built from a
-  //! default-constructed handle packs an empty state, and get_data() asserts on it.
+  //! @brief Whether this dependency refers to a logical data at all.
+  //!
+  //! A dependency built from a default-constructed handle packs an empty state, and
+  //! get_data() asserts on it.
+  //!
+  //! @return `true` if a logical data is attached, `false` for an empty state
   bool has_data() const
   {
     return data != nullptr;

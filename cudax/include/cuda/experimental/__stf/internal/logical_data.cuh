@@ -2302,8 +2302,12 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
 
 namespace reserved
 {
-//! Every dependency of a task must refer to an initialized logical data. A default-constructed
-//! handle is a programming error, reported before the task touches anything.
+//! @brief Check that every dependency of a task refers to an initialized logical data.
+//!
+//! A default-constructed handle is a programming error, reported as `std::invalid_argument`
+//! before the task touches anything.
+//!
+//! @param[in] deps The dependencies of the task
 inline void ensure_task_deps_initialized(const task_dep_vector_untyped& deps)
 {
   size_t index = 0;
