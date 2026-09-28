@@ -44,7 +44,7 @@ class CoreBackendAdapter(Protocol):
 
     def lower_cxx_operator(
         self,
-        operator: Any,
+        operator: CxxOperator,
         *,
         specialization: AlgorithmSpec,
     ) -> Any:
@@ -53,7 +53,7 @@ class CoreBackendAdapter(Protocol):
 
     def lower_python_operator(
         self,
-        operator: Any,
+        operator: PythonOperator,
         *,
         specialization: AlgorithmSpec,
     ) -> Any:
@@ -62,7 +62,7 @@ class CoreBackendAdapter(Protocol):
 
     def lower_stateful_operator(
         self,
-        operator: Any,
+        operator: StatefulOperator,
         *,
         specialization: AlgorithmSpec,
     ) -> Any:
