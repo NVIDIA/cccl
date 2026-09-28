@@ -418,7 +418,9 @@ def provider_merge_sort(
     try:
         _state.register_request(request)
         if request.is_block:
-            descriptor = TempStorage() if temp_storage is None else temp_storage
+            descriptor = (
+                TempStorage(auto_sync=True) if temp_storage is None else temp_storage
+            )
             arguments.extend(
                 _storage.register_deferred_temp_storage_event(
                     descriptor,

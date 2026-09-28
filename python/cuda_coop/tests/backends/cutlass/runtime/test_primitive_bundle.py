@@ -59,7 +59,7 @@ def test_sort_scan_shared_storage(api):
     @cute.kernel
     def kernel(source: cute.Pointer, output: cute.Pointer, tiles: cutlass.Int32):
         group = api.this_block()
-        storage = api.TempStorage(alignment=128)
+        storage = api.TempStorage(alignment=128, auto_sync=True)
         for tile in range(tiles):
             keys = api.ThreadData(2)
             api.load(

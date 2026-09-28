@@ -49,7 +49,7 @@ def run_example(api="common"):
         values = module.ThreadData(_ITEMS)
         module.load(group, source_keys, keys, valid_items=_VALID, oob_default=1000)
         module.load(group, source_values, values, valid_items=_VALID, oob_default=0.0)
-        scratch = module.TempStorage(alignment=16)
+        scratch = module.TempStorage(alignment=16, auto_sync=True)
         sorted_keys = module.merge_sort_keys(
             group,
             keys,
