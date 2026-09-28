@@ -19,6 +19,7 @@ from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 from tests.backends.cutlass.runtime.test_run_length import _run
+from tests.support.paths import PACKAGE_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
@@ -43,8 +44,13 @@ def test_invalid_runtime_controls_trap(arguments):
         f"_run({arguments})\n"
         "raise AssertionError('invalid RLD call did not trap')\n"
     )
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
+    )
     completed = subprocess.run(
         [sys.executable, "-B", "-c", script],
+        env=environment,
         capture_output=True,
         text=True,
         timeout=180,
@@ -94,6 +100,10 @@ def test_scratch_reuse_racecheck():
         "_run(bulk=False, repeats=3, sharing='shared')\n"
         "_run(bulk=True, repeats=3, sharing='exclusive', auto_sync=False)\n"
     )
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
+    )
     completed = subprocess.run(
         [
             tool,
@@ -106,6 +116,7 @@ def test_scratch_reuse_racecheck():
             "-c",
             script,
         ],
+        env=environment,
         capture_output=True,
         text=True,
         timeout=240,
