@@ -377,7 +377,7 @@ def test_documented_neighbor_composition():
         block = coop.this_block()
         values = coop.ThreadData(2, dtype=cutlass.Int32)
         coop.load(block, source, values)
-        scratch = coop.TempStorage(alignment=16)
+        scratch = coop.TempStorage(alignment=16, auto_sync=True)
         differences = coop.adjacent_difference(block, values, temp_storage=scratch)
         heads, tails = coop.discontinuity(
             block, values, mode="heads_and_tails", temp_storage=scratch
