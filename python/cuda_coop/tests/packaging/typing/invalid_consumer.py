@@ -276,15 +276,53 @@ coop.inclusive_scan(  # expected-error: [call-overload]
     np.int32(1),
     scan_op=object(),
 )
-bad_portable_scan: np.int32 = common.exclusive_scan(
+# Discard results so an assignment cannot constrain seed inference.
+common.exclusive_scan(  # expected-error: [misc]
     common_block,
     np.int32(1),
-    initial_value=np.float32(0),  # expected-error: [arg-type]
+    initial_value=np.float32(0),
 )
-bad_qualified_scan: common.ThreadDataLike[np.int32] = coop.exclusive_scan(
+common.scan(  # expected-error: [call-overload]
+    common_block, np.int32(1), mode="exclusive", initial_value=np.int64(0)
+)
+common.exclusive_scan(  # expected-error: [misc]
+    common_block, common_values, initial_value=np.uint32(0)
+)
+common.scan(  # expected-error: [call-overload]
+    common_block, common_values, mode="exclusive", initial_value=np.int16(0)
+)
+common.exclusive_scan(  # expected-error: [misc]
+    common_block,
+    np.float32(1),
+    initial_value=np.float64(0),
+)
+common.scan(  # expected-error: [call-overload]
+    common.this_warp(),
+    np.int32(1),
+    mode="exclusive",
+    initial_value=np.float64(0),
+)
+coop.exclusive_scan(  # expected-error: [misc]
     qualified_block,
-    values,
-    initial_value=np.float32(0),  # expected-error: [arg-type]
+    np.int32(1),
+    initial_value=np.float32(0),
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block, np.int32(1), mode="exclusive", initial_value=np.int64(0)
+)
+coop.exclusive_scan(  # expected-error: [misc]
+    qualified_block, values, initial_value=np.uint32(0)
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block, values, mode="exclusive", initial_value=np.int16(0)
+)
+coop.exclusive_scan(  # expected-error: [misc]
+    qualified_block,
+    np.float32(1),
+    initial_value=np.float64(0),
+)
+coop.scan(  # expected-error: [call-overload]
+    coop.this_warp(), np.int32(1), mode="exclusive", initial_value=np.float64(0)
 )
 common.scan(  # expected-error: [call-overload]
     common_block,
