@@ -33,11 +33,9 @@ benchmarks:
   filters:
     # CUB C++ benchmark filters (regex matched against ninja target names).
     cub:
-      - '^cub\.bench\.reduce\.sum\.'
-      - '^cub\.bench\.scan\.exclusive\.sum\.'
-      - '^cub\.bench\.radix_sort\.keys\.'
-      - '^cub\.bench\.partition\.if\.'
-      - '^cub\.bench\.merge_sort\.keys\.'
+      # Examples:
+      # - '^cub\.bench\.for_each\.base'
+      # - '^cub\.bench\.reduce\.(sum|min)\.'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
     python:
@@ -52,8 +50,8 @@ benchmarks:
     # - "rtxa6000"   # sm_86, 48 GB
     # - "l4"         # sm_89, 24 GB
     # - "rtx4090"    # sm_89, 24 GB
-    - "h100"       # sm_90, 80 GB
-    - "rtxpro6000" # sm_120
+    # - "h100"       # sm_90, 80 GB
+    # - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
   # launch_args: "--cuda 13.3 --host gcc14"

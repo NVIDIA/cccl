@@ -67,7 +67,7 @@ struct BlockScanWarpScans
 
   /// Shared memory storage layout type
 
-  struct alignas(32) _TempStorage
+  struct __align__(32) _TempStorage
   {
     T warp_aggregates[WARPS];
 
@@ -79,8 +79,20 @@ struct BlockScanWarpScans
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  // TODO(bgruber): _TempStorage requests an alignment of 32, but that was never actually honored due to a bug in
+  // cub::Uninitialized<T> (fixed to honor requested alignment). Actually honoring 32 here caused measurable
+  // regressions in several algorithms (e.g. DevicePartition::If, DeviceSelect::Flagged) when benchmarked, so this
+  // wrapper deliberately only aligns to 16 bytes (matching the alignment that was silently delivered before), while
+  // leaving _TempStorage's own declared alignment at 32 to keep DeviceWord selection elsewhere unaffected.
+  struct TempStorage
+  {
+    alignas(16) char storage[sizeof(_TempStorage)];
+
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE _TempStorage& Alias()
+    {
+      return reinterpret_cast<_TempStorage&>(*this);
+    }
+  };
 
   //---------------------------------------------------------------------
   // Per-thread fields
