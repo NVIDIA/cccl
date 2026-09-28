@@ -428,13 +428,13 @@ private:
       for (::cuda::std::int32_t __peer = 0; __peer < __size; ++__peer)
       {
         const auto __recv_count_bytes = __type_size * __h_recv_counts[__peer];
-        const auto __displs_bytes     = __type_size * __h_displs[__peer];
 
         if (__recv_count_bytes == 0)
         {
           continue;
         }
 
+        const auto __displs_bytes    = __type_size * __h_displs[__peer];
         auto* const __recv_ptr_bytes = __recvbuf_bytes + __displs_bytes;
 
         if (__peer == __root)
