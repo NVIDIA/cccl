@@ -47,9 +47,9 @@ int main(int argc, char** argv)
 
   double *dX, *dY, *dZ;
 
-  cuda_safe_call(cudaMalloc((void**) &dX, N * sizeof(double)));
-  cuda_safe_call(cudaMalloc((void**) &dY, N * sizeof(double)));
-  cuda_safe_call(cudaMalloc((void**) &dZ, N * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dX), N * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dY), N * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dZ), N * sizeof(double)));
 
   // Use a kernel to setup values
   setup_vectors<<<16, 16>>>(N, dX, dY, dZ);

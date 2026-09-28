@@ -25,7 +25,7 @@ using namespace cuda::experimental::stf;
 /* Implement atomicMax with a compare and swap */
 _CCCL_DEVICE double atomicMax(double* address, double val)
 {
-  unsigned long long int* address_as_ull = (unsigned long long int*) address;
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
   unsigned long long int old             = *address_as_ull, assumed;
 
   do
