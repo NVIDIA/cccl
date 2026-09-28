@@ -2,16 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common constructors for the current CUDA thread groups.
+"""Expose symbolic thread groups through the common API.
 
-The constructors either delegate to the active compiler backend or return the
-backend-neutral symbolic group used during characterization and planning. This
-module does not resolve launch facts or select primitive implementations.
+These factories describe which threads will cooperate. A compiler resolves the
+description against the kernel launch before it selects an implementation.
+Constructing a group does not execute an operation or synchronize its threads.
 """
 
 from __future__ import annotations
-
-from typing import Any
 
 from ..thread_group import (
     Hierarchy,
@@ -23,7 +21,6 @@ from ..thread_group import (
     this_thread,
     this_warp,
 )
-from ._dispatch import _backend_member, _backend_module_name
 
 _core_this_block = this_block
 _core_this_cluster = this_cluster
@@ -36,17 +33,6 @@ _core_this_warp = this_warp
 MemoryGroup = ThreadGroup
 BlockGroup = ThreadGroup
 WarpGroup = ThreadGroup
-
-
-def _group_constructor(
-    name: str,
-    fallback: Any,
-    *args: Any,
-    **kwargs: Any,
-) -> Any:
-    if _backend_module_name() is None:
-        return fallback(*args, **kwargs)
-    return _backend_member(name)(*args, **kwargs)
 
 
 def this_thread() -> ThreadGroup:
@@ -71,7 +57,7 @@ def this_thread() -> ThreadGroup:
     does not synchronize threads or launch a kernel.
     """
 
-    return _group_constructor("this_thread", _core_this_thread)
+    return _core_this_thread()
 
 
 def this_warp() -> ThreadGroup:
@@ -97,7 +83,7 @@ def this_warp() -> ThreadGroup:
     See :ref:`thread groups <coop-thread-groups>` for the group hierarchy.
     """
 
-    return _group_constructor("this_warp", _core_this_warp)
+    return _core_this_warp()
 
 
 def this_block() -> ThreadGroup:
@@ -121,7 +107,7 @@ def this_block() -> ThreadGroup:
     :ref:`participation requirements <coop-participation>`.
     """
 
-    return _group_constructor("this_block", _core_this_block)
+    return _core_this_block()
 
 
 def this_cluster() -> ThreadGroup:
@@ -153,7 +139,7 @@ def this_cluster() -> ThreadGroup:
         :dedent: 4
     """
 
-    return _group_constructor("this_cluster", _core_this_cluster)
+    return _core_this_cluster()
 
 
 def this_grid() -> ThreadGroup:
@@ -178,12 +164,7 @@ def this_grid() -> ThreadGroup:
     :ref:`ranks and sizes <coop-group-queries>`.
     """
 
-    group = _group_constructor("this_grid", _core_this_grid)
-    if _backend_module_name() is not None and isinstance(group, ThreadGroup):
-        assert group.hierarchy is not None
-        # Backends distinguish common grid policy from qualified grid access.
-        return group.with_hierarchy(group.hierarchy, source="common_root")
-    return group
+    return _core_this_grid()
 
 
 __all__ = [

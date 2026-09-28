@@ -2,24 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common per-thread payload construction.
+"""Define the common constructor for per-thread values in a GPU kernel.
 
-ThreadData is a compiler-owned fixed-size value container; this frontend only
-forwards its static extent, optional dtype, and alignment to the active backend.
-Primitive payload validation lives in the family frontends and shared helpers.
+A compiler replaces this call with storage for the calling thread. The Python
+body rejects host execution because it cannot provide that device storage.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from ._dispatch import _backend_member, _common_root_operation_scope
-from ._payload import ThreadDataLike, _normalize_alignment
+from ..thread_group import CoopCompilerContextRequiredError
+from ._payload import ThreadDataLike
 
 
 def ThreadData(
     items_per_thread: int,
-    dtype: Any = None,
+    dtype: object | None = None,
     *,
     alignment: int | None = None,
 ) -> ThreadDataLike[Any]:
@@ -70,12 +69,9 @@ def ThreadData(
         :dedent: 4
     """
 
-    alignment = _normalize_alignment(alignment)
-
-    with _common_root_operation_scope("ThreadData"):
-        return _backend_member("ThreadData")(
-            items_per_thread, dtype=dtype, alignment=alignment
-        )
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.ThreadData must be called from a supported GPU kernel."
+    )
 
 
 __all__ = ["ThreadData", "ThreadDataLike"]
