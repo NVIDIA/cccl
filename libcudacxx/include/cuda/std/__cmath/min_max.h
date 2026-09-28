@@ -46,6 +46,18 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 [[nodiscard]] _CCCL_API _Tp __with_builtin_fmax(_Tp __x, _Tp __y) noexcept
 {
+#  if _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
+  // Clang lowers fmax to AArch64 fmaxnm, which returns quite NaN for signaling NaNs,
+  // See https://github.com/llvm/llvm-project/issues/176624
+  if (::cuda::std::isnan(__x))
+  {
+    return __y;
+  }
+  if (::cuda::std::isnan(__y))
+  {
+    return __x;
+  }
+#  endif // _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
   {
     return __builtin_fmaxf(__x, __y);
@@ -172,6 +184,18 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 [[nodiscard]] _CCCL_API _Tp __with_builtin_fmin(_Tp __x, _Tp __y) noexcept
 {
+#  if _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
+  // Clang lowers fmin to AArch64 fminnm, which returns quite NaN for signaling NaNs,
+  // See https://github.com/llvm/llvm-project/issues/176624
+  if (::cuda::std::isnan(__x))
+  {
+    return __y;
+  }
+  if (::cuda::std::isnan(__y))
+  {
+    return __x;
+  }
+#  endif // _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
   {
     return __builtin_fminf(__x, __y);

@@ -95,7 +95,7 @@ template <class _Tp>
 #  if defined(_CCCL_BUILTIN_ELEMENTWISE_PEXT)
   return _CCCL_BUILTIN_ELEMENTWISE_PEXT(__v, __mask);
 #  elif defined(_CCCL_BUILTIN_IA32_PEXT_SI) && defined(_CCCL_BUILTIN_IA32_PEXT_DI)
-  if (sizeof(_Tp) <= sizeof(uint32_t))
+  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
     return static_cast<_Tp>(_CCCL_BUILTIN_IA32_PEXT_SI(uint32_t{__v}, uint32_t{__mask}));
   }

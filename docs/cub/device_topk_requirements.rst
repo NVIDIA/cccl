@@ -63,11 +63,15 @@ requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the
 
 .. note::
 
-   **Current support.** Only the unsorted output ordering is implemented so far, so
-   ``cuda::execution::output_ordering::unsorted`` must be requested **explicitly**; ``sorted`` /
+   **Current support.** :cpp:struct:`cub::DeviceBatchedTopK` supports ``unsorted`` and ``sorted`` output.
    ``stable_sorted`` (and therefore an empty, no-requirement environment, which resolves to
-   ``stable_sorted``) ``static_assert`` at compile time. The supported *selection* requirements differ
-   by algorithm and, for :cpp:struct:`cub::DeviceBatchedTopK`, by architecture:
+   ``stable_sorted``) ``static_assert``s at compile time. Sorted batched output requires
+   ``min(k bound, segment-size bound)`` to fit a block-wide radix-sort tile and additional temporary
+   storage proportional to ``num_segments * min(k bound, segment-size bound)``. It supports a *k* of
+   at least 2048 whenever ``max(sizeof(key), sizeof(value)) <= 16``; a wider value may require a
+   tighter bound. As indicative common cases, 4-byte key/value pairs cover 8192 and an 8-byte key
+   with a 4-byte value covers 4096. The supported *selection* requirements differ by algorithm and, for
+   :cpp:struct:`cub::DeviceBatchedTopK`, by architecture:
 
    * :cpp:struct:`cub::DeviceBatchedTopK`:
 
@@ -83,9 +87,9 @@ requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the
 
    * :cpp:struct:`cub::DeviceTopK` implements only the fully opted-out configuration
      (``cuda::execution::determinism::not_guaranteed`` with unsorted output) and has no tie-break
-     dimension yet, so it omits the ``tie_break`` token.
+     dimension yet, so it omits the ``tie_break`` token. Its sorted output remains unimplemented.
 
-   The remaining deterministic, tie-broken, and (stable-)sorted modes documented here define the
+   The remaining deterministic, tie-broken, and stable-sorted modes documented here define the
    committed long-term contract and will become available (including as the no-requirement default) as
    those code paths land.
 

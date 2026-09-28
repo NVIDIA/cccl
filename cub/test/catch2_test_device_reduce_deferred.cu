@@ -16,7 +16,6 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/argument>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/functional>
@@ -32,6 +31,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 #include <c2h/generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
@@ -502,10 +502,8 @@ CUB_TEST("DeviceReduce::Reduce consumes a deferred count produced in another str
   constexpr count_t capacity       = 100'000;
   constexpr count_t selected_count = 1'000;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-  cuda::stream producer{cuda::devices[current_device]};
-  cuda::stream consumer{cuda::devices[current_device]};
+  const cuda::stream producer = c2h::make_current_device_stream();
+  const cuda::stream consumer = c2h::make_current_device_stream();
 
   const auto d_input = cuda::counting_iterator<value_t>{value_t{0}};
   c2h::device_vector<value_t> selected_items(capacity, value_t{capacity + 1});

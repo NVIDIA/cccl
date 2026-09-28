@@ -42,25 +42,13 @@ These install the same dependencies except ``cuda-toolkit``; it is your
 responsibility to ensure a compatible CUDA toolkit is on ``PATH`` and
 ``LD_LIBRARY_PATH``.
 
-For a minimal install without Numba (useful when you supply your own
+For a minimal install without a JIT backend (useful when you supply your own
 :ref:`pre-compiled operators <cuda.compute.externally_compiled_operators>`), use:
 
 .. code-block:: bash
 
    pip install cuda-cccl[minimal-cu13]      # pip-installed CUDA toolkit
    pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
-
-Free-threaded Python is supported with the ``minimal-*`` extras
-(``minimal-cu12``, ``minimal-cu13``, ``minimal-sysctk12``,
-``minimal-sysctk13``). The full ``cu12`` / ``cu13`` / ``sysctk12`` /
-``sysctk13`` extras depend on Numba CUDA, which does not yet publish
-free-threaded (``cp314t``) wheels — installing them on a free-threaded
-interpreter therefore fails at dependency resolution with an error like
-``No matching distribution found for numba-cuda``. Use a minimal
-extra instead and supply pre-compiled operators (``OpKind`` or ``RawOp``).
-If a Numba build that does not support free-threading is imported to
-compile a Python-callable operator, the GIL is re-enabled for the
-process and ``cuda.compute`` emits a ``RuntimeWarning`` reporting it.
 
 Optional: Sequential Task Flow (``cuda-stf``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

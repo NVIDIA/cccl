@@ -11,7 +11,8 @@ import sys
 import unicodedata
 from pathlib import Path
 
-GITHUB_REPORT_LIMIT = 60000
+GITHUB_COMMENT_LIMIT = 60000
+JOB_PREVIEW_LIMIT = 5
 SLACK_MESSAGE_LIMIT = 39000
 # The encoded thread crosses a GitHub job-output and environment-variable boundary.
 SLACK_THREAD_TRANSPORT_LIMIT = 60000
@@ -203,8 +204,12 @@ def code_block(value, limit=None):
     return f"{fence}text\n{value}\n{fence}"
 
 
+def workflow_run_url(repository, run_id):
+    return f"https://github.com/{repository}/actions/runs/{run_id}"
+
+
 def job_url(repository, run_id, job_id):
-    return f"https://github.com/{repository}/actions/runs/{run_id}/job/{job_id}"
+    return f"{workflow_run_url(repository, run_id)}/job/{job_id}"
 
 
 def job_link(job_id, jobs, repository, run_id):
@@ -219,8 +224,14 @@ def render_github_evidence(group):
     return code_block("\n".join(lines), limit=1800)
 
 
-def render_github_group(index, group, jobs, repository, run_id):
+def render_github_group(index, group, jobs, repository, run_id, include_all_jobs):
     job_ids = group["job_ids"]
+    prompt_job_ids = job_ids[:JOB_PREVIEW_LIMIT]
+    visible_job_ids = job_ids if include_all_jobs else prompt_job_ids
+    prompt_omitted_job_count = len(job_ids) - len(prompt_job_ids)
+    prompt_omitted_job_label = "job" if prompt_omitted_job_count == 1 else "jobs"
+    visible_omitted_job_count = len(job_ids) - len(visible_job_ids)
+    visible_omitted_job_label = "job" if visible_omitted_job_count == 1 else "jobs"
     job_label = "job" if len(job_ids) == 1 else "jobs"
     lines = [
         "<details>",
@@ -239,6 +250,16 @@ def render_github_group(index, group, jobs, repository, run_id):
     if evidence:
         lines.extend(["", "**Evidence:**", "", evidence])
 
+    prompt_job_lines = [
+        f"- {jobs[job_id]}: {job_url(repository, run_id, job_id)}"
+        for job_id in prompt_job_ids
+    ]
+    if prompt_omitted_job_count:
+        prompt_job_lines.append(
+            f"- ({prompt_omitted_job_count} additional affected "
+            f"{prompt_omitted_job_label} omitted from this prompt)"
+        )
+
     prompt_lines = [
         (
             "Verify the analyzer guidance below against the linked CI evidence. "
@@ -247,13 +268,10 @@ def render_github_group(index, group, jobs, repository, run_id):
         ),
         "",
         f"Repository: https://github.com/{repository}",
-        f"Workflow run: https://github.com/{repository}/actions/runs/{run_id}",
+        f"Workflow run: {workflow_run_url(repository, run_id)}",
         f"Failure group: {group['title']}",
         "Affected jobs:",
-        *[
-            f"- {jobs[job_id]}: {job_url(repository, run_id, job_id)}"
-            for job_id in job_ids
-        ],
+        *prompt_job_lines,
         "",
         group["agent_prompt"],
     ]
@@ -271,8 +289,15 @@ def render_github_group(index, group, jobs, repository, run_id):
         ]
     )
     lines.extend(
-        f"- {job_link(job_id, jobs, repository, run_id)}" for job_id in job_ids
+        f"- {job_link(job_id, jobs, repository, run_id)}" for job_id in visible_job_ids
     )
+    if visible_omitted_job_count:
+        summary_url = workflow_run_url(repository, run_id)
+        lines.append(
+            f"- *({visible_omitted_job_count} additional affected "
+            f"{visible_omitted_job_label} not shown — "
+            f"[view full group in workflow summary]({summary_url}))*"
+        )
     lines.extend(
         [
             "",
@@ -282,7 +307,7 @@ def render_github_group(index, group, jobs, repository, run_id):
     return lines
 
 
-def render_github_report(analysis, jobs, repository, run_id):
+def render_github_report(analysis, jobs, repository, run_id, include_all_jobs):
     lines = ["### AI failure analysis", ""]
     for index, group in enumerate(analysis["groups"], start=1):
         lines.extend(
@@ -292,14 +317,15 @@ def render_github_report(analysis, jobs, repository, run_id):
                 jobs,
                 repository,
                 run_id,
+                include_all_jobs,
             )
         )
         lines.append("")
 
     report = "\n".join(lines) + "\n"
-    if len(report.encode("utf-8")) > GITHUB_REPORT_LIMIT:
+    if not include_all_jobs and len(report.encode("utf-8")) > GITHUB_COMMENT_LIMIT:
         raise ValidationError(
-            f"rendered GitHub report exceeds {GITHUB_REPORT_LIMIT:,} bytes"
+            f"rendered GitHub comment exceeds {GITHUB_COMMENT_LIMIT:,} bytes"
         )
     return report
 
@@ -350,6 +376,9 @@ def render_slack_thread_reply(
     run_id,
 ):
     job_ids = group["job_ids"]
+    listed_job_ids = job_ids[:JOB_PREVIEW_LIMIT]
+    omitted_job_count = len(job_ids) - len(listed_job_ids)
+    omitted_job_label = "job" if omitted_job_count == 1 else "jobs"
     job_label = "job" if len(job_ids) == 1 else "jobs"
     lines = [
         (
@@ -364,8 +393,14 @@ def render_slack_thread_reply(
     lines.append("*Jobs:*")
     lines.extend(
         f"• {render_slack_job_link(job_id, jobs, repository, run_id)}"
-        for job_id in job_ids
+        for job_id in listed_job_ids
     )
+    if omitted_job_count:
+        summary_url = workflow_run_url(repository, run_id)
+        lines.append(
+            f"• _({omitted_job_count} additional affected {omitted_job_label} not shown — "
+            f"<{summary_url}|view full group in workflow summary>)_"
+        )
 
     reply = "\n".join(lines) + "\n"
     if len(reply) > SLACK_MESSAGE_LIMIT:
@@ -402,7 +437,7 @@ def render_slack_thread(
             f"· {len(job_ids)} {job_label}"
         )
 
-    run_url = f"https://github.com/{repository}/actions/runs/{run_id}"
+    run_url = workflow_run_url(repository, run_id)
     overview_lines.extend(["", f"<{run_url}|GitHub Actions>"])
     if group_count > SLACK_THREAD_REPLY_LIMIT:
         overview_lines.append(
@@ -438,7 +473,11 @@ def parse_args():
         description="Validate and render a structured CI failure analysis."
     )
     parser.add_argument("--analysis-file", type=Path, required=True)
-    parser.add_argument("--format", choices=("github", "slack"), required=True)
+    parser.add_argument(
+        "--format",
+        choices=("github-comment", "github-verbose-summary", "slack"),
+        required=True,
+    )
     parser.add_argument("--repository", required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
@@ -450,12 +489,14 @@ def main():
     analysis, jobs, run = load_analysis_context(args.analysis_file)
     run_id = str(run["id"])
 
-    if args.format == "github":
+    if args.format in ("github-comment", "github-verbose-summary"):
+        include_all_jobs = args.format == "github-verbose-summary"
         rendered = render_github_report(
             analysis,
             jobs,
             args.repository,
             run_id,
+            include_all_jobs,
         )
     else:
         slack_thread = render_slack_thread(

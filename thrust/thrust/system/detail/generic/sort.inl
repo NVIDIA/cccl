@@ -129,8 +129,8 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
   ForwardIterator first_plus_one = first;
   ::cuda::std::advance(first_plus_one, 1);
 
-  ZipIterator zipped_first = thrust::make_zip_iterator(first_plus_one, first);
-  ZipIterator zipped_last  = thrust::make_zip_iterator(last, first);
+  const ZipIterator zipped_first = thrust::make_zip_iterator(first_plus_one, first);
+  const ZipIterator zipped_last  = thrust::make_zip_iterator(last, first);
 
   return ::cuda::std::get<0>(
     thrust::find_if(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<Compare>{comp})

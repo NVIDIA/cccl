@@ -113,7 +113,7 @@ struct __index_query_native<block_level, cluster_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> __call() noexcept
   {
-    ::dim3 __idx{0u, 0u, 0u};
+    ::dim3 __idx{0u, 0u, 0u}; // NOLINT(misc-const-correctness)
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__idx = ::__clusterRelativeBlockIdx();))
     return {static_cast<_Tp>(__idx.x), static_cast<_Tp>(__idx.y), static_cast<_Tp>(__idx.z)};
   }
@@ -135,7 +135,7 @@ struct __index_query_native<cluster_level, grid_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> __call() noexcept
   {
-    ::dim3 __idx{blockIdx};
+    ::dim3 __idx{blockIdx}; // NOLINT(misc-const-correctness)
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__idx = ::__clusterIdx();))
     return {static_cast<_Tp>(__idx.x), static_cast<_Tp>(__idx.y), static_cast<_Tp>(__idx.z)};
   }

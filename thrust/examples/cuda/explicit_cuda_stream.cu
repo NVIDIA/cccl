@@ -60,7 +60,7 @@ int main()
   thrust::inclusive_scan(sync_exec_policy, d_vec.cbegin(), d_vec.cend(), d_vec.begin());
 
   // This access is only valid because the stream has been synchronized
-  int sum = d_vec.back();
+  const int sum = d_vec.back();
 
   // Free the stream:
   err = cudaStreamDestroy(custom_stream);

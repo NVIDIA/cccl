@@ -392,7 +392,7 @@ TEST_FUNC constexpr bool test()
       static_assert(sub.rank_dynamic() == 1);
 
       using submdspan_t = decltype(sub);
-      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_stride>);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_left>);
 
       assert(sub.stride(0) == md.stride(0));
       assert(sub.extent(0) == 1);

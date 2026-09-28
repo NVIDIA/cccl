@@ -290,8 +290,8 @@ _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_noth
 }
 
 /// The type of intermediate accumulator (according to P2322R6)
-template <typename Invocable, typename InputT, typename InitT = InputT>
-using __accumulator_t = decay_t<invoke_result_t<Invocable, InitT, InputT>>;
+template <typename _Invocable, typename _InputT, typename _InitT = _InputT>
+using __accumulator_t = decay_t<invoke_result_t<_Invocable, _InitT, _InputT>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

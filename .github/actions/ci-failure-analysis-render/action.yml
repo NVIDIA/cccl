@@ -6,13 +6,16 @@ inputs:
     description: "Normalized CI failure analysis JSON file."
     required: true
   format:
-    description: "Output format: github or slack."
+    description: "Output format: github-comment, github-verbose-summary, or slack."
     required: true
 
 outputs:
   content:
-    description: "GitHub Markdown or serialized Slack thread JSON, selected by format."
+    description: "Rendered GitHub comment or Slack thread JSON; empty for verbose summaries."
     value: ${{ steps.render.outputs.content }}
+  rendered_file:
+    description: "Path to the rendered content for use by later steps in this job."
+    value: ${{ steps.render.outputs.rendered_file }}
 
 runs:
   using: "composite"
@@ -25,7 +28,7 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         case "${FORMAT}" in
-          github|slack) ;;
+          github-comment|github-verbose-summary|slack) ;;
           *)
             echo "Unsupported failure analysis format: ${FORMAT}" >&2
             exit 1
@@ -40,9 +43,13 @@ runs:
           --output "${output_file}"
         test -s "${output_file}"
 
-        delimiter="EOF_$(openssl rand -hex 16)"
-        {
-          echo "content<<${delimiter}"
-          cat "${output_file}"
-          echo "${delimiter}"
-        } >> "${GITHUB_OUTPUT}"
+        echo "rendered_file=${output_file}" >> "${GITHUB_OUTPUT}"
+
+        if [[ "${FORMAT}" != "github-verbose-summary" ]]; then
+          delimiter="EOF_$(openssl rand -hex 16)"
+          {
+            echo "content<<${delimiter}"
+            cat "${output_file}"
+            echo "${delimiter}"
+          } >> "${GITHUB_OUTPUT}"
+        fi

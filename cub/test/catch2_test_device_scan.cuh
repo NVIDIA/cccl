@@ -113,10 +113,10 @@ void compute_exclusive_scan_by_key_reference(
   EqualityOpT equality_op,
   InitValueT init)
 {
-  c2h::host_vector<ValueT> host_values(d_values);
-  c2h::host_vector<KeyT> host_keys(d_keys);
+  const c2h::host_vector<ValueT> host_values(d_values);
+  const c2h::host_vector<KeyT> host_keys(d_keys);
 
-  std::size_t num_items = host_values.size();
+  const std::size_t num_items = host_values.size();
 
   compute_exclusive_scan_by_key_reference(
     host_values.cbegin(), host_keys.cbegin(), result_out_it, scan_op, equality_op, init, num_items);
@@ -144,9 +144,9 @@ void compute_inclusive_scan_by_key_reference(
 
     for (; i < num_items && equality_op(h_keys_it[i - 1], h_keys_it[i]); ++i)
     {
-      accum_t val      = h_values_it[i];
-      inclusive        = static_cast<accum_t>(scan_op(inclusive, val));
-      result_out_it[i] = static_cast<output_t>(inclusive);
+      const accum_t val = h_values_it[i];
+      inclusive         = static_cast<accum_t>(scan_op(inclusive, val));
+      result_out_it[i]  = static_cast<output_t>(inclusive);
     }
   }
 }
@@ -159,10 +159,10 @@ void compute_inclusive_scan_by_key_reference(
   ScanOpT scan_op,
   EqualityOpT equality_op)
 {
-  c2h::host_vector<ValueT> host_values(d_values);
-  c2h::host_vector<KeyT> host_keys(d_keys);
+  const c2h::host_vector<ValueT> host_values(d_values);
+  const c2h::host_vector<KeyT> host_keys(d_keys);
 
-  std::size_t num_items = host_values.size();
+  const std::size_t num_items = host_values.size();
 
   compute_inclusive_scan_by_key_reference(
     host_values.cbegin(), host_keys.cbegin(), result_out_it, scan_op, equality_op, num_items);

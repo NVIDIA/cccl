@@ -1,0 +1,220 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA___LOGICAL_ENDPOINT_UNICAST_H
+#define _CUDA___LOGICAL_ENDPOINT_UNICAST_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_HAS_CTK() && _CCCL_CTK_AT_LEAST(13, 3) && !_CCCL_COMPILER(NVRTC)
+
+#  include <cuda/__logical_endpoint/common.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__utility/to_underlying.h>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/optional>
+
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+//! @brief Size-independent configuration for a unicast CUDA logical endpoint.
+class unicast_logical_endpoint_spec
+{
+  ::cuda::device_ref __device_;
+  logical_endpoint_flag __flags_          = logical_endpoint_flag::none;
+  logical_endpoint_ipc_handle_type __ipc_ = logical_endpoint_ipc_handle_type::fabric;
+
+  [[nodiscard]] _CCCL_HOST_API ::CUlogicalEndpointProp __as_prop(::cuda::std::uint64_t __bytes) const
+  {
+    ::CUlogicalEndpointProp __prop{};
+    __prop.type           = ::CU_LOGICAL_ENDPOINT_TYPE_UNICAST;
+    __prop.unicast.device = ::cuda::__driver::__deviceGet(device().get());
+    __prop.size           = __bytes;
+    __prop.ipcHandleTypes = ::cuda::std::to_underlying(ipc_handle_type());
+    __prop.flags          = ::cuda::std::to_underlying(flags());
+    return __prop;
+  }
+
+public:
+  friend class unicast_logical_endpoint;
+
+  //! @brief Creates a unicast endpoint specification.
+  //!
+  //! @param[in] __device The CUDA device for the unicast endpoint.
+  //! @param[in] __flags Logical endpoint creation flags.
+  //! @param[in] __ipc The IPC handle type requested for this endpoint.
+  _CCCL_HOST_API explicit unicast_logical_endpoint_spec(
+    ::cuda::device_ref __device,
+    logical_endpoint_flag __flags          = logical_endpoint_flag::none,
+    logical_endpoint_ipc_handle_type __ipc = logical_endpoint_ipc_handle_type::fabric) noexcept
+      : __device_(__device)
+      , __flags_(__flags)
+      , __ipc_(__ipc)
+  {}
+
+  //! @brief Returns the CUDA device for the unicast endpoint.
+  //!
+  //! @return The endpoint device.
+  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::device_ref device() const noexcept
+  {
+    return __device_;
+  }
+
+  //! @brief Returns the creation flags in this specification.
+  //!
+  //! @return The logical endpoint flags.
+  [[nodiscard]] _CCCL_HOST_API constexpr logical_endpoint_flag flags() const noexcept
+  {
+    return __flags_;
+  }
+
+  //! @brief Returns the requested IPC handle type.
+  //!
+  //! @return The logical endpoint IPC handle type.
+  [[nodiscard]] _CCCL_HOST_API constexpr logical_endpoint_ipc_handle_type ipc_handle_type() const noexcept
+  {
+    return __ipc_;
+  }
+
+  //! @brief Checks whether a device supports this unicast endpoint configuration.
+  //!
+  //! Construction still uses `device()`. The optional checker device is only used for capability queries.
+  //!
+  //! @param[in] __checker Optional device used for support attribute checks.
+  //! @return `true` if the requested configuration is supported by the checked device.
+  [[nodiscard]] _CCCL_HOST_API bool
+  is_supported(::cuda::std::optional<::cuda::device_ref> __checker = ::cuda::std::nullopt) const
+  {
+    const auto __device = __checker.has_value() ? *__checker : device();
+    return ::cuda::__detail::__is_logical_endpoint_supported(
+      __device, ::cuda::device_attributes::logical_endpoint_unicast_supported, ipc_handle_type(), flags());
+  }
+
+  //! @brief Queries CUDA driver limits for this endpoint configuration.
+  //!
+  //! @return The required bind alignment and maximum endpoint size.
+  [[nodiscard]] _CCCL_HOST_API logical_endpoint_limits limits() const
+  {
+    const auto __prop = __as_prop(0);
+    logical_endpoint_limits __limits{};
+    _CCCL_TRY_DRIVER_API(
+      ::cuda::__driver::__logicalEndpointGetLimitsNoThrow,
+      "Failed to get logical endpoint limits",
+      __limits.bind_alignment,
+      __limits.max_size,
+      &__prop);
+    return __limits;
+  }
+};
+
+//! @brief Non-owning reference to a unicast CUDA logical endpoint.
+//!
+//! This type is trivially copyable and can be passed to device code directly, including raw `<<<>>>` kernel launches.
+//! Owning `unicast_logical_endpoint` objects are also valid kernel arguments when using `cuda::launch`, which
+//! transforms them to this ref type before invoking the kernel.
+class unicast_logical_endpoint_ref
+    : public ::cuda::__detail::__logical_endpoint_ref_base<::cuda::__detail::__logical_endpoint_type::__unicast>
+{
+  using __base = ::cuda::__detail::__logical_endpoint_ref_base<::cuda::__detail::__logical_endpoint_type::__unicast>;
+
+public:
+  using __base::__base;
+};
+
+//! @brief Move-only owning RAII wrapper for a unicast CUDA logical endpoint.
+//!
+//! This type owns endpoint creation and destruction. It can be passed as a kernel argument through `cuda::launch`; CCCL
+//! launch argument transformation converts it to `unicast_logical_endpoint_ref`. Raw `<<<>>>` launches do not perform
+//! that transformation, so they should pass `unicast_logical_endpoint_ref` explicitly.
+class unicast_logical_endpoint
+    : public ::cuda::__detail::__logical_endpoint_owner_base<unicast_logical_endpoint_ref,
+                                                             ::cuda::__detail::__logical_endpoint_type::__unicast>
+{
+  using __base = ::cuda::__detail::__logical_endpoint_owner_base<unicast_logical_endpoint_ref,
+                                                                 ::cuda::__detail::__logical_endpoint_type::__unicast>;
+
+  friend _CCCL_HOST_API constexpr unicast_logical_endpoint_ref
+  transform_launch_argument(::cuda::stream_ref, const unicast_logical_endpoint&) noexcept;
+
+public:
+  //! @brief Creates an empty logical endpoint owner.
+  _CCCL_HOST_API unicast_logical_endpoint() noexcept {}
+
+  unicast_logical_endpoint(unicast_logical_endpoint&&) noexcept            = default;
+  unicast_logical_endpoint& operator=(unicast_logical_endpoint&&) noexcept = default;
+
+  unicast_logical_endpoint(const unicast_logical_endpoint&)            = delete;
+  unicast_logical_endpoint& operator=(const unicast_logical_endpoint&) = delete;
+
+  //! @brief Reserves one ID and creates a unicast logical endpoint.
+  //!
+  //! @param[in] __spec The endpoint specification.
+  //! @param[in] __bytes The endpoint size in bytes.
+  _CCCL_HOST_API explicit unicast_logical_endpoint(const unicast_logical_endpoint_spec& __spec,
+                                                   ::cuda::std::uint64_t __bytes)
+      : unicast_logical_endpoint(logical_endpoint_id_range{1}, 0, __spec, __bytes)
+  {}
+
+  //! @brief Creates a unicast logical endpoint from a caller-managed ID.
+  //!
+  //! @param[in] __id The caller-managed logical endpoint ID.
+  //! @param[in] __spec The endpoint specification.
+  //! @param[in] __bytes The endpoint size in bytes.
+  _CCCL_HOST_API unicast_logical_endpoint(
+    logical_endpoint_id __id, const unicast_logical_endpoint_spec& __spec, ::cuda::std::uint64_t __bytes)
+  {
+    this->__create_endpoint(__id, __spec.__as_prop(__bytes));
+  }
+
+  //! @brief Creates a unicast logical endpoint from an ID in a retained range.
+  //!
+  //! @param[in] __range The logical endpoint ID range to retain.
+  //! @param[in] __index The ID index in the range.
+  //! @param[in] __spec The endpoint specification.
+  //! @param[in] __bytes The endpoint size in bytes.
+  _CCCL_HOST_API unicast_logical_endpoint(
+    const logical_endpoint_id_range& __range,
+    ::cuda::std::uint32_t __index,
+    const unicast_logical_endpoint_spec& __spec,
+    ::cuda::std::uint64_t __bytes)
+  {
+    const auto __id = __range.at(__index);
+    this->__create_endpoint(__id, __spec.__as_prop(__bytes));
+    this->__retain_id_range(__range);
+  }
+};
+
+//! @brief Converts a unicast logical endpoint owner to the ref passed to kernels by `cuda::launch`.
+//!
+//! @param[in] __endpoint The non-empty owning endpoint.
+//! @return A non-owning unicast endpoint ref for the kernel argument list.
+[[nodiscard]] _CCCL_HOST_API constexpr unicast_logical_endpoint_ref
+transform_launch_argument(::cuda::stream_ref, const unicast_logical_endpoint& __endpoint) noexcept
+{
+  _CCCL_ASSERT(__endpoint.__is_engaged(), "Cannot pass an empty logical endpoint to a kernel");
+  return unicast_logical_endpoint_ref{__endpoint.id()};
+}
+
+_CCCL_END_NAMESPACE_CUDA
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK() && _CCCL_CTK_AT_LEAST(13, 3) && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___LOGICAL_ENDPOINT_UNICAST_H

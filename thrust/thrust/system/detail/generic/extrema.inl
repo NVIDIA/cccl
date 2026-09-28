@@ -103,6 +103,7 @@ struct max_element_reduction
 
 // return the smaller & larger element making sure to prefer the
 // first occurrence of the minimum/maximum element
+// TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 template <typename InputType, typename IndexType, typename BinaryPredicate>
 struct minmax_element_reduction
 {

@@ -25,57 +25,57 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
-template <int NUM_ITEMS, typename T, typename ReduceOperator>
+template <int NumItems, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__ d_out, ReduceOperator reduce_operator)
 {
-  T thread_data[NUM_ITEMS];
+  T thread_data[NumItems];
 #pragma unroll
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
   *d_out = cub::ThreadReduce(thread_data, reduce_operator);
 }
 
-template <int NUM_ITEMS, typename T, typename ReduceOperator>
+template <int NumItems, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_array(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
-  cuda::std::array<T, NUM_ITEMS> thread_data;
+  cuda::std::array<T, NumItems> thread_data;
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
   *d_out = cub::ThreadReduce(thread_data, reduce_operator);
 }
 
-template <int NUM_ITEMS, typename T, typename ReduceOperator>
+template <int NumItems, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
-  T thread_data[NUM_ITEMS];
+  T thread_data[NumItems];
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
-  cuda::std::span<T, NUM_ITEMS> span(thread_data);
+  const cuda::std::span<T, NumItems> span(thread_data);
   *d_out = cub::ThreadReduce(span, reduce_operator);
 }
 
-template <int NUM_ITEMS, typename T, typename ReduceOperator>
+template <int NumItems, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
-  T thread_data[NUM_ITEMS];
+  T thread_data[NumItems];
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < NUM_ITEMS; ++i)
+  for (int i = 0; i < NumItems; ++i)
   {
     thread_data[i] = d_in[i];
   }
-  using Extent = cuda::std::extents<int, NUM_ITEMS>;
-  cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NUM_ITEMS>{});
+  using Extent = cuda::std::extents<int, NumItems>;
+  const cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NumItems>{});
   *d_out = cub::ThreadReduce(mdspan, reduce_operator);
 }
 

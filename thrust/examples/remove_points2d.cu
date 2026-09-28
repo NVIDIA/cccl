@@ -57,7 +57,7 @@ int main()
   std::cout << '\n';
 
   // remove points where x^2 + y^2 > 1 and determine new array sizes
-  size_t new_size =
+  const size_t new_size =
     thrust::remove_if(thrust::make_zip_iterator(x.begin(), y.begin()),
                       thrust::make_zip_iterator(x.end(), y.end()),
                       is_outside_circle<float>())

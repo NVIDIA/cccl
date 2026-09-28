@@ -184,7 +184,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept
   {
-    index_type __size = 1;
+    index_type __size = 1; // NOLINT(misc-const-correctness)
     if constexpr (extents_type::rank() > 0) // MSVC raises a warning even with __r != extents_type::rank()
     {
       for (size_t __r = 0; __r < extents_type::rank(); __r++)

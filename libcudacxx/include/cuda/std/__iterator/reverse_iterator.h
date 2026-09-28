@@ -362,8 +362,8 @@ struct __unwrap_reverse_iter_impl
   }
 };
 
-template <class _Iter, bool __b>
-struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, __b>
+template <class _Iter, bool _Bp>
+struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, _Bp>
     : __unwrap_reverse_iter_impl<reverse_iterator, reverse_iterator, _Iter>
 {};
 

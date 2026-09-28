@@ -21,8 +21,8 @@ CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adj
   auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto output = thrust::device_vector<int>(8);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceAdjacentDifference::SubtractLeftCopy(
     input.begin(), output.begin(), input.size(), cuda::std::minus{}, stream_ref);
@@ -31,7 +31,7 @@ CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adj
     std::cerr << "cub::DeviceAdjacentDifference::SubtractLeftCopy failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   // example-end subtract-left-copy-env-stream
   stream.sync();
   REQUIRE(error == cudaSuccess);
@@ -43,8 +43,8 @@ CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacen
   // example-begin subtract-left-env-stream
   auto data = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceAdjacentDifference::SubtractLeft(data.begin(), data.size(), cuda::std::minus{}, stream_ref);
   if (error != cudaSuccess)
@@ -52,7 +52,7 @@ CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacen
     std::cerr << "cub::DeviceAdjacentDifference::SubtractLeft failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   // example-end subtract-left-env-stream
   stream.sync();
 
@@ -66,8 +66,8 @@ CUB_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[ad
   auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto output = thrust::device_vector<int>(8);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceAdjacentDifference::SubtractRightCopy(
     input.begin(), output.begin(), input.size(), cuda::std::minus{}, stream_ref);
@@ -76,7 +76,7 @@ CUB_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[ad
     std::cerr << "cub::DeviceAdjacentDifference::SubtractRightCopy failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   // example-end subtract-right-copy-env-stream
   stream.sync();
 
@@ -89,8 +89,8 @@ CUB_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjace
   // example-begin subtract-right-env-stream
   auto data = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceAdjacentDifference::SubtractRight(data.begin(), data.size(), cuda::std::minus{}, stream_ref);
   if (error != cudaSuccess)
@@ -98,7 +98,7 @@ CUB_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjace
     std::cerr << "cub::DeviceAdjacentDifference::SubtractRight failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   // example-end subtract-right-env-stream
   stream.sync();
 

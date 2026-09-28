@@ -38,7 +38,7 @@ using count_type = cuda::std::int32_t;
 // untouched. This boilerplate is identical for every test regardless of how the inputs are shaped.
 template <class Env, class T, class Op>
 void do_reduce_deferred(
-  cuda::std::span<cudax::nccl_communicator_ref> comms,
+  cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
   const std::vector<Env>& envs,
   std::vector<cuda::device_buffer<T>>& in,
   std::vector<cuda::device_buffer<count_type>>& num_items,
@@ -53,7 +53,7 @@ void do_reduce_deferred(
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::reduce(
+  cudax::mgmn::reduce(
     cudax::broadcasted,
     comms,
     envs,
@@ -110,7 +110,7 @@ MULTI_GPU_TEST("reduce deferred documentation example", c2h::type_list<int>)
     outputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, 1, cuda::no_init));
   }
 
-  cudax::reduce(
+  cudax::mgmn::reduce(
     cudax::broadcasted,
     comms,
     streams,

@@ -1,3 +1,12 @@
+<#
+.SYNOPSIS
+    Entry point for the Windows numba-free (minimal extra) cuda.compute test lane.
+.DESCRIPTION
+    Provisions the cuda_cccl wheel, then runs the test payload -- by default in a
+    minimal sibling container, except in `sysctk` mode or when
+    CCCL_MINIMAL_CONTAINER=0. See "Testing Python in a minimal container" in
+    docs/infrastructure/ci/references/ci_scripts.rst.
+#>
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
@@ -10,70 +19,21 @@ Param(
 
 $ErrorActionPreference = "Stop"
 
-# Import shared helpers
-Import-Module "$PSScriptRoot/build_common.psm1"
 Import-Module "$PSScriptRoot/build_common_python.psm1"
 
-$python = Get-Python -Version $PyVersion
-$cudaMajor = Get-CudaMajor
-$ctkFlavor = Get-CtkExtraFlavor $CtkMode
+# Needs gh and the workflow helpers, which the minimal container lacks.
+$null = Get-CudaCcclWheel
 
-# Pin cuda-toolkit to the container's CTK minor (-ctk-mode latest
-# opts out). See build_common_python.psm1.
-Set-CtkPin $CtkMode
+$payloadArgs = @('-py-version', $PyVersion)
+if ($CtkMode) { $payloadArgs += @('-ctk-mode', $CtkMode) }
 
-$repoRoot = Get-RepoRoot
-
-$wheelPath = Get-CudaCcclWheel
-
-# Install cuda_cccl with the minimal CUDA extra. This intentionally avoids the
-# full cu* extras because those pull in numba/numba-cuda.
-Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist } "Failed to install pytest / pytest-xdist"
-Invoke-Checked { & $python -m pip install "$wheelPath[minimal-$ctkFlavor$cudaMajor]" } "Failed to install cuda_cccl minimal extra"
-
-Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
-try {
-    Invoke-Checked { & $python -m pytest -n 6 -v compute/test_no_numba.py } "test_no_numba.py failed"
-
-    if ($PyVersion -eq "3.14t") {
-        # Select only tests that support the minimal extra so pytest does not
-        # collect tests that import numba-cuda and re-enable the GIL. These tests
-        # provide their own worker threads, so keep pytest itself in a single
-        # process. The serialization node-ids are module-skipped on the v2
-        # backend today and will start running there automatically once v2 gains
-        # serialization support.
-        Invoke-Checked {
-            & $python -m pytest -n 0 -v `
-                compute/test_free_threading_stress.py `
-                compute/test_multi_cc_serialization.py::test_aot_build_result_load_failure_is_shared_and_retryable `
-                compute/test_multi_cc_serialization.py::test_aot_serialization_waits_for_canonical_first_load
-        } "free-threading stress / serialization tests failed"
-
-        # Broad thread-safety sweep (pytest-run-parallel): re-run the numba-free
-        # functional suite with each test executed concurrently across threads
-        # (barrier-synchronized start), stressing the process-wide build cache,
-        # single-flight coordination, and the Cython bindings from many threads at
-        # once. Complements test_free_threading_stress.py above, which targets
-        # specific shared-object scenarios by hand. -n 0 so the threads share one
-        # interpreter.
-        #
-        # --parallel-threads=2 matches CuPy's free-threading CI (the closest GPU
-        # precedent); a small fixed count bounds GPU-memory pressure from
-        # concurrent kernels and stays reproducible across runners, unlike =auto
-        # (the runner's logical-core count).
-        #
-        # pytest-run-parallel is only used by this sweep, so install it on the
-        # 3.14t path rather than for every minimal (e.g. non-free-threaded 3.14)
-        # run.
-        Invoke-Checked { & $python -m pip install pytest-run-parallel } "Failed to install pytest-run-parallel"
-
-        # Fail fast if the interpreter is not actually GIL-free (wrong build /
-        # PYTHON_GIL=1): pytest-run-parallel does NOT catch a GIL that is enabled
-        # from the start -- it would run threads GIL-serialized and pass
-        # vacuously. (A GIL *re-enabled mid-run* by a non-free-threaded import IS
-        # caught by the plugin, which is why we do not pass --ignore-gil-enabled.)
-        Invoke-Checked { & $python -c "import sys; assert not sys._is_gil_enabled(), 'GIL is enabled; parallel sweep has no signal'" } "interpreter is not GIL-free; parallel sweep has no signal"
-        Invoke-Checked { & $python -m pytest -n 0 -v --parallel-threads=2 compute/test_no_numba.py } "parallel-threads sweep failed"
-    }
+if (((Get-CtkExtraFlavor $CtkMode) -ne 'sysctk') -and ($env:CCCL_MINIMAL_CONTAINER -ne '0')) {
+    & "$PSScriptRoot/run_in_minimal_container.ps1" `
+        -Script 'ci\windows\run_compute_minimal_tests.ps1' `
+        -ScriptArgs $payloadArgs
+} else {
+    # By name, not @payloadArgs: array splatting binds positionally, so the
+    # payload would receive the literal "-py-version" as its version.
+    & "$PSScriptRoot/run_compute_minimal_tests.ps1" -PyVersion $PyVersion -CtkMode $CtkMode
 }
-finally { Pop-Location }
+exit $LASTEXITCODE

@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:26.10-cpp-gcc14-cuda12.9",
+  "image": "rapidsai/devcontainers:26.12-cpp-gcc14-cuda12.9",
   "runArgs": [
     "--init",
     "--name",
@@ -25,7 +25,6 @@
     "AWS_IDP_URL": "https://token.rapids.nvidia.com",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/rapids-token-sccache-devs",
     "CI": "${localEnv:CI}",
-    "NVCC_APPEND_FLAGS": "-t=100",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE": "${localEnv:SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE:true}",
     "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:4}",

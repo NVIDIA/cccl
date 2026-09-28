@@ -42,9 +42,9 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 
 C2H_TEST("__has_recv concept", "[multi_gpu][concepts]")
 {
-  STATIC_REQUIRE(cudax::__has_recv<types::communicator_model>);
-  STATIC_REQUIRE(cudax::__has_recv<types::communicator_model, long*>);
-  STATIC_REQUIRE(!cudax::__has_recv<no_recv>);
+  STATIC_REQUIRE(cudax::mgmn::__has_recv<types::communicator_model>);
+  STATIC_REQUIRE(cudax::mgmn::__has_recv<types::communicator_model, long*>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_recv<no_recv>);
 
-  STATIC_REQUIRE(!cudax::__has_recv<recv_returns_int>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_recv<recv_returns_int>);
 }

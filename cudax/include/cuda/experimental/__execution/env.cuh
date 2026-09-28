@@ -105,7 +105,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_fn
 } // namespace __detail
 
 template <class _Env>
-using __env_ref_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__env_ref_fn, _Env>;
+using __env_ref_t _CCCL_NODEBUG = __call_result_t<__detail::__env_ref_fn, _Env>;
 
 _CCCL_GLOBAL_CONSTANT __detail::__env_ref_fn __env_ref{};
 
@@ -163,7 +163,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 } // namespace __detail
 
 template <class _Env>
-using __fwd_env_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__fwd_env_fn, _Env>;
+using __fwd_env_t _CCCL_NODEBUG = __call_result_t<__detail::__fwd_env_fn, _Env>;
 
 _CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
 
@@ -284,7 +284,7 @@ struct __join_env_fn
 _CCCL_GLOBAL_CONSTANT __detail::__join_env_fn __join_env{};
 
 template <class... _Envs>
-using __join_env_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__join_env_fn, _Envs...>;
+using __join_env_t _CCCL_NODEBUG = __call_result_t<__detail::__join_env_fn, _Envs...>;
 } // namespace execution
 
 template <class... _Properties>

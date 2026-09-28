@@ -19,7 +19,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy legacy size-query is unambi
   int* d_in    = nullptr;
   int* d_out   = nullptr;
   size_t bytes = 0;
-  int n        = 0;
+  const int n  = 0;
 
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractLeftCopy(nullptr, bytes, d_in, d_out, n));
 }
@@ -30,7 +30,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft legacy size-query is unambiguou
 {
   int* d_in    = nullptr;
   size_t bytes = 0;
-  int n        = 0;
+  const int n  = 0;
 
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractLeft(nullptr, bytes, d_in, n));
 }
@@ -42,7 +42,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy legacy size-query is unamb
   int* d_in    = nullptr;
   int* d_out   = nullptr;
   size_t bytes = 0;
-  int n        = 0;
+  const int n  = 0;
 
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractRightCopy(nullptr, bytes, d_in, d_out, n));
 }
@@ -53,7 +53,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight legacy size-query is unambiguo
 {
   int* d_in    = nullptr;
   size_t bytes = 0;
-  int n        = 0;
+  const int n  = 0;
 
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractRight(nullptr, bytes, d_in, n));
 }

@@ -31,6 +31,8 @@ def first_val(my_dict):
 
 class JsonCache:
     _instance = None
+    bench_cache: dict[str, dict]
+    device_cache: dict[str, dict]
 
     def __new__(cls):
         if cls._instance is None:
@@ -72,6 +74,48 @@ class JsonCache:
 
 def json_benches(algname):
     return JsonCache().get_bench(algname)
+
+
+def store_bench_axes(conn, algname, subbench, axes_values, cccl):
+    with conn:
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS axes (
+            algorithm TEXT NOT NULL,
+            subbench TEXT NOT NULL,
+            cccl TEXT NOT NULL,
+            axis_values TEXT NOT NULL,
+            UNIQUE(algorithm, subbench, cccl)
+        );
+        """)
+
+        recorded = conn.execute(
+            "SELECT axis_values FROM axes WHERE algorithm=? AND subbench=? AND cccl=?;",
+            (algname, subbench, cccl),
+        ).fetchone()
+
+        conn.execute(
+            """
+        INSERT INTO axes (algorithm, subbench, cccl, axis_values)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(algorithm, subbench, cccl) DO UPDATE SET
+            axis_values = excluded.axis_values;
+        """,
+            (algname, subbench, cccl, json.dumps(axes_values)),
+        )
+
+    # `score` weighs over what the benchmark declares now, so the record has to
+    # follow it or `analyze.py` would stop reproducing the score this campaign
+    # is about to print. Rows measured under the old declaration are re-weighted
+    # against the new one, which is worth saying out loud.
+    if recorded and json.loads(recorded[0]) != axes_values:
+        print(
+            "#### WARNING {}.{} declared {} when this database was last written"
+            " and declares {} now, both as CCCL {}. `git describe` does not see"
+            " uncommitted edits, so the two cannot be told apart: measurements"
+            " already stored are re-weighted against the new axes.".format(
+                algname, subbench, json.loads(recorded[0]), axes_values, cccl
+            )
+        )
 
 
 def create_benches_tables(conn, subbench, bench_axes):
@@ -194,6 +238,12 @@ def parse_bw(state):
     return extract_bw(bwutil)
 
 
+def axis_value_key(axis_type, value):
+    if axis_type == "float64":
+        return float(value)
+    return value
+
+
 class SubBenchState:
     def __init__(self, state, axes_names, axes_values):
         self.samples = parse_samples(state)
@@ -202,7 +252,8 @@ class SubBenchState:
         self.point = {}
         for axis in state["axis_values"]:
             name = axes_names[axis["name"]]
-            value = axes_values[axis["name"]][axis["value"]]
+            value_key = axis_value_key(axis["type"], axis["value"])
+            value = axes_values[axis["name"]][value_key]
             self.point[name] = value
 
     def __repr__(self):
@@ -218,7 +269,7 @@ class SubBenchState:
 class SubBenchResult:
     def __init__(self, bench):
         axes_names = {}
-        axes_values = {}
+        axes_values: dict[str, dict[str | float, str]] = {}
         for axis in bench["axes"]:
             short_name = axis["name"]
             full_name = get_axis_name(axis)
@@ -226,9 +277,8 @@ class SubBenchResult:
             axes_values[short_name] = {}
             for value in axis["values"]:
                 if "value" in value:
-                    axes_values[axis["name"]][str(value["value"])] = value[
-                        "input_string"
-                    ]
+                    value_key = axis_value_key(axis["type"], str(value["value"]))
+                    axes_values[axis["name"]][value_key] = value["input_string"]
                 else:
                     axes_values[axis["name"]][value["input_string"]] = value[
                         "input_string"
@@ -291,6 +341,23 @@ def get_device_name(device):
     ecc = "eccon" if device["ecc_state"] else "eccoff"
     name = "{} ({}, {}, {})".format(gpu_name, bus_width, sms, ecc)
     return name.replace("NVIDIA ", "")
+
+
+def export_jsonlists(algname):
+    """The jsonlists for `algname`, ready to be handed to another process."""
+    return {"benches": json_benches(algname), "device": device_json(algname)}
+
+
+def prime_jsonlists(algname, jsonlists):
+    """Seed the caches from `export_jsonlists`, launching no benchmark binary.
+
+    Both lists are read by running the base binary, which creates a CUDA context
+    on the device. A process that only needs cached scores would otherwise pay
+    that on a GPU that is busy benchmarking for someone else.
+    """
+    cache = JsonCache()
+    cache.bench_cache[algname] = jsonlists["benches"]
+    cache.device_cache[algname] = jsonlists["device"]
 
 
 def get_gpu_name(algname):
@@ -367,6 +434,7 @@ class RunsCache:
 
 class BenchCache:
     _instance = None
+    existing_tables: set[str]
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -380,11 +448,12 @@ class BenchCache:
         alg_name = bench_base.algorithm_name()
 
         if alg_name not in self.existing_tables:
-            subbench_axes_names = bench_base.axes_names()
-            for subbench in subbench_axes_names:
-                create_benches_tables(
-                    conn, subbench, {alg_name: subbench_axes_names[subbench]}
-                )
+            config = Config()
+            declared_axes_values = bench_base.declared_axes_values()
+            for subbench in declared_axes_values:
+                axes_values = declared_axes_values[subbench]
+                create_benches_tables(conn, subbench, {alg_name: axes_values})
+                store_bench_axes(conn, alg_name, subbench, axes_values, config.cccl)
                 self.existing_tables.add(alg_name)
 
     def push_bench_centers(self, bench, result, estimator):
@@ -396,7 +465,7 @@ class BenchCache:
 
         self.create_table_if_not_exists(conn, bench)
 
-        centers = {}
+        centers: dict[str, dict[str, float]] = {}
         with conn:
             for subbench in result.subbenches:
                 centers[subbench] = {}
@@ -412,7 +481,6 @@ class BenchCache:
                         placeholders = placeholders + ", ?"
                         values.append(value)
 
-                    values = tuple(values)
                     samples = fpzip.compress(state.samples)
                     center = estimator(state.samples)
                     to_insert = (
@@ -424,7 +492,7 @@ class BenchCache:
                         center,
                         state.bw,
                         samples,
-                    ) + values
+                    ) + tuple(values)
 
                     query = """
                     INSERT INTO "{0}" (ctk, cccl, gpu, variant, elapsed, center, bw, samples {1})
@@ -446,7 +514,7 @@ class BenchCache:
 
         self.create_table_if_not_exists(conn, bench)
 
-        centers = {}
+        centers: dict[str, dict[str, float]] = {}
 
         with conn:
             for subbench in rt_values:
@@ -496,7 +564,7 @@ def speedup(base, variant):
     if benchmarks != set(variant.keys()):
         raise Exception("Benchmarks do not match.")
 
-    result = {}
+    result: dict[str, dict[str, float]] = {}
     for bench in benchmarks:
         base_states = base[bench]
         variant_states = variant[bench]
@@ -529,8 +597,11 @@ class ProcessRunner:
 
     def __init__(self):
         self.process = None
-        signal.signal(signal.SIGINT, self.signal_handler)
-        signal.signal(signal.SIGTERM, self.signal_handler)
+        import threading
+
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGINT, self.signal_handler)
+            signal.signal(signal.SIGTERM, self.signal_handler)
 
     def new_process(self, cmd):
         self.process = subprocess.Popen(
@@ -555,6 +626,7 @@ class Bench:
         self.algname = algorithm_name
         self.variant = variant
         self.ct_workload = ct_workload
+        self.execution_seconds = 0.0
 
     def label(self):
         return self.algname + "." + self.variant.label()
@@ -579,15 +651,34 @@ class Bench:
     def bench_names(self):
         return [bench["name"] for bench in json_benches(self.algname)["benchmarks"]]
 
-    def axes_names(self):
-        subbench_names = {}
+    def declared_axes_values(self):
+        subbench_space = {}
         for bench in json_benches(self.algname)["benchmarks"]:
-            names = []
+            space = {}
             for axis in bench["axes"]:
-                names.append(get_axis_name(axis))
+                space[get_axis_name(axis)] = [
+                    value["input_string"] for value in axis["values"]
+                ]
+            subbench_space[bench["name"]] = space
+        return subbench_space
 
-            subbench_names[bench["name"]] = names
-        return subbench_names
+    def declared_rt_axes_values(self):
+        return self.axes_values({}, False)
+
+    def check_axis_values_declared(self, subbench, name, requested, axis):
+        declared = [value["input_string"] for value in axis["values"]]
+        undeclared = [value for value in requested if value not in declared]
+
+        if undeclared:
+            raise Exception(
+                "{}.{} does not declare {} on axis {}, which declares {}".format(
+                    self.algname,
+                    subbench,
+                    ", ".join(undeclared),
+                    name,
+                    ", ".join(declared),
+                )
+            )
 
     def axes_values(self, sub_space, ct):
         subbench_space = {}
@@ -605,6 +696,9 @@ class Bench:
 
                 axis_space = []
                 if name in sub_space:
+                    self.check_axis_values_declared(
+                        bench["name"], name, sub_space[name], axis
+                    )
                     for value in sub_space[name]:
                         axis_space.append(value)
                 else:
@@ -619,7 +713,7 @@ class Bench:
     def ct_axes_value_descriptions(self):
         subbench_descriptions = {}
         for bench in json_benches(self.algname)["benchmarks"]:
-            descriptions = {}
+            descriptions: dict[str, dict[str, str]] = {}
             for axis in bench["axes"]:
                 name = axis["name"]
                 if "{ct}" not in name:
@@ -716,10 +810,10 @@ class Bench:
                 )
             )
 
-            begin = time.time()
+            begin = time.perf_counter()
             p = ProcessRunner().new_process(cmd)
             p.wait(timeout=timeout)
-            elapsed = time.time() - begin
+            elapsed = time.perf_counter() - begin
 
             logger.info(
                 "finished benchmark {} with {} ({}) in {:.3f}s".format(
@@ -753,6 +847,7 @@ class Bench:
         logger = Logger()
         bench_cache = BenchCache()
         runs_cache = RunsCache()
+        self.execution_seconds = 0.0
         cached_centers = bench_cache.pull_bench_centers(
             self, ct_workload_point, rt_values
         )
@@ -769,8 +864,32 @@ class Bench:
             timeout = elapsed * 50
 
         result = self.do_run(ct_workload_point, rt_values, timeout, is_search)
+        self.execution_seconds = result.elapsed
         runs_cache.push_run(self, result.code, result.elapsed)
         return bench_cache.push_bench_centers(self, result, estimator)
+
+    def is_score_cached(self, ct_workload_point, rt_values):
+        """Whether the score can be derived from stored results alone.
+
+        A hit means `score` touches neither the compiler nor the GPU, so callers
+        can skip building the variant. Mirrors the falsy check in `run`, which
+        treats an empty result as a miss.
+        """
+        bench_cache = BenchCache()
+
+        if not bench_cache.pull_bench_centers(self, ct_workload_point, rt_values):
+            return False
+
+        if self.is_base():
+            # baseline's score is always 1.0
+            return True
+
+        # variant's center is not enough, need base to know the score
+        return bool(
+            bench_cache.pull_bench_centers(
+                self.get_base(), ct_workload_point, rt_values
+            )
+        )
 
     def speedup(self, ct_workload_point, rt_values, base_estimator, variant_estimator):
         if self.is_base():
@@ -792,21 +911,51 @@ class Bench:
         if not speedups:
             return float("-inf")
 
-        rt_axes_ids = compute_axes_ids(rt_values)
-        weight_matrices = compute_weight_matrices(rt_values, rt_axes_ids)
+        declared_rt_values = self.declared_rt_axes_values()
+        rt_axes_ids = compute_axes_ids(declared_rt_values)
+        weight_matrices = compute_weight_matrices(declared_rt_values, rt_axes_ids)
 
+        # For importance-ordered axis, score favors last speedups:
+        # score = 15% of S16 + 25% of S20 + 29% of S24 + 31% of S28
+        #
+        # Sometimes, list is incomplete. Say, if a workloads error out or skip.
+        # For simplicity, say we skipped 2^16 and 2^20 elements.
+        #
+        # In these cases, `rt_values` should still contain full list with 2^16
+        # and 2^20 included.
+        # Otherwise, we'd assume that 2^24 was the first value on the importance axis.
+        # In which case, we'd assign weights as 38% / 62% instead of 48% / 52%.
+        #
+        # If we do nothing, score computation would just skip S16 and S20 completely,
+        # while still scaling S24 and S28 components lower, as if S16 and S20 was there.
+        # score = 15% of 0 + 25% of 0 + 29% of S24 + 31% of S28
+        # Note how we end up with 29% of S24 + 31% of S28 all while 29 + 31 do
+        # not add to a 100%.
+        # This breaks "speedup" semantic of the score.
+        #
+        # To fix this, we just accumulate what new 100% mean and scale score by that:
+        # (29/100 of S24) / (60/100) + (31/100 of S28) / (60/100)
+        #     = 29/60 of S24 + 31/60 of S28
+        # which is: 48% of S24 + 52% of S28, maintaining the relative importance.
         score = 0
+        total_weight = 0
         for bench in speedups:
             for state in speedups[bench]:
                 rt_workload = state_to_rt_workload(bench, state)
                 weights = weight_matrices[bench]
                 weight = get_workload_weight(
-                    rt_workload, rt_values[bench], rt_axes_ids[bench], weights
+                    rt_workload,
+                    declared_rt_values[bench],
+                    rt_axes_ids[bench],
+                    weights,
                 )
-                speedup = speedups[bench][state]
-                score = score + weight * speedup
+                score = score + weight * speedups[bench][state]
+                total_weight = total_weight + weight
 
-        return score
+        if total_weight == 0:
+            return float("-inf")
+
+        return score / total_weight
 
 
 class BaseBench(Bench):

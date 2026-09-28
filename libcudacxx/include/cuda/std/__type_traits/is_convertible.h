@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_function.h>
@@ -35,7 +34,7 @@
 #if _CCCL_CHECK_BUILTIN(is_convertible_to) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
 // gcc 13's builin doesn't properly implement some function conversions
-#elif _CCCL_CHECK_BUILTIN(is_convertible) && !_CCCL_COMPILER(GCC, <, 14)
+#elif _CCCL_CHECK_BUILTIN(is_convertible) && !_CCCL_COMPILER(GCC, <, 14) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(14)
 #  define _CCCL_BUILTIN_IS_CONVERTIBLE_TO(...) __is_convertible(__VA_ARGS__)
 #endif // ^^^ has builtin is_convertible_to
 
@@ -46,7 +45,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Fm, class _To>
 inline constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_Fm, _To);
 
-#  if _CCCL_COMPILER(MSVC) // Workaround for DevCom-1627396
+#  if _CCCL_COMPILER(MSVC, <, 19, 42) // Workaround for DevCom-1627396
 template <class _Tp>
 inline constexpr bool is_convertible_v<_Tp&, volatile _Tp&> = true;
 
@@ -58,7 +57,7 @@ inline constexpr bool is_convertible_v<_Tp&, const volatile _Tp&> = true;
 
 template <class _Tp>
 inline constexpr bool is_convertible_v<volatile _Tp&, const volatile _Tp&> = true;
-#  endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC, <, 19, 42)
 
 #else // ^^^ _CCCL_BUILTIN_IS_CONVERTIBLE_TO ^^^ / vvv !_CCCL_BUILTIN_IS_CONVERTIBLE_TO vvv
 
@@ -95,8 +94,8 @@ inline constexpr int __is_array_function_or_void_v<_Tp, false, false, true> = 3;
 
 template <class _T1,
           class _T2,
-          int _T1_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void_v<_T1>,
-          int _T2_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void_v<_T2>>
+          int _T1IsArrayFunctionOrVoid = __is_convertible_imp::__is_array_function_or_void_v<_T1>,
+          int _T2IsArrayFunctionOrVoid = __is_convertible_imp::__is_array_function_or_void_v<_T2>>
 inline constexpr bool __is_convertible_fallback_v =
   decltype(::cuda::std::__is_convertible_imp::__is_convertible_test<_T1, _T2>(0))::value;
 
@@ -131,6 +130,30 @@ template <class _Fm, class _To>
 inline constexpr bool is_convertible_v = __is_convertible_fallback_v<_Fm, _To>;
 
 #endif // ^^^ !_CCCL_BUILTIN_IS_CONVERTIBLE_TO ^^^
+
+#if _CCCL_COMPILER(MSVC)
+// MSVC allows binding rvalues to (const) volatile lvalue references, which requires an lvalue
+// reference to a non-volatile const type ([dcl.init.ref]). That breaks COMMON-REF(T&&, volatile T&).
+// nvcc's frontend inherits this when MSVC is the host compiler, so the builtin and the SFINAE based
+// fallback are both affected and need the correction.
+template <class _Tp>
+inline constexpr bool is_convertible_v<_Tp, volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<_Tp, const volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<_Tp&&, volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<volatile _Tp&&, volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<_Tp&&, const volatile _Tp&> = false;
+
+template <class _Tp>
+inline constexpr bool is_convertible_v<volatile _Tp&&, const volatile _Tp&> = false;
+#endif // _CCCL_COMPILER(MSVC)
 
 template <class _Fm, class _To>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible : bool_constant<is_convertible_v<_Fm, _To>>

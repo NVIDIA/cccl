@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
 
@@ -21,7 +22,9 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
-template <typename _Tp>
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(SmemRef);
+
+template <typename Tp>
 struct SmemRef
 {
   SmemResourceRaw& mSmemResourceRaw;
@@ -33,7 +36,9 @@ struct SmemRef
   _CCCL_DEVICE_API SmemRef(SmemResourceRaw& smemResourceRaw, int phase) noexcept
       : mSmemResourceRaw(smemResourceRaw)
       , mCurPhase(phase)
-  {}
+  {
+    _CCCL_IKET_RANGE_PUSH(SmemRef);
+  }
   // SmemRef is a non-copyable, non-movable type. It must be passed by (mutable)
   // reference to be useful. The reason is that it in case of an accidental copy
   // or move the destructor is called twice. This leads to double-arrivals on
@@ -57,11 +62,12 @@ struct SmemRef
     {
       mSmemResourceRaw.release(mCurPhase);
     }
+    _CCCL_IKET_RANGE_POP();
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API _Tp& data() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API Tp& data() noexcept
   {
-    return *static_cast<_Tp*>(mSmemResourceRaw.data());
+    return *static_cast<Tp*>(mSmemResourceRaw.data());
   }
 
   [[nodiscard]] _CCCL_DEVICE_API int sizeBytes() const noexcept
