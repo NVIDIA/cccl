@@ -83,6 +83,7 @@ TEST_FUNC constexpr bool test_type()
 #if !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     test_mul_overflow<Res, L, R>(lhs_min, -1, cuda::uabs(lhs_min));
     test_mul_overflow<Res, L, R>(-1, rhs_min, cuda::uabs(rhs_min));
+    test_mul_overflow<Res, L, R>(-50000, -50000, 2500000000);
 #endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
   }
 
@@ -90,7 +91,6 @@ TEST_FUNC constexpr bool test_type()
   test_mul_overflow<Res, L, R>(17, 14, 238);
   test_mul_overflow<Res, L, R>(-254, 127, -32258);
   test_mul_overflow<Res, L, R>(1657, -13748, -22780436);
-  test_mul_overflow<Res, L, R>(-50000, -50000, 2500000000);
   test_mul_overflow<Res, L, R>(-2147483647, 4294967295, -9223372030412324865);
   if constexpr (is_unsigned_v<L> && is_unsigned_v<Res>)
   {
