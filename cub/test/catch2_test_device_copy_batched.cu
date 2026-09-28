@@ -16,10 +16,10 @@
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/device_and_stream.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -208,43 +208,7 @@ try
       REQUIRE(d_out == h_out);
     };
 
-    SECTION("DeviceCopy::Batched works with cudaStream_t")
-    {
-      const cuda::stream stream = c2h::make_current_device_stream();
-      test_copy_batched(stream.get());
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::stream")
-    {
-      const cuda::stream stream = c2h::make_current_device_stream();
-      test_copy_batched(stream);
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::stream_ref")
-    {
-      const cuda::stream stream = c2h::make_current_device_stream();
-      const cuda::stream_ref stream_ref{stream};
-      test_copy_batched(stream_ref);
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::std::execution::env")
-    {
-      const cuda::std::execution::env env{};
-      test_copy_batched(env);
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::execution::gpu")
-    {
-      const auto policy = cuda::execution::gpu;
-      test_copy_batched(policy);
-    }
-
-    SECTION("DeviceCopy::Batched works with cuda::execution::gpu with stream")
-    {
-      const cuda::stream stream = c2h::make_current_device_stream();
-      const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-      test_copy_batched(policy);
-    }
+    test_with_custom_streams(test_copy_batched);
   }
 #endif // TEST_LAUNCH == 0
 }

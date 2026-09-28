@@ -29,19 +29,21 @@ int main(int argc, char** argv)
   size_t free_mem, total_mem;
   cuda_safe_call(cudaMemGetInfo(&free_mem, &total_mem));
 
-  std::cout << "Device memory: " << total_mem_ref / (1024 * 1024.) << " MB"
-            << " FREE/TOTAL=" << free_mem / (1024 * 1024.) << "/" << total_mem / (1024 * 1024.) << '\n';
+  std::cout
+    << "Device memory: " << static_cast<double>(total_mem_ref) / (1024 * 1024.) << " MB"
+    << " FREE/TOTAL=" << static_cast<double>(free_mem) / (1024 * 1024.) << "/"
+    << static_cast<double>(total_mem) / (1024 * 1024.) << '\n';
 
   // Warning: this should represent 6% of device's available memory
-  size_t block_size = free_mem / 32;
-  int nblocks       = 2;
+  const size_t block_size = free_mem / 32;
+  const int nblocks       = 2;
 
   // We preallocate most available device memory to avoid being limited by host memory.
   void* wasted_mem;
-  size_t wasted_size = block_size * 29;
+  const size_t wasted_size = block_size * 29;
   cuda_safe_call(cudaMalloc(&wasted_mem, wasted_size));
 
-  std::cout << "Wasted: " << wasted_size / (1024 * 1024.) << " MB" << '\n';
+  std::cout << "Wasted: " << static_cast<double>(wasted_size) / (1024 * 1024.) << " MB" << '\n';
 
   graph_ctx ctx;
 
@@ -65,7 +67,8 @@ int main(int argc, char** argv)
 
   // Checking the amount of memory actually available now
   cuda_safe_call(cudaMemGetInfo(&free_mem, &total_mem));
-  std::cout << "Device memory: FREE/TOTAL=" << free_mem / (1024 * 1024.) << "/" << total_mem / (1024 * 1024.) << '\n';
+  std::cout << "Device memory: FREE/TOTAL=" << static_cast<double>(free_mem) / (1024 * 1024.) << "/"
+            << static_cast<double>(total_mem) / (1024 * 1024.) << '\n';
 
   ctx.submit();
 

@@ -19,6 +19,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 __host__ __device__ double X0(int)
@@ -35,20 +37,20 @@ int main(int argc, char** argv)
   size_t N = 128 * 1024UL * 1024UL;
   if (argc > 1)
   {
-    N = size_t(atoll(argv[1]));
+    N = size_t(::std::stoll(argv[1]));
   }
 
   int check = 0;
   if (argc > 2)
   {
-    check = atoi(argv[2]);
+    check = ::std::stoi(argv[2]);
   }
 
   std::vector<double> X(N);
 
   for (size_t i = 0; i < N; i++)
   {
-    X[i] = X0(i);
+    X[i] = X0(static_cast<int>(i));
   }
 
   auto lX = ctx.logical_data(&X[0], N);
@@ -83,7 +85,7 @@ int main(int argc, char** argv)
     __shared__ double block_partial_sum[th.static_width(1)];
 
     // Device-wide partial sums
-    slice<double> dev_partial_sum = th.template storage<double>(0);
+    const slice<double> dev_partial_sum = th.template storage<double>(0);
 
     /* Thread local prefix-sum */
     const box<1> b = th.apply_partition(shape(x), std::tuple<blocked_partition, blocked_partition>());
@@ -144,7 +146,7 @@ int main(int argc, char** argv)
   printf("%s in %f ms (%g GB/s)\n",
          pretty_print_bytes(N * sizeof(double)).c_str(),
          ms,
-         double(N * sizeof(double) / 1024 / 1024) / ms);
+         double(N * sizeof(double)) / 1024 / 1024 / ms);
 
   if (check)
   {
@@ -152,9 +154,10 @@ int main(int argc, char** argv)
     EXPECT(fabs(X[0] - X0(0)) < 0.00001);
     for (size_t i = 0; i < N; i++)
     {
-      if (fabs(X[i] - X[i - 1] - X0(i)) > 0.00001)
+      if (fabs(X[i] - X[i - 1] - X0(static_cast<int>(i))) > 0.00001)
       {
-        fprintf(stderr, "I %zu X[i] %f (X[i] - X[i-1]) %f expect %f\n", i, X[i], (X[i] - X[i - 1]), X0(i));
+        fprintf(
+          stderr, "I %zu X[i] %f (X[i] - X[i-1]) %f expect %f\n", i, X[i], (X[i] - X[i - 1]), X0(static_cast<int>(i)));
       }
       EXPECT(fabs(X[i] - X[i - 1] - X0(i)) < 0.00001);
     }

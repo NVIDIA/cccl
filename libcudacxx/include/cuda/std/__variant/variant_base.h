@@ -282,7 +282,8 @@ __dtor<__traits<_Types...>, _Trait::_Unavailable> : public __base<_Trait::_Unava
   _CCCL_API ~__dtor() = delete;
 
 protected:
-  _CCCL_API void __destroy() noexcept = delete;
+  // clang-tidy requests public access, but that would make this function part of the API.
+  _CCCL_API void __destroy() noexcept = delete; // NOLINT(modernize-use-equals-delete)
 };
 
 #undef _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY
@@ -343,9 +344,9 @@ protected:
     if (!__rhs.valueless_by_exception())
     {
       constexpr size_t __np = remove_cvref_t<__ctor>::__size();
-      __generic_construct_impl(
-        integral_constant<size_t, __np - 1>{}, __rhs.index(), __lhs, ::cuda::std::forward<_Rhs>(__rhs));
-      __lhs.__index_ = static_cast<decltype(__lhs.__index_)>(__rhs.index());
+      const auto __index    = __rhs.index();
+      __generic_construct_impl(integral_constant<size_t, __np - 1>{}, __index, __lhs, ::cuda::std::forward<_Rhs>(__rhs));
+      __lhs.__index_ = static_cast<decltype(__lhs.__index_)>(__index);
     }
   }
 };
