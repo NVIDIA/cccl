@@ -342,14 +342,10 @@ TEST_CASE("TestScanByKeyWithLargeTypes", "[scan_by_key.inclusive]")
   _TestScanByKeyWithLargeTypes<int, 4>();
   _TestScanByKeyWithLargeTypes<int, 8>();
 
-  // too many resources requested for launch:
-  //_TestScanByKeyWithLargeTypes<int,   16>();
-  //_TestScanByKeyWithLargeTypes<int,   32>();
-
-  // too large to pass as argument
-  //_TestScanByKeyWithLargeTypes<int,   64>();
-  //_TestScanByKeyWithLargeTypes<int,  128>();
-  //_TestScanByKeyWithLargeTypes<int,  256>();
-  //_TestScanByKeyWithLargeTypes<int,  512>();
-  //_TestScanByKeyWithLargeTypes<int, 1024>();
+  // Excluded on QNX like TestScanWithLargeTypes in scan.cu
+#if !defined(__QNX__)
+  _TestScanByKeyWithLargeTypes<int, 16>();
+  _TestScanByKeyWithLargeTypes<int, 32>();
+  _TestScanByKeyWithLargeTypes<int, 64>();
+#endif
 }

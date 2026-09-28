@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan_by_key.cuh>
+#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
@@ -29,6 +30,7 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
+#include <cub/util_vsmem.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
@@ -53,6 +55,37 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan_by_key
 {
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+with_threads_and_items(ScanByKeyPolicy policy, int threads_per_block, int items_per_thread) -> ScanByKeyPolicy
+{
+  policy.lookback.threads_per_block = threads_per_block;
+  policy.lookback.items_per_thread  = items_per_thread;
+  return policy;
+}
+
+template <typename PolicyGetter, typename... AgentParamsT>
+struct scan_by_key_vsmem_helper
+{
+  static constexpr ScanByKeyPolicy selected_policy = PolicyGetter{}();
+
+  using type = vsmem_helper_default_fallback_policy_t<
+    agent_scan_by_key_policy<selected_policy.lookback.threads_per_block,
+                             selected_policy.lookback.items_per_thread,
+                             selected_policy.lookback.load_algorithm,
+                             selected_policy.lookback.load_modifier,
+                             selected_policy.lookback.scan_algorithm,
+                             selected_policy.lookback.store_algorithm,
+                             delay_constructor_t<selected_policy.lookback.lookback_delay.kind,
+                                                 selected_policy.lookback.lookback_delay.delay,
+                                                 selected_policy.lookback.lookback_delay.l2_write_latency>>,
+    AgentScanByKey,
+    AgentParamsT...>;
+
+  static constexpr ScanByKeyPolicy policy = with_threads_and_items(
+    selected_policy, type::agent_policy_t::BLOCK_THREADS, type::agent_policy_t::ITEMS_PER_THREAD);
+  static constexpr ::cuda::std::size_t vsmem_per_block = type::vsmem_per_block;
+};
+
 /**
  * @brief Scan by key kernel entry point (multi-block)
  *
@@ -112,6 +145,9 @@ namespace detail::scan_by_key
  *
  * @param num_items
  *   Total number of scan items for the entire problem
+ *
+ * @param vsmem
+ *   Memory to support virtual shared memory
  */
 template <typename PolicySelector,
           typename KeysInputIteratorT,
@@ -124,7 +160,16 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(
+  scan_by_key_vsmem_helper<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+                           KeysInputIteratorT,
+                           ValuesInputIteratorT,
+                           ValuesOutputIteratorT,
+                           EqualityOp,
+                           ScanOpT,
+                           InitValueT,
+                           OffsetT,
+                           AccumT>::policy.lookback.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     const KeysInputIteratorT d_keys_in,
     KeyT* const d_keys_prev_in,
@@ -135,24 +180,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     EqualityOp equality_op,
     const ScanOpT scan_op,
     const InitValueT init_value,
-    const OffsetT num_items)
+    const OffsetT num_items,
+    vsmem_t vsmem)
 {
-  static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
-
-  using scan_by_key_policy_t = agent_scan_by_key_policy<
-    policy.lookback.threads_per_block,
-    policy.lookback.items_per_thread,
-    policy.lookback.load_algorithm,
-    policy.lookback.load_modifier,
-    policy.lookback.scan_algorithm,
-    policy.lookback.store_algorithm,
-    delay_constructor_t<policy.lookback.lookback_delay.kind,
-                        policy.lookback.lookback_delay.delay,
-                        policy.lookback.lookback_delay.l2_write_latency>>;
-
-  // Thread block type for scanning input tiles
-  using AgentScanByKeyT = detail::scan_by_key::AgentScanByKey<
-    scan_by_key_policy_t,
+  using vsmem_helper_t = typename scan_by_key_vsmem_helper<
+    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
     KeysInputIteratorT,
     ValuesInputIteratorT,
     ValuesOutputIteratorT,
@@ -160,14 +192,21 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     ScanOpT,
     InitValueT,
     OffsetT,
-    AccumT>;
+    AccumT>::type;
 
-  // Shared memory for AgentScanByKey
-  __shared__ typename AgentScanByKeyT::TempStorage temp_storage;
+  // Thread block type for scanning input tiles
+  using agent_scan_by_key_t = typename vsmem_helper_t::agent_t;
+
+  __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
+  typename agent_scan_by_key_t::TempStorage& temp_storage =
+    vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem);
 
   // Process tiles
-  AgentScanByKeyT(temp_storage, d_keys_in, d_keys_prev_in, d_values_in, d_values_out, equality_op, scan_op, init_value)
+  agent_scan_by_key_t(
+    temp_storage, d_keys_in, d_keys_prev_in, d_values_in, d_values_out, equality_op, scan_op, init_value)
     .ConsumeRange(num_items, tile_state, start_tile);
+
+  vsmem_helper_t::discard_temp_storage(temp_storage);
 }
 
 template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT>
@@ -375,7 +414,8 @@ struct dispatch_scan_by_key
       , launcher_factory(launcher_factory)
   {}
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(ScanByKeyPolicy active_policy)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+  __invoke(ScanByKeyPolicy active_policy, ::cuda::std::size_t vsmem_per_block)
   {
     // Get device ordinal
     int device_ordinal;
@@ -391,17 +431,18 @@ struct dispatch_scan_by_key
     auto tile_state = kernel_source.TileState();
 
     // Specify temporary storage allocation requirements
-    size_t allocation_sizes[2];
+    size_t allocation_sizes[3];
     if (const auto error = CubDebug(tile_state.AllocationSize(num_tiles, allocation_sizes[0])))
     {
       return error; // bytes needed for tile status descriptors
     }
 
     allocation_sizes[1] = sizeof(KeyT) * (num_tiles + 1);
+    allocation_sizes[2] = num_tiles * vsmem_per_block;
 
     // Compute allocation pointers into the single storage blob (or compute
     // the necessary size of the blob)
-    void* allocations[2] = {};
+    void* allocations[3] = {};
     if (const auto error =
           CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
@@ -486,7 +527,8 @@ struct dispatch_scan_by_key
                     equality_op,
                     scan_op,
                     init_value,
-                    num_items)))
+                    num_items,
+                    vsmem_t{allocations[2]})))
       {
         return error;
       }
@@ -506,10 +548,35 @@ struct dispatch_scan_by_key
     return cudaSuccess;
   }
 
+  template <typename PolicyGetter>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter)
+  {
+    using vsmem_helper_t = scan_by_key_vsmem_helper<
+      PolicyGetter,
+      KeysInputIteratorT,
+      ValuesInputIteratorT,
+      ValuesOutputIteratorT,
+      EqualityOp,
+      ScanOpT,
+      InitValueT,
+      OffsetT,
+      AccumT>;
+    constexpr ScanByKeyPolicy active_policy       = vsmem_helper_t::policy;
+    constexpr ::cuda::std::size_t vsmem_per_block = vsmem_helper_t::vsmem_per_block;
+    return __invoke(active_policy, vsmem_per_block);
+  }
+
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})
   {
-    return __invoke(detail::scan_by_key::convert_policy<ActivePolicyT>());
+    struct policy_getter
+    {
+      _CCCL_HOST_DEVICE constexpr auto operator()() const -> ScanByKeyPolicy
+      {
+        return detail::scan_by_key::convert_policy<ActivePolicyT>();
+      }
+    };
+    return __invoke(policy_getter{});
   }
 
   /**
@@ -607,37 +674,37 @@ struct dispatch_scan_by_key
       return error;
     }
 
-    const ScanByKeyPolicy active_policy = policy_selector(cc);
+    return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+      detail::log_dispatch("DeviceScanByKey", cc, policy_getter());
 
-    detail::log_dispatch("DeviceScanByKey", cc, active_policy);
-
-    return dispatch_scan_by_key<
-             KeysInputIteratorT,
-             ValuesInputIteratorT,
-             ValuesOutputIteratorT,
-             EqualityOp,
-             ScanOpT,
-             InitValueT,
-             OffsetT,
-             AccumT,
-             PolicyHub,
-             PolicySelectorT,
-             KernelSourceT,
-             KernelLauncherFactory>(
-             d_temp_storage,
-             temp_storage_bytes,
-             d_keys_in,
-             d_values_in,
-             d_values_out,
-             equality_op,
-             scan_op,
-             init_value,
-             num_items,
-             stream,
-             -1,
-             kernel_source,
-             launcher_factory)
-      .__invoke(active_policy);
+      return dispatch_scan_by_key<
+               KeysInputIteratorT,
+               ValuesInputIteratorT,
+               ValuesOutputIteratorT,
+               EqualityOp,
+               ScanOpT,
+               InitValueT,
+               OffsetT,
+               AccumT,
+               PolicyHub,
+               PolicySelectorT,
+               KernelSourceT,
+               KernelLauncherFactory>(
+               d_temp_storage,
+               temp_storage_bytes,
+               d_keys_in,
+               d_values_in,
+               d_values_out,
+               equality_op,
+               scan_op,
+               init_value,
+               num_items,
+               stream,
+               -1,
+               kernel_source,
+               launcher_factory)
+        .__invoke(policy_getter);
+    });
   }
 };
 
@@ -704,9 +771,29 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const ScanByKeyPolicy active_policy = policy_selector(cc);
+  ScanByKeyPolicy active_policy{};
+  ::cuda::std::size_t vsmem_per_block = 0;
+  if (const auto error = CubDebug(detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+        detail::log_dispatch("DeviceScanByKey", cc, policy_getter());
 
-  detail::log_dispatch("DeviceScanByKey", cc, active_policy);
+        using vsmem_helper_t = scan_by_key_vsmem_helper<
+          decltype(policy_getter),
+          KeysInputIteratorT,
+          ValuesInputIteratorT,
+          ValuesOutputIteratorT,
+          EqualityOp,
+          ScanOpT,
+          InitValueT,
+          OffsetT,
+          AccumT>;
+        constexpr ScanByKeyPolicy policy = vsmem_helper_t::policy;
+        active_policy                    = policy;
+        vsmem_per_block                  = vsmem_helper_t::vsmem_per_block;
+        return cudaSuccess;
+      })))
+  {
+    return error;
+  }
 
   // Get device ordinal
   int device_ordinal;
@@ -722,17 +809,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   auto tile_state = kernel_source.TileState();
 
   // Specify temporary storage allocation requirements
-  size_t allocation_sizes[2];
+  size_t allocation_sizes[3];
   if (const auto error = CubDebug(tile_state.AllocationSize(num_tiles, allocation_sizes[0])))
   {
     return error; // bytes needed for tile status descriptors
   }
 
   allocation_sizes[1] = sizeof(KeyT) * (num_tiles + 1);
+  allocation_sizes[2] = num_tiles * vsmem_per_block;
 
   // Compute allocation pointers into the single storage blob (or compute
   // the necessary size of the blob)
-  void* allocations[2] = {};
+  void* allocations[3] = {};
   if (const auto error =
         CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
@@ -817,7 +905,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                   equality_op,
                   scan_op,
                   init_value,
-                  num_items)))
+                  num_items,
+                  vsmem_t{allocations[2]})))
     {
       return error;
     }
