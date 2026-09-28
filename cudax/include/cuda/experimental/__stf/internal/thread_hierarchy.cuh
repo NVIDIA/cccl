@@ -476,7 +476,7 @@ UNITTEST("thread hierarchy sync")
 
   void* args[] = {&h};
   cuda_try(cudaLaunchCooperativeKernel(
-    (void*) reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>,
+    reinterpret_cast<void*>(reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>),
     config[1],
     config[2],
     args,
