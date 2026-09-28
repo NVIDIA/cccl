@@ -430,11 +430,13 @@ request is an error. ``sharing="shared"`` overlaps the uses of one
 descriptor; ``sharing="exclusive"`` assigns distinct call sites separate
 slices. Independent descriptors do not alias.
 
-Automatic trailing synchronization defaults to enabled for both sharing
-modes. A call site inside a loop reuses its slice even with exclusive
-storage. With ``auto_sync=False``, the kernel must provide the required
-barrier before reuse, including across iterations. A scratch reuse barrier
-does not replace synchronization for the kernel's own shared data.
+Explicit descriptors default to ``auto_sync=False`` for both sharing modes.
+The kernel must provide the required barrier before reuse, including across
+iterations: a call site inside a loop reuses its slice even with exclusive
+storage. Set ``auto_sync=True`` to insert a trailing reuse barrier after each
+storage-using call. Compiler-managed scratch, used when no descriptor is
+supplied, synchronizes automatically. A scratch reuse barrier does not replace
+synchronization for the kernel's own shared data.
 
 Warp operations use independent scratch per physical or logical group and
 the appropriate warp mask. Explicit storage support and user shared-memory
