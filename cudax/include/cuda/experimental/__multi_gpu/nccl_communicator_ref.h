@@ -418,7 +418,7 @@ private:
     {
       const auto __size = size();
 
-      if (__send_count_bytes != __h_recv_counts[__root])
+      if (__send_count_bytes != (__type_size * __h_recv_counts[__root]))
       {
         _CCCL_THROW(::cuda::experimental::__nccl::nccl_error,
                     ::cuda::experimental::__nccl::__ncclInvalidArgument,
