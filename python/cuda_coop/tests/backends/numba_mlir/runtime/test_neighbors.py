@@ -161,7 +161,7 @@ def test_qualified_custom_operators_and_shared_storage_reuse():
     @cuda.jit
     def kernel(source, output, head_out, tail_out, original):
         block = numba_coop.this_block()
-        scratch = numba_coop.TempStorage()
+        scratch = numba_coop.TempStorage(auto_sync=True)
         values = cuda.local.array(3, dtype=types.int32)
         for i in range(3):
             values[i] = source[cuda.threadIdx.x * 3 + i]
