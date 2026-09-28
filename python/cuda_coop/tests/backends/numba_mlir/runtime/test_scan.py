@@ -286,7 +286,7 @@ def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
             thread = cuda.threadIdx.x
             state = numba_coop.ThreadData(1, dtype=types.int64)
             state[0] = _PREFIX_INITIAL_STATE
-            storage = numba_coop.TempStorage(sharing="shared")
+            storage = numba_coop.TempStorage(sharing="shared", auto_sync=True)
             for tile in range(_PREFIX_TILE_COUNT):
                 index = tile * _BLOCK_THREADS + thread
                 output[index] = numba_coop.inclusive_sum(
@@ -310,6 +310,7 @@ def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
             storage = numba_coop.TempStorage(
                 _DYNAMIC_STORAGE_BYTES,
                 alignment=16,
+                auto_sync=True,
             )
             for tile in range(_PREFIX_TILE_COUNT):
                 index = tile * _BLOCK_THREADS + thread
@@ -563,7 +564,7 @@ def test_block_scan_accepts_implicit_caller_and_dynamic_storage(storage_mode: st
 @cuda.jit
 def _reuse_scan_storage(source, exclusive, inclusive, preserved):
     thread = cuda.threadIdx.x
-    storage = numba_coop.TempStorage(sharing="shared")
+    storage = numba_coop.TempStorage(sharing="shared", auto_sync=True)
     value = source[thread]
     exclusive[thread] = numba_coop.exclusive_sum(
         numba_coop.this_block(), value, temp_storage=storage

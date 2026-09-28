@@ -4,8 +4,8 @@
 
 """Cooperative operations such as loading and storing a block of values.
 
-This module exports the public functions and group descriptions. Compiler
-adapters recognize these functions by identity and lower their kernel calls.
+This module exports the public functions and group descriptions. Numba
+recognizes these functions by identity; CUTLASS executes them while tracing.
 """
 
 from .exchange import exchange

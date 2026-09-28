@@ -376,8 +376,8 @@ def test_temp_storage_is_an_opaque_primitive_descriptor(kernel):
 
 def test_temp_storage_rewrite_rejects_starred_constructor_arguments():
     # Numba's frontend rejects **kwargs outright, so only *args can reach the
-    # rewrite. It used to parse as TempStorage() and silently keep the default
-    # auto_sync=True that the caller had turned off.
+    # rewrite. Starred options must not silently become TempStorage()
+    # and discard the caller's synchronization policy.
     invocable = _FakeInvocable()
     provider = _register_leading_pointer_provider(invocable)
     options = (None, None, False)
@@ -943,7 +943,7 @@ def test_temp_storage_phi_canonicalizes_equivalent_constructor_contracts():
 
     def kernel(value, choose_first):
         if choose_first:
-            selected = numba_coop.TempStorage()
+            selected = numba_coop.TempStorage(auto_sync=True)
         else:
             selected = numba_coop.TempStorage(auto_sync=True, sharing=" SHARED ")
         return provider(value, temp_storage=selected)
@@ -1243,7 +1243,9 @@ def test_group_planning_rejects_descriptor_joined_with_none_without_ssa():
         planner.context.temp_storage(consume_call.value.args[0])
 
 
-@pytest.mark.parametrize("auto_sync", [False, None], ids=["manual", "auto"])
+@pytest.mark.parametrize(
+    "auto_sync", [False, None, True], ids=["manual", "compat-none", "auto"]
+)
 def test_rebound_constructor_name_collapses_only_with_auto_sync(auto_sync):
     # Production IR is not in SSA form: a name rebound inside a branch keeps
     # one name for two constructor sites. Collapsing them into one region is
@@ -1258,7 +1260,7 @@ def test_rebound_constructor_name_collapses_only_with_auto_sync(auto_sync):
             storage = numba_coop.TempStorage(auto_sync=auto_sync)
         return provider(first, temp_storage=storage)
 
-    if auto_sync is False:
+    if auto_sync is not True:
         with pytest.raises(CoopSinglePhaseRewriteError, match="exactly one site"):
             _rewrite_registered_provider(kernel)
         return
@@ -1287,7 +1289,9 @@ def test_temp_storage_phi_rejects_merging_manual_sync_constructors():
         _rewrite_registered_provider(kernel, ssa=True)
 
 
-@pytest.mark.parametrize("auto_sync", [False, None], ids=["manual", "auto"])
+@pytest.mark.parametrize(
+    "auto_sync", [False, None, True], ids=["manual", "compat-none", "auto"]
+)
 def test_group_planning_collapses_constructor_sites_only_with_auto_sync(auto_sync):
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
     from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
@@ -1317,7 +1321,7 @@ def test_group_planning_collapses_constructor_sites_only_with_auto_sync(auto_syn
         {"block": (32, 1, 1), "grid": (1, 1, 1)},
     )
 
-    if auto_sync is False:
+    if auto_sync is not True:
         with pytest.raises(GroupRewriteError, match="exactly one site"):
             planner.context.temp_storage(consume_call.value.args[0])
     else:
@@ -1375,7 +1379,7 @@ def test_equivalent_temp_storage_phi_escape_is_rejected_before_compile():
 
     def kernel(value, choose_first):
         if choose_first:
-            selected = numba_coop.TempStorage()
+            selected = numba_coop.TempStorage(auto_sync=True)
         else:
             selected = numba_coop.TempStorage(auto_sync=True)
         provider(value, temp_storage=selected)
@@ -1631,7 +1635,7 @@ def _planner_for_storage_policy(spec, use_specs):
     return rewrite, calls
 
 
-def test_shared_storage_reuses_one_aligned_slice_and_defaults_to_auto_sync():
+def test_shared_storage_reuses_one_aligned_slice_and_defaults_to_manual_sync():
     rewrite, calls = _planner_for_storage_policy(
         _TempStorageCtorSpec(None, None, None, "shared"),
         [(24, 8), (64, 16)],
@@ -1639,7 +1643,7 @@ def test_shared_storage_reuses_one_aligned_slice_and_defaults_to_auto_sync():
 
     plan = rewrite._finalize_temp_storage_plan_for_var("storage")
 
-    assert (plan.size_in_bytes, plan.alignment, plan.auto_sync) == (64, 16, True)
+    assert (plan.size_in_bytes, plan.alignment, plan.auto_sync) == (64, 16, False)
     assert [plan.slices_by_call_id[id(call)].offset for call in calls] == [0, 0]
 
 
@@ -1654,7 +1658,9 @@ def test_shared_storage_can_delegate_synchronization_to_the_caller():
     assert not plan.auto_sync
 
 
-@pytest.mark.parametrize("auto_sync", [None, True], ids=["default", "explicit"])
+@pytest.mark.parametrize(
+    "auto_sync", [None, False, True], ids=["compat-none", "manual", "auto"]
+)
 def test_exclusive_storage_assigns_distinct_aligned_slices_with_auto_sync(auto_sync):
     rewrite, calls = _planner_for_storage_policy(
         _TempStorageCtorSpec(None, None, auto_sync, "exclusive"),
@@ -1663,7 +1669,11 @@ def test_exclusive_storage_assigns_distinct_aligned_slices_with_auto_sync(auto_s
 
     plan = rewrite._finalize_temp_storage_plan_for_var("storage")
 
-    assert (plan.size_in_bytes, plan.alignment, plan.auto_sync) == (48, 16, True)
+    assert (plan.size_in_bytes, plan.alignment, plan.auto_sync) == (
+        48,
+        16,
+        auto_sync is True,
+    )
     assert [plan.slices_by_call_id[id(call)].offset for call in calls] == [0, 32]
 
 
@@ -1683,7 +1693,7 @@ def test_exclusive_leading_pointer_storage_emits_a_barrier_per_call_site():
     provider = _register_leading_pointer_provider(invocable)
 
     def kernel(value):
-        storage = numba_coop.TempStorage(sharing="exclusive")
+        storage = numba_coop.TempStorage(sharing="exclusive", auto_sync=True)
         first = provider(value, temp_storage=storage)
         second = provider(first, temp_storage=storage)
         return second
@@ -1693,6 +1703,24 @@ def test_exclusive_leading_pointer_storage_emits_a_barrier_per_call_site():
 
     assert targets.count(invocable) == 2
     assert targets.count(cuda.syncthreads) == 2
+
+
+@pytest.mark.parametrize("auto_sync", [None, False, True])
+def test_unused_storage_plan_requires_default_policy(auto_sync):
+    rewrite, _ = _planner_for_storage_policy(
+        _TempStorageCtorSpec(128, None, auto_sync, "shared"),
+        [],
+    )
+
+    if auto_sync is True:
+        with pytest.raises(
+            CoopSinglePhaseRewriteError, match="requires a cooperative primitive"
+        ):
+            rewrite._finalize_temp_storage_plan_for_var("storage")
+    else:
+        plan = rewrite._finalize_temp_storage_plan_for_var("storage")
+        assert plan.size_in_bytes == 128
+        assert plan.auto_sync is False
 
 
 def test_storage_capacity_is_validated_before_codegen():
@@ -2023,7 +2051,7 @@ def test_descriptor_loop_alias_retains_constructor_provenance(ssa):
     provider = _register_leading_pointer_provider(invocable)
 
     def kernel(value, count):
-        storage = numba_coop.TempStorage()
+        storage = numba_coop.TempStorage(auto_sync=True)
         selected = storage
         for _ in range(count):
             alias = selected
