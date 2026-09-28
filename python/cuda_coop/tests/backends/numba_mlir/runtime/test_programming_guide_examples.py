@@ -228,11 +228,11 @@ def test_manual_scratch():
     copy_tiles_with_manual_sync[1, 128](source, destination)
     cuda.synchronize()
     np.testing.assert_array_equal(destination, source)
+    # coop-pg-manual-scratch-end
 
     compiled = next(iter(copy_tiles_with_manual_sync._launch_config_overloads.values()))
-    # The two explicit block.sync() calls are the only reuse barriers.
-    assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 2
-    # coop-pg-manual-scratch-end
+    # The descriptor adds no barriers to the explicit block.sync() calls.
+    assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 0
 
 
 def test_reduce():
