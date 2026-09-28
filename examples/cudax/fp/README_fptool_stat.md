@@ -316,8 +316,8 @@ threads lowering the minimum simultaneously may leave the sample of either, thou
 instrumented types are unavailable there.
 
 Including `<cuda/fptool>` costs about a fifth more than the types alone, since the statistics
-math wrappers pull in `<cuda/fpmp_math>`. That is a compile-time cost rather than a runtime
-one, but it is worth knowing when the header goes into something large.
+math wrappers rest on the fpmp math surface. That is a compile-time cost rather than a
+runtime one, but it is worth knowing when the header goes into something large.
 
 A measurement workflow
 ----------------------

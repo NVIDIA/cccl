@@ -38,7 +38,7 @@
       - arithmetic: +, -, *, /
       - mixed-type arithmetic, an fpmp2 combined directly with a built-in scalar
       - sqrt, rsqrt and fma
-      - math functions, here exp and sin, from <cuda/fpmp_math>
+      - math functions, here exp and sin
       - comparison operators
       - the hi/lo components the value is stored as
       - the accuracy levels: the same sum on the default and the fpmp2_accuracy::high
@@ -51,13 +51,8 @@
 #include <cstdio>
 #include <exception>
 
-// Multi-precision types and operations, plus the transcendental math functions.
-// The core type alone is available as <cuda/fpmp>, which does not pay the math
-// compile-time cost.
-// Note: The math functions are in <cuda/fpmp_math>
-//       and it already includes <cuda/fpmp>.
+// Multi-precision types and operations, transcendental math functions included.
 #include <cuda/fpmp>
-#include <cuda/fpmp_math>
 
 // The mathematical constants some of the inputs are taken from.
 #include <cuda/std/numbers>

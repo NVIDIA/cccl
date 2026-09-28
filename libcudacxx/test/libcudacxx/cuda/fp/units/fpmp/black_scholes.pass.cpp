@@ -39,7 +39,6 @@
 // error: calling a __host__ __device__ function in tile is not allowed
 
 #include <cuda/fpmp>
-#include <cuda/fpmp_math>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>

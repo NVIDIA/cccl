@@ -145,12 +145,10 @@ Using the types
 ---------------
 
 ```c++
-#include <cuda/fpmp>       // types, operators, sqrt, rsqrt, fma, mad
-#include <cuda/fpmp_math>  // adds exp, log, trig, pow, ...; also pulls in <cuda/fpmp>
+#include <cuda/fpmp>   // types, operators, sqrt, rsqrt, fma, mad, and the math functions
 ```
 
-Include only `<cuda/fpmp>` where the transcendentals are not needed — the math header
-costs compile time.
+One header carries the whole interface, the transcendental math functions included.
 
 The CCCL FP component lives in `cuda::experimental` (to be promoted to `cuda::` later). The
 examples abbreviate it rather than using a using-directive:
@@ -260,7 +258,7 @@ a value whose limbs have drifted into overlap; `renormalize` is how it gets repa
 applied automatically when converting out of `low`, so the call is only needed to repair a
 value that stays at `low` accuracy.
 
-`<cuda/fpmp_math>` adds the transcendentals: `exp`, `log`, `log2`, `log10`, `log1p`, `pow`,
+The same header carries the transcendentals: `exp`, `log`, `log2`, `log10`, `log1p`, `pow`,
 `cbrt`, `rcbrt`, `sin`, `cos`, `tan`, `sincos`, `asin`, `acos`, `atan`, `atan2`, `sinh`,
 `cosh`, `tanh`, `erf`, `erfc`, `normcdfinv`, the rounding family, the min/max family, and
 `icdf` for `fp32mp2` only.
@@ -313,7 +311,7 @@ Demonstrated:
 - mixed-type arithmetic — an `fpmp2` combined directly with a `double` literal, with an
   `int`, with the scalar on the left, and the `+=` scalar accumulate path
 - `sqrt`, `rsqrt` and `fma`
-- math functions, here `exp` and `sin`, from `<cuda/fpmp_math>`
+- math functions, here `exp` and `sin`
 - comparison operators
 - the `hi`/`lo` components the value is stored as
 - the accuracy levels: the same sum on the default and the `high` type, then that same

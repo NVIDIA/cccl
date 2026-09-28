@@ -25,7 +25,8 @@
     ======================================================================================================
     This header provides transcendental mathematical functions for fpmp2 types
     (fp32mp2 = double-float, fp64mp2 = double-double) beyond core arithmetic.
-    Include this header after fpmp.h to enable mathematical functions.
+    It is reached through <cuda/fpmp>, which includes it after fpmp.h; it is not
+    an entry point of its own.
 
     All dedicated fp32mp2 implementations use pure float-float arithmetic
     (no double-precision operations), making them suitable for GPU architectures
