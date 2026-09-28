@@ -537,6 +537,21 @@ follow-up PR):
   belongs in default multi-arch builds.
 - Recommended: `ci/matrix.yaml` — new SM number added to at least one `sm:`/`codegen_target` job.
 
+## infra.ci-flag-removal (important, `ci/*.sh`, `ci/matrix.yaml`, and other shared automation/config)
+
+<!-- provenance:
+  #493→#1458 removed -disable-benchmarks / ENABLE_CUB_BENCHMARKS env-var override when refactoring ci/build_cub.sh;
+  #7919→#10057 (via prerequisite #8160) a PR titled "Remove CuPy upper bound" also silently dropped 12.0 from ctk: lists in ci/matrix.yaml, cutting CTK 12.0 python CI coverage unnoticed for months (issue #8156);
+  #4924→#5543 release-wheels.yml simplification dropped the -p "*${comp}*" filter from gh run download, breaking wheel releases (pair auto-inferred as #5541→#5543)
+-->
+
+When a diff changes CI infrastructure — `ci/matrix.yaml`, CI shell scripts, build/test scripts,
+workflow files — and removes or restricts CI coverage in any way (a version dropped from a job row's
+value list, a CLI flag or `${VAR:=default}` override deleted, a job or filter removed), cross-check
+the PR title and description: the removal must be intended and clearly pointed out. If it looks
+accidental — e.g. the PR's stated purpose is unrelated — flag it and have the author confirm the
+removal is intended. A coverage drop produces no CI failure and can go undetected for months.
+
 ## docs.link-resolves (important, diffs adding or changing hyperlinks in docs, comments, or messages)
 
 <!-- provenance:
