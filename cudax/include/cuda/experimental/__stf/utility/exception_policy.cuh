@@ -834,21 +834,22 @@ inline circuit_breaker_t circuit_breaker(::std::shared_ptr<int> __budget)
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-// Whether a capture target's variant can decline: only typed-exception targets do (on a
+// Whether a store target's variant can decline: only typed-exception targets do (on a
 // dynamic-type mismatch or a throwing copy). exception_ptr, span, and string never decline;
 // their pointer forms fall through these specializations to false.
 template <class _Target>
-inline constexpr bool __capture_may_decline = false;
+inline constexpr bool __store_may_decline = false;
 template <class _E>
-inline constexpr bool __capture_may_decline<_E*> = ::cuda::std::is_base_of_v<::std::exception, _E>;
+inline constexpr bool __store_may_decline<_E*> = ::cuda::std::is_base_of_v<::std::exception, _E>;
 template <class _E>
-inline constexpr bool __capture_may_decline<::std::shared_ptr<_E>> = ::cuda::std::is_base_of_v<::std::exception, _E>;
+inline constexpr bool __store_may_decline<::std::shared_ptr<_E>> = ::cuda::std::is_base_of_v<::std::exception, _E>;
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /**
- * @brief Capturing effect: stores the active exception into a caller-owned target, then lets
- * the chain continue. The boundary pattern's missing name.
+ * @brief Storing effect: puts the active exception into a caller-owned target, then lets the
+ * chain continue. The boundary pattern's missing name. (Named `store`, not `capture`: that word
+ * already means stream capture in CUDA and lambda capture in C++.)
  *
  * Four target families, selected by the target's type:
  * - `std::exception_ptr*` (or `shared_ptr` of one): stores `std::current_exception()`,
@@ -858,28 +859,28 @@ inline constexpr bool __capture_may_decline<::std::shared_ptr<_E>> = ::cuda::std
  *   boundary where `bad_alloc` may be the very exception in flight. Never fails. The span is
  *   a view; the buffer's lifetime stays the caller's.
  * - `std::string*` (or `shared_ptr` of one): stores the `what()` text, allocating. If the
- *   assignment itself throws, the target is left unchanged and the chain continues: capture
+ *   assignment itself throws, the target is left unchanged and the chain continues: store
  *   never substitutes its own storage problems for the exception being handled.
  * - a `std::exception` derivative `_E*` (or `shared_ptr` of one): copy-assigns the caught
  *   object when its dynamic type is EXACTLY `_E` (no slicing, same discipline as typed
  *   catches elsewhere in this file); any other type declines by rethrowing, so
- *   `capture(&typed) | capture(&eptr)` is a ladder whose fallback cannot fail. If `_E`'s
- *   copy assignment throws, the capture declines with the ORIGINAL exception, never with its
+ *   `store(&typed) | store(&eptr)` is a ladder whose fallback cannot fail. If `_E`'s
+ *   copy assignment throws, the store declines with the ORIGINAL exception, never with its
  *   own bookkeeping failure.
  *
- * The hook answers `void`: capture is an `&` citizen and an `always` finalizer, never a
+ * The hook answers `void`: store is an `&` citizen and an `always` finalizer, never a
  * final answer. The `exception_ptr`, span, and string variants are `noexcept`, so the
  * alternation dead-arm theorem correctly rejects them as non-final `|` arms; the typed
  * variant may decline and composes there deliberately.
  *
  * The two canonical boundary spellings:
  * @code
- * capture(&last_exc) & capture(msg_span) & subst(nullptr)  // a C API entry's whole guard
- * always(subst(fallback), capture(&first_error))           // callback: safe result now, rethrow later
+ * store(&last_exc) & store(msg_span) & subst(nullptr)  // a C API entry's whole guard
+ * always(subst(fallback), store(&first_error))           // callback: safe result now, rethrow later
  * @endcode
  */
 template <class _Target>
-struct capture_t
+struct store_t
 {
   //! @cond
   using __exception_sink_tag = void;
@@ -889,7 +890,7 @@ struct capture_t
 
   template <class _Fn>
   void operator()([[maybe_unused]] const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) noexcept(
-    !detail::__capture_may_decline<_Target>)
+    !detail::__store_may_decline<_Target>)
   {
     if constexpr (::cuda::std::is_same_v<_Target, ::cuda::std::span<char>>)
     {
@@ -921,7 +922,7 @@ struct capture_t
       }
       else
       {
-        // Typed capture: exact dynamic type only; anything else declines by rethrowing.
+        // Typed store: exact dynamic type only; anything else declines by rethrowing.
         if (__e == nullptr || typeid(*__e) != typeid(_Held))
         {
           throw;
@@ -948,58 +949,58 @@ struct capture_t
   }
 };
 
-//! @brief Capture the active exception, full dynamic type preserved, into `*__target`.
-inline auto capture(::std::exception_ptr* __target)
+//! @brief Store the active exception, full dynamic type preserved, into `*__target`.
+inline auto store(::std::exception_ptr* __target)
 {
-  _CCCL_ASSERT(__target != nullptr, "capture requires a non-null target");
-  return capture_t<::std::exception_ptr*>{__target};
+  _CCCL_ASSERT(__target != nullptr, "store requires a non-null target");
+  return store_t<::std::exception_ptr*>{__target};
 }
 
-//! @brief See @ref capture. Shared-ownership form.
-inline auto capture(::std::shared_ptr<::std::exception_ptr> __target)
+//! @brief See @ref store. Shared-ownership form.
+inline auto store(::std::shared_ptr<::std::exception_ptr> __target)
 {
-  _CCCL_ASSERT(__target, "capture requires a non-null target");
-  return capture_t<::std::shared_ptr<::std::exception_ptr>>{::cuda::std::move(__target)};
+  _CCCL_ASSERT(__target, "store requires a non-null target");
+  return store_t<::std::shared_ptr<::std::exception_ptr>>{::cuda::std::move(__target)};
 }
 
-//! @brief Capture the active exception's message into a caller-owned buffer, allocation-free.
-inline auto capture(::cuda::std::span<char> __target)
+//! @brief Store the active exception's message into a caller-owned buffer, allocation-free.
+inline auto store(::cuda::std::span<char> __target)
 {
-  return capture_t<::cuda::std::span<char>>{__target};
+  return store_t<::cuda::std::span<char>>{__target};
 }
 
-//! @brief Capture the active exception's message into `*__target`, allocating; best effort.
-inline auto capture(::std::string* __target)
+//! @brief Store the active exception's message into `*__target`, allocating; best effort.
+inline auto store(::std::string* __target)
 {
-  _CCCL_ASSERT(__target != nullptr, "capture requires a non-null target");
-  return capture_t<::std::string*>{__target};
+  _CCCL_ASSERT(__target != nullptr, "store requires a non-null target");
+  return store_t<::std::string*>{__target};
 }
 
-//! @brief See @ref capture. Shared-ownership form.
-inline auto capture(::std::shared_ptr<::std::string> __target)
+//! @brief See @ref store. Shared-ownership form.
+inline auto store(::std::shared_ptr<::std::string> __target)
 {
-  _CCCL_ASSERT(__target, "capture requires a non-null target");
-  return capture_t<::std::shared_ptr<::std::string>>{::cuda::std::move(__target)};
+  _CCCL_ASSERT(__target, "store requires a non-null target");
+  return store_t<::std::shared_ptr<::std::string>>{::cuda::std::move(__target)};
 }
 
-//! @brief Capture an exception of dynamic type exactly `_E` into `*__target`; decline otherwise.
+//! @brief Store an exception of dynamic type exactly `_E` into `*__target`; decline otherwise.
 template <
   class _E,
   ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<::std::exception, _E> && !::cuda::std::is_const_v<_E>, int> = 0>
-auto capture(_E* __target)
+auto store(_E* __target)
 {
-  _CCCL_ASSERT(__target != nullptr, "capture requires a non-null target");
-  return capture_t<_E*>{__target};
+  _CCCL_ASSERT(__target != nullptr, "store requires a non-null target");
+  return store_t<_E*>{__target};
 }
 
-//! @brief See @ref capture. Shared-ownership form.
+//! @brief See @ref store. Shared-ownership form.
 template <
   class _E,
   ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<::std::exception, _E> && !::cuda::std::is_const_v<_E>, int> = 0>
-auto capture(::std::shared_ptr<_E> __target)
+auto store(::std::shared_ptr<_E> __target)
 {
-  _CCCL_ASSERT(__target, "capture requires a non-null target");
-  return capture_t<::std::shared_ptr<_E>>{::cuda::std::move(__target)};
+  _CCCL_ASSERT(__target, "store requires a non-null target");
+  return store_t<::std::shared_ptr<_E>>{::cuda::std::move(__target)};
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -4278,7 +4279,7 @@ UNITTEST("ON_THROW macro")
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
-UNITTEST("capture")
+UNITTEST("store")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::exception_policies;
@@ -4286,7 +4287,7 @@ UNITTEST("capture")
   // exception_ptr target: the deferred-rethrow pattern, full fidelity.
   {
     ::std::exception_ptr last;
-    const int v = on_throw(capture(&last) & subst(-1)) << []() -> int {
+    const int v = on_throw(store(&last) & subst(-1)) << []() -> int {
       throw ::std::runtime_error("boom");
     };
     EXPECT(v == -1);
@@ -4309,7 +4310,7 @@ UNITTEST("capture")
   // span target: allocation-free message transport, the C-boundary shape.
   {
     char msg[64] = {};
-    const int v  = on_throw(capture(::cuda::std::span<char>{msg}) & subst(0)) << []() -> int {
+    const int v  = on_throw(store(::cuda::std::span<char>{msg}) & subst(0)) << []() -> int {
       throw ::std::runtime_error("registered twice");
     };
     EXPECT(v == 0);
@@ -4318,7 +4319,7 @@ UNITTEST("capture")
   // string target, allocating; and the always spelling from the callback pattern.
   {
     ::std::string text;
-    const int v = on_throw(always(subst(7), capture(&text))) << []() -> int {
+    const int v = on_throw(always(subst(7), store(&text))) << []() -> int {
       throw ::std::logic_error("mapper failed");
     };
     EXPECT(v == 7);
@@ -4327,7 +4328,7 @@ UNITTEST("capture")
   // Typed target: exact dynamic type stores and continues...
   {
     ::std::runtime_error err{"unset"};
-    const int v = on_throw(capture(&err) & subst(-2)) << []() -> int {
+    const int v = on_throw(store(&err) & subst(-2)) << []() -> int {
       throw ::std::runtime_error("typed");
     };
     EXPECT(v == -2);
@@ -4337,7 +4338,7 @@ UNITTEST("capture")
   {
     ::std::runtime_error err{"unset"};
     ::std::exception_ptr last;
-    const int v = on_throw(capture(&err) & subst(-2) | capture(&last) & subst(-3)) << []() -> int {
+    const int v = on_throw(store(&err) & subst(-2) | store(&last) & subst(-3)) << []() -> int {
       throw ::std::range_error("derived");
     };
     EXPECT(v == -3);
@@ -4355,7 +4356,7 @@ UNITTEST("capture")
       int code;
     };
     virt_error err{0};
-    const int v = on_throw(capture(&err) & subst(-4)) << []() -> int {
+    const int v = on_throw(store(&err) & subst(-4)) << []() -> int {
       throw virt_error{42};
     };
     EXPECT(v == -4);
@@ -4364,18 +4365,18 @@ UNITTEST("capture")
   // shared_ptr form shares one target across policy copies.
   {
     auto text = ::std::make_shared<::std::string>();
-    static_cast<void>(on_throw((capture(text) & retry) * 2 | subst(0)) << []() -> int {
+    static_cast<void>(on_throw((store(text) & retry) * 2 | subst(0)) << []() -> int {
       throw ::std::runtime_error("each attempt");
     });
     EXPECT(*text == "each attempt");
   }
-  // noexcept bookkeeping: untyped captures never decline, typed ones may.
-  static_assert(!detail::__capture_may_decline<::std::exception_ptr*>);
-  static_assert(!detail::__capture_may_decline<::std::string*>);
-  static_assert(detail::__capture_may_decline<::std::runtime_error*>);
+  // noexcept bookkeeping: untyped stores never decline, typed ones may.
+  static_assert(!detail::__store_may_decline<::std::exception_ptr*>);
+  static_assert(!detail::__store_may_decline<::std::string*>);
+  static_assert(detail::__store_may_decline<::std::runtime_error*>);
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
-  //  - on_throw(capture(&eptr_target) | subst(0)) << ...;
+  //  - on_throw(store(&eptr_target) | subst(0)) << ...;
   //      -> "the left policy never declines; alternatives after it are unreachable"
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
