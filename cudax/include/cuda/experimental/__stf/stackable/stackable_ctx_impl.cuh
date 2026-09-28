@@ -32,6 +32,7 @@
 #include <iostream>
 #include <shared_mutex>
 #include <stack>
+#include <stdexcept>
 #include <thread>
 
 #include "cuda/experimental/__stf/allocators/adapters.cuh"

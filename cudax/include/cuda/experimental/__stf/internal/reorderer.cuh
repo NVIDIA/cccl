@@ -35,6 +35,7 @@
 #include <memory> // ::std::unique_ptr
 #include <queue>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>

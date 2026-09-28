@@ -37,6 +37,9 @@
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
+#include <stdexcept>
+#include <string>
+
 namespace cuda::experimental::stf
 {
 template <auto... spec>

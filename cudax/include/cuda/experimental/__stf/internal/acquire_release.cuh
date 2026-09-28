@@ -32,6 +32,8 @@
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace cuda::experimental::stf

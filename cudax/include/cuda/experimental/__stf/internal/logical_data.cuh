@@ -39,6 +39,8 @@
 #include <map>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace cuda::experimental::stf
 {
@@ -2307,7 +2309,7 @@ inline void ensure_task_deps_initialized(const task_dep_vector_untyped& deps)
   size_t index = 0;
   for (const auto& dep : deps)
   {
-    if (!dep.get_data().is_initialized())
+    if (!dep.has_data() || !dep.get_data().is_initialized())
     {
       throw ::std::invalid_argument(
         "dependency number " + ::std::to_string(index) + " is an uninitialized logical data");

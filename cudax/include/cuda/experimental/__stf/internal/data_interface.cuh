@@ -37,6 +37,8 @@
 
 #include <deque>
 #include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace cuda::experimental::stf
 {

@@ -38,6 +38,7 @@
 #include <cuda/experimental/__stf/utility/memory.cuh>
 
 #include <iostream>
+#include <stdexcept>
 
 namespace cuda::experimental::stf
 {

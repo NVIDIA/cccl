@@ -33,6 +33,8 @@
 #include <memory>
 #include <shared_mutex>
 #include <stack>
+#include <stdexcept>
+#include <string>
 #include <thread>
 #include <tuple>
 

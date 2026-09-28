@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <stdexcept>
 #include <vector>
 
 namespace cuda::experimental::stf

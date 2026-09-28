@@ -41,6 +41,7 @@
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 

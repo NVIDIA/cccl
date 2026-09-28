@@ -42,6 +42,7 @@
 #include <limits> // ::cuda::std::numeric_limits<double>::max()
 #include <random> // random_scheduler uses rng
 #include <sstream> // ::std::stringstream
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>

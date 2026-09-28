@@ -32,6 +32,8 @@
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
 #include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace cuda::experimental::stf
 {
