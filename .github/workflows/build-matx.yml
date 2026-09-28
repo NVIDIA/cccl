@@ -65,8 +65,14 @@ jobs:
           # otherwise fallback to compiling locally
           SCCACHE_DIST_MAX_RETRIES: "2"
           SCCACHE_DIST_REQUEST_TIMEOUT: "3600"
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -eo pipefail
+
+          cat <<EOF | tee -a "${GITHUB_ENV}"
+          SCCACHE_LOGS_SLUG=matx-${RUN_ID}-${RUN_ATTEMPT}-$RANDOM
+          EOF
 
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
@@ -135,6 +141,14 @@ jobs:
             --env "SCCACHE_DIST_AUTH_TOKEN" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
+
+      - if: ${{ !cancelled() }}
+        name: Upload sccache logs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sccache-client-logs-${{ env.SCCACHE_LOGS_SLUG }}
+          path: sccache*.log
+          compression-level: 9
 
   notify-failure:
     name: Notify Slack of MatX failure
