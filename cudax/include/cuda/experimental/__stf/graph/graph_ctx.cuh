@@ -795,9 +795,8 @@ UNITTEST("movable graph_task<>")
 
 UNITTEST("set_symbol on graph_task and graph_task<>")
 {
-  // Every acquisition below gets a guard, purely for the sake of pedantry: should a step throw,
-  // the test still ends its tasks and unpins its buffers, in that order. Each task lives in its
-  // own block, since a task holds its data locked until it ends.
+  // Should a step throw, the guards below end the tasks and unpin the buffers, in that order. Each
+  // task lives in its own block, since a task holds its data locked until it ends.
   graph_ctx ctx;
 
   double X[1024], Y[1024];

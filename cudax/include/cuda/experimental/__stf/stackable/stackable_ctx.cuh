@@ -1739,8 +1739,8 @@ UNITTEST("stackable task on exec_place::host()")
   };
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.task(exec_place::host(), lA.write())->*[](cudaStream_t stream, auto) {
-    // A throw here unwinds through operator->*'s fail path, which is exception-safe: end() is
-    // nothrow and the guards were hardened in #11187/#11224.
+    // A throw here unwinds through operator->*'s fail path, which is exception-safe (end() is
+    // nothrow).
     cuda_try<cudaStreamSynchronize>(stream);
   };
 };

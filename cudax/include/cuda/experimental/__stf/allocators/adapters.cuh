@@ -166,11 +166,8 @@ public:
   /**
    * @brief Free resources allocated by the stream_adapter object
    *
-   * clear() ends the adapter, so it follows the contract of ending functions: every buffer is
-   * deallocated whatever the earlier steps reported (the one synchronize that non-stream-ordered
-   * buffers need is a step like any other), the adapter is then marked cleared, and the first
-   * failure is rethrown. A buffer whose deallocation failed leaks, deliberately: device work that
-   * never completed may still reference it, and there is no retry a caller could sensibly make.
+   * Every buffer is deallocated even if an earlier step failed; the first failure is rethrown once
+   * the adapter is cleared.
    */
   void clear()
   {
