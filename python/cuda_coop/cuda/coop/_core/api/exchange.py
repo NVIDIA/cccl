@@ -11,24 +11,27 @@ host Python call raises an error.
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Any
 
-from cuda.coop._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
-    ExchangeMode,
-)
-
-from ..thread_group import CoopCompilerContextRequiredError
+from ..thread_group import ThreadGroup
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _common_selector,
+    _group_primitive_marker,
 )
 from ._payload import (
     ThreadDataLike,
+    _ReadableThreadDataLike,
+    _validate_common_numeric_value,
 )
-from .thread_group import MemoryGroup
 
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_COMMON_EXCHANGE_MODES = frozenset(
+    {
+        "striped_to_blocked",
+        "blocked_to_striped",
+    }
+)
 
 
 @_common_group_operation(
@@ -36,12 +39,12 @@ _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
     group_kinds=("block", "warp", "threads_within_warp"),
 )
 def exchange(
-    group: MemoryGroup,
-    value: CommonThreadDataLike[_ItemT],
+    group: ThreadGroup,
+    value: _ReadableThreadDataLike[Any],
     /,
     *,
-    mode: ExchangeMode = "striped_to_blocked",
-) -> ThreadDataLike[_ItemT]:
+    mode: Any = "striped_to_blocked",
+) -> ThreadDataLike[Any]:
     """Convert between blocked and striped per-thread layouts.
 
     Parameters
@@ -99,8 +102,25 @@ def exchange(
         :dedent: 4
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.exchange must be called from a supported GPU kernel."
+    mode = _common_selector(
+        "exchange",
+        "mode",
+        mode,
+        _COMMON_EXCHANGE_MODES,
+    )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "exchange",
+            "value",
+            value,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "exchange",
+        group,
+        value,
+        mode=mode,
     )
 
 
