@@ -39,7 +39,7 @@ namespace cuda_cub::core::detail
 {
 #  if _CCCL_DEVICE_COMPILATION()
 template <class Agent, class... Args>
-_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) kernel_agent(Args... args)
 {
   extern __shared__ char shmem[];
   Agent::entry(args..., shmem);
@@ -47,7 +47,7 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _
 
 template <class Agent, class... Args>
 _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
-  _kernel_agent_vshmem(char* vshmem, Args... args)
+  kernel_agent_vshmem(char* vshmem, Args... args)
 {
   extern __shared__ char shmem[];
   vshmem = vshmem == nullptr ? shmem : vshmem + blockIdx.x * temp_storage_size<typename Agent::ptx_plan>::value;
@@ -56,11 +56,11 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
 
 #  else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 template <class, class... Args>
-_CCCL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void kernel_agent(Args... args)
 {}
 
 template <class, class... Args>
-_CCCL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
+_CCCL_KERNEL_ATTRIBUTES void kernel_agent_vshmem(char*, Args... args)
 {}
 #  endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 
@@ -207,7 +207,7 @@ struct AgentLauncher : Agent
   template <class... Args>
   static cuda_optional<int> THRUST_RUNTIME_FUNCTION get_max_blocks_per_sm(AgentPlan plan)
   {
-    return max_blocks_per_sm_impl(_kernel_agent<Agent, Args...>, plan.threads_per_block);
+    return max_blocks_per_sm_impl(kernel_agent<Agent, Args...>, plan.threads_per_block);
   }
 
   // If we are guaranteed to have enough shared memory
@@ -217,9 +217,9 @@ struct AgentLauncher : Agent
   void THRUST_RUNTIME_FUNCTION launch_impl(thrust::detail::true_type, Args... args) const
   {
     assert(has_shmem && vshmem == nullptr);
-    print_info(_kernel_agent<Agent, Args...>);
+    print_info(kernel_agent<Agent, Args...>);
     cuda_cub::detail::triple_chevron(grid, plan.threads_per_block, shmem_size, stream)
-      .doit(_kernel_agent<Agent, Args...>, args...);
+      .doit(kernel_agent<Agent, Args...>, args...);
   }
 
   // If there is a risk of not having enough shared memory
@@ -234,9 +234,9 @@ struct AgentLauncher : Agent
   void THRUST_RUNTIME_FUNCTION launch_impl(thrust::detail::false_type, Args... args) const
   {
     assert((has_shmem && vshmem == nullptr) || (!has_shmem && vshmem != nullptr && shmem_size == 0));
-    print_info(_kernel_agent_vshmem<Agent, Args...>);
+    print_info(kernel_agent_vshmem<Agent, Args...>);
     cuda_cub::detail::triple_chevron(grid, plan.threads_per_block, shmem_size, stream)
-      .doit(_kernel_agent_vshmem<Agent, Args...>, vshmem, args...);
+      .doit(kernel_agent_vshmem<Agent, Args...>, vshmem, args...);
   }
 
   template <class... Args>
