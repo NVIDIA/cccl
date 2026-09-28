@@ -919,18 +919,15 @@ while breaking generic consumers, often in third-party code.
 ## api.duplicated-derived-type-not-updated (important, CUB/Thrust algorithms with multiple public overload families layered over one dispatch)
 
 <!-- provenance:
-  #9289→#9676 DeviceReduce's env-based overloads in device_reduce.cuh independently recomputed accum_t via __accumulator_t instead of delegating to detail::reduce::select_accum_t, so the new no_init_t sentinel wasn't supported by the env overload family
+  #9289→#9676 DeviceReduce's env overloads recomputed accum_t inline instead of using the shared select_accum_t, missing the new no_init_t sentinel
 -->
 
-When a diff adds a new special-case/sentinel argument (a `no_init_t`-style marker) supported via a
-shared low-level type-computation helper (`select_*_t`), grep every other public overload family of
-the same algorithm for a second, independently-written computation of the same derived type (an inline
-`using accum_t = __accumulator_t<…>` instead of the shared helper). A sibling overload family that
-recomputes the type inline silently fails to support the new case — typically a hard compile error the
-moment a caller passes the sentinel there. Check EVERY public entry point, especially the
-`device_*.cuh` facade header layered over the `dispatch_*.cuh` the diff touches — it is frequently not
-in the diff at all; open it anyway, against the diff's base revision (the checkout may already contain
-a later fix). Prefer replacing duplicated formulas with the shared helper.
+When a diff adds support for a new argument or case by extending a shared type-computation helper
+(e.g. `select_accum_t`), check every other public overload family of the same algorithm for an
+independently written computation of the same derived type — especially the `device_*.cuh` facade
+over the touched `dispatch_*.cuh`, which is often not part of the diff; check it against the diff's
+base revision. A copy that recomputes the type inline silently misses the new case. Prefer replacing
+the inline computation with the shared helper.
 
 ## perf.tuning-domain-vs-benchmark-coverage (important, CUB/Thrust tuning-policy tables and arch/type/op-gated perf constants)
 
