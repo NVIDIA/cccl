@@ -146,9 +146,8 @@ struct ScanLookaheadPolicy
   // new value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
   int lookahead_stages = 2; //!< Number of pipeline stages for the lookahead squad
 
-  // If one less than the number of stages, we find a small speedup compared to setting it equal to num_stages. Not sure
-  // why.
-  int block_idx_stages = -1; //!< Number of pipeline stages for stealing block indices
+  // TODO(bgruber): Deprecate this, since we folded it into the loading squad. This member is ignored now.
+  int block_idx_stages = -1;
 
   _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
@@ -751,19 +750,17 @@ _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_scan_store(const Scan
   return warpspeed::SquadDesc{1, policy.reduce_and_scan_warps};
 }
 
-_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_load(const ScanLookaheadPolicy&)
+// Combines bulk-loading the current tile and stealing the next tile index (via cluster launch control) into a
+// single warp: the CLC try_cancel is very cheap compared to the bulk load, so folding it into the load squad saves
+// an entire warp compared to using a dedicated scheduling squad.
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_load_and_next_idx(const ScanLookaheadPolicy&)
 {
   return warpspeed::SquadDesc{2, 1}; // no point in being more than 1 warp
 }
 
-_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_sched(const ScanLookaheadPolicy&)
-{
-  return warpspeed::SquadDesc{3, 1}; // no point in being more than 1 warp
-}
-
 _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_lookahead(const ScanLookaheadPolicy&)
 {
-  return warpspeed::SquadDesc{4, 1}; // must have 1 warp
+  return warpspeed::SquadDesc{3, 1}; // must have 1 warp
 }
 
 // TODO(bgruber): put this somewhere else
@@ -813,15 +810,14 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
   const warpspeed::SquadDesc scanSquads[] = {
     squad_reduce(policy),
     squad_scan_store(policy),
-    squad_load(policy),
-    squad_sched(policy),
+    squad_load_and_next_idx(policy),
     squad_lookahead(policy),
   };
 
-  smemInOut.addPhase(syncHandler, smemAllocator, squad_load(policy));
+  smemInOut.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
   smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan_store(policy)});
 
-  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_sched(policy));
+  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
   smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookahead(policy));
@@ -850,14 +846,13 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   const auto reduce_squad   = squad_reduce(policy);
   const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
 
-  const int num_block_idx_stages =
-    policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, num_stages + policy.block_idx_stages);
   const int num_sum_exclusive_cta_stages =
     policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, num_stages + policy.lookahead_stages);
 
   void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
+  // stealing the next block index is now folded into the load squad, so it shares the same number of stages
   void* next_block_idx_base =
-    smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sizeof(uint4) * num_block_idx_stages), alignof(uint4));
+    smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sizeof(uint4) * num_stages), alignof(uint4));
   void* sum_exclusive_base =
     smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(accum_size * num_sum_exclusive_cta_stages), accum_align);
   void* sum_thread_warp_base =
@@ -866,11 +861,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   ScanResourcesRaw res = {
     warpspeed::SmemResourceRaw{syncHandler, inout_base, inout_stride, inout_stride, num_stages},
     warpspeed::SmemResourceRaw{
-      syncHandler,
-      next_block_idx_base,
-      static_cast<int>(sizeof(uint4)),
-      static_cast<int>(sizeof(uint4)),
-      num_block_idx_stages},
+      syncHandler, next_block_idx_base, static_cast<int>(sizeof(uint4)), static_cast<int>(sizeof(uint4)), num_stages},
     warpspeed::SmemResourceRaw{syncHandler, sum_exclusive_base, accum_size, accum_size, num_sum_exclusive_cta_stages},
     warpspeed::SmemResourceRaw{syncHandler, sum_thread_warp_base, sum_thread_warp, sum_thread_warp, num_stages},
   };
