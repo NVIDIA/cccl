@@ -648,7 +648,7 @@ class _ProvenanceRewrite:
             "TempStorage with auto_sync=False must be constructed at exactly one "
             f"site; {names} reaches {sites} constructor sites. The compiler "
             "cannot verify caller synchronization when it merges these regions. "
-            "Construct the descriptor once or keep auto_sync enabled."
+            "Construct the descriptor once or set auto_sync=True."
         )
 
     def _validate_temp_storage_ctor_sites(self) -> None:
@@ -779,13 +779,15 @@ class _ProvenanceRewrite:
                 raise CoopSinglePhaseRewriteError(f"TempStorage {exc}") from exc
             if alignment is not None:
                 alignment = _normalize_temp_storage_alignment(alignment)
-        auto_sync = None
+        auto_sync = False
         if auto_sync_ref is not None:
             auto_sync = infer_constant(auto_sync_ref, name="auto_sync")
             if auto_sync is not None and (not isinstance(auto_sync, bool)):
                 raise CoopSinglePhaseRewriteError(
                     "TempStorage auto_sync must be None/True/False."
                 )
+        if auto_sync is None:
+            auto_sync = False
         sharing = "shared"
         if sharing_ref is not None:
             sharing = infer_constant(sharing_ref, name="sharing")
@@ -870,7 +872,9 @@ class _ProvenanceRewrite:
         specification: _TempStorageCtorSpecification,
     ) -> tuple[int | None, int | None, bool, str]:
         auto_sync = (
-            True if specification.auto_sync is None else specification.auto_sync
+            False
+            if specification.auto_sync is None
+            else specification.auto_sync
         )
         return (
             specification.size_in_bytes,
@@ -1125,14 +1129,11 @@ class _ProvenanceRewrite:
             )
         _validate_temp_storage_alignment(alignment)
         auto_sync = (
-            True
+            False
             if ctor_specification.auto_sync is None
             else ctor_specification.auto_sync
         )
-        if not uses and (
-            ctor_specification.sharing != "shared"
-            or ctor_specification.auto_sync is False
-        ):
+        if not uses and (ctor_specification.sharing != "shared" or auto_sync):
             raise CoopSinglePhaseRewriteError(
                 "TempStorage non-default sharing or auto_sync requires a "
                 "cooperative primitive to consume the storage descriptor."
