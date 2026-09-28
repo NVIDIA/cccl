@@ -17,6 +17,7 @@ cutlass = pytest.importorskip("cutlass")
 
 from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
+from cutlass.memory import SmemAllocator
 
 from cuda import coop
 from cuda.coop import cutlass as cutlass_coop
@@ -344,6 +345,65 @@ def test_storage_example(sharing, manual_sync):
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
     example.run_example(sharing=sharing, manual_sync=manual_sync)
+
+
+@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize("sharing", ("shared", "exclusive"))
+def test_deferred_storage_preserves_user_shared_memory(api, sharing):
+    @cute.kernel
+    def kernel(
+        source: cute.Pointer, destination: cute.Pointer, preserved: cute.Pointer
+    ):
+        x, y, z = cute.arch.thread_idx()
+        thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
+        allocator = SmemAllocator()
+        canary = cute.make_tensor(
+            allocator.allocate_array(cutlass.Int32, _THREADS, byte_alignment=16),
+            cute.make_layout(_THREADS),
+        )
+        canary[thread] = 101 + 7 * thread
+        cute.arch.sync_threads()
+
+        storage = api.TempStorage(sharing=sharing)
+        payload = api.ThreadData(_ITEMS)
+        api.load(
+            api.this_block(),
+            source,
+            payload,
+            algorithm="transpose",
+            temp_storage=storage,
+        )
+        api.store(
+            api.this_block(),
+            destination,
+            payload,
+            algorithm="transpose",
+            temp_storage=storage,
+        )
+        cute.arch.sync_threads()
+        checks = cute.make_tensor(preserved, cute.make_layout(_THREADS))
+        # Read another thread's live allocation after both scratch users.
+        checks[thread] = canary[_THREADS - 1 - thread]
+
+    @cute.jit
+    def launch(
+        source: cute.Pointer, destination: cute.Pointer, preserved: cute.Pointer
+    ):
+        kernel(source, destination, preserved).launch(grid=1, block=_BLOCK)
+
+    source = values_for(np.int32, _TILE, shift=79)
+    destination = np.full_like(source, -101)
+    preserved = np.zeros(_THREADS, dtype=np.int32)
+    with (
+        device_array(source) as src,
+        device_array(destination) as dst,
+        device_array(preserved) as check,
+    ):
+        launch(src, dst, check)
+    np.testing.assert_array_equal(destination, source)
+    np.testing.assert_array_equal(
+        preserved, 101 + 7 * np.arange(_THREADS - 1, -1, -1, dtype=np.int32)
+    )
 
 
 @pytest.mark.parametrize("algorithm", ("striped", "vectorize", "transpose"))
