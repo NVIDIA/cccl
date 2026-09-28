@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Collect the common kernel API and identify its constructor functions.
+"""Cooperative operations such as loading and storing a block of values.
 
-The root package exports these names. Compiler adapters use their identities
-to recognize cooperative operations without changing the public call syntax.
+This module exports the public functions and group descriptions. Numba
+recognizes these functions by identity; CUTLASS executes them while tracing.
 """
 
 from .exchange import exchange
