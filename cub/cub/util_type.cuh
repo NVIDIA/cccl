@@ -692,7 +692,14 @@ struct Uninitialized
   /// Alias
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& Alias()
   {
-    return reinterpret_cast<T&>(*this);
+    auto* ptr = reinterpret_cast<T*>(this);
+    // NVCC before 13.3 rewrites `$` in demoted __shared__ symbols when --fdevice-time-trace
+    // is set (`name_$_1` becomes `name.1`, which ptxas rejects). Keep the pointer opaque so
+    // the allocation stays one array.
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 3)
+    NV_IF_TARGET(NV_IS_DEVICE, (asm volatile("" : "+l"(ptr));))
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 3)
+    return *ptr;
   }
 };
 
