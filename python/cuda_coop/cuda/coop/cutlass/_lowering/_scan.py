@@ -792,7 +792,7 @@ def _materialize_scan(
             if temp_storage is None:
                 from .._temp_storage import TempStorage
 
-                temp_storage = TempStorage()
+                temp_storage = TempStorage(auto_sync=True)
             scratch_args = (
                 _provider_storage.register_deferred_temp_storage_event(
                     temp_storage,
