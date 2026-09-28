@@ -258,7 +258,7 @@ runs:
           echo -e "\e[1;34mUsing the build cluster at ${SCCACHE_DIST_URL}\e[0m"
         fi
 
-        exit_code=0
+        docker_exit=0
         set +e
         { set -x; } 2>/dev/null
         docker run \
@@ -302,8 +302,9 @@ runs:
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           "${extra_launch_args[@]}" \
           ${{ inputs.image }} \
-          powershell -File "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1" || exit_code=$?
+          powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
+        docker_exit=$?
         { set +x; } 2>/dev/null
         set -e
 
@@ -312,7 +313,7 @@ runs:
           printf 'ARTIFACTS=%s\n' "$artifacts" >> "$GITHUB_OUTPUT"
         fi
 
-        exit "$exit_code"
+        exit "$docker_exit"
 
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
