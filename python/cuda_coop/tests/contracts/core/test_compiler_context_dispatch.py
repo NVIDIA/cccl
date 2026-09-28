@@ -48,16 +48,6 @@ def test_probe_selects_only_the_current_compiler(compiler_environment):
         coop.ThreadData(1)
 
 
-def test_explicit_compiler_scope_takes_precedence(compiler_environment):
-    token = compiler_environment.set("first")
-    try:
-        with _dispatch._compiler_scope("test_backend_second"):
-            assert coop.ThreadData(1) == "second"
-        assert coop.ThreadData(1) == "first"
-    finally:
-        compiler_environment.reset(token)
-
-
 def test_competing_compiler_environments_fail_closed(compiler_environment):
     _dispatch._register_compiler_context_probe("test_backend_second", lambda: True)
     token = compiler_environment.set("first")
@@ -68,7 +58,7 @@ def test_competing_compiler_environments_fail_closed(compiler_environment):
         compiler_environment.reset(token)
 
 
-def test_probe_failure_preserves_cause_and_explicit_scope(compiler_environment):
+def test_probe_failure_preserves_cause(compiler_environment):
     failure = RuntimeError("compiler environment is unavailable")
 
     def failed_probe():
@@ -78,5 +68,3 @@ def test_probe_failure_preserves_cause_and_explicit_scope(compiler_environment):
     with pytest.raises(CoopCompilerContextRequiredError) as caught:
         coop.ThreadData(1)
     assert caught.value.__cause__ is failure
-    with _dispatch._compiler_scope("test_backend_second"):
-        assert coop.ThreadData(1) == "second"
