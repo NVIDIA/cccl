@@ -146,7 +146,15 @@ PortableNumericScalar: TypeAlias = (
     | numpy.float64
     | CompilerScalarLike
 )
-ContextualInitialValue: TypeAlias = ItemT | int | float
+
+class _ExactScalar(Protocol[ItemT]):
+    # Writable __class__ makes the scalar type invariant: a seed cannot widen
+    # the input type. It also keeps NumPy float64 out of the Python-float arm.
+    __class__: type[ItemT]  # type: ignore[assignment]
+
+ContextualInitialValue: TypeAlias = (
+    _ExactScalar[ItemT] | _ExactScalar[int] | _ExactScalar[float]
+)
 _ReadableItemT = TypeVar("_ReadableItemT", bound=PortableNumericScalar, covariant=True)
 ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike

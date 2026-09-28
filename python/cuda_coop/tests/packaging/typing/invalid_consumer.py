@@ -281,15 +281,50 @@ coop.inclusive_scan(  # expected-error: [call-overload]
     np.int32(1),
     scan_op=object(),
 )
-bad_portable_scan: np.int32 = portable.exclusive_scan(
+# Discard results so an assignment cannot constrain seed inference.
+portable.exclusive_scan(  # expected-error: [misc]
     portable_block,
     np.int32(1),
-    initial_value=np.float32(0),  # expected-error: [arg-type]
+    initial_value=np.float32(0),
 )
-bad_qualified_scan: portable.ThreadDataLike[np.int32] = coop.exclusive_scan(
+portable.scan(  # expected-error: [call-overload]
+    portable_block, np.int32(1), mode="exclusive", initial_value=np.int64(0)
+)
+portable.exclusive_scan(  # expected-error: [misc]
+    portable_block, portable_values, initial_value=np.uint32(0)
+)
+portable.scan(  # expected-error: [call-overload]
+    portable_block, portable_values, mode="exclusive", initial_value=np.int16(0)
+)
+portable.exclusive_scan(  # expected-error: [misc]
+    portable_block,
+    np.float32(1),
+    initial_value=np.float64(0),
+)
+portable.scan(  # expected-error: [call-overload]
+    portable.this_warp(), np.int32(1), mode="exclusive", initial_value=np.float64(0)
+)
+coop.exclusive_scan(  # expected-error: [misc]
     qualified_block,
-    values,
-    initial_value=np.float32(0),  # expected-error: [arg-type]
+    np.int32(1),
+    initial_value=np.float32(0),
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block, np.int32(1), mode="exclusive", initial_value=np.int64(0)
+)
+coop.exclusive_scan(  # expected-error: [misc]
+    qualified_block, values, initial_value=np.uint32(0)
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block, values, mode="exclusive", initial_value=np.int16(0)
+)
+coop.exclusive_scan(  # expected-error: [misc]
+    qualified_block,
+    np.float32(1),
+    initial_value=np.float64(0),
+)
+coop.scan(  # expected-error: [call-overload]
+    coop.this_warp(), np.int32(1), mode="exclusive", initial_value=np.float64(0)
 )
 portable.scan(  # expected-error: [call-overload]
     portable_block,
