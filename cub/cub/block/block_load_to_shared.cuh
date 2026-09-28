@@ -25,6 +25,7 @@
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/align_up.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory/ptr_rebind.h>
@@ -249,7 +250,7 @@ private:
 
 public:
   /// @smemstorage{BlockLoadToShared}
-  using TempStorage = cub::Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //! Token type used to enforce correct call order between Commit() and Wait()
   //! member functions. Returned by Commit() and required by Wait() as a usage
@@ -264,7 +265,7 @@ public:
   //! @param[in] temp_storage
   //!   Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockLoadToShared(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
   {
     _CCCL_ASSERT(::cuda::device::is_object_from(temp_storage, ::cuda::device::address_space::shared),
                  "temp_storage has to be in shared memory");

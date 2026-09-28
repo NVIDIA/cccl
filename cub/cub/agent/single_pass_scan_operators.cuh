@@ -30,6 +30,7 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -835,7 +836,7 @@ struct ScanTileState<T, false>
   T* d_tile_inclusive{};
 
   static constexpr size_t description_bytes_per_tile = sizeof(StatusWord);
-  static constexpr size_t payload_bytes_per_tile     = sizeof(Uninitialized<T>);
+  static constexpr size_t payload_bytes_per_tile     = sizeof(::cuda::__as_uninitialized_bytes<T>);
 
   /// Constructor
   _CCCL_FORCEINLINE ScanTileState() = default;
@@ -1229,7 +1230,7 @@ struct TilePrefixCallbackOp
   };
 
   // Alias wrapper allowing temporary storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   // Type of status word
   using StatusWord = typename ScanTileStateT::StatusWord;
@@ -1247,7 +1248,7 @@ struct TilePrefixCallbackOp
   // Precondition: thread blocks processing all of the predecessor tiles were scheduled.
   _CCCL_DEVICE _CCCL_FORCEINLINE
   TilePrefixCallbackOp(ScanTileStateT& tile_status, TempStorage& temp_storage, ScanOpT scan_op, int tile_idx)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , tile_status(tile_status)
       , scan_op(scan_op)
       , tile_idx(tile_idx)

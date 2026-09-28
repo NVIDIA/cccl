@@ -22,6 +22,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -221,11 +222,11 @@ struct AgentThreeWayPartition
     typename BlockLoadT::TempStorage load_items;
 
     // Smem needed for compacting items (allows non POD items in this union)
-    cub::Uninitialized<ItemExchangeT> raw_exchange;
+    ::cuda::__as_uninitialized_bytes<ItemExchangeT> raw_exchange;
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : cub::Uninitialized<_TempStorage>
+  struct TempStorage : ::cuda::__as_uninitialized_bytes<_TempStorage>
   {};
 
   //---------------------------------------------------------------------
@@ -259,7 +260,7 @@ struct AgentThreeWayPartition
     SelectSecondPartOp select_second_part_op,
     OffsetT num_items,
     const StreamingContextT& streaming_context)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_in(d_in)
       , d_first_part_out(d_first_part_out)
       , d_second_part_out(d_second_part_out)
@@ -335,10 +336,10 @@ struct AgentThreeWayPartition
           // Medium item
           const int local_selection_idx = (first_items_selection_indices - num_first_selections_prefix)
                                         + (second_items_selection_indices - num_second_selections_prefix);
-          local_scatter_offset          = second_item_end + item_idx - local_selection_idx;
+          local_scatter_offset = second_item_end + item_idx - local_selection_idx;
         }
 
-        temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
+        temp_storage.raw_exchange.template __alias<ItemExchangeT>()[local_scatter_offset] = items[ITEM];
       }
     }
 
@@ -358,7 +359,7 @@ struct AgentThreeWayPartition
 
       if (!IsLastTile || (item_idx < num_tile_items))
       {
-        const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+        const InputT item = temp_storage.raw_exchange.template __alias<ItemExchangeT>()[item_idx];
 
         if (item_idx < first_item_end)
         {

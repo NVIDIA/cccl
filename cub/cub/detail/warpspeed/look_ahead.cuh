@@ -22,6 +22,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
@@ -198,7 +199,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
   AccumT aggrExclusiveCtaCur = aggrExclusiveCtaPrev;
 
   using warp_reduce_t = WarpReduce<AccumT>;
-  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, ::cuda::__as_uninitialized_bytes<NullType>>,
                 "WarpReduce for a full warp must not require temporary storage");
   [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
 
@@ -283,7 +284,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
   AccumT aggrExclusiveCtaCur = aggrExclusiveCtaPrev;
 
   using warp_reduce_t = WarpReduce<AccumT>;
-  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, ::cuda::__as_uninitialized_bytes<NullType>>,
                 "WarpReduce for a full warp must not require temporary storage");
   [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
 

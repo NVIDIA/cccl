@@ -19,6 +19,7 @@
 #include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/__warp/warp_shuffle.h>
@@ -123,7 +124,7 @@ class WarpBitonicSort
   WarpBitonicSort() = default;
 
 public:
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
 
@@ -450,7 +451,7 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
   WarpBitonicSort() = default;
 
 public:
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
 

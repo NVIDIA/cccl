@@ -28,6 +28,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/limits>
 
@@ -93,7 +94,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   __shared__ typename AgentT::TempStorage temp_storage;
 
-  AgentT{temp_storage.Alias(), d_range, d_values, d_output, range_count, values_count, range_beg_offsets, comp}();
+  AgentT{temp_storage.template __alias<typename AgentT::_TempStorage>(), d_range, d_values, d_output, range_count, values_count, range_beg_offsets, comp}();
 }
 
 template <typename Mode,

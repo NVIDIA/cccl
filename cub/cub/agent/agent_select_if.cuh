@@ -30,6 +30,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -315,11 +316,11 @@ struct AgentSelectIf
     typename BlockLoadFlags::TempStorage load_flags;
 
     // Smem needed for compacting items (allows non POD items in this union)
-    Uninitialized<ItemExchangeT> raw_exchange;
+    ::cuda::__as_uninitialized_bytes<ItemExchangeT> raw_exchange;
   };
 
   // Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -374,7 +375,7 @@ struct AgentSelectIf
     EqualityOpT equality_op,
     OffsetT num_items,
     const StreamingContextT& streaming_context)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_in(d_in)
       , d_selected_out(d_selected_out)
       , d_flags_in(d_flags_in)
@@ -707,7 +708,7 @@ struct AgentSelectIf
       const int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
       if (selection_flags[ITEM])
       {
-        temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
+        temp_storage.raw_exchange.template __alias<ItemExchangeT>()[local_scatter_offset] = items[ITEM];
       }
     }
 
@@ -717,7 +718,7 @@ struct AgentSelectIf
     {
       *((d_selected_out + streaming_context.num_previously_selected())
         + (num_selections_prefix + item)) = // NOLINT(bugprone-misplaced-widening-cast)
-        temp_storage.raw_exchange.Alias()[item];
+        temp_storage.raw_exchange.template __alias<ItemExchangeT>()[item];
     }
   }
 
@@ -809,7 +810,7 @@ struct AgentSelectIf
       const int local_scatter_offset =
         (selection_flags[ITEM]) ? tile_num_rejections + local_selection_idx : local_rejection_idx;
 
-      temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
+      temp_storage.raw_exchange.template __alias<ItemExchangeT>()[local_scatter_offset] = items[ITEM];
     }
 
     // Ensure all threads finished scattering to shared memory
@@ -844,7 +845,7 @@ struct AgentSelectIf
       const OffsetT scatter_offset =
         (item_idx < tile_num_rejections) ? num_rejected_prefix + rejection_idx : num_selections_prefix + selection_idx;
 
-      const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+      const InputT item = temp_storage.raw_exchange.template __alias<ItemExchangeT>()[item_idx];
 
       if (!IsLastTile || (item_idx < num_tile_items))
       {
@@ -889,7 +890,7 @@ struct AgentSelectIf
           : (streaming_context.num_previously_selected() + static_cast<total_offset_t>(num_selections_prefix)
              + static_cast<total_offset_t>(selection_idx));
 
-      const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+      const InputT item = temp_storage.raw_exchange.template __alias<ItemExchangeT>()[item_idx];
       if (!IsLastTile || (item_idx < num_tile_items))
       {
         partitioned_out_it[scatter_offset] = item;
