@@ -50,7 +50,7 @@ def run_example(api="common"):
         module.load(block, source, keys)
         for item in cutlass.range_constexpr(_ITEMS):
             positions[item] = cutlass.Int32(block.rank()) * _ITEMS + item
-        scratch = module.TempStorage(alignment=32)
+        scratch = module.TempStorage(alignment=32, auto_sync=True)
         ordered = module.radix_sort_keys(block, keys, temp_storage=scratch)
         module.store(block, full_keys, ordered)
         if cutlass.const_expr(api == "qualified"):
