@@ -26,7 +26,7 @@ def test_temp_storage_forwards_minimum_alignment(monkeypatch, alignment):
 
     monkeypatch.setattr(api, "_backend_member", lambda name: constructor)
     assert api.TempStorage(64, alignment=alignment) is payload
-    assert calls == [(64, alignment, None, "shared")]
+    assert calls == [(64, alignment, False, "shared")]
     assert calls[0][1] is None or type(calls[0][1]) is int
 
 
