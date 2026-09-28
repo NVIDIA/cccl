@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -14,7 +15,7 @@ from ._symbols import semantic_token
 from ._types import ParameterClassification, TemplateParameter, classify_parameter
 
 
-def _freeze_methods(methods: Any) -> tuple[tuple[Any, ...], ...]:
+def _freeze_methods(methods: Iterable[Iterable[Any]]) -> tuple[tuple[Any, ...], ...]:
     return tuple(tuple(method) for method in methods)
 
 
