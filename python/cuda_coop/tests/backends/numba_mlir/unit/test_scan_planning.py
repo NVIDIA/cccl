@@ -171,42 +171,6 @@ def test_public_signatures_keep_portable_surface_narrow_and_omit_n6_callbacks():
     assert not (package / "_stateful_function.py").exists()
 
 
-@pytest.mark.parametrize(
-    ("parameter", "token"),
-    (
-        ("mode", "inclusive"),
-        ("algorithm", "raking"),
-        ("scan_op", "max"),
-    ),
-)
-@pytest.mark.parametrize("selector_kind", ("object", "string-enum"))
-def test_portable_python_entry_point_rejects_non_string_scan_selectors(
-    parameter,
-    token,
-    selector_kind,
-):
-    import importlib
-
-    from cuda.coop._core.api import _dispatch
-    from cuda.coop._core.api.thread_group import this_block
-
-    scan_api = importlib.import_module("cuda.coop._core.api.scan")
-    group = this_block()
-    selector = (
-        SimpleNamespace(value=token)
-        if selector_kind == "object"
-        else _StringSelector(token)
-    )
-
-    with _dispatch._compiler_scope("test.backend"):
-        with pytest.raises(TypeError, match=rf"{parameter} must be .*string"):
-            scan_api.scan(
-                group,
-                np.int32(1),
-                **{parameter: selector},
-            )
-
-
 @pytest.mark.parametrize("api", ("portable", "qualified"))
 @pytest.mark.parametrize(
     ("parameter", "token"),
