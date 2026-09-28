@@ -22,7 +22,7 @@ def test_storage_defaults(sharing, auto_sync, capacity):
     assert storage.capacity_size_in_bytes == capacity
     assert storage.alignment is None
     assert storage.sharing == sharing
-    assert storage.auto_sync is (True if auto_sync is None else auto_sync)
+    assert storage.auto_sync is (False if auto_sync is None else auto_sync)
     assert storage.is_deferred
 
 
@@ -34,7 +34,7 @@ def test_storage_alignment_and_sharing():
     storage = TempStorage(1024, alignment=Alignment(), sharing=" EXCLUSIVE ")
     assert storage.alignment == 64
     assert storage.sharing == "exclusive"
-    assert storage.auto_sync is True
+    assert storage.auto_sync is False
 
 
 @pytest.mark.parametrize("capacity", [True, False, 1.5, "128"])
@@ -75,7 +75,7 @@ def test_manual_sync_calls_block_barrier(monkeypatch):
     arch = import_module("cutlass.cute.arch")
     calls = []
     monkeypatch.setattr(arch, "sync_threads", lambda: calls.append("block"))
-    assert TempStorage(auto_sync=False).sync() is None
+    assert TempStorage().sync() is None
     assert calls == ["block"]
 
 

@@ -126,14 +126,15 @@ operations' alignment requirements.
 
 ``sharing="shared"`` reuses one slice across call sites. With
 ``sharing="exclusive"``, distinct call sites receive separate slices.
-Both policies insert trailing reuse synchronization by default because a
-single call site can execute repeatedly in a loop. Set ``auto_sync=False``
-only when the kernel calls ``storage.sync()`` before reusing that storage,
-including on the next loop iteration.
+Both policies default to ``auto_sync=False``. The kernel must call
+``storage.sync()`` before reusing that storage, including on the next loop
+iteration. Set ``auto_sync=True`` to insert trailing reuse synchronization
+after each storage-using call. Without an explicit descriptor, the compiler
+manages scratch and its reuse synchronization automatically.
 
-The following example transforms eight independent tiles. Its default is a
-shared descriptor with automatic synchronization; the executable example
-also supports exclusive slices and manual synchronization.
+The following example transforms eight independent tiles. It explicitly enables
+automatic synchronization for a shared descriptor by default; the executable
+example also supports exclusive slices and manual synchronization.
 :download:`Download the storage example
 <../../python/cuda_coop/examples/cutlass/block_storage.py>`:
 
