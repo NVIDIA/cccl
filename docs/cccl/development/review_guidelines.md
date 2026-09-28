@@ -499,6 +499,19 @@ nested structs stay nested structs, constants stay constants with the exact same
 A wrong shape may still compile but carry a different meaning, staying invisible during compilation
 while breaking generic consumers, often in third-party code.
 
+## api.duplicated-derived-type-not-updated (important, CUB/Thrust algorithms with multiple public overload families layered over one dispatch)
+
+<!-- provenance:
+  #9289→#9676 DeviceReduce's env overloads recomputed accum_t inline instead of using the shared select_accum_t, missing the new no_init_t sentinel
+-->
+
+When a diff adds support for a new argument or case by extending a shared type-computation helper
+(e.g. `select_accum_t`), check every other public overload family of the same algorithm for an
+independently written computation of the same derived type — especially the `device_*.cuh` facade
+over the touched `dispatch_*.cuh`, which is often not part of the diff; check it against the diff's
+base revision. A copy that recomputes the type inline silently misses the new case. Prefer replacing
+the inline computation with the shared helper.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
