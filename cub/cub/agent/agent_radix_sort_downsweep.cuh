@@ -201,6 +201,7 @@ struct AgentRadixSortDownsweep
   /**
    * Shared memory storage layout
    */
+  // align at least to 16
   static constexpr ::cuda::std::size_t __temp_storage_alignment = ::cuda::std::max(
     {::cuda::std::size_t{16},
      alignof(typename BlockLoadKeysT::TempStorage),
