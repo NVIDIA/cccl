@@ -168,6 +168,8 @@ state is authoritative.
        if thread == 0:
            final_state[0] = state[0]
 
-Keep the default synchronization when reusing scan scratch between calls.
+This example uses compiler-managed scratch with automatic reuse synchronization.
+For an explicit ``TempStorage`` descriptor, request ``auto_sync=True`` or provide
+barriers before reusing scratch.
 See :doc:`../../coop_api` for the qualified callback and aggregate-output
 contracts, and the :doc:`../programming_guide` for backend activation.

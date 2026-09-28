@@ -112,7 +112,7 @@ def test_qualified_exclusive_sum_example():
         block = coop.this_block()
         state = coop.ThreadData(1, dtype=types.int64)
         state[0] = types.int64(0)
-        scratch = coop.TempStorage()
+        scratch = coop.TempStorage(auto_sync=True)
         for tile in range(3):
             index = tile * cuda.blockDim.x + cuda.threadIdx.x
             destination[index] = coop.exclusive_sum(

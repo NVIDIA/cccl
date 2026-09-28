@@ -176,7 +176,7 @@ def test_shared_scratch():
     @cuda.jit
     def scan_with_shared_scratch(source, destination):
         block = coop.this_block()
-        scratch = coop.TempStorage()
+        scratch = coop.TempStorage(auto_sync=True)
         items = coop.ThreadData(2, dtype=np.int32)
 
         coop.load(block, source, items, algorithm="transpose", temp_storage=scratch)
@@ -202,7 +202,7 @@ def test_manual_scratch():
     @cuda.jit
     def copy_tiles_with_manual_sync(source, destination):
         block = coop.this_block()
-        scratch = coop.TempStorage(auto_sync=False)
+        scratch = coop.TempStorage()
         items = coop.ThreadData(2, dtype=np.int32)
         for tile in range(2):
             offset = tile * cuda.blockDim.x * 2
@@ -230,6 +230,10 @@ def test_manual_scratch():
     copy_tiles_with_manual_sync[1, 128](source, destination)
     cuda.synchronize()
     np.testing.assert_array_equal(destination, source)
+
+    compiled = next(iter(copy_tiles_with_manual_sync._launch_config_overloads.values()))
+    # The two explicit block.sync() calls are the only reuse barriers.
+    assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 2
     # coop-pg-manual-scratch-end
 
 
@@ -304,7 +308,7 @@ def test_prefix_callback():
         block = numba_coop.this_block()
         state = numba_coop.ThreadData(1, dtype=types.int64)
         state[0] = types.int64(0)
-        scratch = numba_coop.TempStorage()
+        scratch = numba_coop.TempStorage(auto_sync=True)
         for tile in range(3):
             index = tile * cuda.blockDim.x + cuda.threadIdx.x
             destination[index] = numba_coop.exclusive_sum(

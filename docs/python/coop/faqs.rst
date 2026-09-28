@@ -78,7 +78,7 @@ share scratch while the values stay in each thread's payload:
    # Inside a kernel; source and destination are kernel arguments.
    block = coop.this_block()
    items = coop.ThreadData(2)
-   scratch = coop.TempStorage()
+   scratch = coop.TempStorage(auto_sync=True)
    coop.load(
        block, source, items, algorithm="transpose", temp_storage=scratch
    )
@@ -90,11 +90,11 @@ The compiler sizes and aligns the shared region for both calls. It inserts
 a barrier after each use. Construct the descriptor inside the kernel, and
 keep application values in ``ThreadData`` or your own arrays.
 
-A descriptor also lets you request capacity or alignment, choose separate
-slices with ``sharing="exclusive"``, or take responsibility for reuse barriers
-with ``auto_sync=False``. Keep automatic synchronization enabled unless your
-kernel provides the required barriers itself, including across loop
-iterations. Separate slices do not remove the need to protect reuse.
+A descriptor also lets you request capacity or alignment, or choose separate
+slices with ``sharing="exclusive"``. Explicit descriptors default to
+``auto_sync=False``, so the kernel must provide reuse barriers, including across
+loop iterations. The example requests ``auto_sync=True`` to insert those
+barriers automatically. Separate slices do not remove the need to protect reuse.
 
 The current backend accepts explicit descriptors for block transpose-family
 Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent

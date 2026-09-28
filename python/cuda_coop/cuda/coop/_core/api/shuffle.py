@@ -6,24 +6,16 @@
 
 from __future__ import annotations
 
-from enum import Enum
-from numbers import Integral
 from typing import Any
 
-from ..thread_group import ThreadGroup
+from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _backend_module_name,
     _common_group_operation,
-    _common_selector,
-    _group_primitive_marker,
 )
 from ._payload import (
     ThreadDataLike,
     _ReadableThreadDataLike,
-    _validate_common_numeric_value,
 )
-
-_COMMON_SHUFFLE_MODES = frozenset({"down", "up"})
 
 
 @_common_group_operation(
@@ -94,36 +86,8 @@ def shuffle(
         :dedent: 4
     """
 
-    mode = _common_selector(
-        "shuffle",
-        "mode",
-        mode,
-        _COMMON_SHUFFLE_MODES,
-    )
-    if _backend_module_name() is not None:
-        _validate_common_numeric_value(
-            "shuffle",
-            "value",
-            value,
-            allow_readonly_thread_data=True,
-            require_thread_data=True,
-        )
-        if (
-            isinstance(distance, (bool, Enum))
-            or not isinstance(distance, Integral)
-            or int(distance) != 1
-        ):
-            raise ValueError(
-                "cuda.coop.shuffle distance must be exactly 1 in the common "
-                "API; use cuda.coop.numba_mlir for scalar Shuffle"
-            )
-        distance = 1
-    return _group_primitive_marker(
-        "shuffle",
-        group,
-        value,
-        mode=mode,
-        distance=distance,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.shuffle must be called from a supported GPU kernel."
     )
 
 

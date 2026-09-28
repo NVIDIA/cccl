@@ -2,26 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common explicit temporary-storage construction.
-
-This frontend delegates caller-selected size, alignment, synchronization, and
-sharing controls to the active backend. Allocation layout and reuse barriers
-remain backend compiler responsibilities.
-"""
+"""Declare shared-memory requirements for the kernel compiler."""
 
 from __future__ import annotations
 
-from typing import Any
-
-from ._dispatch import _backend_member
-from ._payload import TempStorageLike, _normalize_alignment
+from ..thread_group import CoopCompilerContextRequiredError
+from ._payload import TempStorageLike
 
 
 def TempStorage(
-    size_in_bytes: Any = None,
+    size_in_bytes: int | None = None,
     *,
     alignment: int | None = None,
-    auto_sync: Any = None,
+    auto_sync: bool | None = False,
     sharing: str = "shared",
 ) -> TempStorageLike:
     """Describe shared scratch for supported cooperative block operations.
@@ -43,15 +36,16 @@ def TempStorage(
         satisfies both this request and the operations' alignment needs.
     auto_sync : bool, optional
         Whether to insert a trailing barrier after each scratch-using call.
-        ``None`` and ``True`` enable automatic reuse synchronization.
-        ``False`` requires the caller to synchronize before the scratch is
-        reused, including on the next iteration of a loop.
+        Defaults to ``False``; ``None`` also disables automatic reuse
+        synchronization. The caller must synchronize before reusing the
+        scratch, including on the next iteration of a loop. Pass ``True``
+        to request automatic reuse barriers.
     sharing : {"shared", "exclusive"}, optional
         Compile-time allocation policy, default ``"shared"``. Shared call
         sites can reuse one scratch slice. ``"exclusive"`` gives distinct
         call sites separate slices, which may consume more shared memory.
-        It does not disable automatic synchronization: repeated executions
-        of a single call site still reuse its slice.
+        Synchronization is independent: repeated executions of a single
+        call site still reuse its slice.
 
     Returns
     -------
@@ -63,8 +57,8 @@ def TempStorage(
     Examples
     --------
     Reuse one descriptor for transpose Load, Scan, and transpose Store.
-    The loop processes two independent tiles. Automatic barriers protect
-    reuse between operations and between iterations.
+    The loop processes two independent tiles. Explicit ``auto_sync=True``
+    enables barriers between operations and between iterations.
 
     .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
         :language: python
@@ -73,13 +67,8 @@ def TempStorage(
         :dedent: 4
     """
 
-    alignment = _normalize_alignment(alignment)
-
-    return _backend_member("TempStorage")(
-        size_in_bytes=size_in_bytes,
-        alignment=alignment,
-        auto_sync=auto_sync,
-        sharing=sharing,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.TempStorage must be called from a supported GPU kernel."
     )
 
 
