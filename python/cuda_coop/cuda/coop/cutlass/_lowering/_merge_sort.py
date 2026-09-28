@@ -5,6 +5,7 @@
 """Typed CUB Merge Sort requests from the shared block and warp planner."""
 
 import hashlib
+import math
 from dataclasses import dataclass, replace
 from numbers import Integral
 
@@ -353,12 +354,14 @@ def _typed_value(value, dtype, *, sentinel=False):
         if _types.canonical_dsl_type(value) is not dtype:
             raise TypeError("Merge Sort scalar dtype does not match payload dtype")
         value = value.item()
+    if sentinel and type(value) is float and math.isnan(value):
+        raise ValueError("cuda.coop.cutlass.Merge Sort oob_default must not be NaN")
     converted = _types.coerce_plain_scalar(
         value,
         dtype,
         name="Merge Sort oob_default" if sentinel else "Merge Sort item",
         scope=_SCOPE,
-        allow_nonfinite=not sentinel,
+        allow_nonfinite=True,
     )
     if converted is not _types._NOT_PLAIN_SCALAR:
         return converted
