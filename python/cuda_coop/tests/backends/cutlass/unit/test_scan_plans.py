@@ -172,6 +172,24 @@ def test_seed_dtype_and_range():
         _scan._typed_value(1 << 200, cutlass.Float32, initial=True)
 
 
+@pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
+def test_numpy_input_scalar(dtype):
+    value = dtype.numpy_dtype(3)
+    result = _scan._typed_value(value, dtype)
+    assert isinstance(result, dtype)
+    assert result.value == 3
+
+
+def test_numpy_payload_dtype_mismatch():
+    values = ThreadData(1, dtype=np.int32, values=[np.float32(3)])
+    with pytest.raises(TypeError, match="dtype does not match"):
+        _scan.provider_scan(
+            group=this_block(),
+            launch=LaunchFacts(exact_block_dim=(64, 1, 1)),
+            value=values,
+        )
+
+
 @pytest.mark.parametrize("block", (False, True))
 def test_failed_ffi_rolls_back(block, monkeypatch):
     snapshot = object()
