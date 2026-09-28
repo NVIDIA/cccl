@@ -506,8 +506,10 @@ Block Scan rejects ``valid_items``. These two controls are intentionally absent
 from the portable root API.
 
 All Scan forms use CUB temporary storage. Block calls may use compiler-owned,
-caller-owned, or dynamic shared storage and append ``syncthreads`` unless a
-caller-owned descriptor explicitly sets ``auto_sync=False``. Physical and
+caller-owned, or dynamic shared storage. Compiler-owned storage and explicit
+descriptors with ``auto_sync=True`` append ``syncthreads``. Explicit descriptors
+default to ``auto_sync=False``, so the caller must synchronize before reuse.
+Physical and
 logical Warp calls use one compiler-owned slice per Warp and append
 ``syncwarp`` with the participating mask. Prefix callbacks and running-prefix
 state are deferred.
