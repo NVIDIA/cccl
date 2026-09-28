@@ -373,7 +373,7 @@ calls that accept a descriptor. This transpose example uses Numba-CUDA-MLIR:
 storage = coop.TempStorage(
     size_in_bytes=None,
     alignment=None,
-    auto_sync=None,
+    auto_sync=False,
     sharing="shared",
 )
 coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
@@ -395,16 +395,16 @@ count and alignment.
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
 calls that pass the same descriptor on one region; `"exclusive"` gives each
 call site its own slice. A call site inside a loop reuses its slice under
-either policy. `auto_sync` defaults to `True` for both policies and both
+either policy. `auto_sync` defaults to `False` for both policies and both
 integrations.
 
-Distinct descriptors and compiler-owned storage do not alias each other. Each
-scratch-using call appends a barrier after the operation, including the last
-call. That barrier protects reuse of CUB scratch; it does not replace barriers
-needed by the kernel's own shared-memory operations. With `auto_sync=False`,
-call `storage.sync()` or the appropriate block barrier before reusing the
-scratch, including on the next loop iteration. Compiler-owned scratch always
-synchronizes.
+Distinct descriptors and compiler-owned storage do not alias each other. With
+the default `auto_sync=False`, call `storage.sync()` or the appropriate block
+barrier before reusing the scratch, including on the next loop iteration.
+Set `auto_sync=True` to append a barrier after each scratch-using call,
+including the last call. That barrier protects reuse of CUB scratch; it does
+not replace barriers needed by the kernel's own shared-memory operations.
+Compiler-owned scratch always synchronizes.
 
 Construct descriptors inside the kernel. Numba-CUDA-MLIR resolves descriptors
 in its compiler passes; a descriptor may also be passed to a device helper
@@ -632,15 +632,18 @@ are mutually exclusive with `initial_value` and `aggregate_output`, are not
 stateful binary `scan_op` values, and do not support Warp Scan, `valid_items`,
 or structured state.
 
-All Scan providers use CUB temporary storage. Block calls may use implicit or
-caller-owned `TempStorage` and append a block reuse barrier unless a
-caller-owned descriptor explicitly sets `auto_sync=False`. Physical and
-logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
-for the exact participating mask. Prefix callbacks retain the same storage
-rules. When repeated calls reuse Block Scan storage, keep automatic
-synchronization enabled or call `storage.sync()` before reuse when
-`auto_sync=False`. The prefix state is persistent per-thread data, not CUB
-temporary storage.
+All Scan providers use CUB temporary storage. Block calls use compiler-owned
+scratch or an explicit `TempStorage` descriptor. Numba-CUDA-MLIR backing may
+use static or dynamic shared memory. Compiler-owned scratch and explicit
+descriptors with `auto_sync=True` append a block reuse barrier. Explicit
+descriptors default to `auto_sync=False`, so the caller must synchronize
+before reuse. Physical and logical Warp calls use compiler-owned per-Warp
+storage and append `syncwarp` for the exact participating mask. Prefix
+callbacks keep these storage rules. When repeated calls reuse an explicit
+descriptor, set `auto_sync=True` or issue a block barrier before reuse:
+`cuda.syncthreads()` in Numba-CUDA-MLIR, or `storage.sync()` in CUTLASS. The
+prefix state is a per-thread payload that persists across calls; it is not
+CUB temporary storage.
 
 This example uses the common API to load a block tile, compute its exclusive
 sum, and store the out-of-place result:
