@@ -889,6 +889,10 @@ rename after release. A PR comment like "I'm not attached to the name" is a sign
   PR CI missed it because ci/inspect_changes didn't list cudax as depending on thrust/cub
 -->
 
+<!-- note: this is a CI setup problem, not a review concern: the break was a plain compile error in
+  cudax, pruned from PR CI only because the dependency edge was missing; the edge exists today in
+  ci/project_files_and_dependencies.yaml -->
+
 When a diff changes the parameter or return type of a widely-used public entry point — especially
 swapping a vocabulary/wrapper type (`cuda::stream_ref`) for a narrower concrete type (`cudaStream_t`)
 or vice versa — grep the ENTIRE repository for call sites in OTHER CCCL subprojects (cudax, c/parallel,
