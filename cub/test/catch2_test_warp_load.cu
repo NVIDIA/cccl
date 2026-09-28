@@ -11,24 +11,24 @@
 #include <c2h/fill_striped.h>
 
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
-          int LOGICAL_WARP_THREADS,
+          int LogicalWarpThreads,
           int ItemsPerThread,
-          int TOTAL_WARPS,
+          int TotalWarps,
           typename T,
           typename InputIteratorT,
           typename ActionT>
 __global__ void warp_load_kernel(InputIteratorT input_iterator, ActionT action, int* error_counter)
 {
-  using warp_load_t = cub::WarpLoad<T, ItemsPerThread, LoadAlgorithm, LOGICAL_WARP_THREADS>;
+  using warp_load_t = cub::WarpLoad<T, ItemsPerThread, LoadAlgorithm, LogicalWarpThreads>;
   using storage_t   = typename warp_load_t::TempStorage;
 
-  constexpr int tile_size = ItemsPerThread * LOGICAL_WARP_THREADS;
+  constexpr int tile_size = ItemsPerThread * LogicalWarpThreads;
 
-  __shared__ storage_t storage[TOTAL_WARPS];
+  __shared__ storage_t storage[TotalWarps];
 
   const int linear_tid = static_cast<int>(threadIdx.x);
 
-  const int warp_id = linear_tid / LOGICAL_WARP_THREADS;
+  const int warp_id = linear_tid / LogicalWarpThreads;
   warp_load_t load(storage[warp_id]); // NOLINT(misc-const-correctness)
 
   // Test WarpLoad specialization
@@ -40,16 +40,16 @@ __global__ void warp_load_kernel(InputIteratorT input_iterator, ActionT action, 
 }
 
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
-          int LOGICAL_WARP_THREADS,
+          int LogicalWarpThreads,
           int ItemsPerThread,
-          int TOTAL_WARPS,
+          int TotalWarps,
           typename T,
           typename InputIteratorT,
           typename ActionT>
 void warp_load(InputIteratorT input_iterator, ActionT action, int* error_counter)
 {
-  warp_load_kernel<LoadAlgorithm, LOGICAL_WARP_THREADS, ItemsPerThread, TOTAL_WARPS, T, InputIteratorT, ActionT>
-    <<<1, TOTAL_WARPS * LOGICAL_WARP_THREADS>>>(input_iterator, action, error_counter);
+  warp_load_kernel<LoadAlgorithm, LogicalWarpThreads, ItemsPerThread, TotalWarps, T, InputIteratorT, ActionT>
+    <<<1, TotalWarps * LogicalWarpThreads>>>(input_iterator, action, error_counter);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
@@ -57,14 +57,14 @@ void warp_load(InputIteratorT input_iterator, ActionT action, int* error_counter
 /**
  * @brief WarpLoad test specialisation for guarded loads
  */
-template <cub::WarpLoadAlgorithm LoadAlgorithm, int LOGICAL_WARP_THREADS, typename T>
+template <cub::WarpLoadAlgorithm LoadAlgorithm, int LogicalWarpThreads, typename T>
 struct guarded_load_t
 {
   int valid_items;
   T oob_default;
 
   template <int ItemsPerThread, typename InputIteratorT>
-  __device__ void load(cub::WarpLoad<T, ItemsPerThread, LoadAlgorithm, LOGICAL_WARP_THREADS> load,
+  __device__ void load(cub::WarpLoad<T, ItemsPerThread, LoadAlgorithm, LogicalWarpThreads> load,
                        InputIteratorT input,
                        T (&reg)[ItemsPerThread])
   {
@@ -76,14 +76,14 @@ struct guarded_load_t
   {
     const auto linear_tid =
       cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
-    const auto lane_id = linear_tid % LOGICAL_WARP_THREADS;
+    const auto lane_id = linear_tid % LogicalWarpThreads;
     for (int item = 0; item < ItemsPerThread; item++)
     {
       const auto expected_value =
         static_cast<T>(linear_tid * ItemsPerThread + item); // NOLINT(bugprone-misplaced-widening-cast)
 
       const bool is_oob = LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED
-                          ? item * LOGICAL_WARP_THREADS + lane_id >= valid_items
+                          ? item * LogicalWarpThreads + lane_id >= valid_items
                           : lane_id * ItemsPerThread + item >= valid_items;
 
       if (is_oob)
@@ -107,11 +107,11 @@ struct guarded_load_t
 struct unguarded_load_t
 {
   template <cub::WarpLoadAlgorithm LoadAlgorithm,
-            int LOGICAL_WARP_THREADS,
+            int LogicalWarpThreads,
             int ItemsPerThread,
             typename T,
             typename InputIteratorT>
-  __device__ void load(cub::WarpLoad<T, ItemsPerThread, LoadAlgorithm, LOGICAL_WARP_THREADS> load,
+  __device__ void load(cub::WarpLoad<T, ItemsPerThread, LoadAlgorithm, LogicalWarpThreads> load,
                        InputIteratorT input,
                        T (&reg)[ItemsPerThread])
   {
@@ -134,11 +134,11 @@ struct unguarded_load_t
   }
 };
 
-template <cub::WarpLoadAlgorithm LoadAlgorithm, int LOGICAL_WARP_THREADS, int ItemsPerThread, int TOTAL_WARPS, typename T>
+template <cub::WarpLoadAlgorithm LoadAlgorithm, int LogicalWarpThreads, int ItemsPerThread, int TotalWarps, typename T>
 c2h::device_vector<T> generate_input()
 {
-  constexpr int tile_size = LOGICAL_WARP_THREADS * ItemsPerThread;
-  constexpr int num_items = TOTAL_WARPS * tile_size;
+  constexpr int tile_size = LogicalWarpThreads * ItemsPerThread;
+  constexpr int num_items = TotalWarps * tile_size;
 
   c2h::device_vector<T> d_input(num_items);
 
@@ -149,9 +149,9 @@ c2h::device_vector<T> generate_input()
     // In this case we need different stripe pattern, so the
     // items/threads parameters are swapped
 
-    constexpr int FAKE_BLOCK_SIZE = ItemsPerThread * TOTAL_WARPS;
+    constexpr int FAKE_BLOCK_SIZE = ItemsPerThread * TotalWarps;
 
-    fill_striped<ItemsPerThread, LOGICAL_WARP_THREADS, FAKE_BLOCK_SIZE>(h_input.begin());
+    fill_striped<ItemsPerThread, LogicalWarpThreads, FAKE_BLOCK_SIZE>(h_input.begin());
     d_input = h_input;
   }
   else
@@ -188,13 +188,13 @@ using cache_load_modifier =
 
 constexpr int guarded_load_tests_count = 30;
 
-template <int logical_warp_threads>
+template <int LogicalWarpThreads>
 struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
-  static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
+  static constexpr bool is_arch_warp  = (LogicalWarpThreads == cub::detail::warp_threads);
+  static constexpr bool is_pow_of_two = ((LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
 public:

@@ -80,9 +80,7 @@ struct half_t
   {
     // Stolen from Norbert Juffa
     uint32_t ia = *reinterpret_cast<uint32_t*>(&a);
-    uint16_t ir;
-
-    ir = (ia >> 16) & 0x8000;
+    uint16_t ir = (ia >> 16) & 0x8000;
 
     if ((ia & 0x7f800000) == 0x7f800000)
     {

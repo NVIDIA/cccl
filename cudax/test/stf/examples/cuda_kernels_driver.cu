@@ -21,8 +21,8 @@ using namespace cuda::experimental::stf;
 
 __global__ void axpy(double a, slice<const double> x, slice<double> y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < x.size(); i += nthreads)
   {
@@ -53,8 +53,8 @@ void test(bool is_graph)
 
   for (size_t i = 0; i < N; i++)
   {
-    X[i] = X0(i);
-    Y[i] = Y0(i);
+    X[i] = X0(static_cast<int>(i));
+    Y[i] = Y0(static_cast<int>(i));
   }
 
   // Number of times we have applied the axpy kernel
@@ -94,13 +94,13 @@ void test(bool is_graph)
 
   /* Some extra sanity checks, we put this in a dummy task to get access to dX and dY values */
   ctx.task(lX.read(), lY.rw())->*[&](auto, auto dX, auto dY) {
-    int nregs = cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY}.get_num_registers();
+    const int nregs = cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY}.get_num_registers();
 
-    int nregs_fun = cuda_kernel_desc{axpy_fun, 16, 128, 0, alpha, dX, dY}.get_num_registers();
+    const int nregs_fun = cuda_kernel_desc{axpy_fun, 16, 128, 0, alpha, dX, dY}.get_num_registers();
     _CCCL_ASSERT(nregs == nregs_fun, "invalid value");
 
 #if _CCCL_CTK_AT_LEAST(12, 1)
-    int nregs_kernel = cuda_kernel_desc{axpy_kernel, 16, 128, 0, alpha, dX, dY}.get_num_registers();
+    const int nregs_kernel = cuda_kernel_desc{axpy_kernel, 16, 128, 0, alpha, dX, dY}.get_num_registers();
     _CCCL_ASSERT(nregs == nregs_kernel, "invalid value");
 #endif
   };

@@ -15,3 +15,7 @@ cudax_add_catch2_test(test_target cuco.utility.capacity ${cudax_target}
 cudax_add_catch2_test(test_target cuco.utility.traits ${cudax_target}
   test_traits.cu
 )
+
+cudax_add_catch2_test(test_target cuco.utility.probing_scheme ${cudax_target}
+  test_probing_scheme.cu
+)

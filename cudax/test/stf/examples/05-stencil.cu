@@ -10,6 +10,8 @@
 
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 static stream_ctx ctx;
@@ -78,8 +80,8 @@ __global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T*
 {
   for (size_t idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
   {
-    size_t idx2 = idx + ghost_size;
-    array[idx2] = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
+    const size_t idx2 = idx + ghost_size;
+    array[idx2]       = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
   }
 }
 
@@ -87,7 +89,7 @@ __global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T*
 template <typename T>
 void stencil(data_block<T>& bn, data_block<T>& bn1)
 {
-  int dev = bn.preferred_device;
+  const int dev = bn.preferred_device;
 
   ctx.task(exec_place::device(dev), bn.handle.rw(), bn1.handle.read())->*[&](cudaStream_t stream, auto sN, auto sN1) {
     stencil_kernel<T><<<32, 64, 0, stream>>>(bn.block_size, bn.ghost_size, sN.data_handle(), sN1.data_handle());
@@ -108,7 +110,7 @@ void copy_task(
   size_t cnt, logical_data<slice<T>>& dst, size_t offset_dst, logical_data<slice<T>>& src, size_t offset_src, int dev)
 {
   ctx.task(exec_place::device(dev), dst.rw(), src.read())->*[&](cudaStream_t stream, auto dstS, auto srcS) {
-    int nblocks = (cnt > 64) ? 32 : 1;
+    const int nblocks = (cnt > 64) ? 32 : 1;
     copy_kernel<T><<<nblocks, 64, 0, stream>>>(cnt, dstS.data_handle() + offset_dst, srcS.data_handle() + offset_src);
   };
 }
@@ -150,12 +152,12 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    NITER = atoi(argv[1]);
+    NITER = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    NBLOCKS = atoi(argv[2]);
+    NBLOCKS = ::std::stoi(argv[2]);
   }
 
   const size_t GHOST_SIZE = 1;
@@ -179,8 +181,8 @@ int main(int argc, char** argv)
   // Create blocks and allocates host data
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    size_t beg = b * BLOCK_SIZE;
-    size_t end = (b + 1) * BLOCK_SIZE;
+    const size_t beg = b * BLOCK_SIZE;
+    const size_t end = (b + 1) * BLOCK_SIZE;
 
     Un.emplace_back(beg, end, 1ull);
     Un1.emplace_back(beg, end, 1ull);
@@ -188,8 +190,8 @@ int main(int argc, char** argv)
 
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    Un[b].preferred_device  = b % ndevs;
-    Un1[b].preferred_device = b % ndevs;
+    Un[b].preferred_device  = static_cast<int>(b % ndevs);
+    Un1[b].preferred_device = static_cast<int>(b % ndevs);
   }
 
   // Fill blocks with initial values. For the sake of simplicity, we are
@@ -258,7 +260,7 @@ int main(int argc, char** argv)
     check_sum += Un[b].check_sum();
   }
 
-  double err = fabs(check_sum - 1.0);
+  const double err = fabs(check_sum - 1.0);
   EXPECT(err < 0.0001);
 
   ctx.finalize();

@@ -17,8 +17,8 @@ struct stream_registry_factory_t;
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceHistogram::HistogramRange, histogram_range);
@@ -134,43 +134,7 @@ CUB_TEST_CASE("DeviceHistogram::HistogramEven works with user provided memory an
     REQUIRE(d_histogram == expected);
   };
 
-  SECTION("DeviceHistogram::HistogramEven works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_histogram_even(stream.get());
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_histogram_even(stream);
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_histogram_even(stream_ref);
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_histogram_even(env);
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_histogram_even(policy);
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_histogram_even(policy);
-  }
+  test_with_custom_streams(test_histogram_even);
 }
 
 CUB_TEST_CASE("DeviceHistogram::HistogramRange works with default environment", "[histogram][device]", CUB_SMALL)
@@ -254,43 +218,7 @@ CUB_TEST_CASE("DeviceHistogram::HistogramRange works with user provided memory a
     REQUIRE(d_histogram == expected);
   };
 
-  SECTION("DeviceHistogram::HistogramRange works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_histogram_range(stream.get());
-  }
-
-  SECTION("DeviceHistogram::HistogramRange works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_histogram_range(stream);
-  }
-
-  SECTION("DeviceHistogram::HistogramRange works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_histogram_range(stream_ref);
-  }
-
-  SECTION("DeviceHistogram::HistogramRange works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_histogram_range(env);
-  }
-
-  SECTION("DeviceHistogram::HistogramRange works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_histogram_range(policy);
-  }
-
-  SECTION("DeviceHistogram::HistogramRange works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_histogram_range(policy);
-  }
+  test_with_custom_streams(test_histogram_range);
 }
 
 CUB_TEST_CASE("DeviceHistogram::MultiHistogramEven works with default environment", "[histogram][device]", CUB_SMALL)
@@ -868,43 +796,7 @@ CUB_TEST("DeviceHistogram::MultiHistogramRange works with user provided memory a
     REQUIRE(d_histogram_b == expected_b);
   };
 
-  SECTION("DeviceHistogram::MultiHistogramRange works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_multi_histogram_range(stream.get());
-  }
-
-  SECTION("DeviceHistogram::MultiHistogramRange works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_multi_histogram_range(stream);
-  }
-
-  SECTION("DeviceHistogram::MultiHistogramRange works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_multi_histogram_range(stream_ref);
-  }
-
-  SECTION("DeviceHistogram::MultiHistogramRange works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_multi_histogram_range(env);
-  }
-
-  SECTION("DeviceHistogram::MultiHistogramRange works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_multi_histogram_range(policy);
-  }
-
-  SECTION("DeviceHistogram::MultiHistogramRange works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_multi_histogram_range(policy);
-  }
+  test_with_custom_streams(test_multi_histogram_range);
 }
 #endif // TEST_LAUNCH == 0
 
@@ -1426,43 +1318,7 @@ CUB_TEST_CASE("DeviceHistogram::MultiHistogramEven works with user provided memo
     REQUIRE(d_histogram_b == expected_b);
   };
 
-  SECTION("DeviceHistogram::HistogramEven works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_multi_histogram_even(stream.get());
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_multi_histogram_even(stream);
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_multi_histogram_even(stream_ref);
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_multi_histogram_even(env);
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_multi_histogram_even(policy);
-  }
-
-  SECTION("DeviceHistogram::HistogramEven works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_multi_histogram_even(policy);
-  }
+  test_with_custom_streams(test_multi_histogram_even);
 }
 #endif // TEST_LAUNCH == 0
 
