@@ -2,18 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Describe explicit scratch storage for compiler-supported block operations.
+"""Describe explicit scratch for compiler-supported block operations.
 
-The constructor marks a request inside a GPU kernel. A compiler that supports
-explicit scratch collects the descriptor's uses to choose shared-memory space
-and any requested reuse barriers. The Python body raises an error outside a
-supported kernel; it never allocates storage.
+This frontend delegates caller-selected size, alignment, synchronization, and
+sharing controls to the active backend. Compilers collect descriptor uses to
+choose allocation layout and any requested reuse barriers. Construction must
+occur inside a supported kernel.
 """
 
 from __future__ import annotations
 
-from ..thread_group import CoopCompilerContextRequiredError
-from ._payload import TempStorageLike
+from ._dispatch import _backend_member
+from ._payload import TempStorageLike, _normalize_alignment
 
 
 def TempStorage(
@@ -76,8 +76,13 @@ def TempStorage(
         :dedent: 4
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.TempStorage must be called from a supported GPU kernel."
+    alignment = _normalize_alignment(alignment)
+
+    return _backend_member("TempStorage")(
+        size_in_bytes=size_in_bytes,
+        alignment=alignment,
+        auto_sync=auto_sync,
+        sharing=sharing,
     )
 
 

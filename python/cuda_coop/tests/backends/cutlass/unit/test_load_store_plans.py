@@ -68,3 +68,56 @@ def test_partial_transpose_uses_shared_preservation_specialization(algorithm):
         assert "TempStorage" in probe.size_expression
         assert "TempStorage" in probe.alignment_expression
     assert source.index("namespace cub") < source.index('extern "C"')
+
+
+@pytest.mark.parametrize("kind", ("load", "store"))
+@pytest.mark.parametrize("sharing", ("shared", "exclusive"))
+@pytest.mark.parametrize(
+    "options, expected_sync",
+    [
+        (None, True),
+        ({}, False),
+        ({"auto_sync": None}, False),
+        ({"auto_sync": False}, False),
+        ({"auto_sync": True}, True),
+    ],
+    ids=("implicit", "default", "none", "manual", "automatic"),
+)
+def test_reuse_barrier_requires_explicit_opt_in(
+    monkeypatch, kind, sharing, options, expected_sync
+):
+    from cuda.coop._core import GroupLoadStoreKind, LaunchFacts, SynchronizationScope
+    from cuda.coop.cutlass import TempStorage
+    from cuda.coop.cutlass._compiler import _storage
+    from cuda.coop.cutlass._lowering._load_store import (
+        _make_group_load_store_plan,
+        _scratch_arguments,
+    )
+
+    storage = None if options is None else TempStorage(sharing=sharing, **options)
+    plan = _make_group_load_store_plan(
+        group=this_block(),
+        launch=LaunchFacts((64, 1, 1)),
+        kind=GroupLoadStoreKind(kind),
+        dtype=Int32,
+        items_per_thread=2,
+        algorithm="transpose",
+        valid_items=ArgumentBinding.omitted(),
+        oob_default=ArgumentBinding.omitted(),
+        offset=ArgumentBinding.omitted(),
+        temp_storage=storage,
+    )
+    expected = (
+        SynchronizationScope.BLOCK if expected_sync else SynchronizationScope.NONE
+    )
+    assert plan.temp_storage.auto_sync is expected_sync
+    assert plan.synchronization.storage_reuse_barrier is expected
+    observed = []
+
+    def register(descriptor, **kwargs):
+        observed.append(descriptor.auto_sync)
+        return (object(), object(), object())
+
+    monkeypatch.setattr(_storage, "register_deferred_temp_storage_event", register)
+    _scratch_arguments(_CubLoadStoreRequest(plan, Int32), storage)
+    assert observed == [expected_sync]
