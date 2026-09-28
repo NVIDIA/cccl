@@ -391,7 +391,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_error_t stf_stackable_token_destroy(stf_logical_data_handle ld)
 
     stf_task_handle stf_stackable_task_create(stf_ctx_handle ctx)
-    void stf_stackable_task_add_dep(
+    stf_error_t stf_stackable_task_add_dep(
         stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m)
     stf_error_t stf_stackable_task_add_dep_with_dplace(
         stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle data_p)
@@ -414,7 +414,10 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
 # The C library never lets a C++ exception escape: each entry records the
 # failure for the calling thread and returns a failure value. ``_check`` and
 # ``_raise_last_error`` turn that record back into a Python exception carrying
-# the original C++ message.
+# the original C++ message. Only use them right after a C call reported a
+# failure: the record describes the last ``stf_*`` call on this thread, so a
+# condition detected on the Python side (NULL handle, finalized context, ...)
+# must ``raise STFError(...)`` directly instead of reading a stale record.
 
 class STFError(RuntimeError):
     """A failure reported by the CUDASTF library.
@@ -1078,7 +1081,7 @@ cdef class logical_data:
         as this object.
         """
         if self._ld == NULL:
-            _raise_last_error("source logical_data handle is NULL")
+            raise STFError("source logical_data handle is NULL")
 
         cdef logical_data out = logical_data.__new__(logical_data)
         out._ld = stf_logical_data_empty(self._ctx, self._len)
@@ -1603,7 +1606,7 @@ cdef class exec_place:
 
     def __enter__(self):
         if self._h == NULL:
-            _raise_last_error("exec_place handle is null")
+            raise STFError("exec_place handle is null")
         self._scope = stf_exec_place_scope_enter(self._h, 0)
         if self._scope == NULL:
             _raise_last_error("failed to activate exec_place scope")
@@ -2883,7 +2886,7 @@ cdef class context:
         standalone places-layer calls within one context's lifetime.
         """
         if self._ctx == NULL:
-            _raise_last_error("context has been finalized")
+            raise STFError("context has been finalized")
         cdef stf_exec_place_resources_handle h = stf_ctx_get_place_resources(self._ctx)
         return exec_place_resources._borrow_from(h)
 
@@ -2912,7 +2915,7 @@ cdef class context:
         >>> ctx.finalize()
         """
         if self._ctx == NULL:
-            _raise_last_error("context handle is NULL")
+            raise STFError("context handle is NULL")
         cdef CUstream s
         with nogil:
             s = stf_fence(self._ctx)
@@ -2945,7 +2948,7 @@ cdef class context:
         >>> ctx.finalize()
         """
         if self._ctx == NULL:
-            _raise_last_error("context handle is NULL")
+            raise STFError("context handle is NULL")
         if not isinstance(ld, logical_data):
             raise TypeError("wait() requires a logical_data object")
         cdef logical_data ldata = <logical_data>ld
@@ -3568,7 +3571,8 @@ cdef class stackable_task:
             raise ValueError("dep stackable_logical_data belongs to a different context")
 
         if d.dplace is None:
-            stf_stackable_task_add_dep(self._ctx, self._t, ldata._ld, mode_ce)
+            _check(stf_stackable_task_add_dep(self._ctx, self._t, ldata._ld, mode_ce),
+                   "stf_stackable_task_add_dep")
         else:
             if not isinstance(d.dplace, data_place):
                 raise TypeError("dep data_place override must be a data_place")
@@ -4349,7 +4353,7 @@ cdef class stackable_context:
     def fence(self):
         """Return the fence CUDA stream as a Python int. Must be at root level."""
         if self._ctx == NULL:
-            _raise_last_error("stackable_context handle is NULL")
+            raise STFError("stackable_context handle is NULL")
         cdef CUstream s
         with nogil:
             s = stf_stackable_ctx_fence(self._ctx)

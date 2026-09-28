@@ -73,3 +73,18 @@ def test_repeat_count_zero_is_invalid_argument():
         with ctx.repeat(0):
             pass
     ctx.finalize()
+
+
+def test_python_side_checks_do_not_report_a_stale_record():
+    # Leave a failure in the thread-local record, then trigger a check that the
+    # bindings perform themselves. It must not pick up the earlier message.
+    with pytest.raises(stf.STFInvalidArgument, match="invalid device id"):
+        stf.exec_place.device(_device_count())
+
+    ctx = stf.context()
+    ctx.finalize()
+    with pytest.raises(stf.STFError) as info:
+        ctx.fence()
+    assert type(info.value) is stf.STFError
+    assert info.value.code is None
+    assert "invalid device id" not in str(info.value)
