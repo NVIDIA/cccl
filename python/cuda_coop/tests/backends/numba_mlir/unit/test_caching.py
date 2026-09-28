@@ -4,7 +4,11 @@
 
 import hashlib
 import ntpath
+import os
 import posixpath
+import subprocess
+import sys
+import textwrap
 from types import SimpleNamespace
 
 import pytest
@@ -117,6 +121,61 @@ def test_disk_cache_persists_byte_valued_compiler_options(
     assert compute(options) == b"ltoir"
     assert calls == [options]
     assert len(tuple(tmp_path.iterdir())) == 1
+
+
+def test_disk_cache_persists_layout_results_in_a_fresh_process(tmp_path):
+    script = textwrap.dedent(
+        """
+        import sys
+        from cuda.coop.numba_mlir._compiler import _caching
+
+        _caching._CACHE_LOCATION = sys.argv[1]
+        expected = (b"ltoir\\x00\\xff", ((24, 8), (64, 16)))
+
+        @_caching.disk_cache
+        def compile_provider(*, layout_queries):
+            assert sys.argv[2] == "write", "disk cache missed in fresh process"
+            return expected
+
+        result = compile_provider(layout_queries=("sizeof(A)", "sizeof(B)"))
+        assert result == expected
+        assert isinstance(result, tuple)
+        assert isinstance(result[0], bytes)
+        assert isinstance(result[1], tuple)
+        assert all(isinstance(layout, tuple) for layout in result[1])
+        """
+    )
+    environment = dict(os.environ, CUDA_COOP_ENABLE_CACHE="1")
+    for phase in ("write", "read"):
+        result = subprocess.run(
+            [sys.executable, "-B", "-c", script, str(tmp_path), phase],
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+    assert len(tuple(tmp_path.rglob("*"))) == 2
+
+
+def test_layout_cache_identity(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(_caching, "_CACHE_USABLE", True)
+    monkeypatch.setattr(_caching, "_CACHE_LOCATION", str(tmp_path))
+
+    @_caching.disk_cache
+    def compile_provider(*, layout_queries):
+        calls.append(layout_queries)
+        return b"ltoir", ((len(layout_queries) * 16, 16),)
+
+    first = ("sizeof(A)",)
+    second = ("sizeof(A)", "sizeof(B)")
+    assert compile_provider(layout_queries=first) == (b"ltoir", ((16, 16),))
+    assert compile_provider(layout_queries=second) == (b"ltoir", ((32, 16),))
+    assert compile_provider(layout_queries=first) == (b"ltoir", ((16, 16),))
+    assert compile_provider(layout_queries=second) == (b"ltoir", ((32, 16),))
+    assert calls == [first, second]
 
 
 def test_symbol_hash_uses_numba_type_identity():

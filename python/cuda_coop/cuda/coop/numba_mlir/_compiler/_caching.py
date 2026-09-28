@@ -21,7 +21,7 @@ _ENABLE_CACHE = (
     and _CACHE_ENV_VALUE.strip().lower() not in _FALSE_CACHE_VALUES
 )
 _CACHE_USABLE = _ENABLE_CACHE
-_CACHE_SCHEMA_VERSION = 5
+_CACHE_SCHEMA_VERSION = 6
 _CACHE_MISS = object()
 
 
@@ -103,6 +103,11 @@ def _encode_cache_value(value):
             "__cuda_coop_numba_mlir_cache_type__": "bytes",
             "data": b64encode(value).decode("ascii"),
         }
+    if isinstance(value, tuple):
+        return {
+            "__cuda_coop_numba_mlir_cache_type__": "tuple",
+            "items": [_encode_cache_value(item) for item in value],
+        }
     return value
 
 
@@ -111,7 +116,12 @@ def _decode_cache_value(value):
         isinstance(value, dict)
         and value.get("__cuda_coop_numba_mlir_cache_type__") == "bytes"
     ):
-        return b64decode(value["data"].encode("ascii"))
+        return b64decode(value["data"].encode("ascii"), validate=True)
+    if (
+        isinstance(value, dict)
+        and value.get("__cuda_coop_numba_mlir_cache_type__") == "tuple"
+    ):
+        return tuple(_decode_cache_value(item) for item in value["items"])
     return value
 
 

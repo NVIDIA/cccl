@@ -23,6 +23,7 @@ from cuda.coop._headers._toolkit import (
 
 from ._artifacts import check_in, version
 from ._caching import disk_cache
+from ._layout import decode_layout_name, prepare_layout_queries
 
 _REQUIRED_HEADERS = (
     "cub/block/block_load.cuh",
@@ -176,6 +177,8 @@ def compile_impl(
     include_dirs,
     header_identity,
     compiler_options,
+    layout_queries=(),
+    layout_symbol="",
 ):
     """Compile one cache-key-complete source unit."""
 
@@ -212,17 +215,36 @@ def compile_impl(
         raise RuntimeError(f"nvrtcCreateProgram error: {err}")
     had_error = False
     try:
+        for expression in dict.fromkeys(layout_queries):
+            (err,) = nvrtc.nvrtcAddNameExpression(
+                prog, expression.encode("utf-8")
+            )
+            CHECK_NVRTC(err, prog, nvrtc=nvrtc)
         (err,) = nvrtc.nvrtcCompileProgram(
             prog, len(compiler_options), list(compiler_options)
         )
         CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+        layouts = {}
+        for expression in dict.fromkeys(layout_queries):
+            err, lowered_name = nvrtc.nvrtcGetLoweredName(
+                prog, expression.encode("utf-8")
+            )
+            CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+            layouts[expression] = decode_layout_name(
+                lowered_name, symbol=layout_symbol, expression=expression
+            )
         if code == "lto":
             err, size = nvrtc.nvrtcGetLTOIRSize(prog)
             CHECK_NVRTC(err, prog, nvrtc=nvrtc)
             image = bytearray(size)
             (err,) = nvrtc.nvrtcGetLTOIR(prog, image)
             CHECK_NVRTC(err, prog, nvrtc=nvrtc)
-            return bytes(image)
+            result = bytes(image)
+            if layout_queries:
+                return result, tuple(
+                    layouts[expression] for expression in layout_queries
+                )
+            return result
         err, size = nvrtc.nvrtcGetPTXSize(prog)
         CHECK_NVRTC(err, prog, nvrtc=nvrtc)
         image = bytearray(size)
@@ -285,4 +307,27 @@ def compile(*, context: CompileContext | None = None, **kwargs):
         include_dirs=context.include_dirs,
         header_identity=context.header_identity,
         compiler_options=compiler_options,
+    )
+
+
+def compile_with_layouts(
+    *, layout_types: tuple[str, ...], code="lto", **kwargs
+):
+    """Cache provider LTO IR and its ordered storage layouts together.
+
+    The same NVRTC program evaluates sizeof/alignof and emits the provider.
+    Storage-free providers use the ordinary compile path without name queries.
+    """
+
+    if code != "lto":
+        raise ValueError("storage layout queries require LTO compilation")
+    source, symbol, queries = prepare_layout_queries(
+        kwargs["cpp"], layout_types
+    )
+    if not queries:
+        compiler_version, image = compile(code=code, **kwargs)
+        return compiler_version, (image, ())
+    kwargs["cpp"] = source
+    return compile(
+        code=code, layout_queries=queries, layout_symbol=symbol, **kwargs
     )
