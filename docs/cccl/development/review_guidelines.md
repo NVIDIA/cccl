@@ -1024,14 +1024,15 @@ parametrized cases that only compare object identity. Candidate for a pre-commit
 ## test.sibling-config-drift (important, CMake test configuration)
 
 <!-- provenance:
-  #4802→#5242 _CCCL_HEADER_TEST added to libcudacxx/test/internal_headers/CMakeLists.txt only, silently skipping the new prologue/epilogue check for public_headers and public_headers_host_only
+  #4802→#5242 _CCCL_HEADER_TEST added to the internal-headers test CMake config only, silently skipping the new prologue/epilogue check for public_headers and public_headers_host_only
 -->
 
-CCCL often configures near-identical test targets from multiple near-duplicate CMakeLists.txt files
-(internal-header, public-header, host-only public-header tests). When a diff adds a new
-`target_compile_definitions`/compile flag/macro to one such test-configuration file, check every
-sibling CMakeLists.txt defining a structurally similar target for the same addition. Adding a gating
-macro to only one of several near-duplicate test targets silently skips the check for the others.
+CCCL configures near-identical test targets from sibling CMake files, both within a project (the
+libcudacxx header-test trio `libcudacxx/cmake/Libcudacxx*HeaderTesting.cmake`) and across projects
+(`ThrustHeaderTesting.cmake`, `CubHeaderTesting.cmake`, `cudaxHeaderTesting.cmake`). When a diff adds
+a compile definition, flag, or gating macro to one such file, check every sibling defining a
+structurally similar target for the same addition — adding it to only one silently skips the check
+for the others. Siblings are recognizable by near-identical file names and structure.
 
 ## test.new-arch-coverage-gap (important, CUB/Thrust architecture-conditional dispatch/tuning code)
 
