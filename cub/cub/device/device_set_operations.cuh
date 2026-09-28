@@ -70,17 +70,7 @@ private:
     const EnvT& env)
   {
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
-    return detail::set_ops::dispatch<
-      KeyIteratorIn1,
-      KeyIteratorIn2,
-      NullType*,
-      NullType*,
-      KeyIteratorOut,
-      NullType*,
-      OffsetT,
-      CompareOp,
-      SetOp,
-      NumSelectedIteratorT>(
+    return detail::set_ops::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
@@ -125,17 +115,7 @@ private:
     const EnvT& env)
   {
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
-    return detail::set_ops::dispatch<
-      KeyIteratorIn1,
-      KeyIteratorIn2,
-      ValueIteratorIn1,
-      ValueIteratorIn2,
-      KeyIteratorOut,
-      ValueIteratorOut,
-      OffsetT,
-      CompareOp,
-      SetOp,
-      NumSelectedIteratorT>(
+    return detail::set_ops::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
@@ -173,17 +153,7 @@ private:
   {
     return detail::dispatch_with_env(
       env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch<
-          KeyIteratorIn1,
-          KeyIteratorIn2,
-          NullType*,
-          NullType*,
-          KeyIteratorOut,
-          NullType*,
-          OffsetT,
-          CompareOp,
-          SetOp,
-          NumSelectedIteratorT>(
+        return detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,
@@ -228,17 +198,7 @@ private:
   {
     return detail::dispatch_with_env(
       env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch<
-          KeyIteratorIn1,
-          KeyIteratorIn2,
-          ValueIteratorIn1,
-          ValueIteratorIn2,
-          KeyIteratorOut,
-          ValueIteratorOut,
-          OffsetT,
-          CompareOp,
-          SetOp,
-          NumSelectedIteratorT>(
+        return detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,

@@ -156,8 +156,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   // Resolve the tuning policy from the (optional) tuning environment, defaulting to the type-derived selector.
   using default_policy_selector = policy_selector_from_types<KeysIt1, ValuesIt1, KeysIt2, ValuesIt2, Offset>;
-  using default_policy_t        = decltype(default_policy_selector{}(::cuda::compute_capability{}));
-  auto policy_selector = ::cuda::std::execution::__query_or(tuning_env, default_policy_t{}, default_policy_selector{});
+  auto policy_selector    = ::cuda::std::execution::__query_or(tuning_env, SetOpsPolicy{}, default_policy_selector{});
   using policy_selector_t = decltype(policy_selector);
 #if _CCCL_HAS_CONCEPTS()
   static_assert(set_ops_policy_selector<policy_selector_t>, "invalid policy selector for set-ops dispatch");
@@ -182,9 +181,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                    CompareOp,
                    SetOp,
                    NumSelectedIteratorT>;
-    constexpr auto policy        = decltype(policy_getter){}();
-    constexpr int block_threads  = policy.threads_per_block;
-    constexpr int items_per_tile = block_threads * policy.items_per_thread - 1;
+    const auto policy        = policy_getter();
+    const int block_threads  = policy.threads_per_block;
+    const int items_per_tile = block_threads * policy.items_per_thread - 1;
 
     const Offset keys_total = num_keys1 + num_keys2;
     const Offset num_tiles  = ::cuda::ceil_div(keys_total, Offset{items_per_tile});
@@ -270,35 +269,35 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     // Main sweep: one block per tile.
     {
+      auto sweep_kernel = device_set_op_sweep_kernel<
+        policy_selector_t,
+        KeysIt1,
+        KeysIt2,
+        ValuesIt1,
+        ValuesIt2,
+        KeysOutputIt,
+        ValuesOutputIt,
+        Offset,
+        CompareOp,
+        SetOp,
+        NumSelectedIteratorT>;
       if (const auto error = CubDebug(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(static_cast<int>(num_tiles), block_threads, 0, stream)
-              .doit(
-                device_set_op_sweep_kernel<
-                  policy_selector_t,
-                  KeysIt1,
-                  KeysIt2,
-                  ValuesIt1,
-                  ValuesIt2,
-                  KeysOutputIt,
-                  ValuesOutputIt,
-                  Offset,
-                  CompareOp,
-                  SetOp,
-                  NumSelectedIteratorT>,
-                keys1,
-                keys2,
-                values1,
-                values2,
-                num_keys1,
-                num_keys2,
-                keys_out,
-                values_out,
-                compare_op,
-                set_op,
-                partitions,
-                d_num_selected_out,
-                tile_state,
-                vsmem_t{allocations[2]})))
+              .doit(sweep_kernel,
+                    keys1,
+                    keys2,
+                    values1,
+                    values2,
+                    num_keys1,
+                    num_keys2,
+                    keys_out,
+                    values_out,
+                    compare_op,
+                    set_op,
+                    partitions,
+                    d_num_selected_out,
+                    tile_state,
+                    vsmem_t{allocations[2]})))
       {
         return error;
       }
