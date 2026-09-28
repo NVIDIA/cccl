@@ -262,6 +262,11 @@ def check_cutlass_scan_surface(scalar: Uint32) -> None:
     logical = cutlass_coop.this_warp().group_by(8)
     values = cutlass_coop.ThreadData(2, np.int32)
     aggregate = cutlass_coop.ThreadData(1, Uint32)
+    common_aggregate = common_coop.ThreadData(1, Uint32)
+    assert_type(
+        cutlass_coop.exclusive_sum(block, scalar, aggregate_output=common_aggregate),
+        Uint32,
+    )
     assert_type(cutlass_coop.scan(block, values), cutlass_coop.ThreadData[np.int32])
     assert_type(
         cutlass_coop.exclusive_scan(block, values), cutlass_coop.ThreadData[np.int32]
