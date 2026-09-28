@@ -736,9 +736,7 @@ public:
   template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
-    TileDescriptor tile_descriptor;
-    tile_descriptor.status = SCAN_TILE_INCLUSIVE;
-    tile_descriptor.value  = tile_inclusive;
+    const TileDescriptor tile_descriptor{SCAN_TILE_INCLUSIVE, tile_inclusive};
 
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
@@ -749,9 +747,7 @@ public:
   template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
-    TileDescriptor tile_descriptor;
-    tile_descriptor.status = SCAN_TILE_PARTIAL;
-    tile_descriptor.value  = tile_partial;
+    const TileDescriptor tile_descriptor{SCAN_TILE_PARTIAL, tile_partial};
 
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;

@@ -25,7 +25,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void fill_kernel(int* ptr, int n, int val)
 {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid < n)
   {
     ptr[tid] = val;

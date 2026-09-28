@@ -265,9 +265,10 @@ struct Transforms
       m_scale = this->ComputeScale(num_levels, m_max, m_min);
     }
 
-    // Method for converting samples to bin-ids
-    template <CacheLoadModifier LoadModifier>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
+    // Method for converting samples to bin-ids. The sample type is a template parameter because the
+    // agent also feeds privatized bin indices through this op, which must not round-trip through SampleT.
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       const CommonT common_sample = static_cast<CommonT>(sample);
 

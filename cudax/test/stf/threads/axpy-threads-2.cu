@@ -24,8 +24,8 @@ using namespace cuda::experimental::stf;
 
 static __global__ void cuda_sleep_kernel(long long int clock_cnt)
 {
-  long long int start_clock  = clock64();
-  long long int clock_offset = 0;
+  const long long int start_clock = clock64();
+  long long int clock_offset      = 0;
   while (clock_offset < clock_cnt)
   {
     clock_offset = clock64() - start_clock;
@@ -41,14 +41,14 @@ void cuda_sleep(double ms, cudaStream_t stream)
   int clock_rate;
   cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
 
-  long long int clock_cnt = (long long int) (ms * clock_rate);
+  const long long int clock_cnt = (long long int) (ms * clock_rate);
   cuda_sleep_kernel<<<1, 1, 0, stream>>>(clock_cnt);
 }
 
 __global__ void axpy(double a, slice<const double> x, slice<double> y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < x.size(); i += nthreads)
   {
@@ -96,6 +96,7 @@ int main()
 
   std::vector<std::thread> threads;
   // Launch 8 threads.
+  threads.reserve(10);
   for (int i = 0; i < 10; ++i)
   {
     threads.emplace_back(mytask, ctx, i, lX);
