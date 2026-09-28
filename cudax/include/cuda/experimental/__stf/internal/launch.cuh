@@ -462,24 +462,7 @@ public:
       {
         if (start_event && end_event)
         {
-          // Timing is telemetry. A CUDA error here is usually a sticky error from earlier device work
-          // surfacing at the next API call; with exceptions enabled it is reported and the task still
-          // completes, clear() included. (Without exceptions cuda_try ends the program with a report, as
-          // cuda_safe_call did.) Only a sink can change the outcome of the call; a guard cannot.
-          ON_THROW(notify)
-          {
-            cuda_try<cudaEventRecord>(end_event, t.get_stream());
-            cuda_try<cudaEventSynchronize>(end_event);
-            const float milliseconds = cuda_try<cudaEventElapsedTime>(start_event, end_event);
-            if (dot.is_tracing())
-            {
-              dot.template add_vertex_timing<stream_task<>>(t, milliseconds, device);
-            }
-            if (statistics.is_calibrating())
-            {
-              statistics.log_task_time(t, milliseconds);
-            }
-          };
+          reserved::record_task_timing(t, start_event, end_event, t.get_stream(), dot, device);
         }
       }
 
