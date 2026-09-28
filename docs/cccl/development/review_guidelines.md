@@ -902,33 +902,6 @@ wrapper type two conversions away (wrapper → OldType → NewType) stops compil
 at the declaration under review. Green PR CI is not sufficient: `ci/inspect_changes` decides which
 subprojects get rebuilt, and a missing dependency edge means a real downstream break compiles clean.
 
-## api.trait-specialization-member-shape (important, new specializations of standard-library customization-point traits)
-
-<!-- provenance:
-  #7439→#8486,#8488 thrust device_ptr/pointer/normal_iterator pointer_traits specializations defined rebind as a nested struct instead of an alias template;
-  allocator_traits::rebind<U> silently named the struct, breaking RAPIDS via rmm's thrust_allocator
--->
-
-When a diff specializes a primary template, where generic code names its members directly (traits like
-`pointer_traits`, `allocator_traits`, `iterator_traits`), every member the specialization provides
-must have the same shape as in the primary template: an alias template stays an alias template,
-nested structs stay nested structs, constants stay constants with the exact same data type.
-A wrong shape may still compile but carry a different meaning, staying invisible during compilation
-while breaking generic consumers, often in third-party code.
-
-## api.duplicated-derived-type-not-updated (important, CUB/Thrust algorithms with multiple public overload families layered over one dispatch)
-
-<!-- provenance:
-  #9289→#9676 DeviceReduce's env overloads recomputed accum_t inline instead of using the shared select_accum_t, missing the new no_init_t sentinel
--->
-
-When a diff adds support for a new argument or case by extending a shared type-computation helper
-(e.g. `select_accum_t`), check every other public overload family of the same algorithm for an
-independently written computation of the same derived type — especially the `device_*.cuh` facade
-over the touched `dispatch_*.cuh`, which is often not part of the diff; check it against the diff's
-base revision. A copy that recomputes the type inline silently misses the new case. Prefer replacing
-the inline computation with the shared helper.
-
 ## perf.tuning-domain-vs-benchmark-coverage (important, CUB/Thrust tuning-policy tables and arch/type/op-gated perf constants)
 
 <!-- provenance:
@@ -954,35 +927,6 @@ in both directions:
 - A tuning value justified only by an aggregate tuning-search score hides per-problem-size
   regressions; require a per-size benchmark table from small (~2^16) through large (≥2^28) inputs,
   especially when replacing a previously shipped tuning.
-
-## perf.jit-cache-key-vs-codegen-inputs (important, cuda.compute build-result caching)
-
-<!-- provenance:
-  #7657→#9596 (pair auto-inferred as #9475→#9596) histogram build cache keyed on runtime lower/upper level values and exact num_samples, forcing a recompile per distinct bounds (issue #9594)
--->
-
-When a diff constructs or changes the cache key of a memoized build result (factories decorated with
-`@cache_with_registered_key_functions`, the shared `cache_build_results` cache), require the key to
-consist of exactly the inputs that affect the generated code: dtypes, iterator kinds, operator
-identity, compile-regime flags. Flag runtime kernel arguments in the key — scalar bounds, exact
-element counts — since every distinct runtime value then triggers a full recompile, silently
-destroying cache hit rates; canonicalize them into their compile-relevant form first (dtype,
-32/64-bit-offset flag). Scalars captured by a JIT-compiled operator are deliberately keyed by value.
-Conversely, flag a key that omits a compile-affecting input, which causes wrong-kernel reuse.
-
-## perf.intrinsic-wrapper-codegen-parity (important, new generic wrappers over device intrinsics in libcudacxx/cub)
-
-<!-- provenance:
-  #3907→#10035 (pair auto-inferred as #8391→#10035) cuda::device::warp_shuffle memcpy-punned values through uninitialized locals and recomputed the predicate, inflating register pressure vs raw __shfl intrinsics
--->
-
-When a diff introduces a generic (any-type) wrapper over a hardware intrinsic (warp shuffle/vote/match,
-atomics), its generated code must be observable somewhere: either a codegen test comparing it against
-the raw intrinsic for common types (e.g. a FileCheck test asserting the expected instruction and no
-local-memory traffic, like the existing atomics/simd codegen tests), or the wrapper is used in kernels
-covered by the benchmark SASS-diff CI job. Inefficiencies like `memcpy` through uninitialized locals
-or recomputing outputs the instruction already produces have no functional symptom, so without one of
-the two, unfavorable codegen in the new public API ships unseen.
 
 ## test.hidden-consumer-of-internal-api (important, python bindings/internal refactors)
 
@@ -1021,19 +965,6 @@ creates a length-zero array, not a one-element array containing 0 — a plausibl
 `np.zeros(1, dtype=dt)` or `np.array([0], dtype=dt)`. Easy to miss when copy-pasted across many
 parametrized cases that only compare object identity. Candidate for a pre-commit grep.
 
-## test.sibling-config-drift (important, CMake test configuration)
-
-<!-- provenance:
-  #4802→#5242 _CCCL_HEADER_TEST added to the internal-headers test CMake config only, silently skipping the new prologue/epilogue check for public_headers and public_headers_host_only
--->
-
-CCCL configures near-identical test targets from sibling CMake files, both within a project (the
-libcudacxx header-test trio `libcudacxx/cmake/Libcudacxx*HeaderTesting.cmake`) and across projects
-(`ThrustHeaderTesting.cmake`, `CubHeaderTesting.cmake`, `cudaxHeaderTesting.cmake`). When a diff adds
-a compile definition, flag, or gating macro to one such file, check every sibling defining a
-structurally similar target for the same addition — adding it to only one silently skips the check
-for the others. Siblings are recognizable by near-identical file names and structure.
-
 ## test.new-arch-coverage-gap (important, CUB/Thrust architecture-conditional dispatch/tuning code)
 
 <!-- provenance:
@@ -1050,21 +981,6 @@ an entry in an exhaustive self-test table enumerating every known architecture (
 `policy_hub_all` in `catch2_test_util_device.cu`). Do not assume existing CI covers it: dependent
 projects' "light" PR jobs are pinned to a single default SM. Flag the omission; ask the author to
 point at the specific job/test covering the new architecture, or add one.
-
-## infra.ci-flag-removal (important, `ci/*.sh`, `ci/matrix.yaml`, and other shared automation/config)
-
-<!-- provenance:
-  #493→#1458 removed -disable-benchmarks / ENABLE_CUB_BENCHMARKS env-var override when refactoring ci/build_cub.sh;
-  #7919→#10057 (via prerequisite #8160) a PR titled "Remove CuPy upper bound" also silently dropped 12.0 from ctk: lists in ci/matrix.yaml, cutting CTK 12.0 python CI coverage unnoticed for months (issue #8156);
-  #4924→#5543 release-wheels.yml simplification dropped the -p "*${comp}*" filter from gh run download, breaking wheel releases (pair auto-inferred as #5541→#5543)
--->
-
-When a diff changes CI infrastructure — `ci/matrix.yaml`, CI shell scripts, build/test scripts,
-workflow files — and removes or restricts CI coverage in any way (a version dropped from a job row's
-value list, a CLI flag or `${VAR:=default}` override deleted, a job or filter removed), cross-check
-the PR title and description: the removal must be intended and clearly pointed out. If it looks
-accidental — e.g. the PR's stated purpose is unrelated — flag it and have the author confirm the
-removal is intended. A coverage drop produces no CI failure and can go undetected for months.
 
 ## infra.wire-new-routing-value (important, CI workflow/matrix/config files under `.github/` and `ci/`, pre-commit config)
 
