@@ -29,10 +29,8 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::set_ops
 {
-// One step of a (biased) binary search. Advances @p begin past @p key (UpperBound) or up to the first element not
-// ordered before @p key (lower bound). @p shift controls how the midpoint is biased towards @p begin: shift==1 yields
-// an unbiased binary search, larger shifts probe closer to @p begin (useful when the searched-for run is expected to be
-// short).
+// One (biased) binary-search step for the upper bound (UpperBound) or lower bound of @p key. Larger @p shift biases the
+// probe toward @p begin (shift==1 is unbiased), which helps when the searched run is expected to be short.
 template <bool UpperBound, typename IntT, typename Offset, typename It, typename T, typename CompareOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 binary_search_iteration(It data, Offset& begin, Offset& end, T key, int shift, CompareOp compare_op)
@@ -62,9 +60,8 @@ merge_path(It1 a, Offset a_count, It2 b, Offset b_count, Offset diag, CompareOp 
   Offset end   = (::cuda::std::min) (diag, a_count);
   while (begin < end)
   {
-    // FIXME(set-ops): this midpoint can overflow for very large ranges and should use an overflow-safe form such as
-    // cub::MidPoint (begin + (end - begin) / 2). It is kept as `(begin + end) >> 1` to match the SASS of the original
-    // Thrust implementation; switching to the safe form introduces SASS changes.
+    // FIXME(set-ops): `(begin + end) >> 1` can overflow for very large ranges; an overflow-safe MidPoint would be
+    // correct but changes the SASS, so we keep this form to match the original Thrust implementation.
     const Offset mid  = (begin + end) >> 1;
     const key_t a_key = a[mid];
     const key_t b_key = b[diag - 1 - mid];
@@ -95,8 +92,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE Offset binary_search(It data, Offset count, T key
   return begin;
 }
 
-// Binary search that first probes close to @p begin for up to @p levels iterations before falling back to an unbiased
-// search. This accelerates the common case where the searched run starts near the front of the range.
+// Binary search that first probes near @p begin for up to @p levels steps, accelerating runs that start near the front.
 template <bool UpperBound, typename IntT, typename Offset, typename T, typename It, typename CompareOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE Offset
 biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compare_op)
@@ -128,10 +124,9 @@ biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compar
   return begin;
 }
 
-//! Duplicate-aware variant of the merge path. In addition to intersecting the diagonal @p diag with the merge path, it
-//! evenly distributes runs of equal keys between the two input sequences so that set operations observe consistent
-//! multiplicities. Returns the pair (index into @p keys1, index into @p keys2); the second component may be incremented
-//! by one (the "star") to break ties on the boundary of an equal-key run.
+//! Duplicate-aware merge path: intersects the diagonal @p diag while distributing runs of equal keys evenly between the
+//! inputs so set operations see consistent multiplicities. Returns (index into @p keys1, index into @p keys2); the
+//! latter may gain one (the "star") to break ties at an equal-run boundary.
 template <typename It1, typename It2, typename Offset, typename IntT, typename CompareOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset>
 balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, IntT levels, CompareOp compare_op)
@@ -150,8 +145,7 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
     const Offset start1 = biased_binary_search<false>(keys1, index1, x, levels, compare_op);
     const Offset start2 = biased_binary_search<false>(keys2, index2, x, levels, compare_op);
 
-    // The distance between x's merge path and its lower bound is its rank. We add up the A and B ranks and evenly
-    // distribute them to obtain a stairstep path.
+    // Sum x's ranks (distance from merge path to lower bound) in A and B, then split them evenly into a stairstep path.
     const Offset run1      = index1 - start1;
     const Offset run2_lb   = index2 - start2;
     const Offset total_run = run1 + run2_lb;
@@ -174,15 +168,9 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
   return ::cuda::std::make_pair(index1, (diag - index1) + Offset{star});
 }
 
-//---------------------------------------------------------------------
-// Serial set operations
-//
-// Each functor consumes the two per-thread sub-ranges of a shared-memory buffer (interleaved as [keys1 | keys2]) and
-// emits up to items_per_thread results into @p output, recording the source shared-memory index of each result in
-// @p indices (needed to gather the matching value in the by-key case). The return value is a per-item bitmask marking
-// which of the items_per_thread slots are live. The shared buffer is over-allocated so the trailing ++begin reads stay
-// in bounds without explicit range checks.
-//---------------------------------------------------------------------
+// Serial set operations. Each functor walks the two per-thread sub-ranges of the shared [keys1 | keys2] buffer, writes
+// up to items_per_thread results to @p output (with source indices in @p indices for by-key value gather), and returns
+// a per-item live-slot bitmask. The buffer is over-allocated so the trailing ++begin stays in bounds without a check.
 
 //! Emit A when A and B are both in range and equal.
 struct serial_set_intersection
@@ -416,11 +404,9 @@ struct serial_set_union
   }
 };
 
-//! One block consumes one tile. @p partitions holds the merge-path partition boundaries (one per tile plus a trailing
-//! sentinel) computed by the balanced-partition kernel; @p tile_state carries the decoupled look-back scan state used
-//! to place each tile's compacted output. The total number of emitted elements is written to @p output_count by the
-//! last tile. @p PolicyGetter is a nullary callable that returns the @ref SetOpsPolicy tuning policy by value at
-//! constant evaluation.
+//! One block consumes one tile. @p partitions holds the balanced-partition boundaries (one per tile plus a sentinel);
+//! @p tile_state carries the decoupled look-back scan state placing each tile's compacted output; the last tile writes
+//! the total count to @p output_count. @p PolicyGetter returns the @ref SetOpsPolicy by value at constant evaluation.
 template <typename PolicyGetter,
           typename KeysIt1,
           typename KeysIt2,
@@ -431,14 +417,15 @@ template <typename PolicyGetter,
           typename Offset,
           typename CompareOp,
           typename SetOp,
-          typename NumSelectedIteratorT,
-          bool HasValues>
+          typename NumSelectedIteratorT>
 struct agent_set_op
 {
   using key_type   = it_value_t<KeysIt1>;
   using value_type = it_value_t<ValuesIt1>;
 
-  using ScanTileStateT = ScanTileState<Offset>;
+  static constexpr bool has_values = !::cuda::std::is_same_v<value_type, NullType>;
+
+  using scan_tile_state_t = ScanTileState<Offset>;
 
   static constexpr auto policy          = PolicyGetter{}();
   static constexpr int block_threads    = policy.threads_per_block;
@@ -448,15 +435,15 @@ struct agent_set_op
 
   static constexpr CacheLoadModifier load_modifier = policy.load_modifier;
 
-  using TilePrefixCallbackT = TilePrefixCallbackOp<Offset, ::cuda::std::plus<>, ScanTileStateT>;
-  using BlockScanT          = BlockScan<Offset, block_threads, policy.scan_algorithm>;
+  using tile_prefix_callback_t = TilePrefixCallbackOp<Offset, ::cuda::std::plus<>, scan_tile_state_t>;
+  using block_scan_t           = BlockScan<Offset, block_threads, policy.scan_algorithm>;
 
   union TempStorage
   {
     struct ScanStorage
     {
-      typename BlockScanT::TempStorage scan;
-      typename TilePrefixCallbackT::TempStorage prefix;
+      typename block_scan_t::TempStorage scan;
+      typename tile_prefix_callback_t::TempStorage prefix;
     } scan_storage;
 
     struct LoadStorage
@@ -464,8 +451,8 @@ struct agent_set_op
       ::cuda::__uninitialized_array<int, block_threads> offset;
       union
       {
-        // Over-allocated by block_threads items so serial set operations can read one past their range without range
-        // checks (see items_per_tile).
+        // Over-allocated by block_threads items so serial set operations can read one past their range (see
+        // items_per_tile).
         ::cuda::__uninitialized_array<key_type, items_per_tile + block_threads> keys_shared;
         ::cuda::__uninitialized_array<value_type, items_per_tile + block_threads> values_shared;
       };
@@ -473,7 +460,7 @@ struct agent_set_op
   };
 
   TempStorage& storage;
-  ScanTileStateT& tile_state;
+  scan_tile_state_t& tile_state;
   KeysIt1 keys1_in;
   KeysIt2 keys2_in;
   ValuesIt1 values1_in;
@@ -583,7 +570,7 @@ struct agent_set_op
 
     const int diag_loc = (::cuda::std::min<int>) (items_per_thread * threadIdx.x, num_keys1 + num_keys2);
 
-    const ::cuda::std::pair<int, int> partition_loc = balanced_path(
+    const auto [keys1_beg_loc, keys2_beg_loc] = balanced_path(
       &storage.load_storage.keys_shared[0],
       &storage.load_storage.keys_shared[num_keys1],
       num_keys1,
@@ -592,14 +579,10 @@ struct agent_set_op
       4,
       compare_op);
 
-    const int keys1_beg_loc = partition_loc.first;
-    const int keys2_beg_loc = partition_loc.second;
-
-    // Compute the difference between this thread's partition and the next thread's to obtain the per-thread counts.
-    // The two 16-bit coordinates are packed into a single int and shifted one slot to the left across the block.
-    const int value =
-      threadIdx.x == 0 ? (num_keys1 << 16) | num_keys2 : (partition_loc.first << 16) | partition_loc.second;
-    const int dst                    = threadIdx.x == 0 ? block_threads - 1 : static_cast<int>(threadIdx.x) - 1;
+    // Pack this thread's two partition coordinates into one int and shift it one slot left across the block, so each
+    // thread can read the next thread's partition and derive its per-thread counts.
+    const int value = threadIdx.x == 0 ? (num_keys1 << 16) | num_keys2 : (keys1_beg_loc << 16) | keys2_beg_loc;
+    const int dst   = threadIdx.x == 0 ? block_threads - 1 : static_cast<int>(threadIdx.x) - 1;
     storage.load_storage.offset[dst] = value;
     __syncthreads();
 
@@ -622,8 +605,7 @@ struct agent_set_op
       compare_op);
     __syncthreads();
 
-    // Look-back scan over the per-thread output counts to compute the global thread output base and the tile output
-    // count.
+    // Look-back scan over the per-thread output counts for the global thread-output base and the tile output count.
     Offset tile_output_count         = 0;
     Offset thread_output_prefix      = 0;
     Offset tile_output_prefix        = 0;
@@ -631,7 +613,7 @@ struct agent_set_op
 
     if (tile_idx == 0)
     {
-      BlockScanT(storage.scan_storage.scan).ExclusiveSum(thread_output_count, thread_output_prefix, tile_output_count);
+      block_scan_t(storage.scan_storage.scan).ExclusiveSum(thread_output_count, thread_output_prefix, tile_output_count);
       if (threadIdx.x == 0 && !IsLastTile)
       {
         tile_state.SetInclusive(0, tile_output_count);
@@ -639,8 +621,8 @@ struct agent_set_op
     }
     else
     {
-      TilePrefixCallbackT prefix_cb(tile_state, storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
-      BlockScanT(storage.scan_storage.scan).ExclusiveSum(thread_output_count, thread_output_prefix, prefix_cb);
+      tile_prefix_callback_t prefix_cb(tile_state, storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
+      block_scan_t(storage.scan_storage.scan).ExclusiveSum(thread_output_count, thread_output_prefix, prefix_cb);
       tile_output_count  = prefix_cb.GetBlockAggregate();
       tile_output_prefix = prefix_cb.GetExclusivePrefix();
     }
@@ -655,7 +637,7 @@ struct agent_set_op
             tile_output_prefix,
             static_cast<int>(tile_output_count));
 
-    if constexpr (HasValues)
+    if constexpr (has_values)
     {
       const auto values1_load = detail::try_make_cache_modified_iterator<load_modifier>(values1_in);
       const auto values2_load = detail::try_make_cache_modified_iterator<load_modifier>(values2_in);

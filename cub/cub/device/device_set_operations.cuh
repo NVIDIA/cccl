@@ -94,7 +94,8 @@ private:
       compare_op,
       SetOp{},
       d_num_selected_out,
-      stream);
+      stream,
+      env);
   }
 
   template <typename SetOp,
@@ -148,7 +149,8 @@ private:
       compare_op,
       SetOp{},
       d_num_selected_out,
-      stream);
+      stream,
+      env);
   }
 
   template <typename SetOp,
@@ -169,10 +171,8 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    using default_policy_selector =
-      detail::set_ops::policy_selector_from_types<KeyIteratorIn1, NullType*, KeyIteratorIn2, NullType*, OffsetT>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::set_ops::dispatch<
           KeyIteratorIn1,
           KeyIteratorIn2,
@@ -183,8 +183,7 @@ private:
           OffsetT,
           CompareOp,
           SetOp,
-          NumSelectedIteratorT,
-          decltype(policy_selector)>(
+          NumSelectedIteratorT>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,
@@ -199,7 +198,7 @@ private:
           SetOp{},
           d_num_selected_out,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -227,10 +226,8 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    using default_policy_selector = detail::set_ops::
-      policy_selector_from_types<KeyIteratorIn1, ValueIteratorIn1, KeyIteratorIn2, ValueIteratorIn2, OffsetT>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::set_ops::dispatch<
           KeyIteratorIn1,
           KeyIteratorIn2,
@@ -241,8 +238,7 @@ private:
           OffsetT,
           CompareOp,
           SetOp,
-          NumSelectedIteratorT,
-          decltype(policy_selector)>(
+          NumSelectedIteratorT>(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,
@@ -257,7 +253,7 @@ private:
           SetOp{},
           d_num_selected_out,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
