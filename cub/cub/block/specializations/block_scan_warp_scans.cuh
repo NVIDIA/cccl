@@ -67,7 +67,7 @@ struct BlockScanWarpScans
 
   /// Shared memory storage layout type
 
-  struct __align__(32) _TempStorage
+  struct alignas(32) _TempStorage
   {
     T warp_aggregates[WARPS];
 

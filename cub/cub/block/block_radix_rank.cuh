@@ -289,7 +289,7 @@ private:
   using BlockScan = BlockScan<PackedCounter, BlockDimX, InnerScanAlgorithm, BlockDimY, BlockDimZ>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  struct __align__(16) _TempStorage
+  struct alignas(16) alignas(typename BlockScan::TempStorage) /* align at least to 16 */ _TempStorage
   {
     union Aliasable
     {
@@ -612,11 +612,11 @@ private:
   using BlockScanT = BlockScan<DigitCounterT, BLOCK_THREADS, InnerScanAlgorithm, BlockDimY, BlockDimZ>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  struct __align__(16) _TempStorage
+  struct alignas(16) alignas(typename BlockScanT::TempStorage) /* align at least to 16 */ _TempStorage
   {
     typename BlockScanT::TempStorage block_scan;
 
-    union __align__(16) Aliasable
+    union alignas(16) Aliasable
     {
       volatile DigitCounterT warp_digit_counters[RADIX_DIGITS][PADDED_WARPS];
       DigitCounterT raking_grid[BLOCK_THREADS][PADDED_RAKING_SEGMENT];
