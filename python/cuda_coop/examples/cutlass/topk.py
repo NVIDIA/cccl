@@ -57,7 +57,7 @@ def run_example(api="common"):
         else:
             input_keys = keys
             input_positions = positions
-        scratch = module.TempStorage(alignment=16)
+        scratch = module.TempStorage(alignment=16, auto_sync=True)
         min_keys = module.topk_min_keys(
             block,
             input_keys,
