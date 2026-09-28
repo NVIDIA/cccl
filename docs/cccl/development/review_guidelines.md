@@ -485,6 +485,20 @@ covered by the benchmark SASS-diff CI job. Inefficiencies like `memcpy` through 
 or recomputing outputs the instruction already produces have no functional symptom, so without one of
 the two, unfavorable codegen in the new public API ships unseen.
 
+## api.trait-specialization-member-shape (important, new specializations of standard-library customization-point traits)
+
+<!-- provenance:
+  #7439→#8486,#8488 thrust device_ptr/pointer/normal_iterator pointer_traits specializations defined rebind as a nested struct instead of an alias template;
+  allocator_traits::rebind<U> silently named the struct, breaking RAPIDS via rmm's thrust_allocator
+-->
+
+When a diff specializes a primary template, where generic code names its members directly (traits like
+`pointer_traits`, `allocator_traits`, `iterator_traits`), the specialization's structure must reflect
+the primary template: every member must appear in the same shape — an alias template stays an alias
+template, nested structs stay nested structs, constants stay constants with the exact same data type.
+A wrong shape may still compile but carry a different meaning, staying invisible during compilation
+while breaking generic consumers, often in third-party code.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
