@@ -443,6 +443,21 @@ typed pointer — flag arithmetic performed in the 32-bit type: the element inde
 the byte offset does not, so the multiplication must be widened to 64 bits first (e.g.
 `offset * size_t{sizeof(T)}`).
 
+## perf.jit-cache-key-vs-codegen-inputs (important, cuda.compute build-result caching)
+
+<!-- provenance:
+  #7657→#9596 (pair auto-inferred as #9475→#9596) histogram build cache keyed on runtime lower/upper level values and exact num_samples, forcing a recompile per distinct bounds (issue #9594)
+-->
+
+When a diff constructs or changes the cache key of a memoized build result (factories decorated with
+`@cache_with_registered_key_functions`, the shared `cache_build_results` cache), require the key to
+consist of exactly the inputs that affect the generated code: dtypes, iterator kinds, operator
+identity, compile-regime flags. Flag runtime kernel arguments in the key — scalar bounds, exact
+element counts — since every distinct runtime value then triggers a full recompile, silently
+destroying cache hit rates; canonicalize them into their compile-relevant form first (dtype,
+32/64-bit-offset flag). Scalars captured by a JIT-compiled operator are deliberately keyed by value.
+Conversely, flag a key that omits a compile-affecting input, which causes wrong-kernel reuse.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
