@@ -38,6 +38,30 @@ namespace cuda_cub
 {
 namespace detail
 {
+// Thin forwarders to the cub::DeviceSetOps APIs, called from the lambdas passed to the set_operations helper below.
+// Their sole purpose is to carry _CCCL_EXEC_CHECK_DISABLE on a *named* function: the cub APIs are `__host__`-only when
+// CDP is disabled, yet they are reached from the `__host__ __device__` set_operations helper, which trips a spurious
+// cross-execution-space diagnostic. nv_exec_check_disable suppresses it here but does not apply to a generic lambda, so
+// the lambdas call these forwarders instead of cub directly.
+#  define THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(NAME, CUB_FN)     \
+    _CCCL_EXEC_CHECK_DISABLE                                          \
+    template <typename... Args>                                       \
+    _CCCL_HOST_DEVICE cudaError_t NAME(Args&&... args)                \
+    {                                                                 \
+      return cub::DeviceSetOps::CUB_FN(static_cast<Args&&>(args)...); \
+    }
+
+THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_difference, SetDifference)
+THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_intersection, SetIntersection)
+THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_symmetric_difference, SetSymmetricDifference)
+THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_union, SetUnion)
+THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_difference_pairs, SetDifferencePairs)
+THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_intersection_pairs, SetIntersectionPairs)
+THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_symmetric_difference_pairs, SetSymmetricDifferencePairs)
+THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_union_pairs, SetUnionPairs)
+
+#  undef THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER
+
 // Runs a cub::DeviceSetOps algorithm and returns the past-the-end output iterators. The specific operation (and whether
 // it is keys-only or key-value) is fully described by @p cub_device_api, which is invoked as
 // `cub_device_api(d_temp_storage, temp_storage_bytes, num_keys1, num_keys2, stream, d_num_selected)`; this helper owns
@@ -126,7 +150,7 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
         result,
         null_,
         [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
-          return cub::DeviceSetOps::SetDifference(
+          return detail::cub_set_difference(
             d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, stream);
         });
       result = tmp.first;
@@ -178,7 +202,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
         result,
         null_,
         [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
-          return cub::DeviceSetOps::SetIntersection(
+          return detail::cub_set_intersection(
             d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, stream);
         });
       result = tmp.first;
@@ -230,7 +254,7 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
         result,
         null_,
         [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
-          return cub::DeviceSetOps::SetSymmetricDifference(
+          return detail::cub_set_symmetric_difference(
             d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, stream);
         });
       result = tmp.first;
@@ -282,7 +306,7 @@ OutputIt _CCCL_HOST_DEVICE set_union(
         result,
         null_,
         [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
-          return cub::DeviceSetOps::SetUnion(
+          return detail::cub_set_union(
             d_temp, temp_bytes, items1_first, n1, items2_first, n2, result, d_count, compare, stream);
         });
       result = tmp.first;
@@ -348,7 +372,7 @@ template <class Derived,
                           keys_result,
                           items_result,
                           [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
-                            return cub::DeviceSetOps::SetDifferencePairs(
+                            return detail::cub_set_difference_pairs(
                               d_temp,
                               temp_bytes,
                               keys1_first,
@@ -439,7 +463,7 @@ template <class Derived,
                           keys_result,
                           items_result,
                           [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
-                            return cub::DeviceSetOps::SetIntersectionPairs(
+                            return detail::cub_set_intersection_pairs(
                               d_temp,
                               temp_bytes,
                               keys1_first,
@@ -528,7 +552,7 @@ template <class Derived,
                           keys_result,
                           items_result,
                           [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
-                            return cub::DeviceSetOps::SetSymmetricDifferencePairs(
+                            return detail::cub_set_symmetric_difference_pairs(
                               d_temp,
                               temp_bytes,
                               keys1_first,
@@ -620,7 +644,7 @@ template <class Derived,
                           keys_result,
                           items_result,
                           [&](void* d_temp, size_t& temp_bytes, auto n1, auto n2, cudaStream_t stream, auto* d_count) {
-                            return cub::DeviceSetOps::SetUnionPairs(
+                            return detail::cub_set_union_pairs(
                               d_temp,
                               temp_bytes,
                               keys1_first,
