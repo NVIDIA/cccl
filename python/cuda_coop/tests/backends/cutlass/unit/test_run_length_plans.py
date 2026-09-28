@@ -13,6 +13,9 @@ import pytest
 
 cutlass = pytest.importorskip("cutlass")
 
+from cutlass.base_dsl.common import active_env_manager
+from cutlass.cutlass_dsl import CuTeDSL
+
 from cuda import coop
 from cuda.coop import cutlass as cutlass_coop
 from cuda.coop._core import (
@@ -22,7 +25,6 @@ from cuda.coop._core import (
     this_block,
     this_warp,
 )
-from cuda.coop._core.api._dispatch import _compiler_scope
 from cuda.coop.cutlass._compiler import _rendering, _state, _storage, _types
 from cuda.coop.cutlass._lowering import _run_length
 
@@ -156,7 +158,7 @@ def test_invalid_payload_names_operation(api, primitive, invalid):
     ]
     if primitive == "run_length_decode_into":
         args.append(object())
-    with _compiler_scope("cuda.coop.cutlass"):
+    with active_env_manager(CuTeDSL._get_dsl().envar):
         with pytest.raises(TypeError, match=rf"\.{primitive} ") as error:
             getattr(api, primitive)(*args, decoded_items_per_thread=2)
     assert invalid in str(error.value)
