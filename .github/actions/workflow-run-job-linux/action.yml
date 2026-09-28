@@ -213,6 +213,10 @@ runs:
           extra_launch_args+=(--cuda-ext)
         fi
 
+        if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+(ext)?tidy ]]; then
+          extra_launch_args=(--tidy-ext)
+        fi
+
         # Initialize artifact paths, vars, etc shared with the devcontainer:
         source ci/util/artifacts/common.sh
         source ci/util/workflow/common.sh

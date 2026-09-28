@@ -14,5 +14,6 @@ set -x
   --extra-arg='-Wno-error=unused-command-line-argument' \
   --extra-arg='-D_CCCL_CLANG_TIDY_INVOKED=1' \
   -p '@CMAKE_BINARY_DIR@' \
+  @CCCL_CLANG_TIDY_PLUGINS@ \
   "${clang_tidy_args[@]}" \
   "$@"

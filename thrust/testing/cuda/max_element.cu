@@ -67,7 +67,7 @@ TEST_CASE("TestMaxElementDeviceNoSync", "[max_element]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestMaxElementCudaStreams(ExecutionPolicy policy)
+void test_max_element_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -96,12 +96,12 @@ void TestMaxElementCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestMaxElementCudaStreamsSync", "[max_element]")
 {
-  TestMaxElementCudaStreams(thrust::cuda::par);
+  test_max_element_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestMaxElementCudaStreamsNoSync", "[max_element]")
 {
-  TestMaxElementCudaStreams(thrust::cuda::par_nosync);
+  test_max_element_cuda_streams(thrust::cuda::par_nosync);
 }
 
 TEST_CASE("TestMaxElementDevicePointer", "[max_element]")

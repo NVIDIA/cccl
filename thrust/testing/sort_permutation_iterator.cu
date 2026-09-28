@@ -57,7 +57,7 @@ protected:
 };
 
 template <class Vector>
-void TestSortPermutationIterator()
+void test_sort_permutation_iterator()
 {
   using Iterator = typename Vector::iterator;
 
@@ -70,10 +70,10 @@ void TestSortPermutationIterator()
   Vector ref{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
   REQUIRE(A == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestSortPermutationIterator);
+DECLARE_VECTOR_UNITTEST(test_sort_permutation_iterator);
 
 template <class Vector>
-void TestStableSortPermutationIterator()
+void test_stable_sort_permutation_iterator()
 {
   using Iterator = typename Vector::iterator;
 
@@ -86,10 +86,10 @@ void TestStableSortPermutationIterator()
   Vector ref{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
   REQUIRE(A == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestStableSortPermutationIterator);
+DECLARE_VECTOR_UNITTEST(test_stable_sort_permutation_iterator);
 
 template <class Vector>
-void TestSortByKeyPermutationIterator()
+void test_sort_by_key_permutation_iterator()
 {
   using Iterator = typename Vector::iterator;
 
@@ -107,10 +107,10 @@ void TestSortByKeyPermutationIterator()
   Vector ref_B{2, 1, 0, 3, 4, 5, 8, 7, 6, 9};
   REQUIRE(B == ref_B);
 }
-DECLARE_VECTOR_UNITTEST(TestSortByKeyPermutationIterator);
+DECLARE_VECTOR_UNITTEST(test_sort_by_key_permutation_iterator);
 
 template <class Vector>
-void TestStableSortByKeyPermutationIterator()
+void test_stable_sort_by_key_permutation_iterator()
 {
   using Iterator = typename Vector::iterator;
 
@@ -128,4 +128,4 @@ void TestStableSortByKeyPermutationIterator()
   Vector ref_B{2, 1, 0, 3, 4, 5, 8, 7, 6, 9};
   REQUIRE(B == ref_B);
 }
-DECLARE_VECTOR_UNITTEST(TestStableSortByKeyPermutationIterator);
+DECLARE_VECTOR_UNITTEST(test_stable_sort_by_key_permutation_iterator);
