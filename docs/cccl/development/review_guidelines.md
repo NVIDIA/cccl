@@ -909,14 +909,12 @@ subprojects get rebuilt, and a missing dependency edge means a real downstream b
   allocator_traits::rebind<U> silently named the struct, breaking RAPIDS via rmm's thrust_allocator
 -->
 
-When a diff adds a specialization of a standard-library trait that generic code consumes structurally
-(`pointer_traits`, `allocator_traits`, `iterator_traits`), verify the member has the exact same SHAPE
-as the primary template's: an alias template stays an alias template, not a nested struct wrapping
-`using other = …`. A nested `struct rebind { using other = …; };` compiles fine and even compiles where
-used (`rebind<U>` just names the struct), so the mismatch is invisible in the introducing PR's own
-tests and only manifests layers away in a generic consumer, often in third-party code. Diff any new
-trait specialization against the primary template's declaration to confirm identical member shape, and
-add a `static_assert` exercising the trait exactly as its documented consumer does.
+When a diff specializes a primary template, where generic code names its members directly (traits like
+`pointer_traits`, `allocator_traits`, `iterator_traits`), the specialization's structure must reflect
+the primary template: every member must appear in the same shape — an alias template stays an alias
+template, nested structs stay nested structs, constants stay constants with the exact same data type.
+A wrong shape may still compile but carry a different meaning, staying invisible during compilation
+while breaking generic consumers, often in third-party code.
 
 ## api.duplicated-derived-type-not-updated (important, CUB/Thrust algorithms with multiple public overload families layered over one dispatch)
 
