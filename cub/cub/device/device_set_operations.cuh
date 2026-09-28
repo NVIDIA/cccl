@@ -56,7 +56,7 @@ private:
             typename NumSelectedIteratorT,
             typename OffsetT,
             typename CompareOp,
-            typename EnvT>
+            typename TuningEnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t set_op_keys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -67,9 +67,9 @@ private:
     KeyIteratorOut d_keys_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op,
-    const EnvT& env)
+    const TuningEnvT& tuning_env)
   {
-    const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
+    const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, tuning_env).get();
     return detail::set_ops::dispatch(
       d_temp_storage,
       temp_storage_bytes,
@@ -85,7 +85,7 @@ private:
       SetOp{},
       d_num_selected_out,
       stream,
-      env);
+      tuning_env);
   }
 
   template <typename SetOp,
@@ -98,7 +98,7 @@ private:
             typename NumSelectedIteratorT,
             typename OffsetT,
             typename CompareOp,
-            typename EnvT>
+            typename TuningEnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t set_op_pairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -112,9 +112,9 @@ private:
     ValueIteratorOut d_values_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op,
-    const EnvT& env)
+    const TuningEnvT& tuning_env)
   {
-    const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
+    const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, tuning_env).get();
     return detail::set_ops::dispatch(
       d_temp_storage,
       temp_storage_bytes,
@@ -130,7 +130,7 @@ private:
       SetOp{},
       d_num_selected_out,
       stream,
-      env);
+      tuning_env);
   }
 
   template <typename SetOp,
