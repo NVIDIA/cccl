@@ -1059,14 +1059,12 @@ point at the specific job/test covering the new architecture, or add one.
   #4924→#5543 release-wheels.yml simplification dropped the -p "*${comp}*" filter from gh run download, breaking wheel releases (pair auto-inferred as #5541→#5543)
 -->
 
-When a diff touches `ci/*.sh` or `ci/matrix.yaml`, check whether it silently removes an existing
-override mechanism or coverage value that other automation may depend on — a CLI flag or
-`${VAR:=default}` escape hatch in a script, or a specific version value (`ctk`, `cxx`, `py_version`,
-`sm`) dropped from a job row's value list in the matrix. Cross-check the removal against the diff's
-stated purpose: if the PR title/description is about something unrelated and a matrix row's value list
-shrank as a side effect, treat it as likely-unintentional — a silent coverage drop produces no CI
-failure and can go undetected for a long time. Preserve the override, or call out and justify the
-removal in the same change.
+When a diff changes CI infrastructure — `ci/matrix.yaml`, CI shell scripts, build/test scripts,
+workflow files — and removes or restricts CI coverage in any way (a version dropped from a job row's
+value list, a CLI flag or `${VAR:=default}` override deleted, a job or filter removed), cross-check
+the PR title and description: the removal must be intended and clearly pointed out. If it looks
+accidental — e.g. the PR's stated purpose is unrelated — flag it and have the author confirm the
+removal is intended. A coverage drop produces no CI failure and can go undetected for months.
 
 ## infra.wire-new-routing-value (important, CI workflow/matrix/config files under `.github/` and `ci/`, pre-commit config)
 
