@@ -64,7 +64,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceIntoDeviceNoSync, IntegralTy
 #endif
 
 template <typename ExecutionPolicy>
-void TestReduceIntoCudaStreams(ExecutionPolicy policy)
+void test_reduce_into_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
 
@@ -94,12 +94,12 @@ void TestReduceIntoCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestReduceIntoCudaStreamsSync", "[reduce_into]")
 {
-  TestReduceIntoCudaStreams(thrust::cuda::par);
+  test_reduce_into_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestReduceIntoCudaStreamsNoSync", "[reduce_into]")
 {
-  TestReduceIntoCudaStreams(thrust::cuda::par_nosync);
+  test_reduce_into_cuda_streams(thrust::cuda::par_nosync);
 }
 
 #if defined(THRUST_RDC_ENABLED)
