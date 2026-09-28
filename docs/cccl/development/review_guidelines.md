@@ -471,6 +471,47 @@ a compile definition, flag, or gating macro to one such file, check every siblin
 structurally similar target for the same addition — adding it to only one silently skips the check
 for the others. Siblings are recognizable by near-identical file names and structure.
 
+## perf.intrinsic-wrapper-codegen-parity (important, new generic wrappers over device intrinsics in libcudacxx/cub)
+
+<!-- provenance:
+  #3907→#10035 (pair auto-inferred as #8391→#10035) cuda::device::warp_shuffle memcpy-punned values through uninitialized locals and recomputed the predicate, inflating register pressure vs raw __shfl intrinsics
+-->
+
+When a diff introduces a generic (any-type) wrapper over a hardware intrinsic (warp shuffle/vote/match,
+atomics), its generated code must be observable somewhere: either a codegen test comparing it against
+the raw intrinsic for common types (e.g. a FileCheck test asserting the expected instruction and no
+local-memory traffic, like the existing atomics/simd codegen tests), or the wrapper is used in kernels
+covered by the benchmark SASS-diff CI job. Inefficiencies like `memcpy` through uninitialized locals
+or recomputing outputs the instruction already produces have no functional symptom, so without one of
+the two, unfavorable codegen in the new public API ships unseen.
+
+## api.trait-specialization-member-shape (important, new specializations of standard-library customization-point traits)
+
+<!-- provenance:
+  #7439→#8486,#8488 thrust device_ptr/pointer/normal_iterator pointer_traits specializations defined rebind as a nested struct instead of an alias template;
+  allocator_traits::rebind<U> silently named the struct, breaking RAPIDS via rmm's thrust_allocator
+-->
+
+When a diff specializes a primary template, where generic code names its members directly (traits like
+`pointer_traits`, `allocator_traits`, `iterator_traits`), every member the specialization provides
+must have the same shape as in the primary template: an alias template stays an alias template,
+nested structs stay nested structs, constants stay constants with the exact same data type.
+A wrong shape may still compile but carry a different meaning, staying invisible during compilation
+while breaking generic consumers, often in third-party code.
+
+## api.duplicated-derived-type-not-updated (important, CUB/Thrust algorithms with multiple public overload families layered over one dispatch)
+
+<!-- provenance:
+  #9289→#9676 DeviceReduce's env overloads recomputed accum_t inline instead of using the shared select_accum_t, missing the new no_init_t sentinel
+-->
+
+When a diff adds support for a new argument or case by extending a shared type-computation helper
+(e.g. `select_accum_t`), check every other public overload family of the same algorithm for an
+independently written computation of the same derived type — especially the `device_*.cuh` facade
+over the touched `dispatch_*.cuh`, which is often not part of the diff; check it against the diff's
+base revision. A copy that recomputes the type inline silently misses the new case. Prefer replacing
+the inline computation with the shared helper.
+
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
 
 <!-- provenance:
