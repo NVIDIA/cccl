@@ -8,18 +8,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..block._common import normalize_positive_int
-from ..block.histogram import normalize_histogram_algorithm, validate_histogram_dtype
-from ..thread_group import ThreadGroup
+from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _backend_module_name,
-    _group_primitive_marker,
     _portable_group_operation,
 )
 from ._payload import (
-    _common_payload_dtype,
-    _common_thread_data_extent,
-    _validate_common_thread_data_payload,
+    TempStorageLike,
 )
 
 
@@ -31,9 +25,9 @@ def histogram(
     *,
     bins: Any,
     bins_per_thread: Any = 1,
-    counter_dtype: Any = None,
+    counter_dtype: object | None = None,
     algorithm: str = "atomic",
-    temp_storage: Any = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> Any:
     """Return fresh striped bin counts, preserving the input samples.
 
@@ -61,26 +55,8 @@ def histogram(
     storage-reuse synchronization rules apply; it does not retain a running
     histogram between calls. The CUB counterpart is ``cub::BlockHistogram``.
     """
-    normalize_positive_int("bins", bins)
-    normalize_positive_int("bins_per_thread", bins_per_thread)
-    normalize_histogram_algorithm(algorithm)
-    if counter_dtype is not None:
-        validate_histogram_dtype(counter_dtype, counter=True)
-    if _backend_module_name() is not None:
-        _validate_common_thread_data_payload(
-            "histogram", "samples", samples, allow_readonly=True
-        )
-        _common_thread_data_extent("histogram", "samples", samples)
-        validate_histogram_dtype(_common_payload_dtype("histogram", "samples", samples))
-    return _group_primitive_marker(
-        "histogram",
-        group,
-        samples,
-        bins=bins,
-        bins_per_thread=bins_per_thread,
-        counter_dtype=counter_dtype,
-        algorithm=algorithm,
-        temp_storage=temp_storage,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.histogram must be called from a supported GPU kernel."
     )
 
 
