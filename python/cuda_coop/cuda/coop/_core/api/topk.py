@@ -8,13 +8,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import ThreadGroup
+from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _backend_module_name,
-    _group_primitive_marker,
     _portable_group_operation,
 )
-from ._payload import _validate_common_numeric_value
+from ._payload import TempStorageLike
 
 
 @_portable_group_operation("topk_min_keys", group_kinds=("block",))
@@ -24,8 +22,8 @@ def topk_min_keys(
     /,
     *,
     k: Any,
-    valid_items: Any = None,
-    temp_storage: Any = None,
+    valid_items: object = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> Any:
     """Return the minimum keys in an unsorted blocked prefix.
 
@@ -35,21 +33,8 @@ def topk_min_keys(
     uniform integer controls in ``[0, block_threads * items_per_thread]``.
     Invalid runtime controls trap before narrowing to CUB's integer ABI.
     """
-    if _backend_module_name() is not None:
-        _validate_common_numeric_value(
-            "topk_min_keys",
-            "keys",
-            keys,
-            allow_readonly_thread_data=True,
-            require_thread_data=True,
-        )
-    return _group_primitive_marker(
-        "topk_min_keys",
-        group,
-        keys,
-        k=k,
-        valid_items=valid_items,
-        temp_storage=temp_storage,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.topk_min_keys must be called from a supported GPU kernel."
     )
 
 
@@ -61,8 +46,8 @@ def topk_min_pairs(
     /,
     *,
     k: Any,
-    valid_items: Any = None,
-    temp_storage: Any = None,
+    valid_items: object = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> Any:
     """Return the minimum pairs in an unsorted blocked prefix.
 
@@ -72,29 +57,8 @@ def topk_min_pairs(
     uniform integer controls in ``[0, block_threads * items_per_thread]``.
     Invalid runtime controls trap before narrowing to CUB's integer ABI.
     """
-    if _backend_module_name() is not None:
-        _validate_common_numeric_value(
-            "topk_min_pairs",
-            "keys",
-            keys,
-            allow_readonly_thread_data=True,
-            require_thread_data=True,
-        )
-        _validate_common_numeric_value(
-            "topk_min_pairs",
-            "values",
-            values,
-            allow_readonly_thread_data=True,
-            require_thread_data=True,
-        )
-    return _group_primitive_marker(
-        "topk_min_pairs",
-        group,
-        keys,
-        values,
-        k=k,
-        valid_items=valid_items,
-        temp_storage=temp_storage,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.topk_min_pairs must be called from a supported GPU kernel."
     )
 
 
@@ -105,8 +69,8 @@ def topk_max_keys(
     /,
     *,
     k: Any,
-    valid_items: Any = None,
-    temp_storage: Any = None,
+    valid_items: object = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> Any:
     """Return the maximum keys in an unsorted blocked prefix.
 
@@ -116,21 +80,8 @@ def topk_max_keys(
     uniform integer controls in ``[0, block_threads * items_per_thread]``.
     Invalid runtime controls trap before narrowing to CUB's integer ABI.
     """
-    if _backend_module_name() is not None:
-        _validate_common_numeric_value(
-            "topk_max_keys",
-            "keys",
-            keys,
-            allow_readonly_thread_data=True,
-            require_thread_data=True,
-        )
-    return _group_primitive_marker(
-        "topk_max_keys",
-        group,
-        keys,
-        k=k,
-        valid_items=valid_items,
-        temp_storage=temp_storage,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.topk_max_keys must be called from a supported GPU kernel."
     )
 
 
@@ -142,8 +93,8 @@ def topk_max_pairs(
     /,
     *,
     k: Any,
-    valid_items: Any = None,
-    temp_storage: Any = None,
+    valid_items: object = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> Any:
     """Return the maximum pairs in an unsorted blocked prefix.
 
@@ -153,29 +104,8 @@ def topk_max_pairs(
     uniform integer controls in ``[0, block_threads * items_per_thread]``.
     Invalid runtime controls trap before narrowing to CUB's integer ABI.
     """
-    if _backend_module_name() is not None:
-        _validate_common_numeric_value(
-            "topk_max_pairs",
-            "keys",
-            keys,
-            allow_readonly_thread_data=True,
-            require_thread_data=True,
-        )
-        _validate_common_numeric_value(
-            "topk_max_pairs",
-            "values",
-            values,
-            allow_readonly_thread_data=True,
-            require_thread_data=True,
-        )
-    return _group_primitive_marker(
-        "topk_max_pairs",
-        group,
-        keys,
-        values,
-        k=k,
-        valid_items=valid_items,
-        temp_storage=temp_storage,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.topk_max_pairs must be called from a supported GPU kernel."
     )
 
 
