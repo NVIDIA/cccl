@@ -116,7 +116,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
       const auto __lhs1   = ::cuda::uabs(__lhs);
       const auto __rhs1   = ::cuda::uabs(__rhs);
       const auto __div    = __lhs1 / __rhs1;
-      const auto __result = static_cast<_ActualResult>(::cuda::neg(__div));
+      const auto __result = ::cuda::neg(static_cast<_ActualResult>(__div));
       if constexpr (is_unsigned_v<_ActualResult>)
       {
         return overflow_result<_ActualResult>{__result, __div != 0};

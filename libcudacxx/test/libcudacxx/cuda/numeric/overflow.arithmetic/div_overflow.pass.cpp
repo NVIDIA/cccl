@@ -25,16 +25,13 @@ test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case
   //   but the result fits in the Result type
   {
     const auto result = cuda::div_overflow<Result>(lhs, rhs);
-    if (!overflow)
+    if (special_case)
     {
-      if (special_case)
-      {
-        assert(result.value == expected);
-      }
-      else
-      {
-        assert(result.value == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
-      }
+      assert(result.value == expected);
+    }
+    else if (!overflow)
+    {
+      assert(result.value == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
     }
     assert(result.overflow == overflow);
   }
@@ -42,16 +39,13 @@ test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case
   {
     Result result{};
     const bool has_overflow = cuda::div_overflow<Result>(result, lhs, rhs);
-    if (!overflow)
+    if (special_case)
     {
-      if (special_case)
-      {
-        assert(result == expected);
-      }
-      else
-      {
-        assert(result == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
-      }
+      assert(result == expected);
+    }
+    else if (!overflow)
+    {
+      assert(result == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
     }
     assert(has_overflow == overflow);
   }
@@ -62,15 +56,15 @@ test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case
 template <typename Lhs, typename Rhs, typename Result>
 TEST_FUNC constexpr void test_nvcc_12_0_special_cases()
 {
-  // 1 / -1 -> should overflow if the destination type is unsigned
+  // 1 / -1 -> should overflow if the destination type is unsigned, the value is -1 truncated to Result
   if constexpr (cuda::std::is_signed_v<Rhs>)
   {
-    test_div_overflow<Result>(Lhs{1}, Rhs{-1}, cuda::std::is_unsigned_v<Result>);
+    test_div_overflow<Result>(Lhs{1}, Rhs{-1}, cuda::std::is_unsigned_v<Result>, true, static_cast<Result>(-1));
   }
-  // -1 / 1 -> should overflow if the destination type is unsigned
+  // -1 / 1 -> should overflow if the destination type is unsigned, the value is -1 truncated to Result
   if constexpr (cuda::std::is_signed_v<Lhs>)
   {
-    test_div_overflow<Result>(Lhs{-1}, Rhs{1}, cuda::std::is_unsigned_v<Result>);
+    test_div_overflow<Result>(Lhs{-1}, Rhs{1}, cuda::std::is_unsigned_v<Result>, true, static_cast<Result>(-1));
   }
   // 1 / -2 -> quotient is 0, should never overflow
   if constexpr (cuda::std::is_signed_v<Rhs>)
