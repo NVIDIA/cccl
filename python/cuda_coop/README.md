@@ -234,7 +234,7 @@ Block Load and Store accept an optional caller descriptor:
 storage = coop.TempStorage(
     size_in_bytes=None,
     alignment=None,
-    auto_sync=None,
+    auto_sync=False,
     sharing="shared",
 )
 coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
@@ -257,18 +257,18 @@ A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
 every call that passes the same descriptor on one region, while `"exclusive"`
 gives each call site its own slice. A call site inside a loop reuses its slice
 under either layout, so `auto_sync` is independent of `sharing` and defaults to
-`True` for both.
+`False` for both.
 
 The synchronization model is deliberately simple. A descriptor names one
 region; distinct descriptors and compiler-owned storage never alias each other.
-With `auto_sync` enabled (the default) the compiler appends
+With `auto_sync=True`, the compiler appends
 `cuda.syncthreads()` for block groups or `cuda.syncwarp(mask)` for Warp groups
 immediately after every call that consumes the storage, including the last
 one, and never inserts a barrier before a call. That trailing barrier only
 orders reuse of the temporary storage; it is not a general barrier for the
-kernel's own shared-memory traffic and disappears with `auto_sync=False`, in
-which case the caller issues `cuda.syncthreads()` between consecutive uses,
-and a call site inside a loop counts as a reuse on every iteration.
+kernel's own shared-memory traffic. With the default `auto_sync=False`, the
+caller issues `cuda.syncthreads()` between consecutive uses, and a call site
+inside a loop counts as a reuse on every iteration.
 Compiler-owned storage always synchronizes.
 
 All descriptors and compiler-owned requirements of a kernel share one
