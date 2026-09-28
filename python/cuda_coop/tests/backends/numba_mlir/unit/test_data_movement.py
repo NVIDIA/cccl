@@ -1016,7 +1016,8 @@ def test_storage_free_load_store_accept_temp_storage_without_using_it(algorithm)
         ("implicit", 64, 2),
         ("shared", 64, 2),
         ("exclusive", 128, 0),
-        ("unsized", 64, 2),
+        ("unsized", 64, 0),
+        ("compat-none", 64, 0),
     ),
 )
 def test_transpose_storage_contract_reaches_whole_function_rewrite(
@@ -1081,6 +1082,26 @@ def test_transpose_storage_contract_reaches_whole_function_rewrite(
                 auto_sync=False,
                 sharing="exclusive",
             )
+            output = module.ThreadData(2, dtype=types.int32)
+            module.load(
+                module.this_block(),
+                source,
+                output,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+            module.store(
+                module.this_block(),
+                destination,
+                output,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+
+    elif storage_kind == "compat-none":
+
+        def memory(source, destination):
+            storage = module.TempStorage(alignment=alignment, auto_sync=None)
             output = module.ThreadData(2, dtype=types.int32)
             module.load(
                 module.this_block(),

@@ -6,10 +6,10 @@
 
 from __future__ import annotations
 
-import operator
 import struct
 
 from .._core.api._payload import _normalize_alignment
+from .._core.thread_group import CoopCompilerContextRequiredError
 from ._compiler._activation import _require_runtime
 
 # Annotations keep the runtime namespaces lazy while documenting module
@@ -33,21 +33,8 @@ def ThreadData(
 ):
     """Create fixed-size thread-local storage for cooperative operations."""
 
-    if isinstance(items_per_thread, bool):
-        raise TypeError("items_per_thread must be an integer")
-    try:
-        items_per_thread = operator.index(items_per_thread)
-    except TypeError as exc:
-        raise TypeError("items_per_thread must be an integer") from exc
-    if items_per_thread <= 0:
-        raise ValueError("items_per_thread must be a positive integer")
-
-    alignment = _normalize_thread_data_alignment(alignment)
-
-    return _require_runtime().local.array(
-        items_per_thread,
-        dtype,
-        alignment=alignment,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.numba_mlir.ThreadData must be called from a supported GPU kernel."
     )
 
 

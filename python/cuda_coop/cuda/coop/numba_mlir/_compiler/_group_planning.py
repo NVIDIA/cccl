@@ -719,7 +719,7 @@ class GroupPlanningContext:
                 f"be constructed at exactly one site; {value.name!r} reaches "
                 f"{len(sites)} constructor sites. The compiler cannot verify "
                 "caller synchronization when it merges these regions. "
-                "Construct the descriptor once or keep auto_sync enabled."
+                "Construct the descriptor once or set auto_sync=True."
             )
         return descriptor
 
