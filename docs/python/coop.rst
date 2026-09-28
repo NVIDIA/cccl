@@ -672,8 +672,8 @@ default to ``auto_sync=False``, so the caller must synchronize before reuse.
 Physical and
 logical Warp calls use one compiler-owned slice per Warp and append
 ``syncwarp`` with the participating mask. Prefix callbacks do not change these
-rules: when repeated calls reuse Block Scan storage, retain the automatic
-barrier or issue ``syncthreads`` after each call when ``auto_sync=False``. The
+rules: when repeated calls reuse an explicit Block Scan descriptor, set
+``auto_sync=True`` or issue ``syncthreads`` before reuse. The
 prefix state is persistent per-thread data, not CUB temporary storage.
 
 .. literalinclude:: ../../python/cuda_coop/examples/numba_mlir/block_scan.py

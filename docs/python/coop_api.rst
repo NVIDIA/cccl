@@ -148,9 +148,10 @@ structured state. CUB may invoke the callback in every lane of the block's
 first warp, but only lane 0's returned prefix is applied. Initialize every
 thread's state cell identically before the first collective and treat thread
 0's state as authoritative after repeated calls. Prefix callbacks retain the
-normal Block Scan ``TempStorage`` contract. Repeated calls that reuse storage
-must retain the automatic block barrier or execute ``syncthreads`` after each
-call when a caller-owned descriptor sets ``auto_sync=False``.
+normal Block Scan ``TempStorage`` contract. Compiler-managed scratch synchronizes
+automatically. Explicit descriptors default to ``auto_sync=False``; repeated
+calls that reuse them must execute ``syncthreads`` before reuse or request
+``auto_sync=True``.
 
 For Warp Load and Store, each group receives an automatic memory origin of
 ``group_index * (group_size * items_per_thread)`` before the caller's element
