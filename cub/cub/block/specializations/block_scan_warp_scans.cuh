@@ -79,11 +79,10 @@ struct BlockScanWarpScans
   };
 
   /// Alias wrapper allowing storage to be unioned
-  // TODO(bgruber): _TempStorage requests an alignment of 32, but that was never actually honored due to a bug in
-  // cub::Uninitialized<T> (fixed to honor requested alignment). Actually honoring 32 here caused measurable
-  // regressions in several algorithms (e.g. DevicePartition::If, DeviceSelect::Flagged) when benchmarked, so this
-  // wrapper deliberately only aligns to 16 bytes (matching the alignment that was silently delivered before), while
-  // leaving _TempStorage's own declared alignment at 32 to keep DeviceWord selection elsewhere unaffected.
+  // FIXME(bgruber): _TempStorage requests an alignment of 32, but that was never actually honored due to a bug in
+  // cub::Uninitialized<T> (fixed in https://github.com/NVIDIA/cccl/pull/11670). However, correctly respecting the
+  // actual alignment causes regressions in several algorithms (e.g. DevicePartition::If, DeviceSelect::Flagged), so
+  // this wrapper deliberately only aligns to 16 bytes as a workaround. THIS IS A BUG, and should be fixed.
   struct TempStorage
   {
     alignas(16) char storage[sizeof(_TempStorage)];
