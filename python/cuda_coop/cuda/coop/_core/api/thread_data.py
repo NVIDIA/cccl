@@ -12,7 +12,7 @@ from ._payload import ThreadDataLike
 
 def ThreadData(
     items_per_thread: int,
-    dtype: object = None,
+    dtype: object | None = None,
     *,
     alignment: int | None = None,
 ) -> ThreadDataLike[Any]:

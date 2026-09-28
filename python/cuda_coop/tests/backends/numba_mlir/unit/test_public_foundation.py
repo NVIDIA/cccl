@@ -130,7 +130,7 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
     assert call_shape(coop.TempStorage) == (
         ("size_in_bytes", inspect.Parameter.POSITIONAL_OR_KEYWORD, None),
         ("alignment", inspect.Parameter.KEYWORD_ONLY, None),
-        ("auto_sync", inspect.Parameter.KEYWORD_ONLY, None),
+        ("auto_sync", inspect.Parameter.KEYWORD_ONLY, False),
         ("sharing", inspect.Parameter.KEYWORD_ONLY, "shared"),
     )
     assert call_shape(coop.ThreadGroup.group_by) == call_shape(
