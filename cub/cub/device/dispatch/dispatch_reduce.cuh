@@ -38,6 +38,7 @@
 #include <cuda/argument>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -857,6 +858,61 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   return cudaSuccess;
 }
 
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitValueT,
+          typename TransformOpT,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto invoke_single_tile_reduce(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  OffsetT num_items,
+  ReductionOpT reduction_op,
+  InitValueT init,
+  cudaStream_t stream,
+  TransformOpT transform_op,
+  ReducePassPolicy policy,
+  KernelSource kernel_source,
+  KernelLauncherFactory launcher_factory) -> cudaError_t
+{
+  // Return if the caller is simply requesting the size of the storage allocation
+  if (d_temp_storage == nullptr)
+  {
+    temp_storage_bytes = 1;
+    return cudaSuccess;
+  }
+
+  // Log single_reduce_sweep_kernel configuration
+  _CUB_LOG_KERNEL_LAUNCH("DeviceReduceSingleTileKernel", 1, 1, 1, policy.threads_per_block, 0, stream, "");
+
+  // Invoke single_reduce_sweep_kernel
+  if (const auto error = CubDebug(
+        launcher_factory(1, policy.threads_per_block, 0, stream)
+          .doit(kernel_source.SingleTileKernel(), d_in, d_out, num_items, reduction_op, init, transform_op)))
+  {
+    return error;
+  }
+
+  // Check for failure to launch
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  // Sync the stream if specified to flush runtime errors
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  {
+    return error;
+  }
+
+  return cudaSuccess;
+}
+
 // select the accumulator type using an overload set, so __accumulator_t and invoke_result_t are not instantiated when
 // an overriding accumulator type is present. This is needed by CCCL.C, which uses void as accumulator type.
 template <typename InputIteratorT,
@@ -941,6 +997,64 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
   (void) offset_num_items;
 
+  using default_selector_t      = policy_selector_from_types<AccumT, offset_t, ReductionOpT>;
+  using default_kernel_source_t = DeviceReduceKernelSource<
+    PolicySelector,
+    InputIteratorT,
+    OutputIteratorT,
+    offset_t,
+    CUB_NS_QUALIFIER::detail::parameter_from_host_t<offset_t, OffsetT>,
+    ReductionOpT,
+    InitValueT,
+    AccumT,
+    TransformOpT,
+    StableReductionOrder>;
+
+  // This extra interval is measured only for immediate uint32 sums on Thor.
+  // In particular, do not replace a user-supplied policy or kernel source.
+  if constexpr (StableReductionOrder
+                && (::cuda::std::is_same_v<OffsetT, detail::choose_offset_t<::cuda::std::int32_t>>
+                    || ::cuda::std::is_same_v<OffsetT, detail::choose_offset_t<::cuda::std::int64_t>>)
+                && ::cuda::std::is_same_v<InputIteratorT, ::cuda::std::uint32_t*>
+                && ::cuda::std::is_same_v<OutputIteratorT, ::cuda::std::uint32_t*>
+                && ::cuda::std::is_same_v<InitValueT, ::cuda::std::uint32_t>
+                && ::cuda::std::is_same_v<AccumT, ::cuda::std::uint32_t>
+                && ::cuda::std::is_same_v<ReductionOpT, ::cuda::std::plus<>>
+                && ::cuda::std::is_same_v<TransformOpT, ::cuda::std::identity>
+                && ::cuda::std::is_same_v<PolicySelector, default_selector_t>
+                && ::cuda::std::is_same_v<KernelSource, default_kernel_source_t>)
+  {
+    if (cc == ::cuda::compute_capability{11, 0} && offset_num_items > 4096 && offset_num_items <= 8192)
+    {
+      using small_selector_t      = sm110_small_sum_policy_selector<offset_t>;
+      using small_kernel_source_t = DeviceReduceKernelSource<
+        small_selector_t,
+        InputIteratorT,
+        OutputIteratorT,
+        offset_t,
+        offset_t,
+        ReductionOpT,
+        InitValueT,
+        AccumT,
+        TransformOpT>;
+      const auto small_policy = small_selector_t{}(cc);
+      detail::log_dispatch("DeviceReduce", cc, small_policy);
+      return invoke_single_tile_reduce(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        offset_num_items,
+        reduction_op,
+        init,
+        stream,
+        transform_op,
+        small_policy.single_tile,
+        small_kernel_source_t{},
+        launcher_factory);
+    }
+  }
+
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     CUB_DETAIL_CONSTEXPR_ISH const ReducePolicy active_policy = policy_getter();
 
@@ -967,39 +1081,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       // if the problem is small enough to fit into a single tile, just handle it and return early
       if (single_tile_problem)
       {
-        // Return if the caller is simply requesting the size of the storage allocation
-        if (d_temp_storage == nullptr)
-        {
-          temp_storage_bytes = 1;
-          return cudaSuccess;
-        }
-
-        // Log single_reduce_sweep_kernel configuration
-        _CUB_LOG_KERNEL_LAUNCH(
-          "DeviceReduceSingleTileKernel", 1, 1, 1, active_policy.single_tile.threads_per_block, 0, stream, "");
-
-        // Invoke single_reduce_sweep_kernel
-        if (const auto error = CubDebug(
-              launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-                .doit(
-                  kernel_source.SingleTileKernel(), d_in, d_out, offset_num_items, reduction_op, init, transform_op)))
-        {
-          return error;
-        }
-
-        // Check for failure to launch
-        if (const auto error = CubDebug(cudaPeekAtLastError()))
-        {
-          return error;
-        }
-
-        // Sync the stream if specified to flush runtime errors
-        if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-        {
-          return error;
-        }
-
-        return cudaSuccess;
+        return invoke_single_tile_reduce(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_out,
+          offset_num_items,
+          reduction_op,
+          init,
+          stream,
+          transform_op,
+          active_policy.single_tile,
+          kernel_source,
+          launcher_factory);
       }
     }
     else if constexpr (!StableReductionOrder)

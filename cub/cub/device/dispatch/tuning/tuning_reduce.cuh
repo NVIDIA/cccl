@@ -22,8 +22,10 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
+#include <cuda/std/cstdint>
 #include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
@@ -692,6 +694,21 @@ struct policy_selector_from_types
       Determinism,
       classify_accum_input<AccumT>};
     return policies(cc);
+  }
+};
+// Used only for the additional single-tile interval selected by the dispatcher.
+// Keeping the regular selector unchanged avoids regressing smaller inputs and the second pass.
+template <typename OffsetT>
+struct sm110_small_sum_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ReducePolicy
+  {
+    auto policy = policy_selector_from_types<::cuda::std::uint32_t, OffsetT, ::cuda::std::plus<>>{}(cc);
+    if (cc == ::cuda::compute_capability{11, 0})
+    {
+      policy.single_tile = ReducePassPolicy{256, 32, 4, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
+    }
+    return policy;
   }
 };
 } // namespace detail::reduce
