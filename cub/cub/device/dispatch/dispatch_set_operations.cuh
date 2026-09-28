@@ -41,16 +41,6 @@ inline constexpr int partition_kernel_threads = 256;
 template <typename ValuesIt>
 inline constexpr bool has_values = !::cuda::std::is_same_v<it_value_t<ValuesIt>, NullType>;
 
-// Turns a compile-time policy getter into the corresponding agent policy type. Templating on the getter (rather than a
-// SetOpsPolicy value) keeps this working in C++17, where class-type non-type template parameters are not allowed.
-template <typename PolicyGetter>
-struct choose_agent_policy
-{
-  static constexpr SetOpsPolicy active = PolicyGetter{}();
-  using type =
-    agent_set_op_policy<active.threads_per_block, active.items_per_thread, active.load_modifier, active.scan_algorithm>;
-};
-
 // Computes the duplicate-aware merge-path partition boundaries at every tile-sized diagonal. One thread per diagonal.
 template <typename KeysIt1, typename KeysIt2, typename Offset, typename CompareOp>
 _CCCL_KERNEL_ATTRIBUTES void device_set_op_partition_kernel(
@@ -82,8 +72,7 @@ template <typename PolicySelector,
           typename CompareOp,
           typename SetOp,
           typename NumSelectedIteratorT>
-__launch_bounds__(
-  choose_agent_policy<device_policy_getter<PolicySelector, current_tuning_cc().get()>>::type::BLOCK_THREADS)
+__launch_bounds__(device_policy_getter<PolicySelector, current_tuning_cc().get()>{}().threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void device_set_op_sweep_kernel(
     KeysIt1 keys1,
     KeysIt2 keys2,
@@ -100,10 +89,8 @@ __launch_bounds__(
     ScanTileState<Offset> tile_state,
     vsmem_t global_temp_storage)
 {
-  using SetOpPolicyT =
-    typename choose_agent_policy<device_policy_getter<PolicySelector, current_tuning_cc().get()>>::type;
   using AgentT =
-    agent_set_op<SetOpPolicyT,
+    agent_set_op<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
                  KeysIt1,
                  KeysIt2,
                  ValuesIt1,
@@ -182,9 +169,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-    using SetOpPolicyT = typename choose_agent_policy<decltype(policy_getter)>::type;
     using AgentT =
-      agent_set_op<SetOpPolicyT,
+      agent_set_op<decltype(policy_getter),
                    KeysIt1,
                    KeysIt2,
                    ValuesIt1,
@@ -196,8 +182,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                    SetOp,
                    NumSelectedIteratorT,
                    has_values<ValuesIt1>>;
-    constexpr int block_threads  = SetOpPolicyT::BLOCK_THREADS;
-    constexpr int items_per_tile = block_threads * SetOpPolicyT::ITEMS_PER_THREAD - 1;
+    constexpr auto policy        = decltype(policy_getter){}();
+    constexpr int block_threads  = policy.threads_per_block;
+    constexpr int items_per_tile = block_threads * policy.items_per_thread - 1;
 
     const Offset keys_total = num_keys1 + num_keys2;
     const Offset num_tiles  = ::cuda::ceil_div(keys_total, Offset{items_per_tile});
