@@ -19,6 +19,7 @@
 #  include <cuda/devices>
 #  include <cuda/hierarchy>
 #  include <cuda/logical_endpoint>
+#  include <cuda/memory_pool>
 #  include <cuda/ptx>
 #  include <cuda/std/chrono>
 #  include <cuda/std/cstdint>
@@ -113,6 +114,35 @@ template <class... Devices>
     }
   }
   return true;
+}
+
+template <class... Devices>
+[[nodiscard]] bool fabric_memory_pools_supported(cuda::device_ref device, Devices... devices)
+{
+  if (!logical_endpoint_test::memory_pools_supported(device, devices...))
+  {
+    return false;
+  }
+
+  const cuda::device_ref checked_devices[] = {device, devices...};
+  for (const cuda::device_ref checked_device : checked_devices)
+  {
+    const auto supported_handle_types =
+      checked_device.attribute(cuda::device_attributes::memory_pool_supported_handle_types);
+    if ((supported_handle_types & cudaMemHandleTypeFabric)
+        == 0)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+[[nodiscard]] inline cuda::memory_pool_properties fabric_memory_pool_properties()
+{
+  cuda::memory_pool_properties properties{};
+  properties.allocation_handle_type = cudaMemHandleTypeFabric;
+  return properties;
 }
 
 template <class... Devices>
