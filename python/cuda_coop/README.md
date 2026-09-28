@@ -493,8 +493,10 @@ out-of-range runtime `valid_items` value triggers a deterministic device trap
 before CUB's 32-bit parameter is formed, invalidating the current CUDA context.
 
 All Scan providers use CUB temporary storage. Block calls may use implicit,
-caller-owned, or dynamic `TempStorage` and append a block reuse barrier unless
-a caller-owned descriptor explicitly sets `auto_sync=False`. Physical and
+caller-owned, or dynamic `TempStorage`. Compiler-owned storage and explicit
+descriptors with `auto_sync=True` append a block reuse barrier. Explicit
+descriptors default to `auto_sync=False`, so the caller must synchronize before
+reuse. Physical and
 logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
 for the exact participating mask. Prefix callback and running-prefix state APIs
 are not part of this release.
