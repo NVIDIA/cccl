@@ -393,7 +393,7 @@ def test_block_scan_accepts_implicit_caller_and_dynamic_storage(storage_mode: st
 @cuda.jit
 def _reuse_scan_storage(source, exclusive, inclusive, preserved):
     thread = cuda.threadIdx.x
-    storage = qualified_coop.TempStorage(sharing="shared")
+    storage = qualified_coop.TempStorage(sharing="shared", auto_sync=True)
     value = source[thread]
     exclusive[thread] = qualified_coop.exclusive_sum(
         qualified_coop.this_block(), value, temp_storage=storage

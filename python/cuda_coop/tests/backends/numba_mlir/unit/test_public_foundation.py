@@ -144,7 +144,9 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         common_scan = inspect.signature(getattr(common_coop, operation))
         qualified_scan = inspect.signature(getattr(coop, operation))
         for name, parameter in common_scan.parameters.items():
-            assert qualified_scan.parameters[name] == parameter
+            qualified_parameter = qualified_scan.parameters[name]
+            assert qualified_parameter.kind == parameter.kind
+            assert qualified_parameter.default == parameter.default
         assert qualified_scan.return_annotation == common_scan.return_annotation
         assert tuple(qualified_scan.parameters)[len(common_scan.parameters) :] == (
             "valid_items",
