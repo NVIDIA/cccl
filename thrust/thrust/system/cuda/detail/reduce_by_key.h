@@ -733,7 +733,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   ia.launch(tile_state, num_tiles, num_runs_output_it);
   _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
-  char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : nullptr;
+  char* vshmem_ptr = vshmem_size > 0 ? static_cast<char*>(allocations[1]) : nullptr;
 
   const reduce_by_key_agent rbka(
     reduce_by_key_plan, num_items, stream, vshmem_ptr, "reduce_by_keys::reduce_by_key_agent");
