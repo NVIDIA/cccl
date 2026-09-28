@@ -191,7 +191,7 @@ def test_bulk_multiple_windows_partial_final_window_and_empty(qualified, threads
     @cuda.jit
     def kernel(values, lengths, output, relative, totals, start):
         block = api.this_block()
-        scratch = api.TempStorage()
+        scratch = api.TempStorage(auto_sync=True)
         runs = api.ThreadData(2)
         sizes = api.ThreadData(2)
         api.load(block, values, runs)
