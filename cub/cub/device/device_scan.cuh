@@ -2011,7 +2011,12 @@ struct DeviceScan
   }
 
   //! Deprecated [Since 3.6]
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   CCCL_DEPRECATED_BECAUSE("Use cub::DeviceScan::InclusiveScan with an init_value argument instead")
   CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScanInit(
