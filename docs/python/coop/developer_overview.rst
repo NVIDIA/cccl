@@ -655,11 +655,11 @@ slice for each warp; logical warps need slices and synchronization masks
 for their smaller groups. Equal byte counts do not make storage from
 different participation domains interchangeable.
 
-After a storage-bearing block call, the rewrite normally emits a block
-reuse barrier. For supported physical and logical Warp calls, it emits
-``syncwarp`` with the participating group's mask. CUB's synchronization
-inside a primitive does not generally establish that a later primitive
-can immediately overwrite the same scratch.
+After a block call that uses compiler-managed scratch or a descriptor with
+``auto_sync=True``, the rewrite emits a block reuse barrier. For supported
+physical and logical Warp calls, it emits ``syncwarp`` with the participating
+group's mask. CUB's synchronization inside a primitive does not generally
+establish that a later primitive can immediately overwrite the same scratch.
 Automatic synchronization adds a trailing barrier after each storage-consuming
 call. It does not establish that arbitrary user control flow is safe: callers
 must still ensure that all group members reach the primitive and barrier.
@@ -669,14 +669,14 @@ A block operation can expose that reuse choice through ``TempStorage``:
 .. code-block:: python
 
    # Inside a kernel; source and destination each contain one full tile.
-   scratch = coop.TempStorage()
+   scratch = coop.TempStorage(auto_sync=True)
    items = coop.ThreadData(2, dtype=np.int32)
    coop.load(block, source, items,
              algorithm="transpose", temp_storage=scratch)
    coop.store(block, destination, items,
               algorithm="transpose", temp_storage=scratch)
 
-The default shared descriptor permits reuse and automatic barriers. Its
+This shared descriptor requests automatic reuse barriers. Its
 size and alignment can be inferred from its uses. An explicit capacity
 must satisfy the compiled provider's requirements.
 
@@ -685,9 +685,9 @@ options are keyword-only. An explicit ``alignment`` requests a minimum,
 which the planner can strengthen to meet the requirements of its uses.
 
 ``sharing="exclusive"`` allocates separate slices for distinct uses. Shared
-and exclusive descriptors both default to automatic synchronization; layout and
-synchronization are independent. ``auto_sync=False`` leaves synchronization to
-the caller. A loop that reaches the same call site again still needs safe reuse,
+and exclusive descriptors both default to ``auto_sync=False``, leaving
+synchronization to the caller. Layout and synchronization are independent.
+A loop that reaches the same call site again still needs safe reuse,
 including with an exclusive descriptor. For a block primitive, put the required
 block barrier where every thread reaches it before the next use. The planner
 conservatively rejects collapsing multiple manually synchronized constructors

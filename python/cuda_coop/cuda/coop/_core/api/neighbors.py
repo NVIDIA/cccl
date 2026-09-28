@@ -6,33 +6,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..block.neighbors import validate_neighbor_options
-from ..thread_group import ThreadGroup
+from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _backend_module_name,
     _common_group_operation,
-    _group_primitive_marker,
 )
 from ._payload import (
     TempStorageLike,
     ThreadDataLike,
     _ReadableThreadDataLike,
-    _validate_common_numeric_value,
-    _validate_common_temp_storage,
 )
-
-
-def _validate_payload(operation, values, temp_storage):
-    if _backend_module_name() is not None:
-        _validate_common_numeric_value(
-            operation,
-            "values",
-            values,
-            require_thread_data=True,
-            allow_readonly_thread_data=True,
-        )
-        if temp_storage is not None:
-            _validate_common_temp_storage(operation, temp_storage)
 
 
 @_common_group_operation("adjacent_difference", group_kinds=("block",))
@@ -42,7 +24,7 @@ def adjacent_difference(
     /,
     *,
     direction: str = "left",
-    valid_items: Any = None,
+    valid_items: object = None,
     tile_predecessor_item: Any = None,
     tile_successor_item: Any = None,
     temp_storage: TempStorageLike | None = None,
@@ -89,23 +71,8 @@ def adjacent_difference(
     :func:`cuda.coop.numba_mlir.adjacent_difference` for a custom binary
     operator. The CUB counterpart is ``cub::BlockAdjacentDifference``.
     """
-    validate_neighbor_options(
-        "adjacent_difference",
-        direction,
-        partial=valid_items is not None,
-        predecessor=tile_predecessor_item is not None,
-        successor=tile_successor_item is not None,
-    )
-    _validate_payload("adjacent_difference", values, temp_storage)
-    return _group_primitive_marker(
-        "adjacent_difference",
-        group,
-        values,
-        direction=direction,
-        valid_items=valid_items,
-        tile_predecessor_item=tile_predecessor_item,
-        tile_successor_item=tile_successor_item,
-        temp_storage=temp_storage,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.adjacent_difference must be called from a supported GPU kernel."
     )
 
 
@@ -159,21 +126,8 @@ def discontinuity(
     :func:`cuda.coop.numba_mlir.discontinuity` for a custom binary predicate.
     The CUB counterpart is ``cub::BlockDiscontinuity``.
     """
-    validate_neighbor_options(
-        "discontinuity",
-        mode,
-        predecessor=tile_predecessor_item is not None,
-        successor=tile_successor_item is not None,
-    )
-    _validate_payload("discontinuity", values, temp_storage)
-    return _group_primitive_marker(
-        "discontinuity",
-        group,
-        values,
-        mode=mode,
-        tile_predecessor_item=tile_predecessor_item,
-        tile_successor_item=tile_successor_item,
-        temp_storage=temp_storage,
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.discontinuity must be called from a supported GPU kernel."
     )
 
 

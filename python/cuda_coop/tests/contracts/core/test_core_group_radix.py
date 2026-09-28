@@ -78,32 +78,3 @@ def test_rank_plan_has_fixed_result_dtype_and_rejects_warp_scope():
         make_group_primitive_call(this_warp(), operation), LaunchFacts(64)
     )
     assert unsupported.unsupported is not None
-
-
-@pytest.mark.parametrize(
-    "operation,options",
-    [
-        ("radix_sort_keys", {"descending": 1}),
-        ("radix_sort_keys", {"begin_bit": -1}),
-        ("radix_sort_keys", {"end_bit": 33}),
-        ("radix_rank", {"radix_bits": 9}),
-        ("radix_rank", {"begin_bit": 31}),
-        ("radix_rank", {"end_bit": 6, "radix_bits": 4}),
-    ],
-)
-def test_common_frontend_rejects_invalid_controls_before_dispatch(operation, options):
-    from cuda.coop._core.api import _dispatch, radix
-
-    class Payload:
-        items_per_thread = 2
-        dtype = int
-
-        def __len__(self):
-            return 2
-
-        def __getitem__(self, index):
-            return index
-
-    with _dispatch._compiler_scope("test.backend"):
-        with pytest.raises((TypeError, ValueError)):
-            getattr(radix, operation)(this_block(), Payload(), **options)

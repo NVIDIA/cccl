@@ -13,7 +13,8 @@ class TempStorage:
     Parameters, defaults, synchronization rules, and the executable reuse
     example follow :func:`cuda.coop.TempStorage`. This qualified descriptor
     exposes ``size_in_bytes``, ``alignment``, ``auto_sync``, and ``sharing``
-    for the Numba-CUDA-MLIR planner. ``auto_sync=None`` becomes ``True``.
+    for the Numba-CUDA-MLIR planner. ``auto_sync=None`` becomes ``False``.
+    Set ``auto_sync=True`` to request automatic reuse barriers.
 
     Only supported block algorithms accept an explicit descriptor. The
     planner determines capacity and alignment from its uses; its contents

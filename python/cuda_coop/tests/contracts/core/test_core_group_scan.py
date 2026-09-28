@@ -39,26 +39,6 @@ from cuda.coop._core.thread_group import CoopCompilerContextRequiredError
 from tests._group_planning import _plan, _scan
 
 
-class _ThreadData:
-    def __init__(self, items_per_thread=2, *, dtype=np.float32, length=None):
-        self.items_per_thread = items_per_thread
-        self.dtype = dtype
-        self._items = [np.float32(0)] * (items_per_thread if length is None else length)
-
-    def __len__(self):
-        return len(self._items)
-
-    def __getitem__(self, index):
-        return self._items[index]
-
-
-class _TempStorage:
-    size_in_bytes = 128
-    alignment = 16
-    auto_sync = True
-    sharing = "shared"
-
-
 @pytest.mark.parametrize(
     ("group", "operand_kind", "items", "target", "scope", "instances"),
     [
@@ -408,68 +388,6 @@ def test_static_warp_prefix_is_bounded_to_group_width(valid_items):
             _plan(this_warp().group_by(8), operation)
 
 
-def test_common_scan_validates_payload_and_option_matrix(monkeypatch):
-    dispatch = import_module("cuda.coop._core.api._dispatch")
-    api = import_module("cuda.coop._core.api.scan")
-    delegated = object()
-    calls = []
-
-    def marker(*args, **kwargs):
-        calls.append((args, kwargs))
-        return delegated
-
-    monkeypatch.setattr(api, "_group_primitive_marker", marker)
-    with dispatch._compiler_scope("test.backend"):
-        assert api.inclusive_sum(this_block(), _ThreadData()) is delegated
-        assert api.scan(this_warp(), np.float32(1)) is delegated
-        assert (
-            api.exclusive_scan(
-                this_block(),
-                np.float32(1),
-                scan_op=" maximum ",
-                initial_value=0,
-                algorithm="raking-memoize",
-                temp_storage=_TempStorage(),
-            )
-            is delegated
-        )
-        with pytest.raises(
-            TypeError, match="numeric scalar for warp scans in the common API"
-        ):
-            api.inclusive_sum(this_warp(), _ThreadData())
-        with pytest.raises(ValueError, match="require initial_value"):
-            api.exclusive_scan(this_block(), np.int32(1), scan_op="max")
-        with pytest.raises(ValueError, match="only for blocks"):
-            api.inclusive_sum(this_warp(), np.int32(1), algorithm="raking")
-        with pytest.raises(ValueError, match="only for blocks"):
-            api.inclusive_sum(this_warp(), np.int32(1), temp_storage=object())
-        with pytest.raises(TypeError, match="must satisfy TempStorageLike"):
-            api.inclusive_sum(this_block(), np.int32(1), temp_storage=object())
-        with pytest.raises(TypeError, match="value dtypes"):
-            api.inclusive_scan(this_block(), np.float32(1), scan_op="bit_and")
-
-    assert len(calls) == 3
-    assert calls[2][1]["scan_op"] == "max"
-    assert calls[2][1]["algorithm"] == "raking_memoize"
-
-
-def test_common_scan_rejects_inclusive_initial_before_delegation(monkeypatch):
-    dispatch = import_module("cuda.coop._core.api._dispatch")
-    api = import_module("cuda.coop._core.api.scan")
-    calls = []
-
-    monkeypatch.setattr(
-        api,
-        "_group_primitive_marker",
-        lambda *args, **kwargs: calls.append((args, kwargs)),
-    )
-    with dispatch._compiler_scope("test.backend"):
-        with pytest.raises(ValueError, match="not supported for inclusive"):
-            api.scan(this_block(), np.int32(1), mode="inclusive", initial_value=0)
-
-    assert calls == []
-
-
 def test_common_scan_defers_to_compiler_activation_and_exports_root():
     import cuda.coop as coop
 
@@ -492,6 +410,6 @@ def test_common_surface_keeps_qualified_only_scan_controls_out():
     api = import_module("cuda.coop._core.api.scan")
 
     with pytest.raises(TypeError, match="aggregate_output"):
-        api.inclusive_sum(this_block(), np.int32(1), aggregate_output=_ThreadData(1))
+        api.inclusive_sum(this_block(), np.int32(1), aggregate_output=object())
     with pytest.raises(TypeError, match="valid_items"):
         api.inclusive_sum(this_warp(), np.int32(1), valid_items=17)

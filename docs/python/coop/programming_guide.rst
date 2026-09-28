@@ -628,7 +628,7 @@ Reusing scratch across operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This version of a tile scan shares one descriptor between the transpose
-Load, Scan, and transpose Store:
+Load, Scan, and transpose Store, with ``auto_sync=True`` to synchronize reuse:
 
 .. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
    :language: python
@@ -646,22 +646,22 @@ payloads while scratch is reused.
 Capacity, alignment, and lifetime
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``TempStorage()`` defaults to ``sharing="shared"`` with automatic reuse
-synchronization. ``size_in_bytes=None`` and ``alignment=None`` let the
-compiler determine the requirements. An explicit capacity must be large
-enough for the operations using it. An explicit ``alignment`` requests a
-minimum positive power of two in bytes; the compiler can strengthen it.
+``TempStorage()`` defaults to ``sharing="shared"`` and ``auto_sync=False``,
+leaving reuse synchronization to the caller. ``size_in_bytes=None`` and
+``alignment=None`` let the compiler determine the requirements. An explicit
+capacity must be large enough for the operations using it. An explicit
+``alignment`` requests a minimum positive power of two in bytes; the compiler
+can strengthen it.
 Only ``size_in_bytes`` may be positional. The other options are keyword-only.
 
-``sharing="exclusive"`` gives distinct call sites separate slices. Both shared
-and exclusive storage default to automatic synchronization. A loop can reach
+``sharing="exclusive"`` gives distinct call sites separate slices. A loop can reach
 the same call site again and reuse its slice, so exclusive storage still needs
 reuse barriers. It can also consume more shared memory when several calls could
 otherwise share a slice. ``sharing`` controls allocation layout independently
 of ``auto_sync``.
 
-``auto_sync=False`` transfers reuse synchronization to the caller. For
-example, this kernel uses explicit block barriers after each storage-using
+With the default ``auto_sync=False``, the kernel must provide reuse barriers.
+For example, this kernel uses explicit block barriers after each storage-using
 call, including between loop iterations:
 
 .. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
@@ -671,8 +671,8 @@ call, including between loop iterations:
    :end-before: # coop-pg-manual-scratch-end
    :dedent: 4
 
-Automatic synchronization is easier to maintain. Disable it only when you
-can account for each reuse and have a reason to place barriers yourself.
+Set ``auto_sync=True`` to insert automatic trailing barriers for scratch reuse.
+Without an explicit descriptor, the compiler synchronizes scratch automatically.
 An unrelated memory access between calls does not establish a block barrier.
 The MVP conservatively rejects merging multiple manually synchronized
 ``TempStorage`` constructors into one descriptor, including conditional
