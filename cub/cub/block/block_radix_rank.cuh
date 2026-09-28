@@ -289,7 +289,11 @@ private:
   using BlockScan = BlockScan<PackedCounter, BlockDimX, InnerScanAlgorithm, BlockDimY, BlockDimZ>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  struct alignas(16) alignas(typename BlockScan::TempStorage) /* align at least to 16 */ _TempStorage
+  // align at least to 16
+  static constexpr ::cuda::std::size_t __temp_storage_alignment =
+    ::cuda::std::max(::cuda::std::size_t{16}, alignof(typename BlockScan::TempStorage));
+
+  struct alignas(__temp_storage_alignment) _TempStorage
   {
     union Aliasable
     {
@@ -612,7 +616,11 @@ private:
   using BlockScanT = BlockScan<DigitCounterT, BLOCK_THREADS, InnerScanAlgorithm, BlockDimY, BlockDimZ>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  struct alignas(16) alignas(typename BlockScanT::TempStorage) /* align at least to 16 */ _TempStorage
+  // align at least to 16
+  static constexpr ::cuda::std::size_t __temp_storage_alignment =
+    ::cuda::std::max(::cuda::std::size_t{16}, alignof(typename BlockScanT::TempStorage));
+
+  struct alignas(__temp_storage_alignment) _TempStorage
   {
     typename BlockScanT::TempStorage block_scan;
 

@@ -31,6 +31,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -200,7 +201,14 @@ struct AgentRadixSortDownsweep
   /**
    * Shared memory storage layout
    */
-  union __align__(16) _TempStorage
+  static constexpr ::cuda::std::size_t __temp_storage_alignment = ::cuda::std::max(
+    {::cuda::std::size_t{16},
+     alignof(typename BlockLoadKeysT::TempStorage),
+     alignof(typename BlockLoadValuesT::TempStorage),
+     alignof(typename BlockRadixRankT::TempStorage),
+     alignof(Uninitialized<ValueExchangeT>)});
+
+  union alignas(__temp_storage_alignment) _TempStorage
   {
     typename BlockLoadKeysT::TempStorage load_keys;
     typename BlockLoadValuesT::TempStorage load_values;
