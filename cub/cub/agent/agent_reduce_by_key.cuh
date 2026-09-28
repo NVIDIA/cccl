@@ -149,17 +149,16 @@ struct AgentReduceByKey
   using ScanTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
 
   // Guarded inequality functor
-  template <typename _EqualityOpT>
   struct GuardedInequalityWrapper
   {
     /// Wrapped equality operator
-    _EqualityOpT op;
+    EqualityOpT op;
 
     /// Items remaining
     int num_remaining;
 
     /// Constructor
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(_EqualityOpT op, int num_remaining)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(EqualityOpT op, int num_remaining)
         : op(op)
         , num_remaining(num_remaining)
     {}
@@ -431,7 +430,7 @@ struct AgentReduceByKey
 
     for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
     {
-      KeyValuePairT pair                                = temp_storage.raw_exchange.Alias()[item];
+      const KeyValuePairT pair                          = temp_storage.raw_exchange.Alias()[item];
       d_unique_out[num_tile_segments_prefix + item]     = pair.key; // NOLINT(bugprone-misplaced-widening-cast)
       d_aggregates_out[num_tile_segments_prefix + item] = pair.value; // NOLINT(bugprone-misplaced-widening-cast)
     }
@@ -466,7 +465,7 @@ struct AgentReduceByKey
   /**
    * @brief Process a tile of input (dynamic chained scan)
    *
-   * @tparam IS_LAST_TILE
+   * @tparam IsLastTile
    *   Whether the current tile is the last tile
    *
    * @param num_remaining
@@ -481,7 +480,7 @@ struct AgentReduceByKey
    * @param tile_state
    *   Global tile state descriptor
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
@@ -507,7 +506,7 @@ struct AgentReduceByKey
     KeyValuePairT scatter_items[ITEMS_PER_THREAD];
 
     // Load keys
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + tile_offset, keys, num_remaining);
     }
@@ -538,7 +537,7 @@ struct AgentReduceByKey
     __syncthreads();
 
     // Load values
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + tile_offset, values, num_remaining);
     }
@@ -550,16 +549,16 @@ struct AgentReduceByKey
     __syncthreads();
 
     // Initialize head-flags and shuffle up the previous keys
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Use custom flag operator to additionally flag the first out-of-bounds item
-      GuardedInequalityWrapper<EqualityOpT> flag_op(equality_op, num_remaining);
+      const GuardedInequalityWrapper flag_op(equality_op, num_remaining);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
     else
     {
-      InequalityWrapper<EqualityOpT> flag_op(equality_op);
+      const InequalityWrapper<EqualityOpT> flag_op(equality_op);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
@@ -631,7 +630,7 @@ struct AgentReduceByKey
       }
 
       // Update tile status if there are successor tiles
-      if ((!IS_LAST_TILE) && (threadIdx.x == 0))
+      if ((!IsLastTile) && (threadIdx.x == 0))
       {
         tile_state.SetInclusive(0, block_aggregate);
       }
@@ -666,7 +665,7 @@ struct AgentReduceByKey
     Scatter(scatter_items, head_flags, segment_indices, num_tile_segments, num_segments_prefix);
 
     // Last thread in last tile will output final count (and last pair, if necessary)
-    if ((IS_LAST_TILE) && (threadIdx.x == BLOCK_THREADS - 1))
+    if ((IsLastTile) && (threadIdx.x == BLOCK_THREADS - 1))
     {
       OffsetT num_segments = num_segments_prefix + num_tile_segments;
 
@@ -732,7 +731,7 @@ struct AgentReduceByKey
     // block
 
     // Current tile index
-    int tile_idx = static_cast<int>(start_tile + blockIdx.x);
+    const int tile_idx = static_cast<int>(start_tile + blockIdx.x);
 
     // Global offset for the current tile
     OffsetT tile_offset = OffsetT(TILE_ITEMS) * tile_idx;

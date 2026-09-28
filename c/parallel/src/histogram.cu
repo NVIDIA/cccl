@@ -202,7 +202,7 @@ bool check_histogram_overflow(
   const cccl_value_t& upper_level)
 {
   auto is_fp = [](cccl_type_enum t) {
-    return t == CCCL_FLOAT16 || t == CCCL_FLOAT32 || t == CCCL_FLOAT64;
+    return t == CCCL_FLOAT16 || t == CCCL_BFLOAT16 || t == CCCL_FLOAT32 || t == CCCL_FLOAT64;
   };
 
   if (is_fp(build.level_type.type) || is_fp(build.sample_type.type))
@@ -299,6 +299,8 @@ try
 #include <cub/block/block_load.cuh>
 #include <cub/device/dispatch/kernels/kernel_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
+#include <cuda_bf16.h>
+#include <cuda_fp16.h>
 
 struct __align__({1}) storage_t {{
   char data[{0}];
@@ -328,7 +330,7 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   const int privatized_smem_bins =
     num_output_levels_val - 1 > cub::detail::histogram::max_privatized_smem_bins ? 0 : 256;
 
-  const bool is_byte_sample = d_samples.value_type.size == 1;
+  const bool is_byte_sample = d_samples.value_type.size == 1 && d_samples.value_type.type != CCCL_INT8;
 
   std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);
   std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
@@ -624,8 +626,9 @@ CUresult cccl_device_histogram_even(
   int64_t row_stride_samples,
   CUstream stream)
 {
-  auto histogram_impl = d_samples.value_type.size == 1 ? cccl_device_histogram_even_impl<::cuda::std::true_type>
-                                                       : cccl_device_histogram_even_impl<::cuda::std::false_type>;
+  const bool is_byte_sample = d_samples.value_type.size == 1 && d_samples.value_type.type != CCCL_INT8;
+  auto histogram_impl       = is_byte_sample ? cccl_device_histogram_even_impl<::cuda::std::true_type>
+                                             : cccl_device_histogram_even_impl<::cuda::std::false_type>;
 
   return histogram_impl(
     build,

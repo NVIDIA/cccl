@@ -16,7 +16,7 @@ void TestSetIntersectionByKeyDescendingSimple()
   Vector ref_key{4, 0}, ref_val{0, 0};
   Vector result_key(2), result_val(2);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -26,10 +26,10 @@ void TestSetIntersectionByKeyDescendingSimple()
     result_val.begin(),
     ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
+  REQUIRE(ref_key == result_key);
+  REQUIRE(ref_val == result_val);
 }
 DECLARE_VECTOR_UNITTEST(TestSetIntersectionByKeyDescendingSimple);
 
@@ -81,7 +81,7 @@ void TestSetIntersectionByKeyDescending(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionByKeyDescending);

@@ -26,17 +26,16 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_ke
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetSymmetricDifferenceByKeyDispatchExplicit()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchExplicit", "[set_symmetric_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_symmetric_difference_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -59,7 +58,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_ke
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetSymmetricDifferenceByKeyDispatchImplicit()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchImplicit", "[set_symmetric_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -73,9 +72,8 @@ void TestSetSymmetricDifferenceByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDispatchImplicit);
 
 template <typename Vector>
 void TestSetSymmetricDifferenceByKeySimple()
@@ -88,7 +86,7 @@ void TestSetSymmetricDifferenceByKeySimple()
   Vector ref_key{2, 3, 3, 6, 7}, ref_val{0, 1, 1, 0, 1};
   Vector result_key(5), result_val(5);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_symmetric_difference_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_symmetric_difference_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -98,10 +96,10 @@ void TestSetSymmetricDifferenceByKeySimple()
     result_key.begin(),
     result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
+  REQUIRE(ref_key == result_key);
+  REQUIRE(ref_val == result_val);
 }
 DECLARE_VECTOR_UNITTEST(TestSetSymmetricDifferenceByKeySimple);
 
@@ -111,12 +109,11 @@ void TestSetSymmetricDifferenceByKey(const size_t n)
   thrust::host_vector<T> random_keys = unittest::random_integers<unittest::int8_t>(n);
   thrust::host_vector<T> random_vals = unittest::random_integers<unittest::int8_t>(n);
 
-  size_t denominators[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-  size_t num_denominators = sizeof(denominators) / sizeof(size_t);
+  const size_t denominators[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  for (size_t i = 0; i < num_denominators; ++i)
+  for (const size_t denominator : denominators)
   {
-    size_t size_a = n / denominators[i];
+    const size_t size_a = n / denominator;
 
     thrust::host_vector<T> h_a_keys(random_keys.begin(), random_keys.begin() + size_a);
     thrust::host_vector<T> h_b_keys(random_keys.begin() + size_a, random_keys.end());
@@ -133,7 +130,7 @@ void TestSetSymmetricDifferenceByKey(const size_t n)
     thrust::device_vector<T> d_a_vals = h_a_vals;
     thrust::device_vector<T> d_b_vals = h_b_vals;
 
-    size_t max_size = h_a_keys.size() + h_b_keys.size();
+    const size_t max_size = h_a_keys.size() + h_b_keys.size();
 
     thrust::host_vector<T> h_result_keys(max_size);
     thrust::host_vector<T> h_result_vals(max_size);
@@ -169,8 +166,8 @@ void TestSetSymmetricDifferenceByKey(const size_t n)
     d_result_keys.erase(d_end.first, d_result_keys.end());
     d_result_vals.erase(d_end.second, d_result_vals.end());
 
-    ASSERT_EQUAL(h_result_keys, d_result_keys);
-    ASSERT_EQUAL(h_result_vals, d_result_vals);
+    REQUIRE(h_result_keys == d_result_keys);
+    REQUIRE(h_result_vals == d_result_vals);
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceByKey);
@@ -178,7 +175,7 @@ DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceByKey);
 template <typename T>
 void TestSetSymmetricDifferenceByKeyEquivalentRanges(const size_t n)
 {
-  thrust::host_vector<T> temp = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
 
   thrust::host_vector<T> h_a_key = temp;
   thrust::sort(h_a_key.begin(), h_a_key.end());
@@ -193,7 +190,7 @@ void TestSetSymmetricDifferenceByKeyEquivalentRanges(const size_t n)
   thrust::device_vector<T> d_a_val = h_a_val;
   thrust::device_vector<T> d_b_val = h_b_val;
 
-  size_t max_size = h_a_key.size() + h_b_key.size();
+  const size_t max_size = h_a_key.size() + h_b_key.size();
 
   thrust::host_vector<T> h_result_key(max_size), h_result_val(max_size);
   thrust::device_vector<T> d_result_key(max_size), d_result_val(max_size);
@@ -226,8 +223,8 @@ void TestSetSymmetricDifferenceByKeyEquivalentRanges(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceByKeyEquivalentRanges);
 
@@ -259,7 +256,7 @@ void TestSetSymmetricDifferenceByKeyMultiset(const size_t n)
   thrust::device_vector<T> d_a_val = h_a_val;
   thrust::device_vector<T> d_b_val = h_b_val;
 
-  size_t max_size = h_a_key.size() + h_b_key.size();
+  const size_t max_size = h_a_key.size() + h_b_key.size();
   thrust::host_vector<T> h_result_key(max_size), h_result_val(max_size);
   thrust::device_vector<T> d_result_key(max_size), d_result_val(max_size);
 
@@ -291,7 +288,7 @@ void TestSetSymmetricDifferenceByKeyMultiset(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceByKeyMultiset);

@@ -58,7 +58,7 @@ namespace
         bp   = e.first;
       }
     }
-    owners.push_back(pos4(bp[0], bp[1], bp[2], bp[3]));
+    owners.emplace_back(bp[0], bp[1], bp[2], bp[3]);
     *misplaced_bytes += (hi - lo) - best;
   }
   return owners;
@@ -128,11 +128,11 @@ void check_case(dim4 data_dims, const ::std::vector<dim_spec>& spec, dim4 grid_d
 void property_suite()
 {
   const ::std::vector<size_t> grids = {1, 2, 3, 4, 6, 8};
-  for (size_t g : grids)
+  for (const size_t g : grids)
   {
-    for (size_t elemsize : {2, 4})
+    for (const size_t elemsize : {2, 4})
     {
-      for (size_t block : {16, 64, 256})
+      for (const size_t block : {16, 64, 256})
       {
         // 1-D blocked / cyclic / block_cyclic
         check_case(dim4(13), {{dim_policy::blocked, 0, 0}}, dim4(g), elemsize, block);
@@ -147,9 +147,9 @@ void property_suite()
     }
   }
   // tiled 2-D on a (2,2) grid + 3-D with a middle whole dim
-  for (size_t elemsize : {2, 4})
+  for (const size_t elemsize : {2, 4})
   {
-    for (size_t block : {16, 64, 256})
+    for (const size_t block : {16, 64, 256})
     {
       check_case(dim4(12, 16), {{dim_policy::blocked, 0, 0}, {dim_policy::blocked, 1, 0}}, dim4(2, 2), elemsize, block);
       check_case(
@@ -177,12 +177,12 @@ void end_to_end_allocation()
   localized_array arr(
     grid, make_partition_placement_provider(part, data_dims, data_dims.size(), sizeof(int)), n, sizeof(int), data_dims);
   const auto& st = arr.get_stats();
-  // exact plan: sample counters hold byte counts
-  EXPECT(st.total_samples == n * sizeof(int));
+  // census plan: accuracy is the closed-form byte fraction, not a sampled estimate
   size_t mis        = 0;
   const auto owners = part.try_block_owners(st.block_size, sizeof(int), &mis);
   EXPECT(owners.has_value() == true);
-  EXPECT(st.matching_samples == st.total_samples - mis);
+  EXPECT(mis > 0);
+  EXPECT(st.accuracy == 1.0 - static_cast<double>(mis) / static_cast<double>(n * sizeof(int)));
   EXPECT(st.nallocs <= 3); // two shards + at most one straddle merge break
 }
 void malformed_providers_throw()

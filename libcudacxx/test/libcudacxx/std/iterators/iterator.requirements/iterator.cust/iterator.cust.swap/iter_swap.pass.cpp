@@ -208,8 +208,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
     cuda::std::ranges::iter_swap(&g, &h);
     assert(g.value && h.value);
   }
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#  if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
+#if TEST_CUDA_COMPILER(CLANG) // NVCC has issues here, where it generates different results for different versions
   {
     move_tracker arr[2];
     cuda::std::ranges::iter_swap(cuda::std::begin(arr), cuda::std::begin(arr) + 1);
@@ -222,8 +221,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
       assert(arr[0].moves() == 1 && arr[1].moves() == 2);
     }
   }
-#  endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
-#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#endif // TEST_CUDA_COMPILER(CLANG)
   {
     int buff[2] = {1, 2};
     cuda::std::ranges::iter_swap(buff + 0, buff + 1);

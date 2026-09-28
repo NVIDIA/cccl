@@ -162,7 +162,7 @@ if (CUDAToolkit_FOUND)
     # Prefer static CUDA libs on Linux for self-contained binaries. If the
     # toolchain (e.g. lite/pip CUDA installs or some Docker images) only ships
     # the dynamic variants, fall back to those rather than failing configure.
-    foreach (_cudalib nvJitLink nvptxcompiler nvfatbin)
+    foreach (_cudalib nvptxcompiler nvfatbin)
       if (TARGET "CUDA::${_cudalib}_static")
         target_link_libraries(libnvcc PRIVATE "CUDA::${_cudalib}_static")
       elseif (TARGET "CUDA::${_cudalib}")
@@ -172,15 +172,51 @@ if (CUDAToolkit_FOUND)
           FATAL_ERROR
           "libnvcc needs CUDA::${_cudalib}[_static] but neither variant was "
           "found by FindCUDAToolkit. Install the full CUDA toolkit "
-          "(libnvjitlink-dev / libnvfatbin-dev or equivalent)."
+          "(libnvfatbin-dev or equivalent)."
         )
       endif()
     endforeach()
+
+    # nvJitLink is the exception: it must be linked *dynamically*. A statically
+    # linked nvJitLink is frozen at the build image's CTK version, which can be
+    # older than the LTO-IR (NVVM) container libnvcc's LLVM emits; nvJitLink
+    # then rejects it at runtime with "NVVM_ERROR_INVALID_INPUT in
+    # nvvmAddNVVMContainerToProgram, may need newer version of nvJitLink
+    # library". Linking dynamically resolves libnvJitLink.so from the
+    # nvidia-nvjitlink runtime package instead (auditwheel is configured to
+    # exclude it from the wheel, so the installed package supplies it), which
+    # tracks the newest published nvJitLink and stays compatible with the
+    # container. There is deliberately no static fallback: it would build
+    # successfully and then fail at run time.
+    if (TARGET CUDA::nvJitLink)
+      target_link_libraries(libnvcc PRIVATE CUDA::nvJitLink)
+    else()
+      message(
+        FATAL_ERROR
+        "libnvcc needs the shared CUDA::nvJitLink but FindCUDAToolkit did not "
+        "find it. Install the full CUDA toolkit (libnvjitlink-dev or "
+        "equivalent); the static variant is not a usable substitute."
+      )
+    endif()
   endif()
 endif()
 
 if (NOT MSVC)
   target_compile_options(libnvcc PRIVATE -fno-rtti)
+endif()
+
+if (NOT WIN32)
+  # libnvcc statically links its own copies of LLVM, Clang and LLD. By default
+  # every one of those tens of thousands of symbols is exported from the shared
+  # object with default visibility. When another module in the same process also
+  # exports LLVM symbols -- notably numba-cuda-mlir's libMLIRPythonCAPI.so, which
+  # is loaded RTLD_GLOBAL and ships an ABI-incompatible LLVM -- the dynamic
+  # linker can interpose libnvcc's *own* internal calls into that foreign LLVM,
+  # crashing during code generation (e.g. SelectionDAG::getNode reaching a
+  # mismatched MachinePointerInfo::getAddrSpace). Localize the symbols that come
+  # from the static LLVM/Clang/LLD archives so libnvcc exports only its own
+  # libnvcc* C API and all of its LLVM references bind internally.
+  target_link_options(libnvcc PRIVATE LINKER:--exclude-libs,ALL)
 endif()
 
 set_target_properties(

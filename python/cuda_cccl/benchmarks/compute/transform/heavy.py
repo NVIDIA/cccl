@@ -7,7 +7,7 @@
 C++ equivalent: cub/benchmarks/bench/transform/heavy.cu
 
 Notes:
-- Migration: Python uses Numba local arrays to emulate register pressure.
+- Python uses device-local arrays to emulate register pressure.
 """
 
 import sys
@@ -17,16 +17,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cuda.bench as bench
 import cupy as cp
-import numba
 import numpy as np
-from numba import cuda as lang
+from numba_cuda_mlir import cuda as lang
 from utils import as_cupy_stream, generate_data_with_entropy
 
 import cuda.compute
 
 
 def _heavy_op_32(data):
-    reg = lang.local.array(shape=32, dtype=numba.uint32)
+    reg = lang.local.array(shape=32, dtype=np.uint32)
     reg[0] = data
     for i in range(1, 32):
         x = reg[i - 1]
@@ -43,7 +42,7 @@ def _heavy_op_32(data):
 
 
 def _heavy_op_64(data):
-    reg = lang.local.array(shape=64, dtype=numba.uint32)
+    reg = lang.local.array(shape=64, dtype=np.uint32)
     reg[0] = data
     for i in range(1, 64):
         x = reg[i - 1]
@@ -60,7 +59,7 @@ def _heavy_op_64(data):
 
 
 def _heavy_op_128(data):
-    reg = lang.local.array(shape=128, dtype=numba.uint32)
+    reg = lang.local.array(shape=128, dtype=np.uint32)
     reg[0] = data
     for i in range(1, 128):
         x = reg[i - 1]
@@ -77,7 +76,7 @@ def _heavy_op_128(data):
 
 
 def _heavy_op_256(data):
-    reg = lang.local.array(shape=256, dtype=numba.uint32)
+    reg = lang.local.array(shape=256, dtype=np.uint32)
     reg[0] = data
     for i in range(1, 256):
         x = reg[i - 1]

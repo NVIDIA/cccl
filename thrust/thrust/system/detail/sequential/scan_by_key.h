@@ -43,7 +43,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
   using ValueType = thrust::detail::it_value_t<InputIterator2>;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
 
   if (first1 != last1)
   {
@@ -54,7 +54,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
 
     for (++first1, ++first2, ++result; first1 != last1; ++first1, (void) ++first2, (void) ++result)
     {
-      KeyType key = *first1; // NOLINT(performance-unnecessary-copy-initialization)
+      const KeyType key = *first1; // NOLINT(performance-unnecessary-copy-initialization)
 
       if (binary_pred(prev_key, key))
       {
@@ -107,7 +107,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
 
     for (++first1, ++first2, ++result; first1 != last1; ++first1, (void) ++first2, (void) ++result)
     {
-      KeyType key = *first1; // NOLINT(performance-unnecessary-copy-initialization)
+      const KeyType key = *first1; // NOLINT(performance-unnecessary-copy-initialization)
 
       // use temp to permit in-place scans
       temp_value = *first2;

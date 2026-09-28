@@ -36,13 +36,13 @@ void TestVectorLowerBoundSimple()
   IntVector integral_output(10);
   thrust::lower_bound(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
-  typename IntVector::iterator output_end =
+  const typename IntVector::iterator output_end =
     thrust::lower_bound(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
-  ASSERT_EQUAL((output_end - integral_output.begin()), 10);
+  REQUIRE((output_end - integral_output.begin()) == 10);
 
-  IntVector ref{0, 1, 1, 2, 2, 2, 3, 3, 4, 5};
-  ASSERT_EQUAL(integral_output, ref);
+  const IntVector ref{0, 1, 1, 2, 2, 2, 3, 3, 4, 5};
+  REQUIRE(integral_output == ref);
 
   //    // test with iterator output type
   //    using IteratorVector = typename vector_like<Vector, typename Vector::iterator>::type;
@@ -70,16 +70,15 @@ lower_bound(my_system& system, ForwardIterator, ForwardIterator, InputIterator, 
   return output;
 }
 
-void TestVectorLowerBoundDispatchExplicit()
+TEST_CASE("TestVectorLowerBoundDispatchExplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::lower_bound(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestVectorLowerBoundDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator lower_bound(my_tag, ForwardIterator, ForwardIterator, InputIterator, InputIterator, OutputIterator output)
@@ -88,7 +87,7 @@ OutputIterator lower_bound(my_tag, ForwardIterator, ForwardIterator, InputIterat
   return output;
 }
 
-void TestVectorLowerBoundDispatchImplicit()
+TEST_CASE("TestVectorLowerBoundDispatchImplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -99,9 +98,8 @@ void TestVectorLowerBoundDispatchImplicit()
     thrust::retag<my_tag>(vec.end()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestVectorLowerBoundDispatchImplicit);
 
 template <class Vector>
 void TestVectorUpperBoundSimple()
@@ -116,13 +114,13 @@ void TestVectorUpperBoundSimple()
 
   // test with integral output type
   IntVector integral_output(10);
-  typename IntVector::iterator output_end =
+  const typename IntVector::iterator output_end =
     thrust::upper_bound(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
-  ASSERT_EQUAL((output_end - integral_output.begin()), 10);
+  REQUIRE((output_end - integral_output.begin()) == 10);
 
-  IntVector ref{1, 1, 2, 2, 2, 3, 3, 4, 5, 5};
-  ASSERT_EQUAL(integral_output, ref);
+  const IntVector ref{1, 1, 2, 2, 2, 3, 3, 4, 5, 5};
+  REQUIRE(integral_output == ref);
 
   //    // test with iterator output type
   //    using IteratorVector = typename vector_like<Vector, typename Vector::iterator>::type;
@@ -150,16 +148,15 @@ upper_bound(my_system& system, ForwardIterator, ForwardIterator, InputIterator, 
   return output;
 }
 
-void TestVectorUpperBoundDispatchExplicit()
+TEST_CASE("TestVectorUpperBoundDispatchExplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::upper_bound(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestVectorUpperBoundDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator upper_bound(my_tag, ForwardIterator, ForwardIterator, InputIterator, InputIterator, OutputIterator output)
@@ -168,7 +165,7 @@ OutputIterator upper_bound(my_tag, ForwardIterator, ForwardIterator, InputIterat
   return output;
 }
 
-void TestVectorUpperBoundDispatchImplicit()
+TEST_CASE("TestVectorUpperBoundDispatchImplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -179,9 +176,8 @@ void TestVectorUpperBoundDispatchImplicit()
     thrust::retag<my_tag>(vec.end()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestVectorUpperBoundDispatchImplicit);
 
 template <class Vector>
 void TestVectorBinarySearchSimple()
@@ -197,23 +193,23 @@ void TestVectorBinarySearchSimple()
 
   // test with boolean output type
   BoolVector bool_output(10);
-  typename BoolVector::iterator bool_output_end =
+  const typename BoolVector::iterator bool_output_end =
     thrust::binary_search(vec.begin(), vec.end(), input.begin(), input.end(), bool_output.begin());
 
-  ASSERT_EQUAL((bool_output_end - bool_output.begin()), 10);
+  REQUIRE((bool_output_end - bool_output.begin()) == 10);
 
-  BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
-  ASSERT_EQUAL(bool_output, bool_ref);
+  const BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
+  REQUIRE(bool_output == bool_ref);
 
   // test with integral output type
   IntVector integral_output(10, 2);
-  typename IntVector::iterator int_output_end =
+  const typename IntVector::iterator int_output_end =
     thrust::binary_search(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
-  ASSERT_EQUAL((int_output_end - integral_output.begin()), 10);
+  REQUIRE((int_output_end - integral_output.begin()) == 10);
 
-  IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
-  ASSERT_EQUAL(integral_output, int_ref);
+  const IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
+  REQUIRE(integral_output == int_ref);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchSimple);
 
@@ -225,16 +221,15 @@ binary_search(my_system& system, ForwardIterator, ForwardIterator, InputIterator
   return output;
 }
 
-void TestVectorBinarySearchDispatchExplicit()
+TEST_CASE("TestVectorBinarySearchDispatchExplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::binary_search(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestVectorBinarySearchDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator
@@ -244,7 +239,7 @@ binary_search(my_tag, ForwardIterator, ForwardIterator, InputIterator, InputIter
   return output;
 }
 
-void TestVectorBinarySearchDispatchImplicit()
+TEST_CASE("TestVectorBinarySearchDispatchImplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -255,9 +250,8 @@ void TestVectorBinarySearchDispatchImplicit()
     thrust::retag<my_tag>(vec.end()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestVectorBinarySearchDispatchImplicit);
 
 template <typename T>
 struct TestVectorLowerBound
@@ -278,10 +272,10 @@ struct TestVectorLowerBound
     thrust::lower_bound(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), h_output.begin());
     thrust::lower_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
-VariableUnitTest<TestVectorLowerBound, SignedIntegralTypes> TestVectorLowerBoundInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBound, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorUpperBound
@@ -302,10 +296,10 @@ struct TestVectorUpperBound
     thrust::upper_bound(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), h_output.begin());
     thrust::upper_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
-VariableUnitTest<TestVectorUpperBound, SignedIntegralTypes> TestVectorUpperBoundInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBound, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorBinarySearch
@@ -326,10 +320,10 @@ struct TestVectorBinarySearch
     thrust::binary_search(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), h_output.begin());
     thrust::binary_search(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), d_output.begin());
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
-VariableUnitTest<TestVectorBinarySearch, SignedIntegralTypes> TestVectorBinarySearchInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearch, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorLowerBoundDiscardIterator
@@ -343,18 +337,18 @@ struct TestVectorLowerBoundDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(2 * n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> h_result =
+    const thrust::discard_iterator<> h_result =
       thrust::lower_bound(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), thrust::make_discard_iterator());
-    thrust::discard_iterator<> d_result =
+    const thrust::discard_iterator<> d_result =
       thrust::lower_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
-VariableUnitTest<TestVectorLowerBoundDiscardIterator, SignedIntegralTypes> TestVectorLowerBoundDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBoundDiscardIterator, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorUpperBoundDiscardIterator
@@ -368,18 +362,18 @@ struct TestVectorUpperBoundDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(2 * n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> h_result =
+    const thrust::discard_iterator<> h_result =
       thrust::upper_bound(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), thrust::make_discard_iterator());
-    thrust::discard_iterator<> d_result =
+    const thrust::discard_iterator<> d_result =
       thrust::upper_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
-VariableUnitTest<TestVectorUpperBoundDiscardIterator, SignedIntegralTypes> TestVectorUpperBoundDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBoundDiscardIterator, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorBinarySearchDiscardIterator
@@ -393,16 +387,15 @@ struct TestVectorBinarySearchDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(2 * n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> h_result = thrust::binary_search(
+    const thrust::discard_iterator<> h_result = thrust::binary_search(
       h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), thrust::make_discard_iterator());
-    thrust::discard_iterator<> d_result = thrust::binary_search(
+    const thrust::discard_iterator<> d_result = thrust::binary_search(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
-VariableUnitTest<TestVectorBinarySearchDiscardIterator, SignedIntegralTypes>
-  TestVectorBinarySearchDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearchDiscardIterator, SignedIntegralTypes);

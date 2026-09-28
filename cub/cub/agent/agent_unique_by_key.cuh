@@ -254,7 +254,7 @@ struct AgentUniqueByKey
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
+      const int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
       if (selection_flags[ITEM])
       {
         GetShared(tag)[local_scatter_offset] = items[ITEM];
@@ -292,7 +292,7 @@ struct AgentUniqueByKey
    *
    * @return The running count of selections (including this tile)
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
   ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
@@ -300,7 +300,7 @@ struct AgentUniqueByKey
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_idx[ITEMS_PER_THREAD];
 
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -315,7 +315,7 @@ struct AgentUniqueByKey
     __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -335,7 +335,7 @@ struct AgentUniqueByKey
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
-      if ((IS_LAST_TILE) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+      if ((IsLastTile) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
       {
         selection_flags[ITEM] = 1;
       }
@@ -352,16 +352,16 @@ struct AgentUniqueByKey
     if (threadIdx.x == 0)
     {
       // Update tile status if this is not the last tile
-      if constexpr (!IS_LAST_TILE)
+      if constexpr (!IsLastTile)
       {
         tile_state.SetInclusive(0, num_tile_selections);
       }
     }
 
     // Do not count any out-of-bounds selections
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
-      int num_discount = ITEMS_PER_TILE - num_tile_items;
+      const int num_discount = ITEMS_PER_TILE - num_tile_items;
       num_tile_selections -= num_discount;
     }
     num_selections = num_tile_selections;
@@ -410,7 +410,7 @@ struct AgentUniqueByKey
    *
    * @return Returns the running count of selections (including this tile)
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
   ConsumeSubsequentTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
@@ -418,7 +418,7 @@ struct AgentUniqueByKey
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_idx[ITEMS_PER_THREAD];
 
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -433,7 +433,7 @@ struct AgentUniqueByKey
     __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -447,7 +447,7 @@ struct AgentUniqueByKey
 
     __syncthreads();
 
-    KeyT tile_predecessor = d_keys_in[tile_offset - 1];
+    const KeyT tile_predecessor = d_keys_in[tile_offset - 1];
     BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
       .FlagHeads(selection_flags, keys, inequality_op, tile_predecessor);
 
@@ -455,7 +455,7 @@ struct AgentUniqueByKey
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
-      if ((IS_LAST_TILE) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+      if ((IsLastTile) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
       {
         selection_flags[ITEM] = 1;
       }
@@ -474,9 +474,9 @@ struct AgentUniqueByKey
     num_tile_selections   = prefix_cb.GetBlockAggregate();
     num_selections_prefix = prefix_cb.GetExclusivePrefix();
 
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
-      int num_discount = ITEMS_PER_TILE - num_tile_items;
+      const int num_discount = ITEMS_PER_TILE - num_tile_items;
       num_tile_selections -= num_discount;
       num_selections -= num_discount;
     }
@@ -523,18 +523,18 @@ struct AgentUniqueByKey
    * @param tile_state
    *   Global tile state descriptor
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
   ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     OffsetT num_selections;
     if (tile_idx == 0)
     {
-      num_selections = ConsumeFirstTile<IS_LAST_TILE>(num_tile_items, tile_offset, tile_state);
+      num_selections = ConsumeFirstTile<IsLastTile>(num_tile_items, tile_offset, tile_state);
     }
     else
     {
-      num_selections = ConsumeSubsequentTile<IS_LAST_TILE>(num_tile_items, tile_idx, tile_offset, tile_state);
+      num_selections = ConsumeSubsequentTile<IsLastTile>(num_tile_items, tile_idx, tile_offset, tile_state);
     }
 
     return num_selections;
@@ -561,7 +561,7 @@ struct AgentUniqueByKey
   ConsumeRange(int num_tiles, ScanTileStateT& tile_state, NumSelectedIteratorT d_num_selected_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block
-    int tile_idx = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
+    const int tile_idx = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
 
     // Global offset for the current tile
     OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(ITEMS_PER_TILE);
@@ -572,8 +572,8 @@ struct AgentUniqueByKey
     }
     else
     {
-      int num_remaining      = static_cast<int>(num_items - tile_offset);
-      OffsetT num_selections = ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state);
+      const int num_remaining = static_cast<int>(num_items - tile_offset);
+      OffsetT num_selections  = ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state);
       if (threadIdx.x == 0)
       {
         *d_num_selected_out = num_selections;

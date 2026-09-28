@@ -47,7 +47,7 @@ is_copy_constructible : public is_constructible<_Tp, add_lvalue_reference_t<add_
 {};
 
 template <class _Tp>
-inline constexpr bool is_copy_constructible_v = is_constructible<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>::value;
+inline constexpr bool is_copy_constructible_v = is_constructible_v<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>;
 
 #endif // No builtin
 

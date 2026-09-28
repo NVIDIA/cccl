@@ -60,8 +60,10 @@ int main(int, char**)
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70,
     (test<local_memory_selector, cuda::thread_scope_thread>(); test<shared_memory_selector, cuda::thread_scope_block>();
+     test<shared_memory_selector, cuda::thread_scope_cluster>();
      test<global_memory_selector, cuda::thread_scope_block>();
-     test<global_memory_selector, cuda::thread_scope_device>();))
+     test<global_memory_selector, cuda::thread_scope_device>();
+     test<global_memory_selector, cuda::thread_scope_cluster>();))
 #endif
   return 0;
 }

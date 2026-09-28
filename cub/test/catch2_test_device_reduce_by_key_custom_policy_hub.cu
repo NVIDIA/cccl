@@ -49,8 +49,8 @@ CUB_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][de
   c2h::device_vector<value_t> d_aggregates_out(h_values_in.size());
   c2h::device_vector<offset_t> d_num_runs(1);
 
-  c2h::host_vector<key_t> expected_keys{1, 2, 3};
-  c2h::host_vector<value_t> expected_values{3, 12, 13};
+  const c2h::host_vector<key_t> expected_keys{1, 2, 3};
+  const c2h::host_vector<value_t> expected_values{3, 12, 13};
 
   using policy_hub_t = my_policy_hub<reduction_op_t, accum_t, key_t>;
   using dispatch_t   = cub::DispatchReduceByKey<

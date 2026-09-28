@@ -79,7 +79,7 @@ struct index_to_gather_index_op
 };
 
 // ensure that we properly support thrust::tabulate_output_iterator from cuda::std
-void TestTabulateOutputIteratorTraits()
+TEST_CASE("TestTabulateOutputIteratorTraits", "[tabulate_output_iterator]")
 {
   using base_it = thrust::host_vector<int>::iterator;
   using Op      = host_write_op<base_it>;
@@ -108,7 +108,6 @@ void TestTabulateOutputIteratorTraits()
   static_assert(!cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTabulateOutputIteratorTraits);
 
 template <class Vector>
 void TestTabulateOutputIterator()
@@ -127,7 +126,7 @@ void TestTabulateOutputIterator()
                                                  device_write_first_op<it_t>>::type;
 
   // Construct tabulate_output_iterator
-  op_t op{output.begin()};
+  const op_t op{output.begin()};
   auto tabulate_out_it = thrust::make_tabulate_output_iterator(op);
 
   // Prepare input
@@ -148,31 +147,29 @@ void TestTabulateOutputIterator()
     thrust::make_transform_iterator(thrust::make_counting_iterator(0), index_to_gather_index_op{select_every_nth});
   thrust::gather(gather_index_it, gather_index_it + expected_num_selected, input.cbegin(), expected_output.begin());
 
-  ASSERT_EQUAL(expected_num_selected, num_selected);
-  ASSERT_EQUAL(output, expected_output);
+  REQUIRE(expected_num_selected == num_selected);
+  REQUIRE(output == expected_output);
 }
 DECLARE_VECTOR_UNITTEST(TestTabulateOutputIterator);
 
-void TestTabulateOutputIterator()
+TEST_CASE("TestTabulateOutputIteratorSubscript", "[tabulate_output_iterator]")
 {
   using vector_t = thrust::host_vector<int>;
   using vec_it_t = typename vector_t::iterator;
   using op_t     = host_write_op<vec_it_t>;
 
   vector_t out(4, 42);
-  thrust::tabulate_output_iterator<op_t> tabulate_out_it{op_t{out.begin()}};
+  thrust::tabulate_output_iterator<op_t> tabulate_out_it{op_t{out.begin()}}; // NOLINT(misc-const-correctness)
 
   tabulate_out_it[1] = 2;
   vector_t ref{42, 2, 42, 42};
-  ASSERT_EQUAL(out, ref);
+  REQUIRE(out == ref);
 
   tabulate_out_it[3] = 0;
   ref                = {42, 2, 42, 0};
-  ASSERT_EQUAL(out, ref);
+  REQUIRE(out == ref);
 
   tabulate_out_it[1] = 4;
   ref                = {42, 4, 42, 0};
-  ASSERT_EQUAL(out, ref);
+  REQUIRE(out == ref);
 }
-
-DECLARE_UNITTEST(TestTabulateOutputIterator);

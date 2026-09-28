@@ -395,7 +395,7 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr arch_traits_t arch_traits<arch_id::sm_100>() noexcept
 {
-  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_90);
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_100);
   __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
@@ -429,6 +429,28 @@ template <>
 {
   auto __traits    = ::cuda::arch_traits<arch_id::sm_103>();
   __traits.arch_id = arch_id::sm_103a;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr arch_traits_t arch_traits<arch_id::sm_107>() noexcept
+{
+  auto __traits                           = ::cuda::arch_traits<arch_id::sm_100>();
+  __traits.arch_id                        = arch_id::sm_107;
+  __traits.compute_capability_major       = 10;
+  __traits.compute_capability_minor       = 7;
+  __traits.compute_capability             = compute_capability{107};
+  __traits.max_blocks_per_multiprocessor  = 16;
+  __traits.max_threads_per_multiprocessor = 1024;
+  __traits.max_warps_per_multiprocessor   = 32;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr arch_traits_t arch_traits<arch_id::sm_107a>() noexcept
+{
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_107>();
+  __traits.arch_id = arch_id::sm_107a;
   return __traits;
 };
 

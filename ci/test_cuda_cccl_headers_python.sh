@@ -1,33 +1,15 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 source "$ci_dir/pyenv_helper.sh"
-
-# Parse common arguments
+# shellcheck source=ci/util/python/common_arg_parser.sh
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
-# Pin cuda-toolkit to the container's CTK minor and set cuda_version /
-# cuda_major_version (-ctk-mode latest opts out). See pyenv_helper.sh.
-pin_cuda_toolkit "${ctk_mode}"
 
-# Setup Python environment
-setup_python_env "${py_version}"
+# The only lane on this path that does not need a GPU: it asserts that headers
+# shipped in the wheel are on disk, and never launches a kernel.
+export CCCL_MINIMAL_CONTAINER_NO_GPU=1
 
-# Fetch or build the cuda_cccl wheel:
-if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-  wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
-else
-  "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
-fi
-
-# Install cuda_cccl
-CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-ctk_flavor="$(ctk_extra_flavor "${ctk_mode}")"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
-
-# Run tests for core package
-cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest -n auto -v headers/
+dispatch_python_lane "ci/util/python/run_headers_tests.sh" "$@"

@@ -41,13 +41,13 @@ int g_grid_size = 1;
 /**
  * Simple kernel for performing a block-wide reduction.
  */
-template <int BLOCK_THREADS>
+template <int BlockThreads>
 __global__ void BlockReduceKernel(int* d_in, // Tile of input
                                   int* d_out // Tile aggregate
 )
 {
   // Specialize BlockReduce type for our thread block
-  using BlockReduceT = cub::BlockReduce<int, BLOCK_THREADS>;
+  using BlockReduceT = cub::BlockReduce<int, BlockThreads>;
   using TempStorageT = typename BlockReduceT::TempStorage;
 
   union ShmemLayout
@@ -62,7 +62,7 @@ __global__ void BlockReduceKernel(int* d_in, // Tile of input
   // cast to lvalue reference of expected type
   auto& temp_storage = reinterpret_cast<TempStorageT&>(smem);
 
-  int data = d_in[threadIdx.x];
+  const int data = d_in[threadIdx.x];
 
   // Compute sum
   int aggregate = BlockReduceT(temp_storage).Sum(data);
@@ -107,26 +107,26 @@ int Initialize(int* h_in, int num_items)
 /**
  * Test thread block reduction
  */
-template <int BLOCK_THREADS>
+template <int BlockThreads>
 void Test()
 {
   // Allocate host arrays
-  int* h_in = new int[BLOCK_THREADS];
+  int* h_in = new int[BlockThreads];
 
   // Initialize problem and reference output on host
-  int h_aggregate = Initialize(h_in, BLOCK_THREADS);
+  int h_aggregate = Initialize(h_in, BlockThreads);
 
   // Initialize device arrays
   int* d_in  = nullptr;
   int* d_out = nullptr;
-  cudaMalloc((void**) &d_in, sizeof(int) * BLOCK_THREADS);
-  cudaMalloc((void**) &d_out, sizeof(int) * BLOCK_THREADS);
+  cudaMalloc((void**) &d_in, sizeof(int) * BlockThreads);
+  cudaMalloc((void**) &d_out, sizeof(int) * BlockThreads);
 
   // Display input problem data
   if (g_verbose)
   {
     printf("Input data: ");
-    for (int i = 0; i < BLOCK_THREADS; i++)
+    for (int i = 0; i < BlockThreads; i++)
     {
       printf("%d, ", h_in[i]);
     }
@@ -134,10 +134,10 @@ void Test()
   }
 
   // Copy problem to device
-  cudaMemcpy(d_in, h_in, sizeof(int) * BLOCK_THREADS, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_in, h_in, sizeof(int) * BlockThreads, cudaMemcpyHostToDevice);
 
   // determine necessary storage size:
-  auto block_reduce_temp_bytes = sizeof(typename cub::BlockReduce<int, BLOCK_THREADS>::TempStorage);
+  auto block_reduce_temp_bytes = sizeof(typename cub::BlockReduce<int, BlockThreads>::TempStorage);
   // finally, we need to make sure that we can hold at least one integer
   // needed in the kernel to exchange data after reduction
   auto smem_size = (std::max) (1 * sizeof(int), block_reduce_temp_bytes);
@@ -146,12 +146,12 @@ void Test()
   cudaStream_t stream = nullptr;
 
   // Run reduction kernel
-  BlockReduceKernel<BLOCK_THREADS><<<g_grid_size, BLOCK_THREADS, smem_size, stream>>>(d_in, d_out);
+  BlockReduceKernel<BlockThreads><<<g_grid_size, BlockThreads, smem_size, stream>>>(d_in, d_out);
 
   // Check total aggregate
   printf("\tAggregate: ");
   int compare = 0;
-  for (int i = 0; i < BLOCK_THREADS; i++)
+  for (int i = 0; i < BlockThreads; i++)
   {
     compare = compare || CompareDeviceResults(&h_aggregate, d_out + i, 1, g_verbose, g_verbose);
   }

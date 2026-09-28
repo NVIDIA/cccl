@@ -92,7 +92,7 @@ endfunction()
 
 libcudacxx_init_debugger_testing(testing_enabled)
 
-if (NOT testing_enabled)
+if ((NOT testing_enabled) OR LIBCUDACXX_TEST_WITH_NVRTC)
   return()
 endif()
 
@@ -167,7 +167,7 @@ function(libcudacxx_add_pretty_printer_test)
   )
   target_link_libraries(
     ${target_name}
-    PRIVATE libcudacxx.compiler_interface CUDA::cudart
+    PRIVATE libcudacxx.compiler_interface CUDA::cudart CUDA::cuda_driver
   )
 
   # Explicitly set max optimization, the printers should work even when everything is
@@ -241,6 +241,7 @@ if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 13.0)
 endif()
 add_subdirectory(memory_resource)
 add_subdirectory(optional)
+add_subdirectory(shared_resource)
 add_subdirectory(span)
 add_subdirectory(stream)
 add_subdirectory(tuple)

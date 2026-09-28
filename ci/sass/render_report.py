@@ -4,9 +4,12 @@
 The comment says which targets changed, shows the first lines of each diff, and
 tells the author how to request a benchmark run. It does not run the benchmarks
 and does not say that the performance changed.
+
+With `--analysis` it also shows how a model classified each difference.
 """
 
 import argparse
+import html
 import json
 import re
 import sys
@@ -22,6 +25,28 @@ from compare_sass import Status  # noqa: E402
 # shows the diff of this many, one architecture each. The rest are counted.
 _MAX_LISTED_TARGETS = 25
 _MAX_DIFF_BLOCKS = 10
+
+#: The sort rank and the label of each classification.
+_CLASSIFICATIONS = {
+    "significant": (0, "⚠️ Significant"),
+    "unclear": (1, "❓ Unclear"),
+    "benign": (2, "✅ Potentially Benign"),
+}
+
+# The model controls how much it writes, and the comment holds 65536 characters.
+_MAX_TITLE_CHARS = 120
+_MAX_EXPLANATION_CHARS = 600
+
+#: What GitHub accepts in one comment. The renderer stays under it, because a
+#: comment over the limit is rejected whole.
+_MAX_COMMENT_BYTES = 60000
+
+_CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+#: The markdown that can escape one line: a code span, emphasis, or a link. An
+#: `_` between two alphanumerics opens no emphasis in CommonMark, and escaping
+#: it would put a backslash in the middle of every `sm_90`.
+_INLINE_MARKDOWN = re.compile(r"[\\`*\[\]]|(?<![0-9A-Za-z])_|_(?![0-9A-Za-z])")
 
 
 def _code(value: object) -> str:
@@ -76,53 +101,191 @@ def _render_how_to_benchmark(targets: list[dict[str, Any]]) -> list[str]:
     ]
 
 
-def _render_diffs(targets: list[dict[str, Any]], artifacts_url: str) -> list[str]:
+def _rejected(reason: str) -> dict[str, Any]:
+    """The group that stands in for one the model got wrong."""
+    return {
+        "classification": "unclear",
+        "title": "No usable classification",
+        "explanation": f"The renderer rejected the model output: {reason}.",
+    }
+
+
+def _fault(group: Any) -> str | None:
+    """What makes `group` unusable, or None when nothing does.
+
+    `codex-action` holds the model to `model-output.schema.json`, but the
+    renderer reads a file, not a promise.
+    """
+    if not isinstance(group, dict):
+        return "the group was not an object"
+    if (value := group.get("classification")) not in _CLASSIFICATIONS:
+        return f"the classification was {json.dumps(value)}"
+    if not all(
+        isinstance(group.get(field), str) and group[field].strip()
+        for field in ("title", "explanation")
+    ):
+        return "the title or the explanation was empty"
+    if not isinstance(group.get("diffs"), list):
+        return "the diff list was not a list"
+    return None
+
+
+def load_analysis(path: Path, report: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Map every changed diff to the group that classifies it.
+
+    A diff that the model got wrong or left out still gets a group, so one bad
+    answer costs its own diffs and no others. This never raises: the comparison
+    result must reach the pull request even when the model output is garbage.
+    """
+    # A target name holds dots, so a key is compared whole and never split apart.
+    known = {
+        f"{target['target']}.{arch['arch']}"
+        for target in report["targets"]
+        for arch in target["archs"]
+        if arch["changed"]
+    }
+
+    try:
+        with path.open() as fd:
+            groups = json.load(fd)["groups"]
+        if not isinstance(groups, list):
+            raise TypeError("groups is not a list")
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError, KeyError) as error:
+        print(f"warning: {path} is unusable: {error}", file=sys.stderr)
+        return dict.fromkeys(known, _rejected("the output file was unreadable"))
+
+    by_diff: dict[str, dict[str, Any]] = {}
+    for index, group in enumerate(groups):
+        location = f"$.groups[{index}]"
+        if fault := _fault(group):
+            print(f"warning: {location} is unusable: {fault}", file=sys.stderr)
+            # A rejected group still names the diffs it meant to cover, so they
+            # can carry the real reason instead of a bare "not classified".
+            named = group.get("diffs") if isinstance(group, dict) else None
+            group = _rejected(fault)
+            if not isinstance(named, list):
+                continue
+            group["diffs"] = named
+
+        for key in group["diffs"]:
+            if key not in known:
+                print(
+                    f"warning: {location} names unknown diff {key!r}", file=sys.stderr
+                )
+            elif key in by_diff:
+                print(f"warning: {location} repeats diff {key!r}", file=sys.stderr)
+            else:
+                by_diff[key] = group
+
+    for key in known - set(by_diff):
+        by_diff[key] = _rejected("the model did not classify this difference")
+    return by_diff
+
+
+def _text(value: str, limit: int) -> str:
+    """Make model text safe for one line of markdown.
+
+    The model quotes the diffs, which hold whatever the compiler emitted, so
+    every construct that can escape its line is neutralized, not trusted.
+    """
+    value = _CONTROL_CHARACTER.sub("", value)
+    value = " ".join(value.split())
+    if len(value) > limit:
+        value = value[:limit].rstrip() + "..."
+    value = html.escape(value, quote=True).replace("|", "&#124;")
+    return _INLINE_MARKDOWN.sub(lambda m: "\\" + m.group(0), value)
+
+
+def _render_diff_block(
+    target: dict[str, Any],
+    arch: dict[str, Any],
+    group: dict[str, Any] | None,
+    artifacts_url: str,
+) -> list[str]:
+    diff = arch["diff"]
+    excerpt = diff["excerpt"]
+    label = explanation = ""
+    if group:
+        label = f" - {_CLASSIFICATIONS[group['classification']][1]}"
+        explanation = (
+            f"**{_text(group['title'], _MAX_TITLE_CHARS)}** "
+            f"{_text(group['explanation'], _MAX_EXPLANATION_CHARS)}\n"
+        )
+
+    return [
+        "<details>",
+        f"<summary><code>{target['target']} - {arch['arch']}</code>{label}</summary>",
+        "",
+        explanation,
+        f"_Showing {len(excerpt)}/{diff['total_lines']} diff lines, "
+        f"{diff['changed_lines']} changes._ - "
+        f"[⬇️ Full diff]({artifacts_url})",
+        "",
+        # ```diff makes GitHub colour the `-` and `+` lines.
+        "```diff",
+        *excerpt,
+        "```",
+        "</details>",
+    ]
+
+
+def _render_diffs(
+    targets: list[dict[str, Any]],
+    artifacts_url: str,
+    analysis: dict[str, dict[str, Any]],
+    budget: int,
+) -> list[str]:
     """Render one collapsed diff excerpt per changed target.
 
-    A code change usually affects every architecture in the same way, thus the
-    first architecture with a diff is enough to show. A target that this PR
-    added or removed has no diff at all.
+    Architectures can have different classifications, so show the one with the
+    lowest classification rank. Keep the first diff when ranks tie or analysis
+    is absent. A target that this PR added or removed has no diff at all.
+
+    A header change makes hundreds of diffs, so the classification decides
+    which ones keep a block. `budget` is the bytes left for this section, and a
+    block that does not fit it is dropped with the ones behind it.
     """
     with_diff = []
     for target in targets:
+        candidates = []
         for arch in target["archs"]:
             if arch["diff"]:
-                with_diff.append((target, arch))
-                break
+                key = f"{target['target']}.{arch['arch']}"
+                candidates.append((target, arch, analysis.get(key)))
+        if candidates:
+            with_diff.append(
+                min(
+                    candidates,
+                    key=lambda e: _CLASSIFICATIONS[e[2]["classification"]][0],
+                )
+                if analysis
+                else candidates[0]
+            )
 
     if not with_diff:
         return []
 
-    shown = with_diff[:_MAX_DIFF_BLOCKS]
+    if analysis:
+        with_diff.sort(key=lambda e: _CLASSIFICATIONS[e[2]["classification"]][0])
 
-    lines = [
+    header = [
         "",
         "## ‼️  Summary of Differences ‼️ ",
         "",
-        f"Showing {len(shown)}/{len(with_diff)} summaries.",
+        f"Showing {len(with_diff)}/{len(with_diff)} summaries.",
     ]
-    for target, arch in shown:
-        diff = arch["diff"]
-        excerpt = diff["excerpt"]
+    budget -= len("\n".join(header).encode())
 
-        lines.extend(
-            [
-                "<details>",
-                f"<summary><code>{target['target']} - {arch['arch']}</code></summary>",
-                "",
-                f"_Showing {len(excerpt)}/{diff['total_lines']} diff lines, "
-                f"{diff['changed_lines']} changes._ - "
-                f"[⬇️ Full diff]({artifacts_url})",
-                "",
-                # ```diff makes GitHub colour the `-` and `+` lines.
-                "```diff",
-                *excerpt,
-                "```",
-                "</details>",
-            ]
-        )
+    blocks: list[list[str]] = []
+    for target, arch, group in with_diff[:_MAX_DIFF_BLOCKS]:
+        block = _render_diff_block(target, arch, group, artifacts_url)
+        budget -= len("\n".join(block).encode()) + 1
+        if budget < 0:
+            break
+        blocks.append(block)
 
-    return lines
+    header[-1] = f"Showing {len(blocks)}/{len(with_diff)} summaries."
+    return [*header, *(line for block in blocks for line in block)]
 
 
 def _render_changed_table(targets: list[dict[str, Any]]) -> list[str]:
@@ -164,6 +327,7 @@ def render(
     test_ref: str,
     arch: str,
     artifacts_url: str,
+    analysis: dict[str, dict[str, Any]] | None = None,
 ) -> str:
     """Render the markdown fragment for the PR comment."""
     targets = report["targets"]
@@ -204,12 +368,10 @@ def render(
     ]
 
     if changed:
+        lines.extend(_render_changed_table(changed))
+        budget = _MAX_COMMENT_BYTES - len("\n".join(lines).encode())
         lines.extend(
-            [
-                *_render_changed_table(changed),
-                *_render_diffs(changed, artifacts_url),
-                "",
-            ]
+            [*_render_diffs(changed, artifacts_url, analysis or {}, budget), ""]
         )
 
     return "\n".join(lines)
@@ -245,6 +407,14 @@ def main() -> None:
         default="www.example.com",
         help="Download URL of the uploaded dumps.",
     )
+    parser.add_argument(
+        "--analysis",
+        type=Path,
+        help=(
+            "Optional model classification of the diffs. Omit it to render the "
+            "comment without the triage section."
+        ),
+    )
     args = parser.parse_args()
 
     with args.report.open() as fd:
@@ -252,12 +422,15 @@ def main() -> None:
     with args.meta.open() as fd:
         meta = json.load(fd)
 
+    analysis = load_analysis(args.analysis, report) if args.analysis else None
+
     text = render(
         report,
         base_ref=meta["base_ref"],
         test_ref=meta["test_ref"],
         arch=meta["arch"],
         artifacts_url=args.artifacts_url,
+        analysis=analysis,
     )
     args.output.write_text(text)
 

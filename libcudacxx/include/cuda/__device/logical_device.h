@@ -41,10 +41,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 class __logical_device : public __logical_device_ref
 {
 public:
-  [[nodiscard]] _CCCL_HOST_API static __logical_device
-  from_native_handle(device_ref __device, ::CUgreenCtx __gctx) noexcept
+  _CCCL_HOST_API explicit __logical_device(device_ref __device)
+      : __logical_device_ref{__device}
+  {}
+
+  [[nodiscard]] _CCCL_HOST_API static __logical_device from_native_handle(device_ref __device, ::CUgreenCtx __gctx)
   {
-    return {__device, __gctx};
+    return __logical_device{__device, __gctx};
   }
 
   static __logical_device from_native_handle(device_ref, int)                    = delete;
@@ -55,8 +58,10 @@ public:
   __logical_device(const __logical_device&)            = delete;
   __logical_device& operator=(const __logical_device&) = delete;
 
-  _CCCL_HOST_API constexpr __logical_device(__logical_device&& __other) noexcept
-      : __logical_device_ref{::cuda::std::move(__other.__device_), ::cuda::std::exchange(__other.__gctx_, nullptr)}
+  _CCCL_HOST_API __logical_device(__logical_device&& __other) noexcept
+      : __logical_device_ref{::cuda::std::move(__other.__device_),
+                             ::cuda::std::exchange(__other.__cu_ctx_, nullptr),
+                             ::cuda::std::exchange(__other.__green_ctx_, nullptr)}
   {}
 
   _CCCL_HOST_API __logical_device& operator=(__logical_device&& __other) noexcept
@@ -64,8 +69,9 @@ public:
     if (this != &__other)
     {
       __reset();
-      __device_ = ::cuda::std::move(__other.__device_);
-      __gctx_   = ::cuda::std::exchange(__other.__gctx_, nullptr);
+      __device_    = ::cuda::std::move(__other.__device_);
+      __cu_ctx_    = ::cuda::std::exchange(__other.__cu_ctx_, nullptr);
+      __green_ctx_ = ::cuda::std::exchange(__other.__green_ctx_, nullptr);
     }
     return *this;
   }
@@ -76,18 +82,20 @@ public:
   }
 
 private:
-  _CCCL_HOST_API constexpr __logical_device(device_ref __device, ::CUgreenCtx __gctx) noexcept
+  _CCCL_HOST_API explicit __logical_device(device_ref __device, ::CUgreenCtx __gctx)
       : __logical_device_ref{__device, __gctx}
   {}
 
   _CCCL_HOST_API void __reset() noexcept
   {
-    if (__gctx_)
+    if (this->kind() == kinds::green_context)
     {
 #  if _CCCL_CTK_AT_LEAST(12, 5)
-      static_cast<void>(::cuda::__driver::__greenCtxDestroyNoThrow(__gctx_));
+      _CCCL_ASSERT_DRIVER_API(
+        ::cuda::__driver::__greenCtxDestroyNoThrow, "Failed to destroy green context", green_context());
 #  endif // _CCCL_CTK_AT_LEAST(12, 5)
-      __gctx_ = nullptr;
+      __green_ctx_ = nullptr;
+      __cu_ctx_    = nullptr;
     }
   }
 };

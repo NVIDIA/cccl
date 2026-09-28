@@ -22,6 +22,7 @@
 #include <thrust/scatter.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -107,14 +108,9 @@ struct RadixEncoder<float>
 {
   _CCCL_HOST_DEVICE std::uint32_t operator()(float x) const
   {
-    union
-    {
-      float f;
-      std::uint32_t i;
-    } u;
-    u.f                = x;
-    std::uint32_t mask = -static_cast<std::int32_t>(u.i >> 31) | (static_cast<std::uint32_t>(1) << 31);
-    return u.i ^ mask;
+    const auto bits    = ::cuda::std::bit_cast<std::uint32_t>(x);
+    std::uint32_t mask = -static_cast<std::int32_t>(bits >> 31) | (static_cast<std::uint32_t>(1) << 31);
+    return bits ^ mask;
   }
 };
 
@@ -123,14 +119,9 @@ struct RadixEncoder<double>
 {
   _CCCL_HOST_DEVICE std::uint64_t operator()(double x) const
   {
-    union
-    {
-      double f;
-      std::uint64_t i;
-    } u;
-    u.f                = x;
-    std::uint64_t mask = -static_cast<std::int64_t>(u.i >> 63) | (static_cast<std::uint64_t>(1) << 63);
-    return u.i ^ mask;
+    const auto bits    = ::cuda::std::bit_cast<std::uint64_t>(x);
+    std::uint64_t mask = -static_cast<std::int64_t>(bits >> 63) | (static_cast<std::uint64_t>(1) << 63);
+    return bits ^ mask;
   }
 };
 
@@ -239,7 +230,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
   const EncodedType BitMask = static_cast<EncodedType>((1 << RadixBits) - 1);
 
-  Encoder encode;
+  const Encoder encode;
 
   // storage for histograms
   size_t histograms[NumHistograms][HistogramSize] = {{0}};
@@ -269,7 +260,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
     for (unsigned int j = 0; j < HistogramSize; j++)
     {
-      size_t bin = histograms[i][j];
+      const size_t bin = histograms[i][j];
 
       if (bin == N)
       {
@@ -550,7 +541,7 @@ _CCCL_HOST_DEVICE void stable_radix_sort(
 {
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator>;
 
-  size_t N = last - first;
+  const size_t N = last - first;
 
   thrust::detail::temporary_array<KeyType, DerivedPolicy> temp(exec, N);
 
@@ -567,7 +558,7 @@ _CCCL_HOST_DEVICE void stable_radix_sort_by_key(
   using KeyType   = thrust::detail::it_value_t<RandomAccessIterator1>;
   using ValueType = thrust::detail::it_value_t<RandomAccessIterator2>;
 
-  size_t N = last1 - first1;
+  const size_t N = last1 - first1;
 
   thrust::detail::temporary_array<KeyType, DerivedPolicy> temp1(exec, N);
   thrust::detail::temporary_array<ValueType, DerivedPolicy> temp2(exec, N);

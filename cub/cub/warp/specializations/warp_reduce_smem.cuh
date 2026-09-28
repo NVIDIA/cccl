@@ -40,10 +40,10 @@ namespace detail
  * @tparam T
  *   Data type being reduced
  *
- * @tparam LOGICAL_WARP_THREADS
+ * @tparam LogicalWarpThreads
  *   Number of threads per logical warp
  */
-template <typename T, int LOGICAL_WARP_THREADS>
+template <typename T, int LogicalWarpThreads>
 struct WarpReduceSmem
 {
   /******************************************************************************
@@ -51,19 +51,19 @@ struct WarpReduceSmem
    ******************************************************************************/
 
   /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
+  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == warp_threads);
 
   /// Whether the logical warp size is a power-of-two
-  static constexpr bool IS_POW_OF_TWO = ::cuda::is_power_of_two(LOGICAL_WARP_THREADS);
+  static constexpr bool IS_POW_OF_TWO = ::cuda::is_power_of_two(LogicalWarpThreads);
 
   /// The number of warp reduction steps
-  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
+  static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
 
   /// The number of threads in half a warp
   static constexpr int HALF_WARP_THREADS = 1 << (STEPS - 1);
 
   /// The number of shared memory elements per warp
-  static constexpr int WARP_SMEM_ELEMENTS = LOGICAL_WARP_THREADS + HALF_WARP_THREADS;
+  static constexpr int WARP_SMEM_ELEMENTS = LogicalWarpThreads + HALF_WARP_THREADS;
 
   /// FlagT status (when not using ballot)
   static constexpr auto UNSET = 0x0; // Is initially unset
@@ -99,8 +99,8 @@ struct WarpReduceSmem
   /// Constructor
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
-      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
+      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
+      , member_mask(WarpMask<LogicalWarpThreads>(::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
   {}
 
   /******************************************************************************
@@ -114,7 +114,7 @@ struct WarpReduceSmem
   /**
    * @brief Reduction step
    *
-   * @tparam ALL_LANES_VALID
+   * @tparam AllLanesValid
    *   Whether all lanes in each warp are contributing a valid fold of items
    *
    * @param[in] input
@@ -126,7 +126,7 @@ struct WarpReduceSmem
    * @param[in] reduction_op
    *   Reduction operator
    */
-  template <bool ALL_LANES_VALID, typename ReductionOp, int STEP>
+  template <bool AllLanesValid, typename ReductionOp, int STEP>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
   ReduceStep(T input, int valid_items, ReductionOp reduction_op, constant_t<STEP> /*step*/)
   {
@@ -135,19 +135,19 @@ struct WarpReduceSmem
     temp_storage.reduce[lane_id] = input;
     __syncwarp(member_mask);
     // Update input if peer_addend is in range
-    if ((ALL_LANES_VALID && IS_POW_OF_TWO) || ((lane_id + OFFSET) < valid_items))
+    if ((AllLanesValid && IS_POW_OF_TWO) || ((lane_id + OFFSET) < valid_items))
     {
       T peer_addend = temp_storage.reduce[lane_id + OFFSET];
       input         = reduction_op(input, peer_addend);
     }
     __syncwarp(member_mask);
-    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, constant_v<STEP + 1>);
+    return ReduceStep<AllLanesValid>(input, valid_items, reduction_op, constant_v<STEP + 1>);
   }
 
   /**
    * @brief Reduction step (terminate)
    *
-   * @tparam ALL_LANES_VALID
+   * @tparam AllLanesValid
    *   Whether all lanes in each warp are contributing a valid fold of items
    *
    * @param[in] input
@@ -159,7 +159,7 @@ struct WarpReduceSmem
    * @param[in] reduction_op
    *   Reduction operator
    */
-  template <bool ALL_LANES_VALID, typename ReductionOp>
+  template <bool AllLanesValid, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
   ReduceStep(T input, int valid_items, ReductionOp /*reduction_op*/, constant_t<STEPS> /*step*/)
   {
@@ -173,7 +173,7 @@ struct WarpReduceSmem
   /**
    * @brief Ballot-based segmented reduce
    *
-   * @tparam HEAD_SEGMENTED
+   * @tparam HeadSegmented
    *   Whether flags indicate a segment-head or a segment-tail
    *
    * @param[in] input
@@ -188,14 +188,14 @@ struct WarpReduceSmem
    * @param[in] has_ballot
    *   Marker type for whether the target arch has ballot functionality
    */
-  template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+  template <bool HeadSegmented, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
   SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::true_type /*has_ballot*/)
   {
     // Get the start flags for each thread in the warp.
     unsigned warp_flags = __ballot_sync(member_mask, flag);
 
-    if (!HEAD_SEGMENTED)
+    if (!HeadSegmented)
     {
       warp_flags <<= 1;
     }
@@ -206,16 +206,16 @@ struct WarpReduceSmem
     // Accommodate packing of multiple logical warps in a single physical warp
     if (!IS_ARCH_WARP)
     {
-      warp_flags >>= (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS) * LOGICAL_WARP_THREADS;
+      warp_flags >>= (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads) * LogicalWarpThreads;
     }
 
     // Find next flag
     int next_flag = ::cuda::std::countr_zero(warp_flags);
 
     // Clip the next segment at the warp boundary if necessary
-    if (LOGICAL_WARP_THREADS != 32)
+    if (LogicalWarpThreads != 32)
     {
-      next_flag = ::cuda::std::min(next_flag, LOGICAL_WARP_THREADS);
+      next_flag = ::cuda::std::min(next_flag, LogicalWarpThreads);
     }
 
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -244,7 +244,7 @@ struct WarpReduceSmem
   /**
    * @brief Smem-based segmented reduce
    *
-   * @tparam HEAD_SEGMENTED
+   * @tparam HeadSegmented
    *   Whether flags indicate a segment-head or a segment-tail
    *
    * @param[in] input
@@ -259,7 +259,7 @@ struct WarpReduceSmem
    * @param[in] has_ballot
    *   Marker type for whether the target arch has ballot functionality
    */
-  template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+  template <bool HeadSegmented, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T
   SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::false_type /*has_ballot*/)
   {
@@ -289,9 +289,9 @@ struct WarpReduceSmem
       SmemFlag peer_flag_status = flag_storage[lane_id + OFFSET];
 
       // Update input if peer was in range
-      if (lane_id < LOGICAL_WARP_THREADS - OFFSET)
+      if (lane_id < LogicalWarpThreads - OFFSET)
       {
-        if (HEAD_SEGMENTED)
+        if (HeadSegmented)
         {
           // Head-segmented
           if ((flag_status & SEEN) == 0)
@@ -334,7 +334,7 @@ struct WarpReduceSmem
   /**
    * @brief Reduction
    *
-   * @tparam ALL_LANES_VALID
+   * @tparam AllLanesValid
    *   Whether all lanes in each warp are contributing a valid fold of items
    *
    * @param[in] input
@@ -346,16 +346,16 @@ struct WarpReduceSmem
    * @param[in] reduction_op
    *   Reduction operator
    */
-  template <bool ALL_LANES_VALID, typename ReductionOp>
+  template <bool AllLanesValid, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
-    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, constant_v<0>);
+    return ReduceStep<AllLanesValid>(input, valid_items, reduction_op, constant_v<0>);
   }
 
   /**
    * @brief Segmented reduction
    *
-   * @tparam HEAD_SEGMENTED
+   * @tparam HeadSegmented
    *   Whether flags indicate a segment-head or a segment-tail
    *
    * @param[in] input
@@ -367,10 +367,10 @@ struct WarpReduceSmem
    * @param[in] reduction_op
    *   Reduction operator
    */
-  template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+  template <bool HeadSegmented, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
   {
-    return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, ::cuda::std::true_type());
+    return SegmentedReduce<HeadSegmented>(input, flag, reduction_op, ::cuda::std::true_type());
   }
 };
 } // namespace detail

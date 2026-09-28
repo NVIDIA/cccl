@@ -102,7 +102,7 @@ void stream_context_test2()
 void stream_ref_as_scheduler()
 {
   ex::thread_context tctx;
-  cudax::stream sctx{cuda::device_ref{0}};
+  const cudax::stream sctx{cuda::device_ref{0}};
   auto sch = sctx.get_scheduler();
   static_assert(ex::__is_scheduler<decltype(sch)>);
 
@@ -131,16 +131,16 @@ void stream_ref_as_scheduler()
 
 void bulk_on_stream_scheduler()
 {
-  cuda::device_ref _dev{0};
-  cudax::stream sctx{_dev};
+  const cuda::device_ref _dev{0};
+  const cudax::stream sctx{_dev};
   auto sch = sctx.get_scheduler();
 
   using _env_t = cudax::env_t<cuda::mr::device_accessible>;
   auto mr      = cuda::device_default_memory_pool(_dev);
   auto mr2     = cuda::mr::any_resource<cuda::mr::device_accessible>(mr);
-  _env_t env{mr, cuda::get_stream(sch), ex::par_unseq};
+  const _env_t env{mr, cuda::get_stream(sch), ex::par_unseq};
   auto buf = cuda::make_buffer<int>(sctx, mr2, 10, 40, env); // a device buffer of 10 integers, initialized to 40
-  cuda::std::span data{buf};
+  const cuda::std::span data{buf};
 
   auto start = //
     ex::schedule(sch) // begin work on the GPU
@@ -177,9 +177,9 @@ void stream_adapt_non_visitable_sender()
 
 void starts_on_with_stream_scheduler1()
 {
-  cuda::device_ref _dev{0};
-  cudax::stream sctx{_dev};
-  ex::thread_context tctx;
+  const cuda::device_ref _dev{0};
+  const cudax::stream sctx{_dev};
+  ex::thread_context tctx; // NOLINT(misc-const-correctness)
   auto sch = sctx.get_scheduler();
 
   auto start = ex::starts_on(sch, ex::just() | ex::then([] __device__() noexcept -> int {
@@ -192,8 +192,8 @@ void starts_on_with_stream_scheduler1()
 
 void starts_on_with_stream_scheduler2()
 {
-  cuda::device_ref _dev{0};
-  cudax::stream sctx{_dev};
+  const cuda::device_ref _dev{0};
+  const cudax::stream sctx{_dev};
   ex::thread_context tctx;
   auto sch = sctx.get_scheduler();
 

@@ -29,19 +29,25 @@ typedef struct cccl_device_reduce_build_result_t
   void* payload;
   size_t payload_size;
   void* jit_compiler; // hostjit::JITCompiler*
-  void* reduce_fn; // int(*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*) — trailing void* is
-                   // the CUstream
+  void* reduce_fn; // with an init value: int(*)(void*, size_t*, void*, void*, unsigned long long, void*, void*, void*);
+                   // with CCCL_NO_INIT the init pointer is dropped:
+                   // int(*)(void*, size_t*, void*, void*, unsigned long long, void*, void*)
+                   // — in both, the trailing void* is the CUstream
   uint64_t accumulator_size;
   cccl_determinism_t determinism;
+  cccl_init_kind_t init_kind;
 } cccl_device_reduce_build_result_t;
 
+// `init` describes the accumulator type and must be a valid type even with
+// CCCL_NO_INIT (pass the input value type). CCCL_FUTURE_VALUE_INIT is not supported.
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
 CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
@@ -56,7 +62,8 @@ CCCL_C_API CUresult cccl_device_reduce_build_ex(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,

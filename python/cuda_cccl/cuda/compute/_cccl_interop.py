@@ -66,6 +66,11 @@ _NUMPY_DTYPE_TO_ENUM = {
     np.dtype("bool"): TypeEnum.BOOLEAN,
 }
 
+# bfloat16 has a numpy dtype only when the optional ml_dtypes package is
+# installed (types.bfloat16.dtype is None otherwise).
+if types.bfloat16.dtype is not None:
+    _NUMPY_DTYPE_TO_ENUM[types.bfloat16.dtype] = TypeEnum.BFLOAT16
+
 
 @functools.lru_cache(maxsize=256)
 def _type_info_from_dtype(dtype: np.dtype) -> TypeInfo:
@@ -146,6 +151,15 @@ def to_cccl_output_iter(array_or_iterator) -> Iterator:
     return _to_cccl_iter(array_or_iterator, _IteratorIO.OUTPUT)
 
 
+def _ndarray_to_byte_view(array: np.ndarray) -> memoryview:
+    try:
+        return array.data.cast("B")
+    except ValueError:
+        # NumPy extension dtypes (e.g. ml_dtypes.bfloat16) do not support the
+        # buffer protocol; reinterpret the same memory as raw bytes instead.
+        return array.reshape(-1).view(np.uint8).data
+
+
 def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
     from ._proxy import _PROXY_VALUE_DATA_ERROR, ProxyValue
 
@@ -155,8 +169,7 @@ def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
         raise RuntimeError(_PROXY_VALUE_DATA_ERROR)
     if isinstance(array_or_struct, np.ndarray):
         assert array_or_struct.flags.contiguous
-        data = array_or_struct.data.cast("B")
-        return data
+        return _ndarray_to_byte_view(array_or_struct)
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value_state(array_or_struct._data)
@@ -174,7 +187,7 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return Value(info, zero_bytes)
     if isinstance(array_or_struct, np.ndarray):
         info = _type_info_from_dtype(array_or_struct.dtype)
-        return Value(info, array_or_struct.data.cast("B"))
+        return Value(info, _ndarray_to_byte_view(array_or_struct))
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)
@@ -280,6 +293,27 @@ def _common_data_for_cc(cc):
     )
 
 
+def _ensure_pch_configured():
+    # Set up the PCH cache before the first build (see cuda.compute._pch).
+    try:
+        from ._pch import ensure_configured
+
+        ensure_configured()
+    except Exception:
+        pass
+
+
+def _evict_pch():
+    # Prune the PCH cache after a build that may have added to it. A failed
+    # prune must never fail a build that already succeeded.
+    try:
+        from ._pch import evict
+
+        evict()
+    except Exception:
+        pass
+
+
 def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
     """Build (compile + load) via ``build_impl_fn``, supplying compute capability and paths.
 
@@ -288,6 +322,8 @@ def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
     Returns the loaded build result.
     """
     global _check_sass
+
+    _ensure_pch_configured()
 
     common_data = _common_data_for_cc(cc)
     result = build_impl_fn(
@@ -301,6 +337,7 @@ def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
         temp_cubin_file_name = _check_compile_result(cubin)
         os.unlink(temp_cubin_file_name)
 
+    _evict_pch()
     return result
 
 
@@ -313,10 +350,13 @@ def call_compile(build_impl_cls: Callable, *args, cc, **kwargs):
     result is *not* loaded; call ``.load()`` (once, on a matching device) before
     executing. ``cc`` is a ``(major, minor)`` pair and is required.
     """
+    _ensure_pch_configured()
     common_data = _common_data_for_cc(cc)
     # build_impl_cls is a Device<Algo>BuildResult class exposing a compile()
     # staticmethod; it's typed Callable here, so silence the attr check.
-    return build_impl_cls.compile(*args, common_data, **kwargs)  # type: ignore[attr-defined]
+    result = build_impl_cls.compile(*args, common_data, **kwargs)  # type: ignore[attr-defined]
+    _evict_pch()
+    return result
 
 
 def build_for_ccs(build_impl_cls: Callable, *args, compute_capability=None, **kwargs):

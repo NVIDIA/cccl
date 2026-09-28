@@ -93,7 +93,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
+  const c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
     C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
@@ -287,7 +287,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
+  const c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
     C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets

@@ -23,25 +23,10 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/array>
-
 #  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-//! @brief Raw tensor descriptor with dynamic rank, extents, and strides.
-template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
-struct __raw_tensor
-{
-  using __rank_t = ::cuda::std::size_t;
-
-  _Tp* __data;
-  __rank_t __rank;
-  ::cuda::std::array<_ExtentT, _MaxRank> __extents;
-  ::cuda::std::array<_StrideT, _MaxRank> __strides;
-};
-
 //! @brief Direction of an asynchronous memcpy operation.
 enum class __copy_direction
 {

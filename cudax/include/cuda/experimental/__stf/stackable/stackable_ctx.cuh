@@ -34,6 +34,7 @@
 #include <shared_mutex>
 #include <stack>
 #include <thread>
+#include <tuple>
 
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
 #include "cuda/experimental/__stf/internal/task.cuh"
@@ -415,7 +416,7 @@ private:
 
     void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) override
     {
-      nvtx_range r("stackable_logical_data::pop_after_finalize");
+      const nvtx_range r("stackable_logical_data::pop_after_finalize");
 
       _CCCL_ASSERT(parent_offset >= 0, "");
       _CCCL_ASSERT(data_nodes[static_cast<size_t>(parent_offset)].has_value(), "");
@@ -748,7 +749,7 @@ private:
 
 inline stackable_logical_data<void_interface> stackable_ctx::token()
 {
-  int head = pimpl->get_head_offset();
+  const int head = pimpl->get_head_offset();
   return stackable_logical_data<void_interface>(*this, head, true, get_root_ctx().token(), true);
 }
 
@@ -1339,6 +1340,27 @@ public:
     template <typename T>
     using data_t_of = typename T::data_t;
 
+    // cuda_kernel drops void_interface (token) instances from the arguments
+    // it applies to the wrapper functor (task_dep_vector::non_void_instance),
+    // so the wrapper below receives only the non-void instances. Like the
+    // parallel_for kernels and their deps_tup_t (see parallel_for_scope.cuh),
+    // the kernel takes those instances bundled in a single tuple, which the
+    // device side unpacks onto the condition function.
+    using filtered_data_t = reserved::remove_void_interface_from_pack_t<data_t_of<Deps>...>;
+
+    // The tuple that crosses the kernel boundary is the cuda::std rebind of
+    // filtered_data_t (see condition_update_kernel for why).
+    template <typename Tuple>
+    struct to_cuda_tuple;
+
+    template <typename... Ts>
+    struct to_cuda_tuple<::std::tuple<Ts...>>
+    {
+      using type = ::cuda::std::tuple<Ts...>;
+    };
+
+    using kernel_tuple_t = typename to_cuda_tuple<filtered_data_t>::type;
+
     template <typename CondFunc>
     void operator->*(CondFunc&& cond_func)
     {
@@ -1347,9 +1369,15 @@ public:
           return this->ctx_.cuda_kernel(deps...).set_symbol("condition_update");
         },
         tdeps)
-          ->*[cond_func = mv(cond_func), h = handle_](data_t_of<Deps>... args) {
+          ->*[cond_func = mv(cond_func), h = handle_](auto... args) {
                 return cuda_kernel_desc{
-                  reserved::condition_update_kernel<CondFunc, data_t_of<Deps>...>, 1, 1, 0, h, cond_func, args...};
+                  reserved::condition_update_kernel<::cuda::std::decay_t<CondFunc>, kernel_tuple_t>,
+                  1,
+                  1,
+                  0,
+                  h,
+                  cond_func,
+                  kernel_tuple_t{mv(args)...}};
               };
     }
 
@@ -1537,7 +1565,7 @@ UNITTEST("graph_scope direct constructor style")
 
   // Test direct constructor style (like std::lock_guard)
   {
-    stackable_ctx::graph_scope_guard scope{ctx}; // Direct constructor, push() called here
+    const stackable_ctx::graph_scope_guard scope{ctx}; // Direct constructor, push() called here
     lA.push(access_mode::write, data_place::current_device());
     ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
       reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 24);
@@ -1556,14 +1584,14 @@ UNITTEST("graph_scope nested scopes")
 
   // Test nested scopes work correctly using direct constructor style
   {
-    stackable_ctx::graph_scope_guard outer_scope{ctx}; // outer push()
+    const stackable_ctx::graph_scope_guard outer_scope{ctx}; // outer push()
     lA.push(access_mode::write, data_place::current_device());
     ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
       reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 10);
     };
 
     {
-      stackable_ctx::graph_scope_guard inner_scope{ctx}; // inner push() (nested)
+      const stackable_ctx::graph_scope_guard inner_scope{ctx}; // inner push() (nested)
       lB.push(access_mode::write, data_place::current_device());
       ctx.task(lB.write())->*[](cudaStream_t stream, auto b) {
         reserved::kernel_set<<<1, 1, 0, stream>>>(b.data_handle(), 20);
@@ -1656,7 +1684,7 @@ inline void test_graph_scope()
   int array[1024];
   for (size_t i = 0; i < 1024; i++)
   {
-    array[i] = 1 + i * i;
+    array[i] = static_cast<int>(1 + i * i);
   }
 
   auto lA = ctx.logical_data(array).set_symbol("A");
@@ -1728,9 +1756,9 @@ inline void test_pop_prologue_repeated_launch()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1778,9 +1806,9 @@ inline void test_pop_prologue_manual_exec_launch()
   stackable_ctx ctx;
 
   int array[512];
-  for (size_t i = 0; i < 512; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1823,9 +1851,9 @@ inline void test_pop_prologue_zero_launches()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 7;
+    v = 7;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1870,9 +1898,9 @@ inline void test_pop_prologue_handle_invalidation()
   stackable_ctx ctx;
 
   int array[4];
-  for (size_t i = 0; i < 4; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1918,9 +1946,9 @@ inline void test_pop_prologue_graph_child_embed()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1989,9 +2017,9 @@ inline void test_launchable_graph_scope_raii()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2031,9 +2059,9 @@ inline void test_pop_prologue_shared_basic()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2089,9 +2117,9 @@ inline void test_pop_prologue_shared_copies()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2140,9 +2168,9 @@ inline void test_pop_prologue_shared_stored_in_container()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2193,9 +2221,9 @@ inline void test_pop_prologue_shared_manual_epilogue_meh()
   stackable_ctx ctx;
 
   int array[4];
-  for (size_t i = 0; i < 4; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2231,9 +2259,9 @@ inline void test_pop_prologue_with_while_graph_scope_meh()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 

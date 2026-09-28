@@ -12,11 +12,11 @@ void test(Iterator first, Iterator last)
   thrust::detail::trivial_sequence<Iterator, System> ts(system, first, last);
   using ValueType = typename ::cuda::std::iterator_traits<Iterator>::value_type;
 
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[0], ValueType(0, 11));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[1], ValueType(2, 11));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[2], ValueType(1, 13));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[3], ValueType(0, 10));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[4], ValueType(1, 12));
+  REQUIRE((ValueType) ts.begin()[0] == ValueType(0, 11));
+  REQUIRE((ValueType) ts.begin()[1] == ValueType(2, 11));
+  REQUIRE((ValueType) ts.begin()[2] == ValueType(1, 13));
+  REQUIRE((ValueType) ts.begin()[3] == ValueType(0, 10));
+  REQUIRE((ValueType) ts.begin()[4] == ValueType(1, 12));
 
   ts.begin()[0] = ValueType(0, 0);
   ts.begin()[1] = ValueType(0, 0);
@@ -26,8 +26,8 @@ void test(Iterator first, Iterator last)
 
   using TrivialIterator = typename thrust::detail::trivial_sequence<Iterator, System>::iterator_type;
 
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<Iterator>, false);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<TrivialIterator>, true);
+  REQUIRE_FALSE(thrust::is_contiguous_iterator_v<Iterator>);
+  REQUIRE(thrust::is_contiguous_iterator_v<TrivialIterator>);
 }
 
 template <class Vector>
@@ -39,9 +39,9 @@ void TestTrivialSequence()
   test(thrust::make_zip_iterator(A.begin(), B.begin()), thrust::make_zip_iterator(A.end(), B.end()));
 
   Vector refA{0, 2, 1, 0, 1};
-  ASSERT_EQUAL(A, refA);
+  REQUIRE(A == refA);
   // ensure that values weren't modified
   Vector refB{11, 11, 13, 10, 12};
-  ASSERT_EQUAL(B, refB);
+  REQUIRE(B == refB);
 }
 DECLARE_VECTOR_UNITTEST(TestTrivialSequence);

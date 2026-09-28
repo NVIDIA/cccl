@@ -44,8 +44,8 @@ int g_grid_size = 1;
 /**
  * Simple kernel for performing a block-wide exclusive prefix sum over integers
  */
-template <int BLOCK_THREADS,
-          int ITEMS_PER_THREAD,
+template <int BlockThreads,
+          int ItemsPerThread,
           BlockScanAlgorithm ALGORITHM>
 __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
                                      int* d_out, // Tile of output
@@ -53,14 +53,14 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
 {
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  using BlockLoadT = BlockLoad<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using BlockLoadT = BlockLoad<int, BlockThreads, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
 
   // Specialize BlockStore type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  using BlockStoreT = BlockStore<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_STORE_WARP_TRANSPOSE>;
+  using BlockStoreT = BlockStore<int, BlockThreads, ItemsPerThread, BLOCK_STORE_WARP_TRANSPOSE>;
 
   // Specialize BlockScan type for our thread block
-  using BlockScanT = BlockScan<int, BLOCK_THREADS, ALGORITHM>;
+  using BlockScanT = BlockScan<int, BlockThreads, ALGORITHM>;
 
   // Shared memory
   __shared__ union TempStorage
@@ -71,7 +71,7 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
   } temp_storage;
 
   // Per-thread tile data
-  int data[ITEMS_PER_THREAD];
+  int data[ItemsPerThread];
 
   // Load items into a blocked arrangement
   BlockLoadT(temp_storage.load).Load(d_in, data);
@@ -80,14 +80,14 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
   __syncthreads();
 
   // Start cycle timer
-  clock_t start = clock();
+  const clock_t start = clock();
 
   // Compute exclusive prefix sum
   int aggregate;
   BlockScanT(temp_storage.scan).ExclusiveSum(data, data, aggregate);
 
   // Stop cycle timer
-  clock_t stop = clock();
+  const clock_t stop = clock();
 
   // Barrier for smem reuse
   __syncthreads();
@@ -98,8 +98,8 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
   // Store aggregate and elapsed clocks
   if (threadIdx.x == 0)
   {
-    *d_elapsed                              = (start > stop) ? start - stop : stop - start;
-    d_out[BLOCK_THREADS * ITEMS_PER_THREAD] = aggregate;
+    *d_elapsed                           = (start > stop) ? start - stop : stop - start;
+    d_out[BlockThreads * ItemsPerThread] = aggregate;
   }
 }
 
@@ -129,15 +129,15 @@ int Initialize(int* h_in, int* h_reference, int num_items)
 /**
  * Test thread block scan
  */
-template <int BLOCK_THREADS, int ITEMS_PER_THREAD, BlockScanAlgorithm ALGORITHM>
+template <int BlockThreads, int ItemsPerThread, BlockScanAlgorithm ALGORITHM>
 void Test()
 {
-  constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+  constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 
   // Allocate host arrays
   int* h_in        = new int[TILE_SIZE];
   int* h_reference = new int[TILE_SIZE];
-  int* h_gpu       = new int[TILE_SIZE + 1];
+  const int* h_gpu = new int[TILE_SIZE + 1];
 
   // Initialize problem and reference output on host
   int h_aggregate = Initialize(h_in, h_reference, TILE_SIZE);
@@ -164,7 +164,7 @@ void Test()
   // Kernel props
   int max_sm_occupancy;
   CubDebugExit(
-    MaxSmOccupancy(max_sm_occupancy, BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>, BLOCK_THREADS));
+    MaxSmOccupancy(max_sm_occupancy, BlockPrefixSumKernel<BlockThreads, ItemsPerThread, ALGORITHM>, BlockThreads));
 
   // Copy problem to device
   cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice);
@@ -179,13 +179,12 @@ void Test()
     TILE_SIZE,
     g_timing_iterations,
     g_grid_size,
-    BLOCK_THREADS,
-    ITEMS_PER_THREAD,
+    BlockThreads,
+    ItemsPerThread,
     max_sm_occupancy);
 
   // Run aggregate/prefix kernel
-  BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>
-    <<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+  BlockPrefixSumKernel<BlockThreads, ItemsPerThread, ALGORITHM><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
   // Check results
   printf("\tOutput items: ");
@@ -212,8 +211,8 @@ void Test()
     timer.Start();
 
     // Run aggregate/prefix kernel
-    BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>
-      <<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+    BlockPrefixSumKernel<BlockThreads, ItemsPerThread, ALGORITHM>
+      <<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
     timer.Stop();
     elapsed_millis += timer.ElapsedMillis();
@@ -229,10 +228,10 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Display timing results
-  float avg_millis          = elapsed_millis / static_cast<float>(g_timing_iterations);
-  float avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
-  float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
-  float avg_clocks_per_item = avg_clocks / TILE_SIZE;
+  const float avg_millis          = elapsed_millis / static_cast<float>(g_timing_iterations);
+  const float avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
+  const float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
+  const float avg_clocks_per_item = avg_clocks / TILE_SIZE;
 
   printf("\tAverage BlockScan::Sum clocks: %.3f\n", avg_clocks);
   printf("\tAverage BlockScan::Sum clocks per item: %.3f\n", avg_clocks_per_item);
@@ -355,7 +354,7 @@ struct BlockPrefixCallbackOp
   // Thread-0 is responsible for returning a value for seeding the block-wide scan.
   __device__ int operator()(int block_aggregate)
   {
-    int old_prefix = running_total;
+    const int old_prefix = running_total;
     running_total += block_aggregate;
     return old_prefix;
   }
@@ -570,8 +569,8 @@ struct BlockPrefixCallbackMaxOp
   // Thread-0 is responsible for returning a value for seeding the block-wide scan.
   __device__ int operator()(int block_aggregate)
   {
-    int old_prefix = running_total;
-    running_total  = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
+    const int old_prefix = running_total;
+    running_total        = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
     return old_prefix;
   }
 };
@@ -836,7 +835,7 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        int expected = i * 4 + j;
+        const int expected = i * 4 + j;
         if (h_data[i * 4 + j] != expected)
         {
           printf("FAILED at [%d]: expected %d, got %d\n", i * 4 + j, expected, h_data[i * 4 + j]);
@@ -972,7 +971,7 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        int expected = i * 4 + j + 1;
+        const int expected = i * 4 + j + 1;
         if (h_data[i * 4 + j] != expected)
         {
           printf("FAILED at [%d]: expected %d, got %d\n", i * 4 + j, expected, h_data[i * 4 + j]);
@@ -1029,8 +1028,8 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        int idx      = i * 4 + j;
-        int expected = running_max;
+        const int idx      = i * 4 + j;
+        const int expected = running_max;
         if (h_data[idx] != expected)
         {
           printf("FAILED at [%d]: expected %d, got %d\n", idx, expected, h_data[idx]);
@@ -1060,7 +1059,7 @@ void TestDocumentationExamples()
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
     {
-      int expected = running_max;
+      const int expected = running_max;
       if (h_data[i] != expected)
       {
         printf("FAILED at [%d]: expected %d, got %d\n", i, expected, h_data[i]);
@@ -1089,8 +1088,8 @@ void TestDocumentationExamples()
     bool passed = true;
     for (int i = 0; i < num_items && passed; i++)
     {
-      int input_val = (i % 2 == 0) ? i : -i;
-      int expected  = running_max;
+      const int input_val = (i % 2 == 0) ? i : -i;
+      const int expected  = running_max;
       if (h_data[i] != expected)
       {
         printf("FAILED at [%d]: expected %d, got %d\n", i, expected, h_data[i]);
@@ -1121,8 +1120,8 @@ void TestDocumentationExamples()
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        int idx     = i * 4 + j;
-        running_max = (idx > running_max) ? idx : running_max;
+        const int idx = i * 4 + j;
+        running_max   = (idx > running_max) ? idx : running_max;
         if (h_data[idx] != running_max)
         {
           printf("FAILED at [%d]: expected %d, got %d\n", idx, running_max, h_data[idx]);
@@ -1179,8 +1178,8 @@ void TestDocumentationExamples()
     bool passed = true;
     for (int i = 0; i < num_items && passed; i++)
     {
-      int input_val = (i % 2 == 0) ? i : -i;
-      running_max   = (input_val > running_max) ? input_val : running_max;
+      const int input_val = (i % 2 == 0) ? i : -i;
+      running_max         = (input_val > running_max) ? input_val : running_max;
       if (h_data[i] != running_max)
       {
         printf("FAILED at [%d]: expected %d, got %d\n", i, running_max, h_data[i]);

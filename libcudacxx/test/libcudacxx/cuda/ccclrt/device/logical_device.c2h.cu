@@ -73,19 +73,38 @@ C2H_CCCLRT_TEST("logical_device_ref traits", "[device][logical_device]", )
     STATIC_REQUIRE(!cuda::std::is_default_constructible_v<cuda::__logical_device_ref>);
   }
 
-  SECTION("A ref is built from exactly a device and a handle")
+  SECTION("A ref is built from a device, with or without a green context")
   {
     constexpr bool from_device_and_gctx =
       cuda::std::is_constructible_v<cuda::__logical_device_ref, cuda::device_ref, ::CUgreenCtx>;
     constexpr bool from_ordinal_and_gctx = cuda::std::is_constructible_v<cuda::__logical_device_ref, int, ::CUgreenCtx>;
     constexpr bool from_device_alone     = cuda::std::is_constructible_v<cuda::__logical_device_ref, cuda::device_ref>;
+    constexpr bool from_ordinal_alone    = cuda::std::is_constructible_v<cuda::__logical_device_ref, int>;
     constexpr bool from_gctx_alone       = cuda::std::is_constructible_v<cuda::__logical_device_ref, ::CUgreenCtx>;
 
     STATIC_REQUIRE(from_device_and_gctx);
     // `device_ref` converts implicitly from `int`, so an ordinal is accepted too.
     STATIC_REQUIRE(from_ordinal_and_gctx);
-    STATIC_REQUIRE(!from_device_alone);
+    STATIC_REQUIRE(from_device_alone);
+    STATIC_REQUIRE(from_ordinal_alone);
     STATIC_REQUIRE(!from_gctx_alone);
+  }
+
+  SECTION("The device-backed constructor is explicit")
+  {
+    STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::device_ref, cuda::__logical_device_ref>);
+    STATIC_REQUIRE(!cuda::std::is_convertible_v<int, cuda::__logical_device_ref>);
+  }
+
+  SECTION("A ref rejects an ordinal or a null handle where a green context belongs")
+  {
+    constexpr bool from_device_and_int =
+      cuda::std::is_constructible_v<cuda::__logical_device_ref, cuda::device_ref, int>;
+    constexpr bool from_device_and_null =
+      cuda::std::is_constructible_v<cuda::__logical_device_ref, cuda::device_ref, cuda::std::nullptr_t>;
+
+    STATIC_REQUIRE(!from_device_and_int);
+    STATIC_REQUIRE(!from_device_and_null);
   }
 
   SECTION("An owner is move-only and destroys its green context")
@@ -106,15 +125,23 @@ C2H_CCCLRT_TEST("logical_device_ref traits", "[device][logical_device]", )
     STATIC_REQUIRE(!cuda::std::is_trivially_copyable_v<cuda::__logical_device>);
   }
 
-  SECTION("An owner has no default constructor and no public constructor")
+  SECTION("An owner is built from a device alone, but never from a handle directly")
   {
-    // Every owner must come from `from_native_handle`, which is the only place that pairs a handle
-    // with the device it was created on.
+    // A green-context owner must come from `from_native_handle`, which is the only place that pairs
+    // a handle with the device it was created on. A device-backed owner owns nothing, so it needs no
+    // such pairing and its constructor is public.
     constexpr bool from_device_and_gctx =
       cuda::std::is_constructible_v<cuda::__logical_device, cuda::device_ref, ::CUgreenCtx>;
+    constexpr bool from_device_alone = cuda::std::is_constructible_v<cuda::__logical_device, cuda::device_ref>;
 
     STATIC_REQUIRE(!cuda::std::is_default_constructible_v<cuda::__logical_device>);
     STATIC_REQUIRE(!from_device_and_gctx);
+    STATIC_REQUIRE(from_device_alone);
+  }
+
+  SECTION("The device-backed owner constructor is explicit")
+  {
+    STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::device_ref, cuda::__logical_device>);
   }
 
   SECTION("from_native_handle takes a device and a real handle only")
@@ -128,11 +155,11 @@ C2H_CCCLRT_TEST("logical_device_ref traits", "[device][logical_device]", )
 
   SECTION("from_native_handle returns an owner by value")
   {
-    using result_type = decltype(cuda::__logical_device::from_native_handle(
+    using gctx_result_type = decltype(cuda::__logical_device::from_native_handle(
       cuda::std::declval<cuda::device_ref>(), cuda::std::declval<::CUgreenCtx>()));
 
-    constexpr bool returns_owner_by_value = cuda::std::is_same_v<result_type, cuda::__logical_device>;
-    STATIC_REQUIRE(returns_owner_by_value);
+    constexpr bool gctx_returns_owner_by_value = cuda::std::is_same_v<gctx_result_type, cuda::__logical_device>;
+    STATIC_REQUIRE(gctx_returns_owner_by_value);
   }
 
   SECTION("An owner converts to a ref, but a ref does not slice into an owner")
@@ -178,31 +205,26 @@ C2H_CCCLRT_TEST("logical_device_ref traits", "[device][logical_device]", )
   {
     using device_result_type = decltype(cuda::std::declval<cuda::__logical_device_ref>().underlying_device());
     using gctx_result_type   = decltype(cuda::std::declval<cuda::__logical_device_ref>().green_context());
+    using ctx_result_type    = decltype(cuda::std::declval<cuda::__logical_device_ref>().context());
+    using kind_result_type   = decltype(cuda::std::declval<cuda::__logical_device_ref>().kind());
 
     constexpr bool device_matches = cuda::std::is_same_v<cuda::device_ref, device_result_type>;
     constexpr bool gctx_matches   = cuda::std::is_same_v<::CUgreenCtx, gctx_result_type>;
+    constexpr bool ctx_matches    = cuda::std::is_same_v<::CUcontext, ctx_result_type>;
+    constexpr bool kind_matches   = cuda::std::is_same_v<cuda::__logical_device_ref::kinds, kind_result_type>;
 
     STATIC_REQUIRE(device_matches);
     STATIC_REQUIRE(gctx_matches);
-  }
-
-  SECTION("A ref is usable in a constant expression")
-  {
-    constexpr cuda::__logical_device_ref ref{cuda::device_ref{0}, nullptr};
-    constexpr cuda::__logical_device_ref same{cuda::device_ref{0}, nullptr};
-
-    STATIC_REQUIRE(ref.underlying_device() == 0);
-    STATIC_REQUIRE(ref.green_context() == nullptr);
-    STATIC_REQUIRE(ref == same);
+    STATIC_REQUIRE(ctx_matches);
+    STATIC_REQUIRE(kind_matches);
   }
 }
 
 C2H_CCCLRT_TEST("logical_device_ref locality domain", "[device][logical_device]", )
 {
-  SECTION("A ref with no green context is not localized")
+  SECTION("A device-backed ref is not localized")
   {
-    // A null handle must not reach the driver, so this holds even on a machine with no GPU.
-    const cuda::__logical_device_ref ref{cuda::device_ref{0}, nullptr};
+    const cuda::__logical_device_ref ref{cuda::devices[0]};
     const auto result = ref.locality_domain();
 
     REQUIRE_FALSE(result.localized);
@@ -280,38 +302,60 @@ C2H_CCCLRT_TEST("logical_device_ref locality domain", "[device][logical_device]"
 
 C2H_CCCLRT_TEST("logical_device_ref comparison", "[device][logical_device]")
 {
-  // Two distinct non-null handles. They are never dereferenced, so fabricating them is safe and
-  // keeps this test free of any driver call.
-  auto* const gctx0 = reinterpret_cast<::CUgreenCtx>(0x10);
-  auto* const gctx1 = reinterpret_cast<::CUgreenCtx>(0x20);
+  SECTION("Device-backed refs of the same device are equal")
+  {
+    const cuda::__logical_device_ref first{cuda::devices[0]};
+    const cuda::__logical_device_ref second{cuda::devices[0]};
+    REQUIRE(first == second);
 
-  const cuda::__logical_device_ref dev0_null{cuda::device_ref{0}, nullptr};
-  const cuda::__logical_device_ref dev0_gctx0{cuda::device_ref{0}, gctx0};
-  const cuda::__logical_device_ref dev0_gctx1{cuda::device_ref{0}, gctx1};
+    if (cuda::devices.size() > 1)
+    {
+      REQUIRE(first != cuda::__logical_device_ref{cuda::devices[1]});
+    }
+  }
+
+  if (test::cuda_driver_version() < 12050)
+  {
+    SUCCEED("Driver is too old for green context tests");
+    return;
+  }
+
+  // The constructor converts the handle into a driver context, so the handles must be real ones.
+  // A fabricated handle makes the driver read unmapped memory.
+  const auto ldev0 = ::make_logical_device(cuda::devices[0]);
+  const auto ldev1 = ::make_logical_device(cuda::devices[0]);
+
+  const cuda::__logical_device_ref dev0_gctx0{cuda::device_ref{0}, ldev0.green_context()};
+  const cuda::__logical_device_ref dev0_gctx1{cuda::device_ref{0}, ldev1.green_context()};
 
   SECTION("Equal when both the device and the green context match")
   {
-    const cuda::__logical_device_ref same_null{cuda::device_ref{0}, nullptr};
-    const cuda::__logical_device_ref same_gctx0{cuda::device_ref{0}, gctx0};
-    REQUIRE(dev0_null == same_null);
+    const cuda::__logical_device_ref same_gctx0{cuda::device_ref{0}, ldev0.green_context()};
     REQUIRE(dev0_gctx0 == same_gctx0);
   }
 
   SECTION("Different green contexts on the same device are not equal")
   {
     REQUIRE(dev0_gctx0 != dev0_gctx1);
-    REQUIRE(dev0_gctx0 != dev0_null);
   }
 
   SECTION("The same green context on different devices is not equal")
   {
     if (cuda::devices.size() > 1)
     {
-      const cuda::__logical_device_ref dev1_gctx0{cuda::device_ref{1}, gctx0};
-      const cuda::__logical_device_ref dev1_null{cuda::device_ref{1}, nullptr};
+      // The handle stays the one made on device 0. Only the recorded device changes, which is
+      // enough to make the two refs different.
+      const cuda::__logical_device_ref dev1_gctx0{cuda::device_ref{1}, ldev0.green_context()};
       REQUIRE(dev0_gctx0 != dev1_gctx0);
-      REQUIRE(dev0_null != dev1_null);
     }
+  }
+
+  SECTION("A device-backed ref never equals a green-context ref")
+  {
+    const cuda::__logical_device_ref dev0_backed{cuda::devices[0]};
+    REQUIRE(dev0_backed != dev0_gctx0);
+    REQUIRE(dev0_backed.kind() == cuda::__logical_device_ref::kinds::device);
+    REQUIRE(dev0_gctx0.kind() == cuda::__logical_device_ref::kinds::green_context);
   }
 }
 
@@ -328,7 +372,30 @@ C2H_CCCLRT_TEST("logical_device owns a green context", "[device][logical_device]
     const auto device = cuda::devices[0];
     auto ldev         = ::make_logical_device(device);
     REQUIRE(ldev.underlying_device() == device);
+    REQUIRE(ldev.kind() == cuda::__logical_device_ref::kinds::green_context);
     REQUIRE(ldev.green_context() != nullptr);
+  }
+
+  SECTION("A device-backed owner holds the primary context and no green context")
+  {
+    const auto device = cuda::devices[0];
+    const cuda::__logical_device ldev{device};
+
+    REQUIRE(ldev.underlying_device() == device);
+    REQUIRE(ldev.kind() == cuda::__logical_device_ref::kinds::device);
+    REQUIRE(ldev.green_context() == nullptr);
+    REQUIRE(ldev.context() == device.__primary_context());
+  }
+
+  SECTION("A device-backed owner destroys nothing")
+  {
+    // `__reset()` must not call `__greenCtxDestroy` on a primary context. Compute-sanitizer and the
+    // fixture's driver-stack check catch a violation.
+    const auto device = cuda::devices[0];
+    {
+      [[maybe_unused]] const cuda::__logical_device ldev{device};
+    }
+    REQUIRE(cuda::__logical_device{device}.context() == device.__primary_context());
   }
 
   SECTION("Two green contexts on the same device compare unequal")
@@ -340,7 +407,7 @@ C2H_CCCLRT_TEST("logical_device owns a green context", "[device][logical_device]
       static_cast<const cuda::__logical_device_ref&>(ldev0) != static_cast<const cuda::__logical_device_ref&>(ldev1));
   }
 
-  SECTION("Move construction transfers the handle and nulls the source")
+  SECTION("Move construction transfers the handle and clears the source")
   {
     auto source       = ::make_logical_device(cuda::devices[0]);
     const auto gctx   = source.green_context();
@@ -349,10 +416,13 @@ C2H_CCCLRT_TEST("logical_device owns a green context", "[device][logical_device]
 
     REQUIRE(destination.green_context() == gctx);
     REQUIRE(destination.underlying_device() == device);
-    REQUIRE(source.green_context() == nullptr);
+    // A moved-from owner holds nothing. Both handles are null, so it reports the device kind with a
+    // null driver context.
+    REQUIRE(source.kind() == cuda::__logical_device_ref::kinds::device);
+    REQUIRE(source.context() == nullptr);
   }
 
-  SECTION("Move assignment transfers the handle and nulls the source")
+  SECTION("Move assignment transfers the handle and clears the source")
   {
     auto source      = ::make_logical_device(cuda::devices[0]);
     auto destination = ::make_logical_device(cuda::devices[0]);
@@ -362,7 +432,8 @@ C2H_CCCLRT_TEST("logical_device owns a green context", "[device][logical_device]
     destination = cuda::std::move(source);
 
     REQUIRE(destination.green_context() == gctx);
-    REQUIRE(source.green_context() == nullptr);
+    REQUIRE(source.kind() == cuda::__logical_device_ref::kinds::device);
+    REQUIRE(source.context() == nullptr);
   }
 
   SECTION("Self move assignment leaves the green context intact")
@@ -384,7 +455,8 @@ C2H_CCCLRT_TEST("logical_device owns a green context", "[device][logical_device]
     {
       [[maybe_unused]] auto destination = cuda::std::move(source);
     }
-    REQUIRE(source.green_context() == nullptr);
+    REQUIRE(source.kind() == cuda::__logical_device_ref::kinds::device);
+    REQUIRE(source.context() == nullptr);
   }
 
   SECTION("The green context converts to a usable CUcontext")
@@ -392,6 +464,8 @@ C2H_CCCLRT_TEST("logical_device owns a green context", "[device][logical_device]
     auto ldev      = ::make_logical_device(cuda::devices[0]);
     const auto ctx = cuda::__driver::__ctxFromGreenCtx(ldev.green_context());
     REQUIRE(ctx != nullptr);
+    // `context()` is the same conversion, done by the class.
+    REQUIRE(ldev.context() == ctx);
   }
 
   SECTION("A logical_device on a second device reports that device")

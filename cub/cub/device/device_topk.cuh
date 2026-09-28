@@ -51,7 +51,7 @@ template <topk::select SelectDirection,
           typename NumOutItemsT,
           typename DecomposerT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorT d_keys_in,
@@ -100,7 +100,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
   // Extract policy selector from environment tuning
-  using default_policy_selector_t = topk::policy_selector_from_types<it_value_t<KeyInputIteratorT>>;
+  using default_policy_selector_t = topk::
+    policy_selector_from_types<it_value_t<KeyInputIteratorT>, it_value_t<ValueInputIteratorT>, offset_t, out_offset_t>;
   using tuning_env_t =
     ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, EnvT>;
   using policy_selector_t =
@@ -128,7 +129,7 @@ template <topk::select SelectDirection,
           typename NumItemsT,
           typename NumOutItemsT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk_hub(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorT d_keys_in,

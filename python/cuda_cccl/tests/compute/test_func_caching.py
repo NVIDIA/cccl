@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from cuda.compute._caching import CachableFunction, _make_hashable
 
@@ -121,6 +122,9 @@ def test_func_caching_with_python_scalar_closure():
     assert f1 != f3
 
 
+@pytest.mark.thread_unsafe(
+    reason="Mutates the module global it keys on; a concurrent instance changes it under this one's feet."
+)
 def test_func_caching_with_global_variable():
     global global_x
 
@@ -137,10 +141,10 @@ def test_func_caching_with_global_variable():
 
 
 def test_func_caching_wrapped_cuda_jit_function():
-    import numba.cuda
+    from numba_cuda_mlir import cuda as backend_cuda
 
     def make_func():
-        @numba.cuda.jit
+        @backend_cuda.jit
         def inner(x):
             return x
 
@@ -150,7 +154,7 @@ def test_func_caching_wrapped_cuda_jit_function():
         return func
 
     def make_func2():
-        @numba.cuda.jit
+        @backend_cuda.jit
         def inner(x):
             return 2 * x
 

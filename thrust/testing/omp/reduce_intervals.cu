@@ -36,7 +36,7 @@ void reduce_intervals(InputIterator input, OutputIterator output, BinaryFunction
   }
 }
 
-void TestOmpReduceIntervalsSimple()
+TEST_CASE("TestOmpReduceIntervalsSimple", "[reduce_intervals]")
 {
   using T      = int;
   using Vector = thrust::device_vector<T>;
@@ -53,7 +53,7 @@ void TestOmpReduceIntervalsSimple()
     Vector output(decomp.size());
     reduce_intervals(omp_tag, input.begin(), output.begin(), ::cuda::std::plus<T>(), decomp);
 
-    ASSERT_EQUAL(output[0], 10);
+    REQUIRE(output[0] == 10);
   }
 
   {
@@ -61,11 +61,10 @@ void TestOmpReduceIntervalsSimple()
     Vector output(decomp.size());
     reduce_intervals(omp_tag, input.begin(), output.begin(), ::cuda::std::plus<T>(), decomp);
 
-    ASSERT_EQUAL(output[0], 6);
-    ASSERT_EQUAL(output[1], 4);
+    REQUIRE(output[0] == 6);
+    REQUIRE(output[1] == 4);
   }
 }
-DECLARE_UNITTEST(TestOmpReduceIntervalsSimple);
 
 template <typename T>
 struct TestOmpReduceIntervals
@@ -87,7 +86,7 @@ struct TestOmpReduceIntervals
     thrust::system::omp::tag omp_tag;
     reduce_intervals(omp_tag, d_input.begin(), d_output.begin(), ::cuda::std::plus<T>(), decomp);
 
-    ASSERT_EQUAL(h_output, d_output);
+    REQUIRE(h_output == d_output);
   }
 };
-VariableUnitTest<TestOmpReduceIntervals, IntegralTypes> TestOmpReduceIntervalsInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestOmpReduceIntervals, IntegralTypes);

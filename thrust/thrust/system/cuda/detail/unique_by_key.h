@@ -82,7 +82,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t unique_by_key_impl(
   std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
   void* allocations[2]            = {nullptr, nullptr};
 
-  thrust::detail::wrapped_function<BinaryPred, bool> wrapped_pred{binary_pred};
+  const thrust::detail::wrapped_function<BinaryPred, bool> wrapped_pred{binary_pred};
 
   // Query temp storage
   cudaError_t status = cub::DeviceSelect::UniqueByKey(

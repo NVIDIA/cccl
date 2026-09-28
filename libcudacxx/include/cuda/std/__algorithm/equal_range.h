@@ -77,7 +77,7 @@ template <class _ForwardIterator, class _Tp, class _Compare>
 [[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
-  static_assert(__is_callable<_Compare, decltype(*__first), const _Tp&>::value, "The comparator has to be callable");
+  static_assert(__is_callable_v<_Compare, decltype(*__first), const _Tp&>, "The comparator has to be callable");
   static_assert(is_copy_constructible_v<_ForwardIterator>, "Iterator has to be copy constructible");
   return ::cuda::std::__equal_range<_ClassicAlgPolicy>(
     ::cuda::std::move(__first),

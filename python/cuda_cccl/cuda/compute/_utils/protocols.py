@@ -49,6 +49,19 @@ def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
     except (AttributeError, TypeError):
         pass
 
+    # Framework-specific dtypes NumPy can't interpret: PyTorch's bfloat16.
+    # Its __cuda_array_interface__ reports an opaque "<V2" typestr (CAI has no
+    # bfloat16 spelling), which would silently demote the array to a storage
+    # type; map it to the ml_dtypes bfloat16 dtype instead.
+    if str(getattr(arr, "dtype", None)) == "torch.bfloat16":
+        from ..types import bfloat16
+
+        if bfloat16.dtype is None:
+            raise TypeError(
+                "bfloat16 arrays require the ml_dtypes package to be installed"
+            )
+        return bfloat16.dtype
+
     # Fall back to __cuda_array_interface__ for DeviceArrayLike
     cai = arr.__cuda_array_interface__  # type: ignore
     typestr = cai["typestr"]
@@ -124,6 +137,39 @@ def is_contiguous(arr: DeviceArrayLike) -> bool:
     else:
         # not contiguous
         return False
+
+
+def is_c_contiguous(arr: DeviceArrayLike) -> bool:
+    """Whether ``arr`` is contiguous in C (row-major) order.
+
+    ``is_contiguous`` also accepts Fortran order, which is only equivalent to C
+    order for arrays of at most one dimension.  Callers that address the data
+    with C-order strides need this stricter check.
+    """
+    cai = arr.__cuda_array_interface__
+
+    strides = cai["strides"]
+
+    if strides is None:
+        return True
+
+    shape = cai["shape"]
+
+    if any(dim == 0 for dim in shape):
+        # array has no elements
+        return True
+
+    if all(dim == 1 for dim in shape):
+        # there is a single element
+        return True
+
+    itemsize = get_dtype(arr).itemsize
+    expected_stride = itemsize
+    for dim, stride in zip(reversed(shape), reversed(strides)):
+        if stride != expected_stride:
+            return False
+        expected_stride *= dim
+    return True
 
 
 def compute_c_contiguous_strides_in_bytes(

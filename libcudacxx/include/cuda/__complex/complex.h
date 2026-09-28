@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -221,6 +222,34 @@ public:
   {
     __im_ = __im;
   }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr _Tp& get(complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr _Tp&& get(complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr const _Tp& get(const complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr const _Tp&& get(const complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
+  }
 };
 
 //! @brief Deduction guide for construction from complex types.
@@ -249,7 +278,7 @@ template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::cuda::complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<cuda::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -266,7 +295,7 @@ template <::cuda::std::size_t _Ip, class _Tp>
 struct tuple_element<_Ip, ::cuda::complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<cuda::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_STD

@@ -39,10 +39,10 @@ struct __ignore_t
   }
 };
 
-namespace
+inline namespace __cpo
 {
-_CCCL_GLOBAL_CONSTANT __ignore_t ignore = __ignore_t{};
-} // namespace
+_CCCL_GLOBAL_CONSTANT auto ignore = __ignore_t{};
+} // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

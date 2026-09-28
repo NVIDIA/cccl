@@ -35,10 +35,10 @@ CUB_NAMESPACE_BEGIN
 /**
  * Bitfield-extract.
  */
-template <typename UnsignedBits, int BYTE_LEN>
+template <typename UnsignedBits, int ByteLen>
 //! deprecated [Since 3.0]
 CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
-BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<BYTE_LEN> /*byte_len*/)
+BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<ByteLen> /*byte_len*/)
 {
   unsigned int bits;
   asm("bfe.u32 %0, %1, %2, %3;" : "=r"(bits) : "r"((unsigned int) source), "r"(bit_start), "r"(num_bits));
@@ -131,28 +131,29 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y,
 }
 
 /**
- * @brief Returns the warp mask for a warp of @p LOGICAL_WARP_THREADS threads
+ * @brief Returns the warp mask for a warp of @p LogicalWarpThreads threads
  *
  * @par
  * If the number of threads assigned to the virtual warp is not a power of two,
  * it's assumed that only one virtual warp exists.
  *
- * @tparam LOGICAL_WARP_THREADS <b>[optional]</b> The number of threads per
+ * @tparam LogicalWarpThreads <b>[optional]</b> The number of threads per
  *                              "logical" warp (may be less than the number of
  *                              hardware warp threads).
  * @param warp_id Id of virtual warp within architectural warp
  */
-template <int LOGICAL_WARP_THREADS>
+template <int LogicalWarpThreads>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsigned int warp_id)
 {
-  constexpr bool is_pow_of_two = ::cuda::is_power_of_two(LOGICAL_WARP_THREADS);
-  constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == detail::warp_threads;
+  constexpr bool is_pow_of_two = ::cuda::is_power_of_two(LogicalWarpThreads);
+  constexpr bool is_arch_warp  = LogicalWarpThreads == detail::warp_threads;
 
-  unsigned int member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LOGICAL_WARP_THREADS);
+  // NOLINTNEXTLINE(misc-const-correctness)
+  unsigned int member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LogicalWarpThreads);
 
   if constexpr (is_pow_of_two && !is_arch_warp)
   {
-    member_mask <<= warp_id * LOGICAL_WARP_THREADS;
+    member_mask <<= warp_id * LogicalWarpThreads;
   }
 
   return member_mask;
@@ -165,7 +166,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsig
  *        For thread lanes @e i < src_offset, the thread's own @p input is returned to the thread.
  *        ![](shfl_up_logo.png)
  *
- * @tparam LOGICAL_WARP_THREADS
+ * @tparam LogicalWarpThreads
  *   The number of threads per "logical" warp. Must be a power-of-two <= 32.
  *
  * @tparam T
@@ -207,19 +208,19 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsig
  * @param[in] member_mask
  *   32-bit mask of participating warp lanes
  */
-template <int LOGICAL_WARP_THREADS, typename T>
+template <int LogicalWarpThreads, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  constexpr int SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8;
+  constexpr int SHFL_C = (32 - LogicalWarpThreads) << 8;
 
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
   T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+  ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
+  const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
   shuffle_word    = SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
@@ -242,7 +243,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
  *        For thread lanes @e i >= WARP_THREADS, the thread's own @p input is returned to the
  *        thread. ![](shfl_down_logo.png)
  *
- * @tparam LOGICAL_WARP_THREADS
+ * @tparam LogicalWarpThreads
  *   The number of threads per "logical" warp.  Must be a power-of-two <= 32.
  *
  * @tparam T
@@ -285,19 +286,19 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
  * @param[in] member_mask
  *   32-bit mask of participating warp lanes
  */
-template <int LOGICAL_WARP_THREADS, typename T>
+template <int LogicalWarpThreads, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  static constexpr int SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8;
+  static constexpr int SHFL_C = (32 - LogicalWarpThreads) << 8;
 
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
   T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+  ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
+  const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
   shuffle_word    = SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
@@ -321,7 +322,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
  *        then the thread's own @p input is returned to the thread.
  *        ![](shfl_broadcast_logo.png)
  *
- * @tparam LOGICAL_WARP_THREADS
+ * @tparam LogicalWarpThreads
  *   The number of threads per "logical" warp.  Must be a power-of-two <= 32.
  *
  * @tparam T
@@ -362,7 +363,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
  * @param[in] member_mask
  *   32-bit mask of participating warp lanes
  */
-template <int LOGICAL_WARP_THREADS, typename T>
+template <int LogicalWarpThreads, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
 {
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
@@ -370,17 +371,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
   T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+  ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
+  const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
-  shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LOGICAL_WARP_THREADS);
+  shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LogicalWarpThreads);
   output_alias[0] = shuffle_word;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    shuffle_word       = __shfl_sync(member_mask, (unsigned int) input_alias[WORD], src_lane, LOGICAL_WARP_THREADS);
+    shuffle_word       = __shfl_sync(member_mask, (unsigned int) input_alias[WORD], src_lane, LogicalWarpThreads);
     output_alias[WORD] = shuffle_word;
   }
   return output;
@@ -404,17 +405,17 @@ namespace detail
  * warp_matcher_t<4, 32>::match_any(label);
  * ```
  */
-template <int LABEL_BITS, int WARP_ACTIVE_THREADS>
+template <int LabelBits, int WarpActiveThreads>
 struct warp_matcher_t
 {
   static _CCCL_DEVICE unsigned int match_any(unsigned int label)
   {
-    return warp_matcher_t<LABEL_BITS, 32>::match_any(label) & ~(~0 << WARP_ACTIVE_THREADS);
+    return warp_matcher_t<LabelBits, 32>::match_any(label) & ~(~0 << WarpActiveThreads);
   }
 };
 
-template <int LABEL_BITS>
-struct warp_matcher_t<LABEL_BITS, warp_threads>
+template <int LabelBits>
+struct warp_matcher_t<LabelBits, warp_threads>
 {
   // match.any.sync.b32 is slower when matching a few bits
   // using a ballot loop instead
@@ -424,10 +425,10 @@ struct warp_matcher_t<LABEL_BITS, warp_threads>
 
     // Extract masks of common threads for each bit
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int BIT = 0; BIT < LABEL_BITS; ++BIT)
+    for (int BIT = 0; BIT < LabelBits; ++BIT)
     {
       unsigned int mask;
-      unsigned int current_bit = 1 << BIT;
+      const unsigned int current_bit = 1 << BIT;
       asm("{\n"
           "    .reg .pred p;\n"
           "    and.b32 %0, %1, %2;"
@@ -452,7 +453,7 @@ struct warp_matcher_t<LABEL_BITS, warp_threads>
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
 {
-  uint32_t ret{};
+  uint32_t ret{}; // NOLINT(misc-const-correctness)
   asm("shl.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
   return ret;
 }
@@ -463,7 +464,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t nu
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
 {
-  uint32_t ret{};
+  uint32_t ret{}; // NOLINT(misc-const-correctness)
   asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
   return ret;
 }
@@ -472,12 +473,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t n
 
 /**
  * Compute a 32b mask of threads having the same least-significant
- * LABEL_BITS of \p label as the calling thread.
+ * LabelBits of \p label as the calling thread.
  */
-template <int LABEL_BITS, int WARP_ACTIVE_THREADS = detail::warp_threads>
+template <int LabelBits, int WarpActiveThreads = detail::warp_threads>
 inline _CCCL_DEVICE unsigned int MatchAny(unsigned int label)
 {
-  return detail::warp_matcher_t<LABEL_BITS, WARP_ACTIVE_THREADS>::match_any(label);
+  return detail::warp_matcher_t<LabelBits, WarpActiveThreads>::match_any(label);
 }
 
 CUB_NAMESPACE_END

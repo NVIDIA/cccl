@@ -45,6 +45,12 @@
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
 #endif // _CCCL_ENABLE_FREESTANDING
 
+// In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
+#if defined(__CUDACC_TILE__)
+#  undef _CCCL_HAS_BUILTIN_STD_FORWARD
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
+#endif // defined(__CUDACC_TILE__)
+
 // include minimal std:: headers, nvcc in device mode doesn't need the std:: header
 #if _CCCL_HAS_BUILTIN_STD_FORWARD() && !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)

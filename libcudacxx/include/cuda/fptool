@@ -1,0 +1,39 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_FPTOOL
+#define _CUDA_FPTOOL
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+// One header for the whole feature, math functions included. <cuda/fpmp> splits its math
+// off because it is a production type that most translation units use for arithmetic
+// alone; these are analysis types that a few translation units pick up temporarily, so a
+// second umbrella would buy them little.
+
+// fp_custom: a drop-in `double` with a configurable exponent and mantissa size.
+#include <cuda/__fp/fptool_custom.h>
+// fpmp2_stat: a drop-in fpmp2 that counts the arithmetic it performs.
+#include <cuda/__fp/fptool_stat.h>
+// Math functions for fpmp2_stat (exp, log, pow, sin, cos, ...). These rest on
+// <cuda/fpmp_math>, which is what makes this header cost about a fifth more to include
+// than the types alone. fp_custom needs no counterpart: its math functions are the
+// standard spellings on `double` and come with the type.
+#include <cuda/__fp/fptool_stat_math.h>
+
+#endif // _CUDA_FPTOOL

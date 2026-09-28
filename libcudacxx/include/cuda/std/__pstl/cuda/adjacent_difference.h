@@ -72,7 +72,7 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
     const auto __count = ::cuda::std::distance(__first, __last);
 
     // We pass the policy as an environment to DeviceAdjacentDifference
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceAdjacentDifference::SubtractLeftCopy,
       "__pstl_cuda_merge: kernel launch of cub::DeviceAdjacentDifference::SubtractLeftCopy failed",
       ::cuda::std::move(__first),

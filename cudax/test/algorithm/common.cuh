@@ -35,7 +35,7 @@ inline int get_expected_value(uint8_t pattern_byte)
 template <typename Result>
 void check_result_and_erase(cudax::stream_ref stream, Result&& result, uint8_t pattern_byte = fill_byte)
 {
-  int expected = get_expected_value(pattern_byte);
+  const int expected = get_expected_value(pattern_byte);
 
   stream.sync();
   for (int& i : result)
@@ -49,7 +49,7 @@ template <typename Layout = cuda::std::layout_right, typename Extents>
 auto make_buffer_for_mdspan(Extents extents, char value = 0)
 {
   cuda::mr::legacy_pinned_memory_resource host_resource;
-  auto mapping = typename Layout::template mapping<decltype(extents)>{extents};
+  auto mapping = typename Layout::template mapping<Extents>{extents};
 
   cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer(host_resource, mapping.required_span_size());
 
@@ -60,14 +60,14 @@ auto make_buffer_for_mdspan(Extents extents, char value = 0)
 
 inline auto create_fake_strided_mdspan()
 {
-  cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
-  cuda::std::array<size_t, 3> strides{12, 4, 1};
+  const cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
+  const cuda::std::array<size_t, 3> strides{12, 4, 1};
 #if _CCCL_CUDA_COMPILER(NVCC, <, 12, 6)
   auto map = cuda::std::layout_stride::mapping{dynamic_extents, strides};
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 6) ^^^ / vvv _CCCL_CUDA_COMPILER(NVCC, >=, 12, 6) vvv
-  cuda::std::layout_stride::mapping map{dynamic_extents, strides};
+  const cuda::std::layout_stride::mapping map{dynamic_extents, strides};
 #endif // ^^^ _CCCL_CUDA_COMPILER(NVCC, >=, 12, 6) ^^^
-  return cuda::std::mdspan<int, decltype(dynamic_extents), cuda::std::layout_stride>(nullptr, map);
+  return cuda::std::mdspan<int, cuda::std::dextents<size_t, 3>, cuda::std::layout_stride>(nullptr, map);
 };
 
 namespace cuda::experimental

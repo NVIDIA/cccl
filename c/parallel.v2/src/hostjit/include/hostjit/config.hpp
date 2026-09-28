@@ -15,6 +15,7 @@ struct CompilerConfig
   std::string entry_point_name; // Name of the exported entry point function (used for post-link optimization)
   std::string device_pch_path; // Existing device PCH file to load during device compilation
   std::string host_pch_path; // Existing host PCH file to load during host compilation
+  std::string pch_cache_dir; // Where to read/write cached PCHs; empty disables PCH
   std::vector<std::string> include_paths;
   std::vector<std::string> library_paths;
   std::vector<std::string> device_bitcode_files; // Raw LLVM bitcode (magic "BC") linked via LLVM's Linker

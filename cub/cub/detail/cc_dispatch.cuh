@@ -97,7 +97,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_cc_list(
   _CCCL_ASSERT(((device_cc == all_ccs[Is]) || ...),
                "device_cc must appear in the list of compute capabilities compiled for");
 
-  cudaError_t e = cudaErrorInvalidDeviceFunction;
+  // This error will be propagated if assertions are turned off and device_cc is not in the list of compiled
+  // architectures. This can happen if a user compiles with -rdc=true and links against a TU that is compiled for a
+  // lower architecture than the current TU. See https://github.com/NVIDIA/cccl/issues/11403 for details.
+  cudaError_t e = cudaErrorInvalidPtx;
+
 #  if _CCCL_STD_VER >= 2020
   // In C++20, we just create an integral_constant holding the policy, because policies are structural types in C++20.
   // This causes f to be only instantiated for each distinct policy, since the same policy for different arches results

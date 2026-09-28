@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_unique_by_key.cuh>
@@ -240,7 +241,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     // Number of input tiles
     const auto threads_per_block = policy.threads_per_block;
     const auto items_per_thread  = policy.items_per_thread;
-    int tile_size                = threads_per_block * items_per_thread;
+    const int tile_size          = threads_per_block * items_per_thread;
     int num_tiles                = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
     const auto vsmem_size        = num_tiles * vsmem_per_block;
 
@@ -278,9 +279,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     num_tiles                = ::cuda::std::max(1, num_tiles);
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -314,6 +313,11 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
 
     // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
+    constexpr bool cub_debug_log_unique_by_key_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+    const bool cub_debug_log_unique_by_key_kernel = detail::logging_enabled();
+#endif // !CUB_DEBUG_LOG
+    if (cub_debug_log_unique_by_key_kernel)
     {
       // Get SM occupancy for unique_by_key_kernel
       int sweep_sm_occupancy;
@@ -325,17 +329,17 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
         return error;
       }
 
-      _CubLog("Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
-              "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              scan_grid_size.x,
-              scan_grid_size.y,
-              scan_grid_size.z,
-              threads_per_block,
-              (long long) stream,
-              items_per_thread,
-              sweep_sm_occupancy);
+      _CUB_LOG_KERNEL_LAUNCH(
+        "unique_by_key_kernel",
+        scan_grid_size.x,
+        scan_grid_size.y,
+        scan_grid_size.z,
+        threads_per_block,
+        0,
+        stream,
+        ", SM occupancy: %d",
+        sweep_sm_occupancy);
     }
-#endif // CUB_DEBUG_LOG
 
     // Invoke select_if_kernel
     if (const auto error = CubDebug(
@@ -529,20 +533,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     const ::cuda::std::size_t vsmem_per_block = vsmem_helper_impl<typename vsmem_adapted_agents::agent_t>::vsmem_per_block;
 #endif
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceSelect::UniqueByKey to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    detail::log_dispatch("DeviceSelect (unique by key)", cc, active_policy);
 
     const auto threads_per_block = active_policy.threads_per_block;
     const auto items_per_thread  = active_policy.items_per_thread;
-    int tile_size                = threads_per_block * items_per_thread;
+    const int tile_size          = threads_per_block * items_per_thread;
     int num_tiles                = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
     const auto vsmem_size        = num_tiles * vsmem_per_block;
 
@@ -580,9 +575,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     num_tiles                                = ::cuda::std::max(1, num_tiles);
     const int init_grid_size                 = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -617,6 +610,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
 
 #ifdef CUB_DEBUG_LOG
+    constexpr bool cub_debug_log_unique_by_key_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+    const bool cub_debug_log_unique_by_key_kernel = detail::logging_enabled();
+#endif // !CUB_DEBUG_LOG
+    if (cub_debug_log_unique_by_key_kernel)
     {
       // Get SM occupancy for unique_by_key_kernel
       int sweep_sm_occupancy;
@@ -625,17 +623,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       {
         return error;
       }
-      _CubLog("Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
-              "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              scan_grid_size.x,
-              scan_grid_size.y,
-              scan_grid_size.z,
-              threads_per_block,
-              (long long) stream,
-              items_per_thread,
-              sweep_sm_occupancy);
+      _CUB_LOG_KERNEL_LAUNCH(
+        "unique_by_key_kernel",
+        scan_grid_size.x,
+        scan_grid_size.y,
+        scan_grid_size.z,
+        threads_per_block,
+        0,
+        stream,
+        ", SM occupancy: %d",
+        sweep_sm_occupancy);
     }
-#endif // CUB_DEBUG_LOG
 
     // Invoke select_if_kernel
     if (const auto error = CubDebug(

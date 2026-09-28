@@ -12,10 +12,12 @@ void TestTransformWithLambda()
     return v < 4;
   };
   thrust::host_vector<int> A{1, 2, 3, 4, 5, 6, 7};
-  ASSERT_EQUAL(thrust::any_of(A.begin(), A.end(), l), true);
+  REQUIRE(thrust::any_of(A.begin(), A.end(), l));
 
   thrust::device_vector<int> B{1, 2, 3, 4, 5, 6, 7};
-  ASSERT_EQUAL(thrust::any_of(B.begin(), B.end(), l), true);
+  REQUIRE(thrust::any_of(B.begin(), B.end(), l));
 }
-
-DECLARE_UNITTEST(TestTransformWithLambda);
+TEST_CASE("TestTransformWithLambda", "[transform_iterator]")
+{
+  TestTransformWithLambda();
+}
