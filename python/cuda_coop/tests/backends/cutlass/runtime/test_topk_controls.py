@@ -153,7 +153,7 @@ def test_load_topk_sort_store_loop(api):
 
     @cute.kernel
     def kernel(source: cute.Pointer, output: cute.Pointer, repeats: cutlass.Int32):
-        scratch = api.TempStorage(alignment=128)
+        scratch = api.TempStorage(alignment=128, auto_sync=True)
         group = api.this_block()
         for index in range(repeats):
             data = api.ThreadData(items, dtype=cutlass.Int32)
