@@ -333,7 +333,7 @@ public:
 
       if (start_event && end_event)
       {
-        reserved::record_task_timing(*this, start_event, end_event, get_stream(), *dot);
+        reserved::task_statistics::instance().record_task_timing(*this, start_event, end_event, get_stream(), *dot);
       }
 
       clear();
@@ -576,7 +576,7 @@ public:
 
       if (start_event && end_event)
       {
-        reserved::record_task_timing(*this, start_event, end_event, get_stream(), *dot);
+        statistics.record_task_timing(*this, start_event, end_event, get_stream(), *dot);
       }
 
       clear();

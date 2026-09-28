@@ -249,7 +249,7 @@ public:
       {
         if (start_event && end_event)
         {
-          reserved::record_task_timing(t, start_event, end_event, t.get_stream(), dot);
+          statistics.record_task_timing(t, start_event, end_event, t.get_stream(), dot);
         }
       }
       t.clear();

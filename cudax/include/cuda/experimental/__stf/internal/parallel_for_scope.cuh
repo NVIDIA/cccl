@@ -712,7 +712,7 @@ public:
       {
         if (record_time)
         {
-          reserved::record_task_timing(t, start_event, end_event, t.get_stream(), dot, device);
+          statistics.record_task_timing(t, start_event, end_event, t.get_stream(), dot, device);
         }
       }
 
