@@ -549,9 +549,9 @@ descriptors default to `auto_sync=False`, so the caller must synchronize before
 reuse. Physical and
 logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
 for the exact participating mask. Prefix callbacks retain the same storage
-rules. When repeated calls reuse Block Scan storage, keep automatic
-synchronization enabled or issue `cuda.syncthreads()` after each call when
-`auto_sync=False`. The prefix state is persistent per-thread data, not CUB
+rules. When repeated calls reuse an explicit Block Scan descriptor, set
+`auto_sync=True` or issue `cuda.syncthreads()` before reuse. The prefix state is
+persistent per-thread data, not CUB
 temporary storage.
 
 This common example loads a block tile, computes its exclusive sum, and

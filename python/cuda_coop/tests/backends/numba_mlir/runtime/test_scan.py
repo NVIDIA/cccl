@@ -286,7 +286,7 @@ def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
             thread = cuda.threadIdx.x
             state = qualified_coop.ThreadData(1, dtype=types.int64)
             state[0] = _PREFIX_INITIAL_STATE
-            storage = qualified_coop.TempStorage(sharing="shared")
+            storage = qualified_coop.TempStorage(sharing="shared", auto_sync=True)
             for tile in range(_PREFIX_TILE_COUNT):
                 index = tile * _BLOCK_THREADS + thread
                 output[index] = qualified_coop.inclusive_sum(
@@ -310,6 +310,7 @@ def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
             storage = qualified_coop.TempStorage(
                 _DYNAMIC_STORAGE_BYTES,
                 alignment=16,
+                auto_sync=True,
             )
             for tile in range(_PREFIX_TILE_COUNT):
                 index = tile * _BLOCK_THREADS + thread
