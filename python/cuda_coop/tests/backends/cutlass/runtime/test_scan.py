@@ -172,6 +172,48 @@ def test_initial_type(api, dtype, runtime):
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
+@pytest.mark.parametrize("dtype", (np.int32, np.float32))
+@pytest.mark.parametrize("items", (0, 2), ids=("scalar", "payload"))
+@pytest.mark.parametrize("numpy_seed", (False, True), ids=("cute-seed", "numpy-seed"))
+def test_numpy_input(api, dtype, items, numpy_seed):
+    value_type = cutlass_dtype(dtype)
+    size = _THREADS * max(items, 1)
+
+    @cute.kernel
+    def kernel(observed: cute.Pointer):
+        thread = cute.arch.thread_idx()[0]
+        outputs = cute.make_tensor(observed, cute.make_layout(size))
+        if cutlass.const_expr(items):
+            value = api.ThreadData(items, dtype=dtype)
+            for item in cutlass.range_constexpr(items):
+                value[item] = dtype(1)
+        else:
+            value = dtype(1)
+        if cutlass.const_expr(numpy_seed):
+            result = api.scan(
+                api.this_block(), value, mode="exclusive", initial_value=dtype(7)
+            )
+        else:
+            result = api.exclusive_scan(
+                api.this_block(), value, initial_value=value_type(7)
+            )
+        if cutlass.const_expr(items):
+            for item in cutlass.range_constexpr(items):
+                outputs[thread * items + item] = result[item]
+        else:
+            outputs[thread] = result
+
+    @cute.jit
+    def launch(observed: cute.Pointer):
+        kernel(observed).launch(grid=1, block=_THREADS)
+
+    observed = np.zeros(size, dtype=dtype)
+    with device_array(observed) as out:
+        launch(out)
+    np.testing.assert_array_equal(observed, np.arange(size, dtype=dtype) + 7)
+
+
+@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("operation", tuple(_UFUNCS))
 @pytest.mark.parametrize("inclusive", (False, True), ids=("exclusive", "inclusive"))
 def test_builtins(api, operation, inclusive):
