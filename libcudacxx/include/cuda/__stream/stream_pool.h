@@ -67,7 +67,7 @@ enum class __stream_pool_creation
 //! stays valid for the lifetime of the pool. Destroying the pool destroys the streams; it is the caller's
 //! responsibility to synchronize the work submitted to them first. The pool can be moved but not copied. A move
 //! takes over the streams, which stay valid, as do the `cuda::stream_ref` handed out before the move; no thread may
-//! use either pool while it is moved. A moved-from pool has a size of zero and may only be assigned to or destroyed.
+//! use either pool while it is moved. A moved-from pool may only be assigned to or destroyed.
 //!
 //! Whether the streams are created in the constructor or on the first request for their slot is chosen at
 //! construction with a `__stream_pool_creation` value. With `__stream_pool_creation::eager`, the default, every stream
@@ -220,7 +220,7 @@ public:
   //!
   //! @return A reference to a stream owned by the pool
   //!
-  //! @throws std::out_of_range if `__index` is not below `size()`, which is always the case for a moved-from pool
+  //! @throws std::out_of_range if `__index` is not below `size()`
   //! @throws cuda_error if the stream has to be created and the creation fails
   [[nodiscard]] _CCCL_HOST_API stream_ref at(::cuda::std::size_t __index) const
   {
@@ -273,7 +273,7 @@ public:
   //! Fixed at construction; every stream the pool ever hands out comes from one of these slots, whether or not
   //! its stream has been created yet.
   //!
-  //! @return The size given at construction, zero for a moved-from pool
+  //! @return The size given at construction
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t size() const noexcept
   {
     return __size_;

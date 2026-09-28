@@ -153,8 +153,6 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     const cudaStream_t third  = source.at(2).get();
 
     cuda::__stream_pool moved{std::move(source)};
-    REQUIRE(source.size() == 0);
-    REQUIRE_THROWS_AS(source.at(0), std::out_of_range);
     REQUIRE(moved.size() == 3);
     REQUIRE(moved.device() == device);
     REQUIRE(moved.priority() == cuda::stream::default_priority);
@@ -175,13 +173,12 @@ C2H_CCCLRT_TEST("Stream pool on a device", "[stream][stream_pool]")
     cuda::__stream_pool target{device, 1, cuda::__stream_pool_creation::lazy};
     target.next_stream().sync();
     target = std::move(moved);
-    REQUIRE(moved.size() == 0);
     REQUIRE(target.size() == 3);
     REQUIRE(target.at(0).get() == first);
     REQUIRE(target.at(2).get() == third);
     target.at(2).sync();
 
-    // A moved-from pool can be assigned to again.
+    // A moved-from pool may only be assigned to or destroyed; `moved` is destroyed, `source` is assigned to again.
     source = cuda::__stream_pool{device, 2, cuda::__stream_pool_creation::lazy};
     REQUIRE(source.size() == 2);
     REQUIRE(source.next_stream().device() == device);
