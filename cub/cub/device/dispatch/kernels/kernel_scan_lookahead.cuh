@@ -51,8 +51,8 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(Prologue);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadReduce);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadScanStore);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLoadAndNextIdx);
-_CCCL_IKET_CREATE_START_END_RANGE(Load);
-_CCCL_IKET_CREATE_START_END_RANGE(NextIdx);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Load);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(NextIdx);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLookahead);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(GetNextIdx);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(ReduceThreadWarp);
@@ -814,13 +814,13 @@ struct lookahead_scan_closure
       {
         _CCCL_IKET_RANGE_START(SquadLoadAndNextIdx);
 
-        _CCCL_IKET_RANGE_START(Load);
+        _CCCL_IKET_RANGE_PUSH(Load);
         load_current_tile(squad, phaseInOutW, loadInfo);
-        _CCCL_IKET_RANGE_END(Load);
+        _CCCL_IKET_RANGE_POP();
 
-        _CCCL_IKET_RANGE_START(NextIdx);
+        _CCCL_IKET_RANGE_PUSH(NextIdx);
         load_next_tile_index(squad, phaseNextBlockIdxW);
-        _CCCL_IKET_RANGE_END(NextIdx);
+        _CCCL_IKET_RANGE_POP();
 
         _CCCL_IKET_RANGE_END(SquadLoadAndNextIdx);
       }
