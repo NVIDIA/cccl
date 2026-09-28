@@ -6,6 +6,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/stream>
+
+#include "catch2_test_custom_streams.cuh"
 #include "cub_test_macros.h"
 
 CUB_TEST("Device inclusive scan works", "[scan][device]", CUB_SMALL)
@@ -127,6 +130,75 @@ CUB_TEST("cub::DeviceScan::InclusiveScan with init non-env overload is not ambig
   thrust::device_vector<int> out(1);
   size_t temp_storage_bytes = 0;
   cub::DeviceScan::InclusiveScan(nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 5, 1);
+}
+
+CUB_TEST("cub::DeviceScan::InclusiveScan non-env overload with nullptr stream is not ambiguous",
+         "[scan][device]",
+         CUB_SMALL)
+{
+  thrust::device_vector<int> input(1);
+  thrust::device_vector<int> out(1);
+  size_t temp_storage_bytes = 0;
+  cub::DeviceScan::InclusiveScan(
+    nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::std::plus<>{}, 1, nullptr);
+}
+
+CUB_TEST("cub::DeviceScan::InclusiveScan non-env overloads accept a type convertible to cudaStream_t",
+         "[scan][device]",
+         CUB_SMALL)
+{
+  thrust::device_vector<int> input{0, -1, 2, -3, 4, -5, 6};
+  thrust::device_vector<int> out(input.size());
+  const int num_items       = static_cast<int>(input.size());
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const stream_convertible stream_arg{stream.get()};
+  size_t temp_storage_bytes{};
+
+  SECTION("without init_value")
+  {
+    // The stream argument must not be deduced as NumItemsT of the init_value overload
+    cub::DeviceScan::InclusiveScan(
+      nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::maximum<>{}, num_items, stream_arg);
+
+    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+
+    cub::DeviceScan::InclusiveScan(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_storage_bytes,
+      input.begin(),
+      out.begin(),
+      cuda::maximum<>{},
+      num_items,
+      stream_arg);
+    stream.sync();
+
+    const thrust::host_vector<int> expected{0, 0, 2, 2, 4, 4, 6};
+    REQUIRE(expected == out);
+  }
+
+  SECTION("with init_value")
+  {
+    const int init = 1;
+
+    cub::DeviceScan::InclusiveScan(
+      nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::maximum<>{}, init, num_items, stream_arg);
+
+    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+
+    cub::DeviceScan::InclusiveScan(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_storage_bytes,
+      input.begin(),
+      out.begin(),
+      cuda::maximum<>{},
+      init,
+      num_items,
+      stream_arg);
+    stream.sync();
+
+    const thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
+    REQUIRE(expected == out);
+  }
 }
 
 CUB_TEST("cub::DeviceScan::InclusiveScan args::deferred non-env overload is not ambiguous", "[scan][device]", CUB_SMALL)
