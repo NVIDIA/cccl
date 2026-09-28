@@ -1011,6 +1011,9 @@ to check harder, not to skip.
   #3216→#4251 np.zeros([0], dtype=dt) used as a scalar init value across ~20 parametrized cache-identity tests, actually producing a zero-length array
 -->
 
+<!-- note: just the one occurrence, and a generic Python review can catch this well-known numpy
+  shape-vs-value pitfall; probably not worth spending a rule on it -->
+
 When python test code constructs a host-side "init value" or single-element array (commonly passed as
 a scalar seed/identity argument to a reduce-like API), check the construction actually produces the
 intended contents. `numpy.zeros(shape, …)` takes a *shape*, not a *value*: `np.zeros([0], dtype=dt)`
