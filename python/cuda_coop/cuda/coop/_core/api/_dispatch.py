@@ -22,15 +22,11 @@ from typing import Any, Callable, TypeVar
 
 from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 
-_ACTIVE_BACKEND_MODULE: ContextVar[str | None] = ContextVar(
-    "cuda_coop_active_backend_module",
-    default=None,
-)
 _ACTIVE_COMMON_ROOT_OPERATION: ContextVar[str | None] = ContextVar(
     "cuda_coop_active_common_root_operation",
     default=None,
 )
-_CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
+_CallableT = TypeVar("_CallableT", bound=Callable[..., object])
 _COMPILER_CONTEXT_PROBES: dict[str, Callable[[], bool]] = {}
 
 
@@ -38,12 +34,12 @@ _COMPILER_CONTEXT_PROBES: dict[str, Callable[[], bool]] = {}
 class _CommonGroupOperation:
     name: str
     group_kinds: tuple[str, ...]
-    function: Callable[..., Any]
+    function: Callable[..., object]
 
 
 _COMMON_GROUP_OPERATIONS_BY_NAME: dict[str, _CommonGroupOperation] = {}
 _COMMON_GROUP_OPERATIONS_BY_FUNCTION: dict[
-    Callable[..., Any], _CommonGroupOperation
+    Callable[..., object], _CommonGroupOperation
 ] = {}
 
 
@@ -85,7 +81,7 @@ def _common_group_operation(
     return decorate
 
 
-def _common_group_operation_name(function: Any) -> str | None:
+def _common_group_operation_name(function: object) -> str | None:
     registration = _COMMON_GROUP_OPERATIONS_BY_FUNCTION.get(function)
     return None if registration is None else registration.name
 
@@ -100,22 +96,6 @@ class UnsupportedCoopBackendOperationError(NotImplementedError):
         super().__init__(
             f"cuda.coop.{operation} is not implemented by {backend_module!r}"
         )
-
-
-@contextmanager
-def _compiler_scope(backend_module: str) -> Iterator[None]:
-    """Activate one backend for the current compiler trace."""
-
-    if not isinstance(backend_module, str):
-        raise TypeError("backend_module must be a string")
-    if not backend_module.strip():
-        raise ValueError("backend_module must be a non-empty string")
-
-    token = _ACTIVE_BACKEND_MODULE.set(backend_module)
-    try:
-        yield
-    finally:
-        _ACTIVE_BACKEND_MODULE.reset(token)
 
 
 def _register_compiler_context_probe(
@@ -138,9 +118,6 @@ def _register_compiler_context_probe(
 def _backend_module_name() -> str | None:
     """Return the compiler-owned backend active in the current trace."""
 
-    explicit = _ACTIVE_BACKEND_MODULE.get()
-    if explicit is not None:
-        return explicit
     active = None
     for module_name, probe in tuple(_COMPILER_CONTEXT_PROBES.items()):
         try:
@@ -197,7 +174,7 @@ def _backend_member(name: str) -> Any:
 def _common_selector(
     operation: str,
     parameter: str,
-    value: Any,
+    value: object,
     allowed: frozenset[str],
     *,
     allow_none: bool = False,

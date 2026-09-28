@@ -748,7 +748,7 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
         @cuda.jit
         def kernel(source, destination, observed):
             thread = cuda.threadIdx.x
-            storage = numba_coop.TempStorage(64 * 1024, alignment=16)
+            storage = numba_coop.TempStorage(64 * 1024, alignment=16, auto_sync=True)
             payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
@@ -775,7 +775,7 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
         @cuda.jit
         def kernel(source, destination, observed):
             thread = cuda.threadIdx.x
-            storage = numba_coop.TempStorage(sharing="shared")
+            storage = numba_coop.TempStorage(sharing="shared", auto_sync=True)
             payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
@@ -835,7 +835,9 @@ def test_transpose_algorithms_reuse_caller_storage(algorithm, dynamic):
 def test_transpose_storage_honors_minimum_alignment(module, alignment, sharing):
     @cuda.jit
     def kernel(source, destination):
-        storage = module.TempStorage(alignment=alignment, sharing=sharing)
+        storage = module.TempStorage(
+            alignment=alignment, sharing=sharing, auto_sync=True
+        )
         payload = module.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
         module.load(
             module.this_block(),
@@ -1736,7 +1738,7 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
         @cuda.jit
         def kernel(destination):
             thread = cuda.threadIdx.x
-            storage = numba_coop.TempStorage(sharing="exclusive")
+            storage = numba_coop.TempStorage(sharing="exclusive", auto_sync=True)
             payload = numba_coop.ThreadData(
                 _LOOPED_ITEMS_PER_THREAD,
                 dtype=types.int32,
@@ -1776,5 +1778,5 @@ def test_exclusive_storage_reused_by_a_looped_call_site_stays_ordered(manual_syn
     )
     compiled = next(iter(dispatcher._launch_config_overloads.values()))
     # Exactly one block barrier per iteration: the compiler's trailing reuse
-    # barrier by default, or the caller's explicit one with auto_sync=False.
+    # barrier with auto_sync=True, or the caller's explicit one otherwise.
     assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 1

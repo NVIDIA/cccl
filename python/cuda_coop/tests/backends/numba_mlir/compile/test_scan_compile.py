@@ -633,9 +633,10 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
     assert "bar.sync" in ptx
 
 
-def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers() -> (
-    None
-):
+@pytest.mark.parametrize("auto_sync", [None, False, True])
+def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
+    auto_sync,
+) -> None:
     import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(device=True)
@@ -650,7 +651,7 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers()
         # the helper and becomes visible only after inlining. Acceptance must
         # not depend on an unrelated marker being present.
         thread = cuda.threadIdx.x
-        storage = numba_coop.TempStorage()
+        storage = numba_coop.TempStorage(auto_sync=auto_sync)
         first = scan_with(storage, source[thread])
         destination[thread] = scan_with(storage, first)
 
@@ -667,8 +668,10 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers()
     )
 
     assert result.metadata["cubin"]
-    # One trailing reuse barrier per inlined storage-consuming call.
-    assert result.metadata["mlir_module_str"].count("gpu.barrier") == 2
+    # Only explicit opt-in adds a trailing barrier to each inlined call.
+    assert result.metadata["mlir_module_str"].count("gpu.barrier") == (
+        2 if auto_sync is True else 0
+    )
 
 
 def test_primitive_inside_standalone_scan_callback_has_clear_diagnostic():

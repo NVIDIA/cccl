@@ -143,9 +143,7 @@ def test_import_failure_preserves_cause_and_can_retry(
     )
 
 
-def test_activation_tracks_environment_and_respects_explicit_scope(
-    monkeypatch, compiler_modules
-):
+def test_activation_tracks_compiler_environment(monkeypatch, compiler_modules):
     runtime, activation = compiler_modules
     modules = _compatible_modules()
     monkeypatch.setattr(runtime.importlib, "import_module", modules.__getitem__)
@@ -156,9 +154,6 @@ def test_activation_tracks_environment_and_respects_explicit_scope(
     active[0] = object()
     assert _dispatch._backend_module_name() is None
     active[0] = modules["cutlass.cutlass_dsl"].CuTeDSL._get_dsl().envar
-    assert _dispatch._backend_module_name() == "cuda.coop.cutlass"
-    with _dispatch._compiler_scope("cuda.coop.numba_mlir"):
-        assert _dispatch._backend_module_name() == "cuda.coop.numba_mlir"
     assert _dispatch._backend_module_name() == "cuda.coop.cutlass"
     active[0] = None
     assert _dispatch._backend_module_name() is None

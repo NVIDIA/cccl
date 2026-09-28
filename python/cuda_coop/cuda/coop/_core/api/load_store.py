@@ -2,18 +2,127 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Cooperative load and store calls with validation for tracing compilers."""
+
 from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..thread_group import ThreadGroup
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _common_selector,
+    _group_primitive_marker,
+    _validate_common_operation_group,
 )
 from ._payload import (
     TempStorageLike,
     ThreadDataLike,
+    _common_thread_data_extent,
+    _ReadableThreadDataLike,
+    _validate_common_integer_value,
+    _validate_common_numeric_scalar,
+    _validate_common_numeric_value,
+    _validate_common_temp_storage,
 )
+
+_I32_MAX = (1 << 31) - 1
+_I64_MAX = (1 << 63) - 1
+_COMMON_LOAD_STORE_ALGORITHMS = frozenset(
+    {
+        "direct",
+        "striped",
+        "vectorize",
+        "transpose",
+        "warp_transpose",
+        "warp_transpose_timesliced",
+    }
+)
+_WARP_LOAD_STORE_ALGORITHMS = frozenset(
+    {
+        "direct",
+        "striped",
+        "vectorize",
+        "transpose",
+    }
+)
+
+
+def _validate_common_load_store_options(
+    operation: str,
+    group: ThreadGroup,
+    *,
+    algorithm: Any,
+    payload: Any,
+    valid_items: Any,
+    oob_default: object = None,
+    offset: Any,
+    temp_storage: Any,
+) -> None:
+    """Enforce the group-dependent common overload matrix."""
+
+    if _backend_module_name() is None:
+        return
+    _validate_common_operation_group(operation, group)
+    if operation == "load" and oob_default is not None and valid_items is None:
+        raise ValueError("cuda.coop.load oob_default requires valid_items")
+    if valid_items is not None:
+        static_valid_items = _validate_common_integer_value(
+            operation,
+            "valid_items",
+            valid_items,
+        )
+        if static_valid_items is not None:
+            if not 0 <= static_valid_items <= _I32_MAX:
+                raise ValueError(
+                    f"cuda.coop.{operation} valid_items must be between 0 "
+                    "and 2147483647"
+                )
+            if group.static_size is not None:
+                items_per_thread = (
+                    _common_thread_data_extent(
+                        operation,
+                        "output" if operation == "load" else "value",
+                        payload,
+                    )
+                    if isinstance(payload, _ReadableThreadDataLike)
+                    else 1
+                )
+                tile_items = group.static_size * items_per_thread
+                if static_valid_items > tile_items:
+                    raise ValueError(
+                        f"cuda.coop.{operation} valid_items "
+                        f"{static_valid_items} exceeds group tile size "
+                        f"{tile_items}"
+                    )
+    if oob_default is not None:
+        _validate_common_numeric_scalar(operation, "oob_default", oob_default)
+    if offset is not None:
+        static_offset = _validate_common_integer_value(
+            operation,
+            "offset",
+            offset,
+        )
+        if static_offset is not None and not 0 <= static_offset <= _I64_MAX:
+            raise ValueError(
+                f"cuda.coop.{operation} offset must be between 0 and "
+                "9223372036854775807"
+            )
+    if group.kind in {"warp", "threads_within_warp"}:
+        if algorithm not in _WARP_LOAD_STORE_ALGORITHMS:
+            raise ValueError(
+                f"cuda.coop.{operation} algorithm {algorithm!r} is supported "
+                "only for block groups"
+            )
+        if temp_storage is not None:
+            raise ValueError(
+                f"cuda.coop.{operation} temp_storage is not supported for "
+                "Warp groups; omit it so the implementation can provide "
+                "per-group storage"
+            )
+    elif temp_storage is not None:
+        _validate_common_temp_storage(operation, temp_storage)
 
 
 @_common_group_operation(
@@ -110,8 +219,38 @@ def load(
     ``cuda.coop.<backend>`` API for backend-specific behavior.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.load must be called from a supported GPU kernel."
+    algorithm = _common_selector(
+        "load", "algorithm", algorithm, _COMMON_LOAD_STORE_ALGORITHMS
+    )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "load",
+            "output",
+            output,
+            allow_untyped_thread_data=True,
+            require_thread_data=True,
+        )
+    _validate_common_load_store_options(
+        "load",
+        group,
+        algorithm=algorithm,
+        payload=output,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        offset=offset,
+        temp_storage=temp_storage,
+    )
+
+    _group_primitive_marker(
+        "load",
+        group,
+        source,
+        output,
+        algorithm=algorithm,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        offset=offset,
+        temp_storage=temp_storage,
     )
 
 
@@ -201,8 +340,35 @@ def store(
     control-flow requirements at primitive calls.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.store must be called from a supported GPU kernel."
+    algorithm = _common_selector(
+        "store", "algorithm", algorithm, _COMMON_LOAD_STORE_ALGORITHMS
+    )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "store",
+            "value",
+            value,
+            allow_readonly_thread_data=True,
+        )
+    _validate_common_load_store_options(
+        "store",
+        group,
+        algorithm=algorithm,
+        payload=value,
+        valid_items=valid_items,
+        offset=offset,
+        temp_storage=temp_storage,
+    )
+
+    _group_primitive_marker(
+        "store",
+        group,
+        destination,
+        value,
+        algorithm=algorithm,
+        valid_items=valid_items,
+        offset=offset,
+        temp_storage=temp_storage,
     )
 
 
