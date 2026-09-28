@@ -910,9 +910,9 @@ subprojects get rebuilt, and a missing dependency edge means a real downstream b
 -->
 
 When a diff specializes a primary template, where generic code names its members directly (traits like
-`pointer_traits`, `allocator_traits`, `iterator_traits`), the specialization's structure must reflect
-the primary template: every member must appear in the same shape — an alias template stays an alias
-template, nested structs stay nested structs, constants stay constants with the exact same data type.
+`pointer_traits`, `allocator_traits`, `iterator_traits`), every member the specialization provides
+must have the same shape as in the primary template: an alias template stays an alias template,
+nested structs stay nested structs, constants stay constants with the exact same data type.
 A wrong shape may still compile but carry a different meaning, staying invisible during compilation
 while breaking generic consumers, often in third-party code.
 
