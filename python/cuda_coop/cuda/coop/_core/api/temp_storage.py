@@ -14,7 +14,7 @@ def TempStorage(
     size_in_bytes: int | None = None,
     *,
     alignment: int | None = None,
-    auto_sync: bool | None = None,
+    auto_sync: bool | None = False,
     sharing: str = "shared",
 ) -> TempStorageLike:
     """Construct scratch storage with optional minimum alignment in bytes.
