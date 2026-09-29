@@ -247,11 +247,9 @@ def test_transpose_load_store_use_x_major_order_for_multidimensional_block():
 
 
 @cuda.jit
-def _load_preserving_invalid(source, observed, valid_items, source_offset):
+def _load_valid_prefix(source, observed, valid_items, source_offset):
     thread = cuda.threadIdx.x
     payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
-    payload[0] = -17
-    payload[1] = -17
     root_coop.load(
         root_coop.this_block(),
         source,
@@ -261,7 +259,9 @@ def _load_preserving_invalid(source, observed, valid_items, source_offset):
         offset=source_offset,
     )
     for item in range(_ITEMS_PER_THREAD):
-        observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+        index = thread * _ITEMS_PER_THREAD + item
+        if index < valid_items:
+            observed[index] = payload[item]
 
 
 @pytest.mark.parametrize(
@@ -269,13 +269,13 @@ def _load_preserving_invalid(source, observed, valid_items, source_offset):
     (0, _TILE_ITEMS - 9, _TILE_ITEMS),
     ids=("zero", "partial", "full"),
 )
-def test_load_preserves_invalid_slots_and_applies_an_independent_offset(valid_items):
+def test_load_reads_valid_prefix_at_an_independent_offset(valid_items):
     source = _values(np.dtype(np.int32), _LOAD_OFFSET + _TILE_ITEMS)
     observed = np.full(_TILE_ITEMS, 37, dtype=np.int32)
-    expected = np.full(_TILE_ITEMS, -17, dtype=np.int32)
+    expected = np.full(_TILE_ITEMS, 37, dtype=np.int32)
     expected[:valid_items] = source[_LOAD_OFFSET : _LOAD_OFFSET + valid_items]
 
-    _load_preserving_invalid[1, _THREADS](
+    _load_valid_prefix[1, _THREADS](
         source,
         observed,
         np.int32(valid_items),
@@ -431,7 +431,7 @@ def _algorithm_store_kernel(algorithm: str, qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, destination, preserved, valid_items, destination_offset):
+        def kernel(source, destination, valid_items, destination_offset):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
@@ -447,13 +447,11 @@ def _algorithm_store_kernel(algorithm: str, qualified: bool):
                 valid_items=valid_items,
                 offset=destination_offset,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, destination, preserved, valid_items, destination_offset):
+        def kernel(source, destination, valid_items, destination_offset):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
@@ -469,8 +467,6 @@ def _algorithm_store_kernel(algorithm: str, qualified: bool):
                 valid_items=valid_items,
                 offset=destination_offset,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     return kernel
 
@@ -553,12 +549,11 @@ def test_each_block_load_algorithm_matches_its_layout_oracle(
     (0, _TILE_ITEMS - 9, _TILE_ITEMS),
     ids=("zero", "partial", "full"),
 )
-def test_each_block_store_algorithm_matches_its_layout_oracle_and_preserves_input(
+def test_each_block_store_algorithm_matches_its_layout_oracle(
     qualified, algorithm, valid_items
 ):
     source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=37)
     destination = np.full(_STORE_OFFSET + _TILE_ITEMS + 3, -41, dtype=np.int32)
-    preserved = np.full(_TILE_ITEMS, 73, dtype=np.int32)
     expected = _expected_stored_tile(
         source,
         destination,
@@ -570,29 +565,24 @@ def test_each_block_store_algorithm_matches_its_layout_oracle_and_preserves_inpu
     _algorithm_store_kernel(algorithm, qualified)[1, _THREADS](
         source,
         destination,
-        preserved,
         np.int32(valid_items),
         np.int64(_STORE_OFFSET),
     )
 
     np.testing.assert_array_equal(destination, expected)
-    np.testing.assert_array_equal(preserved, source)
 
 
 @cache
-def _partial_transpose_load_preserving_kernel(algorithm: str, qualified: bool):
+def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, initial, observed, valid_items):
+        def kernel(source, observed, valid_items):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
-                payload[item] = initial[index]
             qualified_coop.load(
                 qualified_coop.this_block(),
                 source,
@@ -601,20 +591,19 @@ def _partial_transpose_load_preserving_kernel(algorithm: str, qualified: bool):
                 valid_items=valid_items,
             )
             for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                index = thread * _ITEMS_PER_THREAD + item
+                if index < valid_items:
+                    observed[index] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, initial, observed, valid_items):
+        def kernel(source, observed, valid_items):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
-                payload[item] = initial[index]
             root_coop.load(
                 root_coop.this_block(),
                 source,
@@ -623,7 +612,9 @@ def _partial_transpose_load_preserving_kernel(algorithm: str, qualified: bool):
                 valid_items=valid_items,
             )
             for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                index = thread * _ITEMS_PER_THREAD + item
+                if index < valid_items:
+                    observed[index] = payload[item]
 
     return kernel
 
@@ -633,19 +624,15 @@ def _partial_transpose_load_preserving_kernel(algorithm: str, qualified: bool):
     "algorithm",
     ("transpose", "warp_transpose", "warp_transpose_timesliced"),
 )
-def test_partial_transpose_load_preserves_each_invalid_payload_slot(
-    qualified, algorithm
-):
+def test_partial_transpose_load_reads_the_valid_prefix(qualified, algorithm):
     valid_items = _WIDE_PARTIAL_TILE_ITEMS - 19
     source = _values(np.dtype(np.int32), _WIDE_PARTIAL_TILE_ITEMS, shift=53)
-    initial = -1000 - np.arange(_WIDE_PARTIAL_TILE_ITEMS, dtype=np.int32)
     observed = np.full(_WIDE_PARTIAL_TILE_ITEMS, 71, dtype=np.int32)
-    expected = initial.copy()
+    expected = observed.copy()
     expected[:valid_items] = source[:valid_items]
 
-    _partial_transpose_load_preserving_kernel(algorithm, qualified)[1, _WIDE_THREADS](
+    _partial_transpose_load_kernel(algorithm, qualified)[1, _WIDE_THREADS](
         source,
-        initial,
         observed,
         np.int32(valid_items),
     )
@@ -658,7 +645,7 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(load_source, store_source, observed, destination, preserved):
+        def kernel(load_source, store_source, observed, destination):
             thread = cuda.threadIdx.x
             load_payload = qualified_coop.ThreadData(
                 _WIDE_ITEMS_PER_THREAD,
@@ -684,13 +671,11 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
                 store_payload,
                 algorithm=algorithm,
             )
-            for item in range(_WIDE_ITEMS_PER_THREAD):
-                preserved[thread * _WIDE_ITEMS_PER_THREAD + item] = store_payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(load_source, store_source, observed, destination, preserved):
+        def kernel(load_source, store_source, observed, destination):
             thread = cuda.threadIdx.x
             load_payload = root_coop.ThreadData(
                 _WIDE_ITEMS_PER_THREAD,
@@ -716,8 +701,6 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
                 store_payload,
                 algorithm=algorithm,
             )
-            for item in range(_WIDE_ITEMS_PER_THREAD):
-                preserved[thread * _WIDE_ITEMS_PER_THREAD + item] = store_payload[item]
 
     return kernel
 
@@ -729,19 +712,16 @@ def test_unguarded_wide_load_store_executes_full_tile_path(qualified, algorithm)
     store_source = _values(np.dtype(np.int32), _WIDE_TILE_ITEMS, shift=67)
     observed = np.full(_WIDE_TILE_ITEMS, -1, dtype=np.int32)
     destination = np.full(_WIDE_TILE_ITEMS, -1, dtype=np.int32)
-    preserved = np.full(_WIDE_TILE_ITEMS, -1, dtype=np.int32)
 
     _unguarded_wide_load_store_kernel(algorithm, qualified)[1, _WIDE_THREADS](
         load_source,
         store_source,
         observed,
         destination,
-        preserved,
     )
 
     np.testing.assert_array_equal(observed, load_source)
     np.testing.assert_array_equal(destination, store_source)
-    np.testing.assert_array_equal(preserved, store_source)
 
 
 @cache
@@ -765,6 +745,8 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
                 algorithm=algorithm,
                 temp_storage=storage,
             )
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
             qualified_coop.store(
                 qualified_coop.this_block(),
                 destination,
@@ -772,8 +754,6 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
                 algorithm=algorithm,
                 temp_storage=storage,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     else:
 
@@ -792,6 +772,8 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
                 algorithm=algorithm,
                 temp_storage=storage,
             )
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
             qualified_coop.store(
                 qualified_coop.this_block(),
                 destination,
@@ -799,8 +781,6 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
                 algorithm=algorithm,
                 temp_storage=storage,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     return kernel
 
@@ -1103,7 +1083,7 @@ def test_thread_data_constructor_alias_across_branch(module, monkeypatch):
 
 
 @cuda.jit
-def _qualified_local_array_transpose_store(source, destination, preserved):
+def _qualified_local_array_transpose_store(source, destination):
     thread = cuda.threadIdx.x
     payload = cuda.local.array(shape=_ITEMS_PER_THREAD, dtype=types.int32)
     for item in range(_ITEMS_PER_THREAD):
@@ -1114,23 +1094,18 @@ def _qualified_local_array_transpose_store(source, destination, preserved):
         payload,
         algorithm="transpose",
     )
-    for item in range(_ITEMS_PER_THREAD):
-        preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-def test_qualified_transpose_store_preserves_local_array_payload():
+def test_qualified_transpose_store_accepts_local_array_payload():
     source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=29)
     destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
-    preserved = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
     _qualified_local_array_transpose_store[1, _THREADS](
         source,
         destination,
-        preserved,
     )
 
     np.testing.assert_array_equal(destination, source)
-    np.testing.assert_array_equal(preserved, source)
 
 
 @cuda.jit

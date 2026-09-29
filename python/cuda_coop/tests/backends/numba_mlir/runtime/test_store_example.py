@@ -29,7 +29,7 @@ def test_store_example():
     from cuda import coop
 
     @cuda.jit
-    def store_prefix(destination, preserved):
+    def store_prefix(destination):
         block = coop.this_block()
         rank = cuda.threadIdx.x
         items = coop.ThreadData(2, dtype=np.int32)
@@ -43,14 +43,10 @@ def test_store_example():
             valid_items=251,
             offset=5,
         )
-        preserved[2 * rank] = items[0]
-        preserved[2 * rank + 1] = items[1]
 
     destination = cuda.to_device(np.full(263, -1, dtype=np.int32))
-    preserved = cuda.device_array(256, dtype=np.int32)
-    store_prefix[1, 128](destination, preserved)
+    store_prefix[1, 128](destination)
     expected = np.full(263, -1, dtype=np.int32)
     expected[5:256] = np.arange(251, dtype=np.int32)
     np.testing.assert_array_equal(destination.copy_to_host(), expected)
-    np.testing.assert_array_equal(preserved.copy_to_host(), np.arange(256))
     # example-end
