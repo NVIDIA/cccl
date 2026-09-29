@@ -509,3 +509,42 @@ TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
   REQUIRE(d_dst[N / 2] == static_cast<char>(0x42));
   REQUIRE(d_dst[N - 1] == static_cast<char>(0x42));
 }
+
+// src: (65537,128K):(128K+128,1), layout_stride
+// dst: (65537,128K):(128K,1), layout_right
+// inner extent >= bytes-in-flight of every architecture -> contiguous kernel (2a), outer size > max grid y-dimension
+TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][contiguous][large][.]")
+{
+  constexpr int M     = 65537;
+  constexpr int N     = 128 * 1024;
+  constexpr int Ld    = N + 128;
+  const auto required = size_t{M} * (Ld + N);
+
+  size_t free_mem  = 0;
+  size_t total_mem = 0;
+  cudaMemGetInfo(&free_mem, &total_mem);
+  if (free_mem < required + (size_t{256} << 20))
+  {
+    SKIP("Not enough GPU memory (" << (free_mem >> 20) << " MB free, need ~" << (required >> 20) << " MB)");
+  }
+  thrust::device_vector<char> d_src(size_t{M} * Ld, static_cast<char>(0x42));
+  thrust::device_vector<char> d_dst(size_t{M} * N, static_cast<char>(0x00));
+
+  using cuda::std::layout_stride;
+  using extents_t     = cuda::std::dextents<long long, 2>;
+  using src_mdspan_t  = cuda::device_mdspan<const char, extents_t, layout_stride>;
+  using dst_mdspan_t  = cuda::device_mdspan<char, extents_t>;
+  using src_mapping_t = layout_stride::mapping<extents_t>;
+
+  const src_mapping_t src_mapping(extents_t(M, N), cuda::std::array<long long, 2>{Ld, 1});
+
+  const src_mdspan_t src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
+  const dst_mdspan_t dst(thrust::raw_pointer_cast(d_dst.data()), extents_t(M, N), src_mapping);
+
+  cuda::copy(src, dst, copy_stream);
+  copy_stream.sync();
+
+  REQUIRE(d_dst[0] == static_cast<char>(0x42));
+  REQUIRE(d_dst[size_t{M - 1} * N] == static_cast<char>(0x42));
+  REQUIRE(d_dst[size_t{M} * N - 1] == static_cast<char>(0x42));
+}
