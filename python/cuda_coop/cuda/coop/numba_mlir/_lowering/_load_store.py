@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import operator
-from enum import Enum
 
 from numba_cuda_mlir import types
 
@@ -17,6 +16,12 @@ from cuda.coop._core.warp import (
     make_warp_store_specialization,
 )
 
+from .._compiler._load_store_algorithms import (
+    _BLOCK_LOAD_STORE_ALGORITHMS,
+    _STORAGE_FREE_ALGORITHMS,
+    _WARP_LOAD_STORE_ALGORITHMS,
+    _resolve_algorithm,
+)
 from .._compiler._operations import (
     StorageABI,
     factory_operation,
@@ -36,26 +41,6 @@ from .._types import (
 )
 from ._core import NumbaMlirCoreAdapter, _optional_binding
 
-_BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
-    {
-        "direct",
-        "striped",
-        "vectorize",
-        "transpose",
-        "warp_transpose",
-        "warp_transpose_timesliced",
-    }
-)
-_WARP_LOAD_STORE_ALGORITHMS = frozenset(
-    {
-        "direct",
-        "striped",
-        "vectorize",
-        "transpose",
-    }
-)
-_STORAGE_FREE_ALGORITHMS = frozenset({"direct", "striped", "vectorize"})
-
 
 def _positive_int(value, *, name: str) -> int:
     if isinstance(value, bool):
@@ -67,21 +52,6 @@ def _positive_int(value, *, name: str) -> int:
     if value <= 0:
         raise ValueError(f"{name} must be a positive integer")
     return value
-
-
-def _resolve_algorithm(
-    algorithm, allowed_algorithms, primitive_name: str
-) -> str:
-    if not isinstance(algorithm, str) or isinstance(algorithm, Enum):
-        raise TypeError(f"{primitive_name} algorithm must be a string")
-    token = algorithm.strip().lower().replace("-", "_")
-    if token in allowed_algorithms:
-        return token
-    choices = ", ".join(sorted(allowed_algorithms))
-    raise ValueError(
-        f"Unsupported {primitive_name} algorithm {algorithm!r}; expected one "
-        f"of: {choices}"
-    )
 
 
 def _registered_provider_metadata(factory, algorithm):

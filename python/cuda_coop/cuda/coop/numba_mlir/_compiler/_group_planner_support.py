@@ -40,7 +40,6 @@ _cuda_module = cuda
 ir = _get_numba_mlir_compat().numba_ir
 
 _NAME_COUNTER = count()
-_PAYLOAD_DTYPE_LIKE = "like"
 _GROUP_CONSTRUCTORS = {
     _thread_groups.this_thread: _thread_groups.this_thread,
     _thread_groups.this_warp: _thread_groups.this_warp,
@@ -79,17 +78,6 @@ def _group_operation_name(function: Any) -> str | None:
 
 def _is_common_root_operation(function: Any, operation: str) -> bool:
     return _common_dispatch._common_group_operation_name(function) == operation
-
-
-def _typed_group_payload_like(
-    _prototype: Any,
-    _is_array: bool,
-    _dtype_policy: str,
-    _items_per_thread: int | None = None,
-) -> Any:
-    raise GroupRewriteError(
-        "typed group payload markers must be lowered before device compilation"
-    )
 
 
 # Support consumers import the private names they use explicitly.
