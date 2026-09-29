@@ -74,7 +74,8 @@ def adjacent_difference(
     operator. The CUB counterpart is ``cub::BlockAdjacentDifference``.
     """
     raise CoopCompilerContextRequiredError(
-        "cuda.coop.adjacent_difference must be called from a supported GPU kernel."
+        "cuda.coop.adjacent_difference must be called from a supported "
+        "GPU kernel."
     )
 
 
