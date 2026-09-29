@@ -29,7 +29,7 @@ def TempStorage(
     ``temp_storage`` to operations that accept explicit block scratch.
     ``descriptor.reserve(num_elems, dtype, alignment=...)`` also obtains typed
     shared arrays for application or library data in supported backends.
-    See :ref:`temporary storage <coop-temp-storage>` for supported operations,
+    See :ref:`temporary storage <coop-common-storage>` for supported operations,
     allocation lifetime, and launch-time shared-memory requirements.
 
     Parameters
@@ -83,6 +83,10 @@ def TempStorage(
         :start-after: # temp-storage-example-begin
         :end-before: # temp-storage-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS storage example <coop-cutlass-storage>` demonstrates
+    the same shared/exclusive policies and automatic or explicit reuse
+    synchronization in a CuTe kernel.
     """
 
     alignment = _normalize_alignment(alignment)
