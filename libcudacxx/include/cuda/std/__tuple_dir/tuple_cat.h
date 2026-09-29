@@ -74,8 +74,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tuple, size_t... _Indices>
 [[nodiscard]] _CCCL_API constexpr auto __tuple_cat_impl(__tuple_indices<_Indices...>, _Tuple&& __tuple) noexcept
 {
-  using ::cuda::std::get;
-  return ::cuda::std::forward_as_tuple(get<_Indices>(::cuda::std::forward<_Tuple>(__tuple))...);
+  return ::cuda::std::forward_as_tuple(::cuda::std::get<_Indices>(::cuda::std::forward<_Tuple>(__tuple))...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -87,7 +86,6 @@ template <class _Tuple1, class _Tuple2, size_t... _Indices1, size_t... _Indices2
   _Tuple2&& __tuple2,
   _Tuples&&... __tuples)
 {
-  using ::cuda::std::get;
   if constexpr (sizeof...(_Tuples) != 0)
   {
     using _TupleSize0 = __make_tuple_indices_t<sizeof...(_Indices1) + sizeof...(_Indices2)>;
@@ -95,14 +93,14 @@ template <class _Tuple1, class _Tuple2, size_t... _Indices1, size_t... _Indices2
     return ::cuda::std::__tuple_cat_impl(
       _TupleSize0{},
       _TupleSize1{},
-      ::cuda::std::forward_as_tuple(get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
-                                    get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...),
+      ::cuda::std::forward_as_tuple(::cuda::std::get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
+                                    ::cuda::std::get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...),
       ::cuda::std::forward<_Tuples>(__tuples)...);
   }
   else
   {
-    return ::cuda::std::forward_as_tuple(get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
-                                         get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...);
+    return ::cuda::std::forward_as_tuple(::cuda::std::get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
+                                         ::cuda::std::get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...);
   }
 }
 

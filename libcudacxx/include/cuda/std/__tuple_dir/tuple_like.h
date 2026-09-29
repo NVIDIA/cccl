@@ -88,6 +88,27 @@ inline constexpr bool __tuple_like_ext<::cuda::std::ranges::subrange<_Ip, _Sp, _
 template <class... _Tp>
 inline constexpr bool __tuple_like_ext<__tuple_types<_Tp...>> = true;
 
+// True only for host standard-library tuple-likes. cuda::std tuple-likes stay false so their
+// explicit get overloads remain the ones selected.
+template <class _Tp>
+inline constexpr bool __is_std_tuple_like_v = false;
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class... _Tp>
+inline constexpr bool __is_std_tuple_like_v<::std::tuple<_Tp...>> = true;
+
+template <class _T1, class _T2>
+inline constexpr bool __is_std_tuple_like_v<::std::pair<_T1, _T2>> = true;
+
+template <class _Tp, size_t _Size>
+inline constexpr bool __is_std_tuple_like_v<::std::array<_Tp, _Size>> = true;
+
+#  if __cpp_lib_tuple_like >= 202311L
+template <class _Tp>
+inline constexpr bool __is_std_tuple_like_v<::std::complex<_Tp>> = true;
+#  endif // __cpp_lib_tuple_like >= 202311L
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 template <class _Tp>
 _CCCL_CONCEPT __tuple_like = __tuple_like_ext<remove_cvref_t<_Tp>>;
 

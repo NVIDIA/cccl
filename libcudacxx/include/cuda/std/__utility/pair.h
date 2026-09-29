@@ -243,7 +243,7 @@ private:
   {
     if constexpr (__pair_like<_UPair>)
     {
-      return ::cuda::std::__adl_get<_Index>(::cuda::std::forward<_UPair>(__pair));
+      return ::cuda::std::get<_Index>(::cuda::std::forward<_UPair>(__pair));
     }
     else
     {
@@ -255,7 +255,7 @@ private:
   using __get_t = decltype(pair::__get_type<_Index>(::cuda::std::declval<_UPair>()));
 #else // ^^^ _CCCL_COMPILER(GCC, <, 8) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 8) vvv
   template <size_t _Index, class _UPair>
-  using __get_t = decltype(::cuda::std::__adl_get<_Index>(::cuda::std::declval<_UPair>()));
+  using __get_t = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));
 #endif // !_CCCL_COMPILER(GCC, <, 8)
 
   using __base = __pair_base<_T1, _T2>;
@@ -437,11 +437,11 @@ public:
   _CCCL_API constexpr pair(_UPair&& __p) noexcept(
     is_nothrow_constructible_v<_T1, __get_t<0, _UPair>> && is_nothrow_constructible_v<_T2, __get_t<1, _UPair>>)
       : __base(
-          // __adl_get() specifically will only move the sub-object, it's therefore OK to
+          // get() specifically will only move the sub-object, it's therefore OK to
           // "move" the outer pair twice
           // NOLINTBEGIN(bugprone-use-after-move)
-          ::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
-          ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p))
+          ::cuda::std::get<0>(::cuda::std::forward<_UPair>(__p)),
+          ::cuda::std::get<1>(::cuda::std::forward<_UPair>(__p))
           // NOLINTEND(bugprone-use-after-move)
         )
   {}
@@ -454,8 +454,8 @@ public:
     enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(_UPair&& __p) noexcept(
     is_nothrow_constructible_v<_T1, __get_t<0, _UPair>> && is_nothrow_constructible_v<_T2, __get_t<1, _UPair>>)
-      : __base(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
-               ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))
+      : __base(::cuda::std::get<0>(::cuda::std::forward<_UPair>(__p)),
+               ::cuda::std::get<1>(::cuda::std::forward<_UPair>(__p)))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
@@ -545,9 +545,8 @@ public:
   _CCCL_API constexpr pair& operator=(_UPair&& __p) noexcept(
     is_nothrow_assignable_v<_T1&, __get_t<0, _UPair>> && is_nothrow_assignable_v<_T2&, __get_t<1, _UPair>>)
   {
-    using ::cuda::std::get;
-    this->first  = get<0>(::cuda::std::forward<_UPair>(__p));
-    this->second = get<1>(::cuda::std::forward<_UPair>(__p));
+    this->first  = ::cuda::std::get<0>(::cuda::std::forward<_UPair>(__p));
+    this->second = ::cuda::std::get<1>(::cuda::std::forward<_UPair>(__p));
     return *this;
   }
 
@@ -560,9 +559,8 @@ public:
     noexcept(is_nothrow_assignable_v<const _T1&, __get_t<0, _UPair>>
              && is_nothrow_assignable_v<const _T2&, __get_t<1, _UPair>>)
   {
-    using ::cuda::std::get;
-    this->first  = get<0>(::cuda::std::forward<_UPair>(__p));
-    this->second = get<1>(::cuda::std::forward<_UPair>(__p));
+    this->first  = ::cuda::std::get<0>(::cuda::std::forward<_UPair>(__p));
+    this->second = ::cuda::std::get<1>(::cuda::std::forward<_UPair>(__p));
     return *this;
   }
   // NOLINTEND(bugprone-use-after-move)
