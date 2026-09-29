@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block neighbor kernels checked against independent host oracles."""
-
 import numpy as np
 import pytest
 
