@@ -224,7 +224,8 @@ def check_merge_sort_surface() -> None:
     read_only_keys = _ReadOnlyThreadData(np.int32(1))
     read_only_values = _ReadOnlyThreadData(np.float64(1.0))
     assert_type(
-        coop.merge_sort_keys(coop.this_block(), keys), coop.ThreadDataLike[np.int32]
+        coop.merge_sort_keys(coop.this_block(), keys),
+        coop.ThreadDataLike[np.int32],
     )
     assert_type(
         coop.merge_sort_pairs(coop.this_warp(), keys, values),
@@ -241,6 +242,8 @@ def check_merge_sort_surface() -> None:
         coop.ThreadDataLike[np.int32],
     )
     assert_type(
-        coop.merge_sort_pairs(coop.this_warp(), read_only_keys, read_only_values),
+        coop.merge_sort_pairs(
+            coop.this_warp(), read_only_keys, read_only_values
+        ),
         tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
     )

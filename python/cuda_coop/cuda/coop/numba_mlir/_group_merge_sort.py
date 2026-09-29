@@ -19,7 +19,8 @@ from ._thread_group import ThreadGroup
 
 
 @group_operation(
-    "merge_sort_keys", family_module="cuda.coop.numba_mlir._compiler._group_merge_sort"
+    "merge_sort_keys",
+    family_module="cuda.coop.numba_mlir._compiler._group_merge_sort",
 )
 def merge_sort_keys(
     group: ThreadGroup,
@@ -111,7 +112,8 @@ def merge_sort_keys(
 
 
 @group_operation(
-    "merge_sort_pairs", family_module="cuda.coop.numba_mlir._compiler._group_merge_sort"
+    "merge_sort_pairs",
+    family_module="cuda.coop.numba_mlir._compiler._group_merge_sort",
 )
 def merge_sort_pairs(
     group: ThreadGroup,

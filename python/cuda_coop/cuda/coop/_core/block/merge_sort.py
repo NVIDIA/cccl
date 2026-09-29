@@ -146,7 +146,10 @@ def make_block_merge_sort_semantics(
         raise ValueError("key dtype must be provided")
     if not isinstance(compare_operator, _COMPARE_OPERATORS):
         raise TypeError("BlockMergeSort requires a comparison operator")
-    if isinstance(compare_operator, PythonOperator) and compare_operator.op is None:
+    if (
+        isinstance(compare_operator, PythonOperator)
+        and compare_operator.op is None
+    ):
         raise ValueError("compare_op must be provided")
     if (
         not isinstance(items_per_thread, int)
@@ -155,7 +158,9 @@ def make_block_merge_sort_semantics(
     ):
         raise ValueError("items_per_thread must be a positive integer")
     if (valid_items is None) != (oob_default is None):
-        raise ValueError("valid_items and oob_default must be provided together")
+        raise ValueError(
+            "valid_items and oob_default must be provided together"
+        )
 
     payload = (
         BlockMergeSortPayload.PAIRS
@@ -319,7 +324,7 @@ struct CudaCoopCheckedMergeSort : PrimitiveT
   }
 };
 }
-""",
+""",  # noqa: E501 - Embedded C++ source.
 )
 
 _CHECKED_BLOCK_MERGE_SORT = TypeDefinition(
@@ -332,5 +337,5 @@ using CudaCoopBlockMergeSort = CudaCoopCheckedMergeSort<
   BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ>,
   KeyT, ValueT, ItemsPerThread, BlockDimX * BlockDimY * BlockDimZ * ItemsPerThread>;
 }
-""",
+""",  # noqa: E501 - Embedded C++ source.
 )

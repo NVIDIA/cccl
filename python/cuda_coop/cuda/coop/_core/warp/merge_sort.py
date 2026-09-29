@@ -53,7 +53,9 @@ class WarpMergeSortSpec:
     value_dtype: Any | None
     items_per_thread: int
     threads_in_warp: int
-    compare_operator: CxxOperator | PythonOperator = field(compare=False, hash=False)
+    compare_operator: CxxOperator | PythonOperator = field(
+        compare=False, hash=False
+    )
 
     @property
     def method_name(self) -> str:
@@ -88,12 +90,19 @@ def make_warp_merge_sort_spec(
         raise ValueError("key dtype must be provided")
     if not isinstance(compare_operator, _COMPARE_OPERATORS):
         raise TypeError("WarpMergeSort requires a comparison operator")
-    if isinstance(compare_operator, PythonOperator) and compare_operator.op is None:
+    if (
+        isinstance(compare_operator, PythonOperator)
+        and compare_operator.op is None
+    ):
         raise ValueError("compare_op must be provided")
     if (valid_items is None) != (oob_default is None):
-        raise ValueError("valid_items and oob_default must be provided together")
+        raise ValueError(
+            "valid_items and oob_default must be provided together"
+        )
 
-    items_per_thread = normalize_positive_int("items_per_thread", items_per_thread)
+    items_per_thread = normalize_positive_int(
+        "items_per_thread", items_per_thread
+    )
     if (
         not isinstance(threads_in_warp, int)
         or isinstance(threads_in_warp, bool)
