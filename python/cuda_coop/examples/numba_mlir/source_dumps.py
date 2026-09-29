@@ -2,10 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run one developer-guide kernel with optional CUDA source dumping.
+"""Dump generated CUDA for a selected example kernel.
 
-Set CUDA_COOP_SOURCE_DUMP_DIR before running this script. Use a fresh process
-and a separate output directory for each example to keep the dumps distinct.
+Set CUDA_COOP_SOURCE_DUMP_DIR to the output directory before running.
 """
 
 import argparse

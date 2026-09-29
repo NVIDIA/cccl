@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Store a partial block tile with the qualified Numba-CUDA-MLIR API."""
+"""Store a partial tile at an offset, preserving the rest of the destination."""
 
 import numpy as np
 from numba_cuda_mlir import cuda

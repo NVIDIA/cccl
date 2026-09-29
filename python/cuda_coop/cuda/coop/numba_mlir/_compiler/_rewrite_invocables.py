@@ -2,10 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Invocable coalescing and LTO bundle materialization.
-
-This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
-ordering remain in the rewrite orchestrator.
+"""Deduplicate cooperative specializations and compile them in a shared LTO
+IR bundle.
 """
 
 from ._rewrite_support import (

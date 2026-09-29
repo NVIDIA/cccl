@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Observe a partial block tile loaded with the common ``cuda.coop`` API."""
+"""Load a partial tile with an offset and a default for out-of-bounds items."""
 
 import numpy as np
 from numba_cuda_mlir import cuda

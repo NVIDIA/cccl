@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate Store scalars with compiler types, including unresolved
-provenance.
-"""
-
 import os
 from types import SimpleNamespace
 

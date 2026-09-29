@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-local semantic normalization for Numba-CUDA-MLIR values."""
+"""Normalize compiler dtypes and unwrap device dispatchers for cache keys."""
 
 from numba_cuda_mlir import types
 from numba_cuda_mlir.descriptor import MLIRDispatcher

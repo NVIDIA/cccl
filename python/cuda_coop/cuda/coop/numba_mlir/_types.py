@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compiler-facing dtype, operator, and generated-invocable machinery.
-
-Primitive routing lives in the semantic lowering modules; this module owns the
-shared Numba types and wrapper construction those lowerings build upon.
-"""
+"""Generate C++ wrappers and link them into Numba-callable operations."""
 
 import hashlib
 import os

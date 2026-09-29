@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Installed-wheel activation and compilation regressions."""
-
 from __future__ import annotations
 
 import importlib.metadata
