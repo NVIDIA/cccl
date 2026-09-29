@@ -222,7 +222,9 @@ _rendering.register_bundle_renderer(
 
 
 def provider_shuffle(*, group, launch, value, mode, distance):
-    """Lower a current shared Shuffle plan without an alternate compiler adapter."""
+    """Lower a current shared Shuffle plan without an alternate compiler
+    adapter.
+    """
     array = isinstance(value, ThreadData)
     if array:
         value_type, values = _types.resolve_thread_data_value_type(

@@ -66,8 +66,8 @@ def exchange(
     Parameters
     ----------
     value : ThreadData, CuTe register tensor, or TensorSSA
-        Fixed-size per-thread payload. Register tensors and ``TensorSSA``
-        values are converted with :meth:`cuda.coop.cutlass.ThreadData.from_payload`.
+        Fixed-size per-thread payload. Register tensors and ``TensorSSA`` values
+        are converted with :meth:`cuda.coop.cutlass.ThreadData.from_payload`.
         Every member must supply the same dtype and extent.
     mode : str, optional
         Compile-time conversion, default ``"striped_to_blocked"``. Blocks
