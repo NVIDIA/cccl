@@ -71,7 +71,9 @@ def _import_optional(module_name: str, *, top_level: str) -> ModuleType:
 
 
 def _activate_numba_mlir() -> ModuleType:
-    """Load the runtime, then let the qualified backend validate and activate."""
+    """Load the runtime, then let the qualified backend validate and
+    activate.
+    """
 
     _import_optional("numba_cuda_mlir", top_level="numba_cuda_mlir")
     return importlib.import_module("cuda.coop.numba_mlir")
