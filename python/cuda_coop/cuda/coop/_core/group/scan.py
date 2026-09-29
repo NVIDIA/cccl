@@ -380,7 +380,6 @@ def _plan_scan(
     contracts = _contracts(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
         uniform_arguments=(
