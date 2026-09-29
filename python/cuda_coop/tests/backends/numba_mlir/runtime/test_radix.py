@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Stable radix ordering against independent host oracles."""
-
 import subprocess
 import sys
 from pathlib import Path
