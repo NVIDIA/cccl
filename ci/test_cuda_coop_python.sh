@@ -154,7 +154,7 @@ tests_root="$repo_root/python/cuda_coop/tests"
 case "$stage" in
   contracts)
     cd "$tests_root"
-    python -m pytest -v contracts/ packaging/
+    python -m pytest -v test_*.py packaging/
     ;;
   numba-mlir-compile)
     # The compile contract is deliberately GPU-free. Tests may replace only

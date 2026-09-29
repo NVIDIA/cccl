@@ -1138,7 +1138,7 @@ and test dependencies installed:
 .. code-block:: console
 
    CUDA_VISIBLE_DEVICES="" PYTHONPATH="$PWD/python/cuda_coop" python -m pytest \
-     python/cuda_coop/tests/contracts/core/test_core_group_load_store.py \
+     python/cuda_coop/tests/test_group_load_store.py \
      python/cuda_coop/tests/backends/numba_mlir/unit/test_group_lowering_plan.py
 
    CUDA_VISIBLE_DEVICES="" PYTHONPATH="$PWD/python/cuda_coop" python -m pytest \
