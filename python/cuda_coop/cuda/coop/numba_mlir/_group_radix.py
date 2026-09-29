@@ -14,7 +14,8 @@ from ._thread_group import ThreadGroup
 
 
 @group_operation(
-    "radix_sort_keys", family_module="cuda.coop.numba_mlir._compiler._group_radix"
+    "radix_sort_keys",
+    family_module="cuda.coop.numba_mlir._compiler._group_radix",
 )
 def radix_sort_keys(
     group: ThreadGroup,
@@ -82,7 +83,8 @@ def radix_sort_keys(
 
 
 @group_operation(
-    "radix_sort_pairs", family_module="cuda.coop.numba_mlir._compiler._group_radix"
+    "radix_sort_pairs",
+    family_module="cuda.coop.numba_mlir._compiler._group_radix",
 )
 def radix_sort_pairs(
     group: ThreadGroup,

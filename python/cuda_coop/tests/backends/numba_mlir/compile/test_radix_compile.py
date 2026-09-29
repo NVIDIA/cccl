@@ -27,7 +27,9 @@ def _hidden_device(monkeypatch):
         lambda as_type=str: (9, 0) if as_type is tuple else "sm_90",
     )
     monkeypatch.setattr(
-        cuda, "get_current_device", lambda: SimpleNamespace(compute_capability=(9, 0))
+        cuda,
+        "get_current_device",
+        lambda: SimpleNamespace(compute_capability=(9, 0)),
     )
 
 
@@ -94,7 +96,10 @@ def test_qualified_prefix_and_float_striped_sort_compile():
         keys[1] = source[t * 2 + 1]
         prefix = numba_coop.ThreadData(2, dtype=types.int32)
         ranks = numba_coop.radix_rank(
-            numba_coop.this_block(), keys, radix_bits=7, exclusive_digit_prefix=prefix
+            numba_coop.this_block(),
+            keys,
+            radix_bits=7,
+            exclusive_digit_prefix=prefix,
         )
         ranks_out[t] = ranks[0]
         prefixes[t] = prefix[0]
@@ -102,7 +107,10 @@ def test_qualified_prefix_and_float_striped_sort_compile():
         local[0] = floating[t * 2]
         local[1] = floating[t * 2 + 1]
         result = numba_coop.radix_sort_keys(
-            numba_coop.this_block(), local, blocked_to_striped=True, descending=True
+            numba_coop.this_block(),
+            local,
+            blocked_to_striped=True,
+            descending=True,
         )
         output[t] = result[0]
 
@@ -137,7 +145,9 @@ def test_invalid_radix_contracts_fail_before_device_code(failure):
             result = coop.radix_sort_keys(coop.this_block(), keys, descending=1)
         elif failure == "extent":
             values = coop.ThreadData(3, dtype=types.int32)
-            result, values = coop.radix_sort_pairs(coop.this_block(), keys, values)
+            result, values = coop.radix_sort_pairs(
+                coop.this_block(), keys, values
+            )
         elif failure == "prefix":
             prefix = numba_coop.ThreadData(2, dtype=types.int32)
             result = numba_coop.radix_rank(
@@ -168,5 +178,7 @@ def test_unsigned_64_bit_runtime_controls_are_rejected():
     with pytest.raises(TypeError, match="unsigned integer up to 32 bits"):
         _compile(
             kernel,
-            types.void(types.int32[::1], types.int32[::1], types.uint64, types.uint64),
+            types.void(
+                types.int32[::1], types.int32[::1], types.uint64, types.uint64
+            ),
         )
