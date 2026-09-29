@@ -39,7 +39,9 @@ _FIXED_COMPUTE_CAPABILITY = (9, 0)
 def _fixed_current_device(
     monkeypatch: pytest.MonkeyPatch,
 ) -> list[tuple[int, int]]:
-    """Hide runtime discovery while leaving NVRTC and nvJitLink entirely real."""
+    """Hide runtime discovery while leaving NVRTC and nvJitLink entirely
+    real.
+    """
 
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
         "the Numba-CUDA-MLIR compile stage must hide all CUDA devices"

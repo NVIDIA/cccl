@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run the Developer Overview's Debugger Walkthrough as an active Python file."""
+"""Run the Developer Overview's Debugger Walkthrough as an active Python
+file.
+"""
 
 # Import the kernel DSL before cuda.coop so automatic registration sees it.
 # isort: off
