@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Independent NumPy oracles for block differences and boundary flags."""
 
@@ -349,6 +348,7 @@ def test_runtime_count_traps(count):
         capture_output=True,
         text=True,
         timeout=180,
+        check=False,
     )
     output = completed.stdout + completed.stderr
     assert completed.returncode != 0, output
