@@ -59,6 +59,12 @@ CUB_TEST("Device find_if handles empty input", "[device][find_if]", CUB_SMALL)
     find_if(input, thrust::raw_pointer_cast(output.data()), predicate, 0);
     REQUIRE(output[0] == 0);
   }
+  SECTION("contiguous input")
+  {
+    c2h::device_vector<int> device_input(1, 0);
+    find_if(device_input.begin(), thrust::raw_pointer_cast(output.data()), predicate, 0);
+    REQUIRE(output[0] == 0);
+  }
   SECTION("transformed output")
   {
     auto transformed = cuda::make_transform_output_iterator(output.begin(), cuda::std::negate{});
