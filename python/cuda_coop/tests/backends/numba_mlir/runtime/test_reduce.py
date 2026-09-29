@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Hierarchy Reduce and Sum runtime qualification for Numba-CUDA-MLIR."""
 
@@ -460,7 +459,7 @@ def test_each_deterministic_block_algorithm_matches_an_independent_oracle():
 
 
 def _maximum(left, right):
-    return left if left > right else right
+    return max(right, left)
 
 
 _device_maximum = cuda.jit(device=True)(_maximum)
