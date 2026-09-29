@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 import math
 import os
@@ -459,7 +458,8 @@ def test_semantic_token_handles_recursive_container_subclass_state():
 
 
 def test_semantic_token_tracks_container_state_in_callable_defaults():
-    def with_default(value, table=defaultdict(list, {"value": 1})):
+    # Mutable defaults are the input whose semantic identity is under test.
+    def with_default(value, table=defaultdict(list, {"value": 1})):  # noqa: B006
         return table[value]
 
     original = semantic_token(with_default)
@@ -509,7 +509,7 @@ def test_semantic_token_preserves_signed_zero():
 
 
 def test_semantic_token_preserves_float_type_and_value():
-    assert semantic_token(1.0) == semantic_token(float(1.0))
+    assert semantic_token(1.0) == semantic_token(float("1.0"))
     assert semantic_token(1.0) != semantic_token(1)
 
 

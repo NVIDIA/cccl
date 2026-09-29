@@ -123,9 +123,11 @@ def test_wheel_validator_rejects_invalid_source_revision_tokens(
             json.dumps({"cccl_source_commit": revision}),
         )
 
-    with zipfile.ZipFile(wheel) as archive:
-        with pytest.raises(SystemExit, match="invalid source revision"):
-            _WHEEL_VALIDATOR._validate_provenance(archive)
+    with (
+        zipfile.ZipFile(wheel) as archive,
+        pytest.raises(SystemExit, match="invalid source revision"),
+    ):
+        _WHEEL_VALIDATOR._validate_provenance(archive)
 
 
 def test_wheel_is_universal_and_contains_the_complete_payload() -> None:

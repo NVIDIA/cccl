@@ -130,7 +130,7 @@ class ThreadHierarchy:
         block_dim: int | tuple[int, ...] | list[int],
         grid_dim: int | tuple[int, ...] | list[int] | None = None,
         cluster_dim: int | tuple[int, ...] | list[int] | None = None,
-    ) -> "ThreadHierarchy":
+    ) -> ThreadHierarchy:
         """Materialize planner-verified extents from launch facts."""
 
         hierarchy = object.__new__(cls)
@@ -169,7 +169,7 @@ class ThreadHierarchy:
         return hierarchy
 
     @classmethod
-    def current(cls) -> "ThreadHierarchy":
+    def current(cls) -> ThreadHierarchy:
         """Describe C++ default ``this_*()`` hierarchy construction."""
 
         return cls()
@@ -310,7 +310,7 @@ class ThreadGroup:
 
     kind: str
     hierarchy: ThreadHierarchy = field(default_factory=ThreadHierarchy.current)
-    parent: "ThreadGroup | None" = None
+    parent: ThreadGroup | None = None
     mapping: GroupByMapping | None = None
     # Provenance is excluded from semantic identity and cache keys, but planners
     # may still use it to preserve policy at public API boundaries.
@@ -498,7 +498,8 @@ class ThreadGroup:
             self.hierarchy.semantic_key,  # type: ignore[union-attr]
         )
 
-    def with_hierarchy(
+    # Keep runtime annotations dependency-free on Python 3.10.
+    def with_hierarchy(  # noqa: PYI019
         self: _ThreadGroupT,
         hierarchy: ThreadHierarchy,
         *,
@@ -517,7 +518,8 @@ class ThreadGroup:
             source=source,
         )
 
-    def group_by(
+    # Keep runtime annotations dependency-free on Python 3.10.
+    def group_by(  # noqa: PYI019
         self: _ThreadGroupT,
         count: int,
         *,
@@ -711,8 +713,10 @@ def render_group_decl_lines(
             [
                 f"{indent}::cuda::experimental::coop::generic_group {var_name}{{",
                 f"{indent}    ::cuda::gpu_thread, {parent_name},",
-                f"{indent}    ::cuda::experimental::coop::group_by<"
-                f"{mapping.count}, {exhaustive}>{{}},",
+                (
+                    f"{indent}    ::cuda::experimental::coop::group_by<"
+                    f"{mapping.count}, {exhaustive}>{{}},"
+                ),
                 f"{indent}    ::cuda::experimental::coop::lane_synchronizer{{}}}};",
             ]
         )
@@ -724,21 +728,29 @@ def render_group_decl_lines(
     lines.extend(
         [
             f"{indent}using {var_name}_barriers_type =",
-            f"{indent}    ::cuda::barrier<::cuda::thread_scope_block>"
-            f"[{groups_per_parent}];",
+            (
+                f"{indent}    ::cuda::barrier<::cuda::thread_scope_block>"
+                f"[{groups_per_parent}];"
+            ),
             f"{indent}__shared__ ::cuda::std::aligned_storage_t<",
             f"{indent}    sizeof({var_name}_barriers_type),",
-            f"{indent}    alignof({var_name}_barriers_type)> "
-            f"{var_name}_barriers_storage;",
+            (
+                f"{indent}    alignof({var_name}_barriers_type)> "
+                f"{var_name}_barriers_storage;"
+            ),
             f"{indent}auto& {var_name}_barriers =",
             f"{indent}    reinterpret_cast<{var_name}_barriers_type&>(",
             f"{indent}        {var_name}_barriers_storage);",
             f"{indent}::cuda::experimental::coop::generic_group {var_name}{{",
             f"{indent}    ::cuda::warp, {parent_name},",
-            f"{indent}    ::cuda::experimental::coop::group_by<"
-            f"{mapping.count}, {exhaustive}>{{}},",
-            f"{indent}    ::cuda::experimental::coop::barrier_synchronizer{{"
-            f"{var_name}_barriers}}}};",
+            (
+                f"{indent}    ::cuda::experimental::coop::group_by<"
+                f"{mapping.count}, {exhaustive}>{{}},"
+            ),
+            (
+                f"{indent}    ::cuda::experimental::coop::barrier_synchronizer{{"
+                f"{var_name}_barriers}}}};"
+            ),
         ]
     )
     return lines
@@ -774,11 +786,11 @@ def this_grid() -> ThreadGroup:
 
 __all__ = [
     "COMPLETE_WARP_GROUP_KINDS",
-    "CoopCompilerContextRequiredError",
     "MAPPED_GROUP_KINDS",
     "PHYSICAL_GROUP_KINDS",
-    "THREAD_LEVELS",
     "THREAD_GROUP_KINDS",
+    "THREAD_LEVELS",
+    "CoopCompilerContextRequiredError",
     "GroupByMapping",
     "Hierarchy",
     "ThreadGroup",

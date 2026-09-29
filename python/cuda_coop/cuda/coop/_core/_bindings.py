@@ -41,15 +41,15 @@ class ArgumentBinding:
             raise ValueError("only static argument bindings may carry a value")
 
     @classmethod
-    def omitted(cls) -> "ArgumentBinding":
+    def omitted(cls) -> ArgumentBinding:
         return cls(BindingKind.OMITTED)
 
     @classmethod
-    def static(cls, value: Any) -> "ArgumentBinding":
+    def static(cls, value: Any) -> ArgumentBinding:
         return cls(BindingKind.STATIC, value)
 
     @classmethod
-    def runtime(cls) -> "ArgumentBinding":
+    def runtime(cls) -> ArgumentBinding:
         return cls(BindingKind.RUNTIME)
 
     @property

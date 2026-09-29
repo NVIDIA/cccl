@@ -126,9 +126,12 @@ class LaunchFacts:
 
         exact = self.exact_block_dim
         maximum = self.max_block_dim
-        if exact is not None and maximum is not None:
-            if any(required > limit for required, limit in zip(exact, maximum)):
-                raise ValueError("LaunchFacts exact_block_dim exceeds max_block_dim")
+        if (
+            exact is not None
+            and maximum is not None
+            and any(required > limit for required, limit in zip(exact, maximum))
+        ):
+            raise ValueError("LaunchFacts exact_block_dim exceeds max_block_dim")
 
     @property
     def exact_block_threads(self) -> int | None:
