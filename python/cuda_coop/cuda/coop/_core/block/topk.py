@@ -119,7 +119,7 @@ public:
   }
 };
 } // namespace cub
-""".strip(),
+""".strip(),  # noqa: E501 - Embedded C++ source.
 )
 
 
