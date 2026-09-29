@@ -31,7 +31,9 @@ def _pointer():
 def test_exact_per_group_scratch():
     operation = _load_store(dtype=cutlass.Int32, algorithm="transpose")
     requests = [
-        _CubLoadStoreRequest(_plan(this_warp(), operation, launch=block), cutlass.Int32)
+        _CubLoadStoreRequest(
+            _plan(this_warp(), operation, launch=block), cutlass.Int32
+        )
         for block in ((32, 1, 1), (8, 4, 2))
     ]
     probes = _rendering.bundle_scratch_layout_probes(requests)
@@ -42,15 +44,20 @@ def test_exact_per_group_scratch():
         layout_probes=tuple(probes.values()),
     )
     one, two = [
-        compilation.layouts[request.scratch_requirement_key] for request in requests
+        compilation.layouts[request.scratch_requirement_key]
+        for request in requests
     ]
     assert one.size_in_bytes > 0
     assert two.size_in_bytes == 2 * one.size_in_bytes
     assert one.alignment == two.alignment
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
-@pytest.mark.parametrize("algorithm", ("direct", "striped", "vectorize", "transpose"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
+@pytest.mark.parametrize(
+    "algorithm", ("direct", "striped", "vectorize", "transpose")
+)
 def test_physical_warp_compile(api, algorithm):
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer):
@@ -85,7 +92,9 @@ def test_physical_warp_compile(api, algorithm):
 def test_incomplete_warps_fail(block):
     @cute.kernel
     def kernel(memory: cute.Pointer):
-        cutlass_coop.load(cutlass_coop.this_warp(), memory, cutlass_coop.ThreadData(2))
+        cutlass_coop.load(
+            cutlass_coop.this_warp(), memory, cutlass_coop.ThreadData(2)
+        )
 
     @cute.jit
     def launch(memory: cute.Pointer):
@@ -98,7 +107,9 @@ def test_incomplete_warps_fail(block):
 def test_dynamic_dimensions_fail():
     @cute.kernel
     def kernel(memory: cute.Pointer):
-        cutlass_coop.load(cutlass_coop.this_warp(), memory, cutlass_coop.ThreadData(2))
+        cutlass_coop.load(
+            cutlass_coop.this_warp(), memory, cutlass_coop.ThreadData(2)
+        )
 
     @cute.jit
     def launch(memory: cute.Pointer, block_size: cutlass.Int32):
@@ -108,7 +119,9 @@ def test_dynamic_dimensions_fail():
         cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 64)
 
 
-@pytest.mark.parametrize("algorithm", ("warp_transpose", "warp_transpose_timesliced"))
+@pytest.mark.parametrize(
+    "algorithm", ("warp_transpose", "warp_transpose_timesliced")
+)
 def test_block_algorithms_fail(algorithm):
     @cute.kernel
     def kernel(memory: cute.Pointer):
@@ -127,8 +140,12 @@ def test_block_algorithms_fail(algorithm):
         cute.compile[(GPUArch("sm_80"),)](launch, _pointer())
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
-@pytest.mark.parametrize("algorithm", ("direct", "striped", "vectorize", "transpose"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
+@pytest.mark.parametrize(
+    "algorithm", ("direct", "striped", "vectorize", "transpose")
+)
 def test_warp_storage_descriptor_fails(api, algorithm):
     @cute.kernel
     def kernel(memory: cute.Pointer):
@@ -172,7 +189,10 @@ def test_extent_includes_second_warp():
     def kernel(memory: cute.Pointer):
         inputs = cute.make_tensor(memory, cute.make_layout(128))
         cutlass_coop.load(
-            cutlass_coop.this_warp(), inputs, cutlass_coop.ThreadData(2), offset=1
+            cutlass_coop.this_warp(),
+            inputs,
+            cutlass_coop.ThreadData(2),
+            offset=1,
         )
 
     @cute.jit
