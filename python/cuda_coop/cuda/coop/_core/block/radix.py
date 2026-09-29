@@ -46,7 +46,9 @@ def _bit_binding(name: str, value: Any) -> ArgumentBinding:
         raise ValueError(f"{name} must be provided")
     if option.kind is BindingKind.STATIC:
         static_value = option.value
-        if not isinstance(static_value, Integral) or isinstance(static_value, bool):
+        if not isinstance(static_value, Integral) or isinstance(
+            static_value, bool
+        ):
             raise ValueError(f"{name} must be an integer")
         return ArgumentBinding.static(int(static_value))
     return option
@@ -125,7 +127,11 @@ def make_radix_bit_range(
     static_end = end.value if end.kind is BindingKind.STATIC else None
     if static_begin is not None and static_begin < 0:
         raise ValueError("begin_bit must be non-negative")
-    if bit_width is not None and static_begin is not None and static_begin >= bit_width:
+    if (
+        bit_width is not None
+        and static_begin is not None
+        and static_begin >= bit_width
+    ):
         raise ValueError("begin_bit must be less than the dtype bit width")
     if (
         static_begin is not None
@@ -135,7 +141,11 @@ def make_radix_bit_range(
         raise ValueError("end_bit must be greater than begin_bit")
     if static_end is not None and static_end < 1:
         raise ValueError("end_bit must be positive")
-    if bit_width is not None and static_end is not None and static_end > bit_width:
+    if (
+        bit_width is not None
+        and static_end is not None
+        and static_end > bit_width
+    ):
         raise ValueError("end_bit must not exceed the dtype bit width")
 
     return RadixBitRange(begin, end, bit_width)

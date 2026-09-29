@@ -57,12 +57,14 @@ def _permutation(keys, begin, end, descending):
 )
 @pytest.mark.parametrize("descending", [False, True])
 @pytest.mark.parametrize("partial", [False, True])
-def test_pairs_preserve_stability_association_and_inputs(dtype, descending, partial):
+def test_pairs_preserve_stability_association_and_inputs(
+    dtype, descending, partial
+):
     compiler_dtype = getattr(types, np.dtype(dtype).name)
     qualified = np.dtype(dtype).kind == "f"
-    source = ((np.arange(_THREADS * _ITEMS, dtype=np.int64) * 17) % 43 - 21).astype(
-        dtype
-    )
+    source = (
+        (np.arange(_THREADS * _ITEMS, dtype=np.int64) * 17) % 43 - 21
+    ).astype(dtype)
     if qualified:
         source[0:6] = [np.inf, -np.inf, -0.0, 0.0, -1.5, 1.5]
     payload = np.arange(source.size, dtype=np.float64) + 0.25
@@ -70,7 +72,9 @@ def test_pairs_preserve_stability_association_and_inputs(dtype, descending, part
     end = 6 if partial else source.dtype.itemsize * 8
 
     @cuda.jit
-    def kernel(keys_in, values_in, keys_out, values_out, preserved, begin_bit, end_bit):
+    def kernel(
+        keys_in, values_in, keys_out, values_out, preserved, begin_bit, end_bit
+    ):
         t = cuda.threadIdx.x
         keys = coop.ThreadData(_ITEMS, dtype=compiler_dtype)
         values = coop.ThreadData(_ITEMS, dtype=types.float64)
@@ -104,7 +108,9 @@ def test_pairs_preserve_stability_association_and_inputs(dtype, descending, part
     keys_out = np.empty_like(source)
     values_out = np.empty_like(payload)
     preserved = np.empty_like(source)
-    kernel[1, _THREADS](source, payload, keys_out, values_out, preserved, begin, end)
+    kernel[1, _THREADS](
+        source, payload, keys_out, values_out, preserved, begin, end
+    )
     order = _permutation(source, begin, end, descending)
     np.testing.assert_array_equal(keys_out, source[order])
     np.testing.assert_array_equal(values_out, payload[order])
@@ -117,11 +123,13 @@ def test_pairs_preserve_stability_association_and_inputs(dtype, descending, part
 @pytest.mark.parametrize("dtype", [np.int32, np.uint32, np.int64, np.uint64])
 @pytest.mark.parametrize("descending", [False, True])
 @pytest.mark.parametrize("sign_window", [False, True])
-def test_rank_is_stable_signed_int32_and_composes(dtype, descending, sign_window):
+def test_rank_is_stable_signed_int32_and_composes(
+    dtype, descending, sign_window
+):
     compiler_dtype = getattr(types, np.dtype(dtype).name)
-    source = ((np.arange(_THREADS * _ITEMS, dtype=np.int64) * 17) % 43 - 21).astype(
-        dtype
-    )
+    source = (
+        (np.arange(_THREADS * _ITEMS, dtype=np.int64) * 17) % 43 - 21
+    ).astype(dtype)
     begin = source.dtype.itemsize * 8 - 4 if sign_window else 0
 
     @cuda.jit
@@ -147,7 +155,9 @@ def test_rank_is_stable_signed_int32_and_composes(dtype, descending, sign_window
     expected = np.empty_like(output)
     expected[permutation] = np.arange(source.size, dtype=np.int32)
     np.testing.assert_array_equal(output, expected)
-    np.testing.assert_array_equal(ordered, np.arange(source.size, dtype=np.int32))
+    np.testing.assert_array_equal(
+        ordered, np.arange(source.size, dtype=np.int32)
+    )
     np.testing.assert_array_equal(preserved, source)
 
 
@@ -206,7 +216,9 @@ def test_qualified_scalar_sort_and_rank():
     @cuda.jit
     def kernel(source, sorted_out, rank_out):
         t = cuda.threadIdx.x
-        sorted_out[t] = numba_coop.radix_sort_keys(numba_coop.this_block(), source[t])
+        sorted_out[t] = numba_coop.radix_sort_keys(
+            numba_coop.this_block(), source[t]
+        )
         rank_out[t] = numba_coop.radix_rank(
             numba_coop.this_block(), source[t], radix_bits=6
         )
@@ -257,7 +269,7 @@ dtype = np.uint32 if {unsigned!r} else np.int64
 kernel[1, 64](source, output, dtype({begin}), dtype({end}))
 cuda.synchronize()
 raise AssertionError("invalid radix interval did not trap")
-"""
+"""  # noqa: E501 - Preserve embedded source bytes.
     result = subprocess.run(
         [
             sys.executable,
@@ -275,13 +287,18 @@ raise AssertionError("invalid radix interval did not trap")
     assert result.returncode != 0, output
     assert any(
         error in output
-        for error in ("CUDA_ERROR_ILLEGAL_INSTRUCTION", "CUDA_ERROR_LAUNCH_FAILED")
+        for error in (
+            "CUDA_ERROR_ILLEGAL_INSTRUCTION",
+            "CUDA_ERROR_LAUNCH_FAILED",
+        )
     ), output
 
 
 @pytest.mark.parametrize("qualified", [False, True])
 @pytest.mark.parametrize("pairs", [False, True])
-def test_chained_sorts_and_ranks_infer_dtypes_from_indexed_writes(qualified, pairs):
+def test_chained_sorts_and_ranks_infer_dtypes_from_indexed_writes(
+    qualified, pairs
+):
     api = numba_coop if qualified else coop
 
     @cuda.jit
@@ -316,11 +333,15 @@ def test_chained_sorts_and_ranks_infer_dtypes_from_indexed_writes(qualified, pai
     associated = np.empty_like(payload)
     ordered_ranks = np.empty(source.size, dtype=np.int32)
     preserved = np.empty_like(source)
-    kernel[1, _THREADS](source, payload, output, associated, ordered_ranks, preserved)
+    kernel[1, _THREADS](
+        source, payload, output, associated, ordered_ranks, preserved
+    )
     cuda.synchronize()
     permutation = np.argsort(source, kind="stable")
     np.testing.assert_array_equal(output, source[permutation])
     np.testing.assert_array_equal(preserved, source)
-    np.testing.assert_array_equal(ordered_ranks, np.arange(source.size, dtype=np.int32))
+    np.testing.assert_array_equal(
+        ordered_ranks, np.arange(source.size, dtype=np.int32)
+    )
     if pairs:
         np.testing.assert_array_equal(associated, payload[permutation])

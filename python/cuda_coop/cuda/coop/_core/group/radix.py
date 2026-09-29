@@ -246,7 +246,9 @@ for _semantics in (GroupRadixRankSemantics, GroupRadixSortSemantics):
         classifications=_classifications,
         planner=_plan,
         group_kinds=frozenset({"block"}),
-        unsupported_group_message="cuda.coop radix operations require a complete physical block",
+        unsupported_group_message=(
+            "cuda.coop radix operations require a complete physical block"
+        ),
     )
 del _semantics
 

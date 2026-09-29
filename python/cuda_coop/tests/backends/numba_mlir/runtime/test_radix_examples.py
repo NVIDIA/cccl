@@ -37,7 +37,9 @@ def test_radix_sort_pairs_example():
         coop.load(block, source, keys)
         for item in range(2):
             positions[item] = types.int32(cuda.threadIdx.x * 2 + item)
-        ordered_keys, ordered_positions = coop.radix_sort_pairs(block, keys, positions)
+        ordered_keys, ordered_positions = coop.radix_sort_pairs(
+            block, keys, positions
+        )
         coop.store(block, sorted_keys, ordered_keys)
         coop.store(block, original_positions, ordered_positions)
 
@@ -50,7 +52,9 @@ def test_radix_sort_pairs_example():
     np.testing.assert_array_equal(
         sorted_keys.copy_to_host(), values[expected_positions]
     )
-    np.testing.assert_array_equal(original_positions.copy_to_host(), expected_positions)
+    np.testing.assert_array_equal(
+        original_positions.copy_to_host(), expected_positions
+    )
     # radix-sort-example-end
 
 
@@ -71,7 +75,9 @@ def test_radix_rank_example():
         ranks = coop.radix_rank(block, keys, begin_bit=0, end_bit=4)
         coop.store(block, destination, ranks)
 
-    values = np.random.default_rng(42).integers(0, 256, size=128, dtype=np.uint32)
+    values = np.random.default_rng(42).integers(
+        0, 256, size=128, dtype=np.uint32
+    )
     source = cuda.to_device(values)
     destination = cuda.device_array(128, dtype=np.int32)
     rank_low_digit[1, 64](source, destination)

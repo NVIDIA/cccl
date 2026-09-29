@@ -19,13 +19,18 @@ from cuda.coop._core import (
 )
 from cuda.coop._core.block.radix_rank import make_block_radix_rank_semantics
 from cuda.coop._core.block.radix_sort import make_block_radix_sort_semantics
-from cuda.coop._core.group.radix import GroupRadixRankSemantics, GroupRadixSortSemantics
+from cuda.coop._core.group.radix import (
+    GroupRadixRankSemantics,
+    GroupRadixSortSemantics,
+)
 
 
 @pytest.mark.parametrize("pairs", [False, True])
 @pytest.mark.parametrize("descending", [False, True])
 @pytest.mark.parametrize("striped", [False, True])
-def test_sort_plan_describes_cub_method_results_and_storage(pairs, descending, striped):
+def test_sort_plan_describes_cub_method_results_and_storage(
+    pairs, descending, striped
+):
     operation = GroupRadixSortSemantics(
         make_block_radix_sort_semantics(
             key_dtype=UINT64,
@@ -36,7 +41,8 @@ def test_sort_plan_describes_cub_method_results_and_storage(pairs, descending, s
         )
     )
     plan = plan_group_primitive(
-        make_group_primitive_call(this_block(), operation), LaunchFacts((16, 4, 1))
+        make_group_primitive_call(this_block(), operation),
+        LaunchFacts((16, 4, 1)),
     ).require_supported()
     method = "SortDescending" if descending else "Sort"
     if striped:
@@ -49,7 +55,9 @@ def test_sort_plan_describes_cub_method_results_and_storage(pairs, descending, s
     assert all(value.items_per_member == 3 for value in plan.result.values)
     assert plan.participation.exact_block_dim == (16, 4, 1)
     assert plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+    )
 
 
 def test_rank_plan_has_fixed_result_dtype_and_rejects_warp_scope():
