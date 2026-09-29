@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Reject unsupported TopK inputs before generating a provider."""
-
 from types import SimpleNamespace
 
 import pytest

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""GPU-free production compilation and final linking for TopK."""
-
 import os
 from types import SimpleNamespace
 
