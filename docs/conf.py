@@ -54,6 +54,7 @@ extensions = [
     # "exhale",  # Disabled - causing build timeouts, API docs handled by breathe
     "sphinx_design",  # For dropdown, card, and other directives
     "sphinx_copybutton",
+    "coop_visualization",  # Interactive cooperative primitives with RST fallbacks
     "nbsphinx",
     # "rst_processor",  # Disabled - breathe handles embed:rst natively
     "auto_api_generator",  # Automatically generate API reference pages from Doxygen XML

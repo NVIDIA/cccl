@@ -75,52 +75,38 @@ Memory operations
 .. autofunction:: load
 .. autofunction:: store
 
+
+.. _coop-numba-extensions:
+
 Numba-CUDA-MLIR-qualified API
 -----------------------------
 
 .. py:module:: cuda.coop.numba_mlir
 
-The qualified module provides the matching Block, physical Warp, and logical
-Warp Load and Store entry points, group descriptors, ``ThreadData``, and
-``TempStorage``. It additionally exposes backend memory namespaces. Both
-constructors accept the common ``alignment`` keyword for minimum
-storage alignment. Common and qualified calls use the same lowercase string
-selectors. Block calls support ``direct``, ``striped``, ``vectorize``,
-``transpose``, ``warp_transpose``, and ``warp_transpose_timesliced``. Physical
-and logical Warp calls support ``direct``, ``striped``, ``vectorize``, and
-``transpose``. Use ``this_warp()`` for the
-physical width of 32 or ``this_warp().group_by(width)`` for a logical width of
-1, 2, 4, 8, 16, or 32. The enclosing block must contain a multiple of 32
-threads.
+Use this module for the extensions below. Shared parameters and behavior
+follow the :ref:`Common API <coop-common-api>`.
 
-``direct``, ``striped``, and ``vectorize`` are storage-free at both scopes.
-Warp ``transpose``
-uses compiler-owned storage with one disjoint slice per physical or logical
-group and a masked ``syncwarp`` reuse barrier. Explicit ``TempStorage`` is
-rejected for every Warp algorithm. Transpose Store operations preserve their
-caller-owned input payload while CUB performs its internal reordering.
+.. code-block:: python
 
-Each Warp group receives an automatic memory origin of
-``group_index * (group_size * items_per_thread)`` before the caller's element
-offset is applied, where the index is the x-major linear thread rank divided by
-the group size. Its ``valid_items`` count is relative to that group tile.
-``ThreadGroup`` values are descriptor-only; runtime query, membership, and
-synchronization methods are not part of this release.
+   import cuda.coop.numba_mlir as coop
 
-See the :github:`Numba-CUDA-MLIR type declarations
-<python/cuda_coop/cuda/coop/numba_mlir/__init__.pyi>` for the complete overload
-contract. Importing this qualified module requires the matching
-Numba-CUDA-MLIR extra.
-
-The shared parameter contracts and executable examples are documented above.
-These qualified entry points select the same Load and Store behavior:
+Qualified calls also accept fixed-size, one-dimensional local arrays where
+the operation accepts per-thread payloads. ``local`` and ``shared`` expose
+Numba-CUDA-MLIR's memory namespaces.
 
 .. currentmodule:: cuda.coop.numba_mlir
 
-.. autofunction:: load
-.. autofunction:: store
+Payloads and temporary storage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. autofunction:: ThreadData
 
 .. autoclass:: TempStorage
    :no-members:
    :no-special-members:
+
+Memory operations
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: load
+.. autofunction:: store
