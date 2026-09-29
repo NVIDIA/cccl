@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Built-in Merge Sort signatures for qualified block and warp payloads."""
-
 from typing import Any, TypeAlias, overload
 
 import numpy as np

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed CUB Merge Sort requests from the shared block and warp planner."""
-
 import hashlib
 import math
 from dataclasses import dataclass, replace

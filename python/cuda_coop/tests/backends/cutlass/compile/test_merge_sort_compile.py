@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile real Merge Sort providers, partial shims, and inferred results."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
