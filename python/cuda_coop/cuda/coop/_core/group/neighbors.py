@@ -94,11 +94,13 @@ def _classifications(operation):
 def _plan_neighbors(call, resolved, launch, operation):
     primitive = operation.primitive
     capacity = launch.exact_block_threads * primitive.items_per_thread
-    if operation.valid_items.kind is BindingKind.STATIC:
-        if not 0 <= operation.valid_items.value <= capacity:
-            raise ValueError(
-                f"valid_items must be between 0 and the block tile size ({capacity})"
-            )
+    if (
+        operation.valid_items.kind is BindingKind.STATIC
+        and not 0 <= operation.valid_items.value <= capacity
+    ):
+        raise ValueError(
+            f"valid_items must be between 0 and the block tile size ({capacity})"
+        )
     result = ResultContract(
         tuple(
             LogicalResultContract(

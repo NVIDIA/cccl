@@ -214,13 +214,13 @@ struct {wrapper_name} : {primitive}<T, BlockDimX, BlockDimY, BlockDimZ>
         ),
         parameters=(tuple(parameters),),
     ).specialize(
-        dict(
-            T=call.dtype,
-            BlockDimX=block_dim[0],
-            BlockDimY=block_dim[1],
-            BlockDimZ=block_dim[2],
-            ItemsPerThread=call.items_per_thread,
-        ),
+        {
+            "T": call.dtype,
+            "BlockDimX": block_dim[0],
+            "BlockDimY": block_dim[1],
+            "BlockDimZ": block_dim[2],
+            "ItemsPerThread": call.items_per_thread,
+        },
         metadata={"scope": "block", "primitive": call.operation, "method": method},
     )
 
