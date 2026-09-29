@@ -62,13 +62,13 @@ def load(
         Number of valid elements in the group's tile, shared by all threads
         in that group. Supply a value between zero and the tile size,
         inclusive. ``None`` loads the full tile. Slots beyond this valid
-        prefix have unspecified values unless ``oob_default`` is given.
+        prefix retain their previous values unless ``oob_default`` is given.
     oob_default : numeric scalar, optional
         Value written to slots beyond ``valid_items``. Requires an explicit
-        ``valid_items`` count. For example, use zero to pad a partial tile. A
-        runtime value must have the payload dtype and be uniform across the
-        group. With ``None``, those slots are unspecified, even if initialized
-        before the Load; assign them before reading them.
+        ``valid_items`` count. For example, use zero to pad a partial tile
+        before summing it. A runtime value must have the payload dtype and
+        be uniform across the group. ``None`` leaves those slots unchanged;
+        initialize them before reading them.
     offset : int or integer scalar, optional
         Nonnegative offset in elements from the start of ``source``, uniform
         across the group. ``None`` means zero. For block tiles, supply the
@@ -90,6 +90,22 @@ def load(
     --------
     :cpp:class:`cub::BlockLoad`, :cpp:class:`cub::WarpLoad`
         C++ block and warp Load primitives.
+
+    Examples
+    --------
+    Copy an array with Numba-CUDA-MLIR, using 128 threads and two values per
+    thread. Each block loads up to 256 elements. The last block pads its
+    missing values with zero and stores only the valid prefix.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_load_example.py
+        :language: python
+        :start-after: # example-begin
+        :end-before: # example-end
+        :dedent: 4
+
+    The qualified import activates the Numba-CUDA-MLIR backend even if another
+    module imported ``cuda.coop`` first. Use the qualified
+    ``cuda.coop.<backend>`` API for backend-specific behavior.
     """
 
     raise CoopCompilerContextRequiredError(
@@ -128,9 +144,8 @@ def store(
         This thread's value or readable :ref:`payload <coop-thread-data>`.
         Initialize every item that will be stored. The tile contains
         ``group_size * items_per_thread`` elements, with one item per thread
-        for a scalar. As in CUB, transpose algorithms may rearrange the payload
-        in place. Do not rely on its contents after Store; copy values before
-        the call if they are needed later.
+        for a scalar. Store preserves the input, including when its algorithm
+        rearranges values internally.
     algorithm : str, optional
         Compile-time store algorithm, default ``"direct"``. ``"direct"``
         expects blocked values; ``"striped"`` expects striped values.
@@ -159,12 +174,27 @@ def store(
     Returns
     -------
     None
-        The call writes to ``destination``. The input payload may be rearranged.
+        The call writes to ``destination`` and leaves ``value`` unchanged.
 
     See Also
     --------
     :cpp:class:`cub::BlockStore`, :cpp:class:`cub::WarpStore`
         C++ block and warp Store primitives.
+
+    Examples
+    --------
+    Store a partial tile at an element offset. The untouched prefix and
+    suffix keep their sentinel values. A second output checks that transpose
+    Store preserved every thread's input payload.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_store_example.py
+        :language: python
+        :start-after: # example-begin
+        :end-before: # example-end
+        :dedent: 4
+
+    See :ref:`participation and synchronization <coop-participation>` for
+    control-flow requirements at primitive calls.
     """
 
     raise CoopCompilerContextRequiredError(
