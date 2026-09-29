@@ -260,7 +260,7 @@ coop.reduce(  # expected-error: [call-overload]
     binary_op=select_left,
     algorithm="raking_commutative_only",
 )
-coop.BlockScanAlgorithm  # expected-error: [attr-defined]
+coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
 common.scan(  # expected-error: [call-overload]
     common_block,
     np.int32(1),
