@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Histogram frontend rejection before provider generation."""
-
 from types import SimpleNamespace
 
 import numpy as np

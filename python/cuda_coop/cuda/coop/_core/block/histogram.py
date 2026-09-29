@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Fresh block histograms with a striped per-member projection."""
+"""Build CUB histograms with fresh counters distributed in striped order."""
 
 from __future__ import annotations
 

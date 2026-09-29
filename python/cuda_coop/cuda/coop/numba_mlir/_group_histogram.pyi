@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed fresh block histograms."""
-
 from typing import Literal, TypeAlias, overload
 
 import numpy

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUB block Histogram provider factory."""
-
 from cuda.coop._core import SynchronizationScope
 from cuda.coop._core.block.histogram import (
     make_block_histogram_spec,
