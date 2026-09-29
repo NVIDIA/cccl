@@ -35,7 +35,7 @@ def run_example(*, sharing="shared", manual_sync=False):
             sharing=sharing, alignment=1, auto_sync=not manual_sync
         )
         for tile in range(tiles):
-            payload = coop.ThreadData(_ITEMS)
+            payload = coop.ThreadData(items_per_thread=_ITEMS)
             coop.load(
                 coop.this_block(),
                 source,
