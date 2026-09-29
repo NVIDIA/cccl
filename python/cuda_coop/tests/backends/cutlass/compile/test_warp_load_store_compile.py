@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Physical Warp launch, algorithm, storage, and tile contracts in real traces."""
+"""Physical Warp launch, algorithm, storage, and tile contracts in real
+traces.
+"""
 
 import pytest
 
