@@ -167,7 +167,8 @@ class _ScanPlanning:
         binding = self._context.planning_binding(value)
         if mode == "inclusive" and binding.kind is not BindingKind.OMITTED:
             raise ValueError(
-                "cuda.coop.numba_mlir inclusive scans do not accept initial_value"
+                "cuda.coop.numba_mlir inclusive "
+                "scans do not accept initial_value"
             )
         if binding.kind is BindingKind.OMITTED:
             return binding, None
@@ -244,7 +245,8 @@ class _ScanPlanning:
     ) -> GroupLoweringPlan:
         if plan.target is not GroupLoweringTarget.CUB_BLOCK:
             raise ValueError(
-                "cuda.coop.numba_mlir scan temp_storage applies only to block groups"
+                "cuda.coop.numba_mlir scan temp_storage "
+                "applies only to block groups"
             )
         storage = plan.temp_storage
         synchronization = plan.synchronization
@@ -305,7 +307,8 @@ class _ScanPlanning:
             )
         if group.kind in {"warp", "threads_within_warp"} and is_array:
             raise TypeError(
-                "cuda.coop.numba_mlir WarpScan supports one scalar value per lane"
+                "cuda.coop.numba_mlir WarpScan "
+                "supports one scalar value per lane"
             )
         items_per_thread = 1
         if is_array:
@@ -346,7 +349,8 @@ class _ScanPlanning:
             and initial_binding.kind is BindingKind.OMITTED
         ):
             raise ValueError(
-                "cuda.coop.numba_mlir non-sum exclusive scans require initial_value"
+                "cuda.coop.numba_mlir non-sum "
+                "exclusive scans require initial_value"
             )
         aggregate_raw = bound.arguments.get("aggregate_output")
         aggregate = self._aggregate_output(operation, aggregate_raw, dtype)
