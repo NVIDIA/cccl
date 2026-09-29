@@ -9,6 +9,8 @@ from ._dispatch import (
 )
 from ._model import (
     ArgumentPrecondition,
+    CudaxCallDescription,
+    CudaxReturnKind,
     GroupExecutionRequirements,
     GroupLoweringPlan,
     GroupLoweringTarget,
@@ -40,6 +42,8 @@ from .reduce import GroupReduceSemantics
 
 __all__ = [
     "ArgumentPrecondition",
+    "CudaxCallDescription",
+    "CudaxReturnKind",
     "GroupExecutionRequirements",
     "GroupLoadStoreAlgorithm",
     "GroupLoadStoreKind",
