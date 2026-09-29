@@ -76,15 +76,15 @@ class group_view;
 template <class _Fn>
 class binary_partition;
 
-template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent, bool _IsAlwaysExhaustive = true>
+template <::cuda::std::size_t _StaticUnitCount = ::cuda::std::dynamic_extent, bool _IsAlwaysExhaustive = true>
 class group_by;
 
-template <class _Data, bool _IsExahustive>
+template <class _Data, bool _IsAlwaysExhaustive>
 class group_as;
 
 class identity_mapping;
 
-template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent>
+template <::cuda::std::size_t _StaticUnitCount = ::cuda::std::dynamic_extent>
 class take;
 
 // synchronizers
@@ -116,8 +116,8 @@ inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 
 template <class _Tp>
 inline constexpr bool __is_group_mapping_v = false;
-template <::cuda::std::size_t _UnitCount, bool _IsAlwaysExhaustive>
-inline constexpr bool __is_group_mapping_v<group_by<_UnitCount, _IsAlwaysExhaustive>> = true;
+template <::cuda::std::size_t _StaticUnitCount, bool _IsAlwaysExhaustive>
+inline constexpr bool __is_group_mapping_v<group_by<_StaticUnitCount, _IsAlwaysExhaustive>> = true;
 template <class _Data, bool _IsAlwaysExhaustive>
 inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsAlwaysExhaustive>> = true;
 
