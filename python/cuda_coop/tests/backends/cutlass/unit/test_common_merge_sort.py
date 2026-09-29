@@ -46,10 +46,14 @@ class _ThreadData(_ReadonlyThreadData):
     [
         pytest.param("merge_sort_keys", (_ReadonlyThreadData,), id="keys"),
         pytest.param(
-            "merge_sort_pairs", (_ReadonlyThreadData, _ThreadData), id="pair-keys"
+            "merge_sort_pairs",
+            (_ReadonlyThreadData, _ThreadData),
+            id="pair-keys",
         ),
         pytest.param(
-            "merge_sort_pairs", (_ThreadData, _ReadonlyThreadData), id="pair-values"
+            "merge_sort_pairs",
+            (_ThreadData, _ReadonlyThreadData),
+            id="pair-values",
         ),
         pytest.param(
             "merge_sort_pairs",
@@ -67,7 +71,9 @@ def test_common_merge_sort_accepts_readonly_inputs(
         (
             payload_type(items, dtype)
             for payload_type, items, dtype in zip(
-                payload_types, ((3, 1, 2), (0.3, 0.1, 0.2)), (np.int32, np.float64)
+                payload_types,
+                ((3, 1, 2), (0.3, 0.1, 0.2)),
+                (np.int32, np.float64),
             )
         )
     )
@@ -75,7 +81,9 @@ def test_common_merge_sort_accepts_readonly_inputs(
     calls = []
     result = object()
 
-    def marker(selected_operation, selected_group, *selected_payloads, **kwargs):
+    def marker(
+        selected_operation, selected_group, *selected_payloads, **kwargs
+    ):
         calls.append((selected_operation, selected_group, selected_payloads))
         return result
 

@@ -24,7 +24,9 @@ def _pointer(dtype=cutlass.Int32):
     return make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32, 64))
 @pytest.mark.parametrize("partial", (False, True))
 def test_groups_and_partial_pairs(api, width, partial):
@@ -45,9 +47,9 @@ def test_groups_and_partial_pairs(api, width, partial):
             )
         else:
             result, payload = api.merge_sort_pairs(group, keys, values)
-        cute.make_tensor(memory, cute.make_layout(1))[0] = result[0] + cutlass.Int32(
-            payload[0]
-        )
+        cute.make_tensor(memory, cute.make_layout(1))[0] = result[
+            0
+        ] + cutlass.Int32(payload[0])
 
     @cute.jit
     def launch(memory: cute.Pointer, count: cutlass.Int64):
@@ -74,7 +76,9 @@ def test_inferred_key_type(dtype):
     def launch(memory: cute.Pointer):
         kernel(memory).launch(grid=1, block=32)
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+    )
 
 
 def test_mixed_partial_group_bundle():
@@ -112,7 +116,9 @@ def test_mixed_partial_group_bundle():
     ),
 )
 def test_invalid_profiles(case, message):
-    block = 48 if case == "block_shape" else 24 if case == "incomplete_warp" else 32
+    block = (
+        48 if case == "block_shape" else 24 if case == "incomplete_warp" else 32
+    )
     count_type = cutlass.Uint64 if case == "count_u64" else cutlass.Float32
 
     @cute.kernel
@@ -125,10 +131,15 @@ def test_invalid_profiles(case, message):
             )
         elif cutlass.const_expr(case == "sentinel"):
             result = coop.merge_sort_keys(
-                coop.this_block(), keys, valid_items=1, oob_default=cutlass.Int64(99)
+                coop.this_block(),
+                keys,
+                valid_items=1,
+                oob_default=cutlass.Int64(99),
             )
         elif cutlass.const_expr(case == "unpaired"):
-            result = coop.merge_sort_keys(coop.this_block(), keys, valid_items=1)
+            result = coop.merge_sort_keys(
+                coop.this_block(), keys, valid_items=1
+            )
         elif cutlass.const_expr(case == "warp_storage"):
             result = coop.merge_sort_keys(
                 coop.this_warp(), keys, temp_storage=coop.TempStorage()
@@ -150,12 +161,15 @@ def test_invalid_profiles(case, message):
         kernel(memory, count).launch(grid=1, block=block)
 
     with pytest.raises(
-        (TypeError, ValueError, DSLRuntimeError, NotImplementedError), match=message
+        (TypeError, ValueError, DSLRuntimeError, NotImplementedError),
+        match=message,
     ):
         cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), count_type(1))
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_register_input_boundary(api):
     @cute.kernel
     def kernel(memory: cute.Pointer):
