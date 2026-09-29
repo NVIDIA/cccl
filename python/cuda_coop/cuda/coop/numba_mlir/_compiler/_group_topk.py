@@ -165,12 +165,12 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
         )
         context.record_thread_data_dtype(output, dtype)
         outputs.append(output)
-    kwargs = dict(
-        key_dtype=dtypes[0],
-        threads_per_block=plan.participation.exact_block_dim,
-        items_per_thread=extent,
-        selection=semantics.selection,
-    )
+    kwargs = {
+        "key_dtype": dtypes[0],
+        "threads_per_block": plan.participation.exact_block_dim,
+        "items_per_thread": extent,
+        "selection": semantics.selection,
+    }
     if len(dtypes) > 1:
         kwargs["value_dtype"] = dtypes[1]
     for name, binding in bindings.items():
