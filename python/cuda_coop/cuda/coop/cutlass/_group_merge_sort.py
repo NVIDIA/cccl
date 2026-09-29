@@ -93,12 +93,13 @@ def merge_sort_keys(
         thread count and may be multidimensional. Logical warp widths are
         1, 2, 4, 8, 16, and 32; their enclosing physical warps must be complete.
     keys : ThreadData or CuTe register payload
-        Per-thread keys in blocked order, with a positive, compile-time
-        extent. Read-only payloads are accepted. CuTe register-memory tensors
-        and ``TensorSSA`` values are converted through
-        :meth:`ThreadData.from_payload <cuda.coop.cutlass.ThreadData.from_payload>`.
-        Supported element types are signed and unsigned 8-, 16-, 32-, and
-        64-bit integers, ``Float32``, and ``Float64``.
+        Per-thread keys in blocked order, with a positive, compile-time extent.
+        Read-only payloads are accepted. CuTe register-memory tensors and
+        ``TensorSSA`` values are converted through
+        :meth:`ThreadData.from_payload
+        <cuda.coop.cutlass.ThreadData.from_payload>`. Supported element types
+        are signed and unsigned 8-, 16-, 32-, and 64-bit integers, ``Float32``,
+        and ``Float64``.
     descending : bool, optional
         Compile-time order selector. The default is ascending order.
         Custom comparison predicates are not supported.
