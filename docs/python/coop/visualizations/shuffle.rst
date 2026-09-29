@@ -71,7 +71,7 @@ source and destination elements per block.
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(2, dtype=np.int32)
+   items = coop.ThreadData(items_per_thread=2)
    offset = block_index * 256
    coop.load(block, source, items, offset=offset)
    shifted = coop.shuffle(block, items, mode="up")
