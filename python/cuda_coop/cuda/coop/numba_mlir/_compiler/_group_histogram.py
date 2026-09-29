@@ -150,15 +150,15 @@ def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
         )
     )
     context.record_thread_data_dtype(output, counter)
-    kwargs = dict(
-        sample_dtype=dtype,
-        counter_dtype=counter,
-        threads_per_block=plan.participation.exact_block_dim,
-        items_per_thread=extent,
-        bins=bins,
-        bins_per_thread=bins_per_thread,
-        algorithm=algorithm,
-    )
+    kwargs = {
+        "sample_dtype": dtype,
+        "counter_dtype": counter,
+        "threads_per_block": plan.participation.exact_block_dim,
+        "items_per_thread": extent,
+        "bins": bins,
+        "bins_per_thread": bins_per_thread,
+        "algorithm": algorithm,
+    }
     if not context.is_none(storage):
         kwargs["temp_storage"] = storage
     statements.extend(

@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# ruff: noqa: E402
 
 """Compile Histogram through the production provider and final linker."""
 
