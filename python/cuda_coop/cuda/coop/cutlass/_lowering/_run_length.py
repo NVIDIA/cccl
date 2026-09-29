@@ -149,15 +149,15 @@ class _CubRunLengthRequest:
             raise ValueError(
                 "run_length_decode requires exact one-dimensional block dimensions"
             )
-        expected = dict(
-            ItemT=p.item_dtype,
-            LengthT=p.run_length_dtype,
-            OffsetT=Uint32,
-            ControlT=p.control_dtype,
-            BlockThreads=dimensions[0],
-            RunsPerThread=p.runs_per_thread,
-            DecodedItemsPerThread=p.decoded_items_per_thread,
-        )
+        expected = {
+            "ItemT": p.item_dtype,
+            "LengthT": p.run_length_dtype,
+            "OffsetT": Uint32,
+            "ControlT": p.control_dtype,
+            "BlockThreads": dimensions[0],
+            "RunsPerThread": p.runs_per_thread,
+            "DecodedItemsPerThread": p.decoded_items_per_thread,
+        }
         if dict(spec.template_arguments) != expected:
             raise ValueError(
                 "run_length_decode template arguments do not match its plan"

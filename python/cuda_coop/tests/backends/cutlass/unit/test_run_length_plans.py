@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Run Length Decode plan, ABI, scratch, and transaction contracts."""
 
@@ -32,14 +31,14 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _request(**kwargs):
-    options = dict(
-        group=this_block(),
-        launch=LaunchFacts(exact_block_dim=(32, 1, 1)),
-        value_type=cutlass.Int32,
-        length_type=cutlass.Uint64,
-        runs=2,
-        decoded=3,
-    )
+    options = {
+        "group": this_block(),
+        "launch": LaunchFacts(exact_block_dim=(32, 1, 1)),
+        "value_type": cutlass.Int32,
+        "length_type": cutlass.Uint64,
+        "runs": 2,
+        "decoded": 3,
+    }
     options.update(kwargs)
     return _run_length._CubRunLengthRequest(
         _run_length._make_run_length_plan(**options)
@@ -140,9 +139,15 @@ def test_common_signature(name):
         inspect.signature(getattr(cutlass_coop, name)),
     )
     assert tuple(actual.parameters) == tuple(expected.parameters)
-    for name in actual.parameters:
-        assert actual.parameters[name].kind is expected.parameters[name].kind
-        assert actual.parameters[name].default == expected.parameters[name].default
+    for parameter_name in actual.parameters:
+        assert (
+            actual.parameters[parameter_name].kind
+            is expected.parameters[parameter_name].kind
+        )
+        assert (
+            actual.parameters[parameter_name].default
+            == expected.parameters[parameter_name].default
+        )
 
 
 @pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
@@ -158,9 +163,11 @@ def test_invalid_payload_names_operation(api, primitive, invalid):
     ]
     if primitive == "run_length_decode_into":
         args.append(object())
-    with active_env_manager(CuTeDSL._get_dsl().envar):
-        with pytest.raises(TypeError, match=rf"\.{primitive} ") as error:
-            getattr(api, primitive)(*args, decoded_items_per_thread=2)
+    with (
+        active_env_manager(CuTeDSL._get_dsl().envar),
+        pytest.raises(TypeError, match=rf"\.{primitive} ") as error,
+    ):
+        getattr(api, primitive)(*args, decoded_items_per_thread=2)
     assert invalid in str(error.value)
     assert "ThreadData" in str(error.value)
 
