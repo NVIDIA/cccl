@@ -35,25 +35,40 @@ _VISUALIZATION_TITLES = {
     "reduce-batched": "Batched Warp Reduction",
 }
 
-_API_VISUALIZATIONS = (
-    dict.fromkeys(
-        ("scan", "exclusive_scan", "inclusive_scan", "exclusive_sum", "inclusive_sum"),
-        "scan",
-    )
-    | {name: name for name in _EXPLORERS}
-    | {
-        "sum": "reduce",
-        "adjacent_difference": "adjacent-difference",
-        "run_length_decode": "run-length-decode",
-        "run_length_decode_into": "run-length-decode",
-        "reduce_batched": "reduce-batched",
-    }
-    | dict.fromkeys(("merge_sort_keys", "merge_sort_pairs"), "merge-sort")
-    | dict.fromkeys(("radix_sort_keys", "radix_sort_pairs", "radix_rank"), "radix")
-    | dict.fromkeys(
-        ("topk_min_keys", "topk_max_keys", "topk_min_pairs", "topk_max_pairs"), "topk"
-    )
-)
+_API_VISUALIZATIONS = {
+    "scan": "scan",
+    "exclusive_scan": "scan",
+    "inclusive_scan": "scan",
+    "exclusive_sum": "scan",
+    "inclusive_sum": "scan",
+    "load": "load",
+    "store": "store",
+    "exchange": "exchange",
+    "shuffle": "shuffle",
+    "reduce": "reduce",
+    "merge-sort": "merge-sort",
+    "radix": "radix",
+    "topk": "topk",
+    "adjacent-difference": "adjacent-difference",
+    "discontinuity": "discontinuity",
+    "histogram": "histogram",
+    "run-length-decode": "run-length-decode",
+    "reduce-batched": "reduce-batched",
+    "sum": "reduce",
+    "adjacent_difference": "adjacent-difference",
+    "run_length_decode": "run-length-decode",
+    "run_length_decode_into": "run-length-decode",
+    "reduce_batched": "reduce-batched",
+    "merge_sort_keys": "merge-sort",
+    "merge_sort_pairs": "merge-sort",
+    "radix_sort_keys": "radix",
+    "radix_sort_pairs": "radix",
+    "radix_rank": "radix",
+    "topk_min_keys": "topk",
+    "topk_max_keys": "topk",
+    "topk_min_pairs": "topk",
+    "topk_max_pairs": "topk",
+}
 
 
 def add_api_visualization_link(app, what, name, obj, options, lines):
