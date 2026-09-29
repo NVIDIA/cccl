@@ -19,16 +19,17 @@ array views and barriers.
 
 from __future__ import annotations
 
-from enum import Enum
-
 from numba_cuda_mlir import types
 
 from cuda.coop._core import StorageOwnership, SynchronizationScope
 
-from ..._core.api._payload import _normalize_alignment
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData, _normalize_thread_data_alignment
-from ._descriptor_provenance import descriptor_definitions
+from ._descriptor_provenance import (
+    descriptor_definitions,
+    payload_write_dtypes,
+    temp_storage_constructor,
+)
 from ._rewrite_support import (
     _INFERENCE_EXCEPTIONS,
     _MIN_TEMP_STORAGE_ALIGNMENT,
@@ -56,6 +57,9 @@ from ._rewrite_support import (
     operator,
 )
 from ._scalar_provenance import (
+    cuda_index_dtype,
+    scalar_call_dtype,
+    scalar_expression_dtype,
     try_resolve_static_scalar,
     try_resolve_static_scalar_provenance,
 )
@@ -748,100 +752,29 @@ class _ProvenanceRewrite:
     def _extract_temp_storage_ctor_spec(
         self, call: ir.Expr
     ) -> _TempStorageCtorSpec:
-        if (
-            getattr(call, "vararg", None) is not None
-            or getattr(call, "varkwarg", None) is not None
-        ):
-            # Starred arguments would otherwise be ignored and the descriptor
-            # parsed as if it were default-constructed.
-            raise CoopSinglePhaseRewriteError(
-                "TempStorage does not accept *args or **kwargs; pass "
-                "size_in_bytes, alignment, auto_sync, and sharing explicitly."
-            )
-        kw_map = {name: value for name, value in call.kws}
-        parameter_names = ("size_in_bytes", "alignment", "auto_sync", "sharing")
-        if len(call.args) > 1:
-            raise CoopSinglePhaseRewriteError(
-                "TempStorage accepts only size_in_bytes positionally; "
-                "alignment, auto_sync, and sharing are keyword-only."
-            )
-        unexpected_keywords = sorted(set(kw_map) - set(parameter_names))
-        if unexpected_keywords:
-            names = ", ".join(unexpected_keywords)
-            raise CoopSinglePhaseRewriteError(
-                f"TempStorage got unexpected keyword(s): {names}"
-            )
-        refs = dict(zip(parameter_names, call.args))
-        for name, value_ref in call.kws:
-            if name in refs:
-                raise CoopSinglePhaseRewriteError(
-                    f"TempStorage got multiple values for argument {name!r}"
-                )
-            refs[name] = value_ref
-        size_ref = refs.get("size_in_bytes")
-        alignment_ref = refs.get("alignment")
-        auto_sync_ref = refs.get("auto_sync")
-        sharing_ref = refs.get("sharing")
-
-        def infer_constant(value_ref, *, name: str):
+        def constant(value, *, name):
             try:
-                return self._infer_constant(value_ref)
+                return self._infer_constant(value)
             except _INFERENCE_EXCEPTIONS as exc:
                 raise CoopSinglePhaseRewriteError(
                     f"TempStorage {name} must be a compile-time literal."
                 ) from exc
 
-        size_in_bytes = None
-        if size_ref is not None:
-            raw_size_in_bytes = infer_constant(size_ref, name="size_in_bytes")
-            if raw_size_in_bytes is not None and (
-                not isinstance(raw_size_in_bytes, int)
-                or isinstance(raw_size_in_bytes, bool)
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "TempStorage size_in_bytes must be an integer or None."
-                )
-            size_in_bytes = raw_size_in_bytes
-            if size_in_bytes is not None and size_in_bytes <= 0:
-                raise CoopSinglePhaseRewriteError(
-                    "TempStorage size_in_bytes must be a positive integer."
-                )
-        alignment = None
-        if alignment_ref is not None:
-            raw_alignment = infer_constant(alignment_ref, name="alignment")
-            try:
-                alignment = _normalize_alignment(raw_alignment)
-            except (TypeError, ValueError) as exc:
-                raise CoopSinglePhaseRewriteError(f"TempStorage {exc}") from exc
-            if alignment is not None:
-                alignment = _normalize_temp_storage_alignment(alignment)
-        auto_sync = False
-        if auto_sync_ref is not None:
-            auto_sync = infer_constant(auto_sync_ref, name="auto_sync")
-            if auto_sync is not None and (not isinstance(auto_sync, bool)):
-                raise CoopSinglePhaseRewriteError(
-                    "TempStorage auto_sync must be None/True/False."
-                )
-        if auto_sync is None:
-            auto_sync = False
-        sharing = "shared"
-        if sharing_ref is not None:
-            sharing = infer_constant(sharing_ref, name="sharing")
-            if not isinstance(sharing, str) or isinstance(sharing, Enum):
-                raise CoopSinglePhaseRewriteError(
-                    "TempStorage sharing must be a "
-                    "string: 'shared' or 'exclusive'."
-                )
-            sharing = sharing.strip().lower()
-        if sharing not in {"shared", "exclusive"}:
-            raise CoopSinglePhaseRewriteError(
-                "TempStorage sharing must be 'shared' or 'exclusive'."
-            )
+        try:
+            descriptor = temp_storage_constructor(call, constant)
+        except (TypeError, ValueError) as exc:
+            message = str(exc)
+            if not message.startswith("TempStorage"):
+                message = f"TempStorage {message}"
+            raise CoopSinglePhaseRewriteError(message) from exc
+        alignment = descriptor.alignment
+        if alignment is not None:
+            alignment = _normalize_temp_storage_alignment(alignment)
         return _TempStorageCtorSpec(
-            size_in_bytes=size_in_bytes,
+            size_in_bytes=descriptor.size_in_bytes,
             alignment=alignment,
-            auto_sync=auto_sync,
-            sharing=sharing,
+            auto_sync=descriptor.auto_sync,
+            sharing=descriptor.sharing,
         )
 
     @staticmethod
@@ -1737,22 +1670,9 @@ class _ProvenanceRewrite:
                 func_obj = None
         if func_obj is None:
             return None
-        from ._parameters import (
-            _scalar_cast_dtype,
-            _scalar_operator_result_dtype,
+        return scalar_call_dtype(
+            func_obj, definition.args, self._resolve_var_dtype
         )
-
-        cast_dtype = _scalar_cast_dtype(func_obj)
-        if cast_dtype is None:
-            return None
-        if len(definition.args) == 1 and isinstance(definition.args[0], ir.Var):
-            inferred = _scalar_operator_result_dtype(
-                func_obj,
-                self._resolve_var_dtype(definition.args[0]),
-            )
-            if inferred is not None:
-                return inferred
-        return cast_dtype
 
     @staticmethod
     def _merge_scalar_dtypes(dtypes):
@@ -1773,28 +1693,12 @@ class _ProvenanceRewrite:
         return resolved[0] if len(resolved) == 1 else None
 
     def _cuda_index_dtype(self, definition: ir.Expr):
-        if definition.op != "getattr":
-            return None
-        chain = self._resolve_attribute_chain(definition.value)
-        if chain is None:
-            return None
-        root, attributes = chain
-        full_attributes = (*attributes, definition.attr)
-        if root is _cuda_module and full_attributes in {
-            (index, component)
-            for index in ("blockDim", "blockIdx", "gridDim", "threadIdx")
-            for component in ("x", "y", "z")
-        }:
-            from numba_cuda_mlir import types as numba_mlir_types
-
-            return numba_mlir_types.int32
-        return None
+        return cuda_index_dtype(
+            definition, self._resolve_attribute_chain, _cuda_module
+        )
 
     def _resolve_definition_dtype(self, definition, *, seen: set[str]):
-        from ._parameters import (
-            _python_scalar_dtype,
-            _scalar_operator_result_dtype,
-        )
+        from ._parameters import _python_scalar_dtype
 
         if isinstance(definition, ir.Arg):
             arg_types = tuple(getattr(self._state, "args", ()) or ())
@@ -1827,32 +1731,11 @@ class _ProvenanceRewrite:
             if isinstance(base_value, ir.Var):
                 return self._resolve_var_dtype(base_value, seen=set(seen))
             return None
-        if definition.op in {"binop", "inplace_binop"}:
-            lhs = getattr(definition, "lhs", None)
-            rhs = getattr(definition, "rhs", None)
-            lhs_dtype = (
-                self._resolve_var_dtype(lhs, seen=set(seen))
-                if isinstance(lhs, ir.Var)
-                else None
+        if definition.op in {"binop", "inplace_binop", "unary"}:
+            return scalar_expression_dtype(
+                definition,
+                lambda value: self._resolve_var_dtype(value, seen=set(seen)),
             )
-            rhs_dtype = (
-                self._resolve_var_dtype(rhs, seen=set(seen))
-                if isinstance(rhs, ir.Var)
-                else None
-            )
-            return _scalar_operator_result_dtype(
-                getattr(definition, "fn", None),
-                lhs_dtype,
-                rhs_dtype,
-            )
-        if definition.op == "unary":
-            unary_value = getattr(definition, "value", None)
-            if isinstance(unary_value, ir.Var):
-                return _scalar_operator_result_dtype(
-                    getattr(definition, "fn", None),
-                    self._resolve_var_dtype(unary_value, seen=set(seen)),
-                )
-            return None
         if definition.op == "phi":
             return self._merge_scalar_dtypes(
                 self._resolve_var_dtype(incoming, seen=set(seen))
@@ -1864,78 +1747,19 @@ class _ProvenanceRewrite:
         return None
 
     def _infer_thread_data_dtype_from_writes(self, value: ir.Var):
-        spec = self._resolve_thread_data_spec(value)
-        if spec is None:
+        if self._resolve_thread_data_spec(value) is None:
             return None
-        alias_names = {value.name}
-        changed = True
-        while changed:
-            changed = False
-            for block in self._func_ir.blocks.values():
-                for stmt in block.body:
-                    if not isinstance(stmt, ir.Assign):
-                        continue
-                    definition = stmt.value
-                    sources: tuple[ir.Var, ...] = ()
-                    if isinstance(definition, ir.Var):
-                        sources = (definition,)
-                    elif (
-                        isinstance(definition, ir.Expr)
-                        and definition.op == "cast"
-                    ):
-                        if isinstance(definition.value, ir.Var):
-                            sources = (definition.value,)
-                    elif (
-                        isinstance(definition, ir.Expr)
-                        and definition.op == "phi"
-                    ):
-                        sources = tuple(
-                            incoming
-                            for incoming in _phi_incoming_values(definition)
-                            if isinstance(incoming, ir.Var)
-                        )
-                    source_names = {source.name for source in sources}
-                    if (
-                        stmt.target.name in alias_names
-                        or source_names & alias_names
-                    ):
-                        additions = {
-                            stmt.target.name,
-                            *source_names,
-                        } - alias_names
-                        if additions:
-                            alias_names.update(additions)
-                            changed = True
         inferred = None
-        static_setitem_cls = getattr(ir, "StaticSetItem", None)
-        for block in self._func_ir.blocks.values():
-            for stmt in block.body:
-                if isinstance(stmt, ir.SetItem) or (
-                    static_setitem_cls is not None
-                    and isinstance(stmt, static_setitem_cls)
-                ):
-                    target = getattr(stmt, "target", None)
-                    rhs = getattr(stmt, "value", None)
-                else:
-                    continue
-                if (
-                    not isinstance(target, ir.Var)
-                    or target.name not in alias_names
-                ):
-                    continue
-                if not isinstance(rhs, ir.Var):
-                    continue
-                rhs_dtype = self._resolve_var_dtype(rhs)
-                if rhs_dtype is None:
-                    continue
-                if inferred is None:
-                    inferred = rhs_dtype
-                    continue
-                if inferred != rhs_dtype:
-                    raise CoopSinglePhaseRewriteError(
-                        "Failed to infer a consistent dtype from "
-                        "coop.ThreadData writes."
-                    )
+        for value_dtype in payload_write_dtypes(
+            self._func_ir, value, self._resolve_var_dtype
+        ):
+            if inferred is None:
+                inferred = value_dtype
+            elif inferred != value_dtype:
+                raise CoopSinglePhaseRewriteError(
+                    "Failed to infer a consistent dtype from "
+                    "coop.ThreadData writes."
+                )
         if inferred is not None:
             self._record_inferred_thread_data_dtype(value, inferred)
         return inferred

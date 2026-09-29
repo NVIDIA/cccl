@@ -459,6 +459,14 @@ class GroupPlanningContext:
     def typed_payload_like(self, *args: Any, **kwargs: Any) -> ir.Var:
         return self.__planner._typed_payload_like(*args, **kwargs)
 
+    def box_group_operand(
+        self, *args: Any, **kwargs: Any
+    ) -> tuple[ir.Var, bool]:
+        return self.__planner._boxed_group_operand(*args, **kwargs)
+
+    def result_value(self, *args: Any, **kwargs: Any) -> ir.Var:
+        return self.__planner._result_value(*args, **kwargs)
+
     def planning_binding(self, value: Any) -> ArgumentBinding:
         """Classify a scalar control from its explicit static provenance.
 
