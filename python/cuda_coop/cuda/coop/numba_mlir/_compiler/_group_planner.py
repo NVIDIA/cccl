@@ -438,9 +438,9 @@ class _GroupCallPlanner:
 
     @staticmethod
     def _merge_array_states(states: tuple[bool | None, ...]) -> bool | None:
-        if not states or any((state is False for state in states)):
+        if not states or any(state is False for state in states):
             return False
-        if any((state is True for state in states)):
+        if any(state is True for state in states):
             return True
         return None
 
@@ -478,15 +478,13 @@ class _GroupCallPlanner:
         seen.add(seen_key)
         return self._merge_array_states(
             tuple(
-                (
-                    self._is_array_tuple_item_definition(
-                        definition,
-                        index,
-                        seen=set(seen),
-                        thread_data_only=thread_data_only,
-                    )
-                    for definition in self._all_definitions(value)
+                self._is_array_tuple_item_definition(
+                    definition,
+                    index,
+                    seen=set(seen),
+                    thread_data_only=thread_data_only,
                 )
+                for definition in self._all_definitions(value)
             )
         )
 
@@ -507,15 +505,13 @@ class _GroupCallPlanner:
             incoming_values = getattr(definition, "incoming_values", ())
             return self._merge_array_states(
                 tuple(
-                    (
-                        self._is_array_tuple_item(
-                            incoming,
-                            index,
-                            seen=set(seen),
-                            thread_data_only=thread_data_only,
-                        )
-                        for incoming in incoming_values
+                    self._is_array_tuple_item(
+                        incoming,
+                        index,
+                        seen=set(seen),
+                        thread_data_only=thread_data_only,
                     )
+                    for incoming in incoming_values
                 )
             )
         if definition.op == "build_tuple":
@@ -555,12 +551,10 @@ class _GroupCallPlanner:
         seen.add(value.name)
         return self._merge_array_states(
             tuple(
-                (
-                    self._is_array_definition(
-                        definition, seen=set(seen), thread_data_only=thread_data_only
-                    )
-                    for definition in self._all_definitions(value)
+                self._is_array_definition(
+                    definition, seen=set(seen), thread_data_only=thread_data_only
                 )
+                for definition in self._all_definitions(value)
             )
         )
 
@@ -581,12 +575,10 @@ class _GroupCallPlanner:
             incoming_values = getattr(definition, "incoming_values", ())
             return self._merge_array_states(
                 tuple(
-                    (
-                        self._is_array_value(
-                            incoming, seen=set(seen), thread_data_only=thread_data_only
-                        )
-                        for incoming in incoming_values
+                    self._is_array_value(
+                        incoming, seen=set(seen), thread_data_only=thread_data_only
                     )
+                    for incoming in incoming_values
                 )
             )
         if definition.op in {"getitem", "static_getitem"}:

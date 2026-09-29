@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 from types import SimpleNamespace
 
@@ -54,7 +53,7 @@ def _state(function, *, targetoptions):
 
 
 def _first_block(state):
-    return state.func_ir.blocks[sorted(state.func_ir.blocks)[0]]
+    return state.func_ir.blocks[min(state.func_ir.blocks)]
 
 
 def _match(state):

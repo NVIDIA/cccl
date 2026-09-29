@@ -379,12 +379,10 @@ class _ProvenanceRewrite:
 
     def _is_typed_group_payload_var(self, value: ir.Var) -> bool:
         return any(
-            (
-                isinstance(definition, ir.Expr)
-                and definition.op == "call"
-                and self._is_typed_group_payload_ctor_call(definition)
-                for definition in self._lookup_definitions(value)
-            )
+            isinstance(definition, ir.Expr)
+            and definition.op == "call"
+            and self._is_typed_group_payload_ctor_call(definition)
+            for definition in self._lookup_definitions(value)
         )
 
     def _extract_typed_group_payload_spec(
@@ -524,7 +522,7 @@ class _ProvenanceRewrite:
         dtype = None
         if dtype_ref is not None:
             dtype = self._resolve_dtype_ref(dtype_ref)
-            if any((dtype is alias for alias in (bool, int, float, complex))):
+            if any(dtype is alias for alias in (bool, int, float, complex)):
                 dtype = normalize_dtype_param(dtype)
         return _ThreadDataSpec(
             items_per_thread=items_per_thread,
@@ -1519,11 +1517,9 @@ class _ProvenanceRewrite:
                             sources = (definition.value,)
                     elif isinstance(definition, ir.Expr) and definition.op == "phi":
                         sources = tuple(
-                            (
-                                incoming
-                                for incoming in _phi_incoming_values(definition)
-                                if isinstance(incoming, ir.Var)
-                            )
+                            incoming
+                            for incoming in _phi_incoming_values(definition)
+                            if isinstance(incoming, ir.Var)
                         )
                     source_names = {source.name for source in sources}
                     if stmt.target.name in alias_names or source_names & alias_names:
@@ -1595,11 +1591,9 @@ class _ProvenanceRewrite:
                         sources = (source,)
                 elif definition.op == "phi":
                     sources = tuple(
-                        (
-                            incoming
-                            for incoming in _phi_incoming_values(definition)
-                            if isinstance(incoming, ir.Var)
-                        )
+                        incoming
+                        for incoming in _phi_incoming_values(definition)
+                        if isinstance(incoming, ir.Var)
                     )
                 elif definition.op == "static_getitem":
                     sources = tuple(self._resolve_static_tuple_item_vars(definition))
@@ -1636,9 +1630,13 @@ class _ProvenanceRewrite:
             pass
         if isinstance(value_ref, ir.Var):
             definition = self._lookup_definition(value_ref)
-            if isinstance(definition, ir.Expr) and definition.op == "getattr":
-                if definition.attr == "dtype" and isinstance(definition.value, ir.Var):
-                    return self._resolve_var_dtype(definition.value)
+            if (
+                isinstance(definition, ir.Expr)
+                and definition.op == "getattr"
+                and definition.attr == "dtype"
+                and isinstance(definition.value, ir.Var)
+            ):
+                return self._resolve_var_dtype(definition.value)
             return self._resolve_var_dtype(value_ref)
         return None
 

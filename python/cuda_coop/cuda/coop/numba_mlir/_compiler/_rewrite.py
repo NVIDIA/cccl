@@ -200,7 +200,7 @@ class CoopSinglePhaseRewrite(
             invocable, _ = self._materialize_invocable(match)
             self._record_invocable_specialization(invocable)
             candidate_dead_factory_kw_vars.update(
-                (value_var.name for value_var in match.factory_kw_value_vars)
+                value_var.name for value_var in match.factory_kw_value_vars
             )
             global_name = _next_global_name("single_phase")
             call_invocable_globals[match_inst] = (global_name, invocable)
@@ -574,7 +574,7 @@ class CoopSinglePhaseRewrite(
                 break
 
 
-from . import _group_planner  # noqa: E402, F401
+from . import _group_planner  # noqa: F401
 
 
 @register_planner
