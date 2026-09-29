@@ -78,7 +78,9 @@ def run_example(api="common"):
         # Only min(k, valid_items) output positions are defined, in any order.
         module.store(block, smallest, min_keys, valid_items=_SELECTED)
         module.store(block, largest, max_keys, valid_items=_SELECTED)
-        module.store(block, selected_positions, max_positions, valid_items=_SELECTED)
+        module.store(
+            block, selected_positions, max_positions, valid_items=_SELECTED
+        )
         module.store(block, original_keys, keys)
         module.store(block, original_positions, positions)
 
@@ -102,7 +104,9 @@ def run_example(api="common"):
 
     # docs: end cutlass-topk
 
-    source = np.random.default_rng(42).integers(-1, 2, size=_TILE).astype(np.float32)
+    source = (
+        np.random.default_rng(42).integers(-1, 2, size=_TILE).astype(np.float32)
+    )
     source[2::3] = 0.0
     source[1::5] = -0.0
     outputs = [
@@ -116,33 +120,54 @@ def run_example(api="common"):
         pointers = []
         for array in arrays:
             allocation = _check(driver.cuMemAlloc(array.nbytes))
-            cleanup.callback(lambda ptr=allocation: _check(driver.cuMemFree(ptr)))
+            cleanup.callback(
+                lambda ptr=allocation: _check(driver.cuMemFree(ptr))
+            )
             allocations.append(allocation)
-            _check(driver.cuMemcpyHtoD(allocation, array.ctypes.data, array.nbytes))
-            dtype = cutlass.Float32 if array.dtype == np.float32 else cutlass.Int32
+            _check(
+                driver.cuMemcpyHtoD(allocation, array.ctypes.data, array.nbytes)
+            )
+            dtype = (
+                cutlass.Float32 if array.dtype == np.float32 else cutlass.Int32
+            )
             pointers.append(
                 make_ptr(
-                    dtype, int(allocation), cute.AddressSpace.gmem, assumed_align=16
+                    dtype,
+                    int(allocation),
+                    cute.AddressSpace.gmem,
+                    assumed_align=16,
                 )
             )
         launch(*pointers)
         _check(driver.cuCtxSynchronize())
         for array, allocation in zip(outputs, allocations[1:]):
-            _check(driver.cuMemcpyDtoH(array.ctypes.data, allocation, array.nbytes))
+            _check(
+                driver.cuMemcpyDtoH(array.ctypes.data, allocation, array.nbytes)
+            )
 
     smallest, largest, positions, original_keys, original_positions = outputs
     ordered = np.sort(source[:_VALID])
-    np.testing.assert_array_equal(np.sort(smallest[:_SELECTED]), ordered[:_SELECTED])
-    np.testing.assert_array_equal(np.sort(largest[:_SELECTED]), ordered[-_SELECTED:])
+    np.testing.assert_array_equal(
+        np.sort(smallest[:_SELECTED]), ordered[:_SELECTED]
+    )
+    np.testing.assert_array_equal(
+        np.sort(largest[:_SELECTED]), ordered[-_SELECTED:]
+    )
     selected_ids = positions[:_SELECTED]
     assert len(np.unique(selected_ids)) == _SELECTED
     assert np.all((selected_ids >= 0) & (selected_ids < _VALID))
-    # Preserve the source bits and association even when tied keys are signed zeros.
+    # Preserve the source bits and association even when tied keys are signed
+    # zeros.
     np.testing.assert_array_equal(
-        largest[:_SELECTED].view(np.uint32), source[selected_ids].view(np.uint32)
+        largest[:_SELECTED].view(np.uint32),
+        source[selected_ids].view(np.uint32),
     )
-    np.testing.assert_array_equal(original_keys.view(np.uint32), source.view(np.uint32))
-    np.testing.assert_array_equal(original_positions, np.arange(_TILE, dtype=np.int32))
+    np.testing.assert_array_equal(
+        original_keys.view(np.uint32), source.view(np.uint32)
+    )
+    np.testing.assert_array_equal(
+        original_positions, np.arange(_TILE, dtype=np.int32)
+    )
     for output in outputs[:3]:
         np.testing.assert_array_equal(output[_SELECTED:], -999)
     return outputs

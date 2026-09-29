@@ -864,26 +864,43 @@ def check_cutlass_topk_surface() -> None:
         cutlass_coop.ThreadData[np.float32],
     )
     assert_type(
-        cutlass_coop.topk_max_keys(block, keys, k=Int64(7), valid_items=Uint32(63)),
+        cutlass_coop.topk_max_keys(
+            block, keys, k=Int64(7), valid_items=Uint32(63)
+        ),
         cutlass_coop.ThreadData[np.float32],
     )
     assert_type(
-        cutlass_coop.topk_min_pairs(block, keys, values, k=7, temp_storage=storage),
-        tuple[cutlass_coop.ThreadData[np.float32], cutlass_coop.ThreadData[Int16]],
+        cutlass_coop.topk_min_pairs(
+            block, keys, values, k=7, temp_storage=storage
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.float32], cutlass_coop.ThreadData[Int16]
+        ],
     )
     assert_type(
         cutlass_coop.topk_max_pairs(
-            block, keys, values, k=np.uint16(7), valid_items=31, temp_storage=storage
+            block,
+            keys,
+            values,
+            k=np.uint16(7),
+            valid_items=31,
+            temp_storage=storage,
         ),
-        tuple[cutlass_coop.ThreadData[np.float32], cutlass_coop.ThreadData[Int16]],
+        tuple[
+            cutlass_coop.ThreadData[np.float32], cutlass_coop.ThreadData[Int16]
+        ],
     )
     assert_type(
         cutlass_coop.topk_min_keys(block, _ReadOnlyKeys(), k=0),
         cutlass_coop.ThreadData[np.int32],
     )
     assert_type(
-        cutlass_coop.topk_max_pairs(block, _ReadOnlyKeys(), _ReadOnlyKeys(), k=2),
-        tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.int32]],
+        cutlass_coop.topk_max_pairs(
+            block, _ReadOnlyKeys(), _ReadOnlyKeys(), k=2
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.int32]
+        ],
     )
     assert_type(
         cutlass_coop.topk_min_keys(block, keys.to_register_tensor(), k=7),
@@ -898,8 +915,12 @@ def check_cutlass_topk_surface() -> None:
         tuple[cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[Int16]],
     )
     assert_type(
-        cutlass_coop.topk_max_pairs(block, keys, values.to_register_tensor(), k=7),
-        tuple[cutlass_coop.ThreadData[np.float32], cutlass_coop.ThreadData[Any]],
+        cutlass_coop.topk_max_pairs(
+            block, keys, values.to_register_tensor(), k=7
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.float32], cutlass_coop.ThreadData[Any]
+        ],
     )
     assert_type(
         cutlass_coop.topk_min_pairs(
@@ -914,7 +935,8 @@ def check_cutlass_topk_surface() -> None:
     assert_type(
         common_coop.topk_max_pairs(block, keys, values, k=7),
         tuple[
-            common_coop.ThreadDataLike[np.float32], common_coop.ThreadDataLike[Int16]
+            common_coop.ThreadDataLike[np.float32],
+            common_coop.ThreadDataLike[Int16],
         ],
     )
     assert_type(

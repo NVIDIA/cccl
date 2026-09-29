@@ -373,9 +373,16 @@ common.radix_sort_keys(  # expected-error: [type-var]
 )
 
 cutlass_coop.topk_min_keys(warp, values, k=1)  # expected-error: [arg-type]
-cutlass_coop.topk_max_pairs(logical, values, values, k=1)  # expected-error: [arg-type]
+cutlass_coop.topk_max_pairs(
+    logical,  # expected-error: [arg-type]
+    values,
+    values,
+    k=1,
+)
 cutlass_coop.topk_min_keys(block, values)  # expected-error: [call-overload]
-cutlass_coop.topk_max_keys(block, scalar, k=1)  # expected-error: [call-overload]
+cutlass_coop.topk_max_keys(  # expected-error: [call-overload]
+    block, scalar, k=1
+)
 cutlass_coop.topk_min_pairs(  # expected-error: [call-overload]
     block, values, scalar, k=1
 )

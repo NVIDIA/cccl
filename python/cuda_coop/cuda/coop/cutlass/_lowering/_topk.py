@@ -49,7 +49,8 @@ def _count_binding(value, name, *, optional=False):
     spec = _types.TYPE_SPECS.get(_types.canonical_dsl_type(value))
     if spec is None or spec.token[0] not in {"i", "u"} or spec.token == "u64":
         raise TypeError(
-            f"TopK {name} requires a signed integer up to 64 bits or an unsigned integer up to 32 bits"
+            f"TopK {name} requires a signed integer up to 64 bits "
+            "or an unsigned integer up to 32 bits"
         )
     return ArgumentBinding.runtime()
 
@@ -75,7 +76,9 @@ def _make_topk_plan(
         valid_items=_count_binding(valid_items, "valid_items", optional=True),
     )
     source = (
-        "common_root" if _common_root_operation_name() is not None else "cutlass_root"
+        "common_root"
+        if _common_root_operation_name() is not None
+        else "cutlass_root"
     )
     plan = plan_group_primitive(
         make_group_primitive_call(group, operation, source=source), launch
@@ -121,11 +124,14 @@ class _CubTopKRequest:
             raise ValueError("TopK requires a shared CUB block plan")
         p, spec = self.operation, self.implementation
         if p.key_dtype not in _types.ALL_PROVIDER_TYPES or (
-            p.value_dtype is not None and p.value_dtype not in _types.ALL_PROVIDER_TYPES
+            p.value_dtype is not None
+            and p.value_dtype not in _types.ALL_PROVIDER_TYPES
         ):
             raise TypeError("TopK requires supported numeric dtypes")
         payload = "keys" if p.value_dtype is None else "pairs"
-        tile = "full" if p.valid_items.kind is BindingKind.OMITTED else "partial"
+        tile = (
+            "full" if p.valid_items.kind is BindingKind.OMITTED else "partial"
+        )
         if (
             spec.struct_name != "BlockTopKCoop"
             or spec.method_name != f"{p.selection}_{payload}_{tile}"
@@ -136,7 +142,11 @@ class _CubTopKRequest:
             args.get("KeyT") is not p.key_dtype
             or args.get("ITEMS_PER_THREAD") != p.items_per_thread
             or args.get("ValueT")
-            != (p.value_dtype if p.value_dtype is not None else "::cub::NullType")
+            != (
+                p.value_dtype
+                if p.value_dtype is not None
+                else "::cub::NullType"
+            )
         ):
             raise ValueError("TopK template payload does not match its plan")
         dimensions = self.plan.participation.exact_block_dim
@@ -145,9 +155,13 @@ class _CubTopKRequest:
             or dimensions[1:] != (1, 1)
             or args.get("BLOCK_DIM_X") != dimensions[0]
         ):
-            raise ValueError("TopK requires matching one-dimensional block dimensions")
+            raise ValueError(
+                "TopK requires matching one-dimensional block dimensions"
+            )
         expected = (
-            (p.key_dtype,) if p.value_dtype is None else (p.key_dtype, p.value_dtype)
+            (p.key_dtype,)
+            if p.value_dtype is None
+            else (p.key_dtype, p.value_dtype)
         )
         if (
             self.plan.result is None
@@ -172,7 +186,9 @@ class _CubTopKRequest:
             if storage.auto_sync
             else SynchronizationScope.NONE
         ):
-            raise ValueError("TopK scratch synchronization does not match its plan")
+            raise ValueError(
+                "TopK scratch synchronization does not match its plan"
+            )
 
     @property
     def operation(self):
@@ -200,7 +216,9 @@ class _CubTopKRequest:
 
     @property
     def symbol_name(self):
-        digest = hashlib.sha256(repr(self.plan.artifact_key).encode()).hexdigest()[:16]
+        digest = hashlib.sha256(
+            repr(self.plan.artifact_key).encode()
+        ).hexdigest()[:16]
         return f"cuda_coop_cutlass_topk_{digest}"
 
     def __eq__(self, other):
@@ -224,10 +242,13 @@ def _render_topk(request):
         cpp = _types.TYPE_SPECS[dtype].cpp_type
         params.extend(f"{cpp} {name}{i}" for i in range(p.items_per_thread))
         inputs.append(
-            f"  {cpp} {name}[{p.items_per_thread}] = {{{', '.join(f'{name}{i}' for i in range(p.items_per_thread))}}};"
+            f"  {cpp} {name}[{p.items_per_thread}] = {{"
+            f"{', '.join(f'{name}{i}' for i in range(p.items_per_thread))}"
+            "};"
         )
         outputs.extend(
-            f"  result_{name}[{i}] = {name}[{i}];" for i in range(p.items_per_thread)
+            f"  result_{name}[{i}] = {name}[{i}];"
+            for i in range(p.items_per_thread)
         )
     args = [name for name, _ in payloads]
     for name, binding in (("k", p.k), ("valid_items", p.valid_items)):
@@ -236,13 +257,18 @@ def _render_topk(request):
             args.append(name)
         else:
             value = (
-                p.items_per_thread * request.plan.participation.exact_block_dim[0]
+                p.items_per_thread
+                * request.plan.participation.exact_block_dim[0]
                 if binding.kind is BindingKind.OMITTED
                 else binding.value
             )
             args.append(f"{value}ll")
     params.extend(
-        ("unsigned int storage_address", "int storage_bytes", "int storage_auto_sync")
+        (
+            "unsigned int storage_address",
+            "int storage_bytes",
+            "int storage_auto_sync",
+        )
     )
     params.extend(
         f"{_types.TYPE_SPECS[dtype].cpp_type}* result_{name}"
@@ -252,15 +278,24 @@ def _render_topk(request):
         f"void {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
         "  using storage_type = typename implementation_type::TempStorage;",
-        "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+        (
+            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+            "< sizeof(storage_type) ||"
+        ),
         "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
         '    asm volatile("trap;");',
         "  }",
         "  unsigned long long generic_address;",
-        '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
+        (
+            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+            '"l"((unsigned long long)storage_address));'
+        ),
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         *inputs,
-        f"  implementation_type(storage).{request.implementation.method_name}({', '.join(args)});",
+        (
+            "  implementation_type(storage)."
+            f"{request.implementation.method_name}({', '.join(args)});"
+        ),
         "  if (storage_auto_sync != 0) { __syncthreads(); }",
         *outputs,
         "}",
@@ -273,7 +308,8 @@ _rendering.register_bundle_renderer(
     include_lines=(f"#include <{_HEADER}>",),
     cccl_headers=((f"#include <{_HEADER}>", _HEADER),),
     scratch_layout_probe=lambda request: _rendering.make_scratch_layout_probe(
-        request.scratch_requirement_key, f"typename {request.cpp_type}::TempStorage"
+        request.scratch_requirement_key,
+        f"typename {request.cpp_type}::TempStorage",
     ),
 )
 
@@ -332,7 +368,9 @@ def provider_topk(
     try:
         _state.register_request(request)
         descriptor = (
-            TempStorage(auto_sync=True) if temp_storage is None else temp_storage
+            TempStorage(auto_sync=True)
+            if temp_storage is None
+            else temp_storage
         )
         arguments.extend(
             _storage.register_deferred_temp_storage_event(
@@ -344,14 +382,18 @@ def provider_topk(
         parameter_types.extend((Uint32, Int32, Int32))
         arguments.extend(tensor.iterator.llvm_ptr for tensor in tensors)
         parameter_types.extend([llvm.PointerType.get(0)] * len(tensors))
-        ffi(name=request.symbol_name, params_types=parameter_types, return_type=None)(
-            *arguments
-        )
+        ffi(
+            name=request.symbol_name,
+            params_types=parameter_types,
+            return_type=None,
+        )(*arguments)
         results = tuple(
             ThreadData(
                 payload.items_per_thread,
                 dtype=_types.thread_data_output_dtype(payload, dtype),
-                values=[dtype(tensor[i]) for i in range(payload.items_per_thread)],
+                values=[
+                    dtype(tensor[i]) for i in range(payload.items_per_thread)
+                ],
                 alignment=payload.alignment,
             )
             for payload, (dtype, _), tensor in zip(payloads, resolved, tensors)

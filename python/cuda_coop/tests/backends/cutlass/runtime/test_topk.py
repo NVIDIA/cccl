@@ -41,7 +41,9 @@ class _Readonly:
 
 
 def _assert_bits(actual, expected):
-    np.testing.assert_array_equal(actual.view(np.uint8), expected.view(np.uint8))
+    np.testing.assert_array_equal(
+        actual.view(np.uint8), expected.view(np.uint8)
+    )
 
 
 def _bit_counts(values):
@@ -145,7 +147,10 @@ def _run(
             storage = None
         else:
             storage = api.TempStorage(
-                capacity, sharing=sharing, auto_sync=auto_sync, alignment=alignment
+                capacity,
+                sharing=sharing,
+                auto_sync=auto_sync,
+                alignment=alignment,
             )
         if cutlass.const_expr(controls in {"runtime", "runtime-k"}):
             keep = dynamic_k
@@ -170,7 +175,11 @@ def _run(
                 )
             else:
                 result = topk(
-                    group, key_input, k=keep, valid_items=count, temp_storage=storage
+                    group,
+                    key_input,
+                    k=keep,
+                    valid_items=count,
+                    temp_storage=storage,
                 )
             if cutlass.const_expr(sharing is not None and not auto_sync):
                 storage.sync()
@@ -247,8 +256,14 @@ def _run(
         selected = min(keep, count)
         written = min(1, selected) if chain else selected
         source, input_values = original.copy(), payload.copy()
-        observed, associated = np.empty_like(source), np.empty_like(input_values)
-        preserved_keys, preserved_values = np.empty_like(source), np.empty_like(payload)
+        observed, associated = (
+            np.empty_like(source),
+            np.empty_like(input_values),
+        )
+        preserved_keys, preserved_values = (
+            np.empty_like(source),
+            np.empty_like(payload),
+        )
         arrays = (
             source,
             input_values,
@@ -258,7 +273,9 @@ def _run(
             preserved_values,
         )
         with ExitStack() as stack:
-            pointers = [stack.enter_context(device_array(array)) for array in arrays]
+            pointers = [
+                stack.enter_context(device_array(array)) for array in arrays
+            ]
             args = (
                 *pointers,
                 control_type(keep),
@@ -282,7 +299,9 @@ def _run(
             candidates = original[start : start + count]
             ordered = np.sort(candidates)
             expected = (
-                ordered[:selected] if mode == "min" else ordered[count - selected :]
+                ordered[:selected]
+                if mode == "min"
+                else ordered[count - selected :]
             )
             if chain and selected:
                 expected = expected[-1:] if mode == "min" else expected[:1]
@@ -361,7 +380,9 @@ def test_readonly_inferred_composition(api, pairs):
 @pytest.mark.parametrize("mode", ("min", "max"))
 def test_selected_signed_zero_pairs_preserve_original_bits(dtype, mode):
     nonzero = 1 if mode == "min" else -1
-    source = np.tile(np.array([-0.0, 0.0, nonzero, 2 * nonzero], dtype=dtype), 64)
+    source = np.tile(
+        np.array([-0.0, 0.0, nonzero, 2 * nonzero], dtype=dtype), 64
+    )
     _run(cutlass_coop, mode=mode, dtype=dtype, source=source)
 
 

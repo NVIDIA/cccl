@@ -36,7 +36,9 @@ def _compile(
     @cute.kernel
     def kernel(memory: cute.Pointer, count: cutlass.Int64):
         keys = api.ThreadData(2, dtype=dtype)
-        values = api.ThreadData(1 if bad == "extent" else 2, dtype=cutlass.Float64)
+        values = api.ThreadData(
+            1 if bad == "extent" else 2, dtype=cutlass.Float64
+        )
         keys[0], keys[1] = dtype(7), dtype(3)
         for item in cutlass.range_constexpr(values.items_per_thread):
             values[item] = cutlass.Float64(item)
@@ -67,11 +69,15 @@ def _compile(
     def launch(memory: cute.Pointer, count: cutlass.Int64):
         kernel(memory, count).launch(grid=1, block=block)
 
-    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
     return cute.compile[(GPUArch("sm_80"),)](launch, pointer, cutlass.Int64(17))
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("mode", ("min", "max"))
 @pytest.mark.parametrize("pairs", (False, True))
 @pytest.mark.parametrize("partial", (False, True))
@@ -103,7 +109,8 @@ def test_static_counts(k):
 )
 def test_invalid_profiles(bad, pairs, message):
     with pytest.raises(
-        (TypeError, ValueError, NotImplementedError, DSLRuntimeError), match=message
+        (TypeError, ValueError, NotImplementedError, DSLRuntimeError),
+        match=message,
     ):
         _compile(bad=bad, pairs=pairs)
 
