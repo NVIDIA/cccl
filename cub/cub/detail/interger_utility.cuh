@@ -14,39 +14,55 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename Input>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE auto split_integer(const Input input)
+template <typename Input, ::cuda::std::size_t NumWords = sizeof(Input) / sizeof(unsigned)>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::array<unsigned, NumWords> to_words(const Input input)
 {
   static_assert(::cuda::std::is_integral_v<Input>);
-  constexpr auto half_bits = ::cuda::std::__num_bits_v<Input> / 2;
-  using unsigned_t         = ::cuda::std::make_unsigned_t<Input>;
-  using output_t           = ::cuda::std::__make_nbit_int_t<half_bits, ::cuda::std::is_signed_v<Input>>;
-  const auto input1        = static_cast<unsigned_t>(input);
-  const auto high          = static_cast<output_t>(input1 >> half_bits);
-  const auto low           = static_cast<output_t>(input1);
-  return ::cuda::std::array<output_t, 2>{high, low};
+  static_assert(sizeof(Input) == 2 * sizeof(unsigned) || sizeof(Input) == 4 * sizeof(unsigned));
+  using unsigned_t = ::cuda::std::make_unsigned_t<Input>;
+
+  const auto unsigned_input = static_cast<unsigned_t>(input);
+  ::cuda::std::array<unsigned, NumWords> result{};
+  for (::cuda::std::size_t word = 0; word < NumWords; ++word)
+  {
+    result[word] = static_cast<unsigned>(unsigned_input >> (word * 32));
+  }
+  return result;
 }
 
-template <typename Input>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE auto merge_integers(const Input input_high, const Input input_low)
+template <typename Output, ::cuda::std::size_t Size = sizeof(Output) / sizeof(unsigned)>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Output from_words(const ::cuda::std::array<unsigned, Size>& input)
 {
-  static_assert(::cuda::std::is_integral_v<Input>);
-  constexpr auto num_bits = ::cuda::std::__num_bits_v<Input>;
-  using unsigned_t        = ::cuda::std::__make_nbit_uint_t<num_bits>;
-  using unsigned_x2_t     = ::cuda::std::__make_nbit_uint_t<num_bits * 2>;
-  using output_t          = ::cuda::std::__make_nbit_int_t<num_bits * 2, ::cuda::std::is_signed_v<Input>>;
-  return static_cast<output_t>(
-    (static_cast<unsigned_x2_t>(input_high) << num_bits) | static_cast<unsigned_t>(input_low));
+  static_assert(::cuda::std::is_integral_v<Output>);
+  static_assert(sizeof(Output) == Size * sizeof(unsigned));
+  static_assert(Size == 2 || Size == 4);
+
+  using unsigned_t         = ::cuda::std::make_unsigned_t<Output>;
+  constexpr auto word_bits = 32;
+  unsigned_t result{};
+  for (::cuda::std::size_t word = 0; word < Size; ++word)
+  {
+    result |= static_cast<unsigned_t>(input[word]) << (word * word_bits);
+  }
+  return static_cast<Output>(result);
+}
+
+// reconstructs a 32-bit word from its reduced partial sums and updates the carry
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned
+reconstruct_word_with_carry(const unsigned low_sum, const unsigned high_sum, unsigned& carry)
+{
+  const auto sum_lo = low_sum + carry;
+  const auto sum_hi = high_sum + (sum_lo >> 27);
+  carry             = sum_hi >> 5;
+  return (sum_lo & 0x07FF'FFFFu) | ((sum_hi & 0b11111u) << 27);
 }
 } // namespace detail
 

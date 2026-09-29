@@ -71,10 +71,15 @@ CUB_NAMESPACE_BEGIN
 //!
 //! - On SM80 and later:
 //!
-//!   - ``cuda::std::plus`` for integral types of any size.
+//!   - ``cuda::std::plus``:
+//!
+//!     - 8-bit, 16-bit, 32-bit integers: A single ``redux.sync.add``
+//!     - 64-bit integers: 3x ``redux.sync.add``
+//!     - 128-bit integers: 5x ``redux.sync.add``
+//!
 //!   - ``cuda::minimum`` and ``cuda::maximum`` for integral types up to 32 bits.
-//!   - ``cuda::std::bit_and``, ``cuda::std::bit_or``, and ``cuda::std::bit_xor`` for integral types up to 32 bits and
-//!     unsigned integral types of any size.
+//!   - ``cuda::std::bit_and``, ``cuda::std::bit_or``, and ``cuda::std::bit_xor``: N times ``redux.sync.<bit_op>``,
+//!     where N is ceil(sizeof(T) / sizeof(unsigned)))
 //!
 //! - On SM100f and later in the same architecture family:
 //!

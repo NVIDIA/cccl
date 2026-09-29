@@ -29,8 +29,6 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstdint>
 
@@ -51,8 +49,12 @@ inline constexpr bool is_warp_redux_bitwise_large_supported =
   ::cuda::std::is_unsigned_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_std_bitwise_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
-inline constexpr bool is_warp_redux_plus_large_supported =
-  ::cuda::std::is_integral_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_std_plus_v<ReduceOp, T>;
+inline constexpr bool is_warp_redux_plus_64bit_supported =
+  ::cuda::std::is_integral_v<T> && (sizeof(T) == sizeof(unsigned) * 2) && is_cuda_std_plus_v<ReduceOp, T>;
+
+template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
+inline constexpr bool is_warp_redux_plus_128bit_supported =
+  ::cuda::std::is_integral_v<T> && (sizeof(T) == sizeof(unsigned) * 4) && is_cuda_std_plus_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_min_max_f32_supported =
@@ -61,8 +63,11 @@ inline constexpr bool is_warp_redux_min_max_f32_supported =
 
 template <typename Op, typename T>
 inline constexpr bool is_warp_redux_op_supported =
-  is_warp_redux_op_supported_sm80<Op, T> || is_warp_redux_plus_large_supported<Op, T>
-  || is_warp_redux_bitwise_large_supported<Op, T> || is_warp_redux_min_max_f32_supported<Op, T>;
+  is_warp_redux_op_supported_sm80<Op, T> //
+  || is_warp_redux_plus_64bit_supported<Op, T> //
+  || is_warp_redux_plus_128bit_supported<Op, T> //
+  || is_warp_redux_bitwise_large_supported<Op, T> //
+  || is_warp_redux_min_max_f32_supported<Op, T>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 Redux
@@ -109,31 +114,83 @@ warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 
 template <typename T, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
-warp_redux_plus_large(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
+warp_redux_plus_64bit(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
-  static_assert(is_warp_redux_op_supported_sm80<ReductionOp, T> || is_warp_redux_plus_large_supported<ReductionOp, T>,
-                "Reduction operator not supported");
-  constexpr ::cuda::std::plus<> op;
-  if constexpr (sizeof(T) == sizeof(unsigned)) // base case
-  {
-    return cub::detail::warp_redux_sm80(input, mask, op);
-  }
-  else // recursive case
-  {
-    using unsigned_t        = ::cuda::std::make_unsigned_t<T>;
-    constexpr int half_bits = ::cuda::std::__num_bits_v<T> / 2;
-    const auto [high, low]  = cub::detail::split_integer(static_cast<unsigned_t>(input));
+  static_assert(is_warp_redux_plus_64bit_supported<ReductionOp, T>, "Reduction operator not supported");
+  const auto [low, high] = cub::detail::to_words(input);
+  // The following algorithms implements (multi-precision) column addition with deferred carry propagation, see
+  // https://eprint.iacr.org/2019/794.pdf#page=10 for more details.
+  // the core idea is to split the inputs in columns (bit ranges) where the overflow is not possible.
+  // Base 10 example:
+  //    78
+  // +  67
+  // +  59
+  // -----
+  //   204
+  //
+  // For the binary case, we split each value in three:
+  //  - 32-bit high: 32-63 bits
+  //  - 8-bit  low1: 24-31 bits
+  //  - 24-bit low0: 0-24 bits
+  // we can compute the reduction of each column independently, avoiding overflows, and then combine the results.
 
-    const auto high_reduction = cub::detail::warp_redux_plus_large(high, mask, op);
-    const auto low_reduction  = cub::detail::warp_redux_plus_large(low, mask, op);
+  const auto low1 = low >> 24; // high 8 bits
+  const auto low0 = low & 0x00FFFFFFu; // low 24 bits
 
-    // Each warp has at most 32 participants. Split the low half after five bits so both partial sums fit.
-    const auto carry_out_low = cub::detail::warp_redux_plus_large(low & 0b11111u, mask, op) >> 5;
-    const auto carry_out_top = cub::detail::warp_redux_plus_large(low >> 5, mask, op);
-    const auto result_high   = high_reduction + ((carry_out_top + carry_out_low) >> (half_bits - 5));
+  // the following reductions cannot overflow
+  const auto low0_sum = __reduce_add_sync(mask, low0);
+  const auto low1_sum = __reduce_add_sync(mask, low1);
+  const auto low_sum  = low1_sum + (low0_sum >> 24); // the carry of low0_sum is added to low1_sum (24-31 bits)
 
-    return static_cast<T>(cub::detail::merge_integers(result_high, low_reduction));
-  }
+  // concatenate the first 24 bits of low0_sum (0x210) with the last 8 bits of carry (0x4000)
+  const auto ret_lo = __byte_perm(low0_sum, low_sum, 0x4210);
+  const auto ret_hi = __reduce_add_sync(mask, high) + (low_sum >> 8); // low_sum >> 8 is the carry of the low bits
+
+  return cub::detail::from_words<T>(::cuda::std::array<::cuda::std::uint32_t, 2>{ret_lo, ret_hi});
+}
+
+template <typename T, typename ReductionOp>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
+warp_redux_plus_128bit(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
+{
+  static_assert(is_warp_redux_plus_128bit_supported<ReductionOp, T>, "Reduction operator not supported");
+  const auto [word0, word1, word2, word3] = cub::detail::to_words(input);
+  // In a similar way of the 64-bit case, we split the input in:
+  // 27-bit of word0: 0-26 bits
+  // 27-bit of word1: 32-58 bits
+  // 27-bit of word2: 64-90 bits
+  // each reduction cannot overflow
+  const auto low0 = __reduce_add_sync(mask, word0 & 0x07FF'FFFFu);
+  const auto low1 = __reduce_add_sync(mask, word1 & 0x07FF'FFFFu);
+  const auto low2 = __reduce_add_sync(mask, word2 & 0x07FF'FFFFu);
+
+  // we extract the high 5 bits of each word
+  // 5 bits max value=31, 31 * 32 lanes=992, that can be represented with 10 bits
+  // we perform the reduction of all three values in a single operation of __reduce_add_sync
+  //
+  // word0_high = word0 >> 27;
+  // word1_high = word1 >> 27;
+  // word2_high = word2 >> 27;
+  // packed = word0_high | (word1_high << 10) | (word2_high << 20);
+  //
+  // the previous code can be implemented slightly more efficiently with __funnelshift_l
+  // __funnelshift_l(lo, hi, S) == (hi << S) | (lo >> (32 - S))
+  const auto packed_a  = word2 >> 22; // top 10 bits of word2
+  const auto packed_b  = __funnelshift_l(word1, packed_a, 10); // concat(word2 top 10 bits, word1 low 22 bits)
+  const auto packed_c  = __funnelshift_l(word0, packed_b, 5); // concat(packed_b top 5 bits, word0 low 27 bits)
+  const auto packed    = packed_c & 0b00000'11111'00000'11111'00000'11111u; // select only the 5-bit fields
+  const auto high_sums = __reduce_add_sync(mask, packed);
+
+  const auto high_sum0 = high_sums & 0b11111'11111u; // extract first 10 bits
+  const auto high_sum1 = (high_sums >> 10) & 0b11111'11111u; // extract next 10 bits
+  const auto high_sum2 = high_sums >> 20; // extract last 10 bits
+  uint32_t carry       = 0;
+  const auto ret0      = cub::detail::reconstruct_word_with_carry(low0, high_sum0, carry);
+  const auto ret1      = cub::detail::reconstruct_word_with_carry(low1, high_sum1, carry);
+  const auto ret2      = cub::detail::reconstruct_word_with_carry(low2, high_sum2, carry);
+  const auto ret3      = __reduce_add_sync(mask, word3) + carry;
+
+  return cub::detail::from_words<T>({ret0, ret1, ret2, ret3});
 }
 
 template <typename T, typename ReductionOp>
@@ -218,9 +275,13 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
   { // NOLINT(bugprone-branch-clone)
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_sm80(input, mask, reduction_op);))
   }
-  else if constexpr (is_warp_redux_plus_large_supported<ReductionOp, T>)
+  else if constexpr (is_warp_redux_plus_64bit_supported<ReductionOp, T>)
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_plus_large(input, mask, reduction_op);))
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_plus_64bit(input, mask, reduction_op);))
+  }
+  else if constexpr (is_warp_redux_plus_128bit_supported<ReductionOp, T>)
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_plus_128bit(input, mask, reduction_op);))
   }
   else if constexpr (is_warp_redux_bitwise_large_supported<ReductionOp, T>)
   {
