@@ -113,11 +113,14 @@ _CCCL_HOST_API void __copy_simplified_rank(
       }
     }
 
+    if constexpr (::cuda::__can_stage_in_shared_mem_v<_TpIn, _SrcAccessor, _DstAccessor>)
+    {
     if (::cuda::__use_shared_mem_kernel(__src_narrow, __dst_narrow, __stream.device()))
     {
       ::cuda::__launch_copy_shared_mem_kernel(__src_narrow, __dst_narrow, __stream, __src_accessor, __dst_accessor);
       return;
     }
+  }
   }
   ::cuda::__copy_optimized(
     __src_narrow, __dst_narrow, ::cuda::__total_size(__src_narrow), __stream, __src_accessor, __dst_accessor);
@@ -315,7 +318,8 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     }
 
     const auto __try_shared_mem_copy = [&]() {
-      if constexpr (__max_rank >= 2 && __max_rank <= ::cuda::__max_shared_mem_kernel_rank)
+      if constexpr (__max_rank >= 2 && __max_rank <= ::cuda::__max_shared_mem_kernel_rank
+                    && ::cuda::__can_stage_in_shared_mem_v<_TpIn, _AccessorPolicyIn, _AccessorPolicyOut>)
       {
         if (__src_simplified.__rank == 2) // Optimize when the actual rank is 2
         {
