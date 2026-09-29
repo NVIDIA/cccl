@@ -36,15 +36,23 @@ def run_example(api="common"):
     @cute.kernel
     def scan_tiles(source: cute.Pointer, destination: cute.Pointer):
         group = module.this_block()
-        storage = module.TempStorage(sharing="shared", alignment=64, auto_sync=True)
+        storage = module.TempStorage(
+            sharing="shared", alignment=64, auto_sync=True
+        )
         payload = module.ThreadData(_ITEMS)
-        module.load(group, source, payload, algorithm="transpose", temp_storage=storage)
+        module.load(
+            group, source, payload, algorithm="transpose", temp_storage=storage
+        )
         scanned = module.exclusive_scan(
             group, payload, initial_value=7, temp_storage=storage
         )
         # Scan returns a new payload. The input retains its original values.
         module.store(
-            group, destination, scanned, algorithm="transpose", temp_storage=storage
+            group,
+            destination,
+            scanned,
+            algorithm="transpose",
+            temp_storage=storage,
         )
 
     @cute.jit
@@ -62,18 +70,28 @@ def run_example(api="common"):
         try:
             _check(driver.cuMemcpyHtoD(src, source.ctypes.data, source.nbytes))
             _check(
-                driver.cuMemcpyHtoD(dst, destination.ctypes.data, destination.nbytes)
+                driver.cuMemcpyHtoD(
+                    dst, destination.ctypes.data, destination.nbytes
+                )
             )
             src_pointer = make_ptr(
-                cutlass.Int32, int(src), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(src),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             dst_pointer = make_ptr(
-                cutlass.Int32, int(dst), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(dst),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             launch(src_pointer, dst_pointer)
             _check(driver.cuCtxSynchronize())
             _check(
-                driver.cuMemcpyDtoH(destination.ctypes.data, dst, destination.nbytes)
+                driver.cuMemcpyDtoH(
+                    destination.ctypes.data, dst, destination.nbytes
+                )
             )
         finally:
             _check(driver.cuMemFree(dst))

@@ -24,7 +24,9 @@ def test_partial_warp_scan_example():
 
     @cute.kernel
     def scan_prefix(
-        source: cute.Pointer, destination: cute.Pointer, aggregates: cute.Pointer
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        aggregates: cute.Pointer,
     ):
         thread = cutlass_coop.this_block().rank()
         group = cutlass_coop.this_warp().group_by(8)
@@ -46,7 +48,9 @@ def test_partial_warp_scan_example():
 
     @cute.jit
     def launch(
-        source: cute.Pointer, destination: cute.Pointer, aggregates: cute.Pointer
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        aggregates: cute.Pointer,
     ):
         scan_prefix(source, destination, aggregates).launch(grid=1, block=64)
 
@@ -58,7 +62,9 @@ def test_partial_warp_scan_example():
     expected = observed.copy().reshape(-1, 8)
     valid_values = values.reshape(-1, 8)[:, :5]
     expected[:, 0] = 7
-    expected[:, 1:5] = 7 + np.cumsum(valid_values[:, :-1], axis=1, dtype=np.int32)
+    expected[:, 1:5] = 7 + np.cumsum(
+        valid_values[:, :-1], axis=1, dtype=np.int32
+    )
     expected_aggregates = np.repeat(valid_values.sum(axis=1, dtype=np.int32), 8)
     with (
         device_array(values) as source,

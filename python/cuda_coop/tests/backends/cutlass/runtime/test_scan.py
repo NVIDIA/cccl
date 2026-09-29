@@ -35,7 +35,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 _APIS = (coop, cutlass_coop)
 _BLOCK = (8, 4, 2)
 _THREADS = 64
-_FORMS = ("scan", "exclusive_scan", "inclusive_scan", "exclusive_sum", "inclusive_sum")
+_FORMS = (
+    "scan",
+    "exclusive_scan",
+    "inclusive_scan",
+    "exclusive_sum",
+    "inclusive_sum",
+)
 _WIDTHS = (1, 2, 4, 8, 16, 32)
 _ALGORITHMS = ("raking", "raking_memoize", "warp_scans")
 _UFUNCS = {
@@ -69,7 +75,9 @@ def _prefix(values, *, inclusive, operation="sum", seed=0):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
-@pytest.mark.parametrize("items", (0, 1, 2), ids=("scalar", "one-item", "payload"))
+@pytest.mark.parametrize(
+    "items", (0, 1, 2), ids=("scalar", "one-item", "payload")
+)
 def test_spellings_types(api, dtype, items):
     value_type = cutlass_dtype(dtype)
     extent = max(items, 1)
@@ -77,7 +85,9 @@ def test_spellings_types(api, dtype, items):
     functions = tuple(getattr(api, name) for name in _FORMS)
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.recast_tensor(
@@ -112,7 +122,9 @@ def test_spellings_types(api, dtype, items):
             checks[thread] = value
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+    ):
         kernel(source, observed, preserved).launch(grid=1, block=_BLOCK)
 
     source = (np.arange(size) % 3).astype(dtype)
@@ -121,7 +133,10 @@ def test_spellings_types(api, dtype, items):
     observed = np.zeros(5 * size, dtype=dtype)
     preserved = np.zeros_like(source)
     expected = np.stack(
-        [_prefix(source, inclusive=name.startswith("inclusive")) for name in _FORMS]
+        [
+            _prefix(source, inclusive=name.startswith("inclusive"))
+            for name in _FORMS
+        ]
     )
     with (
         device_array(source) as src,
@@ -140,7 +155,9 @@ def test_initial_type(api, dtype, runtime):
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, initial: value_type):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, initial: value_type
+    ):
         thread = cute.arch.thread_idx()[0]
         inputs = cute.recast_tensor(
             cute.make_tensor(source, cute.make_layout(_THREADS)), value_type
@@ -160,20 +177,26 @@ def test_initial_type(api, dtype, runtime):
         outputs[thread] = result
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, initial: value_type):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, initial: value_type
+    ):
         kernel(source, observed, initial).launch(grid=1, block=_THREADS)
 
     source = (np.arange(_THREADS) % 2).astype(dtype)
     observed = np.zeros_like(source)
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out, 7)
-    np.testing.assert_array_equal(observed, _prefix(source, inclusive=False, seed=7))
+    np.testing.assert_array_equal(
+        observed, _prefix(source, inclusive=False, seed=7)
+    )
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", (np.int32, np.float32))
 @pytest.mark.parametrize("items", (0, 2), ids=("scalar", "payload"))
-@pytest.mark.parametrize("numpy_seed", (False, True), ids=("cute-seed", "numpy-seed"))
+@pytest.mark.parametrize(
+    "numpy_seed", (False, True), ids=("cute-seed", "numpy-seed")
+)
 def test_numpy_input(api, dtype, items, numpy_seed):
     value_type = cutlass_dtype(dtype)
     size = _THREADS * max(items, 1)
@@ -190,7 +213,10 @@ def test_numpy_input(api, dtype, items, numpy_seed):
             value = dtype(1)
         if cutlass.const_expr(numpy_seed):
             result = api.scan(
-                api.this_block(), value, mode="exclusive", initial_value=dtype(7)
+                api.this_block(),
+                value,
+                mode="exclusive",
+                initial_value=dtype(7),
             )
         else:
             result = api.exclusive_scan(
@@ -214,13 +240,17 @@ def test_numpy_input(api, dtype, items, numpy_seed):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("operation", tuple(_UFUNCS))
-@pytest.mark.parametrize("inclusive", (False, True), ids=("exclusive", "inclusive"))
+@pytest.mark.parametrize(
+    "inclusive", (False, True), ids=("exclusive", "inclusive")
+)
 def test_builtins(api, operation, inclusive):
     seed = _SEEDS[operation]
     size = 2 * _THREADS
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, initial: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, initial: cutlass.Int32
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(size))
@@ -234,13 +264,18 @@ def test_builtins(api, operation, inclusive):
             )
         else:
             result = api.exclusive_scan(
-                api.this_block(), payload, scan_op=operation, initial_value=initial
+                api.this_block(),
+                payload,
+                scan_op=operation,
+                initial_value=initial,
             )
         for item in cutlass.range_constexpr(2):
             outputs[thread * 2 + item] = result[item]
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, initial: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, initial: cutlass.Int32
+    ):
         kernel(source, observed, initial).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, size, shift=17)
@@ -251,7 +286,8 @@ def test_builtins(api, operation, inclusive):
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out, seed)
     np.testing.assert_array_equal(
-        observed, _prefix(source, inclusive=inclusive, operation=operation, seed=seed)
+        observed,
+        _prefix(source, inclusive=inclusive, operation=operation, seed=seed),
     )
 
 
@@ -296,7 +332,15 @@ def test_block_algorithm(api, algorithm, items):
 @pytest.mark.parametrize(
     "width",
     (None, *_WIDTHS),
-    ids=("physical", "width1", "width2", "width4", "width8", "width16", "width32"),
+    ids=(
+        "physical",
+        "width1",
+        "width2",
+        "width4",
+        "width8",
+        "width16",
+        "width32",
+    ),
 )
 def test_warp_forms(api, width):
     group_width = width or 32
@@ -312,7 +356,9 @@ def test_warp_forms(api, width):
         if cutlass.const_expr(width is not None):
             group = group.group_by(width)
         for case in cutlass.range_constexpr(5):
-            outputs[case * _THREADS + thread] = functions[case](group, inputs[thread])
+            outputs[case * _THREADS + thread] = functions[case](
+                group, inputs[thread]
+            )
 
     @cute.jit
     def launch(source: cute.Pointer, observed: cute.Pointer):
@@ -421,7 +467,9 @@ def test_block_aggregate(operation):
     seed = _SEEDS[operation]
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, aggregates: cute.Pointer):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, aggregates: cute.Pointer
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
@@ -438,7 +486,9 @@ def test_block_aggregate(operation):
         totals[thread] = aggregate[0]
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, aggregates: cute.Pointer):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, aggregates: cute.Pointer
+    ):
         kernel(source, observed, aggregates).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _THREADS, shift=41)
@@ -454,7 +504,8 @@ def test_block_aggregate(operation):
     ):
         launch(src, out, agg)
     np.testing.assert_array_equal(
-        observed, _prefix(source, inclusive=False, operation=operation, seed=seed)
+        observed,
+        _prefix(source, inclusive=False, operation=operation, seed=seed),
     )
     np.testing.assert_array_equal(
         aggregates, np.full_like(source, _UFUNCS[operation].reduce(source))
@@ -489,7 +540,7 @@ with device_array(np.ones(64, dtype=np.int32)) as src, device_array(np.zeros(64,
     status = driver.cuCtxSynchronize()[0]
     print(f"prefix launch status: {{int(status)}}", flush=True)
 raise AssertionError("invalid Scan prefix did not trap")
-""")
+""")  # noqa: E501 - Preserve embedded source bytes.
     environment = os.environ.copy()
     environment["PYTHONPATH"] = os.pathsep.join(
         filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
@@ -555,7 +606,9 @@ def test_register_aggregate(ssa):
         aggregates: cute.Pointer,
         preserved: cute.Pointer,
     ):
-        kernel(source, observed, aggregates, preserved).launch(grid=1, block=_THREADS)
+        kernel(source, observed, aggregates, preserved).launch(
+            grid=1, block=_THREADS
+        )
 
     source = values_for(np.int32, size, shift=47)
     observed = np.zeros_like(source)
@@ -568,7 +621,9 @@ def test_register_aggregate(ssa):
         device_array(preserved) as check,
     ):
         launch(src, out, agg, check)
-    np.testing.assert_array_equal(observed, _prefix(source, inclusive=False, seed=7))
+    np.testing.assert_array_equal(
+        observed, _prefix(source, inclusive=False, seed=7)
+    )
     np.testing.assert_array_equal(
         aggregates, np.full_like(aggregates, source.sum(dtype=np.int32))
     )
@@ -579,7 +634,9 @@ def test_register_aggregate(ssa):
 def test_final_cubin(tmp_path, warp):
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
-        pytest.skip("cuobjdump is required to inspect final linked instructions")
+        pytest.skip(
+            "cuobjdump is required to inspect final linked instructions"
+        )
 
     @cute.kernel
     def kernel(source: cute.Pointer, observed: cute.Pointer):
@@ -599,7 +656,9 @@ def test_final_cubin(tmp_path, warp):
     source = values_for(np.int32, _THREADS, shift=43)
     observed = np.zeros_like(source)
     with device_array(source) as src, device_array(observed) as out:
-        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](launch, src, out)
+        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
+            launch, src, out
+        )
         compiled(src, out)
     width = 8 if warp else _THREADS
     expected = np.concatenate(
