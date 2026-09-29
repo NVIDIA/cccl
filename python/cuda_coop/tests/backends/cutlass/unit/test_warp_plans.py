@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Physical Warp provider plans retain group-local storage and tile bounds."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")

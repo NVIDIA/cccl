@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent physical-Warp movement, addressing, and scratch reuse oracles."""
-
 import importlib.util
 import re
 import shutil
