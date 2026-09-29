@@ -274,7 +274,6 @@ def _plan_cudax_reduce(
     requirements = _build_execution_requirements(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.NONE,
         cpp_type=None,
         auto_sync=False,
@@ -422,7 +421,6 @@ def _plan_cub_reduce(
     requirements = _build_execution_requirements(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
         uniform_arguments=(
