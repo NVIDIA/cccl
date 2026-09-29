@@ -175,6 +175,7 @@ public:
 
   void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     const_cast<stackable_logical_data*>(this)->push_at(ctx_offset, m, mv(where));
   }
 
@@ -307,7 +308,7 @@ public:
                        access_mode m,
                        const data_place& dplace_hint = data_place::invalid()) const
   {
-    auto& self = *const_cast<stackable_logical_data*>(this);
+    auto& self = *const_cast<stackable_logical_data*>(this); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     auto lock  = self.mut_data().acquire_exclusive_lock();
 
     _CCCL_ASSERT(m != access_mode::none && m != access_mode::relaxed, "Unsupported access mode in nested context");
