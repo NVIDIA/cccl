@@ -100,7 +100,7 @@ share scratch while the values stay in each thread's payload:
 
 .. code-block:: python
 
-   # Inside a Numba kernel; source and destination are kernel arguments.
+   # Inside a kernel; source and destination are kernel arguments.
    block = coop.this_block()
    items = coop.ThreadData(2)
    scratch = coop.TempStorage(auto_sync=True)
@@ -123,7 +123,7 @@ barriers automatically. Separate slices do not remove the need to protect reuse.
 
 Numba accepts explicit descriptors for its supported block primitives;
 see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
-CUTLASS currently provides storage-free block Load/Store only.
+CUTLASS currently accepts explicit descriptors for block transpose-family Load/Store.
 See the :ref:`shared storage model <coop-common-storage>` and the
 :doc:`CUTLASS Programming Guide <../coop_cutlass>` for reuse rules.
 Numba's restrictions on combining cooperative backing with user static or

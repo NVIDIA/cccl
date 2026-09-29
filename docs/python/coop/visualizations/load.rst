@@ -6,9 +6,6 @@
 Load
 ====
 
-This page describes the Numba-CUDA-MLIR implementation. See
-:ref:`backend coverage <coop-backends>` for CUTLASS availability.
-
 :func:`cuda.coop.load` fills each thread's ``ThreadData`` from a contiguous
 tile in memory. The algorithm determines which thread reads each value and
 whether a shared-memory exchange rearranges it afterward.
@@ -68,20 +65,21 @@ it does not serialize the global-memory loads.
 Using Load in a kernel
 ----------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel, with
-``cuda`` imported from ``numba_cuda_mlir``, ``numpy as np``, and
-``cuda.coop as coop``. Launch with 128 threads and provide at least 256
+This common-API fragment works in either DSL with the
+:ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
+128 threads and provide at least 256
 source elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
    items = coop.ThreadData(2, dtype=np.int32)
-   offset = cuda.blockIdx.x * 256
+   offset = block_index * 256
    coop.load(block, source, items, algorithm="transpose", offset=offset)
    # Each thread now owns two consecutive values. Load returns None.
 
 For a partial final tile, supply ``valid_items`` and, when needed,
 ``oob_default``. See :func:`cuda.coop.load` for the full parameter contract
-and a complete example, and the :doc:`../programming_guide` for backend
-activation and thread groups.
+and complete :doc:`Numba <../programming_guide>` and
+:ref:`CUTLASS <coop-cutlass-load-store>` examples. Both programming guides
+explain activation and thread groups.
