@@ -6,13 +6,12 @@
 Shuffle
 =======
 
-This page describes the Numba-CUDA-MLIR implementation. See
-:ref:`backend coverage <coop-backends>` for CUTLASS availability.
-
 :func:`cuda.coop.shuffle` shifts values within a complete block and returns a
 new per-thread payload. The input remains unchanged. ``up`` and ``down`` move
 one item along the flattened blocked tile, including across thread boundaries.
-The qualified Numba-CUDA-MLIR API also supports scalar ``offset`` and ``rotate``.
+The qualified :func:`cuda.coop.numba_mlir.shuffle` and
+:func:`cuda.coop.cutlass.shuffle` APIs also support scalar ``offset`` and
+``rotate``.
 
 The explorer shows eight illustrative threads. Change the items per thread
 to see how local shifts connect across threads. Scalar modes use one value
@@ -64,23 +63,22 @@ hardware instructions.
 Using Shuffle in a kernel
 -------------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel that accepts
-``items_per_thread``. Import
-``cuda`` from ``numba_cuda_mlir``, ``numpy as np``, and
-``cuda.coop as coop``. Launch with 128 threads and provide at least ``128 * items_per_thread``
+This common-API fragment works in either DSL with the
+:ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
+128 threads and provide at least 256
 source and destination elements per block.
 
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
-   offset = cuda.blockIdx.x * 128 * items_per_thread
+   items = coop.ThreadData(2, dtype=np.int32)
+   offset = block_index * 256
    coop.load(block, source, items, offset=offset)
    shifted = coop.shuffle(block, items, mode="up")
-   for item in range(items_per_thread):
-       position = cuda.threadIdx.x * items_per_thread + item
-       if position > 0:
-           destination[offset + position] = shifted[item]
+   position = thread_rank * 2
+   if position > 0:
+       destination[offset + position] = shifted[0]
+   destination[offset + position + 1] = shifted[1]
 
 Every thread calls Shuffle. The conditional guards only the write afterward,
 so the undefined first result is never consumed. The first element of each
@@ -100,7 +98,16 @@ outside the kernel and use the qualified namespace:
    )
    destination[offset + thread] = neighbor
 
-This second fragment also assumes a complete 128-thread block and 128 valid
-elements per block. See :func:`cuda.coop.shuffle` and the
-:doc:`../programming_guide` for the common/qualified API distinction and
-primitive participation rules.
+This second fragment assumes a Numba kernel with a complete 128-thread block
+and 128 valid elements per block. The corresponding CuTe call uses
+``cutlass_coop.shuffle``; this tested kernel rotates one scalar per thread:
+
+.. literalinclude:: ../../../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+   :language: python
+   :start-after: # qualified-rotate-example-begin
+   :end-before: # qualified-rotate-example-end
+   :dedent: 4
+
+See :func:`cuda.coop.shuffle` and the :doc:`Numba <../programming_guide>` and
+:ref:`CUTLASS <coop-cutlass-shuffle>` guides for participation and result
+boundary rules.

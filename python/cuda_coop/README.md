@@ -133,7 +133,8 @@ avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 Each qualified API includes its supported common operations, preserving their
 signatures, string selectors, and inference rules. Numba-CUDA-MLIR adds
 local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
-CuTe register conversions and the controls documented in its guide. Custom operators and Scan prefix
+CuTe register conversions and qualified controls such
+as warp Scan aggregates and scalar Shuffle. Custom operators and Scan prefix
 callbacks are currently supported only by Numba-CUDA-MLIR.
 
 Both integrations accept `ThreadData(items_per_thread, alignment=None)`: use a compile-time
@@ -669,11 +670,12 @@ unchanged. The common API accepts `striped_to_blocked` and
 blocked tile gives each thread consecutive items. A striped tile gives item
 `i` to lane `i % group_size` at per-thread position `i // group_size`.
 
-The qualified `cuda.coop.numba_mlir.exchange` API additionally exposes the
+Both `numba_coop.exchange` and `cutlass_coop.exchange` expose the
 block-only `warp_striped_to_blocked` and `blocked_to_warp_striped` layouts and
 the CUB scatter modes. Scatter ranks are local to the selected group tile and
-must use a signed integer `ThreadData` or local-array payload with the same
-extent as `value`. Unguarded ranks must be in
+must use a signed integer payload with the same extent as `value`.
+Both accept `ThreadData`; qualified Numba calls also accept local arrays, and
+qualified CUTLASS calls accept CuTe register payloads. Unguarded ranks must be in
 `[0, group_size * items_per_thread)`. Guarded scatter skips negative ranks;
 every nonnegative rank must still be in range. Flagged scatter uses only ranks
 whose corresponding non-boolean integer flag is nonzero; each active rank must
@@ -684,8 +686,8 @@ for guarded or flagged scatter.
 
 `shuffle(block, value, mode=...)` is block-only. The common API accepts a
 `ThreadData` payload, `up` or `down`, and the fixed distance `1`; the vacated
-edge item is unspecified. The qualified API also accepts scalar `offset` and
-`rotate` modes. Offset distance is signed, may vary by thread, and must fit a
+edge item is unspecified. Both qualified APIs also accept scalar `offset`
+and `rotate` modes. Offset distance is signed, may vary by thread, and must fit a
 signed 32-bit integer. Static overflows are rejected during compilation;
 runtime overflows trap before narrowing to CUB. Within that range, a source
 rank outside the block leaves that thread's result unspecified. Rotate
@@ -699,6 +701,10 @@ selected group. They use compiler-owned CUB temporary storage and append a
 reuse barrier after every call. Block operations use one block-wide storage
 instance and `syncthreads`; physical and logical Warp Exchange use one
 disjoint slice per group and `syncwarp` with the exact group mask.
+
+The [Numba rearrangement examples](tests/backends/numba_mlir/runtime/test_rearrangement_examples.py)
+and [CuTe Exchange/Shuffle example](examples/cutlass/exchange_shuffle.py)
+demonstrate these layouts and payload-preserving operations.
 
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.

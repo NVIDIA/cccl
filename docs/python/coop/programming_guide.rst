@@ -161,7 +161,8 @@ Numba-CUDA-MLIR:
 
    Numba local arrays, the ``local`` and ``shared`` namespaces, Python device
    callbacks, and stateful Scan prefix callbacks belong to the
-   Numba-CUDA-MLIR integration. CUTLASS-qualified controls are listed in its programming guide.
+   Numba-CUDA-MLIR integration. Some qualified controls, such as Scan
+   aggregate output and block scatter, are also available in CUTLASS.
    Check the selected backend's guide before carrying a qualified call
    between compilers. Check backend coverage before selecting Merge Sort, Radix Sort/Rank,
    or TopK for a CuTe kernel.

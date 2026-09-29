@@ -6,17 +6,14 @@
 Exchange
 ========
 
-This page describes the Numba-CUDA-MLIR implementation. See
-:ref:`backend coverage <coop-backends>` for CUTLASS availability.
-
 :func:`cuda.coop.exchange` rearranges register values across a group. It
 returns a new payload with the requested ownership and preserves the input
 payload. Exchange itself performs no global-memory load or store.
 
 The common API provides ``striped_to_blocked`` and ``blocked_to_striped``.
 The explorer also includes the six additional block modes available through
-``cuda.coop.numba_mlir.exchange``: two warp-striped conversions and four
-rank-based scatters. Each option identifies which API provides it.
+:func:`cuda.coop.numba_mlir.exchange` and :func:`cuda.coop.cutlass.exchange`:
+two warp-striped conversions and four rank-based scatters. Each option identifies which API provides it.
 
 .. coop-visualization:: exchange
 
@@ -79,41 +76,50 @@ and unguarded scatters. Guarded and flagged scatter do not support it.
 Using Exchange in a kernel
 --------------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel that accepts
-``items_per_thread``. Import
-``cuda`` from ``numba_cuda_mlir``, ``numpy as np``, and
-``cuda.coop as coop``. Launch with 128 threads and provide at least ``128 * items_per_thread``
+This common-API fragment works in either DSL with the
+:ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
+128 threads and provide at least 256
 source and destination elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
-   offset = cuda.blockIdx.x * 128 * items_per_thread
+   items = coop.ThreadData(2, dtype=np.int32)
+   offset = block_index * 256
    coop.load(block, source, items, algorithm="striped", offset=offset)
    blocked = coop.exchange(block, items, mode="striped_to_blocked")
    coop.store(block, destination, blocked, algorithm="direct", offset=offset)
-   # blocked owns consecutive items; items retains striped ownership.
+   # blocked owns consecutive pairs; items retains striped ownership.
 
-To scatter, import ``cuda.coop.numba_mlir as numba_coop`` and use its
-qualified operation. With the same 128-thread launch, the
-following full-tile reversal writes every destination exactly once:
+To scatter in Numba, import ``cuda.coop.numba_mlir as numba_coop`` and use its
+qualified operation. With the same 128-thread, two-item launch, the
+following full-tile permutation writes every destination exactly once:
 
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
-   ranks = coop.ThreadData(items_per_thread)
-   tile_size = cuda.blockDim.x * items_per_thread
-   offset = cuda.blockIdx.x * tile_size
+   items = coop.ThreadData(2, dtype=np.int32)
+   ranks = coop.ThreadData(2, dtype=np.int32)
+   offset = cuda.blockIdx.x * 256
    coop.load(block, source, items, algorithm="direct", offset=offset)
-   for item in range(items_per_thread):
-       position = cuda.threadIdx.x * items_per_thread + item
-       ranks[item] = tile_size - 1 - position
+   for item in range(2):
+       position = cuda.threadIdx.x * 2 + item
+       ranks[item] = (5 * position) % 256
    striped = numba_coop.exchange(
        block, items, mode="scatter_to_striped", ranks=ranks
    )
    coop.store(block, destination, striped, algorithm="striped", offset=offset)
 
+For CuTe, :func:`cuda.coop.cutlass.exchange` accepts the same scatter modes
+through ``cutlass_coop``. Its tested example constructs signed ranks,
+scatters a tile, and stores the result:
+
+.. literalinclude:: ../../../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+   :language: python
+   :start-after: # qualified-scatter-example-begin
+   :end-before: # qualified-scatter-example-end
+   :dedent: 4
+
 See :func:`cuda.coop.exchange` for the common operation and the
-:doc:`../programming_guide` for backend activation and group participation.
+:doc:`Numba <../programming_guide>` and :ref:`CUTLASS <coop-cutlass-exchange>`
+guides for group participation and qualified payload forms.
