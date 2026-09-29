@@ -16,6 +16,9 @@ void decode(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   run_length_decode_bench_data<T, OffsetT> s(state);
   const thrust::device_vector<OffsetT> run_lengths = s.run_lengths();
+  // Decode only reads the lengths, so free the offsets before the measurement
+  s.run_offsets.clear();
+  s.run_offsets.shrink_to_fit();
   state.add_global_memory_reads<OffsetT>(s.num_runs);
 
   const T* d_run_values        = thrust::raw_pointer_cast(s.run_values.data());
