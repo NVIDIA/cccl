@@ -162,7 +162,9 @@ def test_descending_requires_static_bool(descending):
 
     def kernel():
         keys = coop.ThreadData(2, types.int32)
-        return coop.merge_sort_keys(coop.this_block(), keys, descending=descending)
+        return coop.merge_sort_keys(
+            coop.this_block(), keys, descending=descending
+        )
 
     with pytest.raises(TypeError, match="descending.*bool"):
         _plan(kernel)
@@ -194,7 +196,9 @@ def test_warp_cannot_use_caller_storage():
     def kernel():
         keys = coop.ThreadData(2, types.int32)
         storage = coop.TempStorage()
-        return coop.merge_sort_keys(coop.this_warp(), keys, temp_storage=storage)
+        return coop.merge_sort_keys(
+            coop.this_warp(), keys, temp_storage=storage
+        )
 
     with pytest.raises(ValueError, match="only to block"):
         _plan(kernel)

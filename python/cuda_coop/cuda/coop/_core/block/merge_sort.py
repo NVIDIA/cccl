@@ -323,7 +323,7 @@ struct CudaCoopCheckedMergeSort : PrimitiveT
   }
 };
 }
-""",
+""",  # noqa: E501 - Embedded C++ source.
 )
 
 _CHECKED_BLOCK_MERGE_SORT = TypeDefinition(
@@ -336,5 +336,5 @@ using CudaCoopBlockMergeSort = CudaCoopCheckedMergeSort<
   BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ>,
   KeyT, ValueT, ItemsPerThread, BlockDimX * BlockDimY * BlockDimZ * ItemsPerThread>;
 }
-""",
+""",  # noqa: E501 - Embedded C++ source.
 )

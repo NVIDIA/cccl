@@ -147,7 +147,8 @@ def _plan_merge_sort(
                 call,
                 resolved,
                 UnsupportedReasonCode.OPERATION_VARIANT,
-                "cub::BlockMergeSort requires a power-of-two block thread count",
+                "cub::BlockMergeSort requires "
+                "a power-of-two block thread count",
             )
         specialization = make_block_merge_sort_specialization(
             block_dim=launch.exact_block_dim, **kwargs
@@ -172,7 +173,8 @@ def _plan_merge_sort(
         and not 0 <= operation.valid_items.value <= capacity
     ):
         raise ValueError(
-            f"valid_items must be between 0 and the group tile size ({capacity})"
+            "valid_items must be between 0 and the group tile size "
+            f"({capacity})"
         )
     outputs = [("keys", primitive.key_dtype)]
     if primitive.has_values:
@@ -235,7 +237,10 @@ _register_group_operation_family(
     classifications=_classifications,
     planner=_plan_merge_sort,
     group_kinds=frozenset({"block", "warp", "threads_within_warp"}),
-    unsupported_group_message="Merge Sort supports complete block, physical warp, and power-of-two logical warp groups",
+    unsupported_group_message=(
+        "Merge Sort supports complete block, physical warp, "
+        "and power-of-two logical warp groups"
+    ),
 )
 
 __all__ = [
