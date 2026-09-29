@@ -18,7 +18,9 @@ from ._core.api.radix_sort import (
 )
 from ._core.api.reduce import reduce, sum
 from ._core.api.run_length import run_length_decode as run_length_decode
-from ._core.api.run_length import run_length_decode_into as run_length_decode_into
+from ._core.api.run_length import (
+    run_length_decode_into as run_length_decode_into,
+)
 from ._core.api.scan import (
     exclusive_scan,
     exclusive_sum,

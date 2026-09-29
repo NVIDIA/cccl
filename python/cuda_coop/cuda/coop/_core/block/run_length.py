@@ -219,7 +219,7 @@ public:
   }
 };
 } // namespace cub
-""".strip(),
+""".strip(),  # noqa: E501 - Embedded C++ source.
 )
 
 
@@ -250,7 +250,9 @@ def make_block_run_length_decode_spec(
     """Describe one complete decode window or construct-once bulk operation."""
     block_dim = normalize_block_dim(block_dim)
     if block_dim[1:] != (1, 1):
-        raise ValueError("run_length_decode supports only one-dimensional blocks")
+        raise ValueError(
+            "run_length_decode supports only one-dimensional blocks"
+        )
     runs = normalize_positive_int("runs_per_thread", runs_per_thread)
     decoded = normalize_positive_int(
         "decoded_items_per_thread", decoded_items_per_thread
@@ -259,10 +261,15 @@ def make_block_run_length_decode_spec(
         raise ValueError(
             "run_length_decode tile extents must fit signed 32-bit integers"
         )
-    if not isinstance(offset, ArgumentBinding) or offset.kind is BindingKind.OMITTED:
+    if (
+        not isinstance(offset, ArgumentBinding)
+        or offset.kind is BindingKind.OMITTED
+    ):
         raise TypeError("run_length_decode offset requires an integer binding")
     if offset.kind is BindingKind.STATIC:
-        if isinstance(offset.value, bool) or not isinstance(offset.value, Integral):
+        if isinstance(offset.value, bool) or not isinstance(
+            offset.value, Integral
+        ):
             raise TypeError("run_length_decode offset must be an integer")
         if not 0 <= offset.value <= (1 << 64) - 1:
             raise ValueError(
@@ -305,7 +312,10 @@ def make_block_run_length_decode_spec(
         parameters.append(control)
         parameters.append(
             Reference(
-                Dependency("OffsetT"), name="total", is_output=True, is_return=True
+                Dependency("OffsetT"),
+                name="total",
+                is_output=True,
+                is_return=True,
             )
         )
         method = "IntoWithOffsets" if relative_offsets else "Into"
@@ -349,20 +359,28 @@ def make_block_run_length_decode_spec(
     algorithm = Algorithm(
         struct_name="BlockRunLengthDecodeCoop",
         method_name=method,
-        c_name="block_run_length_decode_into" if bulk else "block_run_length_decode",
+        c_name="block_run_length_decode_into"
+        if bulk
+        else "block_run_length_decode",
         includes=(
             "cub/block/block_run_length_decode.cuh",
             "cub/block/block_scan.cuh",
             "cuda/std/limits",
             "cuda/std/type_traits",
         ),
-        template_parameters=tuple(TemplateParameter(name) for name in arguments),
+        template_parameters=tuple(
+            TemplateParameter(name) for name in arguments
+        ),
         parameters=(tuple(parameters),),
         type_definitions=(BLOCK_RUN_LENGTH_DECODE_DRIVER,),
         output_by_reference=bulk,
     )
     specialization = algorithm.specialize(
         arguments,
-        metadata={"scope": "block", "primitive": "run_length_decode", "bulk": bulk},
+        metadata={
+            "scope": "block",
+            "primitive": "run_length_decode",
+            "bulk": bulk,
+        },
     )
     return BlockRunLengthDecodeSpec(specialization, block_dim, runs, decoded)

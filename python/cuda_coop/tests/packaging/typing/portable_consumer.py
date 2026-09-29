@@ -332,7 +332,9 @@ def check_run_length_surface(destination: object) -> None:
     values = _ReadOnlyThreadData(np.float32(7))
     lengths = _ReadOnlyThreadData(np.uint64(3))
     assert_type(
-        coop.run_length_decode(block, values, lengths, decoded_items_per_thread=4),
+        coop.run_length_decode(
+            block, values, lengths, decoded_items_per_thread=4
+        ),
         coop.ThreadDataLike[np.float32],
     )
     assert_type(

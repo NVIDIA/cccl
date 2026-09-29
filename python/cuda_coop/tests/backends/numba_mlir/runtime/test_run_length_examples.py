@@ -102,7 +102,9 @@ def test_run_length_bulk_example():
     totals = np.empty(128, dtype=np.uint32)
     decode_all[1, 128](values, lengths, output, totals)
     cuda.synchronize()
-    np.testing.assert_array_equal(output[3:1108], np.repeat(values[:3], lengths[:3]))
+    np.testing.assert_array_equal(
+        output[3:1108], np.repeat(values[:3], lengths[:3])
+    )
     assert np.all(totals == 1105)
     assert np.all(output[:3] == -1) and np.all(output[1108:] == -1)
     # run-length-bulk-example-end
