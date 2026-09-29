@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Explicit registration of cooperative primitives with a compiler backend."""
-
 from __future__ import annotations
 
 import importlib

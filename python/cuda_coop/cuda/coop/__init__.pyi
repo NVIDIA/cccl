@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common cooperative primitives shared by supported CUDA Python DSLs."""
-
 from typing import Literal
 
 from ._core.api.load_store import load, store

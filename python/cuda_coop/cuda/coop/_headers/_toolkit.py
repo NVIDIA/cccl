@@ -2,13 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Keep process-wide CUDA compiler libraries aligned with resolved headers.
+"""Load CUDA compiler libraries from the toolkit selected by the headers.
 
-NVRTC, its builtins library, and nvJitLink are loaded from one monolithic CUDA
-Toolkit root or one split-wheel ``nvidia`` anchor before a binding is allowed
-to resolve either compiler library. NVRTC must match the selected CUDA headers
-exactly. nvJitLink consumes NVRTC's LTO-IR, so it may be a newer minor release,
-but it must have the same major version and cannot be older than the headers.
+NVRTC must match the headers' major and minor versions. nvJitLink may use
+a
+newer minor version of the same major release.
 """
 
 from __future__ import annotations

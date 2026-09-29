@@ -2,12 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Cross-family participation, result, storage, and failure contracts.
-
-Family planners call these helpers only after resolving a static thread group.
-The helpers centralize cache-relevant contracts without owning any primitive's
-semantic choices or a backend's compiler lifecycle.
-"""
+"""Derive scratch and synchronization requirements for resolved groups."""
 
 from __future__ import annotations
 
