@@ -94,7 +94,8 @@ def exchange(
     --------
     Reverse a block tile by assigning each input element its destination rank.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_movement_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_movement_examples.py
         :language: python
         :start-after: # scatter-example-begin
         :end-before: # scatter-example-end

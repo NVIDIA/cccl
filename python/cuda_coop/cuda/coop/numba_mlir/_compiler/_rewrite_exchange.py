@@ -141,7 +141,8 @@ def infer_exchange_payload(
         input_dtype, output_dtype
     ):
         raise CoopSinglePhaseRewriteError(
-            "coop exchange requires value and result arrays to have matching dtype"
+            "coop exchange requires value and "
+            "result arrays to have matching dtype"
         )
 
     mode_value = inference.factory_value("mode")
@@ -193,7 +194,8 @@ def infer_exchange_payload(
             flag_dtype = inference.factory_value("valid_flag_dtype")
         if flag_dtype is None:
             raise CoopSinglePhaseRewriteError(
-                "coop exchange could not infer valid_flag_dtype from valid_flags"
+                "coop exchange could not infer "
+                "valid_flag_dtype from valid_flags"
             )
         inference.infer_kwarg(
             "valid_flag_dtype",

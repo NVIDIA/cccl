@@ -127,7 +127,8 @@ def infer_shuffle_array_payload(
         input_dtype, output_dtype
     ):
         raise CoopSinglePhaseRewriteError(
-            "coop shuffle requires value and result arrays to have matching dtype"
+            "coop shuffle requires value and "
+            "result arrays to have matching dtype"
         )
 
     inference.infer_kwarg(

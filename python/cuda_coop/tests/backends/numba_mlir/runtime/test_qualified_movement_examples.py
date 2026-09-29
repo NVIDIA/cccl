@@ -67,5 +67,7 @@ def test_rotate_example():
     source = cuda.to_device(values)
     destination = cuda.device_array_like(source)
     rotate_tile[1, 128](source, destination)
-    np.testing.assert_array_equal(destination.copy_to_host(), np.roll(values, -7))
+    np.testing.assert_array_equal(
+        destination.copy_to_host(), np.roll(values, -7)
+    )
     # rotate-example-end
