@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Merge Sort contracts include readonly inputs and checked partial tiles."""
-
 from dataclasses import replace
 from types import SimpleNamespace
 
