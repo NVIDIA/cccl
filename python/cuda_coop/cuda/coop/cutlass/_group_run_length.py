@@ -106,7 +106,8 @@ def run_length_decode(
         validation. A window starting beyond the stream contains zeros.
     temp_storage : TempStorage, optional
         Explicit block scratch, or omit for automatic allocation. Requested
-        alignment is a minimum. Synchronize before reuse with ``auto_sync=False``.
+        alignment is a minimum. Synchronize before reuse with
+        ``auto_sync=False``.
 
     Returns
     -------
@@ -174,7 +175,8 @@ def run_length_decode_into(
     cutlass.Uint32
         Full decoded size, available to every member. Empty input writes
         nothing. Insufficient capacity traps before any output write; elements
-        outside the decoded interval remain unchanged. The total must fit uint32.
+        outside the decoded interval remain unchanged. The total must fit
+        uint32.
 
     Notes
     -----
