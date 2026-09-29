@@ -22,7 +22,7 @@ def TempStorage(
     Construct the descriptor inside the kernel and pass it as
     ``temp_storage`` to operations that accept explicit block scratch.
     See :ref:`temporary storage <coop-temp-storage>` for supported operations,
-    allocation lifetime, and synchronization requirements.
+    allocation lifetime, and launch-time shared-memory requirements.
 
     Parameters
     ----------
@@ -53,6 +53,18 @@ def TempStorage(
         Compiler-recognized scratch descriptor. The storage contents are
         opaque; keep application data in :func:`cuda.coop.ThreadData` or
         application-owned arrays.
+
+    Examples
+    --------
+    Reuse one descriptor for transpose Load and Store.
+    The loop processes two independent tiles. Explicit ``auto_sync=True``
+    enables barriers between operations and between iterations.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
+        :language: python
+        :start-after: # temp-storage-example-begin
+        :end-before: # temp-storage-example-end
+        :dedent: 4
     """
 
     raise CoopCompilerContextRequiredError(

@@ -71,7 +71,8 @@ def load(
         prefix retain their previous values unless ``oob_default`` is given.
     oob_default : numeric scalar, optional
         Value written to slots beyond ``valid_items``. Requires an explicit
-        ``valid_items`` count. For example, use zero to pad a partial tile. A runtime value must have the payload dtype and
+        ``valid_items`` count. For example, use zero to pad a partial tile
+        before summing it. A runtime value must have the payload dtype and
         be uniform across the group. ``None`` leaves those slots unchanged;
         initialize them before reading them.
     offset : int or integer scalar, optional
@@ -95,6 +96,22 @@ def load(
     --------
     :cpp:class:`cub::BlockLoad`, :cpp:class:`cub::WarpLoad`
         C++ block and warp Load primitives.
+
+    Examples
+    --------
+    Copy an array with Numba-CUDA-MLIR, using 128 threads and two values per
+    thread. Each block loads up to 256 elements. The last block pads its
+    missing values with zero and stores only the valid prefix.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_load_example.py
+        :language: python
+        :start-after: # example-begin
+        :end-before: # example-end
+        :dedent: 4
+
+    The qualified import activates the Numba-CUDA-MLIR backend even if another
+    module imported ``cuda.coop`` first. Use the qualified
+    ``cuda.coop.<backend>`` API for backend-specific behavior.
     """
 
     raise CoopCompilerContextRequiredError(
@@ -169,6 +186,21 @@ def store(
     --------
     :cpp:class:`cub::BlockStore`, :cpp:class:`cub::WarpStore`
         C++ block and warp Store primitives.
+
+    Examples
+    --------
+    Store a partial tile at an element offset. The untouched prefix and
+    suffix keep their sentinel values. A second output checks that transpose
+    Store preserved every thread's input payload.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_store_example.py
+        :language: python
+        :start-after: # example-begin
+        :end-before: # example-end
+        :dedent: 4
+
+    See :ref:`participation and synchronization <coop-participation>` for
+    control-flow requirements at primitive calls.
     """
 
     raise CoopCompilerContextRequiredError(
