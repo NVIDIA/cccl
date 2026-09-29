@@ -25,7 +25,11 @@ from cuda.coop._core.group.reduce_batched import GroupReduceBatchedSemantics
 from cuda.coop._core.warp.reduce_batched import WarpReduceBatchedSemantics
 
 from .._compiler import _rendering, _state, _types
-from .._operators import OPERATOR_CPP, operator_expression, validate_operator_dtype
+from .._operators import (
+    OPERATOR_CPP,
+    operator_expression,
+    validate_operator_dtype,
+)
 from .._thread_data import ThreadData, _make_rmem_tensor
 
 _SCOPE = "cuda.coop.cutlass"
@@ -42,11 +46,15 @@ def _make_reduce_batched_plan(
     primitive = WarpReduceBatchedSemantics(
         dtype,
         batches,
-        CxxOperator(cpp=OPERATOR_CPP[op], dtype=Dependency("T"), name="binary_op"),
+        CxxOperator(
+            cpp=OPERATOR_CPP[op], dtype=Dependency("T"), name="binary_op"
+        ),
         output_layout,
     )
     source = (
-        "common_root" if _common_root_operation_name() is not None else "cutlass_root"
+        "common_root"
+        if _common_root_operation_name() is not None
+        else "cutlass_root"
     )
     return plan_group_primitive(
         make_group_primitive_call(
@@ -66,7 +74,9 @@ class _CubReduceBatchedRequest:
         self.plan.require_supported()
         if (
             self.plan.target is not GroupLoweringTarget.CUB_WARP
-            or not isinstance(self.plan.call.operation, GroupReduceBatchedSemantics)
+            or not isinstance(
+                self.plan.call.operation, GroupReduceBatchedSemantics
+            )
             or not isinstance(self.plan.implementation, AlgorithmSpec)
         ):
             raise ValueError("reduce_batched requires a shared CUB warp plan")
@@ -82,14 +92,18 @@ class _CubReduceBatchedRequest:
             spec.struct_name != "WarpReduceBatched"
             or spec.method_name
             != (
-                "ReduceToStriped" if p.output_layout == "striped" else "ReduceToBlocked"
+                "ReduceToStriped"
+                if p.output_layout == "striped"
+                else "ReduceToBlocked"
             )
             or args.get("T") is not p.dtype
             or args.get("BATCHES") != p.batches
             or args.get("LOGICAL_WARP_THREADS") != width
             or args.get("SYNC_PHYSICAL_WARP") != "false"
         ):
-            raise ValueError("reduce_batched implementation does not match its plan")
+            raise ValueError(
+                "reduce_batched implementation does not match its plan"
+            )
         if (
             self.plan.result is None
             or len(self.plan.result.values) != 1
@@ -122,7 +136,9 @@ class _CubReduceBatchedRequest:
 
     @property
     def symbol_name(self):
-        digest = hashlib.sha256(repr(self.plan.artifact_key).encode()).hexdigest()[:16]
+        digest = hashlib.sha256(
+            repr(self.plan.artifact_key).encode()
+        ).hexdigest()[:16]
         return f"cuda_coop_cutlass_reduce_batched_{digest}"
 
     def __eq__(self, other):
@@ -151,10 +167,14 @@ def _render_reduce_batched(request):
         f"  const {cpp} inputs[{p.batches}] = {{{inputs}}};",
         f"  {cpp} outputs[{request.outputs_per_thread}] = {{}};",
         (
-            f"  implementation_type(storage).{request.implementation.method_name}("
+            "  implementation_type(storage)."
+            f"{request.implementation.method_name}("
             f"inputs, outputs, {operator_expression(request.op)});"
         ),
-        *(f"  result[{i}] = outputs[{i}];" for i in range(request.outputs_per_thread)),
+        *(
+            f"  result[{i}] = outputs[{i}];"
+            for i in range(request.outputs_per_thread)
+        ),
         "}",
     ]
 
@@ -164,7 +184,9 @@ _rendering.register_bundle_renderer(
     "cub_group_reduce_batched",
     render=_render_reduce_batched,
     include_lines=tuple(f"#include <{header}>" for header in _INCLUDES),
-    cccl_headers=tuple((f"#include <{header}>", header) for header in _INCLUDES),
+    cccl_headers=tuple(
+        (f"#include <{header}>", header) for header in _INCLUDES
+    ),
 )
 
 
@@ -192,7 +214,11 @@ def provider_reduce_batched(*, group, launch, value, op, output_layout):
         if isinstance(item, np.generic):
             item = item.item()
         converted = _types.coerce_plain_scalar(
-            item, dtype, name="reduce_batched item", scope=_SCOPE, allow_nonfinite=True
+            item,
+            dtype,
+            name="reduce_batched item",
+            scope=_SCOPE,
+            allow_nonfinite=True,
         )
         arguments.append(
             dtype(item) if converted is _types._NOT_PLAIN_SCALAR else converted
@@ -200,7 +226,9 @@ def provider_reduce_batched(*, group, launch, value, op, output_layout):
     snapshot = _state.snapshot_active_session_state()
     try:
         _state.register_request(request)
-        result = _make_rmem_tensor(request.outputs_per_thread, dtype, value.alignment)
+        result = _make_rmem_tensor(
+            request.outputs_per_thread, dtype, value.alignment
+        )
         ffi(
             name=request.symbol_name,
             params_types=[dtype] * len(items) + [llvm.PointerType.get(0)],
@@ -209,7 +237,9 @@ def provider_reduce_batched(*, group, launch, value, op, output_layout):
         return ThreadData(
             request.outputs_per_thread,
             dtype=_types.thread_data_output_dtype(value, dtype),
-            values=[dtype(result[i]) for i in range(request.outputs_per_thread)],
+            values=[
+                dtype(result[i]) for i in range(request.outputs_per_thread)
+            ],
             alignment=value.alignment,
         )
     except BaseException:
