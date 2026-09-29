@@ -77,7 +77,8 @@ def shuffle(
     --------
     Rotate one scalar per thread by seven positions, including wraparound.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_movement_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_movement_examples.py
         :language: python
         :start-after: # rotate-example-begin
         :end-before: # rotate-example-end
