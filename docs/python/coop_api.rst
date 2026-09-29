@@ -105,6 +105,23 @@ See :ref:`scan operators and prefixes <coop-scans>`.
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
 
+Data rearrangement
+^^^^^^^^^^^^^^^^^^
+
+See :ref:`blocked and striped layouts <coop-data-layouts>`.
+
+.. autofunction:: exchange
+.. autofunction:: shuffle
+
+Comparison sorting
+^^^^^^^^^^^^^^^^^^
+
+See :ref:`sorting keys and associated values <coop-merge-sort>`.
+
+.. autofunction:: merge_sort_keys
+.. autofunction:: merge_sort_pairs
+
+
 .. _coop-numba-extensions:
 
 Numba-CUDA-MLIR-qualified API
@@ -155,3 +172,19 @@ Scan
 .. autofunction:: inclusive_sum
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
+
+.. autoclass:: StatefulFunction
+   :no-members:
+   :no-special-members:
+
+Data rearrangement
+^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: exchange
+.. autofunction:: shuffle
+
+Comparison sorting
+^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: merge_sort_keys
+.. autofunction:: merge_sort_pairs

@@ -20,3 +20,4 @@ do not predict GPU performance.
    store
    reduce
    scan
+   merge-sort
