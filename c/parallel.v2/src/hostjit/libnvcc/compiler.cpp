@@ -72,6 +72,17 @@ LLD_HAS_DRIVER(elf)
 
 namespace libnvcc
 {
+// CompilerConfig::libdevice_path is populated by make_jit_config() for
+// pip-installed toolkits, where libdevice.10.bc may live outside
+// cuda_toolkit_path (see util/build_utils.h find_libdevice_bc()). Configs
+// built via detectDefaultConfig() alone (env/system CTK) leave it empty, so
+// fall back to the historical derivation from cuda_toolkit_path.
+static std::string resolved_libdevice_path(const hostjit::CompilerConfig& config)
+{
+  return config.libdevice_path.empty() ? config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc"
+                                        : config.libdevice_path;
+}
+
 static std::once_flag llvm_init_flag;
 
 static void initialize_llvm()
@@ -950,7 +961,7 @@ public:
     arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
     arg_strings.push_back("-mlink-builtin-bitcode");
-    arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
+    arg_strings.push_back(resolved_libdevice_path(config));
     arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
     arg_strings.push_back("-target-cpu");
     arg_strings.push_back("sm_" + std::to_string(config.sm_version));
@@ -1107,7 +1118,7 @@ public:
         // introduced by the extra bitcode modules.
         if (success && !bitcode_files_to_link.empty())
         {
-          std::string libdevice_path = config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc";
+          std::string libdevice_path = resolved_libdevice_path(config);
           llvm::SMDiagnostic err;
           auto libdevice = llvm::parseIRFile(libdevice_path, err, llvm_context);
           if (libdevice)
@@ -1353,7 +1364,7 @@ public:
     arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
     arg_strings.push_back("-mlink-builtin-bitcode");
-    arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
+    arg_strings.push_back(resolved_libdevice_path(config));
     arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
     arg_strings.push_back("-target-cpu");
     arg_strings.push_back("sm_" + std::to_string(config.sm_version));
@@ -1952,7 +1963,7 @@ public:
       arg_strings.push_back("-fgnuc-version=4.2.1");
 #endif
       arg_strings.push_back("-mlink-builtin-bitcode");
-      arg_strings.push_back(config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc");
+      arg_strings.push_back(resolved_libdevice_path(config));
       arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
       arg_strings.push_back("-target-cpu");
       arg_strings.push_back("sm_" + std::to_string(config.sm_version));
