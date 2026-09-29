@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from .._algorithm import Algorithm, AlgorithmSpec, TypeDefinition
+from .._algorithm import Algorithm, AlgorithmSpec
 from .._bindings import (
     ArgumentBinding,
     BindingKind,
@@ -64,75 +64,6 @@ _STORE_ALGORITHM_CPP = {
     WarpStoreAlgorithm.VECTORIZE: "::cub::WARP_STORE_VECTORIZE",
     WarpStoreAlgorithm.TRANSPOSE: "::cub::WARP_STORE_TRANSPOSE",
 }
-_PRESERVING_WARP_LOAD = TypeDefinition(
-    name="cuda_coop_warp_load_preserving_invalid",
-    code=r"""
-namespace cub {
-template <typename T,
-          int ItemsPerThread,
-          WarpLoadAlgorithm Algorithm,
-          int LogicalWarpThreads>
-class CudaCoopWarpLoadPreservingInvalid
-{
-  static_assert(LogicalWarpThreads > 0 && LogicalWarpThreads <= 32 &&
-                  (LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0,
-                "cuda.coop WarpLoad requires a power-of-two width in [1, 32]");
-
-  using primitive_type =
-    WarpLoad<T, ItemsPerThread, Algorithm, LogicalWarpThreads>;
-
-  primitive_type primitive;
-
-public:
-  using TempStorage = typename primitive_type::TempStorage;
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE CudaCoopWarpLoadPreservingInvalid()
-      : primitive()
-  {}
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE
-  CudaCoopWarpLoadPreservingInvalid(TempStorage& temp_storage)
-      : primitive(temp_storage)
-  {}
-
-  template <typename InputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Load(
-    InputIteratorT warp_iterator,
-    T (&items)[ItemsPerThread])
-  {
-    primitive.Load(warp_iterator, items);
-  }
-
-  template <typename InputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Load(
-    InputIteratorT warp_iterator,
-    T (&items)[ItemsPerThread],
-    int valid_items)
-  {
-    T original[ItemsPerThread];
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ItemsPerThread; ++item)
-    {
-      original[item] = items[item];
-    }
-
-    primitive.Load(warp_iterator, items, valid_items);
-
-    const int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid()) %
-                     LogicalWarpThreads;
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ItemsPerThread; ++item)
-    {
-      if (lane * ItemsPerThread + item >= valid_items)
-      {
-        items[item] = original[item];
-      }
-    }
-  }
-};
-} // namespace cub
-""".strip(),
-)
 _T = Dependency("T")
 _ITEMS_PER_THREAD = Dependency("ITEMS_PER_THREAD")
 _TEMPLATE_PARAMETERS = (
@@ -472,25 +403,14 @@ def make_warp_load_store_spec(
         include_full_tile=include_full_tile,
         include_pointer_offset=include_pointer_offset,
     )
-    preserve_invalid_items = (
-        call.kind is WarpLoadStoreKind.LOAD
-        and call.has_valid_items
-        and not call.has_oob_default
-        and call.algorithm is WarpLoadStoreAlgorithm.TRANSPOSE
-    )
     title = call.kind.value.title()
     specialization = Algorithm(
-        struct_name=(
-            "CudaCoopWarpLoadPreservingInvalid"
-            if preserve_invalid_items
-            else f"Warp{title}"
-        ),
+        struct_name=f"Warp{title}",
         method_name=title,
         c_name=f"warp_{call.kind.value}",
         includes=(f"cub/warp/warp_{call.kind.value}.cuh",),
         template_parameters=_TEMPLATE_PARAMETERS,
         parameters=call.parameters,
-        type_definitions=((_PRESERVING_WARP_LOAD,) if preserve_invalid_items else ()),
     ).specialize(
         {
             "T": dtype,
@@ -511,7 +431,6 @@ def make_warp_load_store_spec(
             ),
             "effective_offset_origin": "group_instance",
             "effective_offset_stride": (call.threads_in_warp * call.items_per_thread),
-            "preserves_invalid_items": preserve_invalid_items,
         },
     )
     return WarpLoadStoreSpec(specialization=specialization, call=call)
