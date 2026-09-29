@@ -96,7 +96,7 @@ slices with ``sharing="exclusive"``. Explicit descriptors default to
 loop iterations. The example requests ``auto_sync=True`` to insert those
 barriers automatically. Separate slices do not remove the need to protect reuse.
 
-The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan.
+The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort.
 Warp operations use compiler-owned scratch. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.
@@ -124,3 +124,14 @@ Use ``coop.register("numba-cuda-mlir")`` to state that intent explicitly.
 It works regardless of import order, is safe to repeat, and also accepts
 ``"numba_cuda_mlir"``. The backend dependencies must already be installed.
 See :ref:`backend registration <coop-backend-registration>`.
+
+
+.. _coop-faq-global-sort:
+
+Does sorting each block sort the whole array?
+---------------------------------------------
+
+Each call sorts only the selected group's tile. Several blocks therefore
+produce independently sorted tiles. A globally sorted array requires an
+algorithm that combines those tiles. Warp and logical-warp Merge Sort
+likewise sort each participating group's tile independently.

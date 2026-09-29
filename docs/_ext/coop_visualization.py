@@ -14,9 +14,12 @@ _EXPLORERS = {
     "shuffle": "coop-shuffle.js",
     "reduce": "coop-collectives.js",
     "scan": "coop-collectives.js",
+    "merge-sort": "coop-merge-sort.js",
 }
 
-_VISUALIZATION_TITLES = {}
+_VISUALIZATION_TITLES = {
+    "merge-sort": "Merge Sort",
+}
 
 _API_VISUALIZATIONS = {
     "scan": "scan",
@@ -29,7 +32,10 @@ _API_VISUALIZATIONS = {
     "exchange": "exchange",
     "shuffle": "shuffle",
     "reduce": "reduce",
+    "merge-sort": "merge-sort",
     "sum": "reduce",
+    "merge_sort_keys": "merge-sort",
+    "merge_sort_pairs": "merge-sort",
 }
 
 
