@@ -725,7 +725,7 @@ def test_planned_storage_guardrails_fail_before_materialization(
         this_thread,
     )
     from cuda.coop._core.group._contracts import _contracts
-    from tests.support.group_planning import _load_store, _plan
+    from tests._group_planning import _load_store, _plan
 
     plan = _plan(
         this_block(),
@@ -866,7 +866,7 @@ def test_planned_caller_storage_contract_must_match_the_descriptor(
         StorageOwnership,
         this_block,
     )
-    from tests.support.group_planning import _load_store, _plan
+    from tests._group_planning import _load_store, _plan
 
     plan = _plan(
         this_block(),
@@ -909,7 +909,7 @@ def test_apply_refuses_a_plan_whose_auto_sync_disagrees_with_implicit_storage():
     from dataclasses import replace
 
     from cuda.coop._core import GroupLoadStoreAlgorithm, this_block
-    from tests.support.group_planning import _load_store, _plan
+    from tests._group_planning import _load_store, _plan
 
     plan = _plan(
         this_block(),
