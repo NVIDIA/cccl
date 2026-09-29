@@ -43,7 +43,9 @@ _TEMPLATE_PARAMETERS = (
 )
 
 
-def block_radix_rank_bins_per_thread(radix_bits: int, block_threads: int) -> int:
+def block_radix_rank_bins_per_thread(
+    radix_bits: int, block_threads: int
+) -> int:
     """Return CUB's per-thread exclusive-prefix array extent."""
 
     radix_bits = normalize_positive_int("radix_bits", radix_bits)
@@ -135,7 +137,10 @@ class BlockRadixRankSpec:
 
     @property
     def bins_per_thread(self) -> int:
-        assert self.call.expected_exclusive_digit_prefix_items_per_thread is not None
+        assert (
+            self.call.expected_exclusive_digit_prefix_items_per_thread
+            is not None
+        )
         return self.call.expected_exclusive_digit_prefix_items_per_thread
 
     @property
@@ -162,7 +167,9 @@ def make_block_radix_rank_semantics(
 
     if key_dtype is None:
         raise ValueError("key dtype must be provided")
-    items_per_thread = normalize_positive_int("items_per_thread", items_per_thread)
+    items_per_thread = normalize_positive_int(
+        "items_per_thread", items_per_thread
+    )
     if block_threads is not None:
         block_threads = normalize_positive_int("block_threads", block_threads)
     if exclusive_digit_prefix_items_per_thread is not None:
@@ -272,7 +279,9 @@ def make_block_radix_rank_spec(
         bit_width=key_bit_width,
     )
     if not bit_range.is_static or bit_range.radix_bits is None:
-        raise ValueError("cub::BlockRadixRank requires a static radix bit range")
+        raise ValueError(
+            "cub::BlockRadixRank requires a static radix bit range"
+        )
     bins_per_thread = block_radix_rank_bins_per_thread(
         bit_range.radix_bits,
         block_threads,

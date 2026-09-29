@@ -29,7 +29,9 @@ def infer_radix_payload(context, inference):
         dtype = inference.inferred_array_dtype(value, spec)
         parameter = "value_dtype" if index == 1 and pairs else "dtype"
         expected = (
-            types.int32 if index == 1 and rank else inference.factory_value(parameter)
+            types.int32
+            if index == 1 and rank
+            else inference.factory_value(parameter)
         )
         if dtype is None:
             dtype = expected

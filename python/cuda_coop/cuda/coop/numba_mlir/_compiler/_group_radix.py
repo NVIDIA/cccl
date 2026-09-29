@@ -22,7 +22,10 @@ from cuda.coop._core.block.radix_rank import (
     make_block_radix_rank_semantics,
 )
 from cuda.coop._core.block.radix_sort import make_block_radix_sort_semantics
-from cuda.coop._core.group.radix import GroupRadixRankSemantics, GroupRadixSortSemantics
+from cuda.coop._core.group.radix import (
+    GroupRadixRankSemantics,
+    GroupRadixSortSemantics,
+)
 
 from ._group_planner_support import (
     _PAYLOAD_DTYPE_INT32,
@@ -60,7 +63,9 @@ def _dtype(context, operation, parameter, value):
 def _bool(context, operation, name, value):
     value = context.constant(value)
     if not isinstance(value, bool):
-        raise TypeError(f"cuda.coop.{operation} {name} must be a compile-time bool")
+        raise TypeError(
+            f"cuda.coop.{operation} {name} must be a compile-time bool"
+        )
     return value
 
 
@@ -72,7 +77,9 @@ def _sort_bit(context, operation, name, value):
         return int(constant)
     dtype = context.dtype(value)
     if dtype is None:
-        raise GroupRewriteError(f"cuda.coop.{operation} could not infer {name} dtype")
+        raise GroupRewriteError(
+            f"cuda.coop.{operation} could not infer {name} dtype"
+        )
     _validate_runtime_integer_dtype(dtype, operation=operation, parameter=name)
     return value
 
@@ -93,15 +100,22 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
     extent = None
     for name in parameters:
         value = bound.arguments[name]
-        if is_common_root and not context.is_thread_data(operation, name, value):
-            raise TypeError(f"cuda.coop.{operation} requires {name} to be ThreadData")
+        if is_common_root and not context.is_thread_data(
+            operation, name, value
+        ):
+            raise TypeError(
+                f"cuda.coop.{operation} requires {name} to be ThreadData"
+            )
         is_array = context.is_array(operation, value)
         count = context.array_extent(value) if is_array else 1
         if count is None:
             raise GroupRewriteError(
-                f"cuda.coop.{operation} requires a static items_per_thread extent"
+                f"cuda.coop.{operation} requires "
+                f"a static items_per_thread extent"
             )
-        if extent is not None and (extent != count or is_array != array_map["keys"]):
+        if extent is not None and (
+            extent != count or is_array != array_map["keys"]
+        ):
             raise ValueError(
                 "keys and values must have the same shape and items_per_thread"
             )
@@ -128,7 +142,9 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         dtype_map["values"] = _validate_common_numeric_dtype(
             dtype_map["values"], operation=operation, parameter="values"
         )
-    descending = _bool(context, operation, "descending", bound.arguments["descending"])
+    descending = _bool(
+        context, operation, "descending", bound.arguments["descending"]
+    )
     adapter = NumbaMlirCoreAdapter()
     kwargs = {
         "dtype": key_dtype,
@@ -156,12 +172,19 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
                 end_bit - begin_bit, context.launch.exact_block_threads
             )
             prefix_extent = context.array_extent(prefix)
-            if not context.is_array(operation, prefix) or prefix_extent != expected:
+            if (
+                not context.is_array(operation, prefix)
+                or prefix_extent != expected
+            ):
                 raise ValueError(
-                    f"exclusive_digit_prefix must contain {expected} items per thread"
+                    f"exclusive_digit_prefix must "
+                    f"contain {expected} items per thread"
                 )
             dtype = context.dtype(prefix)
-            if dtype is not None and normalize_dtype_param(dtype) != types.int32:
+            if (
+                dtype is not None
+                and normalize_dtype_param(dtype) != types.int32
+            ):
                 raise TypeError("exclusive_digit_prefix must have int32 dtype")
             context.record_thread_data_dtype(prefix, types.int32)
         primitive = make_block_radix_rank_semantics(
@@ -183,12 +206,16 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         end_bit = (
             key_dtype.bitwidth
             if context.is_none(bound.arguments["end_bit"])
-            else _sort_bit(context, operation, "end_bit", bound.arguments["end_bit"])
+            else _sort_bit(
+                context, operation, "end_bit", bound.arguments["end_bit"]
+            )
         )
         begin_binding = context.planning_binding(begin_bit)
         end_binding = context.planning_binding(end_bit)
         make_radix_bit_range(
-            begin_bit=begin_binding, end_bit=end_binding, bit_width=key_dtype.bitwidth
+            begin_bit=begin_binding,
+            end_bit=end_binding,
+            bit_width=key_dtype.bitwidth,
         )
         striped = _bool(
             context,
@@ -198,7 +225,9 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         )
         primitive = make_block_radix_sort_semantics(
             **core_kwargs,
-            value_dtype=None if not pairs else adapter.core_dtype(dtype_map["values"]),
+            value_dtype=None
+            if not pairs
+            else adapter.core_dtype(dtype_map["values"]),
             begin_bit=begin_binding,
             end_bit=end_binding,
             key_bit_width=key_dtype.bitwidth,
@@ -219,7 +248,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         descriptor = context.temp_storage(temp_storage)
         if descriptor is None:
             raise TypeError(
-                "radix sort temp_storage must resolve to a TempStorage descriptor"
+                "radix sort temp_storage must "
+                "resolve to a TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(
@@ -316,11 +346,18 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
 
 
 for _operation, _results, _count in (
-    ("radix_rank", (GroupResultSource(None, "keys", fixed_dtype=types.int32),), 2),
+    (
+        "radix_rank",
+        (GroupResultSource(None, "keys", fixed_dtype=types.int32),),
+        2,
+    ),
     ("radix_sort_keys", (GroupResultSource("keys", "keys"),), 3),
     (
         "radix_sort_pairs",
-        (GroupResultSource("keys", "keys"), GroupResultSource("values", "values")),
+        (
+            GroupResultSource("keys", "keys"),
+            GroupResultSource("values", "values"),
+        ),
         4,
     ),
 ):

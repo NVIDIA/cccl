@@ -253,9 +253,12 @@ def check_radix_surface() -> None:
     block = coop.this_block()
     keys = coop.ThreadData(3, np.int32)
     values = coop.ThreadData(3, np.float64)
-    assert_type(coop.radix_sort_keys(block, keys), coop.ThreadDataLike[np.int32])
     assert_type(
-        coop.radix_rank(block, keys, radix_bits=4), coop.ThreadDataLike[np.int32]
+        coop.radix_sort_keys(block, keys), coop.ThreadDataLike[np.int32]
+    )
+    assert_type(
+        coop.radix_rank(block, keys, radix_bits=4),
+        coop.ThreadDataLike[np.int32],
     )
     assert_type(
         coop.radix_sort_pairs(block, keys, values),

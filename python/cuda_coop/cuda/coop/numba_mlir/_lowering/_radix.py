@@ -37,7 +37,9 @@ def radix_rank(
 ):
     dtype = normalize_dtype_param(dtype)
     if dtype not in {types.int32, types.uint32, types.int64, types.uint64}:
-        raise TypeError("radix_rank keys require int32, uint32, int64, or uint64")
+        raise TypeError(
+            "radix_rank keys require int32, uint32, int64, or uint64"
+        )
     cub_dtype = dtype
     transforms = None
     if dtype.signed:
@@ -45,7 +47,10 @@ def radix_rank(
         expression = (
             "(static_cast<unsigned int>({value}) ^ 0x80000000u)"
             if dtype.bitwidth == 32
-            else "(static_cast<unsigned long long>({value}) ^ 0x8000000000000000ull)"
+            else (
+                "(static_cast<unsigned long long>({value}) ^ "
+                "0x8000000000000000ull)"
+            )
         )
         transforms = {
             "keys": NumbaMlirArrayInputTransform(
@@ -83,7 +88,9 @@ def radix_sort_keys(
         types.float32,
         types.float64,
     }:
-        raise TypeError("radix_sort keys require 32- or 64-bit integers or floats")
+        raise TypeError(
+            "radix_sort keys require 32- or 64-bit integers or floats"
+        )
     adapter = NumbaMlirCoreAdapter()
     spec = make_block_radix_sort_spec(
         key_dtype=adapter.core_dtype(dtype),

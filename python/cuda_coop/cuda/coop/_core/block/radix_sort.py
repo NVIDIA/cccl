@@ -58,7 +58,10 @@ class BlockRadixSortBitPolicy(str, Enum):
 
     @property
     def includes_default(self) -> bool:
-        return self in {BlockRadixSortBitPolicy.DEFAULT, BlockRadixSortBitPolicy.BOTH}
+        return self in {
+            BlockRadixSortBitPolicy.DEFAULT,
+            BlockRadixSortBitPolicy.BOTH,
+        }
 
     @property
     def includes_explicit(self) -> bool:
@@ -261,14 +264,18 @@ def make_block_radix_sort_semantics(
 
     if key_dtype is None:
         raise ValueError("key dtype must be provided")
-    items_per_thread = normalize_positive_int("items_per_thread", items_per_thread)
+    items_per_thread = normalize_positive_int(
+        "items_per_thread", items_per_thread
+    )
     order = normalize_radix_order(descending)
     if isinstance(blocked_to_striped, BlockRadixSortOutput):
         output = blocked_to_striped
     else:
         output = (
             BlockRadixSortOutput.STRIPED
-            if normalize_boolean_option("blocked_to_striped", blocked_to_striped)
+            if normalize_boolean_option(
+                "blocked_to_striped", blocked_to_striped
+            )
             else BlockRadixSortOutput.BLOCKED
         )
     payload = (
@@ -290,7 +297,9 @@ def make_block_radix_sort_semantics(
     else:
         bit_policy = BlockRadixSortBitPolicy(bit_policy)
     if bit_policy is BlockRadixSortBitPolicy.DEFAULT and has_begin:
-        raise ValueError("default bit policy cannot include explicit bit bounds")
+        raise ValueError(
+            "default bit policy cannot include explicit bit bounds"
+        )
     if bit_policy is BlockRadixSortBitPolicy.EXPLICIT and not has_begin:
         raise ValueError("explicit bit policy requires begin_bit and end_bit")
 
@@ -371,7 +380,9 @@ def make_block_radix_sort_spec(
             "KeyT": key_dtype,
             "BLOCK_DIM_X": block_dim[0],
             "ITEMS_PER_THREAD": call.items_per_thread,
-            "ValueT": value_dtype if value_dtype is not None else "::cub::NullType",
+            "ValueT": value_dtype
+            if value_dtype is not None
+            else "::cub::NullType",
             "RADIX_BITS": 4,
             "MEMOIZE_OUTER_SCAN": "true",
             "INNER_SCAN_ALGORITHM": (
@@ -407,7 +418,9 @@ def _checked_radix_sort_type() -> TypeDefinition:
     ):
         methods.append(f"  using PrimitiveT::{method};")
         for pairs in (False, True):
-            values_parameter = ", ValueT (&values)[ItemsPerThread]" if pairs else ""
+            values_parameter = (
+                ", ValueT (&values)[ItemsPerThread]" if pairs else ""
+            )
             values_argument = ", values" if pairs else ""
             methods.append(f"""
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void {method}(
@@ -420,7 +433,7 @@ def _checked_radix_sort_type() -> TypeDefinition:
     }}
     PrimitiveT::{method}(keys{values_argument}, static_cast<int>(begin_bit), static_cast<int>(end_bit));
   }}
-""")
+""")  # noqa: E501 - Embedded C++ source.
     return TypeDefinition(
         name="cuda_coop_checked_block_radix_sort",
         code="""
@@ -435,7 +448,7 @@ struct CudaCoopBlockRadixSort : BlockRadixSort<
   using PrimitiveT = BlockRadixSort<KeyT, BlockDimX, ItemsPerThread, ValueT,
     RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>;
   using PrimitiveT::PrimitiveT;
-"""
+"""  # noqa: E501 - Embedded C++ source.
         + "\n".join(methods)
         + "\n};\n}\n",
     )

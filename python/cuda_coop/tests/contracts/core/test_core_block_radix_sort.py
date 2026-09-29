@@ -6,7 +6,13 @@
 import numpy as np
 import pytest
 
-from cuda.coop._core import INT64, Array, Dependency, TempStorageParameter, Value
+from cuda.coop._core import (
+    INT64,
+    Array,
+    Dependency,
+    TempStorageParameter,
+    Value,
+)
 from cuda.coop._core.block import (
     BlockRadixSortBitPolicy,
     BlockRadixSortOutput,
@@ -37,7 +43,9 @@ def test_default_key_sort_spec_owns_cub_specialization_and_abi():
         "ValueT": "::cub::NullType",
         "RADIX_BITS": 4,
         "MEMOIZE_OUTER_SCAN": "true",
-        "INNER_SCAN_ALGORITHM": ("::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS"),
+        "INNER_SCAN_ALGORITHM": (
+            "::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS"
+        ),
         "SMEM_CONFIG": "cudaSharedMemBankSizeFourByte",
         "BLOCK_DIM_Y": 2,
         "BLOCK_DIM_Z": 1,
@@ -109,11 +117,15 @@ def test_both_policy_preserves_default_and_explicit_overload_order():
     )
 
     assert len(spec.specialization.parameters) == 2
-    assert [parameter.name for parameter in spec.specialization.parameters[0]] == [
+    assert [
+        parameter.name for parameter in spec.specialization.parameters[0]
+    ] == [
         "temp_storage",
         "keys",
     ]
-    assert [parameter.name for parameter in spec.specialization.parameters[1]] == [
+    assert [
+        parameter.name for parameter in spec.specialization.parameters[1]
+    ] == [
         "temp_storage",
         "keys",
         "begin_bit",
@@ -196,7 +208,9 @@ def test_sort_boolean_options_accept_numpy_scalars_but_reject_truthy_integers():
             descending=moduleless_type(),
         )
 
-    with pytest.raises(ValueError, match="blocked_to_striped must be a boolean"):
+    with pytest.raises(
+        ValueError, match="blocked_to_striped must be a boolean"
+    ):
         make_block_radix_sort_spec(
             key_dtype="u32",
             block_dim=(32, 1, 1),
@@ -207,7 +221,9 @@ def test_sort_boolean_options_accept_numpy_scalars_but_reject_truthy_integers():
 
 @pytest.mark.parametrize("items_per_thread", [0, -1, True, 1.5, "two"])
 def test_sort_rejects_invalid_item_count(items_per_thread):
-    with pytest.raises(ValueError, match="items_per_thread must be a positive integer"):
+    with pytest.raises(
+        ValueError, match="items_per_thread must be a positive integer"
+    ):
         make_block_radix_sort_semantics(
             key_dtype="u32",
             items_per_thread=items_per_thread,
