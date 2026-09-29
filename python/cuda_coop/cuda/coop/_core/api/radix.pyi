@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block radix ordering signatures."""
-
 from typing import TypeAlias
 
 import numpy
