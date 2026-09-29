@@ -6,6 +6,9 @@
 Batched Warp Reduction
 ======================
 
+This page describes the Numba-CUDA-MLIR implementation. See
+:ref:`backend operation support <coop-backend-operation-support>` for CUTLASS availability.
+
 :func:`cuda.coop.reduce_batched` reduces several independent batches across
 a warp. Each thread contributes one item to each batch: local slot zero
 belongs to batch zero, slot one to batch one, and so on. The result has
