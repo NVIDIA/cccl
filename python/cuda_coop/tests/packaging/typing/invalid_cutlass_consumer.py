@@ -174,7 +174,9 @@ cutlass_coop.exchange(block, scalar)  # expected-error: [call-overload]
 cutlass_coop.exchange(  # expected-error: [call-overload]
     block, values, mode="scatter_to_blocked"
 )
-cutlass_coop.exchange(block, values, ranks=ranks)  # expected-error: [call-overload]
+cutlass_coop.exchange(  # expected-error: [call-overload]
+    block, values, ranks=ranks
+)
 cutlass_coop.exchange(  # expected-error: [call-overload]
     warp, values, mode="scatter_to_blocked", ranks=ranks
 )
@@ -211,14 +213,22 @@ cutlass_coop.exchange(  # expected-error: [call-overload]
 )
 common.exchange(block, values, ranks=ranks)  # expected-error: [call-arg]
 cutlass_coop.shuffle(warp, values)  # expected-error: [arg-type]
-cutlass_coop.shuffle(block, values, distance=2)  # expected-error: [call-overload]
+cutlass_coop.shuffle(  # expected-error: [call-overload]
+    block, values, distance=2
+)
 cutlass_coop.shuffle(block, scalar)  # expected-error: [call-overload]
-cutlass_coop.shuffle(block, values, mode="rotate")  # expected-error: [call-overload]
+cutlass_coop.shuffle(  # expected-error: [call-overload]
+    block, values, mode="rotate"
+)
 cutlass_coop.shuffle(  # expected-error: [call-overload]
     block, scalar, mode="rotate", distance=np.uint64(1)
 )
-cutlass_coop.shuffle(block, values, prefix=scalar)  # expected-error: [call-overload]
-cutlass_coop.shuffle(block, values, suffix=scalar)  # expected-error: [call-overload]
+cutlass_coop.shuffle(  # expected-error: [call-overload]
+    block, values, prefix=scalar
+)
+cutlass_coop.shuffle(  # expected-error: [call-overload]
+    block, values, suffix=scalar
+)
 cutlass_coop.shuffle(  # expected-error: [call-overload]
     block, values, temp_storage=cutlass_coop.TempStorage()
 )

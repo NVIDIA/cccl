@@ -512,13 +512,19 @@ def check_cutlass_exchange_surface() -> None:
             cutlass_coop.ThreadData[np.float32],
         )
         assert_type(
-            cutlass_coop.exchange(block, values, mode=mode, warp_time_slicing=True),
+            cutlass_coop.exchange(
+                block, values, mode=mode, warp_time_slicing=True
+            ),
             cutlass_coop.ThreadData[np.float32],
         )
     for scatter_mode in ("scatter_to_blocked", "scatter_to_striped"):
         assert_type(
             cutlass_coop.exchange(
-                block, values, mode=scatter_mode, ranks=ranks, warp_time_slicing=True
+                block,
+                values,
+                mode=scatter_mode,
+                ranks=ranks,
+                warp_time_slicing=True,
             ),
             cutlass_coop.ThreadData[np.float32],
         )
@@ -545,7 +551,8 @@ def check_cutlass_exchange_surface() -> None:
     for width in (1, 2, 4, 8, 16, 32):
         logical = cutlass_coop.this_warp().group_by(width)
         assert_type(
-            cutlass_coop.exchange(logical, values), cutlass_coop.ThreadData[np.float32]
+            cutlass_coop.exchange(logical, values),
+            cutlass_coop.ThreadData[np.float32],
         )
     assert_type(
         cutlass_coop.exchange(common_coop.this_block(), values),
@@ -580,17 +587,24 @@ def check_cutlass_exchange_surface() -> None:
 def check_cutlass_shuffle_surface(scalar: Uint32) -> None:
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(3, np.int32)
-    assert_type(cutlass_coop.shuffle(block, values), cutlass_coop.ThreadData[np.int32])
+    assert_type(
+        cutlass_coop.shuffle(block, values), cutlass_coop.ThreadData[np.int32]
+    )
     assert_type(
         cutlass_coop.shuffle(block, values, mode="up"),
         cutlass_coop.ThreadData[np.int32],
     )
-    assert_type(cutlass_coop.shuffle(block, scalar, mode="offset", distance=-2), Uint32)
     assert_type(
-        cutlass_coop.shuffle(block, scalar, mode="rotate", distance=Int16(2)), Uint32
+        cutlass_coop.shuffle(block, scalar, mode="offset", distance=-2), Uint32
     )
     assert_type(
-        cutlass_coop.shuffle(block, scalar, mode="rotate", distance=np.uint32(2)),
+        cutlass_coop.shuffle(block, scalar, mode="rotate", distance=Int16(2)),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.shuffle(
+            block, scalar, mode="rotate", distance=np.uint32(2)
+        ),
         Uint32,
     )
     assert_type(

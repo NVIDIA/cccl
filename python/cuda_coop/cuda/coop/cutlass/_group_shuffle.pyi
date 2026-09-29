@@ -17,7 +17,11 @@ from .._typing import (
     CommonThreadDataLike,
     ScalarShuffleMode,
 )
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 _Distance: TypeAlias = (

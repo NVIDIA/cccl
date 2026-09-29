@@ -47,7 +47,12 @@ def test_exact_offset(distance):
 
 @pytest.mark.parametrize(
     "mode,distance",
-    (("offset", -(1 << 31) - 1), ("offset", 1 << 31), ("rotate", 0), ("rotate", 48)),
+    (
+        ("offset", -(1 << 31) - 1),
+        ("offset", 1 << 31),
+        ("rotate", 0),
+        ("rotate", 48),
+    ),
 )
 def test_static_bounds(mode, distance):
     with pytest.raises(ValueError, match="distance"):
@@ -72,7 +77,8 @@ def test_runtime_distance(dtype):
 
 
 @pytest.mark.parametrize(
-    "distance", (True, np.bool_(True), 1.5, cutlass.Float32(1), cutlass.Uint64(1))
+    "distance",
+    (True, np.bool_(True), 1.5, cutlass.Float32(1), cutlass.Uint64(1)),
 )
 def test_distance_type(distance):
     with pytest.raises(TypeError, match="distance"):
@@ -119,7 +125,9 @@ def test_group_restriction():
 
 def test_failed_call_rollback(monkeypatch):
     snapshot, registered, restored = object(), [], []
-    monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: snapshot)
+    monkeypatch.setattr(
+        _state, "snapshot_active_session_state", lambda: snapshot
+    )
     monkeypatch.setattr(_state, "register_request", registered.append)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)
 
