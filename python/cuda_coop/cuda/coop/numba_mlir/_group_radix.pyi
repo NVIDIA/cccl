@@ -22,11 +22,20 @@ from cuda.coop._typing import (
 from ._thread_group import BlockGroup
 
 _IntegerKey: TypeAlias = (
-    int | numpy.int32 | numpy.uint32 | numpy.int64 | numpy.uint64 | CompilerIntegerLike
+    int
+    | numpy.int32
+    | numpy.uint32
+    | numpy.int64
+    | numpy.uint64
+    | CompilerIntegerLike
 )
 _KeyT = TypeVar(
     "_KeyT",
-    bound=_IntegerKey | float | numpy.float32 | numpy.float64 | CompilerScalarLike,
+    bound=_IntegerKey
+    | float
+    | numpy.float32
+    | numpy.float64
+    | CompilerScalarLike,
 )
 _RankKeyT = TypeVar("_RankKeyT", bound=_IntegerKey)
 _ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)

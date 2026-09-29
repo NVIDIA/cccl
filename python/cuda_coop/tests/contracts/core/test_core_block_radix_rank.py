@@ -50,7 +50,9 @@ def test_radix_rank_spec_owns_cub_specialization_and_full_abi():
         "RADIX_BITS": 6,
         "IS_DESCENDING": "true",
         "MEMOIZE_OUTER_SCAN": "true",
-        "INNER_SCAN_ALGORITHM": ("::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS"),
+        "INNER_SCAN_ALGORITHM": (
+            "::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS"
+        ),
         "SMEM_CONFIG": "cudaSharedMemBankSizeFourByte",
         "BLOCK_DIM_Y": 2,
         "BLOCK_DIM_Z": 1,
@@ -60,7 +62,9 @@ def test_radix_rank_spec_owns_cub_specialization_and_full_abi():
     assert spec.specialization.parameters == (
         (
             TempStorageParameter(),
-            Array(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD"), name="keys"),
+            Array(
+                Dependency("KeyT"), Dependency("ITEMS_PER_THREAD"), name="keys"
+            ),
             Array(
                 INT32,
                 Dependency("ITEMS_PER_THREAD"),
@@ -182,7 +186,9 @@ def test_static_default_resolution_preserves_frontend_policy():
 
 @pytest.mark.parametrize("value", [0, -1, True, 1.5, "two"])
 def test_radix_rank_rejects_invalid_item_count(value):
-    with pytest.raises(ValueError, match="items_per_thread must be a positive integer"):
+    with pytest.raises(
+        ValueError, match="items_per_thread must be a positive integer"
+    ):
         make_block_radix_rank_semantics(
             key_dtype="u32",
             key_bit_width=32,
@@ -203,7 +209,9 @@ def test_radix_rank_rejects_invalid_item_count(value):
         (0, 33, "end_bit must not exceed the dtype bit width"),
     ],
 )
-def test_radix_rank_rejects_invalid_static_bit_ranges(begin_bit, end_bit, message):
+def test_radix_rank_rejects_invalid_static_bit_ranges(
+    begin_bit, end_bit, message
+):
     with pytest.raises(ValueError, match=message):
         make_radix_bit_range(
             begin_bit=begin_bit,

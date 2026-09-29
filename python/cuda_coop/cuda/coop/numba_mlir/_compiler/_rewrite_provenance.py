@@ -411,7 +411,10 @@ class _ProvenanceRewrite:
             raise CoopSinglePhaseRewriteError(
                 "typed group payload array-kind must be a compile-time bool"
             )
-        from ._group_planner_support import _PAYLOAD_DTYPE_INT32, _PAYLOAD_DTYPE_LIKE
+        from ._group_planner_support import (
+            _PAYLOAD_DTYPE_INT32,
+            _PAYLOAD_DTYPE_LIKE,
+        )
 
         if dtype_policy not in {_PAYLOAD_DTYPE_LIKE, _PAYLOAD_DTYPE_INT32}:
             raise CoopSinglePhaseRewriteError(
