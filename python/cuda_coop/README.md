@@ -122,6 +122,7 @@ explains terms and concepts, including blocked and striped layouts.
 | --- | --- |
 | Memory operations | `load`, `store` |
 | Reduction | `reduce`, `sum` |
+| Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
 
 Each operation documents its supported groups and result ownership in the
@@ -483,7 +484,7 @@ checked and converted in that context. Inclusive scans reject an initial
 value. The aggregate reports only the input reduction and does not include the
 exclusive initial value.
 
-The portable root API intentionally exposes only the common surface above. The
+The common root API intentionally exposes only the common surface above. The
 qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
 `ThreadData` or local array populated with the group aggregate. Warp forms also
 accept `valid_items`, which selects the first N lanes by group rank and requires
@@ -501,7 +502,7 @@ logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
 for the exact participating mask. Prefix callback and running-prefix state APIs
 are not part of this release.
 
-This portable example loads a block tile, computes its exclusive sum, and
+This common example loads a block tile, computes its exclusive sum, and
 stores the out-of-place result:
 
 ```python

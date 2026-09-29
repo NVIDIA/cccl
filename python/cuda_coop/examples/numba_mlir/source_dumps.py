@@ -12,7 +12,7 @@ import argparse
 import numpy as np
 from numba_cuda_mlir import cuda
 
-import cuda.coop.numba_mlir as numba_coop  # noqa: F401 -- activate the backend
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop
 
 
@@ -63,16 +63,39 @@ def copy_transpose(source, destination, items_per_thread):
 # docs: end dump-transpose
 
 
+# docs: start dump-scan
+@cuda.jit(device=True)
+def maximum(left, right):
+    if left > right:
+        return left
+    return right
+
+
+@cuda.jit
+def scan_maximum(source, destination):
+    block = numba_coop.this_block()
+    value = source[cuda.threadIdx.x]
+    destination[cuda.threadIdx.x] = numba_coop.inclusive_scan(
+        block,
+        value,
+        scan_op=maximum,
+    )
+
+
+# docs: end dump-scan
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("example", choices=("direct", "transpose"))
+    parser.add_argument("example", choices=("direct", "transpose", "scan"))
     example = parser.parse_args().example
-    count = 256
+    count = 128 if example == "scan" else 256
     source = ((np.arange(count) * 17) % 113 - 51).astype(np.int32)
     destination = np.empty_like(source)
     kernel = {
         "direct": copy_direct,
         "transpose": copy_transpose,
+        "scan": scan_maximum,
     }[example]
     if example == "scan":
         kernel[1, 128](source, destination)
@@ -82,7 +105,7 @@ def main():
             source, destination, items_per_thread
         )
     cuda.synchronize()
-    expected = source
+    expected = np.maximum.accumulate(source) if example == "scan" else source
     np.testing.assert_array_equal(destination, expected)
     print(f"{example}: result verified")
 

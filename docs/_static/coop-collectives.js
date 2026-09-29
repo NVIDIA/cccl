@@ -18,6 +18,12 @@
     { id: "raking", label: "Raking", tag: "CUB · root result" },
     { id: "warp_reductions", label: "Warp reductions", tag: "CUB · warp partials" },
   ];
+  const block_scan_algorithms = [
+    { id: "raking", label: "Raking", tag: "Shared segments and prefixes" },
+    { id: "raking_memoize", label: "Raking, memoize", tag: "Retain local partials in registers" },
+    { id: "warp_scans", label: "Warp scans", tag: "Local warp scans and warp prefixes" },
+  ];
+
   function group_width(scope) {
     return scope === "thread" ? 1 : scope === "logical_warp" ? 2 : scope === "warp" ? 4 : threads;
   }
@@ -136,4 +142,90 @@
     build: build_reduce,
   });
 
+  function prefix_choices(state) {
+    const generic_exclusive = state.variant === "exclusive_scan";
+    const choices = generic_exclusive ? [choice("zero", "Initial value 0"), choice("ten", "Initial value 10")] : [choice("none", "No added prefix")];
+    return choices;
+  }
+
+  function build_scan(state) {
+    const items = Number(state.items);
+    const width = group_width(state.scope);
+    const valid = state.valid === "half" ? width / 2 : width;
+    const operator = state.variant.endsWith("_sum") ? "sum" : state.operator;
+    const inclusive = state.variant.startsWith("inclusive");
+    const values = input_values(threads * items, operator);
+    const totals = Array.from({ length: threads }, (_, thread) => fold(values.slice(thread * items, (thread + 1) * items), operator));
+    const aggregates = Array.from({ length: threads / width }, (_, group) => fold(values.slice(group * width * items, (group * width + valid) * items), operator));
+    const seeds = aggregates.map(aggregate => state.prefix === "ten" ? 10 : state.prefix === "zero" || !inclusive ? 0 : null);
+    const local = values.map((_, index) => {
+      const thread = Math.floor(index / items);
+      const value = fold(values.slice(thread * items, index + 1), operator);
+      return token(`v${index}`, value, "local", index, `T${thread} local inclusive prefix through slot ${index % items}: ${value}.`, thread);
+    });
+    const prefixes = totals.map((_, thread) => {
+      const start = Math.floor(thread / width) * width;
+      const prefix = fold(totals.slice(start, thread), operator, seeds[Math.floor(thread / width)]);
+      const entry = token(`prefix${thread}`, prefix, "prefix", thread,
+        prefix === null ? "This is the first thread: no preceding value or added prefix exists." : `T${thread} receives prefix ${prefix} from earlier threads and the selected initial prefix.`, thread,
+        { row: "local", index: thread * items + items - 1 });
+      if (prefix === null) { entry.label = "∅"; entry.value = "empty prefix"; }
+      if (thread % width >= valid) { entry.label = "?"; entry.value = "undefined"; entry.detail = "This rank is outside valid_items; its output is not defined."; entry.muted = true; }
+      return entry;
+    });
+    const output = values.map((_, index) => {
+      const thread = Math.floor(index / items);
+      const group = Math.floor(thread / width);
+      const value = thread % width < valid ? fold(values.slice(group * width * items, index + (inclusive ? 1 : 0)), operator, seeds[group]) : null;
+      return token(`v${index}`, value, "output", index,
+        value === null ? `T${thread} is outside valid_items; this result is undefined.` : `${state.variant} result for T${thread}, slot ${index % items}: ${value}.`, thread,
+        { row: "local", index });
+    });
+    const rows = [
+      { id: "input", label: "Input registers · blocked sequence", count: values.length, groups: groups(items) },
+      { id: "local", label: "Local inclusive prefixes · inputs remain unchanged", count: values.length, groups: groups(items) },
+      { id: "prefix", label: "Prefix entering each thread · ∅ means no earlier value", count: threads, groups: groups(1) },
+      { id: "output", label: `${inclusive ? "Inclusive" : "Exclusive"} result registers`, count: values.length, groups: groups(items) },
+    ];
+    if (state.aggregate === "emit") {
+      rows.push({ id: "aggregate", label: "Optional aggregate_output · input aggregate, without prefix", count: threads, groups: groups(1) });
+      for (let thread = 0; thread < threads; ++thread) output.push(token(`aggregate${thread}`, aggregates[Math.floor(thread / width)], "aggregate", thread,
+        "The group input aggregate is returned to every lane; initial_value is not included.", Math.floor(thread / width) * width));
+    }
+    const algorithm = state.scope === "block" ? block_scan_algorithms.find(value => value.id === state.algorithm) : { label: "Warp scan" };
+    const notes = [
+      `${inclusive ? "Inclusive output includes the current item." : "Exclusive output stops before the current item."} Order is blocked: all of T0's items, then T1's, and so on within each group.`,
+      "The local and incoming prefixes are mathematical decompositions. Raking stages through shared segments; memoization retains partials in registers; warp_scans propagates totals between warp scans. The figure does not specify exact instructions or storage padding.",
+      state.scope === "block" ? "Block scans accept scalar values or ThreadData, and return a separate result without changing the input." : "Physical and logical warp scans accept one scalar per lane. Every lane participates; ranks beyond valid_items have undefined scan outputs.",
+    ];
+    if (state.operator === "custom_max" && !state.variant.endsWith("_sum")) notes.push("Custom maximum is a device callback passed as scan_op through cuda.coop.numba_mlir.");
+    if (state.aggregate === "emit") notes.push("aggregate_output is a qualified-backend one-item output. It excludes any initial prefix.");
+    return {
+      detail: `${algorithm.label}: ${state.variant.replaceAll("_", " ")} over ${width * items} ordered items per ${state.scope.replaceAll("_", " ")} group.`,
+      rows,
+      phases: [
+        { label: "Inputs", description: "Values are ordered by thread rank and then by local item slot.", tokens: source_tokens(values, items) },
+        { label: "Local prefixes", description: "Each thread computes prefixes within its own items; these do not yet include earlier threads.", tokens: local },
+        { label: "Propagate prefixes", description: "Each thread receives the aggregate of earlier threads, combined with any initial prefix.", tokens: prefixes },
+        { label: "Scan results", description: notes[0], tokens: output },
+      ],
+      notes,
+      summary: `Scan outputs: [${output.filter(entry => entry.row === "output").map(entry => entry.label).join(", ")}]. Input group aggregates: [${aggregates.join(", ")}].`,
+    };
+  }
+
+  window.CoopExplorer.register("scan", {
+    title: "Follow a cooperative scan", eyebrow: "Ordered values to prefixes", defaultAlgorithm: "raking",
+    algorithms: state => state.scope === "block" ? block_scan_algorithms : [{ id: "warp", label: "Warp scan", tag: "One scalar per physical or logical lane" }],
+    controls: [
+      { id: "scope", label: "Group", value: "block", choices: scope_choices },
+      { id: "items", label: "Items per thread", value: "2", choices: state => state.scope === "block" ? ["1", "2", "4"] : ["1"] },
+      { id: "variant", label: "Operation", value: "exclusive_sum", choices: [choice("exclusive_sum", "Exclusive sum"), choice("inclusive_sum", "Inclusive sum"), choice("exclusive_scan", "Exclusive scan"), choice("inclusive_scan", "Inclusive scan")] },
+      { id: "operator", label: "Operator", value: "sum", choices: state => state.variant.endsWith("_sum") ? [choice("sum", "Sum")] : [choice("sum", "Sum"), choice("max", "Maximum"), choice("custom_max", "Custom maximum callback")] },
+      { id: "prefix", label: "Prefix", value: "none", choices: prefix_choices },
+      { id: "valid", label: "Contributing ranks", value: "full", choices: state => [choice("full", "All group members"), ...(state.scope !== "block" ? [choice("half", "First half (valid_items)")] : [])] },
+      { id: "aggregate", label: "Aggregate output", value: "none", choices: [choice("none", "Scan results only"), choice("emit", "Also return input aggregate")] },
+    ],
+    build: build_scan,
+  });
 })();

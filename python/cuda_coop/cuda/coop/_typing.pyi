@@ -179,7 +179,7 @@ TraceInteger: TypeAlias = int | numpy.integer[Any]
 ValidItems: TypeAlias = IntegerValue
 
 class ThreadDataLike(Protocol[_ItemT]):
-    """Portable mutable, indexable per-thread payload contract.
+    """Common mutable, indexable per-thread payload contract.
 
     Concrete compiler backends may attach additional helpers and metadata, but
     common operations rely only on this payload shape and item access contract.
@@ -200,7 +200,7 @@ class ThreadDataLike(Protocol[_ItemT]):
         """Replace one thread-local item."""
 
 class PortableThreadDataLike(Protocol[_ReadableItemT_co]):
-    """Thread payload whose readable item type is in the portable closure."""
+    """Thread payload whose readable items use the common API's numeric types."""
 
     items_per_thread: int
     dtype: object | None
@@ -209,10 +209,10 @@ class PortableThreadDataLike(Protocol[_ReadableItemT_co]):
         """Return the number of items owned by this thread."""
 
     def __getitem__(self, index: int, /) -> _ReadableItemT_co:
-        """Return one portable numeric register value."""
+        """Return one numeric register value supported by the common API."""
 
 class TempStorageLike(Protocol):
-    """Portable explicit scratch-storage descriptor contract."""
+    """Common explicit scratch-storage descriptor contract."""
 
     size_in_bytes: int | None
     alignment: int | None
