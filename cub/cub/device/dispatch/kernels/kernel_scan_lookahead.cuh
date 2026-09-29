@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_scan.cuh>
 #include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
@@ -51,7 +52,8 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(Prologue);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadReduce);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadScanStore);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLoadAndNextIdx);
-_CCCL_IKET_CREATE_PUSH_POP_RANGE(Load);
+// Load is declared in cub/agent/agent_scan.cuh, which kernel_scan.cuh always includes before this header, so it's
+// shared between the classic (lookback) and warpspeed (lookahead) scan kernels instead of being redeclared here.
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(NextIdx);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLookahead);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(GetNextIdx);
