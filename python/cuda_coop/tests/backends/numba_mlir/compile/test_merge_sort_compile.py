@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""GPU-hidden Merge Sort provider and production kernel compilation."""
-
 import os
 from types import SimpleNamespace
 

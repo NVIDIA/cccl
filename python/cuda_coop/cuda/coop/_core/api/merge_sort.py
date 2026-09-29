@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Group-first Merge Sort entry points."""
-
 from __future__ import annotations
 
 from typing import Any

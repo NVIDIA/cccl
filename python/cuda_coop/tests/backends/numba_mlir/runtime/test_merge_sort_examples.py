@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Executable merge-sort examples included by the programming guide."""
-
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUB Merge Sort providers for block and warp groups."""
-
 from cuda.coop._core import (
     INT8,
     CxxOperator,
