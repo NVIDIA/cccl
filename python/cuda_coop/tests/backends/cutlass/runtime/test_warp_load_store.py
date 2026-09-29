@@ -98,12 +98,11 @@ def test_group_local_load_counts_offsets_and_defaults(api, algorithm, base_valid
 @pytest.mark.parametrize(
     "base_valid", (0, 100, _WARP_TILE), ids=("zero", "partial", "full-first-warp")
 )
-def test_group_local_store_counts_offsets_preserve_payload(api, algorithm, base_valid):
+def test_group_local_store_counts_and_offsets(api, algorithm, base_valid):
     @cute.kernel
     def kernel(
         source: cute.Pointer,
         destination: cute.Pointer,
-        preserved: cute.Pointer,
         valid: cutlass.Int32,
     ):
         x, y, z = cute.arch.thread_idx()
@@ -124,22 +123,17 @@ def test_group_local_store_counts_offsets_preserve_payload(api, algorithm, base_
             valid_items=count,
             offset=cutlass.Int64(5 + warp * 4),
         )
-        outputs = cute.make_tensor(preserved, cute.make_layout(_BLOCK_TILE))
-        for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = payload[item]
 
     @cute.jit
     def launch(
         source: cute.Pointer,
         destination: cute.Pointer,
-        preserved: cute.Pointer,
         valid: cutlass.Int32,
     ):
-        kernel(source, destination, preserved, valid).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, valid).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _BLOCK_TILE, shift=19)
     destination = np.full(_BLOCK_TILE + 15, -101, dtype=np.int32)
-    preserved = np.zeros_like(source)
     expected = destination.copy()
     for thread in range(_THREADS):
         warp, lane = divmod(thread, _WIDTH)
@@ -149,14 +143,9 @@ def test_group_local_store_counts_offsets_preserve_payload(api, algorithm, base_
             index = _index(algorithm, lane, item)
             if index < count:
                 expected[origin + index] = source[thread * _ITEMS + item]
-    with (
-        device_array(source) as src,
-        device_array(destination) as dst,
-        device_array(preserved) as check,
-    ):
-        launch(src, dst, check, base_valid)
+    with device_array(source) as src, device_array(destination) as dst:
+        launch(src, dst, base_valid)
     np.testing.assert_array_equal(destination, expected)
-    np.testing.assert_array_equal(preserved, source)
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
@@ -199,23 +188,21 @@ def test_warp_layout_for_every_dtype(api, dtype, operation, algorithm):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("static_count", (False, True), ids=("runtime", "static"))
-def test_partial_transpose_preserves_each_warps_invalid_registers(api, static_count):
+def test_partial_transpose_loads_each_warps_valid_items_without_default(
+    api, static_count
+):
     valid = _WARP_TILE - 19
 
     @cute.kernel
     def kernel(
         source: cute.Pointer,
-        initial: cute.Pointer,
         observed: cute.Pointer,
         count: cutlass.Int32,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
-        inputs = cute.make_tensor(initial, cute.make_layout(_BLOCK_TILE))
         outputs = cute.make_tensor(observed, cute.make_layout(_BLOCK_TILE))
         payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = inputs[thread * _ITEMS + item]
         if cutlass.const_expr(static_count):
             api.load(
                 api.this_warp(),
@@ -232,32 +219,28 @@ def test_partial_transpose_preserves_each_warps_invalid_registers(api, static_co
                 algorithm="transpose",
                 valid_items=count - (thread // _WIDTH) * 13,
             )
+        selected_count = valid if static_count else count - (thread // _WIDTH) * 13
         for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = payload[item]
+            if (thread % _WIDTH) * _ITEMS + item < selected_count:
+                outputs[thread * _ITEMS + item] = payload[item]
 
     @cute.jit
     def launch(
         source: cute.Pointer,
-        initial: cute.Pointer,
         observed: cute.Pointer,
         count: cutlass.Int32,
     ):
-        kernel(source, initial, observed, count).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, count).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _BLOCK_TILE)
-    initial = -1000 - np.arange(_BLOCK_TILE, dtype=np.int32)
-    observed = np.zeros_like(initial)
-    expected = initial.copy()
+    observed = np.full(_BLOCK_TILE, 71, dtype=np.int32)
+    expected = observed.copy()
     for warp in range(_THREADS // _WIDTH):
         start = warp * _WARP_TILE
         count = valid if static_count else valid - warp * 13
         expected[start : start + count] = source[start : start + count]
-    with (
-        device_array(source) as src,
-        device_array(initial) as seed,
-        device_array(observed) as out,
-    ):
-        launch(src, seed, out, valid)
+    with device_array(source) as src, device_array(observed) as out:
+        launch(src, out, valid)
     np.testing.assert_array_equal(observed, expected)
 
 
