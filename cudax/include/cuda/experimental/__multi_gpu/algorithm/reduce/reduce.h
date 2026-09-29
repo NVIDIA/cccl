@@ -52,8 +52,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
 namespace __detail::__reduce
 {
 template <class _Buffer, class _Comm, class _Env, class _InputIt, class _SizeT, class _Tp, class _BinaryOp>
@@ -67,30 +66,20 @@ template <class _Buffer, class _Comm, class _Env, class _InputIt, class _SizeT, 
   const _BinaryOp& __op,
   const _Tp& __ident)
 {
-  const auto& __logical_device = __comm.logical_device();
-  // Workaround for the case where:
-  //
-  // 1. The stream is the NULL stream.
-  // 2. The resource is the default per-device memory resource.
-  // 3. There is no current context set.
-  //
-  // In this case cuMemAllocFromPool fails with INVALID_CONTEXT because the driver cannot pick
-  // an appropriate context to tie the allocation to.
-  const auto _                = ::cuda::__ensure_current_context{__logical_device};
   ::cuda::stream_ref __stream = ::cuda::get_stream(__env);
-  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __logical_device);
+  auto __resource = ::cuda::experimental::mgmn::__detail::__resource_from_env(__env, __stream.__logical_device());
 
   // Allocate enough storage so that we can use the buffer directly in an in-place comm all
   // gather/all reduce call. Those calls require that the receive buffer is of size nranks *
   // sendcount.
-  auto __buff = ::cuda::experimental::__detail::__make_safe_uninitialized_buffer<_Tp>(
+  auto __buff = ::cuda::experimental::mgmn::__detail::__make_safe_uninitialized_buffer<_Tp>(
     __stream, ::cuda::std::move(__resource), __comm.size(), __env);
   static_assert(::cuda::std::same_as<decltype(__buff), _Buffer>);
 
   const auto __rank = __comm.rank();
 
   __CUDAX_MULTI_GPU_DISPATCH(
-    __logical_device,
+    __stream,
     CUB_NS_QUALIFIER::DeviceReduce::Reduce,
     __input_it,
     // Similarly to above, prepare for the comm calls later. In order for those to be
@@ -146,7 +135,7 @@ _CCCL_HOST_API void __two_stage_gather_reduction(
        ::cuda::std::ranges::views::zip(__comms, __envs, *__partials, __outputs))
   {
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      __buffer.stream(),
       CUB_NS_QUALIFIER::DeviceReduce::Reduce,
       __buffer.begin(),
       __out,
@@ -224,7 +213,7 @@ _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::range
                    _CCCL_AND ::cuda::std::ranges::forward_range<_SizeTRange> _CCCL_AND
                      __detail::__range_of_output_iters<_OutputIterRange, _Tp>)
 _CCCL_HOST_API void reduce(
-  [[maybe_unused]] const __result_policy_base<_Policy>& __policy,
+  [[maybe_unused]] const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputIterRange&& __input_iters,
@@ -235,12 +224,12 @@ _CCCL_HOST_API void reduce(
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
   static_assert(::cuda::std::ranges::sized_range<_CommRange>);
-  static_assert(::cuda::std::same_as<_Policy, broadcasted_t>,
+  static_assert(::cuda::std::same_as<_Policy, ::cuda::experimental::broadcasted_t>,
                 "Only broadcasted results are currently supported. Please open an issue at "
                 "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
 
   using __properties =
-    ::cuda::experimental::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
+    ::cuda::experimental::mgmn::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
 
   static_assert(::cuda::std::__indirectly_binary_reducible<_BinaryOp, _Tp, typename __properties::__input_iter_type>);
 
@@ -249,6 +238,31 @@ _CCCL_HOST_API void reduce(
   static_assert(::cuda::std::__is_callable_v<::cuda::get_stream_t, typename __properties::__env_type>,
                 "Environment must contain a stream");
 
+  // TODO(jfaibussowit):
+  //
+  // Determinism is a tricky problem. In addition to CUB it also depends on the communicator so
+  // we need some way of asking the communicator whether they can satisfy it. But should it
+  // expose a query() member? A default_properties? And what should the default be, to assume
+  // it can only handle not_guaranteed? Also, it's relatively obvious that you can ask the
+  // question about reductions, but should you be able to ask it about other methods like
+  // gather/allgather?
+  //
+  // There is an additional wrinkle that determinism for comms is usually tied to the
+  // topology as well. If you run the same program but with different number of ranks, you
+  // probably get different results. We can't ensure this at compile time.
+  //
+  // So all this is to say, I will punt this until a user has a need for it, which may help us
+  // decide these things.
+  {
+    using __determinism _CCCL_NODEBUG =
+      ::cuda::experimental::mgmn::__detail::__determinism_of_t<typename __properties::__env_type>;
+
+    static_assert(::cuda::std::same_as<__determinism, ::cuda::execution::determinism::run_to_run_t>
+                    || ::cuda::std::same_as<__determinism, ::cuda::execution::determinism::not_guaranteed_t>,
+                  "Only run_to_run and not_guaranteed reductions are currently supported. Please open an issue at "
+                  "github.com/NVIDIA/cccl/issue requesting support for stronger determinism");
+  }
+
   const auto __num_local = ::cuda::std::ranges::size(__comms);
 
   if (!__num_local)
@@ -256,7 +270,7 @@ _CCCL_HOST_API void reduce(
     return;
   }
 
-  _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::reduce");
+  _CCCL_NVTX_RANGE_SCOPE("cuda::mgmn::reduce");
 
   auto __partials = ::std::vector<typename __properties::__buffer_type>{};
 
@@ -267,19 +281,19 @@ _CCCL_HOST_API void reduce(
        ::cuda::std::ranges::views::zip(__comms, __envs, __input_iters, __num_items_range))
   {
     __partials.emplace_back(
-      ::cuda::experimental::__detail::__reduce::__local_reduction<typename __properties::__buffer_type>(
+      ::cuda::experimental::mgmn::__detail::__reduce::__local_reduction<typename __properties::__buffer_type>(
         /*__ROOT_RANK=*/0, __comm, __env, __input_it, __num_items, __init, __op, __ident));
   }
 
-  if constexpr (::cuda::experimental::__has_all_reduce<::cuda::std::ranges::range_value_t<_CommRange>,
-                                                       typename __properties::__output_type*,
-                                                       _BinaryOp>)
+  if constexpr (::cuda::experimental::mgmn::__has_all_reduce<::cuda::std::ranges::range_value_t<_CommRange>,
+                                                             typename __properties::__output_type*,
+                                                             _BinaryOp>)
   {
-    ::cuda::experimental::__detail::__reduce::__direct_reduction(__comms, __output_iters, __op, &__partials);
+    ::cuda::experimental::mgmn::__detail::__reduce::__direct_reduction(__comms, __output_iters, __op, &__partials);
   }
   else
   {
-    ::cuda::experimental::__detail::__reduce::__two_stage_gather_reduction(
+    ::cuda::experimental::mgmn::__detail::__reduce::__two_stage_gather_reduction(
       __comms, __envs, __output_iters, __op, &__partials);
   }
 }
@@ -322,7 +336,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::random_access_iterator<_InputIt>
                  _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
 _CCCL_HOST_API void reduce(
-  const __result_policy_base<_Policy>& __policy,
+  const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
   _InputIt __input_iter,
@@ -332,7 +346,7 @@ _CCCL_HOST_API void reduce(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  ::cuda::experimental::reduce(
+  ::cuda::experimental::mgmn::reduce(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
@@ -343,7 +357,7 @@ _CCCL_HOST_API void reduce(
     ::cuda::std::move(__op),
     ::cuda::std::move(__ident));
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

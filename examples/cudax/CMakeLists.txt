@@ -73,3 +73,18 @@ target_link_libraries(vector_add PUBLIC cudax_samples_interface)
 include(CTest)
 enable_testing()
 add_test(NAME vector_add COMMAND vector_add)
+
+# The fp samples demonstrate the extended and reduced precision floating-point types
+file(
+  GLOB fp_sample_srcs
+  RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
+  CONFIGURE_DEPENDS
+  fp/*.cu
+)
+
+foreach (fp_sample_src IN LISTS fp_sample_srcs)
+  get_filename_component(fp_sample "${fp_sample_src}" NAME_WLE)
+  add_executable(${fp_sample} "${fp_sample_src}")
+  target_link_libraries(${fp_sample} PUBLIC cudax_samples_interface)
+  add_test(NAME ${fp_sample} COMMAND ${fp_sample})
+endforeach()

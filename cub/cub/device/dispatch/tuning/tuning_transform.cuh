@@ -333,11 +333,15 @@ tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool fill
   if (filling)
   {
     // manually tuned fill on RTX 5090
-    // TODO(bgruber): re-enable this later! It's disabled to avoid SASS changes in PR #6914
-    // if (cc >= ::cuda::compute_capability{12, 0})
-    // {
-    //   return TransformVectorizedPolicy{256, 8, 4};
-    // }
+    if (cc >= ::cuda::compute_capability{12, 0})
+    {
+      if (store_size == 8)
+      {
+        return TransformVectorizedPolicy{256, 8, 4};
+      }
+      // otherwise, the tunings for B200 are good
+    }
+
     // manually tuned fill on B200, same as H200
     if (cc >= ::cuda::compute_capability{9, 0})
     {

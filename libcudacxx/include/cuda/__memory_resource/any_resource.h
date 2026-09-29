@@ -38,7 +38,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
 
 template <class _Property>
-using __property_result_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call1< //
+using __property_result_t _CCCL_NODEBUG = ::cuda::std::__type_call1< //
   ::cuda::std::conditional_t<cuda::property_with_value<_Property>,
                              ::cuda::std::__type_quote1<__property_value_t>,
                              ::cuda::std::__type_always<void>>,
@@ -80,7 +80,7 @@ struct __with_property
 
     _CCCL_TEMPLATE(class _Ty)
     _CCCL_REQUIRES((::cuda::has_property<_Ty, _Property>) )
-    using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__get_property<_Ty>>;
+    using overrides _CCCL_NODEBUG = __overrides_for<_Ty, &__get_property<_Ty>>;
   };
 };
 
@@ -152,7 +152,7 @@ struct __ibasic_resource : __basic_interface<__ibasic_resource>
   }
 
   template <class _Ty>
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__allocate_sync_fn<_Ty>, &__deallocate_sync_fn<_Ty>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Ty, &__allocate_sync_fn<_Ty>, &__deallocate_sync_fn<_Ty>>;
 };
 
 template <class...>
@@ -186,15 +186,15 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
   }
 
   template <class _Ty>
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__allocate_async<_Ty>, &__deallocate_async<_Ty>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Ty, &__allocate_async<_Ty>, &__deallocate_async<_Ty>>;
 };
 
 template <class... _Properties>
-using __iresource _CCCL_NODEBUG_ALIAS = ::cuda::
+using __iresource _CCCL_NODEBUG = ::cuda::
   __iset<__ibasic_resource<>, __iproperty_set<_Properties...>, ::cuda::__icopyable<>, ::cuda::__iequality_comparable<>>;
 
 template <class... _Properties>
-using __iasync_resource _CCCL_NODEBUG_ALIAS = __iset<__iresource<_Properties...>, __ibasic_async_resource<>>;
+using __iasync_resource _CCCL_NODEBUG = __iset<__iresource<_Properties...>, __ibasic_async_resource<>>;
 
 template <class _Property>
 using __try_property_result_t =

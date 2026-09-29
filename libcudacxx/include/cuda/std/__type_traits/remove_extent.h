@@ -34,15 +34,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct remove_extent
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
 };
 
 #  if _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 template <class _Tp>
-using remove_extent_t _CCCL_NODEBUG_ALIAS = typename remove_extent<_Tp>::type;
+using remove_extent_t _CCCL_NODEBUG = typename remove_extent<_Tp>::type;
 #  else // ^^^ _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() ^^^ / vvv !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() vvv
 template <class _Tp>
-using remove_extent_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
+using remove_extent_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
 #  endif // !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 
 #else
@@ -63,7 +63,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[_Np]>
 };
 
 template <class _Tp>
-using remove_extent_t _CCCL_NODEBUG_ALIAS = typename remove_extent<_Tp>::type;
+using remove_extent_t _CCCL_NODEBUG = typename remove_extent<_Tp>::type;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
 

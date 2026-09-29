@@ -176,9 +176,9 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<SelectedOutIt, RejectedOutIt> stable_p
     return ::cuda::std::make_pair(selected_result, rejected_result);
   }
 
-  using output_it_wrapper_t = cub::detail::select::partition_distinct_output_t<SelectedOutIt, RejectedOutIt>;
-  std::size_t num_items     = static_cast<std::size_t>(::cuda::std::distance(first, last));
-  std::size_t num_selected =
+  using output_it_wrapper_t   = cub::detail::select::partition_distinct_output_t<SelectedOutIt, RejectedOutIt>;
+  const std::size_t num_items = static_cast<std::size_t>(::cuda::std::distance(first, last));
+  const std::size_t num_selected =
     partition(policy, first, last, stencil, output_it_wrapper_t{selected_result, rejected_result}, predicate);
   return ::cuda::std::make_pair(selected_result + num_selected, rejected_result + num_items - num_selected);
 }
@@ -193,15 +193,15 @@ THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
   }
 
   // Element type of the input iterator
-  using value_t         = thrust::detail::it_value_t<InputIt>;
-  std::size_t num_items = static_cast<std::size_t>(::cuda::std::distance(first, last));
+  using value_t               = thrust::detail::it_value_t<InputIt>;
+  const std::size_t num_items = static_cast<std::size_t>(::cuda::std::distance(first, last));
 
   // Allocate temporary storage, which will serve as the input to the partition
   thrust::detail::temporary_array<value_t, Derived> tmp(policy, num_items);
   cuda_cub::uninitialized_copy(policy, first, last, tmp.begin());
 
   // Partition input from temporary storage to the user-provided range [`first`, `last`)
-  std::size_t num_selected =
+  const std::size_t num_selected =
     partition(policy, tmp.data().get(), tmp.data().get() + num_items, stencil, first, predicate);
   return first + num_selected;
 }
@@ -349,15 +349,15 @@ stable_partition(execution_policy<Derived>& policy, Iterator first, Iterator las
 template <class Predicate>
 struct __is_partitioned_fn
 {
-  Predicate pred_;
+  Predicate pred;
 
-  // Not const-qualified: a const operator() would propagate const onto pred_
+  // Not const-qualified: a const operator() would propagate const onto pred
   // and reject predicates whose own operator() is non-const (Thrust permits these).
   template <class Tuple>
   [[nodiscard]] _CCCL_HOST_DEVICE bool operator()(const Tuple& tuple)
   {
-    const bool lhs = pred_(thrust::raw_reference_cast(::cuda::std::get<0>(tuple)));
-    const bool rhs = pred_(thrust::raw_reference_cast(::cuda::std::get<1>(tuple)));
+    const bool lhs = pred(thrust::raw_reference_cast(::cuda::std::get<0>(tuple)));
+    const bool rhs = pred(thrust::raw_reference_cast(::cuda::std::get<1>(tuple)));
     return !lhs && rhs;
   }
 };

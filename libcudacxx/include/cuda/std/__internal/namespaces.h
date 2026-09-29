@@ -120,6 +120,9 @@
 #define _CCCL_BEGIN_NAMESPACE_CUDA_ARGUMENT _CCCL_BEGIN_NAMESPACE(cuda::args)
 #define _CCCL_END_NAMESPACE_CUDA_ARGUMENT   _CCCL_END_NAMESPACE(cuda::args)
 
+#define _CCCL_BEGIN_NAMESPACE_CUDA_MGMN _CCCL_BEGIN_NAMESPACE(cuda::experimental::mgmn)
+#define _CCCL_END_NAMESPACE_CUDA_MGMN   _CCCL_END_NAMESPACE(cuda::experimental::mgmn)
+
 // Namespace to avoid name collisions with CPOs on clang-16 (see
 // https://godbolt.org/z/9TadonrdM for example). MSVC's ancient parser also gets confused with
 // __cccl_true in the main iter_move template.

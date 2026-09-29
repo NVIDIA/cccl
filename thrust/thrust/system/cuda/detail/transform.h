@@ -18,15 +18,11 @@
 
 #  include <cub/device/device_transform.cuh>
 
-#  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
-#  include <thrust/zip_function.h>
 
 #  include <cuda/__functional/address_stability.h>
-#  include <cuda/__iterator/zip_function.h>
-#  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/std/__algorithm/transform.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
@@ -165,31 +161,6 @@ OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   throw_on_error(status, "transform: failed to synchronize");
 
   return result + num_items;
-}
-
-// unwrap zip_iterator and zip_function into their underlying iterators so cub::DeviceTransform can optimize them
-// TODO(bgruber): we may want to move this unpacking logic into cub::DeviceTransform directly
-template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
-OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
-  execution_policy<Derived>& policy,
-  ::cuda::std::tuple<zip_iterator<::cuda::std::tuple<InputIts...>>> firsts,
-  OutputIt result,
-  Offset num_items,
-  zip_function<TransformOp> transform_op)
-{
-  return cub_transform_many(
-    policy, ::cuda::std::get<0>(firsts).get_iterator_tuple(), result, num_items, transform_op.underlying_function());
-}
-
-template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
-OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
-  execution_policy<Derived>& policy,
-  ::cuda::std::tuple<::cuda::zip_iterator<InputIts...>> firsts,
-  OutputIt result,
-  Offset num_items,
-  ::cuda::zip_function<TransformOp> transform_op)
-{
-  return cub_transform_many(policy, ::cuda::std::get<0>(firsts).__iterators(), result, num_items, transform_op.__fun());
 }
 
 template <typename F>

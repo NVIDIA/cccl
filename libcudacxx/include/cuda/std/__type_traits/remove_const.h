@@ -32,11 +32,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct remove_const
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CONST(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_CONST(_Tp);
 };
 
 template <class _Tp>
-using remove_const_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CONST(_Tp);
+using remove_const_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_CONST(_Tp);
 
 #else
 
@@ -52,7 +52,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_const<const _Tp>
 };
 
 template <class _Tp>
-using remove_const_t _CCCL_NODEBUG_ALIAS = typename remove_const<_Tp>::type;
+using remove_const_t _CCCL_NODEBUG = typename remove_const<_Tp>::type;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
 

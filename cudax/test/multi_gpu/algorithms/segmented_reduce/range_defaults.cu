@@ -87,7 +87,7 @@ MULTI_GPU_TEST("segmented_reduce, range overloads default values", )
 
   SECTION("Default init, op, ident (all)")
   {
-    cudax::segmented_reduce(
+    cudax::mgmn::segmented_reduce(
       cudax::broadcasted, comms, envs, input_iters, num_segments, begin_iters, end_iters, output_iters);
 
     for (const auto& buf : out)
@@ -98,7 +98,7 @@ MULTI_GPU_TEST("segmented_reduce, range overloads default values", )
 
   SECTION("Default op, ident")
   {
-    cudax::segmented_reduce(
+    cudax::mgmn::segmented_reduce(
       cudax::broadcasted, comms, envs, input_iters, num_segments, begin_iters, end_iters, output_iters, init);
 
     for (const auto& buf : out)
@@ -109,7 +109,7 @@ MULTI_GPU_TEST("segmented_reduce, range overloads default values", )
 
   SECTION("Default ident")
   {
-    cudax::segmented_reduce(
+    cudax::mgmn::segmented_reduce(
       cudax::broadcasted, comms, envs, input_iters, num_segments, begin_iters, end_iters, output_iters, init, op);
 
     for (const auto& buf : out)
@@ -120,7 +120,7 @@ MULTI_GPU_TEST("segmented_reduce, range overloads default values", )
 
   SECTION("Default none")
   {
-    cudax::segmented_reduce(
+    cudax::mgmn::segmented_reduce(
       cudax::broadcasted, comms, envs, input_iters, num_segments, begin_iters, end_iters, output_iters, init, op, ident);
 
     for (const auto& buf : out)

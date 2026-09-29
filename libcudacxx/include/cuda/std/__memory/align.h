@@ -43,10 +43,10 @@ _CCCL_HOST_DEVICE_API inline void* align(size_t __alignment, size_t __size, void
     return nullptr;
   }
 
-  char* __char_ptr    = static_cast<char*>(__ptr);
-  char* __aligned_ptr = reinterpret_cast<char*>( // NOLINT(performance-no-int-to-ptr)
+  char* __char_ptr          = static_cast<char*>(__ptr);
+  const char* __aligned_ptr = reinterpret_cast<char*>( // NOLINT(performance-no-int-to-ptr)
     reinterpret_cast<uintptr_t>(__char_ptr + (__alignment - 1)) & -__alignment);
-  const size_t __diff = static_cast<size_t>(__aligned_ptr - __char_ptr);
+  const size_t __diff       = static_cast<size_t>(__aligned_ptr - __char_ptr);
   if (__diff > (__space - __size))
   {
     return nullptr;

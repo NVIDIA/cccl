@@ -38,7 +38,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__hss_sort
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hss_sort
 {
 template <class _Tp>
 struct _Bracket
@@ -110,7 +111,7 @@ template <class _Tp, class _Env, class _BinaryOp>
 class _HSSSorter
 {
 public:
-  using __resource_type _CCCL_NODEBUG = ::cuda::experimental::__detail::__resource_type_for<_Env>;
+  using __resource_type _CCCL_NODEBUG = ::cuda::experimental::mgmn::__detail::__resource_type_for<_Env>;
 
   // The size/capacity-aware device buffer type for element type `_Up`.
   template <class _Up>
@@ -152,11 +153,11 @@ private:
     ::cuda::std::span<const ::cuda::std::size_t> __cap_displs,
     ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
 
-  template <class _CommRange, class _EnvRange>
+  template <class _EnvRange>
   [[nodiscard]]
   _CCCL_HOST_API static ::cuda::std::pair<::std::vector<__per_comm_sampling_scratch_type>,
                                           ::std::vector<__per_comm_histogramming_result_type>>
-  __allocate_histogramming_buffers(const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs);
+  __allocate_histogramming_buffers(const __local_setup_result_type& __setup, _EnvRange&& __envs);
 
   template <class _CommRange>
   _CCCL_HOST_API static void __exchange_sample_counts(
@@ -224,9 +225,7 @@ private:
 
   // ------------------------------------------------------------------------------------------
 
-  template <class _Comm>
   _CCCL_HOST_API static void __merge_k_way_tree(
-    const _Comm& __comm,
     const _Env& __env,
     const __resizable_buffer_type<_Tp>& __data,
     ::cuda::std::span<const ::cuda::std::size_t> __counts,
@@ -234,9 +233,7 @@ private:
     const _BinaryOp& __cmp,
     __resizable_buffer_type<_Tp>* __ret);
 
-  template <class _Comm>
   _CCCL_HOST_API static void __merge_k_way(
-    const _Comm& __comm,
     const _Env& __env,
     const __resizable_buffer_type<_Tp>& __data,
     ::cuda::std::span<const ::cuda::std::size_t> __counts,
@@ -258,7 +255,7 @@ private:
 public:
   template <class _Policy, class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   _CCCL_HOST_API static void __execute(
-    const __result_policy_base<_Policy>&,
+    const ::cuda::experimental::__result_policy_base<_Policy>&,
     _CommRange&& __comms,
     _EnvRange&& __envs,
     _InputIterRange&& __input_iters,
@@ -267,7 +264,8 @@ public:
 };
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental::__detail::__hss_sort
+} // namespace __detail::__hss_sort
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

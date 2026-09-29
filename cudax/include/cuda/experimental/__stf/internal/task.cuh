@@ -437,7 +437,7 @@ public:
   // Returns execution prereqs
   event_list acquire(backend_ctx_untyped& ctx);
 
-  void release(backend_ctx_untyped& ctx, event_list& done_prereqs);
+  void release(backend_ctx_untyped& ctx, event_list& done_prereqs) noexcept;
 
   // Returns the current state of the task
   phase get_task_phase() const

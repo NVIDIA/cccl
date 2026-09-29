@@ -421,7 +421,8 @@ public:
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
     while (!__try_wait())
-      ;
+    {
+    }
     phase_parity ^= 1u;
   }
 

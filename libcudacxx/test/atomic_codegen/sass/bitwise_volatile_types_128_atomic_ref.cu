@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // clang-format off
-// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:device=tsd,GPU,non_block:system=tss,SYS,non_block
+// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:cluster=tsc,GPU,non_block:device=tsd,GPU,non_block:system=tss,SYS,non_block
 // %PARAM% TYPE type i128:u128
 // %PARAM% OP,SASS_LUT op and=fetch_and,0xc0:or=fetch_or,0xfc:xor=fetch_xor,0x3c
 // %PARAM% ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order relaxed=mor,,non_seq_cst,no_acquire,no_membar:acquire=moa,,non_seq_cst,acquire,no_membar:release=more,ALL,non_seq_cst,no_acquire,membar:acq_rel=moar,ALL,non_seq_cst,acquire,membar:seq_cst=mosc,SC,seq_cst,acquire,membar
@@ -50,9 +50,10 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
-; SMXX: {{.*}}ISETP.NE{{.*}}
+; SMXX: {{.*}}{{ISETP\.NE(\.U32)?\.OR\.EX|ISETP\.NE\.[SU]64\.OR|LOP3\.LUT}} [[RETRY_PRED:P[0-9]+]], {{.*}}[[RETRY_PRED]]{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*\[}}[[ATOM_ADDR]]{{(\.64)?\].*}}
 ; SMXX-NOT: {{.*}}ATOM.E.{{AND|OR|XOR}}{{.*}}
+; SMXX: {{.*}}@[[RETRY_PRED]] BRA{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */

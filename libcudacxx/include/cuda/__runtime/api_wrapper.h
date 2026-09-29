@@ -24,7 +24,7 @@
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
 
-#define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)                   \
+#define _CCCL_TRY_RUNTIME_API(_NAME, _MSG, ...)                \
   do                                                           \
   {                                                            \
     const ::cudaError_t __status = _NAME(__VA_ARGS__);         \
@@ -35,26 +35,12 @@
     }                                                          \
   } while (0)
 
-#define _CCCL_ASSERT_CUDA_API(_NAME, _MSG, ...)                         \
+#define _CCCL_ASSERT_RUNTIME_API(_NAME, _MSG, ...)                      \
   do                                                                    \
   {                                                                     \
     [[maybe_unused]] const ::cudaError_t __status = _NAME(__VA_ARGS__); \
     ::cudaGetLastError(); /* clear CUDA error state */                  \
-    _CCCL_ASSERT(__status == cudaSuccess, _MSG);                        \
+    _CCCL_ASSERT(__status == ::cudaSuccess, _MSG);                      \
   } while (0)
-
-#define _CCCL_LOG_CUDA_API(_NAME, _MSG, ...)                                       \
-  [&]() {                                                                          \
-    const ::cudaError_t __status = _NAME(__VA_ARGS__);                             \
-    if (__status != ::cudaSuccess)                                                 \
-    {                                                                              \
-      ::cuda::__msg_storage __msg_buffer;                                          \
-      ::cuda::__detail::__format_cuda_error(__msg_buffer, __status, _MSG, #_NAME); \
-      ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                            \
-      ::fflush(stderr);                                                            \
-    }                                                                              \
-    ::cudaGetLastError(); /* clear CUDA error state */                             \
-    return __status;                                                               \
-  }()
 
 #endif //_CUDA___RUNTIME_API_WRAPPER_H

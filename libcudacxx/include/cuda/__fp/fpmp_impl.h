@@ -173,6 +173,9 @@ namespace cuda::experimental
 // whether it provides the type. ARM64 stays excluded, as in CCCL: no ARM64 toolchain
 // provides __float128 (aarch64 GCC does not even define __SIZEOF_FLOAT128__), and nvc++
 // there rejects the name outright - such hosts take the 128-bit long double path below.
+// GCC still provides the distinct IEC type _Float128 (including on x86, where
+// __fpmp_fp128 is __float128). fpmp2 converts to that spelling separately (see
+// fpmp.h) because GCC does not convert _Float128 to __fpmp_fp128 when they differ.
 */
 #ifndef _CCCL_FPMP_HAS_FLOAT128_TYPE
 #  if _CCCL_HAS_FLOAT128()
@@ -311,6 +314,36 @@ using __fpmp_fp128 = long double;
 static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floating-point type");
 #endif
 
+// IEC 60559 _Float128. GCC often treats this as a distinct binary128 type from
+// __fpmp_fp128 (__float128 on x86, long double on aarch64 IEEE-128) with no
+// implicit conversion. Declared when the compiler offers the type so fpmp2 can
+// convert to it without going through __fpmp_fp128; when the two types are
+// already the same, the extra members are SFINAE'd out.
+//
+// __FLT128_MANT_DIG__ alone does not answer the question: it describes the
+// format, and both GCC and Clang predefine it on x86 without accepting the
+// _Float128 *token* in C++. GCC 13 is the first release to spell the C23
+// interchange types in C++ (P1467). Godbolt gcc 16.2 x86: sizeof(_Float128)==16
+// and is_same with both long double and __float128 is false, so the extra
+// members are not redundant on that host. Clang still does not implement
+// P1467R9 (https://clang.llvm.org/cxx_status.html); llvm/llvm-project#78503
+// only covers float16_t / bfloat16_t, and #80195 remains open for C23
+// _Float128. Godbolt x86-64 clang 23.1 (-std=c++17 and c++23) rejects the
+// token. armv8-a clang accepts it as an alias of long double (is_same true,
+// __STDCPP_FLOAT128_T__ unset): from 12 with -std=c++17, from 17 with
+// -std=c++23 (16 with c++23 does not). Extra members would SFINAE out there,
+// so this gate stays GCC. __STDCPP_FLOAT128_T__ is the portable on-ramp if a
+// later Clang/libstdc++/libc++ provides a distinct type. Requiring GCC also
+// rules out NVRTC, NVHPC and MSVC. nvcc with a GCC 13 host parses _Float128
+// in both passes, which is what the aarch64 quad reductions need.
+#ifndef _CCCL_FPMP_HAS_IEC_FLOAT128
+#  if defined(__FLT128_MANT_DIG__) && (_CCCL_COMPILER(GCC, >=, 13) || defined(__STDCPP_FLOAT128_T__))
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 1
+#  else
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 0
+#  endif
+#endif
+
 /*
 // Internal macro definitions
 */
@@ -438,6 +471,69 @@ inline constexpr bool __fpmp2_is_fp64_v = ::cuda::std::is_same_v<_Tp, double>;
 // Element types accepted by fpmp2: exactly the two formats above.
 template <typename _Tp>
 inline constexpr bool __fpmp2_is_supported_fp_v = __fpmp2_is_fp32_v<_Tp> || __fpmp2_is_fp64_v<_Tp>;
+
+/*
+// Floating-point sources that reach the single-limb constructor of an fpmp2 with element
+// type _Fp without losing anything: _Fp itself, and float widening into a double-based
+// pair. double into a float pair is not in the set, because it generally needs the low
+// limb to be represented. Such a source must not be reachable through an implicit
+// conversion sequence, or the compiler can pick the single-limb constructor and drop the
+// low part with no diagnostic; it is routed to the _CCCL_FPMP_EXPLICIT constructor
+// instead, which populates both limbs.
+*/
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_lossless_fp_v =
+  ::cuda::std::is_same_v<_Tp, _Fp> || (__fpmp2_is_fp32_v<_Tp> && __fpmp2_is_fp64_v<_Fp>);
+
+// Significand bits of one limb, counting the implicit leading bit.
+template <typename _Fp>
+inline constexpr int __fpmp2_mantissa_bits_v = __fpmp2_is_fp32_v<_Fp> ? 24 : 53;
+
+/*
+// Value bits of an integer type, i.e. excluding the sign, or -1 if _Tp is not one of the
+// standard integer types. The specialization exists because __num_bits_v answers with a
+// static_assert rather than by SFINAE, so naming it for a class type is a hard error; the
+// constraints below combine this with other predicates in a single constant expression,
+// which instantiates every operand regardless of short-circuiting. Dispatching on
+// __cccl_is_integer_v keeps __num_bits_v out of the non-integer case entirely.
+*/
+template <typename _Tp, bool = ::cuda::std::__cccl_is_integer_v<_Tp>>
+inline constexpr int __fpmp2_int_value_bits_v = -1;
+
+template <typename _Tp>
+inline constexpr int __fpmp2_int_value_bits_v<_Tp, true> =
+  static_cast<int>(::cuda::std::__num_bits_v<_Tp>) - static_cast<int>(::cuda::std::is_signed_v<_Tp>);
+
+/*
+// Integer sources that one limb already represents exactly for every value of the type:
+// int32_t and narrower into a double limb, int16_t and narrower into a float limb. The
+// low limb is provably zero, so these take the single-component constructor, which just
+// converts and zeroes lo. Routing them through the two-limb integer constructor instead
+// would be equally correct but would emit a residual computation that always yields zero
+// (4 extra PTX instructions for `fp64mp2 acc = 0;`).
+//
+// Restricted to __cccl_is_integer_v (via __fpmp2_int_value_bits_v, which reports -1 for
+// everything else) so that bool and the character types stay out of the single-component
+// constructor's constraint: they have their own delegating constructor, and letting both
+// apply would make `fpmp2 x = 'a'` ambiguous. They reach this path anyway, one hop later,
+// once that delegate has widened them to a fixed-width integer.
+*/
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_int_fits_limb_v =
+  __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= __fpmp2_mantissa_bits_v<_Fp>;
+
+/*
+// Integer sources that the fpmp2 pair represents exactly for every value of the type.
+// The two limbs cover twice the significand of one, so the pair holds any integer up to
+// 2 * __fpmp2_mantissa_bits_v bits: 48 for a float pair (int32_t and narrower) and 106
+// for a double pair (every standard integer type, up to uint64_t). Unlike the narrowing
+// floating-point case, these lose nothing, so they are allowed implicitly: the ones that
+// need both limbs go to the accurate integer constructor, the rest to the cheap one.
+// Wider integers (int64_t into a float pair, __int128) are excluded and stay explicit.
+*/
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_lossless_int_v =
+  __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= 2 * __fpmp2_mantissa_bits_v<_Fp>;
 
 /*
 // Internal basic arith operations

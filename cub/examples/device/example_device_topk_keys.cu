@@ -111,7 +111,7 @@ int main(int argc, char** argv)
   // Prepare CUDA stream
   cudaStream_t stream = nullptr;
   CubDebugExit(cudaStreamCreate(&stream));
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
   auto env = cuda::std::execution::env{stream_ref, requirements};

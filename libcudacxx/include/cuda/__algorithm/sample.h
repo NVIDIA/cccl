@@ -58,7 +58,7 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
   _Distance __n_int,
   _UniformRandomNumberGenerator& __g)
 {
-  ::cuda::std::uniform_real_distribution<double> __uniform{};
+  ::cuda::std::uniform_real_distribution<double> __uniform{}; // NOLINT(misc-const-correctness)
 
   auto __top    = static_cast<double>(__N_int - __n_int);
   auto __N_real = static_cast<double>(__N_int);
@@ -132,7 +132,7 @@ template <class _PopulationIterator, class _SampleIterator, class _Distance, cla
   _Distance __n_int,
   _UniformRandomNumberGenerator& __g)
 {
-  ::cuda::std::uniform_real_distribution<double> __uniform{};
+  ::cuda::std::uniform_real_distribution<double> __uniform{}; // NOLINT(misc-const-correctness)
 
   // Index of the next candidate element. Method D never moves it backwards, so the output is stable.
   auto __index = _Distance{0};

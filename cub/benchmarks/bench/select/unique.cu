@@ -53,7 +53,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
   offset_t* d_num_unique = thrust::raw_pointer_cast(num_unique_out.data());
 
   // Get number of unique elements for metrics
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     cub::DeviceSelect::Unique,
     "select_unique failed",
     d_in,
@@ -81,7 +81,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
     );
     if constexpr (InPlace::value)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Unique,
         "select_unique failed",
         d_in,
@@ -92,7 +92,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, InPlace>)
     }
     else
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Unique,
         "select_unique failed",
         d_in,

@@ -6,6 +6,7 @@
 #include <numeric>
 #include <vector>
 
+#include <catch2/matchers/catch_matchers_range_equals.hpp>
 #include <unittest/unittest.h>
 
 namespace
@@ -36,7 +37,7 @@ private:
 } // namespace
 
 template <typename T>
-void TestUniversalAllocateUnique()
+void test_universal_allocate_unique()
 {
   // Simple test to ensure that pointers created with universal_memory_resource
   // can be dereferenced and used with STL code. This is necessary as some
@@ -53,17 +54,17 @@ void TestUniversalAllocateUnique()
   static_assert(std::is_same_v<decltype(obj.get()), thrust::universal_ptr<some_object<T>>>,
                 "Unexpected pointer type returned from std::unique_ptr::get.");
 
-  ASSERT_EQUAL(*raw, T(42));
-  ASSERT_EQUAL(*raw.get(), T(42));
-  ASSERT_EQUAL(obj->getter(), T(42));
-  ASSERT_EQUAL((*obj).getter(), T(42));
-  ASSERT_EQUAL(obj.get()->getter(), T(42));
-  ASSERT_EQUAL((*obj.get()).getter(), T(42));
+  REQUIRE(*raw == T(42));
+  REQUIRE(*raw.get() == T(42));
+  REQUIRE(obj->getter() == T(42));
+  REQUIRE((*obj).getter() == T(42));
+  REQUIRE(obj.get()->getter() == T(42));
+  REQUIRE((*obj.get()).getter() == T(42));
 }
-DECLARE_GENERIC_UNITTEST(TestUniversalAllocateUnique);
+DECLARE_GENERIC_UNITTEST(test_universal_allocate_unique);
 
 template <typename T>
-void TestUniversalIterationRaw()
+void test_universal_iteration_raw()
 {
   auto array = thrust::allocate_unique_n<T>(thrust::universal_allocator<T>{}, 6, 42);
 
@@ -72,14 +73,14 @@ void TestUniversalIterationRaw()
 
   for (auto iter = array.get(), end = array.get() + 6; iter < end; ++iter)
   {
-    ASSERT_EQUAL(*iter, T(42));
-    ASSERT_EQUAL(*iter.get(), T(42));
+    REQUIRE(*iter == T(42));
+    REQUIRE(*iter.get() == T(42));
   }
 }
-DECLARE_GENERIC_UNITTEST(TestUniversalIterationRaw);
+DECLARE_GENERIC_UNITTEST(test_universal_iteration_raw);
 
 template <typename T>
-void TestUniversalIterationObj()
+void test_universal_iteration_obj()
 {
   auto array = thrust::allocate_unique_n<some_object<T>>(thrust::universal_allocator<some_object<T>>{}, 6, 42);
 
@@ -88,16 +89,16 @@ void TestUniversalIterationObj()
 
   for (auto iter = array.get(), end = array.get() + 6; iter < end; ++iter)
   {
-    ASSERT_EQUAL(iter->getter(), T(42));
-    ASSERT_EQUAL((*iter).getter(), T(42));
-    ASSERT_EQUAL(iter.get()->getter(), T(42));
-    ASSERT_EQUAL((*iter.get()).getter(), T(42));
+    REQUIRE(iter->getter() == T(42));
+    REQUIRE((*iter).getter() == T(42));
+    REQUIRE(iter.get()->getter() == T(42));
+    REQUIRE((*iter.get()).getter() == T(42));
   }
 }
-DECLARE_GENERIC_UNITTEST(TestUniversalIterationObj);
+DECLARE_GENERIC_UNITTEST(test_universal_iteration_obj);
 
 template <typename T>
-void TestUniversalRawPointerCast()
+void test_universal_raw_pointer_cast()
 {
   auto obj = thrust::allocate_unique<T>(thrust::universal_allocator<T>{}, 42);
 
@@ -111,15 +112,15 @@ void TestUniversalRawPointerCast()
                 "Unexpected pointer type returned from cuda::std::to_address.");
 
   *thrust::raw_pointer_cast(obj.get()) = T(17);
-  ASSERT_EQUAL(*obj, T(17));
+  REQUIRE(*obj == T(17));
 
   *cuda::std::to_address(obj.get()) = T(42);
-  ASSERT_EQUAL(*obj, T(42));
+  REQUIRE(*obj == T(42));
 }
-DECLARE_GENERIC_UNITTEST(TestUniversalRawPointerCast);
+DECLARE_GENERIC_UNITTEST(test_universal_raw_pointer_cast);
 
 template <typename T>
-void TestUniversalThrustVector(std::size_t const n)
+void test_universal_thrust_vector(std::size_t const n)
 {
   thrust::host_vector<T> host(n);
   thrust::universal_vector<T> universal(n);
@@ -129,15 +130,15 @@ void TestUniversalThrustVector(std::size_t const n)
 
   thrust::sequence(host.begin(), host.end(), 0);
   thrust::sequence(universal.begin(), universal.end(), 0);
-  ASSERT_EQUAL(host.size(), n);
-  ASSERT_EQUAL(universal.size(), n);
-  ASSERT_EQUAL(host, universal);
+  REQUIRE(host.size() == n);
+  REQUIRE(universal.size() == n);
+  REQUIRE(host == universal);
 }
-DECLARE_VARIABLE_UNITTEST(TestUniversalThrustVector);
+DECLARE_VARIABLE_UNITTEST(test_universal_thrust_vector);
 
 // TODO(bgruber): merge test into previous when we have Catch2
 template <typename T>
-void TestUniversalHostPinnedThrustVector(std::size_t const n)
+void test_universal_host_pinned_thrust_vector(std::size_t const n)
 {
   thrust::host_vector<T> host(n);
   thrust::universal_host_pinned_vector<T> universal(n);
@@ -148,16 +149,16 @@ void TestUniversalHostPinnedThrustVector(std::size_t const n)
   thrust::sequence(host.begin(), host.end(), 0);
   thrust::sequence(universal.begin(), universal.end(), 0);
 
-  ASSERT_EQUAL(host.size(), n);
-  ASSERT_EQUAL(universal.size(), n);
-  ASSERT_EQUAL(host, universal);
+  REQUIRE(host.size() == n);
+  REQUIRE(universal.size() == n);
+  REQUIRE(host == universal);
 }
-DECLARE_VARIABLE_UNITTEST(TestUniversalHostPinnedThrustVector);
+DECLARE_VARIABLE_UNITTEST(test_universal_host_pinned_thrust_vector);
 
 // Verify that a std::vector using the universal allocator will work with
 // Standard Library algorithms.
 template <typename T>
-void TestUniversalStdVector(std::size_t const n)
+void test_universal_std_vector(std::size_t const n)
 {
   std::vector<T> host(n);
   std::vector<T, thrust::universal_allocator<T>> universal(n);
@@ -168,8 +169,9 @@ void TestUniversalStdVector(std::size_t const n)
   std::iota(host.begin(), host.end(), 0);
   std::iota(universal.begin(), universal.end(), 0);
 
-  ASSERT_EQUAL(host.size(), n);
-  ASSERT_EQUAL(universal.size(), n);
-  ASSERT_EQUAL(host, universal);
+  REQUIRE(host.size() == n);
+  REQUIRE(universal.size() == n);
+  // host and universal have different allocator types, so std::vector::operator== does not apply
+  REQUIRE_THAT(universal, Catch::Matchers::RangeEquals(host));
 }
-DECLARE_VARIABLE_UNITTEST(TestUniversalStdVector);
+DECLARE_VARIABLE_UNITTEST(test_universal_std_vector);

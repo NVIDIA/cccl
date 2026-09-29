@@ -38,7 +38,7 @@ using scan_test_util::inclusive_expected_for_rank;
 // per-rank calls must rendezvous in their collectives, so issuing them serially would deadlock.
 // Catch2 assertions remain on the main thread after all worker threads have joined.
 template <class T, class Op>
-void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
+void run_case(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
               const std::vector<std::vector<T>>& inputs_by_rank,
               const T& init,
               const T& ident,
@@ -68,7 +68,7 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
   INFO("ident = " << ident);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::inclusive_scan(
+    cudax::mgmn::inclusive_scan(
       cudax::distributed, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op, ident);
   });
 
@@ -113,7 +113,7 @@ MULTI_GPU_TEST("inclusive_scan single-comm documentation example", c2h::type_lis
     auto input  = cuda::make_device_buffer<int>(environment, device, input_values);
     auto output = cuda::make_device_buffer<int>(environment, device, input_values.size(), cuda::no_init);
 
-    cudax::inclusive_scan(
+    cudax::mgmn::inclusive_scan(
       cudax::distributed, communicator, environment, input.begin(), input.size(), output.begin(), /*__init=*/0);
 
     // Every rank contributes {1, 2}, so rank r starts with a prefix of 3 * r.

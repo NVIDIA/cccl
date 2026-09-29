@@ -27,13 +27,17 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_nothrow_assignable) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_nothrow_assignable)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
 
 template <class _Tp, class _Arg>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_assignable : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
+is_nothrow_assignable : bool_constant<_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
 {};
 
 template <class _Tp, class _Arg>
@@ -41,25 +45,19 @@ inline constexpr bool is_nothrow_assignable_v = _CCCL_BUILTIN_IS_NOTHROW_ASSIGNA
 
 #else // ^^^ _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE ^^^ / vvv !_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE vvv
 
-template <bool, class _Tp, class _Arg>
-struct __cccl_is_nothrow_assignable;
+template <class _Tp, class _Arg, bool _IsAssignable = is_assignable_v<_Tp, _Arg>>
+inline constexpr bool __cccl_is_nothrow_assignable_v = false;
 
 template <class _Tp, class _Arg>
-struct __cccl_is_nothrow_assignable<false, _Tp, _Arg> : public false_type
+inline constexpr bool __cccl_is_nothrow_assignable_v<_Tp, _Arg, true> =
+  noexcept(::cuda::std::declval<_Tp>() = ::cuda::std::declval<_Arg>());
+
+template <class _Tp, class _Arg>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable : bool_constant<__cccl_is_nothrow_assignable_v<_Tp, _Arg>>
 {};
 
 template <class _Tp, class _Arg>
-struct __cccl_is_nothrow_assignable<true, _Tp, _Arg>
-    : public integral_constant<bool, noexcept(::cuda::std::declval<_Tp>() = ::cuda::std::declval<_Arg>())>
-{};
-
-template <class _Tp, class _Arg>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_assignable : public __cccl_is_nothrow_assignable<is_assignable_v<_Tp, _Arg>, _Tp, _Arg>
-{};
-
-template <class _Tp, class _Arg>
-inline constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
+inline constexpr bool is_nothrow_assignable_v = __cccl_is_nothrow_assignable_v<_Tp, _Arg>;
 
 #endif // !_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE
 

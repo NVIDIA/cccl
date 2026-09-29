@@ -536,7 +536,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
         mutex.lock();
 
         // Iterate the range of free blocks on the same device
-        BlockDescriptor free_key(device);
+        const BlockDescriptor free_key(device);
         CachedBlocks::iterator block_itr = cached_blocks.lower_bound(free_key);
 
         while ((block_itr != cached_blocks.end()) && (block_itr->device == device))
@@ -695,7 +695,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
     // Find corresponding block descriptor
     bool recached = false;
     BlockDescriptor search_key(d_ptr, device);
-    BusyBlocks::iterator block_itr = live_blocks.find(search_key);
+    const BusyBlocks::iterator block_itr = live_blocks.find(search_key);
     if (block_itr != live_blocks.end())
     {
       // Remove from live blocks
@@ -823,7 +823,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
     while (!cached_blocks.empty())
     {
       // Get first block
-      CachedBlocks::iterator begin = cached_blocks.begin();
+      const CachedBlocks::iterator begin = cached_blocks.begin();
 
       // Get entry-point device ordinal if necessary
       if (entrypoint_device == INVALID_DEVICE_ORDINAL)

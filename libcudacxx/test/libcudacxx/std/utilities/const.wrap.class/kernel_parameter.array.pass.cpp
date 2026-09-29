@@ -7,11 +7,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+// todo(dabayer): Enable constant_wrapper for msvc.
+// UNSUPPORTED: msvc
+
 // nvcc generates different symbol on host and device leading to kernel launch failure. Seems to be working with gcc as
 // the host compiler.
 // UNSUPPORTED: nvcc && (nvhpc || clang || msvc)
 
-// nvrtc is unsupported.
+// This test requires kernel launch from host.
 // UNSUPPORTED: nvrtc
 
 // constant_wrapper

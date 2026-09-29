@@ -42,7 +42,7 @@ __global__ void arch_specific_kernel_mock_do_not_launch()
   }
   if (cuda::device::current_arch_traits().redux_intrinisic)
   {
-    [[maybe_unused]] int dummy1 = 0, dummy2 = 0;
+    [[maybe_unused]] int dummy1 = 0, dummy2 = 0; // NOLINT(misc-const-correctness)
     asm volatile("redux.sync.add.s32 %0, %1, 0xffffffff;" : "=r"(dummy1) : "r"(dummy2));
   }
   if (cuda::device::current_arch_traits().cp_async_supported)
@@ -83,6 +83,11 @@ void constexpr compare_static_and_dynamic()
   constexpr cuda::compute_capability cc{ComputeCapability};
   constexpr cuda::arch_traits_t static_traits  = cuda::arch_traits<cuda::to_arch_id(cc)>();
   constexpr cuda::arch_traits_t dynamic_traits = cuda::arch_traits_for(cuda::to_arch_id(cc));
+
+  static_assert(cuda::compute_capability{static_traits.arch_id} == cc);
+  static_assert(static_traits.compute_capability == cc);
+  static_assert(static_traits.compute_capability_major == cc.major_cap());
+  static_assert(static_traits.compute_capability_minor == cc.minor_cap());
 
   static_assert(static_traits.arch_id == dynamic_traits.arch_id);
   static_assert(static_traits.max_threads_per_block == dynamic_traits.max_threads_per_block);

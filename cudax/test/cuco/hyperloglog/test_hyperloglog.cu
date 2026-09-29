@@ -13,7 +13,9 @@
 
 #include <cuda/buffer>
 #include <cuda/functional>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/std/cmath>
 #include <cuda/std/cstddef>
@@ -94,7 +96,7 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
 
   CAPTURE(num_items, hll_precision, sketch_size_kb);
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   // Generate `num_items` distinct items
@@ -124,7 +126,7 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
   REQUIRE_THAT(device_estimate_value, Catch::Matchers::WithinRel(host_estimate, 1e-10));
 }
 
-C2H_TEST("HyperLogLog device ref merge", "[hyperloglog]")
+C2H_TEST("HyperLogLog merge", "[hyperloglog]")
 {
   using T              = int32_t;
   using estimator_type = cudax::cuco::hyperloglog<T>;
@@ -132,7 +134,7 @@ C2H_TEST("HyperLogLog device ref merge", "[hyperloglog]")
   constexpr std::size_t num_items = 1 << 20;
   const estimator_type::precision precision{8};
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   estimator_type source{stream, mr, precision};
@@ -141,8 +143,45 @@ C2H_TEST("HyperLogLog device ref merge", "[hyperloglog]")
   const auto source_estimate = source.estimate(stream);
 
   estimator_type destination{stream, mr, precision};
-  merge_kernel<<<1, 128, 0, stream.get()>>>(destination.ref(), source.ref());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+
+  SECTION("device reference")
+  {
+    cuda::launch(stream,
+                 cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<128>()),
+                 merge_kernel<decltype(destination.ref())>,
+                 destination.ref(),
+                 source.ref());
+  }
+
+  SECTION("host estimator")
+  {
+    destination.merge(stream, source);
+  }
+
+  SECTION("host estimator asynchronous")
+  {
+    destination.merge_async(stream, source);
+  }
+
+  SECTION("host estimator from reference")
+  {
+    destination.merge(stream, source.ref());
+  }
+
+  SECTION("host estimator from reference asynchronous")
+  {
+    destination.merge_async(stream, source.ref());
+  }
+
+  SECTION("host reference")
+  {
+    destination.ref().merge(stream, source.ref());
+  }
+
+  SECTION("host reference asynchronous")
+  {
+    destination.ref().merge_async(stream, source.ref());
+  }
 
   REQUIRE(destination.estimate(stream) == source_estimate);
   REQUIRE(source.estimate(stream) == source_estimate);
@@ -165,7 +204,7 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
   // RSD for a given precision is given by the following formula
   const double relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   // Generate `num_items` distinct items
@@ -233,7 +272,7 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
 
   auto items_begin = cuda::transform_iterator(cuda::counting_iterator<std::size_t>{0}, scaled_index{repeats});
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   estimator_type estimator{stream, mr, sd};
@@ -269,10 +308,10 @@ C2H_TEST("HyperLogLog precision constructor", "[hyperloglog]")
 
   REQUIRE(estimator_type::sketch_bytes(precision) == expected_sketch_bytes);
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  estimator_type estimator{stream, mr, precision};
+  const estimator_type estimator{stream, mr, precision};
 
   REQUIRE(estimator.sketch_bytes() == expected_sketch_bytes);
   REQUIRE(estimator.estimate(stream) == 0);
@@ -282,7 +321,7 @@ C2H_TEST("HyperLogLog estimate preserves fractional cardinality", "[hyperloglog]
 {
   using estimator_type = cudax::cuco::hyperloglog<int32_t>;
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   estimator_type estimator{stream, mr, estimator_type::precision{8}};
@@ -322,7 +361,7 @@ C2H_TEST("Hyperloglog estimate works with pinned memory pool", "[hyperloglog]")
   constexpr double tolerance_factor        = 2.5;
   const double relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   auto items = ::cuda::make_buffer<T>(stream, mr, num_items, ::cuda::no_init);

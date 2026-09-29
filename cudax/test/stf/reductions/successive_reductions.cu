@@ -58,7 +58,7 @@ int main()
 
     // Check that we have the expected value, and reset it so that we can perform another reduction
     ctx.task(var_handle.rw())->*[=](cudaStream_t stream, auto d_var) {
-      int expected = (N * (N - 1)) / 2;
+      const int expected = (N * (N - 1)) / 2;
       check_value_and_reset<<<1, 1, 0, stream>>>(d_var.data_handle(), expected, 0);
     };
   }

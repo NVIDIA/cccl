@@ -24,7 +24,7 @@ void __global__ lambda_launcher(const Dims dims, const Lambda lambda)
 template <typename Comparator, unsigned int FilterArch>
 bool arch_filter(const cudaDeviceProp& props)
 {
-  int act_arch = props.major * 10 + props.minor;
+  const int act_arch = props.major * 10 + props.minor;
   if (Comparator()(act_arch, FilterArch))
   {
     return true;
@@ -74,7 +74,7 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
 
     if constexpr (Dims::has_level(cuda::cluster))
     {
-      dim3 cluster_dims{cuda::block.dims(cuda::cluster, dims)};
+      const dim3 cluster_dims{cuda::block.dims(cuda::cluster, dims)};
       config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
       config.attrs[config.numAttrs].val.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
       config.numAttrs                              = 1;

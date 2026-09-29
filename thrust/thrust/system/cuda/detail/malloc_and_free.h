@@ -67,7 +67,7 @@ _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 #else // not __CUB_CACHING_MALLOC
   NV_IF_TARGET(
     NV_IS_HOST,
-    (cudaError_t status = cudaMalloc(&result, n);
+    (const cudaError_t status = cudaMalloc(&result, n);
 
      if (status != cudaSuccess) {
        cudaGetLastError(); // Clear global CUDA error state.
@@ -96,7 +96,7 @@ _CCCL_HOST_DEVICE void free(execution_policy<DerivedPolicy>&, Pointer ptr)
       thrust::free(thrust::seq, ptr);));
 #else // not __CUB_CACHING_MALLOC
   NV_IF_TARGET(NV_IS_HOST,
-               (cudaError_t status = cudaFree(thrust::raw_pointer_cast(ptr));
+               (const cudaError_t status = cudaFree(thrust::raw_pointer_cast(ptr));
                 cuda_cub::throw_on_error(status, "device free failed");),
                ( // NV_IS_DEVICE
                  thrust::free(thrust::seq, ptr);));

@@ -173,4 +173,53 @@ private:
   ::std::vector<::std::shared_ptr<ctx_resource>> resources;
   bool resources_released = false; // Safety flag to prevent double release
 };
+namespace reserved
+{
+//! \brief A `ctx_resource` that owns a heap-allocated payload referenced by a CUDA callback.
+//!
+//! The payload outlives the call that enqueues the callback, so it cannot live on the stack, and
+//! it may be referenced by a graph node that is replayed more than once, so the callback itself
+//! must not free it. The context frees it once, when it releases its resources.
+//!
+//! Ownership transfer is two-phase, and both phases matter:
+//!
+//!  1. The constructor takes a NON-OWNING pointer. The caller keeps its `unique_ptr` until
+//!     `ctx_resource_set::add()` has actually taken the resource, and only then releases it.
+//!     `add()` can throw from its `push_back`, and on that path no graph node exists yet, so the
+//!     caller is still the right owner and frees correctly.
+//!  2. After registration succeeds the context is responsible, and frees exactly once from the
+//!     stream-ordered release callback.
+//!
+//! The destructor deliberately does not free. The payload must
+//! outlive any asynchronous work referencing it, and only the stream-ordered release callback
+//! knows when that work has finished -- a destructor cannot. A context abandoned without
+//! `finalize()` therefore leaks the payload rather than freeing it out from under a graph node
+//! that is still pending. `mix_stream_and_graph.cu` does exactly that: it submits a graph_ctx
+//! and lets it go out of scope without syncing, and freeing here segfaults when the host node
+//! later runs.
+template <typename Payload>
+class callback_args_resource : public ctx_resource
+{
+public:
+  //! Non-owning until the caller releases its own pointer; see the two-phase note above.
+  explicit callback_args_resource(Payload* payload) noexcept
+      : payload_(payload)
+  {}
+
+  bool can_release_in_callback() const noexcept override
+  {
+    return true;
+  }
+
+  void release_in_callback() noexcept override
+  {
+    delete payload_;
+    payload_ = nullptr;
+  }
+
+private:
+  //! Raw and intentionally never freed by the destructor; see the note above.
+  Payload* payload_ = nullptr;
+};
+} // end namespace reserved
 } // end namespace cuda::experimental::stf

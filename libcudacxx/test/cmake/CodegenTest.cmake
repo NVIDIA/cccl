@@ -152,15 +152,44 @@ endfunction()
 # SMXX:       any arch
 # SM1XX:      any SM100-series arch
 # SM100-PLUS: SM100 and newer
+# NOT-SM100-PLUS: older than SM100
+# Architecture-family prefixes used only in PREFIX_COMBINE directives are
+# activated without being passed to FileCheck as standalone prefixes.
 function(
-  libcudacxx_codegen_get_sass_check_prefixes
+  libcudacxx_codegen_get_arch_check_prefixes
   out_prefixes
   out_has_specific_checks
   test_contents
   arch
+  base_prefixes
 )
-  set(check_prefixes SMXX)
+  set(check_prefixes ${base_prefixes})
   set(arch_prefix "SM${arch}")
+  string(TOUPPER "${test_contents}" uppercase_test_contents)
+
+  # Architecture-family markers may be used solely as PREFIX_COMBINE inputs.
+  # The resolver below keeps such markers out of the standalone FileCheck
+  # prefixes while still enabling the corresponding combined prefix.
+  string(
+    REGEX MATCHALL
+    "%FILECHECK%[ ]+PREFIX_COMBINE[ ]+[A-Z][A-Z0-9_-]*([ ]*,[ ]*[A-Z][A-Z0-9_-]*)+"
+    prefix_combine_directives
+    "${uppercase_test_contents}"
+  )
+  set(prefix_combine_components)
+  foreach (directive IN LISTS prefix_combine_directives)
+    string(
+      REGEX REPLACE
+      ".*%FILECHECK%[ ]+PREFIX_COMBINE[ ]+"
+      ""
+      components
+      "${directive}"
+    )
+    string(REPLACE " " "" components "${components}")
+    string(REPLACE "," ";" components "${components}")
+    list(APPEND prefix_combine_components ${components})
+  endforeach()
+  list(REMOVE_DUPLICATES prefix_combine_components)
 
   string(
     REGEX MATCH
@@ -168,13 +197,11 @@ function(
     has_arch_prefix
     "${test_contents}"
   )
-  string(TOUPPER "${test_contents}" uppercase_test_contents)
-  string(
-    REGEX MATCH
-    "%FILECHECK%[ ]+PREFIX_COMBINE[ ]+${arch_prefix}[ ]*,"
-    has_arch_combined_prefix
-    "${uppercase_test_contents}"
-  )
+  if (arch_prefix IN_LIST prefix_combine_components)
+    set(has_arch_combined_prefix TRUE)
+  else()
+    set(has_arch_combined_prefix FALSE)
+  endif()
   if (has_arch_prefix OR has_arch_combined_prefix)
     list(APPEND check_prefixes "${arch_prefix}")
   endif()
@@ -186,7 +213,7 @@ function(
       has_sm1xx_prefix
       "${test_contents}"
     )
-    if (has_sm1xx_prefix)
+    if (has_sm1xx_prefix OR "SM1XX" IN_LIST prefix_combine_components)
       list(APPEND check_prefixes SM1XX)
     endif()
   endif()
@@ -206,15 +233,61 @@ function(
       list(APPEND check_prefixes "SM${plus_arch}-PLUS")
     endif()
   endforeach()
+
+  string(
+    REGEX MATCHALL
+    "; NOT-SM[0-9]+-PLUS(:|-[A-Z]+:)"
+    not_plus_prefixes
+    "${test_contents}"
+  )
+  if ("${arch}" MATCHES "[af]$")
+    set(not_plus_prefixes)
+  endif()
+  foreach (not_plus_prefix IN LISTS not_plus_prefixes)
+    string(
+      REGEX REPLACE
+      ".*NOT-SM([0-9]+)-PLUS.*"
+      "\\1"
+      plus_arch
+      "${not_plus_prefix}"
+    )
+    if (arch LESS plus_arch)
+      list(APPEND check_prefixes "NOT-SM${plus_arch}-PLUS")
+    endif()
+  endforeach()
+
+  if (NOT "${arch}" MATCHES "[af]$")
+    foreach (component IN LISTS prefix_combine_components)
+      if (component MATCHES "^SM([0-9]+)-PLUS$")
+        set(plus_arch "${CMAKE_MATCH_1}")
+        if (arch GREATER_EQUAL plus_arch)
+          list(APPEND check_prefixes "${component}")
+        endif()
+      elseif (component MATCHES "^NOT-SM([0-9]+)-PLUS$")
+        set(plus_arch "${CMAKE_MATCH_1}")
+        if (arch LESS plus_arch)
+          list(APPEND check_prefixes "${component}")
+        endif()
+      endif()
+    endforeach()
+  endif()
   list(REMOVE_DUPLICATES check_prefixes)
   list(JOIN check_prefixes "," check_prefixes)
 
   string(
     REGEX MATCH
-    "; SM([0-9]+[a-f]?|1XX|[0-9]+-PLUS)(:|-[A-Z]+:)"
+    "; (NOT-)?SM([0-9]+[a-f]?|1XX|[0-9]+-PLUS)(:|-[A-Z]+:)"
     has_specific_checks
     "${test_contents}"
   )
+  if (NOT has_specific_checks)
+    foreach (component IN LISTS prefix_combine_components)
+      if (component MATCHES "^(NOT-)?SM([0-9]+[AF]?|1XX|[0-9]+-PLUS)$")
+        set(has_specific_checks TRUE)
+        break()
+      endif()
+    endforeach()
+  endif()
   set(${out_prefixes} "${check_prefixes}" PARENT_SCOPE)
   set(${out_has_specific_checks} "${has_specific_checks}" PARENT_SCOPE)
 endfunction()
@@ -498,13 +571,27 @@ function(libcudacxx_codegen_add_ptx_tests)
   )
 
   foreach (test_path IN LISTS arg_TESTS)
+    set_property(
+      DIRECTORY
+      APPEND
+      PROPERTY CMAKE_CONFIGURE_DEPENDS "${test_path}"
+    )
+    file(READ "${test_path}" test_contents)
+    libcudacxx_codegen_get_arch_check_prefixes(
+      check_prefixes
+      unused_has_arch_specific_checks
+      "${test_contents}"
+      "${arg_ARCH}"
+      "${arg_CHECK_PREFIXES}"
+    )
+
     libcudacxx_codegen_add_test(
       AGGREGATE_TARGET ${arg_AGGREGATE_TARGET}
       TARGET_PREFIX ${arg_TARGET_PREFIX}
       CODE_KIND ptx
       ARCH ${arg_ARCH}
       TEST "${test_path}"
-      CHECK_PREFIXES ${arg_CHECK_PREFIXES}
+      CHECK_PREFIXES "${check_prefixes}"
       COMPILE_DEFINITIONS ${arg_COMPILE_DEFINITIONS}
     )
   endforeach()
@@ -557,11 +644,12 @@ function(libcudacxx_codegen_add_sass_tests)
     set(test_archs)
     set(has_arch_specific_checks FALSE)
     foreach (arch IN LISTS arg_ARCHITECTURES)
-      libcudacxx_codegen_get_sass_check_prefixes(
+      libcudacxx_codegen_get_arch_check_prefixes(
         check_prefixes
         arch_has_specific_checks
         "${test_contents}"
         "${arch}"
+        SMXX
       )
       if (arch_has_specific_checks)
         set(has_arch_specific_checks TRUE)
@@ -589,21 +677,32 @@ function(libcudacxx_codegen_add_sass_tests)
     endif()
 
     foreach (arch IN LISTS test_archs)
-      libcudacxx_codegen_get_sass_check_prefixes(
+      libcudacxx_codegen_get_arch_check_prefixes(
         check_prefixes
         has_arch_specific_checks
         "${test_contents}"
         "${arch}"
+        SMXX
       )
       string(REPLACE "," ";" common_check_prefixes "${check_prefixes}")
+      string(TOUPPER "${test_contents}" uppercase_test_contents)
       foreach (check_prefix IN LISTS arg_CHECK_PREFIXES)
+        string(TOUPPER "${check_prefix}" uppercase_check_prefix)
         string(
           REGEX MATCH
           "; ${check_prefix}(:|-[A-Z]+:)"
           has_check_prefix
           "${test_contents}"
         )
-        if (has_check_prefix)
+        string(
+          REGEX MATCH
+          # The prefix may be the final component before the directive's line
+          # ending, not just a component followed by a comma.
+          "%FILECHECK%[ ]+PREFIX_COMBINE[ ]+([A-Z][A-Z0-9_-]*[ ]*,[ ]*)*${uppercase_check_prefix}[ ]*(,|[\r\n])"
+          has_combined_check_prefix
+          "${uppercase_test_contents}"
+        )
+        if (has_check_prefix OR has_combined_check_prefix)
           list(APPEND common_check_prefixes "${check_prefix}")
         endif()
       endforeach()
