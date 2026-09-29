@@ -37,7 +37,7 @@ def _portable_group_operation(
     *,
     group_kinds: tuple[str, ...],
 ) -> Callable[[_CallableT], _CallableT]:
-    """Register one portable group overload by exact callable identity."""
+    """Register one common group overload by exact callable identity."""
 
     if not name or not group_kinds:
         raise ValueError("portable group operations require a name and group kinds")
@@ -80,7 +80,7 @@ class UnsupportedCoopBackendOperationError(NotImplementedError):
 
 
 def _portable_group_name(kind: str) -> str:
-    """Return the portable API spelling for one internal group kind."""
+    """Return the common API spelling for one internal group kind."""
 
     return "physical_warp" if kind == "warp" else kind
 
@@ -89,7 +89,7 @@ def _validate_portable_operation_group(
     operation: str,
     group: object,
 ) -> None:
-    """Enforce the portable group matrix for a common-root call."""
+    """Enforce the common group matrix for a common-root call."""
 
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"cuda.coop.{operation} group must be a ThreadGroup")
