@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-"""Resolve exact scratch layouts and materialize kernel-local shared memory."""
+"""Allocate shared scratch and replace placeholders after layout resolution."""
 
 from __future__ import annotations
 
