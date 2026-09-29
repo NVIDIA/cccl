@@ -203,7 +203,8 @@ def _load(
         group_kwargs = {"threads_in_warp": threads_in_warp}
     else:
         raise ValueError(
-            f"unsupported cuda.coop Load provider namespace {registered.namespace!r}"
+            f"unsupported cuda.coop Load provider namespace "
+            f"{registered.namespace!r}"
         )
     registered = _registered_provider_metadata(provider_factory, algorithm)
     adapter = NumbaMlirCoreAdapter(
@@ -400,7 +401,8 @@ def _store(
         group_kwargs = {"threads_in_warp": threads_in_warp}
     else:
         raise ValueError(
-            f"unsupported cuda.coop Store provider namespace {registered.namespace!r}"
+            f"unsupported cuda.coop Store provider namespace "
+            f"{registered.namespace!r}"
         )
     registered = _registered_provider_metadata(provider_factory, algorithm)
     adapter = NumbaMlirCoreAdapter(

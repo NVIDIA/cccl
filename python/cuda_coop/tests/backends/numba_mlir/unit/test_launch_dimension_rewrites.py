@@ -95,7 +95,9 @@ def test_launch_block_dimensions_are_canonicalized(block, expected):
         {"__launch_config__": {"block": (0, 1, 1)}},
     ],
 )
-def test_launch_bounds_and_inexact_launches_do_not_infer_dimensions(targetoptions):
+def test_launch_bounds_and_inexact_launches_do_not_infer_dimensions(
+    targetoptions,
+):
     rewrite = object.__new__(CoopSinglePhaseRewrite)
     rewrite._state = SimpleNamespace(metadata={"targetoptions": targetoptions})
 
@@ -186,7 +188,10 @@ def test_deferred_rewrite_leaves_device_helper_ir_intact():
         return block_load(source, output, dtype=types.int32)
 
     state = _state(device_function, targetoptions={"device": True})
-    before = {label: tuple(block.body) for label, block in state.func_ir.blocks.items()}
+    before = {
+        label: tuple(block.body)
+        for label, block in state.func_ir.blocks.items()
+    }
     rewrite = CoopSinglePhaseRewrite(state)
 
     assert not rewrite.match(
@@ -197,7 +202,8 @@ def test_deferred_rewrite_leaves_device_helper_ir_intact():
     )
     assert rewrite._deferred_launch_dim_inference
     assert {
-        label: tuple(block.body) for label, block in state.func_ir.blocks.items()
+        label: tuple(block.body)
+        for label, block in state.func_ir.blocks.items()
     } == before
 
 
@@ -229,7 +235,9 @@ def test_kernel_planner_retries_with_an_exact_launch(monkeypatch):
             "cluster": None,
         }
         requests.append(requested_state)
-        requested_state.metadata["targetoptions"]["__launch_config__"] = launch_config
+        requested_state.metadata["targetoptions"]["__launch_config__"] = (
+            launch_config
+        )
         return launch_config
 
     monkeypatch.setattr(rewrites, "require_launch_config", require_exact_launch)
@@ -289,7 +297,9 @@ def test_kernel_planner_reports_an_unresolved_launch_after_retry(
             )
         return launch_config
 
-    monkeypatch.setattr(rewrites, "require_launch_config", require_unresolved_launch)
+    monkeypatch.setattr(
+        rewrites, "require_launch_config", require_unresolved_launch
+    )
 
     with pytest.raises(CoopSinglePhaseRewriteError) as exc_info:
         CoopWholeFunctionPlanner(state).run()
@@ -309,14 +319,20 @@ def test_device_planner_defers_without_requesting_a_launch(monkeypatch):
         return block_load(source, output, dtype=types.int32)
 
     state = _state(device_function, targetoptions={"device": True})
-    before = {label: tuple(block.body) for label, block in state.func_ir.blocks.items()}
+    before = {
+        label: tuple(block.body)
+        for label, block in state.func_ir.blocks.items()
+    }
 
     def unexpected_launch_request(_state):
         pytest.fail("device-function planning requested kernel launch metadata")
 
-    monkeypatch.setattr(rewrites, "require_launch_config", unexpected_launch_request)
+    monkeypatch.setattr(
+        rewrites, "require_launch_config", unexpected_launch_request
+    )
 
     assert not CoopWholeFunctionPlanner(state).run()
     assert {
-        label: tuple(block.body) for label, block in state.func_ir.blocks.items()
+        label: tuple(block.body)
+        for label, block in state.func_ir.blocks.items()
     } == before

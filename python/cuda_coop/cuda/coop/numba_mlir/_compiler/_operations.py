@@ -202,11 +202,13 @@ class RewriteOperationSpecification:
             name, required_name = prerequisite
             if not isinstance(name, str) or not name:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite names must be non-empty strings"
+                    "runtime_factory_kw_prerequisite "
+                    "names must be non-empty strings"
                 )
             if not isinstance(required_name, str) or not required_name:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite names must be non-empty strings"
+                    "runtime_factory_kw_prerequisite "
+                    "names must be non-empty strings"
                 )
             prerequisites.append((name, required_name))
         object.__setattr__(
@@ -259,14 +261,16 @@ class RewriteOperationSpecification:
         if unknown_runtime_kwargs:
             names = ", ".join(sorted(unknown_runtime_kwargs))
             raise ValueError(
-                f"runtime_factory_kwargs must be allowed factory kwargs: {names}"
+                f"runtime_factory_kwargs must be "
+                f"allowed factory kwargs: {names}"
             )
         base_runtime_arg_count = min(self.runtime_arg_counts)
         if max(self.runtime_arg_counts) - base_runtime_arg_count > len(
             self.runtime_factory_kwargs
         ):
             raise ValueError(
-                "runtime_arg_counts require more trailing runtime arguments than "
+                "runtime_arg_counts require more "
+                "trailing runtime arguments than "
                 "runtime_factory_kwargs declares"
             )
         prerequisite_names = [name for name, _ in prerequisites]
@@ -285,7 +289,8 @@ class RewriteOperationSpecification:
                 )
             if required_name not in known_prerequisites:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite requirements must be known "
+                    "runtime_factory_kw_prerequisite "
+                    "requirements must be known "
                     f"factory kwargs: {required_name}"
                 )
             if name == required_name:
@@ -306,7 +311,8 @@ class RewriteOperationSpecification:
         if unknown_required_kwargs:
             names = ", ".join(sorted(unknown_required_kwargs))
             raise ValueError(
-                f"required_factory_kwargs must be allowed factory kwargs: {names}"
+                f"required_factory_kwargs must be "
+                f"allowed factory kwargs: {names}"
             )
         unknown_scalar_kwargs = (
             self.scalar_binding_kwargs - runtime_factory_kwargs
@@ -330,7 +336,8 @@ class RewriteOperationSpecification:
                 )
             if self.runtime_offset_kwarg in runtime_factory_kwargs:
                 raise ValueError(
-                    "runtime_offset_kwarg must not also be a runtime factory kwarg"
+                    "runtime_offset_kwarg must not "
+                    "also be a runtime factory kwarg"
                 )
         if not isinstance(self.accepts_temp_storage, bool):
             raise TypeError("accepts_temp_storage must be a bool")
@@ -365,7 +372,8 @@ def group_operation(
         existing = _GROUP_OPERATIONS.get(function)
         if existing is not None and existing != operation:
             raise RuntimeError(
-                f"group marker {function!r} is already registered as {existing!r}"
+                f"group marker {function!r} is "
+                f"already registered as {existing!r}"
             )
         _GROUP_OPERATIONS[function] = operation
         existing_module = _GROUP_FAMILY_MODULES.get(operation)
@@ -476,7 +484,8 @@ def register_factory(
     existing = _FACTORY_OPERATIONS.get(function)
     if existing is not None and existing != metadata:
         raise RuntimeError(
-            f"lowering factory {function!r} is already registered as {existing!r}"
+            f"lowering factory {function!r} is "
+            f"already registered as {existing!r}"
         )
     _FACTORY_OPERATIONS[function] = metadata
     return function

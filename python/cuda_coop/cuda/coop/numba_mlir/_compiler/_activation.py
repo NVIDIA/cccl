@@ -147,7 +147,9 @@ def _initialize_runtime_hooks_transaction() -> None:
         name for name in sys.modules if name.startswith(f"{package_name}.")
     )
     try:
-        planner_module = importlib.import_module(f"{package_name}._compiler._rewrite")
+        planner_module = importlib.import_module(
+            f"{package_name}._compiler._rewrite"
+        )
         group_planner_module = importlib.import_module(
             f"{package_name}._compiler._group_planner"
         )
@@ -196,7 +198,9 @@ def _verify_registration_postconditions(
         ),
     )
     invalid = tuple(
-        f"{name}={count}" for name, count in registration_counts.items() if count != 1
+        f"{name}={count}"
+        for name, count in registration_counts.items()
+        if count != 1
     )
     if invalid:
         raise _NumbaMlirBackendImportError(
