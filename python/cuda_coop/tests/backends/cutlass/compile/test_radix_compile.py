@@ -82,7 +82,9 @@ def _compile(
                     group, keys, payload, begin_bit=begin, end_bit=end
                 )
             else:
-                result = api.radix_sort_keys(group, keys, begin_bit=begin, end_bit=end)
+                result = api.radix_sort_keys(
+                    group, keys, begin_bit=begin, end_bit=end
+                )
         for item in cutlass.range_constexpr(items):
             values[item] = cutlass.Int32(result[item])
 
@@ -94,7 +96,9 @@ def _compile(
     return cute.compile[(GPUArch("sm_80"),)](launch, ptr, cutlass.Int64(0))
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("mode", ("sort", "pairs", "rank"))
 @pytest.mark.parametrize(
     "dtype", (cutlass.Int32, cutlass.Uint32, cutlass.Int64, cutlass.Uint64)
@@ -132,7 +136,8 @@ def test_qualified_float_sort(dtype):
 )
 def test_invalid_profiles(mode, bad, dtype, message):
     with pytest.raises(
-        (TypeError, ValueError, NotImplementedError, DSLRuntimeError), match=message
+        (TypeError, ValueError, NotImplementedError, DSLRuntimeError),
+        match=message,
     ):
         _compile(mode=mode, bad=bad, dtype=dtype)
 

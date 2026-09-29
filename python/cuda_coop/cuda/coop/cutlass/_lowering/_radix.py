@@ -73,7 +73,8 @@ def _bit_binding(value, name):
         or type_specification.token == "u64"
     ):
         raise TypeError(
-            f"radix sort {name} requires a signed integer up to 64 bits or an unsigned integer up to 32 bits"
+            f"radix sort {name} requires a signed integer up to 64 bits "
+            "or an unsigned integer up to 32 bits"
         )
     return ArgumentBinding.runtime()
 
@@ -376,7 +377,10 @@ def _render_radix(request):
         args = [
             "keys",
             "ranks",
-            f"::cub::BFEDigitExtractor<{unsigned}>({p.bit_range.static_begin_bit}, {p.radix_bits})",
+            (
+                f"::cub::BFEDigitExtractor<{unsigned}>"
+                f"({p.bit_range.static_begin_bit}, {p.radix_bits})"
+            ),
         ]
         result_names = [("ranks", "int", p.items_per_thread)]
         if p.has_exclusive_digit_prefix:
@@ -384,7 +388,10 @@ def _render_radix(request):
             inputs.extend(
                 (
                     f"  int prefix[{extent}];",
-                    f"  for (int i = 0; i < {extent}; ++i) {{ prefix[i] = -1; }}",
+                    (
+                        f"  for (int i = 0; i < {extent}; ++i) "
+                        "{ prefix[i] = -1; }"
+                    ),
                 )
             )
             args.append("prefix")
@@ -416,15 +423,24 @@ def _render_radix(request):
         f"void {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
         "  using storage_type = typename implementation_type::TempStorage;",
-        "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+        (
+            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+            "< sizeof(storage_type) ||"
+        ),
         "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
         '    asm volatile("trap;");',
         "  }",
         "  unsigned long long generic_address;",
-        '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
+        (
+            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+            '"l"((unsigned long long)storage_address));'
+        ),
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         *inputs,
-        f"  implementation_type(storage).{request.implementation.method_name}({', '.join(args)});",
+        (
+            "  implementation_type(storage)."
+            f"{request.implementation.method_name}({', '.join(args)});"
+        ),
         "  if (storage_auto_sync != 0) { __syncthreads(); }",
         *outputs,
         "}",
@@ -638,7 +654,8 @@ def provider_radix_rank(
         )
         if prefix.items_per_thread != expected:
             raise ValueError(
-                f"radix_rank exclusive_digit_prefix must contain {expected} items per thread"
+                "radix_rank exclusive_digit_prefix must contain "
+                f"{expected} items per thread"
             )
         if (
             prefix.dtype is not None

@@ -78,7 +78,8 @@ def _validate(
     )
     if name not in {"int32", "uint32", "int64", "uint64"}:
         raise TypeError(
-            f"cuda.coop.{operation} keys require int32, uint32, int64, or uint64"
+            f"cuda.coop.{operation} keys require "
+            "int32, uint32, int64, or uint64"
         )
     if operation == "radix_sort_pairs":
         _validate_common_numeric_value(
@@ -91,14 +92,20 @@ def _validate(
         if _common_thread_data_extent(
             operation, "keys", keys
         ) != _common_thread_data_extent(operation, "values", values):
-            raise ValueError("keys and values must have the same items_per_thread")
+            raise ValueError(
+                "keys and values must have the same items_per_thread"
+            )
     if not isinstance(descending, bool):
-        raise TypeError(f"cuda.coop.{operation} descending must be a compile-time bool")
+        raise TypeError(
+            f"cuda.coop.{operation} descending must be a compile-time bool"
+        )
     width = int(name[-2:])
     if operation == "radix_rank":
         _radix_bounds(operation, width, begin_bit, end_bit, radix_bits)
     else:
-        begin = _validate_common_integer_value(operation, "begin_bit", begin_bit)
+        begin = _validate_common_integer_value(
+            operation, "begin_bit", begin_bit
+        )
         end = (
             width
             if end_bit is None
