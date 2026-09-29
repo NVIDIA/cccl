@@ -2,12 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared payload validation for common root calls.
-
-Family frontends use these import-light helpers before delegating to a compiler
-backend. The validators define the conservative common contract and do not
-infer backend-specific types or construct lowering plans.
-"""
+"""Validate per-thread values and scratch descriptors for backend calls."""
 
 from __future__ import annotations
 

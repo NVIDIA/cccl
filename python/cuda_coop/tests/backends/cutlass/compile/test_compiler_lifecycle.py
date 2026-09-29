@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Real CUTLASS tracing, compilation, linking, and retry lifecycle coverage."""
-
 import os
 import subprocess
 import sys

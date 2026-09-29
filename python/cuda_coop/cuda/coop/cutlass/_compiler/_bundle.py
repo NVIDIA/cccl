@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Resolve one trace's provider source to a validated LTO-IR artifact."""
+"""Compile and cache generated C++ as LTO-IR for CuTe linking."""
 
 from __future__ import annotations
 

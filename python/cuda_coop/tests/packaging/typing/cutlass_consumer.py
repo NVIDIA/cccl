@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Strict consumer of the qualified CUTLASS Block Load/Store surface."""
-
 from __future__ import annotations
 
 from typing import Literal

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Scalar types and typed provider rendering contracts for CUTLASS."""
-
 from __future__ import annotations
 
 import math

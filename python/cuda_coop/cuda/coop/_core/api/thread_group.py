@@ -2,12 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common constructors for the current CUDA thread groups.
-
-The constructors either delegate to the active compiler backend or return the
-backend-neutral symbolic group used during characterization and planning. This
-module does not resolve launch facts or select primitive implementations.
-"""
+"""Construct groups through the active backend, or use symbolic descriptors."""
 
 from __future__ import annotations
 

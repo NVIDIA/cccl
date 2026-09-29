@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUTLASS primitive Load/Store entry points."""
-
 from __future__ import annotations
 
 import math

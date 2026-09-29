@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Canonical request registration and generated C++ rendering."""
+"""Deduplicate C++ requests and render their combined source."""
 
 from __future__ import annotations
 

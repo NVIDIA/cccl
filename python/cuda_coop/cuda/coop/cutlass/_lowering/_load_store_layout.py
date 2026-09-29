@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Static layout proofs shared by CUTLASS load and store providers."""
+"""Check static shapes and strides for contiguous memory access."""
 
 from __future__ import annotations
 

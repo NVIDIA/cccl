@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exact launch facts supplied by the active CUTLASS compiler."""
+"""Read and validate CuTe kernel dimensions and launch flags."""
 
 from __future__ import annotations
 

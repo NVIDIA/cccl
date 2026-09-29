@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Per-trace provider sessions and finalizer ownership."""
+"""Keep C++ requests separate for each active CuTe trace."""
 
 from __future__ import annotations
 

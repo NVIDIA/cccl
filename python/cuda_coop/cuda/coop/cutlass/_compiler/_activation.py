@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Select CUTLASS only while its compiler owns the active environment."""
+"""Select CUTLASS dispatch inside its active CuTe compiler context."""
 
 from __future__ import annotations
 

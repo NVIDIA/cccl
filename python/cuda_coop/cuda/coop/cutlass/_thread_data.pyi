@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing declarations for CUTLASS per-thread register payloads."""
-
 from collections.abc import Callable, Iterator
 from typing import Any, Generic, Protocol, overload
 

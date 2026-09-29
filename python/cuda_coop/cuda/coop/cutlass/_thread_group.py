@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUTLASS group descriptors resolved from compiler-owned launch facts."""
-
 from __future__ import annotations
 
 from cuda.coop._core import (

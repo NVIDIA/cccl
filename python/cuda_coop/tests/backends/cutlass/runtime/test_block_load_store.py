@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent numerical oracles for direct CUTLASS Block Load and Store."""
-
 import importlib.util
 import math
 import re

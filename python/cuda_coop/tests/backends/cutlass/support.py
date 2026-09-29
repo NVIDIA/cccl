@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Small CUDA Driver allocations for CUTLASS numerical tests."""
+"""Allocate device buffers and copy test data with the CUDA Driver API."""
 
 from contextlib import contextmanager
 
