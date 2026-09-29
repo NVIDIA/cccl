@@ -34,12 +34,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-//! Fixed-capacity, dynamically sized vector with the same (reduced) interface as `cuda::std::inplace_vector<T,
-//! Capacity>`. Unlike `cuda::std::inplace_vector`, whose backing storage is private, this keeps its state in public
-//! data members, so it (and any tuning policy embedding it) remains usable as a C++20 non-type template parameter --
-//! CC dispatch (`cub::detail::policy_constant` / `cuda::std::integral_constant`, see `cub/detail/cc_dispatch.cuh`)
-//! instantiates resolved tuning policies that way, which requires every base class and non-static data member to be
-//! public ("structural type"). Only the member functions tuning policies actually need are provided.
+//! Like inplace_vector<T, N>, but structural, so we can pass it as part of NTTPs (e.g. tuning policies)
 template <typename T, ::cuda::std::size_t Capacity>
 struct structural_inplace_vector
 {
