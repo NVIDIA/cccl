@@ -19,6 +19,11 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
+#ifndef CCCL_DISABLE_CUB_CUH_COMPILE_TIME_WARNING
+#  warning \
+    "<cub/cub.cuh> is very expensive to compile. Please include only the headers for the algorithms you are using. You can define CCCL_DISABLE_CUB_CUH_COMPILE_TIME_WARNING to disable this warning."
+#endif // CCCL_DISABLE_CUB_CUH_COMPILE_TIME_WARNING
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
