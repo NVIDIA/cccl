@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-"""Histogram counts, striped ownership, preservation, and scratch reuse."""
-
 import numpy as np
 import pytest
 
