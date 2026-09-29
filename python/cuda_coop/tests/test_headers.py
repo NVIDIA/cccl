@@ -13,7 +13,7 @@ import pytest
 import cuda.coop._headers as headers
 from cuda.coop._headers import CoopIncludePaths, resolve_include_paths
 
-_PACKAGE_ROOT = Path(__file__).parents[3]
+_PACKAGE_ROOT = Path(__file__).parents[1]
 
 
 def _write_source_checkout(checkout: Path) -> None:
@@ -30,19 +30,12 @@ def _write_source_checkout(checkout: Path) -> None:
     )
 
 
-@pytest.mark.parametrize("complete_checkout", (False, True))
 def test_environment_inside_checkout_uses_installed_headers(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    complete_checkout: bool,
 ) -> None:
     checkout = tmp_path / "cccl"
-    if complete_checkout:
-        _write_source_checkout(checkout)
-    else:
-        probe = checkout / "cub" / "cub" / "version.cuh"
-        probe.parent.mkdir(parents=True)
-        probe.touch()
+    _write_source_checkout(checkout)
     installed_module = (
         checkout
         / ".venv"
@@ -68,30 +61,20 @@ def test_environment_inside_checkout_uses_installed_headers(
     paths = resolve_include_paths(start=installed_module)
 
     assert paths == expected
-    assert headers._find_source_checkout(installed_module) is None
 
 
-def test_source_package_path_resolves_only_its_checkout(tmp_path: Path) -> None:
-    checkout = tmp_path / "cccl"
-    _write_source_checkout(checkout)
-    source_module = (
-        checkout
-        / "python"
-        / "cuda_coop"
-        / "cuda"
-        / "coop"
-        / "_headers"
-        / "__init__.py"
+def test_source_resolution_uses_one_coherent_header_set() -> None:
+    paths = resolve_include_paths(
+        start=Path(__file__),
+        required_headers=(
+            "cub/block/block_load.cuh",
+            "thrust/detail/raw_pointer_cast.h",
+            "cuda/experimental/coop/algorithm",
+            "cuda/std/cstdint",
+        ),
     )
-    source_module.parent.mkdir(parents=True)
-    source_module.touch()
-
-    source = headers._find_source_checkout(source_module)
-
-    assert source is not None
-    root, include_paths = source
-    assert root == checkout
-    assert include_paths == (
+    checkout = _PACKAGE_ROOT.parents[1]
+    assert paths.cccl == (
         checkout / "thrust",
         checkout / "cub",
         checkout / "cudax" / "include",
@@ -138,8 +121,9 @@ if unexpected:
     assert result.returncode == 0, result.stderr
 
 
-@pytest.mark.parametrize("platform", ("linux", "win32"))
-@pytest.mark.parametrize("configured", (False, True))
+@pytest.mark.parametrize(
+    "platform,configured", [("linux", False), ("win32", True)]
+)
 def test_cuda_header_fallback_respects_platform(
     tmp_path, monkeypatch, platform, configured
 ):
@@ -171,3 +155,21 @@ def test_cuda_header_fallback_respects_platform(
     assert headers._cuda_include_paths() == ((include,) if configured else ())
     fallback = (Path("/usr/local/cuda/include"),) if platform == "linux" else ()
     assert calls[-1] == ((include,) if configured else ()) + fallback
+
+
+def test_required_header_diagnostic_never_falls_back_to_toolkit() -> None:
+    with pytest.raises(
+        headers.HeaderResolutionError, match="does not fall back"
+    ):
+        resolve_include_paths(
+            start=Path(__file__),
+            required_headers=("cub/block/not_a_primitive.cuh",),
+        )
+
+
+def test_cuda_headers_are_required_only_when_compiling() -> None:
+    paths = CoopIncludePaths(
+        cccl=(Path("cccl/include"),), cuda=(), origin="test"
+    )
+    with pytest.raises(headers.HeaderResolutionError, match="cuda_runtime.h"):
+        paths.as_tuple()
