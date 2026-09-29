@@ -47,7 +47,7 @@ TEST_CASE("TestSetUnionDispatchImplicit", "[set_union]")
 }
 
 template <typename Vector>
-void TestSetUnionSimple()
+void test_set_union_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -61,10 +61,10 @@ void TestSetUnionSimple()
   REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
-DECLARE_VECTOR_UNITTEST(TestSetUnionSimple);
+DECLARE_VECTOR_UNITTEST(test_set_union_simple);
 
 template <typename Vector>
-void TestSetUnionWithEquivalentElementsSimple()
+void test_set_union_with_equivalent_elements_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -78,10 +78,10 @@ void TestSetUnionWithEquivalentElementsSimple()
   REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
-DECLARE_VECTOR_UNITTEST(TestSetUnionWithEquivalentElementsSimple);
+DECLARE_VECTOR_UNITTEST(test_set_union_with_equivalent_elements_simple);
 
 template <typename T>
-void TestSetUnion(const size_t n)
+void test_set_union(const size_t n)
 {
   size_t sizes[]         = {0, 1, n / 2, n, n + 1, 2 * n};
   const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
@@ -115,10 +115,10 @@ void TestSetUnion(const size_t n)
     REQUIRE(h_result == d_result);
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestSetUnion);
+DECLARE_VARIABLE_UNITTEST(test_set_union);
 
 template <typename T>
-void TestSetUnionToDiscardIterator(const size_t n)
+void test_set_union_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> temp = unittest::random_integers<T>(2 * n);
   thrust::host_vector<T> h_a(temp.begin(), temp.begin() + n);
@@ -147,4 +147,4 @@ void TestSetUnionToDiscardIterator(const size_t n)
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetUnionToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_set_union_to_discard_iterator);

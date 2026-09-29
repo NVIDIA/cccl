@@ -37,7 +37,7 @@ TEST_CASE("TestSortByKeyDispatchImplicit", "[sort_by_key]")
 }
 
 template <class Vector>
-void InitializeSimpleKeyValueSortTest(
+void initialize_simple_key_value_sort_test(
   Vector& unsorted_keys, Vector& unsorted_values, Vector& sorted_keys, Vector& sorted_values)
 {
   unsorted_keys.resize(7);
@@ -52,22 +52,22 @@ void InitializeSimpleKeyValueSortTest(
 }
 
 template <class Vector>
-void TestSortByKeySimple()
+void test_sort_by_key_simple()
 {
   Vector unsorted_keys, unsorted_values;
   Vector sorted_keys, sorted_values;
 
-  InitializeSimpleKeyValueSortTest(unsorted_keys, unsorted_values, sorted_keys, sorted_values);
+  initialize_simple_key_value_sort_test(unsorted_keys, unsorted_values, sorted_keys, sorted_values);
 
   thrust::sort_by_key(unsorted_keys.begin(), unsorted_keys.end(), unsorted_values.begin());
 
   REQUIRE(unsorted_keys == sorted_keys);
   REQUIRE(unsorted_values == sorted_values);
 }
-DECLARE_VECTOR_UNITTEST(TestSortByKeySimple);
+DECLARE_VECTOR_UNITTEST(test_sort_by_key_simple);
 
 template <typename T>
-void TestSortAscendingKeyValue(const size_t n)
+void test_sort_ascending_key_value(const size_t n)
 {
   thrust::host_vector<T> h_keys   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_keys = h_keys;
@@ -81,10 +81,10 @@ void TestSortAscendingKeyValue(const size_t n)
   REQUIRE(h_keys == d_keys);
   REQUIRE(h_values == d_values);
 }
-DECLARE_VARIABLE_UNITTEST(TestSortAscendingKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_sort_ascending_key_value);
 
 template <typename T>
-void TestSortDescendingKeyValue(const size_t n)
+void test_sort_descending_key_value(const size_t n)
 {
   thrust::host_vector<int> h_keys   = unittest::random_integers<int>(n);
   thrust::device_vector<int> d_keys = h_keys;
@@ -98,7 +98,7 @@ void TestSortDescendingKeyValue(const size_t n)
   REQUIRE(h_keys == d_keys);
   REQUIRE(h_values == d_values);
 }
-DECLARE_VARIABLE_UNITTEST(TestSortDescendingKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_sort_descending_key_value);
 
 TEST_CASE("TestSortByKeyBool", "[sort_by_key]")
 {
