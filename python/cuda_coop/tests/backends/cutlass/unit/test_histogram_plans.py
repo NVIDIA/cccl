@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Histogram planning includes counter storage and independent output types."""
 
@@ -27,16 +26,16 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _request(**options):
-    arguments = dict(
-        group=this_block(),
-        launch=LaunchFacts(exact_block_dim=(64, 1, 1)),
-        sample_type=cutlass.Int32,
-        items=3,
-        bins=65,
-        bins_per_thread=2,
-        counter_type=cutlass.Int64,
-        algorithm="atomic",
-    )
+    arguments = {
+        "group": this_block(),
+        "launch": LaunchFacts(exact_block_dim=(64, 1, 1)),
+        "sample_type": cutlass.Int32,
+        "items": 3,
+        "bins": 65,
+        "bins_per_thread": 2,
+        "counter_type": cutlass.Int64,
+        "algorithm": "atomic",
+    }
     arguments.update(options)
     return _histogram._CubHistogramRequest(_histogram._make_histogram_plan(**arguments))
 
@@ -58,15 +57,15 @@ def test_types_and_result(sample, counter, algorithm):
 @pytest.mark.parametrize(
     "options",
     [
-        dict(sample_type=cutlass.Float32),
-        dict(counter_type=cutlass.Uint8),
-        dict(bins=0),
-        dict(bins=129),
-        dict(bins_per_thread=0),
-        dict(bins=True),
-        dict(algorithm="other"),
-        dict(group=this_warp()),
-        dict(launch=LaunchFacts(exact_block_dim=(8, 8, 1))),
+        {"sample_type": cutlass.Float32},
+        {"counter_type": cutlass.Uint8},
+        {"bins": 0},
+        {"bins": 129},
+        {"bins_per_thread": 0},
+        {"bins": True},
+        {"algorithm": "other"},
+        {"group": this_warp()},
+        {"launch": LaunchFacts(exact_block_dim=(8, 8, 1))},
     ],
 )
 def test_invalid_contract(options):
