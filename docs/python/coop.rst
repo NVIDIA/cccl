@@ -28,10 +28,10 @@
    coop/developer_overview
 
 ``cuda.coop`` brings CCCL's optimized cooperative algorithms to Python GPU
-kernels. Use it when threads need to work together, such as loading a tile
-of values or arranging data for the next stage of a computation. These
-operations run inside a kernel, where you can combine them with your own
-code and reuse algorithms maintained and tuned for NVIDIA GPUs.
+kernels. Use it when threads need to work together, such as summing a tile of
+values or arranging data for the next stage of a computation. These operations
+run inside a kernel, where you can combine them with your own code and reuse
+algorithms maintained and tuned for NVIDIA GPUs.
 
 The Numba-CUDA-MLIR integration compiles cooperative calls inside Python
 GPU kernels. You keep Numba's kernel syntax and launch conventions and
@@ -107,24 +107,23 @@ To work on the integration, follow a kernel through the
 
 .. raw:: html
 
-   <span id="backend-registration"></span>
    <span id="build-time-cmake-variables"></span>
    <span id="compilation-and-headers"></span>
    <span id="configuration"></span>
    <span id="coop-backend-registration"></span>
-   <span id="coop-data-layouts"></span>
-   <span id="coop-participation"></span>
-   <span id="coop-temp-storage"></span>
-   <span id="coop-thread-data"></span>
-   <span id="coop-thread-groups"></span>
+   <span id="coop-numba-context-lifetime"></span>
+   <span id="coop-numba-validation"></span>
+   <span id="cuda-devices-and-context-lifetime"></span>
    <span id="data-layouts-and-algorithms"></span>
    <span id="exchange-semantics"></span>
    <span id="groups-and-thread-data"></span>
    <span id="installation"></span>
    <span id="kernel-api"></span>
    <span id="load-and-store-semantics"></span>
+   <span id="numba-cuda-mlir-validation-scope"></span>
    <span id="participation-and-synchronization"></span>
    <span id="per-thread-payloads"></span>
+   <span id="registering-a-backend"></span>
    <span id="runtime-environment-variables"></span>
    <span id="shuffle-semantics"></span>
    <span id="temporary-storage"></span>
