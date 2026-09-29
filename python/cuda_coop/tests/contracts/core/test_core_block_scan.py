@@ -303,7 +303,7 @@ def test_block_scan_sum_accepts_stateless_prefix_callback():
 
 def test_block_scan_prefix_callback_follows_scan_operator_in_cub_signature():
     def maximum(left, right):
-        return left if left > right else right
+        return max(right, left)
 
     def running_prefix(state, aggregate):
         previous = state[0]
