@@ -110,7 +110,7 @@ IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
 SignedIntegerScalar: TypeAlias = (
     int | numpy.signedinteger[Any] | CompilerIntegerLike
 )
-IntegralScalar: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
+IntegralScalar: TypeAlias = SignedIntegerScalar | numpy.unsignedinteger[Any]
 TraceInteger: TypeAlias = int | numpy.integer[Any]
 ValidItems: TypeAlias = IntegerValue
 
