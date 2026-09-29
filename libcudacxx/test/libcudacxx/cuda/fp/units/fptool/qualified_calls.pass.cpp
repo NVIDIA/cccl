@@ -15,7 +15,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// ADDITIONAL_COMPILE_FLAGS: -DCCCL_ENABLE_FPTOOL
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_ENABLE_FPTOOL
 // note: fptool is opt-in, because its types carry mutable state at namespace scope;
 // see <cuda/__fp/fptool_common.h>
 
