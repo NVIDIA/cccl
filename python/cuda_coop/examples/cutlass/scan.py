@@ -39,7 +39,7 @@ def run_example(api="common"):
         storage = module.TempStorage(
             sharing="shared", alignment=64, auto_sync=True
         )
-        payload = module.ThreadData(_ITEMS)
+        payload = module.ThreadData(items_per_thread=_ITEMS)
         module.load(
             group, source, payload, algorithm="transpose", temp_storage=storage
         )
