@@ -13,7 +13,10 @@ from .._core.api.thread_group import ThreadGroup as CommonThreadGroup
 from .._typing import ThreadGroupKind
 
 _GroupKindT_co = TypeVar(
-    "_GroupKindT_co", bound=ThreadGroupKind, covariant=True, default=ThreadGroupKind
+    "_GroupKindT_co",
+    bound=ThreadGroupKind,
+    covariant=True,
+    default=ThreadGroupKind,
 )
 
 Hierarchy = ThreadHierarchy
@@ -49,4 +52,10 @@ def this_block() -> BlockGroup:
 def this_warp() -> ThreadGroup[Literal["warp"]]:
     """Describe the current complete physical warp."""
 
-__all__ = ["Hierarchy", "ThreadGroup", "ThreadHierarchy", "this_block", "this_warp"]
+__all__ = [
+    "Hierarchy",
+    "ThreadGroup",
+    "ThreadHierarchy",
+    "this_block",
+    "this_warp",
+]
