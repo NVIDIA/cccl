@@ -42,7 +42,7 @@ def run_example(api="common"):
         outputs = cute.make_tensor(
             destination, cute.make_layout(2 * _THREADS + 1)
         )
-        payload = module.ThreadData(_ITEMS, dtype=cutlass.Int32)
+        payload = module.ThreadData(items_per_thread=_ITEMS)
         for item in cutlass.range_constexpr(_ITEMS):
             payload[item] = inputs[thread * _ITEMS + item]
         # Full reductions broadcast a scalar to every member of the group.
