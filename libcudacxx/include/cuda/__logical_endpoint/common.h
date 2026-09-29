@@ -451,6 +451,23 @@ template <class _EndpointAttribute>
     }
   }
 
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  if (__ipc != logical_endpoint_ipc_handle_type::none)
+  {
+    if (::cuda::__driver::__version_below(13, 4))
+    {
+      return false;
+    }
+
+    const auto __supported_handle_types =
+      __device.attribute(::cuda::device_attributes::logical_endpoint_supported_handle_types);
+    if ((__supported_handle_types & ::cuda::std::to_underlying(__ipc)) != ::cuda::std::to_underlying(__ipc))
+    {
+      return false;
+    }
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
+
   if ((__flags & logical_endpoint_flag::counted_ops) != logical_endpoint_flag::none)
   {
     if (!__device.attribute(::cuda::device_attributes::logical_endpoint_counted_ops_supported))
@@ -839,10 +856,8 @@ public:
   //! Only owning endpoints can export because refs store only an ID and do not retain endpoint metadata used for typed
   //! import validation.
   //!
-  //! @param[in] __tag The fabric export tag.
   //! @return A logical endpoint fabric handle wrapper.
-  [[nodiscard]] _CCCL_HOST_API logical_endpoint_fabric_handle
-  export_endpoint([[maybe_unused]] fabric_handle_t __tag) const
+  [[nodiscard]] _CCCL_HOST_API logical_endpoint_fabric_handle export_endpoint(fabric_handle_t) const
   {
     _CCCL_ASSERT(__is_engaged(), "Cannot export an empty logical endpoint");
     if (__ipc_handle_type_ != logical_endpoint_ipc_handle_type::fabric)
