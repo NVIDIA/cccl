@@ -8,9 +8,13 @@ from dataclasses import replace
 import pytest
 
 from cuda.coop._core import (
+    INT32,
+    INT64,
     Algorithm,
     ArgumentKind,
     Dependency,
+    PythonOperator,
+    StatefulOperator,
     TemplateParameter,
     Value,
     semantic_token,
@@ -98,3 +102,89 @@ def test_algorithm_specialization_rejects_container_cycles():
 )
 def test_semantic_token_preserves_scalar_identity(left, right):
     assert semantic_token(left) != semantic_token(right)
+
+
+@pytest.mark.parametrize(
+    ("operator_type", "options"),
+    [(PythonOperator, {}), (StatefulOperator, {"state_dtype": INT32})],
+)
+def test_operator_token_uses_backend_callback_identity(operator_type, options):
+    class DeviceCallback:
+        def __init__(self, py_func):
+            self.py_func = py_func
+            self.compiler_cache = {}
+
+        def __call__(self, left, right):
+            raise AssertionError("device callback must not run on the host")
+
+    def add(left, right):
+        return left + right
+
+    def tokenizer(callback):
+        return semantic_token(callback.py_func)
+
+    callback = DeviceCallback(add)
+    operator = operator_type(
+        ret_dtype=INT32,
+        arg_dtypes=(INT32, INT32),
+        op=callback,
+        op_tokenizer=tokenizer,
+        **options,
+    )
+    first = semantic_token(operator)
+    callback.compiler_cache["compiled"] = object()
+
+    assert semantic_token(operator) == first
+    assert semantic_token(replace(operator, op=DeviceCallback(add))) == first
+    equivalent = replace(
+        operator, op_tokenizer=lambda value: semantic_token(value.py_func)
+    )
+    assert semantic_token(equivalent) == first
+
+
+@pytest.mark.parametrize(
+    ("operator_type", "options"),
+    [(PythonOperator, {}), (StatefulOperator, {"state_dtype": INT32})],
+)
+def test_operator_token_rechecks_callback_dependencies(
+    operator_type, options, monkeypatch
+):
+    operator = operator_type(
+        ret_dtype=INT32,
+        arg_dtypes=(INT32, INT32),
+        op=_global_dependent_operator,
+        op_tokenizer=semantic_token,
+        **options,
+    )
+    original = semantic_token(operator)
+    monkeypatch.setitem(
+        _global_dependent_operator.__globals__,
+        "_REFERENCED_SEMANTIC_GLOBAL",
+        2,
+    )
+    assert semantic_token(operator) != original
+
+
+@pytest.mark.parametrize(
+    ("operator_type", "options"),
+    [(PythonOperator, {}), (StatefulOperator, {"state_dtype": INT32})],
+)
+def test_operator_token_preserves_dtype_identity(operator_type, options):
+    def add(left, right):
+        return left + right
+
+    operator = operator_type(
+        ret_dtype=INT32,
+        arg_dtypes=(INT32, INT32),
+        op=add,
+        op_tokenizer=semantic_token,
+        **options,
+    )
+    original = semantic_token(operator)
+
+    assert semantic_token(replace(operator, ret_dtype=INT64)) != original
+    assert (
+        semantic_token(replace(operator, arg_dtypes=(INT64, INT32))) != original
+    )
+    if isinstance(operator, StatefulOperator):
+        assert semantic_token(replace(operator, state_dtype=INT64)) != original

@@ -537,7 +537,7 @@ def test_group_plan_allows_storage_free_group_execution(monkeypatch):
         FactoryOperation,
         StorageABI,
     )
-    from tests.support.group_planning import _load_store, _plan
+    from tests._group_planning import _load_store, _plan
 
     plan = _plan(this_block(), _load_store())
     launch = LaunchFacts(exact_block_dim=(64, 1, 1))
@@ -612,7 +612,7 @@ def test_group_plan_preserves_other_group_execution_rejections(
         FactoryOperation,
         StorageABI,
     )
-    from tests.support.group_planning import _load_store, _plan
+    from tests._group_planning import _load_store, _plan
 
     storage_bearing = case == "storage-bearing-plan"
     plan = _plan(
