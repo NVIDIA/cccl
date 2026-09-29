@@ -30,7 +30,9 @@ def test_runtime_count_requires_supported_integer(type_name):
 
     def kernel(count):
         values = coop.ThreadData(2, types.int32)
-        return coop.adjacent_difference(coop.this_block(), values, valid_items=count)
+        return coop.adjacent_difference(
+            coop.this_block(), values, valid_items=count
+        )
 
     with pytest.raises(TypeError, match="valid_items"):
         _plan(kernel, (getattr(types, type_name),))
@@ -46,7 +48,9 @@ def test_runtime_boundary_dtype_must_match(operation):
 
     def kernel(boundary):
         values = coop.ThreadData(2, types.float32)
-        return function(coop.this_block(), values, tile_predecessor_item=boundary)
+        return function(
+            coop.this_block(), values, tile_predecessor_item=boundary
+        )
 
     with pytest.raises(TypeError, match="tile_predecessor_item dtype"):
         _plan(kernel, (types.float64,))
@@ -101,10 +105,14 @@ def test_neighbor_operator_tracks_nested_device_helper(monkeypatch, operation):
     original = _symbols._type_dependency_token
 
     def reject_dispatcher_class(value, state):
-        assert value is not MLIRDispatcher, "fingerprinting compiler implementation"
+        assert value is not MLIRDispatcher, (
+            "fingerprinting compiler implementation"
+        )
         return original(value, state)
 
-    monkeypatch.setattr(_symbols, "_type_dependency_token", reject_dispatcher_class)
+    monkeypatch.setattr(
+        _symbols, "_type_dependency_token", reject_dispatcher_class
+    )
 
     def make_operator(offset):
         @cuda.jit(device=True)

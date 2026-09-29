@@ -38,7 +38,9 @@ def test_declared_result_dtype_extent_and_arity(monkeypatch):
             2 if context.constant(bound.arguments["mode"]) == "two" else 1
         )
 
-    monkeypatch.setitem(_operations._GROUP_OPERATIONS, marker, "test_result_metadata")
+    monkeypatch.setitem(
+        _operations._GROUP_OPERATIONS, marker, "test_result_metadata"
+    )
     monkeypatch.setitem(
         _operations._GROUP_PRIMITIVES,
         "test_result_metadata",
