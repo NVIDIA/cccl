@@ -85,6 +85,14 @@ context. Cast the assigned result to the intended scalar type, such as
 Store. This is a limit of the current planner; the helper's result may already
 have a type that the later compiler phases can determine.
 
+An explicit signature on the scalar helper does not supply that missing
+context to this early planner.
+
+Helpers containing cooperative operations follow the separate
+:ref:`device-helper inlining rules <coop-numba-device-helpers>`. Those rules
+also cover passing groups and ``ThreadData`` payloads between helpers and
+the calling kernel.
+
 Use typed values when the computation needs a particular width or precision.
 The optional ``dtype`` parameter supplies element-type information when the
 surrounding program cannot establish it. It does not initialize the payload,
