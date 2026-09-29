@@ -665,6 +665,25 @@ private:
 
     auto& from_data_node = st.data_nodes[static_cast<size_t>(parent_offset)].value();
 
+    // The parent scope holds this data with the mode its own import was granted, i.e. the mode
+    // the grandparent froze it with. A nested import cannot ask for more: a scope that only reads
+    // cannot hand out write access, since its own write-back would violate its grant. Checked
+    // here, before anything is frozen, so the misuse surfaces at push() and not at pop() inside a
+    // destructor.
+    if (const int grandparent_offset = st.sctx.get_parent_offset(parent_offset);
+        grandparent_offset >= 0 && st.is_frozen(grandparent_offset))
+    {
+      const access_mode granted = st.get_frozen_mode(grandparent_offset);
+      if (!access_mode_permits(granted, m))
+      {
+        _CCCL_THROW(::std::logic_error,
+                    ::std::string("invalid access mode escalation: the enclosing scope holds the data with mode ")
+                      .append(access_mode_string(granted))
+                      .append(", requested ")
+                      .append(access_mode_string(m)));
+      }
+    }
+
     if (where.is_invalid())
     {
       where = from_ctx.default_exec_place().affine_data_place();
