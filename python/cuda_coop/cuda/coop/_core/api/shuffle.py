@@ -79,7 +79,8 @@ def shuffle(
     Shift a block tile in both directions and fill the exposed boundary with
     zero before storing the results.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_rearrangement_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_rearrangement_examples.py
         :language: python
         :start-after: # shuffle-example-begin
         :end-before: # shuffle-example-end

@@ -186,7 +186,8 @@ def _plan_exchange(
                 call,
                 resolved,
                 UnsupportedReasonCode.OPERATION_VARIANT,
-                f"cub::WarpExchange does not support mode {operation.mode.value!r}",
+                "cub::WarpExchange does not support mode "
+                f"{operation.mode.value!r}",
             )
         if primitive.warp_time_slicing:
             return _unsupported(

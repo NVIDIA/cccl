@@ -100,7 +100,8 @@ def _array_dtype(
         dtype = context.payload_write_dtype(value)
     if dtype is None:
         raise GroupRewriteError(
-            f"cuda.coop.numba_mlir.exchange could not infer a dtype for {parameter}"
+            f"cuda.coop.numba_mlir.exchange could "
+            f"not infer a dtype for {parameter}"
         )
     return dtype
 
@@ -110,7 +111,8 @@ def _rank_dtype(dtype: Any) -> Any:
         dtype = normalize_dtype_param(dtype)
     except (TypeError, ValueError) as exc:
         raise TypeError(
-            "cuda.coop.numba_mlir.exchange ranks must have a signed integer dtype"
+            "cuda.coop.numba_mlir.exchange ranks "
+            "must have a signed integer dtype"
         ) from exc
     dtype = getattr(dtype, "literal_type", dtype)
     if (
@@ -119,7 +121,8 @@ def _rank_dtype(dtype: Any) -> Any:
         or not dtype.signed
     ):
         raise TypeError(
-            "cuda.coop.numba_mlir.exchange ranks must have a signed integer dtype"
+            "cuda.coop.numba_mlir.exchange ranks "
+            "must have a signed integer dtype"
         )
     return dtype
 
@@ -273,7 +276,8 @@ class _ExchangePlanning:
                 else "does not accept"
             )
             raise ValueError(
-                f"cuda.coop.numba_mlir.exchange {mode} {requirement} valid_flags"
+                f"cuda.coop.numba_mlir.exchange "
+                f"{mode} {requirement} valid_flags"
             )
 
         rank_dtype = None
