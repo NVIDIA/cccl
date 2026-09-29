@@ -29,7 +29,9 @@ pytestmark = [
 @pytest.mark.parametrize(
     "sample_dtype", [np.uint8, np.int32, np.uint32, np.int64, np.uint64]
 )
-@pytest.mark.parametrize("counter_dtype", [np.int32, np.uint32, np.int64, np.uint64])
+@pytest.mark.parametrize(
+    "counter_dtype", [np.int32, np.uint32, np.int64, np.uint64]
+)
 def test_histogram_counts_preservation_and_padding(
     algorithm, sample_dtype, counter_dtype
 ):
@@ -64,9 +66,12 @@ def test_histogram_counts_preservation_and_padding(
     for block in range(2):
         expected = np.zeros(128, dtype=counter_dtype)
         expected[:65] = np.bincount(
-            source[block * 192 : (block + 1) * 192].astype(np.int64), minlength=65
+            source[block * 192 : (block + 1) * 192].astype(np.int64),
+            minlength=65,
         )
-        np.testing.assert_array_equal(output[block * 128 : (block + 1) * 128], expected)
+        np.testing.assert_array_equal(
+            output[block * 128 : (block + 1) * 128], expected
+        )
     np.testing.assert_array_equal(preserved, source)
 
 
@@ -105,18 +110,24 @@ def test_fresh_calls_reuse_storage(threads, bins, algorithm, manual_sync):
             cuda.syncthreads()
         for i in range(bins_per_thread):
             second[i] += first[i]
-        coop.store(block, destination, second, algorithm="striped", valid_items=bins)
+        coop.store(
+            block, destination, second, algorithm="striped", valid_items=bins
+        )
 
     source = (np.arange(threads * 3) % bins).astype(np.int32)
     output = np.empty(bins, dtype=np.int32)
     kernel[1, threads](source, output)
     cuda.synchronize()
-    np.testing.assert_array_equal(output, 2 * np.bincount(source, minlength=bins))
+    np.testing.assert_array_equal(
+        output, 2 * np.bincount(source, minlength=bins)
+    )
 
 
 @pytest.mark.parametrize("scalar", [False, True])
 @pytest.mark.parametrize("algorithm", ["atomic", "sort"])
-def test_qualified_scalar_and_local_array_return_counter_payload(scalar, algorithm):
+def test_qualified_scalar_and_local_array_return_counter_payload(
+    scalar, algorithm
+):
     @cuda.jit
     def kernel(source, destination):
         block = numba_coop.this_block()

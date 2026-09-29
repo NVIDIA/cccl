@@ -10,7 +10,11 @@ from cuda.coop._core.block.histogram import (
     validate_histogram_dtype,
 )
 
-from .._compiler._operations import StorageABI, factory_operation, register_factory
+from .._compiler._operations import (
+    StorageABI,
+    factory_operation,
+    register_factory,
+)
 from .._compiler._parameters import normalize_dim_param, normalize_dtype_param
 from .._types import make_invocable_from_specialization
 from ._core import NumbaMlirCoreAdapter

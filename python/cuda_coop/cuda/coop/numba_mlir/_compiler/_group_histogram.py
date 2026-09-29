@@ -45,7 +45,9 @@ def _infer_payload(context, inference):
     ):
         value, spec = inference.array_candidate(index)
         if value is None or spec is None or spec.items_per_thread is None:
-            raise GroupRewriteError("histogram requires fixed-size per-thread payloads")
+            raise GroupRewriteError(
+                "histogram requires fixed-size per-thread payloads"
+            )
         dtype = inference.inferred_array_dtype(value, spec)
         if dtype is None:
             dtype = inference.factory_value(dtype_name)
@@ -61,7 +63,9 @@ def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
     from .._lowering._core import NumbaMlirCoreAdapter
 
     value = bound.arguments["samples"]
-    if is_common_root and not context.is_thread_data(operation, "samples", value):
+    if is_common_root and not context.is_thread_data(
+        operation, "samples", value
+    ):
         raise TypeError("cuda.coop.histogram samples must be ThreadData")
     is_array = context.is_array(operation, value)
     extent = context.array_extent(value) if is_array else 1
@@ -78,10 +82,14 @@ def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
     counter = (
         types.int32
         if context.is_none(bound.arguments["counter_dtype"])
-        else normalize_dtype_param(context.constant(bound.arguments["counter_dtype"]))
+        else normalize_dtype_param(
+            context.constant(bound.arguments["counter_dtype"])
+        )
     )
     validate_histogram_dtype(counter, counter=True)
-    bins = normalize_positive_int("bins", context.constant(bound.arguments["bins"]))
+    bins = normalize_positive_int(
+        "bins", context.constant(bound.arguments["bins"])
+    )
     bins_per_thread = _extent(context, bound)
     algorithm = normalize_histogram_algorithm(
         context.constant(bound.arguments["algorithm"])
@@ -103,7 +111,8 @@ def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
         descriptor = context.temp_storage(storage)
         if descriptor is None:
             raise TypeError(
-                "histogram temp_storage must resolve to a TempStorage descriptor"
+                "histogram temp_storage must "
+                "resolve to a TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(
@@ -133,10 +142,18 @@ def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
         statements, operation=operation, value=value, scope=scope, loc=loc
     )
     constructor = context.value_var(
-        statements, scope=scope, loc=loc, stem="histogram_payload", value=ThreadData
+        statements,
+        scope=scope,
+        loc=loc,
+        stem="histogram_payload",
+        value=ThreadData,
     )
     count = context.value_var(
-        statements, scope=scope, loc=loc, stem="histogram_extent", value=bins_per_thread
+        statements,
+        scope=scope,
+        loc=loc,
+        stem="histogram_extent",
+        value=bins_per_thread,
     )
     counter_type = context.value_var(
         statements, scope=scope, loc=loc, stem="histogram_dtype", value=counter

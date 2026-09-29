@@ -47,11 +47,15 @@ def test_histogram_accumulation_example():
             )
             for i in range(2):
                 total[i] += counts[i]
-        coop.store(block, destination, total, algorithm="striped", valid_items=65)
+        coop.store(
+            block, destination, total, algorithm="striped", valid_items=65
+        )
 
     source = (np.arange(3 * 128) % 65).astype(np.int32)
     destination = np.empty(65, dtype=np.int64)
     histogram_tiles[1, 64](source, 3, destination)
     cuda.synchronize()
-    np.testing.assert_array_equal(destination, np.bincount(source, minlength=65))
+    np.testing.assert_array_equal(
+        destination, np.bincount(source, minlength=65)
+    )
     # histogram-accumulation-example-end
