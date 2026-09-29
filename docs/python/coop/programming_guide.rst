@@ -491,6 +491,67 @@ Adding ``group_origin`` to ``offset`` here would count it twice. This
 automatic origin applies to Warp Load and Store; ordinary array indexing
 in a kernel uses exactly the index you write.
 
+.. _coop-numba-device-helpers:
+
+Device helpers
+--------------
+
+Use ``@cuda.jit(device=True)`` to put cooperative operations in a reusable
+helper. Pass a group and a ``ThreadData`` payload as arguments just as you
+would pass them to an operation in the kernel. The group still names the
+caller's participating threads; each thread passes its own payload. Changes
+to that payload's items are visible to the caller.
+
+Cooperative helpers must be inlined into the calling kernel before planning.
+Numba-CUDA-MLIR defaults device helpers to ``inline="always"``; the example
+spells it out on ``load_into``. ``inline="never"`` prevents this frontend
+inlining and is unsupported for a helper containing cooperative operations.
+Inlining during later optimization or device linking comes too late to
+supply the group and payload information this planner needs.
+
+This example uses nested helpers. ``load_tile`` creates a payload, passes it
+and the group to ``load_into``, and returns the initialized payload to the
+kernel. Load infers the element type from ``source``:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_device_helpers_example.py
+   :language: python
+   :name: coop-pg-device-helpers
+   :start-after: # coop-pg-device-helpers-begin
+   :end-before: # coop-pg-device-helpers-end
+   :dedent: 4
+
+After inlining, the planner can see the helpers' operations, group arguments,
+and payload uses together. The calling kernel supplies the compiler context
+and launch dimensions. An inlined helper can also create or return a group.
+``coop.this_block()`` inside the helper refers to the same block as the
+caller. Group descriptors are resolved during compilation and have no
+separate runtime representation for an out-of-line device call.
+
+Every required group member must reach each cooperative call inside the
+helper, including through nested calls or loops. Moving an operation into a
+helper does not change its participation or synchronization requirements.
+Cooperative operations inside standalone operation callbacks remain
+unsupported; those callbacks may perform ordinary device computation.
+
+An ordinary ``inline="never"`` helper can index and modify a payload whose
+element type is already established. It receives a local array, so
+``items.items_per_thread`` is unavailable there. Continue using the original
+payload in the caller: returning the array from an out-of-line helper loses
+the payload metadata needed by subsequent common cooperative calls. Inline
+helpers that need that metadata or return a payload for those calls.
+
+Ordinary scalar helpers can also remain out of line. Their return values may
+need a typed assignment or another supported operation to establish a
+``ThreadData`` element type, even when the helper has an explicit signature.
+This is separate from cooperative helper inlining; see
+:ref:`element-type inference <coop-faq-thread-data-dtype>` for workarounds.
+
+Keep cooperative group mappings, operation selectors, and payload or storage
+shapes known at compile time. The current planner does not support
+``literal_unroll`` values that determine these properties. Write those calls
+with compile-time constants. Ordinary runtime loops with fixed cooperative
+shapes, and unrelated uses of ``literal_unroll``, remain supported.
+
 .. _coop-temp-storage:
 
 .. _tempstorage-scratch-used-during-a-collective:
@@ -600,20 +661,6 @@ default inferred allocation and unsized shared descriptor are sufficient
 for the kernels above; use an explicit capacity when you have a reason to
 reserve that amount of shared memory.
 
-Helpers and compile-time values
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Device helpers containing primitives must be inlined into the kernel so the
-planner can resolve their groups, descriptors, and launch dimensions. Default
-helper inlining is supported. A surviving non-inlined primitive helper, a
-descriptor escaping through a runtime object, or a primitive inside a
-standalone callback receives a compilation error. Move the primitive into the
-kernel or an inlined helper; callbacks may perform ordinary device computation.
-
-The MVP does not support ``literal_unroll`` values that determine cooperative
-groups, operation selectors, or payload and storage shapes. Write the affected
-calls explicitly with compile-time constants. Ordinary runtime loops with fixed
-cooperative shapes, and unrelated uses of ``literal_unroll``, remain supported.
 
 .. _coop-reductions:
 
