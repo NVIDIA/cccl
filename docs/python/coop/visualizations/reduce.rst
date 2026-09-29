@@ -78,7 +78,7 @@ least 256 input elements for each block.
 .. code-block:: python
 
    block = coop.this_block()
-   values = coop.ThreadData(2, dtype=np.int32)
+   values = coop.ThreadData(items_per_thread=2)
    coop.load(block, source, values, offset=block_index * 256)
    total = coop.sum(block, values, algorithm="raking")
    if thread_rank == 0:
