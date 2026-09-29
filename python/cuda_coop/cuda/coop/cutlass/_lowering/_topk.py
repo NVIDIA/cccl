@@ -55,7 +55,8 @@ def _count_binding(value, name, *, optional=False):
         or type_specification.token == "u64"
     ):
         raise TypeError(
-            f"TopK {name} requires a signed integer up to 64 bits or an unsigned integer up to 32 bits"
+            f"TopK {name} requires a signed integer up to 64 bits "
+            "or an unsigned integer up to 32 bits"
         )
     return ArgumentBinding.runtime()
 
@@ -250,7 +251,9 @@ def _render_topk(request):
         cpp = _types.TYPE_SPECIFICATIONS[dtype].cpp_type
         params.extend(f"{cpp} {name}{i}" for i in range(p.items_per_thread))
         inputs.append(
-            f"  {cpp} {name}[{p.items_per_thread}] = {{{', '.join(f'{name}{i}' for i in range(p.items_per_thread))}}};"
+            f"  {cpp} {name}[{p.items_per_thread}] = {{"
+            f"{', '.join(f'{name}{i}' for i in range(p.items_per_thread))}"
+            "};"
         )
         outputs.extend(
             f"  result_{name}[{i}] = {name}[{i}];"
@@ -284,15 +287,24 @@ def _render_topk(request):
         f"void {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
         "  using storage_type = typename implementation_type::TempStorage;",
-        "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+        (
+            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+            "< sizeof(storage_type) ||"
+        ),
         "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
         '    asm volatile("trap;");',
         "  }",
         "  unsigned long long generic_address;",
-        '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
+        (
+            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+            '"l"((unsigned long long)storage_address));'
+        ),
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         *inputs,
-        f"  implementation_type(storage).{request.implementation.method_name}({', '.join(args)});",
+        (
+            "  implementation_type(storage)."
+            f"{request.implementation.method_name}({', '.join(args)});"
+        ),
         "  if (storage_auto_sync != 0) { __syncthreads(); }",
         *outputs,
         "}",

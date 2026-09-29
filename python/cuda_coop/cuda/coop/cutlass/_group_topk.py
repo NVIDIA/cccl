@@ -13,16 +13,24 @@ from ._thread_data import _snapshot_readable_payload
 def _topk(group, keys, values, *, selection, k, valid_items, temp_storage):
     primitive = f"topk_{selection}_{'keys' if values is None else 'pairs'}"
     if not isinstance(group, ThreadGroup):
-        raise TypeError(f"cuda.coop.cutlass.{primitive} group must be a ThreadGroup")
+        raise TypeError(
+            f"cuda.coop.cutlass.{primitive} group must be a ThreadGroup"
+        )
     if group.kind != "block":
-        raise NotImplementedError("TopK supports only complete this_block() groups")
+        raise NotImplementedError(
+            "TopK supports only complete this_block() groups"
+        )
     if temp_storage is not None and not isinstance(temp_storage, TempStorage):
         raise TypeError("TopK temp_storage must be CUTLASS TempStorage")
     keys = _snapshot_readable_payload(keys, name="keys", primitive=primitive)
     if values is not None:
-        values = _snapshot_readable_payload(values, name="values", primitive=primitive)
+        values = _snapshot_readable_payload(
+            values, name="values", primitive=primitive
+        )
         if keys.items_per_thread != values.items_per_thread:
-            raise ValueError("TopK keys and values must have matching items_per_thread")
+            raise ValueError(
+                "TopK keys and values must have matching items_per_thread"
+            )
 
     from ._compiler._launch import current_kernel_launch_facts
     from ._lowering._topk import provider_topk
@@ -158,7 +166,9 @@ def topk_max_keys(group, keys, /, *, k, valid_items=None, temp_storage=None):
     )
 
 
-def topk_min_pairs(group, keys, values, /, *, k, valid_items=None, temp_storage=None):
+def topk_min_pairs(
+    group, keys, values, /, *, k, valid_items=None, temp_storage=None
+):
     """Select the smallest keys and their associated values.
 
     This qualified form of :func:`cuda.coop.topk_min_pairs` accepts CuTe
@@ -214,7 +224,9 @@ def topk_min_pairs(group, keys, values, /, *, k, valid_items=None, temp_storage=
     )
 
 
-def topk_max_pairs(group, keys, values, /, *, k, valid_items=None, temp_storage=None):
+def topk_max_pairs(
+    group, keys, values, /, *, k, valid_items=None, temp_storage=None
+):
     """Select the largest keys and their associated values.
 
     This qualified form of :func:`cuda.coop.topk_max_pairs` accepts the same

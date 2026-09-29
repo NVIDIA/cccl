@@ -12,7 +12,11 @@ from typing_extensions import TypeVar
 
 from .._core.api.thread_group import BlockGroup
 from .._typing import CommonNumericScalar, CommonThreadDataLike, TempStorageLike
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
 _ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
