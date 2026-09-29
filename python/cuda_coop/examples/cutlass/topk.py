@@ -30,7 +30,9 @@ def _check(result):
 
 
 def run_example(api="common"):
-    """Check selected multisets and pair identity without assuming output order."""
+    """Check selected multisets and pair identity without assuming output
+    order.
+    """
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
