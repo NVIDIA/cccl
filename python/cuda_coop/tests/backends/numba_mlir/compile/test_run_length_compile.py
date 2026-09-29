@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""GPU-free final-link checks for the complete-operation RLD providers."""
-
 import os
 from types import SimpleNamespace
 
