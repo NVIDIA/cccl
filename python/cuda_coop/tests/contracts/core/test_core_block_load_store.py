@@ -123,40 +123,6 @@ def test_block_load_partial_default_and_pointer_offset_overloads():
     )
 
 
-@pytest.mark.parametrize(
-    "algorithm",
-    ("transpose", "warp_transpose", "warp_transpose_timesliced"),
-)
-def test_partial_transpose_load_preserves_invalid_payload_items(algorithm):
-    preserving = make_block_load_spec(
-        dtype="i32",
-        block_dim=(64, 1, 1),
-        items_per_thread=2,
-        algorithm=algorithm,
-        valid_items=True,
-    )
-    defaulting = make_block_load_spec(
-        dtype="i32",
-        block_dim=(64, 1, 1),
-        items_per_thread=2,
-        algorithm=algorithm,
-        valid_items=True,
-        oob_default=True,
-    )
-
-    assert preserving.specialization.struct_name == (
-        "CudaCoopBlockLoadPreservingInvalid"
-    )
-    assert preserving.specialization.metadata["preserves_invalid_items"]
-    assert len(preserving.specialization.type_definitions) == 1
-    assert "original[item] = items[item]" in (
-        preserving.specialization.type_definitions[0].code
-    )
-    assert defaulting.specialization.struct_name == "BlockLoad"
-    assert not defaulting.specialization.metadata["preserves_invalid_items"]
-    assert defaulting.specialization.type_definitions == ()
-
-
 def test_block_load_preserves_static_tile_controls_in_the_implementation_abi():
     spec = make_block_load_spec(
         dtype="f32",

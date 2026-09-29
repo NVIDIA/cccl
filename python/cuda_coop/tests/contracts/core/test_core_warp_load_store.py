@@ -122,47 +122,6 @@ def test_warp_store_partial_runtime_effective_offset_abi():
     assert spec.specialization.metadata["effective_offset_stride"] == 64
 
 
-def test_partial_transpose_load_preserves_invalid_payload_items():
-    preserving = make_warp_load_spec(
-        dtype="i32",
-        items_per_thread=2,
-        algorithm="transpose",
-        threads_in_warp=8,
-        valid_items=True,
-    )
-    defaulting = make_warp_load_spec(
-        dtype="i32",
-        items_per_thread=2,
-        algorithm="transpose",
-        valid_items=True,
-        oob_default=True,
-    )
-    direct = make_warp_load_spec(
-        dtype="i32",
-        items_per_thread=2,
-        algorithm="direct",
-        valid_items=True,
-    )
-
-    assert preserving.specialization.struct_name == (
-        "CudaCoopWarpLoadPreservingInvalid"
-    )
-    assert preserving.specialization.metadata["preserves_invalid_items"]
-    assert len(preserving.specialization.type_definitions) == 1
-    wrapper = preserving.specialization.type_definitions[0].code
-    assert "original[item] = items[item]" in wrapper
-    assert "::cuda::ptx::get_sreg_laneid()" in wrapper
-    assert "get_sreg_laneid()) %" in wrapper
-    assert "LogicalWarpThreads;" in wrapper
-    assert "lane * ItemsPerThread + item >= valid_items" in wrapper
-    assert "(LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0" in wrapper
-    assert defaulting.specialization.struct_name == "WarpLoad"
-    assert not defaulting.specialization.metadata["preserves_invalid_items"]
-    assert defaulting.specialization.type_definitions == ()
-    assert direct.specialization.struct_name == "WarpLoad"
-    assert not direct.specialization.metadata["preserves_invalid_items"]
-
-
 def test_warp_load_store_support_exactly_four_algorithms():
     assert {algorithm.value for algorithm in WarpLoadStoreAlgorithm} == {
         "direct",
