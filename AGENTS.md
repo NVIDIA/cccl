@@ -4,7 +4,7 @@ This document provides guidelines for building, testing, and contributing to the
 
 For `cuda.coop` work, including `python/cuda_coop/**` and
 `docs/python/coop*`, read [python/cuda_coop/AGENTS.md](python/cuda_coop/AGENTS.md)
-and apply its example conventions.
+and apply its API, behavior, and example conventions.
 
 ---
 
