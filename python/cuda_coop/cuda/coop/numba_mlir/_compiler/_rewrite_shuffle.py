@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shuffle payload inference and runtime-distance validation."""
-
 from enum import Enum
 from numbers import Integral
 

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Re-export the typing contracts owned by common API families."""
-
 from .exchange import exchange
 from .load_store import load, store
 from .shuffle import shuffle
