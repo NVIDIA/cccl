@@ -589,7 +589,7 @@ public:
    */
   void push_back(const value_type& x);
 
-  /*! This method construct an element in-place to the end of this vector_base.
+  /*! This method construct an element in-place to the end of this vector.
    *  \param args the argument(s) passed to the constructor.
    *  \return A reference to the newly constructed element.
    */
