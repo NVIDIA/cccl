@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Exchange requests retain layout, auxiliary dtype, and group contracts."""
 
@@ -33,15 +32,15 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 def _request(group=None, *, mode="striped_to_blocked", block=(8, 4, 2), **options):
     mode = BlockExchangeMode(mode)
-    kwargs = dict(
-        group=this_block() if group is None else group,
-        launch=LaunchFacts(exact_block_dim=block),
-        dtype=cutlass.Int32,
-        items_per_thread=2,
-        mode=mode.value,
-        rank_dtype=cutlass.Int32 if mode.uses_ranks else None,
-        valid_flag_dtype=cutlass.Int32 if mode.uses_valid_flags else None,
-    )
+    kwargs = {
+        "group": this_block() if group is None else group,
+        "launch": LaunchFacts(exact_block_dim=block),
+        "dtype": cutlass.Int32,
+        "items_per_thread": 2,
+        "mode": mode.value,
+        "rank_dtype": cutlass.Int32 if mode.uses_ranks else None,
+        "valid_flag_dtype": cutlass.Int32 if mode.uses_valid_flags else None,
+    }
     kwargs.update(options)
     plan = _exchange._make_group_exchange_plan(**kwargs).require_supported()
     return _exchange._CubExchangeRequest(

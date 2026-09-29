@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Array and scalar Shuffle oracles, controls, and scratch reuse."""
 
@@ -267,6 +266,7 @@ raise AssertionError("invalid Shuffle distance did not trap")
         capture_output=True,
         text=True,
         timeout=180,
+        check=False,
     )
     output = result.stdout + result.stderr
     assert result.returncode != 0, output

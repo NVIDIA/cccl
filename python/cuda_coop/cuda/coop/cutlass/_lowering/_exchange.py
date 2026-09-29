@@ -317,8 +317,10 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
     if request.group_kind in {"warp", "threads_within_warp"}:
         instances, logical_width = _warp_instances(request)
         storage_lines = [
-            "  __shared__ typename implementation_type::TempStorage "
-            f"storage[{instances}];",
+            (
+                "  __shared__ typename implementation_type::TempStorage "
+                f"storage[{instances}];"
+            ),
             "  unsigned int storage_instance =",
             f"      (threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) / {logical_width}u;",
         ]
@@ -369,12 +371,16 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
     ]
     return [
         f"void {request.symbol_name}({', '.join(params)}) {{",
-        f"  using implementation_type = ::cub::{implementation.struct_name}<"
-        f"{template_arguments}>;",
+        (
+            f"  using implementation_type = ::cub::{implementation.struct_name}<"
+            f"{template_arguments}>;"
+        ),
         *storage_lines,
         *input_lines,
-        f"  implementation_type({storage}).{implementation.method_name}("
-        f"{', '.join(call_arguments)});",
+        (
+            f"  implementation_type({storage}).{implementation.method_name}("
+            f"{', '.join(call_arguments)});"
+        ),
         _storage_reuse_barrier_line(request),
         *output_lines,
         "}",
