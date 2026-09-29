@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Family-local planning for windowed and bulk Run Length Decode."""
-
 from dataclasses import replace
 
 from numba_cuda_mlir import types

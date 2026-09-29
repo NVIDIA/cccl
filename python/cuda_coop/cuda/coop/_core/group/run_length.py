@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-neutral complete-operation Run Length Decode planning."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
