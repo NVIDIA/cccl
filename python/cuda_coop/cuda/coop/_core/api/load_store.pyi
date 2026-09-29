@@ -47,7 +47,7 @@ def load(
     *,
     algorithm: BlockLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
-    oob_default: _CommonNumericT | int | float,
+    oob_default: _CommonNumericT | float,
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> None:
@@ -77,7 +77,7 @@ def load(
     *,
     algorithm: WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
-    oob_default: _CommonNumericT | int | float,
+    oob_default: _CommonNumericT | float,
     offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> None:

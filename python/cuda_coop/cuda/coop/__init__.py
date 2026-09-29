@@ -27,7 +27,8 @@ def _package_version() -> str:
 
 __version__ = _package_version()
 
-__all__ = ["__version__", "register", *_common_exports]
+__all__ = ["__version__", "register"]
+__all__.extend(_common_exports)
 
 
 def __dir__() -> list[str]:
@@ -36,7 +37,7 @@ def __dir__() -> list[str]:
     return sorted(__all__)
 
 
-from ._core._auto_registration import _auto_register_known_dsls  # noqa: E402
+from ._core._auto_registration import _auto_register_known_dsls
 
 _auto_register_known_dsls()
 del _auto_register_known_dsls

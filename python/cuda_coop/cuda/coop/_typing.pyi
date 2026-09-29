@@ -8,7 +8,7 @@ from typing import Any, Literal, Protocol, TypeAlias, TypeVar
 
 import numpy
 
-ItemT = TypeVar("ItemT")
+_ItemT = TypeVar("_ItemT")
 
 ThreadLevel: TypeAlias = Literal[
     "thread",
@@ -147,15 +147,17 @@ CommonNumericScalar: TypeAlias = (
     | CompilerScalarLike
 )
 
-class _ExactScalar(Protocol[ItemT]):
+class _ExactScalar(Protocol[_ItemT]):
     # Writable __class__ makes the scalar type invariant: a seed cannot widen
     # the input type. It also keeps NumPy float64 out of the Python-float arm.
-    __class__: type[ItemT]  # type: ignore[assignment]
+    __class__: type[_ItemT]  # type: ignore[assignment]
 
 ContextualInitialValue: TypeAlias = (
-    _ExactScalar[ItemT] | _ExactScalar[int] | _ExactScalar[float]
+    _ExactScalar[_ItemT] | _ExactScalar[int] | _ExactScalar[float]
 )
-_ReadableItemT = TypeVar("_ReadableItemT", bound=CommonNumericScalar, covariant=True)
+_ReadableItemT_co = TypeVar(
+    "_ReadableItemT_co", bound=CommonNumericScalar, covariant=True
+)
 ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
 )
@@ -176,7 +178,7 @@ ThreadGroupQueryScalar: TypeAlias = (
 TraceInteger: TypeAlias = int | numpy.integer[Any]
 ValidItems: TypeAlias = IntegerValue
 
-class ThreadDataLike(Protocol[ItemT]):
+class ThreadDataLike(Protocol[_ItemT]):
     """Common mutable, indexable per-thread payload contract.
 
     Concrete compiler backends may attach additional helpers and metadata, but
@@ -191,13 +193,13 @@ class ThreadDataLike(Protocol[ItemT]):
     def __len__(self) -> int:
         """Return the number of logical items owned by this thread."""
 
-    def __getitem__(self, index: int, /) -> ItemT:
+    def __getitem__(self, index: int, /) -> _ItemT:
         """Return one thread-local item."""
 
-    def __setitem__(self, index: int, value: ItemT, /) -> None:
+    def __setitem__(self, index: int, value: _ItemT, /) -> None:
         """Replace one thread-local item."""
 
-class CommonThreadDataLike(Protocol[_ReadableItemT]):
+class CommonThreadDataLike(Protocol[_ReadableItemT_co]):
     """Thread payload whose readable items use the common API's numeric types."""
 
     items_per_thread: int
@@ -206,7 +208,7 @@ class CommonThreadDataLike(Protocol[_ReadableItemT]):
     def __len__(self) -> int:
         """Return the number of items owned by this thread."""
 
-    def __getitem__(self, index: int, /) -> _ReadableItemT:
+    def __getitem__(self, index: int, /) -> _ReadableItemT_co:
         """Return one numeric register value supported by the common API."""
 
 class TempStorageLike(Protocol):
@@ -220,25 +222,25 @@ class TempStorageLike(Protocol):
 __all__ = [
     "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "CommonShuffleMode",
     "ContextualInitialValue",
     "ExchangeMode",
     "LoadStoreAlgorithm",
-    "CommonShuffleMode",
+    "NonSumScanOperator",
     "ReduceAlgorithm",
     "ReduceOperator",
+    "ScalarShuffleMode",
     "ScanAlgorithm",
     "ScanMode",
     "ScanOperator",
-    "SumScanOperator",
-    "NonSumScanOperator",
-    "ScalarShuffleMode",
     "ShuffleMode",
+    "SumScanOperator",
     "SynchronizableGroupKind",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
-    "WarpLoadStoreAlgorithm",
     "WarpExchangeMode",
+    "WarpLoadStoreAlgorithm",
 ]
