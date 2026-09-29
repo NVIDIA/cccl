@@ -354,8 +354,9 @@ You may omit ``dtype`` when surrounding operations establish it:
 If you initialize the payload yourself, specifying a dtype usually makes
 the code easier to follow. Conflicting dtype requirements are errors.
 
-Load writes into the payload supplied by the caller. Store preserves its
-input. Both return ``None``. Exchange and array Shuffle return fresh payloads,
+Load writes into the payload supplied by the caller. Transpose Store
+algorithms may rearrange their input payload in place, as in CUB. Copy values
+before Store if they are needed later. Both operations return ``None``. Exchange and array Shuffle return fresh payloads,
 so their input values remain available afterwards. Reduction returns a scalar, including when each thread
 contributes several items.
 
@@ -390,7 +391,8 @@ For a physical or logical warp, it holds
 range before calling Load or Store. An out-of-range runtime count causes
 a device trap and invalidates the CUDA context.
 
-Load leaves invalid slots unchanged unless you pass ``oob_default``.
+Load leaves invalid slots unspecified unless you pass ``oob_default``,
+even if those slots were initialized before Load.
 Store leaves destination elements outside the valid prefix untouched.
 Supply an operation-appropriate identity when processing padded data:
 zero for sum, one for multiplication, and a suitable upper or lower bound
