@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared payload-inference mechanics and family dispatch.
-
-Primitive-specific inference lives in the matching ``_rewrite_<family>``
-mixin. This module owns only the common inference context and dispatch order.
-"""
-
 from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
 from ._rewrite_support import (

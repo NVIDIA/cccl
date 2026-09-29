@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Lower backend-neutral cooperative specializations into Numba-CUDA-MLIR
-wrappers.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Mapping

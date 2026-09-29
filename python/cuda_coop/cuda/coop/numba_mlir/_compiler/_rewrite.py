@@ -2,11 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Single-phase rewrite orchestration for Numba-CUDA-MLIR.
-
-The concrete analysis and primitive finalization responsibilities are split
-across focused rewrite mixins. This module owns registration, the stable
-operation specification table, match/apply ordering, and whole-function retry.
+"""Rewrite cooperative calls before type inference and after device-function
+inlining.
 """
 
 from ._operations import _GROUP_LOWERING_PLAN_KWARG, StorageABI

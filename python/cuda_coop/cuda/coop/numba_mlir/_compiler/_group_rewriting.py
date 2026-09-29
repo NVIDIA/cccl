@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Declared before-inference rewrite interface for primitive families."""
-
 from __future__ import annotations
 
 from typing import Any

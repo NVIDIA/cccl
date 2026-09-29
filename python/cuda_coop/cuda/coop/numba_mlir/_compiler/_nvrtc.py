@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile and cache Numba-CUDA-MLIR wrappers with an exact CUDA toolchain."""
+"""Compile generated CUDA source to LTO IR or PTX with NVRTC."""
 
 from __future__ import annotations
 

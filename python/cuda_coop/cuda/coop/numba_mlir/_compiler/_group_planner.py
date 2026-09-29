@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared whole-function group planner for Numba-CUDA-MLIR.
-
-This module owns cross-family IR provenance, hierarchy and payload caches,
-result construction, and orchestration. Primitive-specific lowering methods
-live in the adjacent semantic group mixins.
-"""
-
 from enum import Enum
 
 import cuda.coop._core.api._dispatch as _portable_dispatch

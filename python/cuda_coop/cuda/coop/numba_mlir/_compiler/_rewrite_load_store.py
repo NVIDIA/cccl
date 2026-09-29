@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block Load/Store payload inference and pre-provider validation."""
-
 from dataclasses import dataclass
 from numbers import Integral
 
