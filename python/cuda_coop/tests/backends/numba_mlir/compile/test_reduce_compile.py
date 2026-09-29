@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """GPU-free, real-toolchain compilation contracts for hierarchy Reduce."""
 
@@ -313,65 +312,65 @@ def test_deterministic_cub_reduce_variants_compile_with_scoped_storage(
     block_cases = (
         (
             _reduce.sum,
-            dict(
-                dtype=types.int32,
-                threads_per_block=_BLOCK_THREADS,
-                algorithm="warp_reductions",
-            ),
+            {
+                "dtype": types.int32,
+                "threads_per_block": _BLOCK_THREADS,
+                "algorithm": "warp_reductions",
+            },
             ".Sum(",
             "::cub::BLOCK_REDUCE_WARP_REDUCTIONS",
         ),
         (
             _reduce.sum,
-            dict(
-                dtype=types.float64,
-                threads_per_block=_BLOCK_THREADS,
-                items_per_thread=2,
-                value_kind="array",
-                algorithm="raking",
-            ),
+            {
+                "dtype": types.float64,
+                "threads_per_block": _BLOCK_THREADS,
+                "items_per_thread": 2,
+                "value_kind": "array",
+                "algorithm": "raking",
+            },
             ".Sum(",
             "::cub::BLOCK_REDUCE_RAKING",
         ),
         (
             _reduce.block_reduce_builtin,
-            dict(
-                dtype=types.float32,
-                threads_per_block=_BLOCK_THREADS,
-                binary_op="max",
-                algorithm="raking",
-            ),
+            {
+                "dtype": types.float32,
+                "threads_per_block": _BLOCK_THREADS,
+                "binary_op": "max",
+                "algorithm": "raking",
+            },
             ".Reduce(",
             "::cub::BLOCK_REDUCE_RAKING",
         ),
         (
             _reduce.block_reduce_builtin,
-            dict(
-                dtype=types.uint32,
-                threads_per_block=_BLOCK_THREADS,
-                binary_op="bit_xor",
-                algorithm="raking_commutative_only",
-            ),
+            {
+                "dtype": types.uint32,
+                "threads_per_block": _BLOCK_THREADS,
+                "binary_op": "bit_xor",
+                "algorithm": "raking_commutative_only",
+            },
             ".Reduce(",
             "::cub::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY",
         ),
         (
             _reduce.sum,
-            dict(
-                dtype=types.uint16,
-                threads_per_block=_BLOCK_THREADS,
-                num_valid=ArgumentBinding.runtime(),
-            ),
+            {
+                "dtype": types.uint16,
+                "threads_per_block": _BLOCK_THREADS,
+                "num_valid": ArgumentBinding.runtime(),
+            },
             ".Sum(",
             "::cub::BLOCK_REDUCE_WARP_REDUCTIONS",
         ),
         (
             _reduce.sum,
-            dict(
-                dtype=types.int64,
-                threads_per_block=_BLOCK_THREADS,
-                num_valid=ArgumentBinding.static(37),
-            ),
+            {
+                "dtype": types.int64,
+                "threads_per_block": _BLOCK_THREADS,
+                "num_valid": ArgumentBinding.static(37),
+            },
             ".Sum(",
             "::cub::BLOCK_REDUCE_WARP_REDUCTIONS",
         ),
@@ -379,33 +378,33 @@ def test_deterministic_cub_reduce_variants_compile_with_scoped_storage(
     warp_cases = (
         (
             _reduce.warp_sum,
-            dict(
-                dtype=types.int16,
-                threads_in_warp=32,
-                threads_per_block=_BLOCK_THREADS,
-            ),
+            {
+                "dtype": types.int16,
+                "threads_in_warp": 32,
+                "threads_per_block": _BLOCK_THREADS,
+            },
             ".Sum(",
         ),
         (
             _reduce.warp_reduce_builtin,
-            dict(
-                dtype=types.float32,
-                binary_op="max",
-                threads_in_warp=8,
-                threads_per_block=_BLOCK_THREADS,
-                valid_items=ArgumentBinding.static(5),
-            ),
+            {
+                "dtype": types.float32,
+                "binary_op": "max",
+                "threads_in_warp": 8,
+                "threads_per_block": _BLOCK_THREADS,
+                "valid_items": ArgumentBinding.static(5),
+            },
             ".Reduce(",
         ),
         (
             _reduce.warp_reduce_builtin,
-            dict(
-                dtype=types.uint32,
-                binary_op="bit_and",
-                threads_in_warp=8,
-                threads_per_block=_BLOCK_THREADS,
-                valid_items=ArgumentBinding.runtime(),
-            ),
+            {
+                "dtype": types.uint32,
+                "binary_op": "bit_and",
+                "threads_in_warp": 8,
+                "threads_per_block": _BLOCK_THREADS,
+                "valid_items": ArgumentBinding.runtime(),
+            },
             ".Reduce(",
         ),
     )
@@ -501,7 +500,7 @@ def test_stateless_cub_callbacks_compile_for_block_arrays_and_warp_prefixes(
     compile_context: _nvrtc.CompileContext,
 ) -> None:
     def maximum(lhs, rhs):
-        return lhs if lhs > rhs else rhs
+        return max(rhs, lhs)
 
     device_maximum = cuda.jit(device=True)(maximum)
     cases = (
@@ -583,7 +582,7 @@ def test_parameter_name_cannot_shadow_callback_symbol(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def maximum(lhs, rhs):
-        return lhs if lhs > rhs else rhs
+        return max(rhs, lhs)
 
     monkeypatch.setattr(
         _types,

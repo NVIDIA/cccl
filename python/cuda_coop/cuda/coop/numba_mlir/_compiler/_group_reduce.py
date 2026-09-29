@@ -339,7 +339,7 @@ class _ReducePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> list[Any]:
-        plan, operator_kind, binary_op, is_array = self._plan(
+        plan, operator_kind, binary_op, _is_array = self._plan(
             operation=operation,
             group=group,
             bound=bound,
