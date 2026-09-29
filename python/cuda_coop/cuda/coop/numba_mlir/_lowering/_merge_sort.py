@@ -36,7 +36,8 @@ def comparison_operator(descending, compare_op):
     if compare_op is not None:
         if descending:
             raise ValueError(
-                "Merge Sort compare_op and descending=True are mutually exclusive"
+                "Merge Sort compare_op and "
+                "descending=True are mutually exclusive"
             )
         if not callable(compare_op):
             raise TypeError(
