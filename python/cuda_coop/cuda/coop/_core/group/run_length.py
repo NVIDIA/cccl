@@ -52,7 +52,10 @@ class GroupRunLengthDecodeSemantics:
     def semantic_key(self):
         return (
             "run_length_decode",
-            *(semantic_token(getattr(self, field.name)) for field in fields(self)),
+            *(
+                semantic_token(getattr(self, field.name))
+                for field in fields(self)
+            ),
         )
 
     def __eq__(self, other):
@@ -66,7 +69,9 @@ class GroupRunLengthDecodeSemantics:
     @property
     def result_visibility(self):
         return (
-            ResultVisibility.ALL_MEMBERS if self.bulk else ResultVisibility.PER_MEMBER
+            ResultVisibility.ALL_MEMBERS
+            if self.bulk
+            else ResultVisibility.PER_MEMBER
         )
 
     @property
@@ -84,7 +89,9 @@ def _classifications(operation):
         ParameterClassification(
             name,
             ArgumentKind.RUNTIME,
-            ParameterRole.INPUT if name.startswith("run_") else ParameterRole.OUTPUT,
+            ParameterRole.INPUT
+            if name.startswith("run_")
+            else ParameterRole.OUTPUT,
         )
         for name in names
     ]
@@ -102,7 +109,10 @@ def _classifications(operation):
 
 def _plan(call, resolved, launch, operation):
     spec = make_block_run_length_decode_spec(
-        **{field.name: getattr(operation, field.name) for field in fields(operation)},
+        **{
+            field.name: getattr(operation, field.name)
+            for field in fields(operation)
+        },
         block_dim=launch.exact_block_dim,
     ).specialization
     result = ResultContract(
@@ -161,5 +171,7 @@ _register_group_operation_family(
     classifications=_classifications,
     planner=_plan,
     group_kinds=frozenset({"block"}),
-    unsupported_group_message="run_length_decode requires a complete this_block() group",
+    unsupported_group_message=(
+        "run_length_decode requires a complete this_block() group"
+    ),
 )

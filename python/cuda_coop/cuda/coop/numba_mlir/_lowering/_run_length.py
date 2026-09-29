@@ -7,7 +7,11 @@
 from cuda.coop._core import SynchronizationScope
 from cuda.coop._core.block.run_length import make_block_run_length_decode_spec
 
-from .._compiler._operations import StorageABI, factory_operation, register_factory
+from .._compiler._operations import (
+    StorageABI,
+    factory_operation,
+    register_factory,
+)
 from .._compiler._parameters import normalize_dim_param
 from .._types import make_invocable_from_specialization
 from ._core import NumbaMlirCoreAdapter

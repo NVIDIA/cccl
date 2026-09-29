@@ -19,7 +19,9 @@ from cuda.coop.numba_mlir import _types
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 
-@pytest.mark.parametrize("bulk,relative", [(False, True), (True, False), (True, True)])
+@pytest.mark.parametrize(
+    "bulk,relative", [(False, True), (True, False), (True, True)]
+)
 def test_rld_production_compile_and_link(monkeypatch, bulk, relative):
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
@@ -81,7 +83,9 @@ def test_rld_production_compile_and_link(monkeypatch, bulk, relative):
             )
             numba_coop.store(block, destination, decoded)
             for item in range(4):
-                relative_output[cuda.threadIdx.x * 4 + item] = relative_items[item]
+                relative_output[cuda.threadIdx.x * 4 + item] = relative_items[
+                    item
+                ]
             counts[cuda.threadIdx.x] = total[0]
 
     signature = types.void(
@@ -149,4 +153,6 @@ def test_bulk_destination_requires_matching_writable_contiguous_array(
         ("cluster", None),
     )
     with pytest.raises(TypeError, match="writable contiguous"):
-        kernel._compile_launch_config_signature(types.void(destination_type), launch)
+        kernel._compile_launch_config_signature(
+            types.void(destination_type), launch
+        )

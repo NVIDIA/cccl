@@ -68,7 +68,12 @@ def test_windows_preserve_inputs_and_zero_invalid_slots(
         decoded = np.repeat(values, lengths.astype(np.int64))
         for offset in (0, 2, len(decoded), len(decoded) + 1, 2**32 + 2):
             kernel[1, 32](
-                values, lengths, output, kept_values, kept_lengths, np.uint64(offset)
+                values,
+                lengths,
+                output,
+                kept_values,
+                kept_lengths,
+                np.uint64(offset),
             )
             cuda.synchronize()
             expected = np.zeros_like(output)
@@ -171,7 +176,9 @@ def test_uint64_decode_above_uint32_range_without_large_allocation(total_size):
     output = np.empty(64, dtype=np.int32)
     relative = np.empty(64, dtype=np.uint64)
     total = np.empty(32, dtype=np.uint64)
-    kernel[1, 32](values, lengths, output, relative, total, np.uint64(total_size - 3))
+    kernel[1, 32](
+        values, lengths, output, relative, total, np.uint64(total_size - 3)
+    )
     cuda.synchronize()
     np.testing.assert_array_equal(output[:3], [7, 9, 9])
     np.testing.assert_array_equal(
@@ -184,7 +191,9 @@ def test_uint64_decode_above_uint32_range_without_large_allocation(total_size):
 
 @pytest.mark.parametrize("qualified", [False, True])
 @pytest.mark.parametrize("threads", [32, 37])
-def test_bulk_multiple_windows_partial_final_window_and_empty(qualified, threads):
+def test_bulk_multiple_windows_partial_final_window_and_empty(
+    qualified, threads
+):
     api = numba_coop if qualified else coop
 
     @cuda.jit
@@ -218,7 +227,8 @@ def test_bulk_multiple_windows_partial_final_window_and_empty(qualified, threads
                 temp_storage=scratch,
             )
         totals[cuda.threadIdx.x] = total
-        # Reusing this descriptor after the internal bulk loop needs the normal barrier.
+        # Reusing this descriptor after the internal bulk loop needs the
+        # normal barrier.
         again = api.run_length_decode(
             block, runs, sizes, decoded_items_per_thread=1, temp_storage=scratch
         )
@@ -234,18 +244,26 @@ def test_bulk_multiple_windows_partial_final_window_and_empty(qualified, threads
         output = np.full(len(expected) + 10, -1, dtype=np.int16)
         relative = np.full(len(output), 9999, dtype=np.uint64)
         totals = np.empty(threads, dtype=np.uint64)
-        kernel[1, threads](values, lengths, output, relative, totals, np.int64(3))
+        kernel[1, threads](
+            values, lengths, output, relative, totals, np.int64(3)
+        )
         cuda.synchronize()
         np.testing.assert_array_equal(output[3 : 3 + len(expected)], expected)
-        assert np.all(output[:3] == -1) and np.all(output[3 + len(expected) :] == -1)
+        assert np.all(output[:3] == -1) and np.all(
+            output[3 + len(expected) :] == -1
+        )
         assert np.all(totals == len(expected))
         if qualified:
             offsets = (
-                np.concatenate([np.arange(size, dtype=np.uint64) for size in prefix])
+                np.concatenate(
+                    [np.arange(size, dtype=np.uint64) for size in prefix]
+                )
                 if prefix
                 else []
             )
-            np.testing.assert_array_equal(relative[3 : 3 + len(expected)], offsets)
+            np.testing.assert_array_equal(
+                relative[3 : 3 + len(expected)], offsets
+            )
             assert np.all(relative[:3] == 9999) and np.all(
                 relative[3 + len(expected) :] == 9999
             )
@@ -310,7 +328,7 @@ except Exception as error:
     print('EXPECTED_RLD_TRAP')
 else:
     raise AssertionError('invalid run length decode input did not trap')
-"""
+"""  # noqa: E501 - Preserve embedded source bytes.
     result = subprocess.run(
         [sys.executable, "-c", script],
         env=os.environ.copy(),

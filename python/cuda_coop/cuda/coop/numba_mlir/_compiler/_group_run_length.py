@@ -59,7 +59,12 @@ def _infer_payload(context, inference):
     if inference.op_name == "run_length_decode":
         decoded_extent = inference.factory_value("decoded_items_per_thread")
         for index, name, extent, dtype in (
-            (2, "decoded", decoded_extent, inference.factory_value("item_dtype")),
+            (
+                2,
+                "decoded",
+                decoded_extent,
+                inference.factory_value("item_dtype"),
+            ),
             (
                 3,
                 "total_decoded_size",
@@ -80,13 +85,19 @@ def _infer_payload(context, inference):
                 )
             actual_dtype = inference.inferred_array_dtype(value, spec)
             if actual_dtype is not None and actual_dtype != dtype:
-                raise CoopSinglePhaseRewriteError(f"{name} dtype must match {dtype}")
+                raise CoopSinglePhaseRewriteError(
+                    f"{name} dtype must match {dtype}"
+                )
             context.record_thread_data_dtype(value, dtype)
     else:
         arrays = [(2, "destination", inference.factory_value("item_dtype"))]
         if inference.factory_value("relative_offsets"):
             arrays.append(
-                (4, "relative_offsets", inference.factory_value("decoded_offset_dtype"))
+                (
+                    4,
+                    "relative_offsets",
+                    inference.factory_value("decoded_offset_dtype"),
+                )
             )
         for index, name, dtype in arrays:
             actual = context.numba_type(inference.runtime_args[index])
@@ -98,14 +109,19 @@ def _infer_payload(context, inference):
                 or actual.dtype != dtype
             ):
                 raise TypeError(
-                    f"run_length_decode_into {name} must be a writable contiguous "
+                    f"run_length_decode_into {name} "
+                    f"must be a writable contiguous "
                     f"one-dimensional array with dtype {dtype}"
                 )
 
 
 def _allocate(context, statements, scope, loc, name, extent, dtype):
     constructor = context.value_var(
-        statements, scope=scope, loc=loc, stem="rld_ThreadData", value=ThreadData
+        statements,
+        scope=scope,
+        loc=loc,
+        stem="rld_ThreadData",
+        value=ThreadData,
     )
     size = context.value_var(
         statements, scope=scope, loc=loc, stem="rld_extent", value=extent
@@ -116,7 +132,9 @@ def _allocate(context, statements, scope, loc, name, extent, dtype):
     output = context.new_var(scope, loc, name)
     statements.append(
         ir.Assign(
-            ir.Expr.call(constructor, [size], (("dtype", item_type),), loc), output, loc
+            ir.Expr.call(constructor, [size], (("dtype", item_type),), loc),
+            output,
+            loc,
         )
     )
     context.record_thread_data_dtype(output, dtype)
@@ -132,15 +150,22 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
     for name in ("run_values", "run_lengths"):
         value = bound.arguments[name]
         if not context.is_array(operation, value):
-            raise TypeError(f"{operation} {name} must be a fixed per-thread array")
+            raise TypeError(
+                f"{operation} {name} must be a fixed per-thread array"
+            )
         size = context.array_extent(value)
         if size is None or (extent is not None and extent != size):
             raise ValueError(
-                f"{operation} run values and lengths require matching fixed extents"
+                f"{operation} run values and lengths "
+                f"require matching fixed extents"
             )
         extent = size
-        if is_common_root and not context.is_thread_data(operation, name, value):
-            raise TypeError(f"cuda.coop.{operation} requires {name} to be ThreadData")
+        if is_common_root and not context.is_thread_data(
+            operation, name, value
+        ):
+            raise TypeError(
+                f"cuda.coop.{operation} requires {name} to be ThreadData"
+            )
         dtype = context.dtype(value) or context.payload_write_dtype(value)
         dtype = (
             _integer_dtype(dtype, name)
@@ -187,7 +212,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         descriptor = context.temp_storage(storage)
         if descriptor is None:
             raise GroupRewriteError(
-                "run_length_decode temp_storage requires a TempStorage descriptor"
+                "run_length_decode temp_storage "
+                "requires a TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(
@@ -230,7 +256,13 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         output = None
     else:
         output = _allocate(
-            context, statements, scope, loc, "rld_decoded", decoded_extent, dtypes[0]
+            context,
+            statements,
+            scope,
+            loc,
+            "rld_decoded",
+            decoded_extent,
+            dtypes[0],
         )
         args.append(output)
         for name, size in (
@@ -240,7 +272,13 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
             value = bound.arguments.get(name)
             if context.is_none(value):
                 value = _allocate(
-                    context, statements, scope, loc, "rld_" + name, size, offset_dtype
+                    context,
+                    statements,
+                    scope,
+                    loc,
+                    "rld_" + name,
+                    size,
+                    offset_dtype,
                 )
             else:
                 if (
@@ -248,11 +286,16 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
                     or context.array_extent(value) != size
                 ):
                     raise TypeError(
-                        f"{name} requires a fixed per-thread payload of extent {size}"
+                        f"{name} requires a fixed "
+                        f"per-thread payload of extent {size}"
                     )
-                dtype = context.dtype(value) or context.payload_write_dtype(value)
+                dtype = context.dtype(value) or context.payload_write_dtype(
+                    value
+                )
                 if dtype is not None and dtype != offset_dtype:
-                    raise TypeError(f"{name} dtype must match decoded_offset_dtype")
+                    raise TypeError(
+                        f"{name} dtype must match decoded_offset_dtype"
+                    )
                 context.record_thread_data_dtype(value, offset_dtype)
             args.append(value)
     kwargs = {
@@ -273,7 +316,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
             inst,
             lowering_plan=plan,
             factory=getattr(
-                _run_length, operation + ("_offsets" if bulk and has_relative else "")
+                _run_length,
+                operation + ("_offsets" if bulk and has_relative else ""),
             ),
             args=args,
             kwargs=kwargs,
@@ -286,14 +330,19 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
 register_group_primitive(
     "run_length_decode",
     lower=_lower,
-    results=(GroupResultSource("run_values", None, extent_resolver=_decode_extent),),
+    results=(
+        GroupResultSource("run_values", None, extent_resolver=_decode_extent),
+    ),
 )
 register_group_primitive(
     "run_length_decode_into",
     lower=_lower,
     results=(
         GroupResultSource(
-            None, None, fixed_dtype=types.uint32, dtype_keyword="decoded_offset_dtype"
+            None,
+            None,
+            fixed_dtype=types.uint32,
+            dtype_keyword="decoded_offset_dtype",
         ),
     ),
 )
