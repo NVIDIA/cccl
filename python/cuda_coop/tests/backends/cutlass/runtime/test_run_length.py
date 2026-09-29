@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent Run Length Decode windows, bulk output, and preservation oracles."""
+"""Independent Run Length Decode windows, bulk output, and preservation
+oracles.
+"""
 
 from contextlib import ExitStack
 
