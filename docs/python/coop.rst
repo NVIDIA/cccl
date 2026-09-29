@@ -40,6 +40,8 @@ provides access to overload templates, IR, datamodels, and the registries
 needed to roll back a failed activation. It does not adapt between runtime
 versions. Other runtime series are rejected before compiler registries change.
 
+.. _coop-backend-registration:
+
 Backend registration
 --------------------
 
@@ -176,6 +178,11 @@ The portable root and qualified backend expose matching entry points:
        offset=tile_offset,
    )
 
+For a complete copy kernel, including allocation, launch, tail handling, and
+an output check, see the example in :func:`cuda.coop.load`. The API reference
+also includes tested examples for :func:`cuda.coop.store`,
+:func:`cuda.coop.ThreadData`, and :func:`cuda.coop.TempStorage`.
+
 Use the qualified namespace when backend-specific types or controls are
 required:
 
@@ -185,6 +192,8 @@ required:
 
 Both spellings are compiler markers. Calls must occur in a compatible compiler
 context; they are not host-side data movement operations.
+
+.. _coop-thread-groups:
 
 Groups and thread data
 ----------------------
@@ -207,6 +216,32 @@ membership, and synchronization methods such as
 ``rank``, ``count``, ``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and
 ``is_member`` are not exposed.
 
+.. _coop-participation:
+
+Participation and synchronization
+---------------------------------
+
+Every member of a participating group must reach the same cooperative call.
+A branch around a block operation must be uniform across the block; a branch
+around a logical-warp operation must be uniform within that logical warp.
+Complete sibling logical groups may follow different paths. Warp operations
+require a block size divisible by 32, with no incomplete final physical warp.
+
+Do not put a block Load or Store inside a per-element ``if index < count``
+condition. Use ``valid_items`` to describe the valid prefix while all block
+threads participate. An early return by some threads also violates participation
+if the remaining threads later execute a block operation.
+
+A scratch-reuse barrier protects temporary storage. Its presence depends on
+the algorithm and storage policy; arrange explicit synchronization wherever
+application-owned shared memory requires it. A barrier does not make
+divergent participation safe.
+
+.. _coop-thread-data:
+
+Per-thread payloads
+-------------------
+
 ``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes the
 fixed-size register payload owned by each participating thread. Portable and
 qualified calls use the same inference rules: an untyped Load output infers
@@ -220,6 +255,12 @@ payload storage; ``None`` lets the compiler choose. For example,
 16-byte alignment. The backend may use stronger alignment, including for
 requests smaller than its minimum allocation alignment. This option does not
 assert alignment of source or destination arrays passed to Load or Store.
+
+Payload slots start uninitialized. Write every slot before reading it; a
+partial Load needs ``oob_default`` or previously initialized values for its
+invalid slots. :class:`cuda.coop.ThreadDataLike` names the shared payload
+interface in type signatures. Protocol compatibility alone does not make an
+arbitrary Python object a supported kernel value.
 
 The payload's ``items_per_thread`` attribute is a compile-time integer and
 can be used as a loop bound inside a kernel, including through payload aliases.
@@ -309,6 +350,11 @@ value explicitly before storing it:
    value = types.int32(source[cuda.threadIdx.x] + 1)
    coop.store(block, destination, value, algorithm="direct")
 
+.. _coop-data-layouts:
+
+Data layouts and algorithms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Both portable and qualified entry points use the same string algorithm
 vocabulary: ``direct``, ``striped``,
 ``vectorize``, ``transpose``, ``warp_transpose``, and
@@ -330,10 +376,17 @@ use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
 
+For group size ``G``, items per thread ``K``, thread rank ``t``, and item index
+``i``, blocked order uses tile position ``t * K + i``; striped order uses
+``t + i * G``. The payload has no runtime layout tag that corrects a mismatched
+Load/Store pair.
+
 Store consumes the arrangement associated with its selected algorithm. The
 transpose Store implementations copy the payload before calling CUB, so Store
 never modifies the caller's scalar or ``ThreadData`` value while CUB performs
 its in-place reordering.
+
+.. _coop-temp-storage:
 
 Temporary storage
 -----------------
