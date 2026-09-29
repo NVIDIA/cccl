@@ -29,6 +29,12 @@ MemoryGroup: TypeAlias = BlockGroup | WarpGroup
 def this_block() -> BlockGroup:
     """Describe the current CUDA thread block."""
 
-__all__ = ["Hierarchy", "ThreadGroup", "ThreadHierarchy", "this_block", "this_warp"]
+__all__ = [
+    "Hierarchy",
+    "ThreadGroup",
+    "ThreadHierarchy",
+    "this_block",
+    "this_warp",
+]
 
 def this_warp() -> WarpGroup: ...
