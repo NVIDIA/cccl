@@ -51,6 +51,9 @@ def _builtin_operator(name="plus"):
     return CxxOperator(cpp, Dependency("T"), name="binary_op")
 
 
+_OMITTED_VALID_ITEMS = ArgumentBinding.omitted()
+
+
 def _reduce(
     *,
     dtype="int32",
@@ -58,7 +61,7 @@ def _reduce(
     value_kind="scalar",
     items_per_thread=1,
     reduce_operator=None,
-    valid_items=ArgumentBinding.omitted(),
+    valid_items=_OMITTED_VALID_ITEMS,
     broadcast=True,
     cub_algorithm=None,
 ):
@@ -476,7 +479,7 @@ def test_grid_reduce_has_a_stable_hidden_workspace_rejection():
 
 
 def test_common_root_exports_reduce_and_sum():
-    import cuda.coop as coop
+    from cuda import coop
 
     api = import_module("cuda.coop._core.api.reduce")
     assert coop.reduce is api.reduce
