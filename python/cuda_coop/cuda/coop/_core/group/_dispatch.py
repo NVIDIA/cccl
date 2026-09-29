@@ -48,13 +48,19 @@ class _GroupOperationFamily:
             if not isinstance(kind, str) or kind not in THREAD_GROUP_KINDS
         }
         if invalid_group_kinds:
-            names = ", ".join(sorted(repr(kind) for kind in invalid_group_kinds))
-            raise ValueError(f"group_kinds contains unsupported values: {names}")
+            names = ", ".join(
+                sorted(repr(kind) for kind in invalid_group_kinds)
+            )
+            raise ValueError(
+                f"group_kinds contains unsupported values: {names}"
+            )
         if (
             not isinstance(self.unsupported_group_message, str)
             or not self.unsupported_group_message.strip()
         ):
-            raise ValueError("unsupported_group_message must be a non-empty string")
+            raise ValueError(
+                "unsupported_group_message must be a non-empty string"
+            )
 
 
 _GROUP_OPERATION_FAMILIES: dict[type, _GroupOperationFamily] = {}
@@ -86,7 +92,8 @@ def _register_group_operation_family(
     existing = _GROUP_OPERATION_FAMILIES.get(semantics_type)
     if existing is not None and existing != registration:
         raise RuntimeError(
-            f"group operation semantics {semantics_type!r} are already registered"
+            f"group operation semantics {semantics_type!r} "
+            "are already registered"
         )
     _GROUP_OPERATION_FAMILIES[semantics_type] = registration
 
@@ -139,7 +146,11 @@ def plan_group_primitive(
             family.unsupported_group_message,
         )
     cluster_dim = launch.exact_cluster_dim
-    uses_multi_block_cluster = cluster_dim is not None and cluster_dim != (1, 1, 1)
+    uses_multi_block_cluster = cluster_dim is not None and cluster_dim != (
+        1,
+        1,
+        1,
+    )
     if (
         call.group.kind in {"cluster", "grid"}
         and uses_multi_block_cluster

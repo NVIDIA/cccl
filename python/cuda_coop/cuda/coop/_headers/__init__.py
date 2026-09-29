@@ -44,7 +44,9 @@ class CoopIncludePaths:
         return (*self.cccl, *self.cuda)
 
 
-def _unique_existing_dirs(paths: Iterable[Path | str | None]) -> tuple[Path, ...]:
+def _unique_existing_dirs(
+    paths: Iterable[Path | str | None],
+) -> tuple[Path, ...]:
     result: list[Path] = []
     seen: set[Path] = set()
     for raw_path in paths:
@@ -67,7 +69,9 @@ def _source_checkout_paths(root: Path) -> tuple[Path, ...]:
         root / "cudax" / "include",
         root / "libcudacxx" / "include",
     )
-    missing = tuple(path.relative_to(root) for path in candidates if not path.is_dir())
+    missing = tuple(
+        path.relative_to(root) for path in candidates if not path.is_dir()
+    )
     if missing:
         rendered = ", ".join(path.as_posix() for path in missing)
         raise HeaderResolutionError(
@@ -143,7 +147,8 @@ def _installed_include_paths() -> CoopIncludePaths:
 
     if not any((path / _CUB_PROBE).is_file() for path in cccl):
         raise HeaderResolutionError(
-            "The installed cuda-coop wheel does not contain its bundled CUB headers."
+            "The installed cuda-coop wheel does not contain "
+            "its bundled CUB headers."
         )
     return CoopIncludePaths(
         cccl=cccl,
@@ -182,7 +187,9 @@ def _cuda_include_paths() -> tuple[Path, ...]:
         for env_name in ("CUDA_PATH", "CUDA_HOME", "CUDA_ROOT")
         if (root := os.environ.get(env_name))
     )
-    fallback = (Path("/usr/local/cuda/include"),) if sys.platform != "win32" else ()
+    fallback = (
+        (Path("/usr/local/cuda/include"),) if sys.platform != "win32" else ()
+    )
     return _select_cuda_include_path((*configured, *fallback))
 
 
@@ -196,8 +203,12 @@ def _validate_required_headers(
     for header in dict.fromkeys(required_headers):
         relative = Path(header)
         if relative.is_absolute() or ".." in relative.parts:
-            raise HeaderResolutionError(f"Invalid CCCL header path: {header!r}.")
-        if not any((include_path / relative).is_file() for include_path in cccl_paths):
+            raise HeaderResolutionError(
+                f"Invalid CCCL header path: {header!r}."
+            )
+        if not any(
+            (include_path / relative).is_file() for include_path in cccl_paths
+        ):
             missing.append(header)
     if missing:
         raise HeaderResolutionError(

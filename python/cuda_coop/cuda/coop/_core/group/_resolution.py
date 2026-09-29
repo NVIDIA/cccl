@@ -112,12 +112,16 @@ def resolve_thread_group(
     if needs_cluster:
         cluster_launch_verified = launch.is_verified("cluster_launch")
         if exact_cluster_dim is None:
-            if launch.cluster_launch is not False or not cluster_launch_verified:
+            if (
+                launch.cluster_launch is not False
+                or not cluster_launch_verified
+            ):
                 return _resolution_failure(
                     group,
                     UnsupportedReasonCode.LAUNCH_CAPABILITY,
                     "cluster and grid group operations require exact static "
-                    "cluster dimensions, or a backend-verified non-cluster launch",
+                    "cluster dimensions, or a backend-verified "
+                    "non-cluster launch",
                 )
             exact_cluster_dim = (1, 1, 1)
         elif launch.cluster_launch is None or not cluster_launch_verified:
@@ -127,11 +131,14 @@ def resolve_thread_group(
                 "cluster and grid group operations require backend-verified "
                 "cluster launch state",
             )
-        elif exact_cluster_dim != (1, 1, 1) and launch.cluster_launch is not True:
+        elif (
+            exact_cluster_dim != (1, 1, 1) and launch.cluster_launch is not True
+        ):
             return _resolution_failure(
                 group,
                 UnsupportedReasonCode.LAUNCH_CAPABILITY,
-                "multi-block cluster operations require verified cluster launch "
+                "multi-block cluster operations require "
+                "verified cluster launch "
                 "capability",
             )
 

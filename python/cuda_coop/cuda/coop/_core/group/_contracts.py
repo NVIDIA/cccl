@@ -81,7 +81,9 @@ def _group_topology(
         execution_scope = SynchronizationScope.WARP
     elif kind == "warps_within_block":
         if block_threads is None:
-            raise ValueError("mapped block contracts require exact block dimensions")
+            raise ValueError(
+                "mapped block contracts require exact block dimensions"
+            )
         if block_threads % group_size != 0:
             raise ValueError("group width must divide the enclosing block size")
         instances = block_threads // group_size

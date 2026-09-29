@@ -39,9 +39,9 @@ def test_i32_parameter_materializes_each_binding_kind():
     assert i32_parameter(
         ArgumentBinding.omitted(), name="value", omitted_value=3
     ) == CxxFunction("3", dtype=INT32, name="value")
-    assert i32_parameter(ArgumentBinding.static(5), name="value") == CxxFunction(
-        "5", dtype=INT32, name="value"
-    )
+    assert i32_parameter(
+        ArgumentBinding.static(5), name="value"
+    ) == CxxFunction("5", dtype=INT32, name="value")
     assert i32_parameter(ArgumentBinding.runtime(), name="value") == Value(
         INT32, name="value"
     )
@@ -64,7 +64,9 @@ def test_i32_parameter_normalizes_numpy_integers():
 def test_i32_parameter_accepts_signed_i32_boundaries(value):
     expected = CxxFunction(str(value), dtype=INT32, name="value")
 
-    assert i32_parameter(ArgumentBinding.static(value), name="value") == expected
+    assert (
+        i32_parameter(ArgumentBinding.static(value), name="value") == expected
+    )
     assert (
         i32_parameter(
             ArgumentBinding.omitted(),

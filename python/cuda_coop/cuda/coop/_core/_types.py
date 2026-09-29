@@ -82,7 +82,9 @@ class Dependency:
 
     def resolve(self, template_arguments: Mapping[str, Any]) -> Any:
         if self.name not in template_arguments:
-            raise SubstitutionFailure(f"Template argument {self.name} not provided")
+            raise SubstitutionFailure(
+                f"Template argument {self.name} not provided"
+            )
         value = template_arguments[self.name]
         if value is None:
             raise SubstitutionFailure(f"Template argument {self.name} is None")
