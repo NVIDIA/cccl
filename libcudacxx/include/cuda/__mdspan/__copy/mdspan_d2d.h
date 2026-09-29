@@ -115,12 +115,12 @@ _CCCL_HOST_API void __copy_simplified_rank(
 
     if constexpr (::cuda::__can_stage_in_shared_mem_v<_TpIn, _SrcAccessor, _DstAccessor>)
     {
-    if (::cuda::__use_shared_mem_kernel(__src_narrow, __dst_narrow, __stream.device()))
-    {
-      ::cuda::__launch_copy_shared_mem_kernel(__src_narrow, __dst_narrow, __stream, __src_accessor, __dst_accessor);
-      return;
+      if (::cuda::__use_shared_mem_kernel(__src_narrow, __dst_narrow, __stream.device()))
+      {
+        ::cuda::__launch_copy_shared_mem_kernel(__src_narrow, __dst_narrow, __stream, __src_accessor, __dst_accessor);
+        return;
+      }
     }
-  }
   }
   ::cuda::__copy_optimized(
     __src_narrow, __dst_narrow, ::cuda::__total_size(__src_narrow), __stream, __src_accessor, __dst_accessor);
