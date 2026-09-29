@@ -134,7 +134,8 @@ class _ShufflePlanning:
         if is_common_root:
             if not self._context.is_thread_data("shuffle", "value", value):
                 raise TypeError(
-                    "cuda.coop.shuffle requires a fixed-size ThreadData payload; "
+                    "cuda.coop.shuffle requires a "
+                    "fixed-size ThreadData payload; "
                     "use cuda.coop.numba_mlir for backend-qualified scalar or "
                     "local-array shuffle support"
                 )
@@ -179,7 +180,8 @@ class _ShufflePlanning:
             distance_binding = self._context.planning_binding(distance_value)
             if distance_binding.kind is BindingKind.OMITTED:
                 raise ValueError(
-                    "cuda.coop.numba_mlir.shuffle scalar values require distance"
+                    "cuda.coop.numba_mlir.shuffle "
+                    "scalar values require distance"
                 )
             if distance_binding.kind is BindingKind.STATIC:
                 distance = distance_binding.value
@@ -187,7 +189,8 @@ class _ShufflePlanning:
                     distance, Integral
                 ):
                     raise TypeError(
-                        "cuda.coop.numba_mlir.shuffle distance must be an integer"
+                        "cuda.coop.numba_mlir.shuffle "
+                        "distance must be an integer"
                     )
                 if mode == BlockShuffleMode.ROTATE.value:
                     block_threads = self._context.launch.exact_block_threads

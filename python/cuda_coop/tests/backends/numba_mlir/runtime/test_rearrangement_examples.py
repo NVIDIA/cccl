@@ -98,7 +98,9 @@ def test_shuffle_example():
     following = cuda.device_array_like(source)
     preceding = cuda.device_array_like(source)
     shift_tile[1, 128](source, following, preceding)
-    np.testing.assert_array_equal(following.copy_to_host(), np.append(values[1:], 0))
+    np.testing.assert_array_equal(
+        following.copy_to_host(), np.append(values[1:], 0)
+    )
     np.testing.assert_array_equal(
         preceding.copy_to_host(), np.insert(values[:-1], 0, 0)
     )
