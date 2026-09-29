@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common radix frontend checks for CUTLASS tracing."""
-
 from importlib import import_module
 
 import pytest
