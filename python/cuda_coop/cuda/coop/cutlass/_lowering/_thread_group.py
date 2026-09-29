@@ -56,12 +56,15 @@ class _CudaxGroupRequest:
 def _resolve_method_group(group, op, level="thread"):
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"{_SCOPE}.ThreadGroup method requires a ThreadGroup")
-    if op in _QUERY_OPS and group.mapping is not None:
-        if _LEVEL_ORDER[level] > _LEVEL_ORDER[group.mapping.parent]:
-            raise NotImplementedError(
-                f"{_SCOPE} mapped ThreadGroup queries above the immediate parent "
-                "require recursive group composition"
-            )
+    if (
+        op in _QUERY_OPS
+        and group.mapping is not None
+        and (_LEVEL_ORDER[level] > _LEVEL_ORDER[group.mapping.parent])
+    ):
+        raise NotImplementedError(
+            f"{_SCOPE} mapped ThreadGroup queries above the immediate parent "
+            "require recursive group composition"
+        )
     if op in _SYNC_OPS:
         if group.kind == "warps_within_block":
             raise NotImplementedError(
@@ -116,8 +119,10 @@ def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
     lines.extend(
         (
             "  auto group_warp_rank = ::cuda::warp.rank(group_parent);",
-            f"  constexpr ::cuda::std::uint32_t group_warp_count = "
-            f"{group.mapping.count};",
+            (
+                f"  constexpr ::cuda::std::uint32_t group_warp_count = "
+                f"{group.mapping.count};"
+            ),
             f"  constexpr ::cuda::std::uint32_t grouped_warp_count = {grouped_warps};",
         )
     )
