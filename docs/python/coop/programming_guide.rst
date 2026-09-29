@@ -150,6 +150,9 @@ several operations:
    * - Neighbor comparisons
      - Adjacent differences and head/tail flags with tile boundary controls
      - Also accepts stateless ``difference_op`` and ``flag_op`` callbacks
+   * - Histograms
+     - Fresh striped counters from fixed integer sample payloads
+     - Also accepts one scalar sample per thread
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -723,7 +726,7 @@ allocation. Its contents are opaque; keep application values in
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
    * - Block transpose-family Load/Store; Block Reduce; Block Scan; Block Merge Sort;
-       Block Radix Sort; TopK; Adjacent Difference; Discontinuity
+       Block Radix Sort; TopK; Adjacent Difference; Discontinuity; Histogram
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store; Warp Reduce; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
@@ -1161,6 +1164,29 @@ or last tail remains one regardless of the predicate. Returned flags have
 
 See :func:`cuda.coop.numba_mlir.adjacent_difference` and
 :func:`cuda.coop.numba_mlir.discontinuity` for the qualified API reference.
+
+.. _coop-histogram:
+
+Counting samples by bin
+-----------------------
+
+:func:`cuda.coop.histogram` counts a block's integer samples into ``bins``
+counters. Each sample must be in ``[0, bins)``. ``bins_per_thread`` fixes
+the result extent, so ``block_threads * bins_per_thread`` must cover all
+bins. The default counter dtype is ``int32``; 32- and 64-bit signed or
+unsigned counters are supported.
+
+The result uses striped bin ownership: thread ``t``, slot ``i`` owns bin
+``t + i * block_threads``. Slots beyond ``bins`` contain zero. Use a
+striped Store with ``valid_items=bins`` to write the counters in bin order.
+Both ``algorithm="atomic"`` and ``algorithm="sort"`` preserve the input
+samples and return fresh counts. The :doc:`Histogram visualization
+<visualizations/histogram>` includes a tested example that accumulates
+several tiles by adding their returned counters.
+
+Histogram has no partial-input count. Padding a short tile with zeros
+adds samples to bin zero; see :ref:`the padding FAQ
+<coop-faq-histogram-padding>`.
 
 
 Checking and tuning a kernel

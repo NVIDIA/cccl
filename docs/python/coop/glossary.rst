@@ -56,6 +56,12 @@ Terms
       header, it can select the initial value or the value from the previous
       iteration. Comments refer to these alternatives as *phi inputs*.
 
+   bin
+      A counter indexed by an input sample in :func:`cuda.coop.histogram`.
+      A sample with value ``b`` increments bin ``b``. Every sample must
+      satisfy ``0 <= b < bins``. Returned bins use :term:`striped`
+      ownership. See :doc:`Histogram <visualizations/histogram>`.
+
    tile boundary
       The edge between one group's tile and the neighboring data.
       Adjacent Difference and Discontinuity can consume an explicit
