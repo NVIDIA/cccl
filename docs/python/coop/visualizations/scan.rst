@@ -81,7 +81,7 @@ scans its own tile independently.
 .. code-block:: python
 
    block = coop.this_block()
-   values = coop.ThreadData(2, dtype=np.int32)
+   values = coop.ThreadData(items_per_thread=2)
    offset = cuda.blockIdx.x * 256
    coop.load(block, source, values, offset=offset)
    prefixes = coop.inclusive_sum(block, values, algorithm="raking_memoize")

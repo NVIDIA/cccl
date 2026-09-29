@@ -32,7 +32,7 @@ def test_first_kernel():
     @cuda.jit
     def scan_tiles(source, destination, count):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         tile_size = cuda.blockDim.x * 2
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(count - offset, 0), tile_size)
@@ -81,7 +81,7 @@ def test_qualified_scan():
     def scan_tiles_with_totals(source, destination, totals):
         block = numba_coop.this_block()
         items = cuda.local.array(2, dtype=types.int32)
-        aggregate = numba_coop.ThreadData(1, dtype=np.int32)
+        aggregate = numba_coop.ThreadData(items_per_thread=1)
         offset = cuda.blockIdx.x * cuda.blockDim.x * 2
 
         numba_coop.load(block, source, items, offset=offset)
@@ -128,7 +128,7 @@ def test_exchange():
     @cuda.jit
     def scan_striped_input(source, destination):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         coop.load(block, source, items, algorithm="striped")
         blocked = coop.exchange(block, items, mode="striped_to_blocked")
         prefixes = coop.inclusive_sum(block, blocked)
@@ -186,7 +186,7 @@ def test_shared_scratch():
     def scan_with_shared_scratch(source, destination):
         block = coop.this_block()
         scratch = coop.TempStorage(auto_sync=True)
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
 
         coop.load(
             block, source, items, algorithm="transpose", temp_storage=scratch
@@ -300,7 +300,7 @@ def test_custom_scan():
     @cuda.jit
     def running_maximum(source, destination):
         block = numba_coop.this_block()
-        items = numba_coop.ThreadData(2, dtype=np.int32)
+        items = numba_coop.ThreadData(items_per_thread=2)
         numba_coop.load(block, source, items)
         result = numba_coop.inclusive_scan(block, items, scan_op=maximum)
         numba_coop.store(block, destination, result)
