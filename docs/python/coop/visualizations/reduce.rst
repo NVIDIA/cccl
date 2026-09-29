@@ -78,7 +78,7 @@ This fragment runs inside a Numba-CUDA-MLIR kernel with ``cuda`` imported from
 .. code-block:: python
 
    block = coop.this_block()
-   values = coop.ThreadData(2, dtype=np.int32)
+   values = coop.ThreadData(items_per_thread=2)
    coop.load(block, source, values, offset=cuda.blockIdx.x * 256)
    total = coop.sum(block, values, broadcast=False, algorithm="raking")
    if cuda.threadIdx.x == 0:
