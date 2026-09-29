@@ -29,7 +29,7 @@ def test_thread_data_example():
     @cuda.jit
     def square_indices(destination):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32, alignment=16)
+        items = coop.ThreadData(items_per_thread=2, alignment=16)
         offset = cuda.blockIdx.x * cuda.blockDim.x * 2
         for i in range(items.items_per_thread):
             index = offset + cuda.threadIdx.x * 2 + i
@@ -55,7 +55,7 @@ def test_temp_storage_example():
     def copy_tiles(source, destination):
         block = coop.this_block()
         scratch = coop.TempStorage(alignment=16, auto_sync=True)
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         for tile in range(2):
             offset = tile * cuda.blockDim.x * 2
             coop.load(

@@ -103,7 +103,7 @@ can replace the name used for Numba's `cuda.jit`.
 Shared operations retain the common signatures, string selectors, and
 inference rules. The backend namespace adds Numba local-array payloads and
 memory namespaces.
-Both namespaces accept `ThreadData(..., alignment=None)`: use a compile-time
+Both namespaces accept `ThreadData(items_per_thread=..., alignment=None)`: use a compile-time
 positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
 or Store arrays.
@@ -168,7 +168,7 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(2)
+items = coop.ThreadData(items_per_thread=2)
 tile_items = cuda.blockDim.x * 2
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
@@ -291,15 +291,22 @@ that Numba-CUDA-MLIR inlines into the kernel, which is the default.
 
 The three block transpose algorithms use CUB temporary storage. Without a descriptor,
 the compiler allocates the specialization's exact storage and inserts a block
-reuse barrier. A caller descriptor can select shared or exclusive ownership,
-request capacity and alignment, or opt into dynamic shared memory. The provider
-remains authoritative for the required byte count and alignment.
+reuse barrier. A caller descriptor selects shared or exclusive slices and
+may request capacity and alignment. Both explicit and omitted storage
+participate in the shared-memory plan and launch accounting. The provider
+determines the required byte count and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
 every call that passes the same descriptor on one region, while `"exclusive"`
 gives each call site its own slice. A call site inside a loop reuses its slice
 under either layout, so `auto_sync` is independent of `sharing` and defaults to
 `False` for both.
+
+Exclusive slices use more shared memory to avoid barriers needed solely for
+cross-call scratch reuse when `auto_sync=False`. Repeated execution of one
+call site still reuses its slice and must be synchronized. Omitting storage
+lets the compiler choose the layout and insert reuse barriers; it does not
+guarantee a separate slice per call site.
 
 The synchronization model is deliberately simple. A descriptor names one
 region; distinct descriptors and compiler-owned storage never alias each other.
