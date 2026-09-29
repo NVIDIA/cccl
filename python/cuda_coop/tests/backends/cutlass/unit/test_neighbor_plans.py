@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Neighbor calls preserve the shared planner's types and storage contract."""
 
@@ -29,14 +28,14 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _request(**options):
-    arguments = dict(
-        group=this_block(),
-        launch=LaunchFacts(exact_block_dim=(8, 4, 2)),
-        dtype=cutlass.Int32,
-        items=3,
-        operation="adjacent_difference",
-        mode="left",
-    )
+    arguments = {
+        "group": this_block(),
+        "launch": LaunchFacts(exact_block_dim=(8, 4, 2)),
+        "dtype": cutlass.Int32,
+        "items": 3,
+        "operation": "adjacent_difference",
+        "mode": "left",
+    }
     arguments.update(options)
     return _neighbors._CubNeighborRequest(_neighbors._make_neighbor_plan(**arguments))
 
@@ -76,10 +75,10 @@ def test_invalid_count(count):
 @pytest.mark.parametrize(
     "options",
     [
-        dict(mode="right", predecessor=True),
-        dict(successor=True),
-        dict(mode="right", valid_items=1, successor=True),
-        dict(operation="discontinuity", mode="heads", valid_items=1),
+        {"mode": "right", "predecessor": True},
+        {"successor": True},
+        {"mode": "right", "valid_items": 1, "successor": True},
+        {"operation": "discontinuity", "mode": "heads", "valid_items": 1},
     ],
 )
 def test_invalid_options(options):
