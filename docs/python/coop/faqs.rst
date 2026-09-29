@@ -60,6 +60,59 @@ Keep the alias on a dotted import. Bare ``import cuda.coop.numba_mlir``
 assigns the top-level package to ``cuda`` in that scope, replacing the name
 previously imported from ``numba_cuda_mlir``.
 
+.. _coop-faq-thread-data-dtype:
+
+When does ``ThreadData`` need an explicit element type?
+-------------------------------------------------------
+
+Start with an inferred payload:
+
+.. code-block:: python
+
+   # Inside a kernel; source is a typed memory operand.
+   items = coop.ThreadData(items_per_thread=2)
+   coop.load(coop.this_block(), source, items)
+
+Load supplies the source element type. In Numba-CUDA-MLIR, supported indexed
+assignments and a Store destination can also establish the type. Other
+cooperative producers define their output types where their contracts say so.
+Inference follows the backend's supported operations and assignments.
+
+Numba's current planner cannot infer a payload type solely from the results of
+a non-inlined device helper when no other supported operation supplies type
+context. Cast the assigned result to the intended scalar type, such as
+``numpy.int32``, or provide that context through a supported operation such as
+Store. This is a limit of the current planner; the helper's result may already
+have a type that the later compiler phases can determine.
+
+Use typed values when the computation needs a particular width or precision.
+The optional ``dtype`` parameter supplies element-type information when the
+surrounding program cannot establish it. It does not initialize the payload,
+resolve conflicting typed values, or enable unsupported types. Initialize
+every item before reading it.
+
+.. _coop-faq-exclusive-storage:
+
+Why use ``sharing="exclusive"`` instead of omitting storage?
+------------------------------------------------------------
+
+Omitting ``temp_storage`` lets the compiler choose the scratch layout and
+insert reuse barriers. It may reuse scratch across compatible calls; omission
+does not guarantee a separate slice for each call site.
+
+``TempStorage(sharing="exclusive")`` gives distinct call sites separate
+slices while retaining the descriptor's capacity, alignment, and
+synchronization controls. Two calls with separate slices need no barrier
+solely to reuse each other's scratch. This can save that synchronization when
+``auto_sync=False``, at the cost of more shared memory. Barriers required by
+the algorithm or by application data dependencies still apply.
+
+Repeated execution of one call site, including a loop, reuses its slice.
+Synchronize before that reuse or set ``auto_sync=True`` to request trailing
+reuse barriers. ``sharing`` controls layout independently of ``auto_sync``.
+The backend accounts for cooperative scratch with either explicit or omitted
+storage; ``exclusive`` is a choice about which calls may share its bytes.
+
 .. _coop-faq-temp-storage:
 
 Why or when would I provide my own ``TempStorage``?
@@ -69,15 +122,15 @@ Usually, you can omit it. The compiler allocates the scratch required by
 an operation and inserts a barrier to make reuse safe. Direct, striped, and
 vectorized Load/Store need no shared scratch.
 
-An explicit descriptor is useful when several supported block operations
-can reuse the same allocation. For example, a transpose Load and Store can
+An explicit descriptor lets you choose which supported block operations
+share an allocation. For example, a transpose Load and Store can
 share scratch while the values stay in each thread's payload:
 
 .. code-block:: python
 
    # Inside a kernel; source and destination are kernel arguments.
    block = coop.this_block()
-   items = coop.ThreadData(2)
+   items = coop.ThreadData(items_per_thread=2)
    scratch = coop.TempStorage(auto_sync=True)
    coop.load(
        block, source, items, algorithm="transpose", temp_storage=scratch
@@ -94,7 +147,9 @@ A descriptor also lets you request capacity or alignment, or choose separate
 slices with ``sharing="exclusive"``. Explicit descriptors default to
 ``auto_sync=False``, so the kernel must provide reuse barriers, including across
 loop iterations. The example requests ``auto_sync=True`` to insert those
-barriers automatically. Separate slices do not remove the need to protect reuse.
+barriers automatically. See :ref:`exclusive scratch slices
+<coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
+synchronization.
 
 The current backend accepts explicit descriptors for block transpose-family Load/Store.
 Warp operations use compiler-owned scratch. See

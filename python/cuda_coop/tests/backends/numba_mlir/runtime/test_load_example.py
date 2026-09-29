@@ -29,7 +29,7 @@ def test_load_example():
     @cuda.jit
     def copy_tiles(source, destination):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         tile_size = cuda.blockDim.x * 2
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(source.size - offset, 0), tile_size)

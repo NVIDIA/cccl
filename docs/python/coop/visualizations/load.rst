@@ -73,7 +73,7 @@ source elements for each block.
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(2, dtype=np.int32)
+   items = coop.ThreadData(items_per_thread=2)
    offset = cuda.blockIdx.x * 256
    coop.load(block, source, items, algorithm="transpose", offset=offset)
    # Each thread now owns two consecutive values. Load returns None.
