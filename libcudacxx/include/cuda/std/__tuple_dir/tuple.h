@@ -663,9 +663,13 @@ public:
   template <class _Alloc, class _Up>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&, array<_Up, 0>) noexcept
   {}
+  // Accepts volatile tuple<> as well as other empty tuple-likes, so it can hide the copy and move
+  // constructors. Those still win for non-volatile tuple<>.
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _UTuple, enable_if_t<__tuple_like_with_size<_UTuple, 0>, int> = 0>
   _CCCL_API constexpr tuple(_UTuple&&) noexcept
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _UTuple,
             enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
