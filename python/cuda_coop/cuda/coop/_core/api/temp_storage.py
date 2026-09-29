@@ -39,11 +39,13 @@ def TempStorage(
         scratch, including on the next iteration of a loop. Pass ``True``
         to request automatic reuse barriers.
     sharing : {"shared", "exclusive"}, optional
-        Compile-time allocation policy, default ``"shared"``. Shared call
-        sites can reuse one scratch slice. ``"exclusive"`` gives distinct
-        call sites separate slices, which may consume more shared memory.
-        Synchronization is independent: repeated executions of a single
-        call site still reuse its slice.
+        Compile-time allocation policy, default ``"shared"``. Calls using
+        the same descriptor can reuse one scratch slice. ``"exclusive"``
+        gives distinct call sites separate slices, using more shared memory
+        to avoid barriers needed solely for cross-call scratch reuse when
+        ``auto_sync=False``. Repeated execution of one call site still reuses
+        its slice and requires synchronization before reuse. Omitting
+        ``temp_storage`` leaves layout and reuse barriers to the compiler.
 
     Returns
     -------

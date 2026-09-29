@@ -10,8 +10,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TypeVar
 
-from ..thread_group import ThreadGroup
-
 _CallableT = TypeVar("_CallableT", bound=Callable[..., object])
 
 
@@ -33,7 +31,13 @@ def _portable_group_operation(
     *,
     group_kinds: tuple[str, ...],
 ) -> Callable[[_CallableT], _CallableT]:
-    """Register one common group overload by exact callable identity."""
+    """Record a public operation and the groups it accepts.
+
+    The decorator runs when the API module is imported and records the
+    function object without wrapping it. Compiler adapters use that object
+    to recognize calls, including imported aliases. An unrelated function
+    with the same name does not acquire this registration.
+    """
 
     if not name or not group_kinds:
         raise ValueError(
@@ -60,52 +64,6 @@ def _portable_group_operation(
         return function
 
     return decorate
-
-
-def _portable_group_operation_name(function: object) -> str | None:
-    registration = _PORTABLE_GROUP_OPERATIONS_BY_FUNCTION.get(function)
-    return None if registration is None else registration.name
-
-
-class UnsupportedCoopBackendOperationError(NotImplementedError):
-    """The selected compiler backend does not implement a root operation."""
-
-    def __init__(self, backend_module: str, operation: str) -> None:
-        self.backend_module = backend_module
-        self.operation = operation
-        self.reason_code = "cuda-coop-backend-operation-unavailable"
-        super().__init__(
-            f"cuda.coop.{operation} is not implemented by {backend_module!r}"
-        )
-
-
-def _portable_group_name(kind: str) -> str:
-    """Return the common API spelling for one internal group kind."""
-
-    return "physical_warp" if kind == "warp" else kind
-
-
-def _validate_portable_operation_group(
-    operation: str,
-    group: object,
-) -> None:
-    """Enforce the common group matrix for a common-root call."""
-
-    if not isinstance(group, ThreadGroup):
-        raise TypeError(f"cuda.coop.{operation} group must be a ThreadGroup")
-    registration = _PORTABLE_GROUP_OPERATIONS_BY_NAME.get(operation)
-    if registration is None:
-        raise UnsupportedCoopBackendOperationError("cuda.coop", operation)
-    supported = registration.group_kinds
-    if group.kind in supported:
-        return
-    group_name = _portable_group_name(group.kind)
-    supported_names = ", ".join(map(_portable_group_name, supported))
-    raise NotImplementedError(
-        f"cuda.coop.{operation} does not support group kind {group_name!r} in "
-        f"the portable API; supported group kinds: {supported_names}; use a "
-        "backend-qualified import for backend-specific group support"
-    )
 
 
 __all__ = []

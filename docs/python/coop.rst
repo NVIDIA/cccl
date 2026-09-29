@@ -91,15 +91,17 @@ divergent participation safe.
 Per-thread payloads
 -------------------
 
-``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes a
-fixed-size payload owned by each thread. With 128 threads and two items per
-thread, a group tile contains 256 values. Each thread reads and writes its own
+``coop.ThreadData(items_per_thread=2)`` gives each thread two slots.
+With 128 threads, a group tile contains 256 values. Each thread accesses its own
 slots with ``items[0]`` and ``items[1]``. The positive compile-time item count
 is also available as ``items.items_per_thread``.
 
-The compiler can infer an omitted dtype from a supported producer such as
-Load. An explicit ``alignment`` is a minimum storage alignment in bytes and
-must be a positive compile-time power of two. It does not assert alignment
+Leave the element type unspecified for normal use. A supported producer
+such as Load supplies it; backend-supported typed assignments can also
+establish it. Explicit type information is useful when the surrounding program
+cannot identify the intended representation. Conflicting typed values are
+errors. An explicit ``alignment`` requests a minimum storage alignment in bytes
+and must be a positive compile-time power of two. It does not assert alignment
 of the arrays passed to Load or Store.
 
 The contents are uninitialized. Write every item before reading it. A full
@@ -154,14 +156,17 @@ a positive power-of-two minimum in bytes; the compiler may strengthen it.
 
 ``sharing="shared"`` allows call sites using the same descriptor to overlap
 their scratch slices. ``sharing="exclusive"`` gives distinct call sites
-separate slices. Repeated execution of a call site, including a loop, still
-reuses its slice under either policy.
+separate slices, using more shared memory to avoid barriers needed solely for
+cross-call scratch reuse when ``auto_sync=False``. A loop still reuses each
+call site's slice on its next iteration, so that reuse must be synchronized.
+Application data dependencies may require additional barriers.
 
 ``TempStorage()`` defaults to ``auto_sync=False``; passing ``None`` also
 disables automatic reuse barriers. The caller must synchronize before reuse.
 Use ``TempStorage(auto_sync=True)`` to request a trailing barrier after each
-scratch-using call. Omitting the ``temp_storage`` argument is different: the
-compiler manages the allocation and its reuse barriers automatically.
+scratch-using call. Omitting ``temp_storage`` lets the compiler choose the
+layout and insert reuse barriers. It may reuse scratch across compatible calls;
+omission does not guarantee a separate slice per call site.
 
 :class:`cuda.coop.TempStorageLike` is the descriptor interface used in type
 signatures. The scratch contents are opaque; keep application data in
