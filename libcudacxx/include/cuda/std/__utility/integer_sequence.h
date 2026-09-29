@@ -28,6 +28,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(make_integer_seq) || _CCCL_COMPILER(MSVC, >=, 19, 23)
+#  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>
+#endif // _CCCL_CHECK_BUILTIN(make_integer_seq)
+
+#if _CCCL_HAS_BUILTIN(__integer_pack) || _CCCL_COMPILER(GCC, >=, 8)
+#  define _CCCL_BUILTIN_INTEGER_PACK(...) __integer_pack(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__integer_pack) || _CCCL_COMPILER(GCC, >=, 8)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t...>
