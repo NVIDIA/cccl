@@ -77,7 +77,8 @@ def exchange(
     Load two values per thread in striped order, then exchange them into
     blocked order before storing. The output has the original array order.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_rearrangement_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_rearrangement_examples.py
         :language: python
         :start-after: # exchange-example-begin
         :end-before: # exchange-example-end

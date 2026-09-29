@@ -98,7 +98,9 @@ def _in_place_parameters(mode: BlockExchangeMode) -> tuple[Any, ...]:
     if mode.uses_ranks:
         parameters.append(Array(_OFFSET_T, _ITEMS_PER_THREAD, name="ranks"))
     if mode.uses_valid_flags:
-        parameters.append(Array(_VALID_FLAG_T, _ITEMS_PER_THREAD, name="valid_flags"))
+        parameters.append(
+            Array(_VALID_FLAG_T, _ITEMS_PER_THREAD, name="valid_flags")
+        )
     return tuple(parameters)
 
 
@@ -117,7 +119,9 @@ def _out_of_place_parameters(mode: BlockExchangeMode) -> tuple[Any, ...]:
     if mode.uses_ranks:
         parameters.append(Array(_OFFSET_T, _ITEMS_PER_THREAD, name="ranks"))
     if mode.uses_valid_flags:
-        parameters.append(Array(_VALID_FLAG_T, _ITEMS_PER_THREAD, name="valid_flags"))
+        parameters.append(
+            Array(_VALID_FLAG_T, _ITEMS_PER_THREAD, name="valid_flags")
+        )
     return tuple(parameters)
 
 
@@ -215,7 +219,8 @@ def make_block_exchange_semantics(
     dtype: Any,
     items_per_thread: int,
     mode: str | BlockExchangeMode,
-    value_form: str | BlockExchangeValueForm = BlockExchangeValueForm.OUT_OF_PLACE,
+    value_form: str
+    | BlockExchangeValueForm = BlockExchangeValueForm.OUT_OF_PLACE,
     warp_time_slicing: bool = False,
     rank_dtype: Any | None = None,
     valid_flag_dtype: Any | None = None,
@@ -246,14 +251,19 @@ def make_block_exchange_semantics(
     if not mode.uses_ranks and rank_dtype is not None:
         raise ValueError("rank_dtype is only valid for scatter modes")
     if mode.uses_valid_flags and valid_flag_dtype is None:
-        raise ValueError("valid_flag_dtype is required for scatter_to_striped_flagged")
+        raise ValueError(
+            "valid_flag_dtype is required for scatter_to_striped_flagged"
+        )
     if not mode.uses_valid_flags and valid_flag_dtype is not None:
         raise ValueError(
             "valid_flag_dtype is only valid for scatter_to_striped_flagged"
         )
 
     methods: list[tuple[Any, ...]] = []
-    if value_form in {BlockExchangeValueForm.IN_PLACE, BlockExchangeValueForm.BOTH}:
+    if value_form in {
+        BlockExchangeValueForm.IN_PLACE,
+        BlockExchangeValueForm.BOTH,
+    }:
         methods.append(_in_place_parameters(mode))
     if value_form in {
         BlockExchangeValueForm.OUT_OF_PLACE,
@@ -279,7 +289,8 @@ def make_block_exchange_spec(
     block_dim: tuple[int, int, int],
     items_per_thread: int,
     mode: str | BlockExchangeMode,
-    value_form: str | BlockExchangeValueForm = BlockExchangeValueForm.OUT_OF_PLACE,
+    value_form: str
+    | BlockExchangeValueForm = BlockExchangeValueForm.OUT_OF_PLACE,
     warp_time_slicing: bool = False,
     rank_dtype: Any | None = None,
     valid_flag_dtype: Any | None = None,

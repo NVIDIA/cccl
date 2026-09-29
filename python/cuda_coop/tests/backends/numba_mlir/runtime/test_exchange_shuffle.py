@@ -62,7 +62,9 @@ _TIME_SLICED_MODES = tuple(
 
 
 def _values(size: int, *, shift: int = 0) -> np.ndarray:
-    return ((np.arange(size, dtype=np.int64) * 17 + shift) % 997 - 491).astype(np.int32)
+    return ((np.arange(size, dtype=np.int64) * 17 + shift) % 997 - 491).astype(
+        np.int32
+    )
 
 
 def _structured_exchange_oracle(
@@ -129,7 +131,9 @@ def _reversed_ranks(
         lane = thread % group_width
         for item in range(items_per_thread):
             local_index = lane * items_per_thread + item
-            ranks[thread * items_per_thread + item] = group_items - 1 - local_index
+            ranks[thread * items_per_thread + item] = (
+                group_items - 1 - local_index
+            )
     return ranks
 
 
@@ -312,7 +316,9 @@ def _structured_exchange_kernel(
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
 @pytest.mark.parametrize("mode", ("striped_to_blocked", "blocked_to_striped"))
 @pytest.mark.parametrize(
     ("scope", "group_width"),
@@ -394,7 +400,9 @@ def _qualified_block_exchange_kernel(mode: str, warp_time_slicing: bool):
     }:
 
         @cuda.jit
-        def kernel(source, ranks_source, flags_source, observed, preserved, ranks_out):
+        def kernel(
+            source, ranks_source, flags_source, observed, preserved, ranks_out
+        ):
             thread = cuda.threadIdx.x
             payload = cuda.local.array(
                 shape=_ITEMS_PER_THREAD,
@@ -416,7 +424,9 @@ def _qualified_block_exchange_kernel(mode: str, warp_time_slicing: bool):
     elif mode == "scatter_to_striped_flagged":
 
         @cuda.jit
-        def kernel(source, ranks_source, flags_source, observed, preserved, ranks_out):
+        def kernel(
+            source, ranks_source, flags_source, observed, preserved, ranks_out
+        ):
             thread = cuda.threadIdx.x
             payload = cuda.local.array(
                 shape=_ITEMS_PER_THREAD,
@@ -452,7 +462,9 @@ def _qualified_block_exchange_kernel(mode: str, warp_time_slicing: bool):
     else:
 
         @cuda.jit
-        def kernel(source, ranks_source, flags_source, observed, preserved, ranks_out):
+        def kernel(
+            source, ranks_source, flags_source, observed, preserved, ranks_out
+        ):
             thread = cuda.threadIdx.x
             payload = cuda.local.array(
                 shape=_ITEMS_PER_THREAD,
@@ -519,7 +531,9 @@ def _block_exchange_inputs(
             group_width=_BLOCK_THREADS,
             items_per_thread=_ITEMS_PER_THREAD,
             mode=mode,
-            valid_flags=(valid_flags if mode == "scatter_to_striped_flagged" else None),
+            valid_flags=(
+                valid_flags if mode == "scatter_to_striped_flagged" else None
+            ),
         )
     return source, ranks, valid_flags, expected, compared
 
@@ -528,7 +542,9 @@ def _block_exchange_inputs(
 def test_qualified_block_exchange_modes_match_oracles_and_accept_local_arrays(
     mode: str,
 ) -> None:
-    source, ranks, valid_flags, expected, compared = _block_exchange_inputs(mode)
+    source, ranks, valid_flags, expected, compared = _block_exchange_inputs(
+        mode
+    )
     observed = np.full(_TILE_ITEMS, -2011, dtype=np.int32)
     preserved = np.full(_TILE_ITEMS, -2013, dtype=np.int32)
     ranks_out = np.full(_TILE_ITEMS, -2017, dtype=np.int32)
@@ -552,7 +568,9 @@ def test_qualified_block_exchange_modes_match_oracles_and_accept_local_arrays(
 def test_block_exchange_warp_time_slicing_matches_the_full_storage_oracle(
     mode: str,
 ) -> None:
-    source, ranks, valid_flags, expected, compared = _block_exchange_inputs(mode)
+    source, ranks, valid_flags, expected, compared = _block_exchange_inputs(
+        mode
+    )
     observed = np.full(_TILE_ITEMS, -2021, dtype=np.int32)
     preserved = np.full(_TILE_ITEMS, -2023, dtype=np.int32)
     ranks_out = np.full(_TILE_ITEMS, -2027, dtype=np.int32)
@@ -749,7 +767,7 @@ def _offset_shuffle(source, distances, observed):
     )
 
 
-def test_scalar_offset_accepts_per_thread_negative_and_positive_int32_distances() -> (
+def test_scalar_offset_accepts_per_thread_negative_and_positive_int32_distances() -> (  # noqa: E501 - Preserve descriptive test name.
     None
 ):
     source = _values(_BLOCK_THREADS, shift=173)
@@ -802,13 +820,17 @@ def test_scalar_rotate_supports_static_and_per_thread_runtime_distances(
 ) -> None:
     source = _values(_BLOCK_THREADS, shift=191)
     static_distance = 7
-    runtime_distances = ((np.arange(_BLOCK_THREADS) % 11) + 1).astype(distance_dtype)
+    runtime_distances = ((np.arange(_BLOCK_THREADS) % 11) + 1).astype(
+        distance_dtype
+    )
     static_observed = np.full(_BLOCK_THREADS, -2071, dtype=np.int32)
     runtime_observed = np.full(_BLOCK_THREADS, -2073, dtype=np.int32)
     static_expected = np.empty_like(source)
     runtime_expected = np.empty_like(source)
     for thread in range(_BLOCK_THREADS):
-        static_expected[thread] = source[(thread + static_distance) % _BLOCK_THREADS]
+        static_expected[thread] = source[
+            (thread + static_distance) % _BLOCK_THREADS
+        ]
         runtime_expected[thread] = source[
             (thread + int(runtime_distances[thread])) % _BLOCK_THREADS
         ]
@@ -863,7 +885,9 @@ def _repeated_storage_reuse_kernel(source, exchange_observed, shuffle_observed):
     )
 
 
-def test_repeated_exchange_and_shuffle_calls_reuse_implementation_storage() -> None:
+def test_repeated_exchange_and_shuffle_calls_reuse_implementation_storage() -> (
+    None
+):
     source = _values(_TILE_ITEMS, shift=211)
     exchange_observed = np.full(_TILE_ITEMS, -2081, dtype=np.int32)
     shuffle_observed = np.full(_BLOCK_THREADS, -2083, dtype=np.int32)
@@ -1007,9 +1031,9 @@ def _run_same_direction_warp_reuse(width, *, check_output=True):
                 mode="blocked_to_striped",
             )
             for item in range(3):
-                observed[iteration * _REUSE_THREADS * 3 + thread * 3 + item] = result[
-                    item
-                ]
+                observed[iteration * _REUSE_THREADS * 3 + thread * 3 + item] = (
+                    result[item]
+                )
 
     observed = np.full(_REUSE_ROUNDS * _REUSE_THREADS * 3, -1, dtype=np.int32)
     kernel[1, _REUSE_THREADS](observed)
@@ -1021,9 +1045,14 @@ def _run_same_direction_warp_reuse(width, *, check_output=True):
                 for lane in range(width):
                     for item in range(3):
                         thread = group * width + lane
-                        index = iteration * _REUSE_THREADS * 3 + thread * 3 + item
+                        index = (
+                            iteration * _REUSE_THREADS * 3 + thread * 3 + item
+                        )
                         expected[index] = (
-                            iteration * 997 + group * width * 3 + item * width + lane
+                            iteration * 997
+                            + group * width * 3
+                            + item * width
+                            + lane
                         )
         np.testing.assert_array_equal(observed, expected)
 
@@ -1037,7 +1066,9 @@ def test_warp_exchange_same_direction_reuse(width):
 def test_warp_exchange_reuse_racecheck(width):
     # Expensive instrumentation is opt-in and must be scheduled serially.
     if os.environ.get("CUDA_COOP_RUN_RACECHECK") != "1":
-        pytest.skip("set CUDA_COOP_RUN_RACECHECK=1 for serial sanitizer qualification")
+        pytest.skip(
+            "set CUDA_COOP_RUN_RACECHECK=1 for serial sanitizer qualification"
+        )
     sanitizer = shutil.which("compute-sanitizer")
     if sanitizer is None:
         pytest.skip("compute-sanitizer is not available")
@@ -1052,7 +1083,7 @@ if {disable_barrier!r}:
     from cuda.coop.numba_mlir._compiler._rewrite_storage import _StorageRewrite
     _StorageRewrite._emit_temp_storage_auto_sync = lambda *args, **kwargs: None
 namespace['_run_same_direction_warp_reuse']({width}, check_output={not disable_barrier!r})
-"""
+"""  # noqa: E501 - Preserve embedded source bytes.
         result = subprocess.run(
             [
                 sanitizer,
@@ -1071,7 +1102,9 @@ namespace['_run_same_direction_warp_reuse']({width}, check_output={not disable_b
             timeout=180,
         )
         output = result.stdout + result.stderr
-        summary = re.search(r"RACECHECK SUMMARY: (\d+) hazards displayed", output)
+        summary = re.search(
+            r"RACECHECK SUMMARY: (\d+) hazards displayed", output
+        )
         assert summary is not None, output
         if disable_barrier:
             # A clean negative control would make this an insensitive test.

@@ -147,7 +147,10 @@ def _plan_exchange(
     assert block_threads is not None
     primitive = operation.primitive
     if resolved.kind == "block":
-        if operation.mode in _BLOCK_WARP_STRIPED_MODES and block_threads % 32 != 0:
+        if (
+            operation.mode in _BLOCK_WARP_STRIPED_MODES
+            and block_threads % 32 != 0
+        ):
             return _unsupported(
                 call,
                 resolved,
@@ -179,7 +182,8 @@ def _plan_exchange(
                 call,
                 resolved,
                 UnsupportedReasonCode.OPERATION_VARIANT,
-                f"cub::WarpExchange does not support mode {operation.mode.value!r}",
+                "cub::WarpExchange does not support mode "
+                f"{operation.mode.value!r}",
             )
         if primitive.warp_time_slicing:
             return _unsupported(

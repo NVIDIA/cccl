@@ -28,7 +28,9 @@ _I32_MAX = (1 << 31) - 1
 def _mode_token(value: object) -> str:
     if isinstance(value, str) and not isinstance(value, Enum):
         return value.strip().lower().replace("-", "_")
-    raise CoopSinglePhaseRewriteError("coop shuffle mode must be a compile-time string")
+    raise CoopSinglePhaseRewriteError(
+        "coop shuffle mode must be a compile-time string"
+    )
 
 
 def _block_threads(value: object) -> int | None:
@@ -61,7 +63,9 @@ def infer_shuffle_scalar_payload(
 ) -> None:
     """Infer the scalar Shuffle provider dtype."""
 
-    if not inference.runtime_args or not isinstance(inference.runtime_args[0], ir.Var):
+    if not inference.runtime_args or not isinstance(
+        inference.runtime_args[0], ir.Var
+    ):
         raise CoopSinglePhaseRewriteError(
             "coop shuffle scalar value must be a runtime variable"
         )
@@ -114,9 +118,12 @@ def infer_shuffle_array_payload(
             "coop shuffle could not infer array value dtype"
         )
     input_dtype = _numeric_dtype(input_dtype, parameter="value")
-    if output_dtype is not None and not _dtype_values_match(input_dtype, output_dtype):
+    if output_dtype is not None and not _dtype_values_match(
+        input_dtype, output_dtype
+    ):
         raise CoopSinglePhaseRewriteError(
-            "coop shuffle requires value and result arrays to have matching dtype"
+            "coop shuffle requires value and "
+            "result arrays to have matching dtype"
         )
 
     inference.infer_kwarg("items_per_thread", input_spec.items_per_thread)
@@ -158,7 +165,9 @@ def validate_shuffle_scalar_runtime_controls(
                 "coop shuffle distance must fit a signed 32-bit integer"
             )
         if mode == "rotate":
-            block_threads = _block_threads(factory_kwargs.get("threads_per_block"))
+            block_threads = _block_threads(
+                factory_kwargs.get("threads_per_block")
+            )
             if block_threads is not None and not 1 <= value < block_threads:
                 raise CoopSinglePhaseRewriteError(
                     "coop shuffle rotate distance must satisfy "

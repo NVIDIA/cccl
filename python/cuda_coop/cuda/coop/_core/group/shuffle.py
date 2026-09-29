@@ -135,20 +135,28 @@ def _plan_shuffle(
             UnsupportedReasonCode.OPERATION_VARIANT,
             "public CUB Rotate requires a block with at least two threads",
         )
-    if primitive.value_kind is BlockShuffleValueKind.ARRAY and primitive.mode not in {
-        BlockShuffleMode.UP,
-        BlockShuffleMode.DOWN,
-    }:
+    if (
+        primitive.value_kind is BlockShuffleValueKind.ARRAY
+        and primitive.mode
+        not in {
+            BlockShuffleMode.UP,
+            BlockShuffleMode.DOWN,
+        }
+    ):
         return _unsupported(
             call,
             resolved,
             UnsupportedReasonCode.OPERATION_VARIANT,
             "public CUB ThreadData shuffle supports only Up and Down",
         )
-    if primitive.value_kind is BlockShuffleValueKind.SCALAR and primitive.mode not in {
-        BlockShuffleMode.OFFSET,
-        BlockShuffleMode.ROTATE,
-    }:
+    if (
+        primitive.value_kind is BlockShuffleValueKind.SCALAR
+        and primitive.mode
+        not in {
+            BlockShuffleMode.OFFSET,
+            BlockShuffleMode.ROTATE,
+        }
+    ):
         return _unsupported(
             call,
             resolved,

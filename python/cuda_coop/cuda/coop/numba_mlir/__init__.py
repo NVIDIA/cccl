@@ -56,7 +56,9 @@ def __getattr__(name):
             "exchange": "_group_exchange",
             "shuffle": "_group_shuffle",
         }[name]
-        value = getattr(importlib.import_module(f"{__name__}.{module_name}"), name)
+        value = getattr(
+            importlib.import_module(f"{__name__}.{module_name}"), name
+        )
         globals()[name] = value
         return value
     if name in {"local", "shared"}:

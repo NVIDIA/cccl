@@ -13,7 +13,10 @@ from typing import Any
 from .._algorithm import Algorithm, AlgorithmSpec
 from .._types import Array, Dependency, TemplateParameter, TempStorageParameter
 from ..block._common import normalize_positive_int
-from ..block.exchange import BlockExchangeSemantics, make_block_exchange_semantics
+from ..block.exchange import (
+    BlockExchangeSemantics,
+    make_block_exchange_semantics,
+)
 
 _SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
 
@@ -118,7 +121,8 @@ def make_warp_exchange_spec(
     items_per_thread: int,
     threads_in_warp: int,
     mode: str | WarpExchangeMode,
-    value_form: str | WarpExchangeValueForm = WarpExchangeValueForm.OUT_OF_PLACE,
+    value_form: str
+    | WarpExchangeValueForm = WarpExchangeValueForm.OUT_OF_PLACE,
     rank_dtype: Any | None = None,
 ) -> WarpExchangeSpec:
     """Build canonical SMEM-backed WarpExchange semantics."""
@@ -138,7 +142,9 @@ def make_warp_exchange_spec(
     if not uses_ranks and rank_dtype is not None:
         raise ValueError("rank_dtype is only valid for scatter_to_striped")
     if not uses_ranks and value_form is not WarpExchangeValueForm.OUT_OF_PLACE:
-        raise ValueError("in-place overloads are only valid for scatter_to_striped")
+        raise ValueError(
+            "in-place overloads are only valid for scatter_to_striped"
+        )
     call = make_block_exchange_semantics(
         dtype=dtype,
         items_per_thread=items_per_thread,
@@ -148,7 +154,10 @@ def make_warp_exchange_spec(
     )
 
     methods: list[tuple[Any, ...]] = []
-    if value_form in {WarpExchangeValueForm.IN_PLACE, WarpExchangeValueForm.BOTH}:
+    if value_form in {
+        WarpExchangeValueForm.IN_PLACE,
+        WarpExchangeValueForm.BOTH,
+    }:
         methods.append(_in_place_parameters())
     if value_form in {
         WarpExchangeValueForm.OUT_OF_PLACE,

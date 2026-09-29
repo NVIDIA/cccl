@@ -120,7 +120,9 @@ def infer_exchange_payload(
     if input_dtype is None:
         input_dtype = inference.factory_value("dtype")
     if input_dtype is None:
-        raise CoopSinglePhaseRewriteError("coop exchange could not infer value dtype")
+        raise CoopSinglePhaseRewriteError(
+            "coop exchange could not infer value dtype"
+        )
     try:
         input_dtype = _validate_common_numeric_dtype(
             input_dtype,
@@ -129,13 +131,18 @@ def infer_exchange_payload(
         )
     except (TypeError, ValueError) as exc:
         raise CoopSinglePhaseRewriteError(str(exc)) from exc
-    if output_dtype is not None and not _dtype_values_match(input_dtype, output_dtype):
+    if output_dtype is not None and not _dtype_values_match(
+        input_dtype, output_dtype
+    ):
         raise CoopSinglePhaseRewriteError(
-            "coop exchange requires value and result arrays to have matching dtype"
+            "coop exchange requires value and "
+            "result arrays to have matching dtype"
         )
 
     mode_value = inference.factory_value("mode")
-    mode = _mode_token("striped_to_blocked" if mode_value is None else mode_value)
+    mode = _mode_token(
+        "striped_to_blocked" if mode_value is None else mode_value
+    )
     uses_ranks = mode in _SCATTER_MODES
     uses_valid_flags = mode == "scatter_to_striped_flagged"
     expected_count = 2 + int(uses_ranks) + int(uses_valid_flags)
@@ -175,7 +182,8 @@ def infer_exchange_payload(
             flag_dtype = inference.factory_value("valid_flag_dtype")
         if flag_dtype is None:
             raise CoopSinglePhaseRewriteError(
-                "coop exchange could not infer valid_flag_dtype from valid_flags"
+                "coop exchange could not infer "
+                "valid_flag_dtype from valid_flags"
             )
         inference.infer_kwarg(
             "valid_flag_dtype",
