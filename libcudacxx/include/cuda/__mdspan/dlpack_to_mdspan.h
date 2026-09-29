@@ -183,7 +183,7 @@ __to_mdspan(const ::DLTensor& __tensor)
         _CCCL_THROW(::std::invalid_argument, "DLTensor shapes must be positive");
       }
       __extents_array[__i] = __tensor.shape[__i];
-      __empty_tensor      = __empty_tensor || __tensor.shape[__i] == 0;
+      __empty_tensor       = __empty_tensor || __tensor.shape[__i] == 0;
     }
   }
   if (__tensor.data == nullptr && !__empty_tensor)
