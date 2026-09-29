@@ -8,10 +8,14 @@ import pytest
 
 import cuda.coop._core.thread_group as _thread_group
 from cuda.coop._core import (
+    CoopCompilerContextRequiredError,
+    LaunchFacts,
     ThreadGroup,
     ThreadHierarchy,
     make_thread_group,
+    resolve_thread_group,
     this_block,
+    this_thread,
     this_warp,
 )
 
@@ -125,3 +129,33 @@ def test_group_by_requires_exhaustive_non_nested_membership():
         this_warp().group_by(12)
     with pytest.raises(NotImplementedError, match="nested"):
         this_warp().group_by(8).group_by(2)
+
+
+def test_thread_group_sync_requires_compiler_activation():
+    with pytest.raises(CoopCompilerContextRequiredError, match="sync"):
+        this_block().sync()
+
+
+@pytest.mark.parametrize(
+    ("group", "block_threads"),
+    [(this_block(), 48), (this_thread(), 16)],
+)
+def test_warp_queries_preserve_partial_physical_warps(group, block_threads):
+    resolved = resolve_thread_group(
+        group,
+        LaunchFacts(exact_block_dim=block_threads),
+        through_level="warp",
+    ).require_supported()
+
+    assert resolved.hierarchy.block_thread_count == block_threads
+
+
+def test_block_warp_query_requires_a_complete_physical_warp():
+    with pytest.raises(
+        NotImplementedError, match="at least one complete 32-thread Warp"
+    ):
+        resolve_thread_group(
+            this_block(),
+            LaunchFacts(exact_block_dim=16),
+            through_level="warp",
+        ).require_supported()
