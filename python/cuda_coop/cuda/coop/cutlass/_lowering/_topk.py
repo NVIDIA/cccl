@@ -23,7 +23,6 @@ from cuda.coop._core import (
     make_group_primitive_call,
     plan_group_primitive,
 )
-from cuda.coop._core.api._dispatch import _common_root_operation_name
 from cuda.coop._core.group.topk import GroupTopKSemantics
 
 from .._compiler import _rendering, _state, _storage, _types
@@ -73,13 +72,12 @@ def _make_topk_plan(
         k=_count_binding(k, "k"),
         valid_items=_count_binding(valid_items, "valid_items", optional=True),
     )
-    source = (
-        "common_root"
-        if _common_root_operation_name() is not None
-        else "cutlass_root"
-    )
     plan = plan_group_primitive(
-        make_group_primitive_call(group, operation, source=source), launch
+        make_group_primitive_call(
+            group,
+            operation,
+        ),
+        launch,
     ).require_supported()
     return replace(
         plan,
