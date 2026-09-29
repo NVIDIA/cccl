@@ -22,13 +22,13 @@ from cuda.coop._core.group.histogram import GroupHistogramSemantics
 
 
 def _spec(**kwargs):
-    options = dict(
-        sample_dtype=INT32,
-        block_dim=(64, 1, 1),
-        items_per_thread=3,
-        bins=65,
-        bins_per_thread=2,
-    )
+    options = {
+        "sample_dtype": INT32,
+        "block_dim": (64, 1, 1),
+        "items_per_thread": 3,
+        "bins": 65,
+        "bins_per_thread": 2,
+    }
     options.update(kwargs)
     return make_block_histogram_spec(**options)
 
