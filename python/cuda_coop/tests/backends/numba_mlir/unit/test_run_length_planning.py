@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Reject unsupported RLD shapes and controls during group planning."""
-
 from types import SimpleNamespace
 
 import pytest

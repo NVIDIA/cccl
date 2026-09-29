@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Complete-operation providers for CUB BlockRunLengthDecode."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

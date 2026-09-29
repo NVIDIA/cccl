@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Window sizing and complete-operation provider contracts."""
-
 import pytest
 
 from cuda.coop._core import INT32, UINT64, ArgumentBinding, CxxFunction, Value
