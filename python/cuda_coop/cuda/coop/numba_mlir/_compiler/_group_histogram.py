@@ -115,7 +115,8 @@ def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
         descriptor = context.temp_storage(storage)
         if descriptor is None:
             raise TypeError(
-                "histogram temp_storage must resolve to a TempStorage descriptor"
+                "histogram temp_storage must "
+                "resolve to a TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(
