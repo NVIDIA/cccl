@@ -27,7 +27,9 @@ _Sample: TypeAlias = (
     | numpy.uint64
     | CompilerIntegerLike
 )
-_Counter = TypeVar("_Counter", numpy.int32, numpy.uint32, numpy.int64, numpy.uint64)
+_Counter = TypeVar(
+    "_Counter", numpy.int32, numpy.uint32, numpy.int64, numpy.uint64
+)
 
 @overload
 def histogram(

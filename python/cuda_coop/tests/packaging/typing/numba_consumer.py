@@ -702,7 +702,9 @@ def check_neighbor_results() -> None:
 def check_histogram_surface() -> None:
     block = coop.this_block()
     samples = coop.ThreadData(3, np.uint8)
-    assert_type(coop.histogram(block, samples, bins=33), coop.ThreadDataLike[np.int32])
+    assert_type(
+        coop.histogram(block, samples, bins=33), coop.ThreadDataLike[np.int32]
+    )
     assert_type(
         coop.histogram(
             block,
@@ -719,5 +721,6 @@ def check_histogram_surface() -> None:
         coop.ThreadDataLike[np.int32],
     )
     assert_type(
-        coop.histogram(block, np.int64(3), bins=33), coop.ThreadDataLike[np.int32]
+        coop.histogram(block, np.int64(3), bins=33),
+        coop.ThreadDataLike[np.int32],
     )

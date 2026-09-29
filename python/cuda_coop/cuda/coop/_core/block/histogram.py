@@ -10,10 +10,18 @@ from dataclasses import dataclass
 from typing import Any
 
 from .._algorithm import Algorithm, AlgorithmSpec, TypeDefinition
-from .._types import INT32, Array, Dependency, TemplateParameter, TempStorageParameter
+from .._types import (
+    INT32,
+    Array,
+    Dependency,
+    TemplateParameter,
+    TempStorageParameter,
+)
 from ._common import normalize_block_dim, normalize_positive_int
 
-HISTOGRAM_SAMPLE_DTYPES = frozenset({"uint8", "int32", "uint32", "int64", "uint64"})
+HISTOGRAM_SAMPLE_DTYPES = frozenset(
+    {"uint8", "int32", "uint32", "int64", "uint64"}
+)
 HISTOGRAM_COUNTER_DTYPES = frozenset({"int32", "uint32", "int64", "uint64"})
 
 
@@ -24,7 +32,9 @@ def validate_histogram_dtype(dtype: Any, *, counter: bool = False) -> Any:
     allowed = HISTOGRAM_COUNTER_DTYPES if counter else HISTOGRAM_SAMPLE_DTYPES
     if name not in allowed:
         parameter = "counter_dtype" if counter else "samples"
-        raise TypeError(f"histogram {parameter} dtype must be one of {sorted(allowed)}")
+        raise TypeError(
+            f"histogram {parameter} dtype must be one of {sorted(allowed)}"
+        )
     return dtype
 
 
@@ -81,7 +91,7 @@ public:
   }
 };
 } // namespace cub
-""".strip(),
+""".strip(),  # noqa: E501 - Embedded C++ source.
 )
 
 
@@ -107,7 +117,9 @@ def make_block_histogram_spec(
     block_dim = normalize_block_dim(block_dim)
     if block_dim[1:] != (1, 1):
         raise ValueError("histogram supports only one-dimensional blocks")
-    items_per_thread = normalize_positive_int("items_per_thread", items_per_thread)
+    items_per_thread = normalize_positive_int(
+        "items_per_thread", items_per_thread
+    )
     bins = normalize_positive_int("bins", bins)
     bins_per_thread = normalize_positive_int("bins_per_thread", bins_per_thread)
     if bins > block_dim[0] * bins_per_thread:
@@ -115,7 +127,11 @@ def make_block_histogram_spec(
             "histogram bins_per_thread must provide capacity for every bin"
         )
     if (
-        max(bins, block_dim[0] * bins_per_thread, block_dim[0] * items_per_thread)
+        max(
+            bins,
+            block_dim[0] * bins_per_thread,
+            block_dim[0] * items_per_thread,
+        )
         > (1 << 31) - 1
     ):
         raise ValueError(
@@ -174,6 +190,12 @@ def make_block_histogram_spec(
             if algorithm == "atomic"
             else "::cub::BLOCK_HISTO_SORT",
         },
-        metadata={"scope": "block", "primitive": "histogram", "algorithm": algorithm},
+        metadata={
+            "scope": "block",
+            "primitive": "histogram",
+            "algorithm": algorithm,
+        },
     )
-    return BlockHistogramSpec(spec, block_dim, items_per_thread, bins, bins_per_thread)
+    return BlockHistogramSpec(
+        spec, block_dim, items_per_thread, bins, bins_per_thread
+    )
