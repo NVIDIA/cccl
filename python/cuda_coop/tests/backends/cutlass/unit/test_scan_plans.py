@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Scan requests retain shared result, scratch, and initial-value contracts."""
-
 from dataclasses import replace
 
 import numpy as np

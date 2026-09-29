@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Scan compile gates cover typed ABI, prefixes, and storage controls."""
-
 import numpy as np
 import pytest
 

@@ -1,13 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-"""Same-dtype NumPy and CUTLASS scalar seed contracts.
-
-CUTLASS scalar annotations do not encode the canonical dtype structurally,
-so mixed NumPy/compiler seeds need one nominal pairing per supported dtype.
-The compiler protocols also require scalar metadata, so a missing optional
-CUTLASS import cannot turn a seed or input contract into unrestricted Any.
-"""
+"""Pair NumPy and CUTLASS scalar types so scan seeds match the input dtype."""
 
 from typing import Protocol, TypeAlias, TypeVar
 
