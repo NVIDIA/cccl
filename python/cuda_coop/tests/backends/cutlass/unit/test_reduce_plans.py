@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUTLASS Reduce consumes shared routing and result contracts."""
-
 import operator
 from dataclasses import replace
 

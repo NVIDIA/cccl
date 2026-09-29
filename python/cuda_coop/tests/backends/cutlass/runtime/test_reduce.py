@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent numerical and ownership checks for built-in Reduce and Sum."""
-
 import importlib.util
 import os
 import re
