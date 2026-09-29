@@ -70,7 +70,9 @@ class GroupScanSemantics:
 
     primitive: ScanSemantics
     cub_algorithm: BlockScanAlgorithm | str | None = None
-    valid_items: ArgumentBinding = field(default_factory=ArgumentBinding.omitted)
+    valid_items: ArgumentBinding = field(
+        default_factory=ArgumentBinding.omitted
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.primitive, ScanSemantics):
@@ -87,7 +89,8 @@ class GroupScanSemantics:
                 algorithm = normalize_block_scan_algorithm(self.cub_algorithm)
             except ValueError as exc:
                 raise ValueError(
-                    f"unsupported CUB BlockScan algorithm {self.cub_algorithm!r}"
+                    "unsupported CUB BlockScan algorithm "
+                    f"{self.cub_algorithm!r}"
                 ) from exc
             object.__setattr__(self, "cub_algorithm", algorithm)
 
@@ -151,7 +154,9 @@ def _call_classifications(
     operation: GroupScanSemantics,
 ) -> tuple[ParameterClassification, ...]:
     classifications = [
-        ParameterClassification("value", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+        ParameterClassification(
+            "value", ArgumentKind.RUNTIME, ParameterRole.INPUT
+        )
     ]
     if operation.scan_operator is not None:
         classifications.append(
@@ -286,7 +291,8 @@ def _plan_scan(
             resolved,
             UnsupportedReasonCode.OPERATION_VARIANT,
             "group exclusive scans with a custom operator require an initial "
-            "value because the no-initial overload leaves group rank zero undefined",
+            "value because the no-initial overload leaves "
+            "group rank zero undefined",
         )
 
     assert launch.exact_block_dim is not None
@@ -294,12 +300,16 @@ def _plan_scan(
     assert block_threads is not None
     if resolved.kind == "block":
         algorithm = operation.cub_algorithm or BlockScanAlgorithm.RAKING
-        if algorithm is BlockScanAlgorithm.WARP_SCANS and block_threads % 32 != 0:
+        if (
+            algorithm is BlockScanAlgorithm.WARP_SCANS
+            and block_threads % 32 != 0
+        ):
             return _unsupported(
                 call,
                 resolved,
                 UnsupportedReasonCode.OPERATION_VARIANT,
-                "BLOCK_SCAN_WARP_SCANS requires a block size that is a multiple "
+                "BLOCK_SCAN_WARP_SCANS requires a block size "
+                "that is a multiple "
                 "of the 32-thread architectural warp",
             )
         if operation.cub_algorithm is None:
@@ -340,12 +350,15 @@ def _plan_scan(
         assert warp_width is not None
         if operation.valid_items.kind is BindingKind.STATIC:
             valid_items = operation.valid_items.value
-            if isinstance(valid_items, bool) or not isinstance(valid_items, Integral):
+            if isinstance(valid_items, bool) or not isinstance(
+                valid_items, Integral
+            ):
                 raise TypeError("static valid_items must be an integer")
             valid_items = int(valid_items)
             if not 1 <= valid_items <= warp_width:
                 raise ValueError(
-                    "static valid_items must be between 1 and the logical warp size"
+                    "static valid_items must be between 1 "
+                    "and the logical warp size"
                 )
         warp_spec = make_warp_scan_spec(
             dtype=operation.dtype,
@@ -373,7 +386,11 @@ def _plan_scan(
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
         uniform_arguments=(
-            *(("initial_value",) if operation.initial_value is not None else ()),
+            *(
+                ("initial_value",)
+                if operation.initial_value is not None
+                else ()
+            ),
             *(
                 ("valid_items",)
                 if operation.valid_items.kind is not BindingKind.OMITTED

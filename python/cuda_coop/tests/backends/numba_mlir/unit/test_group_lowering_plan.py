@@ -471,7 +471,8 @@ def test_inferred_load_dtype_follows_output_aliases(qualified, projection):
     planner = _planner(memory, arg_types=(array_type, types.boolean))
     assert planner.run()
     assert (
-        planner.context.dtype(_assigned_var(planner.func_ir, "payload")) == types.int32
+        planner.context.dtype(_assigned_var(planner.func_ir, "payload"))
+        == types.int32
     )
 
 
@@ -481,7 +482,9 @@ def test_inferred_load_dtype_rejects_conflicting_alias_writes(qualified):
 
     import cuda.coop.numba_mlir as qualified_coop
     from cuda import coop as root_coop
-    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
 
     module = qualified_coop if qualified else root_coop
 
@@ -497,7 +500,9 @@ def test_inferred_load_dtype_rejects_conflicting_alias_writes(qualified):
 
     array_type = types.Array(types.int32, 1, "C")
     conflicting_type = types.Array(types.float32, 1, "C")
-    planner = _planner(memory, arg_types=(array_type, conflicting_type, types.boolean))
+    planner = _planner(
+        memory, arg_types=(array_type, conflicting_type, types.boolean)
+    )
     with pytest.raises(GroupRewriteError, match="inconsistent dtypes"):
         planner.run()
 
@@ -506,11 +511,15 @@ def test_load_does_not_infer_dtype_for_an_earlier_exchange():
     from numba_cuda_mlir import types
 
     from cuda import coop
-    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
 
     def memory(source):
         payload = coop.ThreadData(2)
-        exchanged = coop.exchange(coop.this_block(), payload, mode="blocked_to_striped")
+        exchanged = coop.exchange(
+            coop.this_block(), payload, mode="blocked_to_striped"
+        )
         coop.load(coop.this_block(), source, payload)
         return exchanged
 

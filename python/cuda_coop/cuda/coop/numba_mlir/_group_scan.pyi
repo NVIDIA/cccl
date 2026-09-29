@@ -52,10 +52,16 @@ _OperatorScanAlias: TypeAlias = Callable[[object, object], object]
 _ItemScanCallable: TypeAlias = Callable[[_ItemT, _ItemT], _ItemT]
 _ScalarScanCallable: TypeAlias = Callable[[_ScalarT, _ScalarT], _ScalarT]
 _KnownItemScanOperator: TypeAlias = (
-    ScanOperator | _OperatorScanAlias | _NumpyScanUfunc | _ItemScanCallable[_ItemT]
+    ScanOperator
+    | _OperatorScanAlias
+    | _NumpyScanUfunc
+    | _ItemScanCallable[_ItemT]
 )
 _KnownScalarScanOperator: TypeAlias = (
-    ScanOperator | _OperatorScanAlias | _NumpyScanUfunc | _ScalarScanCallable[_ScalarT]
+    ScanOperator
+    | _OperatorScanAlias
+    | _NumpyScanUfunc
+    | _ScalarScanCallable[_ScalarT]
 )
 _NonSumItemScanOperator: TypeAlias = (
     NonSumScanOperator

@@ -39,7 +39,9 @@ def _validate_logical_warp_threads(value: Any) -> int:
         or isinstance(value, bool)
         or value not in _SUPPORTED_LOGICAL_WARP_THREADS
     ):
-        raise ValueError("threads_in_warp must be a power of two between 1 and 32")
+        raise ValueError(
+            "threads_in_warp must be a power of two between 1 and 32"
+        )
     return value
 
 
@@ -109,7 +111,9 @@ def make_warp_scan_spec(
     mode = WarpScanMode(mode)
     if isinstance(valid_items, bool):
         valid_items = (
-            ArgumentBinding.runtime() if valid_items else ArgumentBinding.omitted()
+            ArgumentBinding.runtime()
+            if valid_items
+            else ArgumentBinding.omitted()
         )
     elif not isinstance(valid_items, ArgumentBinding):
         raise TypeError("valid_items must be a bool or ArgumentBinding")
