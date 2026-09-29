@@ -64,10 +64,10 @@ def reduce_batched(
 
     Notes
     -----
-    Each batch reduces independently; input slots are not combined with
-    one another. Both backends support complete physical
-    warps and logical warps of 1, 2, 4, 8, 16, or 32 threads. The compiler manages
-    any provider storage; this operation has no ``temp_storage`` argument.
+    Each batch reduces independently; input slots are not combined with one
+    another. Both backends support complete physical warps and logical warps of
+    1, 2, 4, 8, 16, or 32 threads. The compiler manages any provider storage;
+    this operation has no ``temp_storage`` argument.
 
     Use :func:`cuda.coop.numba_mlir.reduce_batched` for a custom stateless
     device operator, or :func:`cuda.coop.cutlass.reduce_batched` for CuTe
