@@ -21,7 +21,6 @@
 
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
-#include <cuda/std/__algorithm/minmax_element.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -48,7 +47,28 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  return ::cuda::std::minmax_element(first, last, thrust::detail::wrapped_function<BinaryPredicate>{comp});
+  // Cannot delegate to cuda::std::minmax_element because the standard returns
+  // the *last* equivalent maximum, while Thrust's parallel backends (and existing
+  // tests) expect the *first* equivalent maximum.
+  thrust::detail::wrapped_function<BinaryPredicate> wrapped_comp{comp};
+
+  ForwardIterator imin = first;
+  ForwardIterator imax = first;
+
+  for (; first != last; ++first)
+  {
+    if (wrapped_comp(*first, *imin))
+    {
+      imin = first;
+    }
+
+    if (wrapped_comp(*imax, *first))
+    {
+      imax = first;
+    }
+  }
+
+  return ::cuda::std::make_pair(imin, imax);
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

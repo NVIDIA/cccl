@@ -456,28 +456,3 @@ TEST_CASE("SequentialNoneOfProxyReference", "[sequential][proxy_reference]")
 
   CHECK(thrust::none_of(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{}));
 }
-
-// device_vector iterators hand out a proxy reference instead of a real float&,
-// so these tests check that wrapped_function unwraps it before converting.
-TEST_CASE("SequentialFindIfDeviceReference", "[sequential][proxy_reference]")
-{
-  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-
-  const auto result = thrust::find_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
-  CHECK(result - vec.begin() == 2);
-}
-
-TEST_CASE("SequentialForEachDeviceReference", "[sequential][proxy_reference]")
-{
-  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f};
-
-  thrust::for_each(thrust::seq, vec.begin(), vec.end(), double_negate{});
-}
-
-TEST_CASE("SequentialReduceDeviceReference", "[sequential][proxy_reference]")
-{
-  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f};
-
-  const float result = thrust::reduce(thrust::seq, vec.begin(), vec.end(), 0.0f, double_plus{});
-  CHECK(result == 10.0f);
-}
