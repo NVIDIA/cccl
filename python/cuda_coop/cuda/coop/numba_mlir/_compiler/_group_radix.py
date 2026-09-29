@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Family-local whole-function planning for block radix operations."""
-
 from dataclasses import replace
 from numbers import Integral
 

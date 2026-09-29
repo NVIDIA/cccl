@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared backend-neutral radix primitive vocabulary."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
