@@ -131,7 +131,8 @@ def this_cluster() -> ThreadGroup:
     Launch a two-block cluster with Numba-CUDA-MLIR and query each block's
     rank within it. This example requires compute capability 9.0 or newer.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
         :language: python
         :start-after: # cluster-example-begin
         :end-before: # cluster-example-end
