@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Group-first Exchange entry point for CuTe kernels."""
-
 from enum import Enum
 
 from cuda.coop._core import GroupExchangeMode

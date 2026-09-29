@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exchange signatures for qualified Block and Warp payloads."""
-
 from typing import Any, Literal, TypeAlias, overload
 
 import numpy as np

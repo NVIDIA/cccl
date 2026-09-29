@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shuffle compiler gates reject unsupported routes before linking."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")

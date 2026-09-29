@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent Exchange layout and scatter oracles with input preservation."""
-
 import re
 import shutil
 import subprocess

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shuffle signatures for qualified Block arrays and scalars."""
-
 from typing import Any, Literal, TypeAlias, overload
 
 import numpy as np
