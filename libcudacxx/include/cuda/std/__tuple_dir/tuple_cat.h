@@ -111,20 +111,26 @@ _CCCL_TEMPLATE(class... _Tuples)
 _CCCL_REQUIRES(__all_tuple_like<_Tuples...>)
 [[nodiscard]] _CCCL_API constexpr __tuple_cat_return_t<_Tuples...> tuple_cat(_Tuples&&... __tuples)
 {
+  // [tuple.creation] Returns tuple<CTypes...>(celems...). The implementation stages a tuple of references.
+  // Direct-initialize the result so an explicit element constructor from that reference is usable. Returning the
+  // reference tuple would copy-initialize and reject that constructor.
+  using _Result = __tuple_cat_return_t<_Tuples...>;
   if constexpr (sizeof...(_Tuples) == 0)
   {
     return tuple<>{};
   }
   else if constexpr (sizeof...(_Tuples) <= 2)
   {
-    return ::cuda::std::__tuple_cat_impl(__make_tuple_indices_t<tuple_size<remove_reference_t<_Tuples>>::value>{}...,
-                                         ::cuda::std::forward<_Tuples>(__tuples)...);
+    return _Result(::cuda::std::__tuple_cat_impl(
+      __make_tuple_indices_t<tuple_size<remove_reference_t<_Tuples>>::value>{}...,
+      ::cuda::std::forward<_Tuples>(__tuples)...));
   }
   else
   {
     using _TupleSize0 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<0, _Tuples...>>>::value>;
     using _TupleSize1 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<1, _Tuples...>>>::value>;
-    return ::cuda::std::__tuple_cat_impl(_TupleSize0{}, _TupleSize1{}, ::cuda::std::forward<_Tuples>(__tuples)...);
+    return _Result(
+      ::cuda::std::__tuple_cat_impl(_TupleSize0{}, _TupleSize1{}, ::cuda::std::forward<_Tuples>(__tuples)...));
   }
 }
 
