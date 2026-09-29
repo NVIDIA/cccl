@@ -11,12 +11,16 @@ Cooperative operations let a group of threads work on data together.
 This page explains the participating threads, their payloads and
 layouts, and the rules for results and temporary storage.
 
+See the :doc:`Numba-CUDA-MLIR Programming Guide <programming_guide>`
+for complete kernels and launch examples.
+
 .. _coop-backend-registration:
 
-Backend registration
---------------------
+Registering a backend
+---------------------
 
-Call ``register`` on the host before compiling a kernel:
+Call :func:`cuda.coop.register` on the host before compiling kernels to
+select the backend explicitly:
 
 .. code-block:: python
 
@@ -26,11 +30,17 @@ Call ``register`` on the host before compiling a kernel:
 
    from numba_cuda_mlir import cuda
 
-Registration works in either import order and is safe to repeat. It also
-accepts ``"numba_cuda_mlir"``. The backend dependencies must already be
-installed. A standalone ``cuda.coop`` import does not load an optional
-compiler; importing it after Numba-CUDA-MLIR activates the backend
-automatically unless ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` is set.
+Registration loads the backend and installs its compiler hooks, so this
+works regardless of whether ``cuda.coop`` or Numba-CUDA-MLIR was imported
+first. Repeated calls are safe and return ``None``. The spelling
+``"numba_cuda_mlir"`` is also accepted. Registration requires the backend's
+dependencies to be installed; it does not install packages.
+
+For convenience, importing ``cuda.coop`` after ``numba_cuda_mlir`` also
+registers the backend automatically. A standalone ``cuda.coop`` import does
+not discover or load optional compilers. Explicit registration is useful in
+libraries and notebooks where another import may already have loaded
+``cuda.coop``.
 
 Importing the backend namespace also registers it:
 
@@ -38,15 +48,16 @@ Importing the backend namespace also registers it:
 
    import cuda.coop.numba_mlir as numba_coop
 
-You can use ``as coop`` when only using this backend. Keep the alias so the
-import does not replace a ``cuda`` name imported from Numba-CUDA-MLIR.
-The common API will also support future backends; CUTLASS support is planned.
+Use ``numba_coop`` when mixing common and backend calls. If your program uses
+only the backend namespace, you can import it as ``coop`` instead. See the
+:ref:`namespace FAQ <coop-faq-numba-only>` and
+:ref:`API comparison <coop-programming-api-choice>`.
 
 
 Kernel API
 ----------
 
-The portable root and qualified backend expose matching entry points:
+The common root and qualified backend expose matching entry points:
 
 .. code-block:: python
 
@@ -96,8 +107,6 @@ Both spellings are compiler markers. Calls must occur in a compatible compiler
 context; they are not host-side data movement operations.
 
 
-.. _coop-thread-groups:
-
 Groups and thread data
 ----------------------
 
@@ -111,7 +120,7 @@ threads are linearized in x-major order. Every member of a participating group
 must reach its collective; complete sibling logical groups may take different
 control-flow paths.
 
-The portable group vocabulary also includes thread, cluster, grid, and mapped
+The common group vocabulary also includes thread, cluster, grid, and mapped
 groups of physical warps, but those are not Load or Store targets.
 ``ThreadGroup`` objects are descriptor-only in this release. ``group_by`` is
 compile-time vocabulary for describing a static partition. Runtime query,
@@ -119,8 +128,6 @@ membership, and synchronization methods such as
 ``rank``, ``count``, ``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and
 ``is_member`` are not exposed.
 
-
-.. _coop-participation:
 
 Participation and synchronization
 ---------------------------------
@@ -142,13 +149,11 @@ application-owned shared memory requires it. A barrier does not make
 divergent participation safe.
 
 
-.. _coop-thread-data:
-
 Per-thread payloads
 -------------------
 
 ``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes the
-fixed-size register payload owned by each participating thread. Portable and
+fixed-size register payload owned by each participating thread. Common and
 qualified calls use the same inference rules: an untyped Load output infers
 its dtype from the source, and Store combines the destination dtype with
 payload writes. Load fills the supplied output in place and returns ``None``.
@@ -256,12 +261,11 @@ value explicitly before storing it:
    value = types.int32(source[cuda.threadIdx.x] + 1)
    coop.store(block, destination, value, algorithm="direct")
 
-.. _coop-data-layouts:
 
 Data layouts and algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Both portable and qualified entry points use the same string algorithm
+Both common and qualified entry points use the same string algorithm
 vocabulary: ``direct``, ``striped``,
 ``vectorize``, ``transpose``, ``warp_transpose``, and
 ``warp_transpose_timesliced``. All six algorithms are executable with the
@@ -277,7 +281,7 @@ Physical and logical Warp Load and Store support ``direct``, ``striped``,
 ``vectorize``, and ``transpose``. Their layouts follow the same rules at the
 selected group width: ``direct`` and ``vectorize`` expose blocked payloads,
 ``striped`` exposes a striped payload, and ``transpose`` uses striped memory
-transactions while exposing a blocked payload. Portable and qualified calls
+transactions while exposing a blocked payload. Common and qualified calls
 use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
@@ -292,8 +296,6 @@ transpose Store implementations copy the payload before calling CUB, so Store
 never modifies the caller's scalar or ``ThreadData`` value while CUB performs
 its in-place reordering.
 
-
-.. _coop-temp-storage:
 
 Temporary storage
 -----------------
@@ -388,6 +390,6 @@ An unrelated ``literal_unroll`` loop does not add this restriction.
 
 Warp ``transpose`` uses compiler-owned storage with one disjoint slice per
 physical or logical group. The compiler inserts ``syncwarp`` with the exact
-logical-group mask. Both the portable and qualified APIs reject explicit
+logical-group mask. Both the common and qualified APIs reject explicit
 ``TempStorage`` for every Warp Load and Store algorithm, including the
 storage-free modes.

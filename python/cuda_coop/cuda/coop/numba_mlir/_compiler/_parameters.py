@@ -156,7 +156,7 @@ def _validate_common_numeric_dtype(
     operation: str,
     parameter: str | None = None,
 ):
-    """Return one normalized dtype from the common numeric profile."""
+    """Return one normalized dtype from the common API's numeric profile."""
 
     dtype, dtype_name = _normalize_common_dtype(dtype)
     validate_common_numeric_dtype_name(
