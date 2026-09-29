@@ -20,7 +20,7 @@ TILE_ITEMS = THREADS * ITEMS_PER_THREAD
 @cuda.jit
 def block_scan_kernel(values, prefixes):
     block = coop.this_block()
-    items = coop.ThreadData(ITEMS_PER_THREAD, dtype=np.int32)
+    items = coop.ThreadData(items_per_thread=ITEMS_PER_THREAD)
     coop.load(block, values, items)
     scanned = coop.exclusive_sum(block, items)
     coop.store(block, prefixes, scanned)
