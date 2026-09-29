@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common block Adjacent Difference and Discontinuity APIs."""
-
 from __future__ import annotations
 
 from typing import Any
