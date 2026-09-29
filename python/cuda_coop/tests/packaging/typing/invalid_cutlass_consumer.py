@@ -433,8 +433,12 @@ common.topk_max_pairs(
 )
 
 cutlass_coop.adjacent_difference(warp, values)  # expected-error: [arg-type]
-cutlass_coop.adjacent_difference(block, scalar)  # expected-error: [call-overload]
-cutlass_coop.discontinuity(block, values, mode="up")  # expected-error: [call-overload]
+cutlass_coop.adjacent_difference(  # expected-error: [call-overload]
+    block, scalar
+)
+cutlass_coop.discontinuity(  # expected-error: [call-overload]
+    block, values, mode="up"
+)
 cutlass_coop.discontinuity(  # expected-error: [call-overload]
     block, values, flag_op=callback
 )

@@ -16,7 +16,9 @@ from cuda.coop import cutlass as cutlass_coop
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(
     "algorithm",
     (
@@ -40,7 +42,9 @@ def test_algorithm_selector_spellings(api, algorithm):
     def launch(memory: cute.Pointer):
         kernel(memory).launch(grid=1, block=32)
 
-    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
     assert cute.compile[(GPUArch("sm_80"),)](launch, pointer) is not None
 
 

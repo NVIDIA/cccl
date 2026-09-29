@@ -50,7 +50,8 @@ def _valid_binding(value):
     spec = _types.TYPE_SPECS.get(_types.canonical_dsl_type(value))
     if spec is None or spec.token[0] not in {"i", "u"} or spec.token == "u64":
         raise TypeError(
-            "neighbor valid_items requires a signed integer up to 64 bits or an unsigned integer up to 32 bits"
+            "neighbor valid_items requires a signed integer up to 64 bits "
+            "or an unsigned integer up to 32 bits"
         )
     return ArgumentBinding.runtime()
 
@@ -81,7 +82,9 @@ def _make_neighbor_plan(
         successor=successor,
     )
     plan = plan_group_primitive(
-        make_group_primitive_call(group, GroupNeighborSemantics(primitive, valid)),
+        make_group_primitive_call(
+            group, GroupNeighborSemantics(primitive, valid)
+        ),
         launch,
     ).require_supported()
     if temp_storage is not None and not isinstance(temp_storage, TempStorage):
@@ -126,7 +129,9 @@ class _CubNeighborRequest:
         ):
             raise TypeError("neighbor request requires a shared CUB block plan")
         if self.value_type not in _types.ALL_PROVIDER_TYPES:
-            raise TypeError("neighbor request requires a supported numeric dtype")
+            raise TypeError(
+                "neighbor request requires a supported numeric dtype"
+            )
         if self.implementation.method_name != "Apply":
             raise ValueError("neighbor implementation does not match its plan")
         arguments = self.implementation.template_arguments
@@ -136,13 +141,16 @@ class _CubNeighborRequest:
             or tuple(arguments.get(f"BlockDim{axis}") for axis in "XYZ")
             != self.plan.participation.exact_block_dim
         ):
-            raise ValueError("neighbor template arguments do not match its plan")
+            raise ValueError(
+                "neighbor template arguments do not match its plan"
+            )
         if not self.plan.temp_storage.exact_layout_required:
             raise ValueError("neighbor request requires exact scratch layout")
         result = self.plan.result
         if (
             result is None
-            or tuple(item.name for item in result.values) != self.operation.result_names
+            or tuple(item.name for item in result.values)
+            != self.operation.result_names
             or any(
                 item.dtype != self.operation.result_dtype
                 or item.items_per_member != self.items
@@ -181,7 +189,9 @@ class _CubNeighborRequest:
             _types.TYPE_SPECS[value].cpp_type if name == "T" else str(value)
             for name, value in self.implementation.ordered_template_arguments
         ]
-        return f"::cub::{self.implementation.struct_name}<{', '.join(arguments)}>"
+        return (
+            f"::cub::{self.implementation.struct_name}<{', '.join(arguments)}>"
+        )
 
     @property
     def scratch_requirement_key(self):
@@ -189,7 +199,9 @@ class _CubNeighborRequest:
 
     @property
     def symbol_name(self):
-        digest = hashlib.sha256(repr(self.plan.artifact_key).encode()).hexdigest()[:16]
+        digest = hashlib.sha256(
+            repr(self.plan.artifact_key).encode()
+        ).hexdigest()[:16]
         return f"cuda_coop_cutlass_{self.operation.operation}_{digest}"
 
     def __eq__(self, other):
@@ -238,12 +250,18 @@ def _render_neighbors(request):
         f"  using T = {cpp};",
         f"  using implementation_type = {request.cpp_type};",
         "  using storage_type = typename implementation_type::TempStorage;",
-        "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+        (
+            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+            "< sizeof(storage_type) ||"
+        ),
         "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
         '    asm volatile("trap;");',
         "  }",
         "  unsigned long long generic_address;",
-        '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
+        (
+            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+            '"l"((unsigned long long)storage_address));'
+        ),
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         f"  T values[{request.items}] = {{{values}}};",
         *(f"  {output_cpp} {name}[{request.items}] = {{}};" for name in names),
@@ -260,7 +278,8 @@ def _render_neighbors(request):
 
 def _scratch_probe(request):
     return _rendering.make_scratch_layout_probe(
-        request.scratch_requirement_key, f"typename {request.cpp_type}::TempStorage"
+        request.scratch_requirement_key,
+        f"typename {request.cpp_type}::TempStorage",
     )
 
 
@@ -347,7 +366,9 @@ def provider_neighbors(
     try:
         _state.register_request(request)
         descriptor = (
-            TempStorage(auto_sync=True) if temp_storage is None else temp_storage
+            TempStorage(auto_sync=True)
+            if temp_storage is None
+            else temp_storage
         )
         arguments.extend(
             _storage.register_deferred_temp_storage_event(
@@ -359,9 +380,11 @@ def provider_neighbors(
         parameter_types.extend((Uint32, Int32, Int32))
         arguments.extend(tensor.iterator.llvm_ptr for tensor in tensors)
         parameter_types.extend([llvm.PointerType.get(0)] * len(tensors))
-        ffi(name=request.symbol_name, params_types=parameter_types, return_type=None)(
-            *arguments
-        )
+        ffi(
+            name=request.symbol_name,
+            params_types=parameter_types,
+            return_type=None,
+        )(*arguments)
         output_dtype = (
             _types.thread_data_output_dtype(values, dtype)
             if operation == "adjacent_difference"
@@ -371,7 +394,9 @@ def provider_neighbors(
             ThreadData(
                 len(items),
                 dtype=output_dtype,
-                values=[request.output_type(tensor[i]) for i in range(len(items))],
+                values=[
+                    request.output_type(tensor[i]) for i in range(len(items))
+                ],
                 alignment=values.alignment,
             )
             for tensor in tensors
