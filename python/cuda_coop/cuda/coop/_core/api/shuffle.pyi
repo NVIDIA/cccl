@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for portable cooperative Shuffle."""
+"""Typing contract for common cooperative Shuffle."""
 
 from typing import Literal
 
