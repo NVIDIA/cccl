@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable, Literal, overload
+from collections.abc import Callable
+from typing import Literal, overload
 
 import numpy as np
 from typing_extensions import TypeVar
