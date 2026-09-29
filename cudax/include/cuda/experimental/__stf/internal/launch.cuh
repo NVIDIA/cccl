@@ -415,21 +415,25 @@ public:
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
-    // The timing events are released on every path. A failing destroy leaks an event and is
-    // reported; the guard is noexcept, so it cannot become a second exception.
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
     SCOPE(exit)
     {
-      ON_THROW(notify)
+      if (start_event)
       {
-        if (start_event)
+        ON_THROW(notify)
         {
           cuda_try<cudaEventDestroy>(start_event);
-        }
-        if (end_event)
+        };
+      }
+      if (end_event)
+      {
+        ON_THROW(notify)
         {
           cuda_try<cudaEventDestroy>(end_event);
-        }
-      };
+        };
+      }
     };
 
     const size_t grid_size = e_place.size();
