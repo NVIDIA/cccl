@@ -136,7 +136,9 @@ def test_qualified_surface_is_common_plus_backend_extensions():
             getattr(common_coop, operation)
         )
 
-    assert call_shape(coop.reduce_batched) == call_shape(common_coop.reduce_batched)
+    assert call_shape(coop.reduce_batched) == call_shape(
+        common_coop.reduce_batched
+    )
 
     common_exchange = inspect.signature(common_coop.exchange)
     qualified_exchange = inspect.signature(coop.exchange)
