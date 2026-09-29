@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Describe a device callable paired with explicit runtime state."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
