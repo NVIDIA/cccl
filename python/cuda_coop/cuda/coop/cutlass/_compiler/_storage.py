@@ -69,7 +69,7 @@ def _active_cuda_kernel_op() -> Any:
 def _cuda_kernel_name(kernel_op: Any) -> str:
     try:
         return str(kernel_op.attributes["sym_name"])
-    except Exception:
+    except Exception:  # noqa: BLE001 - A diagnostic name must not break scratch planning.
         return f"cuda.kernel@{id(kernel_op):x}"
 
 
@@ -100,7 +100,7 @@ def register_deferred_temp_storage_event(
     size_placeholder = _fresh_i32_placeholder()
     try:
         location = str(smem_addr_placeholder.owner.location)
-    except Exception:
+    except Exception:  # noqa: BLE001 - Missing diagnostic locations do not invalidate scratch.
         location = "unknown location"
 
     session.add_deferred_temp_storage_event(
@@ -237,7 +237,7 @@ def _replace_all_uses(old_value: Any, new_value: Any) -> None:
         try:
             replace(new_value)
             return
-        except Exception:
+        except Exception:  # noqa: BLE001, S112 - Try the alternate MLIR spelling before reporting incompatibility.
             continue
     _deferred_temp_storage_capability_error()
 
