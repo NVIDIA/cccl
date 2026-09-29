@@ -40,7 +40,9 @@ from ._model import (
 
 @dataclass(frozen=True, eq=False)
 class GroupShuffleSemantics:
-    """Scalar or array BlockShuffle operation selected after group resolution."""
+    """Scalar or array BlockShuffle operation selected after group
+    resolution.
+    """
 
     primitive: BlockShuffleSemantics
 
