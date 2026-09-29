@@ -146,8 +146,9 @@ struct ScanLookaheadPolicy
   // new value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
   int lookahead_stages = 2; //!< Number of pipeline stages for the lookahead squad
 
-  // TODO(bgruber): Deprecate this, since we folded it into the loading squad. This member is ignored now.
-  int block_idx_stages = -1;
+  //! Deprecated [Since CCCL 3.6]
+  CCCL_DEPRECATED_BECAUSE("block_idx_stages no longer has any effect and will be removed in CCCL 4.0") int
+    block_idx_stages = -1;
 
   _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
@@ -157,9 +158,11 @@ struct ScanLookaheadPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ScanLookaheadPolicy& lhs, const ScanLookaheadPolicy& rhs) noexcept
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return lhs.reduce_and_scan_warps == rhs.reduce_and_scan_warps && lhs.items_per_thread == rhs.items_per_thread
         && lhs.lookahead_items_per_thread == rhs.lookahead_items_per_thread
         && lhs.lookahead_stages == rhs.lookahead_stages && lhs.block_idx_stages == rhs.block_idx_stages;
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -171,10 +174,12 @@ struct ScanLookaheadPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookaheadPolicy& p)
   {
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return os
         << "ScanLookaheadPolicy { .reduce_and_scan_warps = " << p.reduce_and_scan_warps << ", .items_per_thread = "
         << p.items_per_thread << ", .lookahead_items_per_thread = " << p.lookahead_items_per_thread
         << ", .lookahead_stages = " << p.lookahead_stages << ", .block_idx_stages = " << p.block_idx_stages << " }";
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 #endif // _CCCL_HOSTED()
 };
@@ -958,24 +963,24 @@ struct policy_selector
             if (input_type == type_t::other)
             {
               // wrps_6.lbi_8.ipt_104.lbs_2.bis_2 ()  1.249803  1.041534  1.270719  1.566667
-              return ScanLookaheadPolicy{6, 104 - 1, 8, 2, 2};
+              return ScanLookaheadPolicy{6, 104 - 1, 8, 2};
             }
             break;
           case 4:
             if (input_type == type_t::float32)
             {
               // wrps_3.lbi_8.ipt_120.lbs_2.bis_-2 ()  1.127914  1.060261  1.129389  1.169118
-              return ScanLookaheadPolicy{3, 120 - 1, 8, 2, -2};
+              return ScanLookaheadPolicy{3, 120 - 1, 8, 2};
             }
             // wrps_4.lbi_5.ipt_88.lbs_-2.bis_-2 ()  1.079626  1.013468  1.090259  1.206897
-            return ScanLookaheadPolicy{4, 88 - 1, 5, -2, -2};
+            return ScanLookaheadPolicy{4, 88 - 1, 5, -2};
           case 8:
             if (input_type == type_t::float64)
             {
               break;
             }
             // wrps_2.lbi_7.ipt_88.lbs_-2.bis_-2 ()  1.032518  0.993770  1.029765  1.046025
-            return ScanLookaheadPolicy{2, 88 - 1, 7, -2, -2};
+            return ScanLookaheadPolicy{2, 88 - 1, 7, -2};
           default:
             break;
         }
