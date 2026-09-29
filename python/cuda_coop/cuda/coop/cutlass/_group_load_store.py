@@ -27,7 +27,8 @@ def _resolve_group(group, algorithm, temp_storage, operation):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
     if group.kind not in {"block", "warp", "threads_within_warp"}:
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} requires a block, physical warp, or logical warp group"
+            f"{_SCOPE}.{operation} requires a block, physical warp, "
+            "or logical warp group"
         )
     if group.kind != "block" and temp_storage is not None:
         raise NotImplementedError(

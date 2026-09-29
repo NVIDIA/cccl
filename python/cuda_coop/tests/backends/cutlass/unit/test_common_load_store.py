@@ -65,8 +65,12 @@ def test_common_load_mutates_output_and_returns_none(monkeypatch, group):
     source = [11, 23]
     calls = []
 
-    def marker(operation, selected_group, selected_source, selected_output, **kwargs):
-        calls.append((operation, selected_group, selected_source, selected_output))
+    def marker(
+        operation, selected_group, selected_source, selected_output, **kwargs
+    ):
+        calls.append(
+            (operation, selected_group, selected_source, selected_output)
+        )
         for index, value in enumerate(selected_source):
             selected_output[index] = value
 
@@ -101,15 +105,24 @@ def test_common_load_store_validate_block_payloads_and_options(monkeypatch):
             lambda: "test.backend",
         )
         api.store(
-            this_block(), object(), _ReadonlyThreadData(), temp_storage=_TempStorage()
+            this_block(),
+            object(),
+            _ReadonlyThreadData(),
+            temp_storage=_TempStorage(),
         )
-        with pytest.raises(ValueError, match="oob_default requires valid_items"):
+        with pytest.raises(
+            ValueError, match="oob_default requires valid_items"
+        ):
             api.load(this_block(), object(), _ThreadData(), oob_default=0)
         with pytest.raises(TypeError, match="must satisfy TempStorageLike"):
-            api.load(this_block(), object(), _ThreadData(), temp_storage=object())
+            api.load(
+                this_block(), object(), _ThreadData(), temp_storage=object()
+            )
         with pytest.raises(TypeError, match="fixed-size ThreadData"):
             api.load(this_block(), object(), object())
-        with pytest.raises(ValueError, match="must match the payload item count"):
+        with pytest.raises(
+            ValueError, match="must match the payload item count"
+        ):
             api.load(this_block(), object(), _ThreadData(length=1))
         with pytest.raises(TypeError, match="common API"):
             api.load(this_block(), object(), _ThreadData(dtype=np.float16))
@@ -123,11 +136,20 @@ def test_common_load_store_validate_block_payloads_and_options(monkeypatch):
         assert api.load(logical_warp, object(), logical_output) is None
         api.store(logical_warp, object(), _ReadonlyThreadData())
         for group in (this_warp(), logical_warp):
-            with pytest.raises(ValueError, match="supported only for block groups"):
-                api.load(group, object(), _ThreadData(), algorithm="warp_transpose")
-            with pytest.raises(ValueError, match="not supported for Warp groups"):
+            with pytest.raises(
+                ValueError, match="supported only for block groups"
+            ):
+                api.load(
+                    group, object(), _ThreadData(), algorithm="warp_transpose"
+                )
+            with pytest.raises(
+                ValueError, match="not supported for Warp groups"
+            ):
                 api.store(
-                    group, object(), _ReadonlyThreadData(), temp_storage=_TempStorage()
+                    group,
+                    object(),
+                    _ReadonlyThreadData(),
+                    temp_storage=_TempStorage(),
                 )
 
 
@@ -194,7 +216,11 @@ def test_common_static_controls_fail_closed_before_delegation(monkeypatch):
                 TypeError,
                 "integer value supported by the common API",
             ),
-            ({"offset": "4"}, TypeError, "integer value supported by the common API"),
+            (
+                {"offset": "4"},
+                TypeError,
+                "integer value supported by the common API",
+            ),
             ({"valid_items": -1}, ValueError, "between 0"),
             ({"offset": -1}, ValueError, "between 0"),
             ({"offset": 1 << 63}, ValueError, "between 0"),

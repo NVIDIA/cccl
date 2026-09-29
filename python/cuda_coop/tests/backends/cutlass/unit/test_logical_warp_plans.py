@@ -58,7 +58,9 @@ def _request(
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize("exhaustive", (True, False))
 def test_logical_group_contract(width, kind, algorithm, exhaustive):
-    request = _request(width, kind=kind, algorithm=algorithm, exhaustive=exhaustive)
+    request = _request(
+        width, kind=kind, algorithm=algorithm, exhaustive=exhaustive
+    )
     plan = request.plan
     assert plan.target is GroupLoweringTarget.CUB_WARP
     assert plan.resolved_group.static_size == width
@@ -69,11 +71,17 @@ def test_logical_group_contract(width, kind, algorithm, exhaustive):
     assert _load_store._required_static_elements(request) == 128
     if algorithm == "transpose":
         assert plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
-        assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+        assert (
+            plan.synchronization.storage_reuse_barrier
+            is SynchronizationScope.WARP
+        )
         assert len(_rendering.bundle_scratch_layout_probes([request])) == 1
     else:
         assert plan.temp_storage.ownership is StorageOwnership.NONE
-        assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+        assert (
+            plan.synchronization.storage_reuse_barrier
+            is SynchronizationScope.NONE
+        )
         assert not _rendering.bundle_scratch_layout_probes([request])
 
 
@@ -98,7 +106,9 @@ def test_subgroup_tile_bounds(width):
 def test_subgroup_offset_headroom(width):
     maximum = (1 << 63) - 1 - (128 - 2 * width)
     assert (
-        _request(width, offset=ArgumentBinding.static(maximum)).operation.offset.value
+        _request(
+            width, offset=ArgumentBinding.static(maximum)
+        ).operation.offset.value
         == maximum
     )
     with pytest.raises(ValueError, match="offset"):
@@ -109,10 +119,15 @@ def test_subgroup_offset_headroom(width):
 def test_scratch_identity_counts_groups(width):
     one_warp = _request(width, algorithm="transpose", block=(32, 1, 1))
     two_warps = _request(width, algorithm="transpose")
-    assert one_warp.implementation.semantic_key == two_warps.implementation.semantic_key
+    assert (
+        one_warp.implementation.semantic_key
+        == two_warps.implementation.semantic_key
+    )
     assert one_warp.scratch_requirement_key != two_warps.scratch_requirement_key
     assert one_warp.symbol_name != two_warps.symbol_name
-    assert len(_rendering.bundle_scratch_layout_probes([one_warp, two_warps])) == 2
+    assert (
+        len(_rendering.bundle_scratch_layout_probes([one_warp, two_warps])) == 2
+    )
 
 
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
@@ -136,7 +151,9 @@ def test_mapped_warps_rejected():
         _request(32, group=this_block().group_by(1))
 
 
-@pytest.mark.parametrize("algorithm", ("warp_transpose", "warp_transpose_timesliced"))
+@pytest.mark.parametrize(
+    "algorithm", ("warp_transpose", "warp_transpose_timesliced")
+)
 def test_block_algorithms_rejected(algorithm):
     with pytest.raises(NotImplementedError, match="algorithm"):
         _request(8, algorithm=algorithm)
