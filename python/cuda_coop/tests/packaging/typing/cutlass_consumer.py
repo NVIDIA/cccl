@@ -2,12 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Type-check CUTLASS payloads for Block and Warp Load and Store calls.
+"""Type-check CUTLASS payloads shared with common Load and Store calls.
 
 The checks confirm that payload construction, register-tensor conversions, and
-immutable-vector conversions keep the scalar dtype. Qualified and common calls
-accept the same payloads. This module is a mypy input; it does not trace or
-launch a kernel.
+immutable-vector conversions keep the scalar dtype. This module is a mypy
+input; it does not trace or launch a kernel.
 """
 
 from __future__ import annotations
