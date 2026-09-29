@@ -802,7 +802,8 @@ struct lookahead_scan_closure
       // We need to handle the first and the last -partial- tile differently
       const bool is_first_tile = idxTile == 0;
 
-      if (squad == squadSched)
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadSched) // NOLINT(cppcoreguidelines-slicing)
       {
         _CCCL_IKET_RANGE_START(SquadSched);
         load_next_tile_index(squad, phaseNextBlockIdxW);
@@ -817,7 +818,8 @@ struct lookahead_scan_closure
       const warpspeed::CpAsyncOobInfo loadInfo =
         warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
 
-      if (squad == squadLoad)
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadLoad) // NOLINT(cppcoreguidelines-slicing)
       {
         _CCCL_IKET_RANGE_START(SquadLoad);
         load_current_tile(squad, phaseInOutW, loadInfo);
@@ -839,7 +841,8 @@ struct lookahead_scan_closure
       }();
       _CCCL_IKET_RANGE_POP();
 
-      if (squad == squadReduce)
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadReduce) // NOLINT(cppcoreguidelines-slicing)
       {
         _CCCL_IKET_RANGE_START(SquadReduce);
         reduce_tile(
@@ -855,14 +858,16 @@ struct lookahead_scan_closure
         _CCCL_IKET_RANGE_END(SquadReduce);
       }
 
-      if (squad == squadLookahead)
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadLookahead) // NOLINT(cppcoreguidelines-slicing)
       {
         _CCCL_IKET_RANGE_START(SquadLookahead);
         lookahead(squad, phaseAggrExclusiveCtaW, is_first_tile, idxTilePrev, AggrExclusiveCtaPrev, idxTile, numTiles);
         _CCCL_IKET_RANGE_END(SquadLookahead);
       }
 
-      if (squad == squadScanStore)
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadScanStore) // NOLINT(cppcoreguidelines-slicing)
       {
         static_assert(tile_size % squadScanStore.threadCount() == 0);
         _CCCL_IKET_RANGE_START(SquadScanStore);
@@ -905,7 +910,8 @@ struct lookahead_scan_closure
     }
 
     // epilogue: after the load squad finished, we can start ramping up the next kernel
-    if (squad == squadLoad)
+    // slice is intentional, see SquadDesc::operator==()
+    if (squad == squadLoad) // NOLINT(cppcoreguidelines-slicing)
     {
       _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     }
