@@ -26,11 +26,83 @@
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
+#include <cuda/std/initializer_list>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+//! Fixed-capacity, dynamically sized vector with the same (reduced) interface as `cuda::std::inplace_vector<T,
+//! Capacity>`. Unlike `cuda::std::inplace_vector`, whose backing storage is private, this keeps its state in public
+//! data members, so it (and any tuning policy embedding it) remains usable as a C++20 non-type template parameter --
+//! CC dispatch (`cub::detail::policy_constant` / `cuda::std::integral_constant`, see `cub/detail/cc_dispatch.cuh`)
+//! instantiates resolved tuning policies that way, which requires every base class and non-static data member to be
+//! public ("structural type"). Only the member functions tuning policies actually need are provided.
+template <typename T, ::cuda::std::size_t Capacity>
+struct structural_inplace_vector
+{
+  using value_type      = T;
+  using size_type       = ::cuda::std::size_t;
+  using const_reference = const T&;
+  using const_iterator  = const T*;
+
+  ::cuda::std::array<T, Capacity> elems{};
+  size_type count = 0;
+
+  _CCCL_HOST_DEVICE_API constexpr structural_inplace_vector(::cuda::std::initializer_list<T> ilist)
+  {
+    for (const auto& elem : ilist)
+    {
+      elems[count++] = elem;
+    }
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_type size() const noexcept
+  {
+    return count;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_reference operator[](size_type pos) const noexcept
+  {
+    return elems[pos];
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator begin() const noexcept
+  {
+    return elems.data();
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator end() const noexcept
+  {
+    return elems.data() + count;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const structural_inplace_vector& lhs, const structural_inplace_vector& rhs)
+  {
+    if (lhs.count != rhs.count)
+    {
+      return false;
+    }
+    for (size_type i = 0; i < lhs.count; ++i)
+    {
+      if (lhs.elems[i] != rhs.elems[i])
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const structural_inplace_vector& lhs, const structural_inplace_vector& rhs)
+  {
+    return !(lhs == rhs);
+  }
+};
+
 // copy of cccl_type_enum from cccl/c/types.h, which we cannot share, since CCCL.C's public interface does not depend on
 // libcu++
 enum class type_t
