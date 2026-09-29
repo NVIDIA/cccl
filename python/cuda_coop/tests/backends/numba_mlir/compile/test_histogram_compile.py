@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-"""Compile Histogram through the production provider and final linker."""
-
 import os
 from types import SimpleNamespace
 

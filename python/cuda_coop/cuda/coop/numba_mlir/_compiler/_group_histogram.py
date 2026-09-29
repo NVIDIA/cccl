@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Whole-function planning for fresh block histogram results."""
+"""Allocate a new result payload for each block histogram."""
 
 from dataclasses import replace
 
