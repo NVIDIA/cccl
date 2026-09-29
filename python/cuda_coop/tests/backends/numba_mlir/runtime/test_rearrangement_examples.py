@@ -29,7 +29,7 @@ def test_exchange_example():
     @cuda.jit
     def exchange_tile(source, destination):
         block = coop.this_block()
-        striped = coop.ThreadData(2, dtype=np.int32)
+        striped = coop.ThreadData(items_per_thread=2)
         coop.load(block, source, striped, algorithm="striped")
         blocked = coop.exchange(block, striped, mode="striped_to_blocked")
         coop.store(block, destination, blocked)
@@ -52,7 +52,7 @@ def test_exchange_striped_output():
     @cuda.jit
     def exchange_tile(source, destination, preserved):
         block = coop.this_block()
-        blocked = coop.ThreadData(2, dtype=np.int32)
+        blocked = coop.ThreadData(items_per_thread=2)
         coop.load(block, source, blocked)
         striped = coop.exchange(block, blocked, mode="blocked_to_striped")
         coop.store(block, destination, striped)
@@ -79,7 +79,7 @@ def test_shuffle_example():
     @cuda.jit
     def shift_tile(source, following, preceding):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         coop.load(block, source, items)
         down = coop.shuffle(block, items, mode="down")
         up = coop.shuffle(block, items, mode="up")
