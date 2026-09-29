@@ -984,9 +984,9 @@ class ThreadGroup:
         Returns
         -------
         None
-            The call waits for the group's participating threads at the
-            barrier. All participants must execute it in converged control
-            flow; see :ref:`participation requirements <coop-common-participation>`.
+            The call waits for the group's participating threads at the barrier.
+            All participants must execute it in converged control flow; see
+            :ref:`participation requirements <coop-common-participation>`.
 
         Notes
         -----
@@ -1042,10 +1042,10 @@ class ThreadGroup:
 
         Notes
         -----
-        Use this query to guard rank-dependent work for excluded threads.
-        Before guarding a primitive, check that primitive's
-        :ref:`participation requirements <coop-common-participation>`; a membership
-        check alone does not make a divergent primitive valid.
+        Use this query to guard rank-dependent work for excluded threads. Before
+        guarding a primitive, check that primitive's :ref:`participation
+        requirements <coop-common-participation>`; a membership check alone does
+        not make a divergent primitive valid.
 
         See Also
         --------
