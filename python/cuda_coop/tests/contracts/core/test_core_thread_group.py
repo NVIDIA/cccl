@@ -40,8 +40,13 @@ def test_thread_group_kind_sets_preserve_distinct_contracts():
     assert COMPLETE_WARP_GROUP_KINDS <= THREAD_GROUP_KINDS
     assert frozenset(_thread_group._CPP_LEVEL_EXPR) == THREAD_LEVELS
     assert frozenset(_group_resolution._THREAD_LEVEL_ORDER) == THREAD_LEVELS
-    assert frozenset(_group_resolution._MAPPED_PARENT_LEVEL) == MAPPED_GROUP_KINDS
-    assert frozenset(_group_resolution._MAPPED_PARENT_LEVEL.values()) <= THREAD_LEVELS
+    assert (
+        frozenset(_group_resolution._MAPPED_PARENT_LEVEL) == MAPPED_GROUP_KINDS
+    )
+    assert (
+        frozenset(_group_resolution._MAPPED_PARENT_LEVEL.values())
+        <= THREAD_LEVELS
+    )
     assert THREAD_GROUP_QUERY_DTYPE_NAMES == frozenset(
         {
             "int8",
@@ -252,7 +257,10 @@ def test_resolved_mapped_warp_group_rendering_allocates_barriers():
         "  ::cuda::experimental::coop::generic_group group{",
         "      ::cuda::warp, group_parent,",
         "      ::cuda::experimental::coop::group_by<2, false>{},",
-        "      ::cuda::experimental::coop::barrier_synchronizer{group_barriers}};",
+        (
+            "      ::cuda::experimental::coop::barrier_synchronizer"
+            "{group_barriers}};"
+        ),
     ]
 
 
@@ -381,7 +389,9 @@ def test_group_by_exhaustive_validation_and_nested_mapping_rejection():
         ).require_supported()
 
     oversized = this_block().group_by(3, exhaustive=False)
-    with pytest.raises(NotImplementedError, match="exceeds the resolved parent"):
+    with pytest.raises(
+        NotImplementedError, match="exceeds the resolved parent"
+    ):
         resolve_thread_group(
             oversized,
             LaunchFacts(exact_block_dim=64),

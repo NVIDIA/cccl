@@ -109,7 +109,8 @@ def make_warp_reduce_specialization(
             raise ValueError("static valid_items must be a positive integer")
         if value > threads_in_warp:
             raise ValueError(
-                f"static valid_items {value} exceeds warp size {threads_in_warp}"
+                f"static valid_items {value} exceeds warp size "
+                f"{threads_in_warp}"
             )
     if operation in {WarpReduceOperation.MIN, WarpReduceOperation.MAX} and (
         valid_items.kind is not BindingKind.OMITTED
