@@ -2,14 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Private compiler API access for the supported Numba-CUDA-MLIR 0.5.x runtime.
-
-The backend otherwise imports documented, top-level Numba-CUDA-MLIR APIs
-directly. This module exposes the private overload, IR, datamodel, and registry
-APIs needed by the backend. It supports one runtime series, without adapting
-between versions. Registry snapshots let activation undo its own additions
-when an import fails.
-"""
+"""Access the private compiler APIs required by Numba-CUDA-MLIR 0.5.x."""
 
 from __future__ import annotations
 

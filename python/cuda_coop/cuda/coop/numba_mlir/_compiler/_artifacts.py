@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Temporary artifact and compiler-output helpers.
-
-These functions own short-lived binary files and PTX metadata extraction used
-by NVRTC/LTO assembly.  They do not normalize primitive parameters or define a
-persistent cache schema.
-"""
-
 import os
 import re
 import tempfile

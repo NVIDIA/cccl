@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Numba-CUDA-MLIR bindings for shared CUDA thread-group descriptors."""
-
 from __future__ import annotations
 
 from cuda.coop._core import ThreadHierarchy, make_thread_group

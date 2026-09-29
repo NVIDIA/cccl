@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Temporary-storage layout and IR emission.
-
-This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
-ordering remain in the rewrite orchestrator.
-"""
+"""Allocate shared scratch and insert reuse barriers for cooperative calls."""
 
 from cuda.coop._core import StorageOwnership, SynchronizationScope
 

@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block and physical or logical Warp Load/Store IR planning.
-
-This mixin owns only its primitive-family IR rewrite. Shared provenance,
-launch facts, caches, and final orchestration remain in the group planner.
-"""
-
 import operator
 from enum import Enum
 

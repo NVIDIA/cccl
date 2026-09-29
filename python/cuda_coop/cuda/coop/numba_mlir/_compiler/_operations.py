@@ -2,12 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exact callable-identity registries for planner-recognized operations.
-
-Numba IR eventually exposes the Python callable assigned to a call site.  The
-planner records and looks up those callable objects directly here; module and
-function names are diagnostic metadata only and never establish identity.
-"""
+"""Register cooperative markers and lowering factories by callable identity."""
 
 from __future__ import annotations
 

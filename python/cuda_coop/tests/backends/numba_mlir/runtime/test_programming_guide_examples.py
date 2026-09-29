@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Executable examples included in the programming guide."""
-
 import numpy as np
 import pytest
 

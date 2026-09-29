@@ -2,14 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Connect the common ``cuda.coop`` API to compatible Python kernel DSLs.
+"""Register compatible compiler runtimes already imported by the application.
 
-Importing ``cuda.coop`` probes an explicit allowlist of separately installed
-DSL integrations. Each probe verifies the compiler capabilities that its
-adapter needs before installing compiler-owned activation. One incompatible
-DSL does not prevent root import. Set
-``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` to a truthy value to skip every
-automatic probe and register backends explicitly instead.
+Set CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1 to disable automatic
+registration.
 """
 
 from __future__ import annotations
