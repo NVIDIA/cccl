@@ -89,7 +89,7 @@ scans its own tile independently.
 .. code-block:: python
 
    block = coop.this_block()
-   values = coop.ThreadData(2, dtype=np.int32)
+   values = coop.ThreadData(items_per_thread=2)
    offset = block_index * 256
    coop.load(block, source, values, offset=offset)
    prefixes = coop.inclusive_sum(block, values, algorithm="raking_memoize")
@@ -169,7 +169,7 @@ state is authoritative.
    @cuda.jit
    def scan_two_tiles(source, output, final_state):
        thread = cuda.threadIdx.x
-       state = numba_coop.ThreadData(1, dtype=types.int64)
+       state = numba_coop.ThreadData(items_per_thread=1)
        state[0] = 10
        for tile in range(2):
            index = tile * 128 + thread
