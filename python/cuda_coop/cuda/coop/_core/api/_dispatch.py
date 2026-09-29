@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Register cooperative operations and their supported thread groups.
-
-Compiler adapters use function identity to recognize calls such as load and
-store, then check which group kinds the operation supports.
-"""
+"""Index cooperative calls by function identity and supported group kinds."""
 
 from __future__ import annotations
 

@@ -2,11 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-neutral cooperative primitive semantic descriptions.
+"""Cooperative call descriptions used by compiler adapters.
 
-This package intentionally contains only Python standard-library imports.
-Backend integrations lower these records into their own compiler, provider,
-linker, and runtime objects.
+Importing this package requires only the Python standard library.
 """
 
 from ._adapter import CoreBackendAdapter, lower_method_parameters

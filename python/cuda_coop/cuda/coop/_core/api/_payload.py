@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Per-thread payload and scratch-storage interfaces shared by compilers."""
-
 from __future__ import annotations
 
 import operator

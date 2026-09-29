@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for common explicit temporary storage."""
-
 from cuda.coop._typing import TempStorageLike, TempStorageSharing
 
 __all__ = ["TempStorage", "TempStorageLike"]

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-neutral static and runtime scalar argument bindings."""
-
 from __future__ import annotations
 
 import math

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Stable semantic identities and internal symbol helpers."""
+"""Build cache keys from Python values and callable dependencies."""
 
 from __future__ import annotations
 

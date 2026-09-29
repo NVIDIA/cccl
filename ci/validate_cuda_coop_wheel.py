@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate the supported layout of a standalone ``cuda-coop`` wheel.
-
-The archive is checked without importing it so a source checkout or another
-installed ``cuda`` namespace distribution cannot hide packaging regressions.
-"""
+"""Check the files and metadata in a ``cuda-coop`` wheel archive."""
 
 from __future__ import annotations
 

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Register and dispatch backend-neutral primitive families."""
-
 from __future__ import annotations
 
 from collections.abc import Callable

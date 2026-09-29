@@ -2,11 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Construct symbolic descriptions of the current CUDA thread groups.
-
-The compiler resolves these descriptions against the kernel launch.
-"""
-
 from __future__ import annotations
 
 from ..thread_group import (

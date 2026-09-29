@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Resolve symbolic thread groups against compiler-provided launch facts.
-
-Resolution is shared by every primitive family and records typed failures when
-the launch cannot prove a safe static group. It does not choose an algorithm,
-construct an artifact, or inspect backend compiler state.
-"""
-
 from __future__ import annotations
 
 from ..launch import LaunchFacts

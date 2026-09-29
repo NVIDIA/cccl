@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Optional CUDA source diagnostics shared by compiler backends."""
-
 from __future__ import annotations
 
 import hashlib
