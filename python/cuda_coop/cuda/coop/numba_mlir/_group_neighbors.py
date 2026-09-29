@@ -34,12 +34,26 @@ def adjacent_difference(
     temp_storage: TempStorageLike | None = None,
     difference_op: Any = None,
 ) -> ThreadDataLike[Any]:
-    """Common Adjacent Difference semantics with a custom binary operator.
+    """Compute neighbor differences with an optional device operator.
 
-    difference_op(current, neighbor) must be a stateless device-compilable
-    callable returning the input dtype. None selects subtraction. Fixed-size
-    local arrays are also accepted. Inputs are preserved, including the
-    invalid suffix. Groups must be complete blocks.
+    Shared parameters, participation, boundaries, partial tiles, and scratch
+    behavior follow :func:`cuda.coop.adjacent_difference`.
+
+    Additional parameters
+    ---------------------
+    values : ThreadDataLike or local array
+        Fixed-size local arrays are accepted in addition to ThreadData.
+    difference_op : callable, optional
+        Stateless device-compilable ``difference_op(current, neighbor)``
+        returning the input dtype. ``None`` selects subtraction. The call
+        receives the previous neighbor for left differences and the next
+        neighbor for right differences.
+
+    Returns
+    -------
+    ThreadDataLike
+        The fresh payload described by the common operation, including when
+        the input is a local array.
     """
     return group_primitive_marker(
         "adjacent_difference",
@@ -68,12 +82,25 @@ def discontinuity(
     temp_storage: TempStorageLike | None = None,
     flag_op: Any = None,
 ) -> ThreadDataLike[Any] | tuple[ThreadDataLike[Any], ThreadDataLike[Any]]:
-    """Common full-tile Discontinuity semantics with a binary predicate.
+    """Flag adjacent items with an optional device predicate.
 
-    flag_op(previous, current) determines heads; flag_op(current, next)
-    determines tails. It must be a stateless device-compilable predicate.
-    None selects inequality. Fixed-size local arrays are also accepted.
-    The result flag dtype is int32; heads_and_tails returns (heads, tails).
+    Shared parameters, participation, boundaries, and scratch behavior follow
+    :func:`cuda.coop.discontinuity`.
+
+    Additional parameters
+    ---------------------
+    values : ThreadDataLike or local array
+        Fixed-size local arrays are accepted in addition to ThreadData.
+    flag_op : callable, optional
+        Stateless device-compilable binary predicate. Heads evaluate
+        ``flag_op(previous, current)``; tails evaluate
+        ``flag_op(current, next)``. ``None`` selects inequality.
+
+    Returns
+    -------
+    ThreadDataLike or tuple of ThreadDataLike
+        The common operation's int32 flag payload, or ``(heads, tails)``
+        for ``mode="heads_and_tails"``, including for local-array inputs.
     """
     return group_primitive_marker(
         "discontinuity",
