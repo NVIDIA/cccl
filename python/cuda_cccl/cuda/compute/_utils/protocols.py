@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import weakref
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
 
 import numpy as np
@@ -25,6 +26,37 @@ def is_device_array(obj: object) -> bool:
 # Perf: This cache holds the pointer accessor functions for all types we have seen.
 # This avoids try..except chains or repeated attribute lookups for the same type.
 _DATA_POINTER_ACCESSOR_CACHE: dict[type, Callable[[DeviceArrayLike], int]] = {}
+
+# Stream handles are immutable for the lifetime of an object implementing the
+# __cuda_stream__ protocol. Cache successful validation by object identity so
+# repeated algorithm calls on the same stream do not re-run the protocol.
+# Weak references avoid extending the lifetime of CUDA stream objects.
+_STREAM_HANDLE_CACHE: dict[int, tuple[weakref.ReferenceType[object], int]] = {}
+
+
+def _get_cached_stream_handle(stream: object) -> Optional[int]:
+    entry = _STREAM_HANDLE_CACHE.get(id(stream))
+    if entry is not None and entry[0]() is stream:
+        return entry[1]
+    return None
+
+
+def _cache_stream_handle(stream: object, handle: int) -> None:
+    stream_id = id(stream)
+
+    def remove(dead_ref: weakref.ReferenceType[object]) -> None:
+        current = _STREAM_HANDLE_CACHE.get(stream_id)
+        if current is not None and current[0] is dead_ref:
+            _STREAM_HANDLE_CACHE.pop(stream_id, None)
+
+    try:
+        stream_ref = weakref.ref(stream, remove)
+    except TypeError:
+        # Some third-party protocol implementations cannot be weak-referenced.
+        # Keep supporting them without caching rather than retaining them.
+        return
+
+    _STREAM_HANDLE_CACHE[stream_id] = (stream_ref, handle)
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
@@ -220,6 +252,10 @@ def validate_and_get_stream(stream) -> Optional[int]:
     if stream is None:
         return None
 
+    cached_handle = _get_cached_stream_handle(stream)
+    if cached_handle is not None:
+        return cached_handle
+
     try:
         stream_property = stream.__cuda_stream__()
     except AttributeError as e:
@@ -237,6 +273,7 @@ def validate_and_get_stream(stream) -> Optional[int]:
     if version == 0:
         if not isinstance(handle, int):
             raise TypeError(f"invalid stream handle {handle}")
+        _cache_stream_handle(stream, handle)
         return handle
 
     raise TypeError(f"unsupported __cuda_stream__ version {version}")
