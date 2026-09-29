@@ -21,20 +21,19 @@ version = namedtuple("version", ("major", "minor"))
 def make_binary_tempfile(content: bytes, suffix: str) -> BinaryIO:
     """Write content to a closed, unbuffered temporary binary file."""
 
-    tmp = tempfile.NamedTemporaryFile(
+    with tempfile.NamedTemporaryFile(
         mode="w+b", suffix=suffix, buffering=0, delete=False
-    )
-    try:
-        tmp.write(content)
-    except Exception:
-        name = tmp.name
-        tmp.close()
+    ) as tmp:
         try:
-            os.unlink(name)
-        except FileNotFoundError:
-            pass
-        raise
-    tmp.close()
+            tmp.write(content)
+        except Exception:
+            name = tmp.name
+            tmp.close()
+            try:
+                os.unlink(name)
+            except FileNotFoundError:
+                pass
+            raise
     return tmp
 
 
