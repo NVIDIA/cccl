@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Group-first load and store markers for Numba-CUDA-MLIR.
-
-This module owns public movement signatures.  Compiler planning and CUB
-provider materialization live in ``_compiler`` and ``_lowering`` respectively.
-"""
-
 from __future__ import annotations
 
 from typing import Any

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block and physical or logical Warp Load/Store provider lowering."""
-
 import operator
 from enum import Enum
 

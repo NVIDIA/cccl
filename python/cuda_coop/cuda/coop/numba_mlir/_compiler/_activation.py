@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load Numba-CUDA-MLIR and transactionally activate compiler hooks.
-
-Qualified backend import owns activation, while this module owns runtime
-capability diagnostics and rollback-safe compiler registry mutation.
-"""
+"""Register compiler hooks and roll back this backend's additions on failure."""
 
 from __future__ import annotations
 

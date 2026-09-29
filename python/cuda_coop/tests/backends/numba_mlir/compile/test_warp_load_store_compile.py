@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""GPU-free compilation contracts for physical and logical Warp Load/Store."""
-
 from __future__ import annotations
 
 import os

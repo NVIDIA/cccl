@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared runtime diagnostic for compile-time group primitive markers.
-
-Primitive signatures live in semantic ``_group_*`` modules.  This helper only
-provides their common failure mode when a marker escapes compiler lowering.
-"""
-
 from __future__ import annotations
 
 from typing import Any

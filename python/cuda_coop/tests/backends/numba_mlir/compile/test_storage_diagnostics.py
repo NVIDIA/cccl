@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile MVP descriptor restrictions through the production pipeline."""
-
 import os
 from types import SimpleNamespace
 

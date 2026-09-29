@@ -5,13 +5,6 @@
 # The family rewrites import this module's private support names explicitly.
 # ruff: noqa: F401
 
-"""Shared single-phase provider rewriting for Numba-CUDA-MLIR.
-
-This compiler layer preserves launch inference, device-function deferral,
-payload provenance, temporary-storage planning, and invocable coalescing.  It
-dispatches to semantic provider modules through exact callable identities.
-"""
-
 from __future__ import annotations
 
 import hashlib

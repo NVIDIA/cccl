@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Launch-dimension inference and device-function deferral.
-
-This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
-ordering remain in the rewrite orchestrator.
-"""
-
 from ._rewrite_support import (
     CoopSinglePhaseRewriteError,
     _DeferredCoopRewrite,

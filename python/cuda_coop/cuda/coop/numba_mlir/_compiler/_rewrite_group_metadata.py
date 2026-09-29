@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Dispatch opaque per-family rewrite metadata and argument preparation."""
-
 from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
 from ._rewrite_support import CoopSinglePhaseRewriteError, ir

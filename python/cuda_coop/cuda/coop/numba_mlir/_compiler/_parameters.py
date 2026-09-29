@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Trace-static parameter normalization for Numba-CUDA-MLIR lowering.
-
-This module canonicalizes dimensions, dtypes, common dtype profiles, and
-typed scalar literals before provider construction.  It does not inspect IR,
-infer launch metadata, or own persistent cache formats.
-"""
-
 import math
 import operator
 from collections import namedtuple
