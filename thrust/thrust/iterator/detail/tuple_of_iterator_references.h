@@ -183,7 +183,9 @@ public:
   // this overload of swap() permits swapping tuple_of_iterator_references returned as temporaries from
   // iterator dereferences
   template <class... Us>
-  _CCCL_HOST_DEVICE friend void swap(tuple_of_iterator_references&& x, tuple_of_iterator_references<Us...>&& y)
+  _CCCL_HOST_DEVICE friend void
+  swap(tuple_of_iterator_references&& x, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+       tuple_of_iterator_references<Us...>&& y) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     x.swap(y);
   }

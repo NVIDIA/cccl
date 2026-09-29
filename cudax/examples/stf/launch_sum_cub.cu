@@ -13,7 +13,7 @@
  * @brief A reduction kernel written using launch and CUB
  */
 
-#include <cub/cub.cuh>
+#include <cub/block/block_reduce.cuh>
 
 #include <cuda/experimental/stf.cuh>
 
