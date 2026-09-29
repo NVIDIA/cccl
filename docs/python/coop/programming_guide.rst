@@ -272,7 +272,7 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 ``ThreadData``: the part of a tile owned by one thread
 ------------------------------------------------------
 
-``coop.ThreadData(2, dtype=np.int32)`` gives each thread two integer slots.
+``coop.ThreadData(items_per_thread=2)`` gives each thread two slots.
 With 128 threads, the group owns 256 values. Each thread
 indexes its own slots with ``items[0]`` and ``items[1]``. Each thread accesses only its own slots.
 
@@ -349,10 +349,13 @@ The current numeric payload types are signed and unsigned integers of 8,
 precision, complex, and structured payloads are outside this contract.
 Bitwise operators require integer values.
 
-You may omit ``dtype`` when surrounding operations establish it:
-``items = coop.ThreadData(2)`` followed by Load infers the source dtype.
-If you initialize the payload yourself, specifying a dtype usually makes
-the code easier to follow. Conflicting dtype requirements are errors.
+Leave the constructor's element type unspecified for normal use.
+Load infers it from the source, and Store can establish it from the destination.
+Supported typed assignments also provide the element type; use a typed scalar
+when your computation needs a particular width or precision. Inference follows
+the backend's supported producers and assignments. Conflicting type requirements
+are errors. See :ref:`element-type inference <coop-faq-thread-data-dtype>` for
+cases that need additional information.
 
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
@@ -372,7 +375,7 @@ Increasing the item count increases the amount of live data per thread.
 
 The optional ``alignment`` keyword requests a minimum power-of-two alignment
 in bytes when the compiler materializes the payload. For example,
-``coop.ThreadData(4, dtype=np.float32, alignment=16)`` requests at least
+``coop.ThreadData(items_per_thread=4, alignment=16)`` requests at least
 16-byte alignment. The compiler may strengthen it. This setting applies
 to payload storage; alignment of the input and output arrays remains a
 separate property.
@@ -538,11 +541,17 @@ capacity must be large enough for the operations using it. An explicit
 can strengthen it.
 Only ``size_in_bytes`` may be positional. The other options are keyword-only.
 
-``sharing="exclusive"`` gives distinct call sites separate slices. A loop can reach
-the same call site again and reuse its slice, so exclusive storage still needs
-reuse barriers. It can also consume more shared memory when several calls could
-otherwise share a slice. ``sharing`` controls allocation layout independently
-of ``auto_sync``.
+``sharing="exclusive"`` gives distinct call sites separate slices. With
+``auto_sync=False``, those calls need no barrier solely to reuse each other's
+scratch. This uses more shared memory than sharing a slice. A loop reuses each
+call site's slice on its next iteration, so that reuse still needs a barrier.
+``sharing`` and ``auto_sync`` are independent controls; application data
+dependencies may require additional synchronization. See
+:ref:`the exclusive-storage FAQ <coop-faq-exclusive-storage>`.
+
+Omitted storage also participates in the backend's shared-memory plan and
+launch accounting. The compiler may reuse its scratch across compatible calls
+and inserts the required reuse barriers.
 
 With the default ``auto_sync=False``, the kernel must provide reuse barriers.
 For example, this kernel uses explicit block barriers after each storage-using

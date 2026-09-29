@@ -405,7 +405,7 @@ from cuda import coop
 @cuda.jit
 def block_sum(source, output):
     thread = cuda.threadIdx.x
-    values = coop.ThreadData(2, dtype=types.int32)
+    values = coop.ThreadData(items_per_thread=2)
     values[0] = source[2 * thread]
     values[1] = source[2 * thread + 1]
     total = coop.sum(coop.this_block(), values, broadcast=False)

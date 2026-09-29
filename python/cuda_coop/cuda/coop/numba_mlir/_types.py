@@ -1227,20 +1227,6 @@ def war_introspection(fn, n):
     return PyFunctionType(func_code, {"fn": fn})
 
 
-def war_introspection_call(fn, n, returns_value):
-    arglist = ", ".join(f"param{i}" for i in range(n))
-    mod_lines = [f"def impl({arglist}):"]
-    if returns_value:
-        mod_lines.append(f"    return fn({arglist})")
-    else:
-        mod_lines.append(f"    fn({arglist})")
-        mod_lines.append("    return")
-    mod_str = "\n".join(mod_lines) + "\n"
-    mod_code = compile(mod_str, "<string>", "exec")
-    func_code = mod_code.co_consts[0]
-    return PyFunctionType(func_code, {"fn": fn})
-
-
 def war_introspection_call_with_transforms(fn, transforms, returns_value):
     n = len(transforms)
     arglist = ", ".join(f"param{i}" for i in range(n))
@@ -2147,21 +2133,6 @@ class _SharedTempFile:
         return self._temp_file.name
 
 
-def _collect_udf_decls(algo):
-    udf_decls = OrderedDict()
-    for method in algo.parameters:
-        for param in method:
-            if not isinstance(param, StatelessOperator):
-                continue
-            declaration = param.forward_decl()
-            previous = udf_decls.setdefault(param.name, declaration)
-            if previous != declaration:
-                raise RuntimeError(
-                    "Python operators produced conflicting device symbols"
-                )
-    return udf_decls
-
-
 def _collect_extra_ltoirs(algo):
     extras = []
     if algo.type_definitions:
@@ -2433,7 +2404,6 @@ def prepare_ltoir_bundle(
         else:
             algo._temp_storage_bytes = 0
             algo._temp_storage_alignment = 1
-        algo._lto_irs = extras
         algo._precompiled_ltoir_files = (bundle_temp_file,)
         algo.__dict__["_lto_ir_cache_key"] = algo._make_lto_ir_cache_key(
             threads=threads_by_algo.get(

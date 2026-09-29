@@ -5,7 +5,7 @@
 """Sum a block's inputs and write the result from thread zero."""
 
 import numpy as np
-from numba_cuda_mlir import cuda, types
+from numba_cuda_mlir import cuda
 
 from cuda import coop
 
@@ -19,7 +19,7 @@ def block_sum(source, output):
     """Reduce a full block tile and let only the block root store the result."""
 
     thread = cuda.threadIdx.x
-    values = coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+    values = coop.ThreadData(items_per_thread=_ITEMS_PER_THREAD)
     for item in range(_ITEMS_PER_THREAD):
         values[item] = source[thread * _ITEMS_PER_THREAD + item]
     total = coop.sum(coop.this_block(), values, broadcast=False)
