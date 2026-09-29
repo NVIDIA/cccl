@@ -218,9 +218,11 @@ determines the layout expected by that call; the payload does not carry a
 layout tag. See the :doc:`Load <coop/visualizations/load>` and
 :doc:`Exchange <coop/visualizations/exchange>` visualizations for the mappings.
 
-Load infers an untyped payload's dtype from its memory operand. When building
-values directly, use an explicit numeric type such as ``cutlass.Int32`` or
-``numpy.int32``. Supported payload types are signed and unsigned integers of
+Leave the constructor's element type unspecified for normal use. Load
+infers it from the memory operand; consuming primitives can infer it from
+homogeneous initialized values. Use typed scalar assignments, such as
+``cutlass.Int32(expression)``, when the computation needs a specific numeric
+representation. Supported payload types are signed and unsigned integers of
 8, 16, 32, or 64 bits and 32- or 64-bit floating point. An individual primitive
 can accept a smaller set; for example, bitwise operators require integers.
 Boolean, half-precision, complex, and structured payloads are unsupported.
@@ -239,12 +241,28 @@ operations document their result ownership below. Read results only at the
 positions or threads where the primitive defines them.
 
 Index payloads with compile-time integers and initialize each item before
-reading it. ``ThreadData(4, dtype=cutlass.Float32, alignment=16)`` requests at
+reading it. ``ThreadData(items_per_thread=4, alignment=16)`` requests at
 least 16-byte alignment when storage is materialized. Input and output memory
 alignment is separate. The compiler decides which values remain in registers
 and which spill to local memory. The :ref:`qualified conversion methods
 <coop-cutlass-register-payloads>` connect payloads to CuTe register tensors
 and immutable register values.
+
+.. _coop-cutlass-dtype-inference:
+
+Element types in advanced interop
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Raw MLIR integer values may carry a width such as ``i32`` without signedness.
+The adapter cannot determine whether that value represents a signed or
+unsigned integer from its width alone. Preserve the intended type in the
+producer or wrap the value in the appropriate CUTLASS scalar type. Explicit
+payload element-type metadata is also available for this case and must match
+the integer width.
+
+An explicit type does not initialize missing items or make conflicting typed
+values compatible. The ordinary Load and typed-assignment examples retain
+enough information to infer their payload types.
 
 .. _coop-cutlass-helpers:
 
@@ -310,7 +328,7 @@ alignment permit them, with direct accesses as a fallback.
 
 Direct, striped, and vectorized Load/Store use no shared scratch and need no
 scratch-reuse barrier, even when passed a ``TempStorage`` descriptor.
-``ThreadData(alignment=...)`` requests a minimum payload alignment; it does
+``ThreadData(items_per_thread=2, alignment=...)`` requests a minimum payload alignment; it does
 not change the logical item layout.
 
 .. _coop-cutlass-storage:
@@ -335,7 +353,9 @@ in the Numba guide describe that compiler's allocation model.
 
 ``sharing="shared"`` reuses one slice across call sites. With
 ``sharing="exclusive"``, distinct call sites receive separate slices.
-Both policies default to ``auto_sync=False``. The kernel must call
+This uses more shared memory to avoid barriers needed solely for cross-call
+scratch reuse when automatic synchronization is disabled. Both policies
+default to ``auto_sync=False``. The kernel must call
 ``storage.sync()`` before reusing that storage, including on the next loop
 iteration. Set ``auto_sync=True`` to insert trailing reuse synchronization
 after each storage-using call. Without an explicit descriptor, the compiler
@@ -526,7 +546,7 @@ Built-in Scan
 ``scan``, ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
 ``inclusive_sum`` support block, physical warp, and logical warp groups. Block
 primitives accept scalars and fixed multi-item payloads; warp primitives
-accept one scalar per lane. A ``ThreadData(1, ...)`` remains an array payload
+accept one scalar per lane. A ``ThreadData(items_per_thread=1)`` remains an array payload
 and is not accepted by Warp Scan. Input values are preserved. A scalar input
 returns a scalar; a block payload returns a fresh ``ThreadData`` with the same
 dtype and extent in blocked order.

@@ -47,8 +47,8 @@ def run_example(api="common"):
         original_keys: cute.Pointer,
     ):
         block = module.this_block()
-        keys = module.ThreadData(_ITEMS)
-        positions = module.ThreadData(_ITEMS)
+        keys = module.ThreadData(items_per_thread=_ITEMS)
+        positions = module.ThreadData(items_per_thread=_ITEMS)
         module.load(block, source, keys)
         for item in cutlass.range_constexpr(_ITEMS):
             positions[item] = cutlass.Int32(block.rank()) * _ITEMS + item
@@ -71,7 +71,7 @@ def run_example(api="common"):
             module.store(
                 block, digit_positions, pair_positions, algorithm="striped"
             )
-            prefixes = module.ThreadData(1, cutlass.Int32)
+            prefixes = module.ThreadData(items_per_thread=1)
             ranks = module.radix_rank(
                 block,
                 keys,
