@@ -37,8 +37,6 @@ from ._thread_group import (
 )
 
 __all__ = [
-    "adjacent_difference",
-    "discontinuity",
     "Hierarchy",
     "StatefulFunction",
     "TempStorage",
@@ -47,6 +45,8 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
