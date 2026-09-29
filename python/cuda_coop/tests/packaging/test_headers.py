@@ -8,9 +8,9 @@ import json
 import os
 import shutil
 import subprocess
+from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
-from typing import Iterator
 
 import pytest
 

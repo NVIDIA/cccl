@@ -73,7 +73,21 @@ repos:
     rev: v0.15.20
     hooks:
     - id: ruff  # linter
+      exclude: ^python/cuda_coop/
     - id: ruff-format  # formatter
+      exclude: ^python/cuda_coop/
+
+  # Use the newer Ruff rules for `cuda.coop`.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.9
+    hooks:
+    - id: ruff-check
+      name: ruff check (cuda.coop)
+      files: ^python/cuda_coop/
+    - id: ruff-format
+      name: ruff format (cuda.coop)
+      files: ^python/cuda_coop/
+      types_or: [python, pyi, jupyter]
 
   # CMake formatting
   - repo: https://github.com/BlankSpruce/gersemi
