@@ -22,3 +22,4 @@ do not predict GPU performance.
    scan
    merge-sort
    radix
+   topk
