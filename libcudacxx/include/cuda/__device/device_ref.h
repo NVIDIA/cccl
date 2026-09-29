@@ -26,12 +26,42 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__runtime/types.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+//! @brief How `device_ref::__locality_domains()` carves the SMs of a device into one green context per
+//! locality domain (`cuDevSmResourceSplit` with `CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID`).
+//!
+//! The driver attributes SMs to locality domains, but a plain split by domain id only hands out the
+//! domain's SMs that form complete co-scheduled groups at the device's default alignment. Depending
+//! on the part this can leave a sizeable share of the device in the (discarded) remainder, so each
+//! domain ends up with fewer SMs than the driver attributes to it. The methods below trade cluster
+//! co-scheduling guarantees against SM coverage:
+//!
+//! - `__backfill` (default): every domain gets the same share of the device, `floor(total / n)`
+//!   rounded down to an even count. The driver fills the share with the domain's own SMs first,
+//!   then SMs attributed to no domain, then SMs of other domains, so the contexts cover the whole
+//!   device (up to `2 * n - 2` SMs) and are balanced. Co-scheduling stays at the device default
+//!   where complete groups exist; the backfilled SMs may not form complete groups.
+//! - `__aligned`: only the domain's complete co-scheduled groups at the device's default alignment.
+//!   Strictly local and cluster-friendly, but the smallest set.
+//! - `__fine`: every SM the driver attributes to the domain, at the finest co-scheduling
+//!   granularity (groups of 2). Strictly local; thread block clusters larger than 2 blocks cannot be
+//!   guaranteed co-scheduled inside these contexts.
+enum class __locality_domain_sm_split : unsigned int
+{
+  __backfill = 0,
+  __aligned  = 1,
+  __fine     = 2,
+};
+
+//! Number of `__locality_domain_sm_split` values; sizes the per-device cache.
+inline constexpr ::cuda::std::size_t __locality_domain_sm_split_count = 3;
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
@@ -169,8 +199,19 @@ public:
                                                                                   // <cuda/__device/physical_device.h>
                                                                                   // to avoid circular dependency
 
+  //! @brief Retrieve one logical device per locality domain of this device
+  //!
+  //! On a device with several locality domains each element is a green context whose SMs belong to
+  //! one domain, in ascending domain id order. @p __split selects how the SMs are carved up, see
+  //! `__locality_domain_sm_split`. Each split method is computed once per device and cached.
+  //!
+  //! On a device with a single locality domain, or on toolkits without locality domain support,
+  //! the single element is the device itself and @p __split is ignored.
+  //!
+  //! @throws cuda_error if the driver refuses to split the device or to create a green context
   // implemented in cuda/__device/physical_device.h> to avoid circular dependency
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const __logical_device_ref> __locality_domains() const;
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const __logical_device_ref>
+  __locality_domains(__locality_domain_sm_split __split = __locality_domain_sm_split::__backfill) const;
 };
 
 _CCCL_DIAG_POP
