@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/memory>
+
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
@@ -47,8 +49,9 @@ public:
     }
     else
     {
-      h_addr = (double*) malloc(s);
-      cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
+      auto owner = cuda::std::make_unique<double>();
+      cuda_safe_call(cudaHostRegister(owner.get(), s, cudaHostRegisterPortable));
+      h_addr = owner.release();
     }
 
     data_place d = is_tmp ? data_place::invalid() : data_place::host();

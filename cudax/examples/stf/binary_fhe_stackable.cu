@@ -62,11 +62,11 @@ public:
   ciphertext encrypt() const;
 
 private:
+  friend class ciphertext;
   std::vector<char> values;
   mutable stackable_ctx ctx;
   ::std::string symbol;
 
-public:
   mutable stackable_logical_data<slice<char>> ld;
 };
 
@@ -175,9 +175,9 @@ public:
     return result;
   }
 
-  mutable stackable_logical_data<slice<uint64_t>> ld;
-
 private:
+  friend ciphertext plaintext::encrypt() const;
+  mutable stackable_logical_data<slice<uint64_t>> ld;
   mutable stackable_ctx ctx;
   ::std::string symbol;
 };
