@@ -6,18 +6,74 @@
 .. warning::
    ``cuda.coop`` is an experimental API and is subject to change.
 
-Portable API
-------------
+.. _coop-portable-api:
+.. _portable-api:
+.. _coop-common-api:
 
-The portable functions below are compiler markers. The installed ``.pyi``
+Common API
+----------
+
+The primitive functions below are compiler markers; ``register`` is a
+host-side configuration function. The installed ``.pyi``
 files are authoritative for overload and result typing.
 
-.. automodule:: cuda.coop
-   :members:
-   :exclude-members: __version__
-   :imported-members:
-   :no-undoc-members:
+.. currentmodule:: cuda.coop
+
+Backend registration
+^^^^^^^^^^^^^^^^^^^^
+
+See :ref:`registering a backend <coop-backend-registration>`.
+
+.. autofunction:: register
+
+Thread groups
+^^^^^^^^^^^^^
+
+See :ref:`thread groups <coop-thread-groups>` and
+:ref:`participation and synchronization <coop-participation>` for the shared
+execution model. A descriptor's availability does not imply that every
+primitive supports that group.
+
+.. autofunction:: this_thread
+.. autofunction:: this_warp
+.. autofunction:: this_block
+.. autofunction:: this_cluster
+.. autofunction:: this_grid
+
+.. autoclass:: ThreadGroup
+   :no-members:
    :no-special-members:
+
+   .. automethod:: group_by
+
+.. autoclass:: ThreadHierarchy
+   :no-members:
+   :no-special-members:
+
+.. py:class:: Hierarchy
+
+   Alias for :class:`ThreadHierarchy`.
+
+Payloads and temporary storage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: ThreadData
+
+.. autoclass:: ThreadDataLike
+   :no-members:
+   :no-special-members:
+
+.. autofunction:: TempStorage
+
+.. autoclass:: TempStorageLike
+   :no-members:
+   :no-special-members:
+
+Memory operations
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: load
+.. autofunction:: store
 
 Numba-CUDA-MLIR-qualified API
 -----------------------------
@@ -27,8 +83,8 @@ Numba-CUDA-MLIR-qualified API
 The qualified module provides the matching Block, physical Warp, and logical
 Warp Load and Store entry points, group descriptors, ``ThreadData``, and
 ``TempStorage``. It additionally exposes backend memory namespaces. Both
-constructors accept the portable ``alignment`` keyword for minimum payload
-storage alignment. Portable and qualified calls use the same lowercase string
+constructors accept the common ``alignment`` keyword for minimum
+storage alignment. Common and qualified calls use the same lowercase string
 selectors. Block calls support ``direct``, ``striped``, ``vectorize``,
 ``transpose``, ``warp_transpose``, and ``warp_transpose_timesliced``. Physical
 and logical Warp calls support ``direct``, ``striped``, ``vectorize``, and
@@ -55,3 +111,16 @@ See the :github:`Numba-CUDA-MLIR type declarations
 <python/cuda_coop/cuda/coop/numba_mlir/__init__.pyi>` for the complete overload
 contract. Importing this qualified module requires the matching
 Numba-CUDA-MLIR extra.
+
+The shared parameter contracts and executable examples are documented above.
+These qualified entry points select the same Load and Store behavior:
+
+.. currentmodule:: cuda.coop.numba_mlir
+
+.. autofunction:: load
+.. autofunction:: store
+.. autofunction:: ThreadData
+
+.. autoclass:: TempStorage
+   :no-members:
+   :no-special-members:
