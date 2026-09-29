@@ -198,7 +198,8 @@ floating-point sum can differ from a sequential CPU sum because the order
 of additions differs.
 
 Load initializes the destination payload in place and returns ``None``.
-Store leaves its input unchanged and also returns ``None``. Other
+Store also returns ``None``. Transpose Store algorithms may rearrange the
+input payload; copy values before Store if they are needed later. Other
 operations document their result ownership below. Read results only at the
 positions or threads where the primitive defines them.
 

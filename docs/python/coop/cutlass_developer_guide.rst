@@ -41,7 +41,8 @@ Load reads 45 items beginning at source offset 3 and fills the other payload
 items with ``-7``. Store writes the first 53 items beginning at destination
 offset 5. Each thread calls both primitives, including threads whose
 items are outside the valid prefix. Load mutates ``payload`` and returns
-``None``. Store writes the destination and also returns ``None``.
+``None``. Store also returns ``None``; transpose algorithms may rearrange
+the payload, so this example does not use it after Store.
 
 The :download:`complete example
 <../../../python/cuda_coop/examples/cutlass/block_load_store.py>` includes
