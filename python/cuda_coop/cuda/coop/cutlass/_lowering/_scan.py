@@ -75,7 +75,6 @@ def _make_group_scan_plan(
     aggregate: bool = False,
     valid_items: Any = None,
     algorithm: Any = None,
-    source: str = "cutlass_root",
 ) -> GroupLoweringPlan:
     """Build the canonical shared-core plan for one CUTLASS scan."""
 
@@ -132,7 +131,6 @@ def _make_group_scan_plan(
             cub_algorithm=algorithm,
             valid_items=_classify_valid_items(valid_items, primitive="scan"),
         ),
-        source=source,
     )
     return plan_group_primitive(call, launch)
 
