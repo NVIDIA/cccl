@@ -567,17 +567,56 @@ combination carries a reason that the backend reports before provider
 compilation. For instance, having a ``ThreadGroup`` descriptor for a scope
 does not imply that every primitive supports that scope.
 
-``AlgorithmSpec`` describes a CUB template specialization and its method
-parameters without compiler types. ``NumbaMlirCoreAdapter`` maps those
-types and parameters to the Numba backend's representation. CUDAX group
-calls use a separate call description and generated wrapper.
-
 Reduce illustrates why implementation selection belongs in the family
 planner. Full reductions with supported built-in operators use CUDAX's
 hierarchy-aware implementation. Prefix reductions, explicit CUB algorithm
 selection, and qualified custom operators take supported CUB paths. The
 same public operation can therefore have different implementation and
 storage contracts depending on its arguments.
+
+.. _cuda.coop.semantics_and_specs:
+
+Semantics and Specs
+-------------------
+
+Semantics records describe a normalized primitive call. Specs bind that
+description to a C++ specialization. Both are Python descriptions used
+before backend lowering and compilation.
+
+``make_*_semantics()`` functions record inputs such as the dtype and
+operators, normalize modes and item counts, and validate optional controls.
+An ``ArgumentBinding`` records whether a control is omitted, static, or runtime;
+only a static binding carries its value. These records can already include
+an algorithm choice or logical warp width.
+
+``make_*_spec()`` functions use those semantics to select a C++ class,
+method, headers, and parameter signatures, and bind template arguments such
+as the block dimensions. They also check constraints that depend on the
+specialization. For Block Load/Store, the returned spec contains ``call``
+(a ``BlockLoadStoreSemantics`` record) and ``specialization`` (an
+``AlgorithmSpec`` with the C++ algorithm description and bound arguments).
+
+For the tile copy above, ``make_block_load_store_semantics()`` describes
+an ``int32`` Load with two items per thread and the direct algorithm.
+``make_block_load_store_spec()`` adds the 128-thread block dimensions and
+describes ``cub::BlockLoad<int, 128, 2, cub::BLOCK_LOAD_DIRECT>``. The tile
+capacity is then 256 elements, so a static ``valid_items`` can be checked
+against that bound. The same call semantics can describe a Load for a
+256-thread block, which needs a different spec.
+
+At the group level, ``Group*Semantics`` records the operation requested by
+the frontend. ``GroupPrimitiveCall`` pairs it with a ``ThreadGroup``.
+The shared planner combines the call with ``LaunchFacts`` to select an
+implementation. Its ``GroupLoweringPlan`` carries the selected
+``AlgorithmSpec`` and the execution contracts described above; CUDAX paths
+use a separate call description. The backend then lowers the plan into
+callable providers. ``NumbaMlirCoreAdapter`` translates core parameter
+descriptors such as ``Array`` and ``Pointer`` into Numba representations.
+Provider generation, compilation, and final linking follow.
+
+Both semantics and specs have a ``semantic_key`` for identity comparisons
+and reuse. A spec's key includes its bound specialization arguments; the
+name does not imply that the object is a semantics record.
 
 Payloads, layouts, and results
 ------------------------------
