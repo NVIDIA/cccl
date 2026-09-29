@@ -119,7 +119,10 @@ def _rewrite_planned_movement(function, *, arg_types):
         "store": _MovementInvocable(64),
     }
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
-    rewrite._materialize_invocable = lambda match: (invocables[match.op_name], False)
+    rewrite._materialize_invocable = lambda match: (
+        invocables[match.op_name],
+        False,
+    )
     rewrite._record_invocable_specialization = lambda _invocable: None
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
@@ -202,7 +205,9 @@ class _FailingAttribute:
     "exception_type",
     (AttributeError, ImportError, KeyError, TypeError, ValueError),
 )
-def test_call_result_dtype_treats_attribute_failure_as_unresolved(exception_type):
+def test_call_result_dtype_treats_attribute_failure_as_unresolved(
+    exception_type,
+):
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
     from numba_cuda_mlir.numbair_transforms import ir
 
@@ -283,10 +288,14 @@ def test_provider_memory_parameters_require_contiguous_arrays():
 
     from cuda.coop.numba_mlir import _types
 
-    assert _types.Pointer(types.int32).dtype() == types.Array(types.int32, 1, "C")
+    assert _types.Pointer(types.int32).dtype() == types.Array(
+        types.int32, 1, "C"
+    )
 
 
-def test_static_factory_value_used_in_another_block_keeps_its_definition(monkeypatch):
+def test_static_factory_value_used_in_another_block_keeps_its_definition(
+    monkeypatch,
+):
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
     from numba_cuda_mlir.numbair_transforms import ir
@@ -321,9 +330,15 @@ def test_static_factory_value_used_in_another_block_keeps_its_definition(monkeyp
     )
     rewrite = CoopSinglePhaseRewrite(state)
     invocable = SimpleNamespace(files=(), specialization=None)
-    monkeypatch.setattr(rewrite, "_prepare_ltoir_bundle_for_matches", lambda _: None)
-    monkeypatch.setattr(rewrite, "_materialize_invocable", lambda _: (invocable, False))
-    monkeypatch.setattr(rewrite, "_record_invocable_specialization", lambda _: None)
+    monkeypatch.setattr(
+        rewrite, "_prepare_ltoir_bundle_for_matches", lambda _: None
+    )
+    monkeypatch.setattr(
+        rewrite, "_materialize_invocable", lambda _: (invocable, False)
+    )
+    monkeypatch.setattr(
+        rewrite, "_record_invocable_specialization", lambda _: None
+    )
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         if rewrite.match(func_ir, block, state.typemap, state.calltypes):
@@ -399,7 +414,9 @@ def test_common_direct_block_load_store_lowers_to_private_factories():
     assert Counter(factory for factory, _ in calls) == Counter(expected)
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
     ("algorithm", "storage_free"),
@@ -462,7 +479,9 @@ def test_group_planner_selects_algorithm_storage_provider(
     assert len(calls) == 1
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
 @pytest.mark.parametrize("operation", ("load", "store"))
 def test_group_planner_normalizes_algorithm_strings(qualified, operation):
     from numba_cuda_mlir import types
@@ -508,8 +527,12 @@ def test_group_planner_normalizes_algorithm_strings(qualified, operation):
     assert len(calls) == 1
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
-@pytest.mark.parametrize("logical_width", (None, 8), ids=("physical", "logical"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
+@pytest.mark.parametrize(
+    "logical_width", (None, 8), ids=("physical", "logical")
+)
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
     ("algorithm", "storage_free"),
@@ -567,7 +590,9 @@ def test_warp_planner_selects_declared_provider(
 
     expected = getattr(
         _load_store,
-        f"warp_{operation}" if storage_free else f"_warp_{operation}_with_storage",
+        f"warp_{operation}"
+        if storage_free
+        else f"_warp_{operation}_with_storage",
     )
     calls = [
         call
@@ -675,7 +700,9 @@ def test_qualified_planner_rejects_unsupported_algorithm(
         planner.run()
 
 
-@pytest.mark.parametrize("logical_width", [None, 8], ids=["physical", "logical"])
+@pytest.mark.parametrize(
+    "logical_width", [None, 8], ids=["physical", "logical"]
+)
 def test_warp_effective_offset_uses_x_major_group_index(logical_width):
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numbair_transforms import ir
@@ -717,20 +744,28 @@ def test_warp_effective_offset_uses_x_major_group_index(logical_width):
     assert definitions[effective.name].rhs.name == "offset"
 
     group_index = next(
-        value for name, value in definitions.items() if "warp_tile_group_index" in name
+        value
+        for name, value in definitions.items()
+        if "warp_tile_group_index" in name
     )
     origin = next(
-        value for name, value in definitions.items() if "warp_tile_origin" in name
+        value
+        for name, value in definitions.items()
+        if "warp_tile_origin" in name
     )
     linear_rank = next(
-        value for name, value in definitions.items() if "warp_tile_linear_rank" in name
+        value
+        for name, value in definitions.items()
+        if "warp_tile_linear_rank" in name
     )
     assert group_index.fn is operator.floordiv
     assert origin.fn is operator.mul
     assert linear_rank.fn is operator.add
 
     group_width = next(
-        value for name, value in definitions.items() if "warp_tile_group_width" in name
+        value
+        for name, value in definitions.items()
+        if "warp_tile_group_width" in name
     )
     group_tile_items = next(
         value
@@ -771,7 +806,9 @@ def test_qualified_store_recovers_keyword_local_array_extent():
     assert len(calls[0].args) == 2
 
 
-@pytest.mark.parametrize("qualified", [False, True], ids=["portable", "qualified"])
+@pytest.mark.parametrize(
+    "qualified", [False, True], ids=["portable", "qualified"]
+)
 @pytest.mark.parametrize(
     "group_factory",
     [
@@ -815,9 +852,13 @@ def test_unsupported_load_group_returns_typed_plan_before_compile(
         planner.run()
 
 
-@pytest.mark.parametrize("qualified", [False, True], ids=["portable", "qualified"])
+@pytest.mark.parametrize(
+    "qualified", [False, True], ids=["portable", "qualified"]
+)
 @pytest.mark.parametrize("operation", ["load", "store"])
-@pytest.mark.parametrize("logical_width", [None, 8], ids=["physical", "logical"])
+@pytest.mark.parametrize(
+    "logical_width", [None, 8], ids=["physical", "logical"]
+)
 def test_warp_rejects_explicit_temp_storage_before_provider(
     monkeypatch, qualified, operation, logical_width
 ):
@@ -869,7 +910,9 @@ def test_warp_rejects_explicit_temp_storage_before_provider(
         planner.run()
 
 
-@pytest.mark.parametrize("qualified", [False, True], ids=["portable", "qualified"])
+@pytest.mark.parametrize(
+    "qualified", [False, True], ids=["portable", "qualified"]
+)
 def test_incomplete_physical_warp_fails_before_provider_selection(
     monkeypatch, qualified
 ):
@@ -899,7 +942,9 @@ def test_incomplete_physical_warp_fails_before_provider_selection(
 
 
 @pytest.mark.parametrize("algorithm", ("direct", "striped", "vectorize"))
-def test_storage_free_load_store_accept_temp_storage_without_using_it(algorithm):
+def test_storage_free_load_store_accept_temp_storage_without_using_it(
+    algorithm,
+):
     pytest.importorskip("numba_cuda_mlir")
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numbair_transforms import ir
@@ -990,7 +1035,9 @@ def test_storage_free_load_store_accept_temp_storage_without_using_it(algorithm)
     assert rewrite._temp_storage_plans == {}
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
 @pytest.mark.parametrize("alignment", (1, 16, 32))
 @pytest.mark.parametrize(
     ("storage_kind", "expected_size", "expected_barriers"),
@@ -1142,18 +1189,25 @@ def test_transpose_storage_contract_reaches_whole_function_rewrite(
     assert rewrite._temp_storage_global_plan.max_alignment == (
         16 if storage_kind == "implicit" else max(16, alignment)
     )
-    assert {invocable.temp_storage_bytes for invocable in invocables} == {48, 64}
+    assert {invocable.temp_storage_bytes for invocable in invocables} == {
+        48,
+        64,
+    }
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
-def test_transpose_storage_contract_rejects_insufficient_capacity_before_codegen(
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
+def test_transpose_storage_contract_rejects_insufficient_capacity_before_codegen(  # noqa: E501 - Preserve descriptive test name.
     qualified,
 ):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as numba_coop
     from cuda import coop
-    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewriteError
+    from cuda.coop.numba_mlir._compiler._rewrite import (
+        CoopSinglePhaseRewriteError,
+    )
 
     module = numba_coop if qualified else coop
 
@@ -1173,7 +1227,9 @@ def test_transpose_storage_contract_rejects_insufficient_capacity_before_codegen
         )
 
     array_type = types.Array(types.int32, 1, "C")
-    with pytest.raises(CoopSinglePhaseRewriteError, match="smaller than required"):
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="smaller than required"
+    ):
         _rewrite_planned_movement(memory, arg_types=(array_type,))
 
 
@@ -1200,9 +1256,14 @@ def test_block_load_store_adapters_preserve_offset_overloads():
     from numba_cuda_mlir import types
 
     from cuda.coop._core import ArgumentBinding
-    from cuda.coop._core.block import make_block_load_spec, make_block_store_spec
+    from cuda.coop._core.block import (
+        make_block_load_spec,
+        make_block_store_spec,
+    )
     from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
-    from cuda.coop.numba_mlir._lowering._load_store import _load_store_value_abis
+    from cuda.coop.numba_mlir._lowering._load_store import (
+        _load_store_value_abis,
+    )
 
     load = NumbaMlirCoreAdapter(
         value_abis=_load_store_value_abis(
@@ -1264,7 +1325,10 @@ def test_static_movement_controls_are_absent_from_numba_runtime_abi():
     from numba_cuda_mlir import types
 
     from cuda.coop._core import ArgumentBinding
-    from cuda.coop._core.block import make_block_load_spec, make_block_store_spec
+    from cuda.coop._core.block import (
+        make_block_load_spec,
+        make_block_store_spec,
+    )
     from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
     from cuda.coop.numba_mlir._types import PointerOffset, algo_coalesce_key
 
@@ -1340,7 +1404,9 @@ def test_runtime_valid_items_is_checked_before_cub_integer_narrowing():
     from cuda.coop._core import ArgumentBinding
     from cuda.coop._core.block import make_block_load_spec
     from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
-    from cuda.coop.numba_mlir._lowering._load_store import _load_store_value_abis
+    from cuda.coop.numba_mlir._lowering._load_store import (
+        _load_store_value_abis,
+    )
     from cuda.coop.numba_mlir._types import BoundedInteger, algo_coalesce_key
 
     adapter = NumbaMlirCoreAdapter(
@@ -1500,9 +1566,9 @@ def test_arbitrary_primitive_declares_bounded_and_exact_value_abis():
         synchronization_scope=SynchronizationScope.NONE,
     )
     assert algo_coalesce_key(algorithm) != algo_coalesce_key(wider)
-    assert algorithm.mangled_name(algorithm.parameters[0]) != wider.mangled_name(
-        wider.parameters[0]
-    )
+    assert algorithm.mangled_name(
+        algorithm.parameters[0]
+    ) != wider.mangled_name(wider.parameters[0])
 
     load_like = Algorithm(
         struct_name="LegacyLikePrimitive",
@@ -1532,7 +1598,13 @@ def test_arbitrary_primitive_declares_bounded_and_exact_value_abis():
 def test_value_abi_declarations_fail_closed_during_materialization():
     from numba_cuda_mlir import types
 
-    from cuda.coop._core import INT32, Algorithm, Pointer, SynchronizationScope, Value
+    from cuda.coop._core import (
+        INT32,
+        Algorithm,
+        Pointer,
+        SynchronizationScope,
+        Value,
+    )
     from cuda.coop.numba_mlir._compiler._operations import StorageABI
     from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
     from cuda.coop.numba_mlir._types import ExactValue
@@ -1556,7 +1628,9 @@ def test_value_abi_declarations_fail_closed_during_materialization():
         )
 
     with pytest.raises(ValueError, match="unknown .* value ABI"):
-        materialize(Value(INT32, name="value"), {"missing": ExactValue(types.int32)})
+        materialize(
+            Value(INT32, name="value"), {"missing": ExactValue(types.int32)}
+        )
     with pytest.raises(ValueError, match="require scalar Value parameters"):
         materialize(
             Pointer(INT32, name="value"),
@@ -1878,7 +1952,9 @@ def test_cuda_and_array_scalars_keep_compiler_dtypes_for_store(
         module.store(module.this_block(), destination, source[cuda.threadIdx.x])
 
     def numpy_cast_source(source, destination):
-        module.store(module.this_block(), destination, np.int32(cuda.threadIdx.x + 1))
+        module.store(
+            module.this_block(), destination, np.int32(cuda.threadIdx.x + 1)
+        )
 
     def compiler_cast_source(source, destination):
         module.store(
@@ -1938,13 +2014,17 @@ def test_runtime_control_integer_domain_is_accepted_before_materialization(
 
         def memory(source, control):
             output = module.ThreadData(2, dtype=types.int32)
-            return module.load(module.this_block(), source, output, valid_items=control)
+            return module.load(
+                module.this_block(), source, output, valid_items=control
+            )
 
     else:
 
         def memory(source, control):
             output = module.ThreadData(2, dtype=types.int32)
-            return module.load(module.this_block(), source, output, offset=control)
+            return module.load(
+                module.this_block(), source, output, offset=control
+            )
 
     array_type = types.Array(types.int32, 1, "C")
     _run_single_phase_to_provider_boundary(
@@ -1981,13 +2061,17 @@ def test_runtime_control_invalid_types_fail_before_materialization(
 
         def memory(source, control):
             output = module.ThreadData(2, dtype=types.int32)
-            return module.load(module.this_block(), source, output, valid_items=control)
+            return module.load(
+                module.this_block(), source, output, valid_items=control
+            )
 
     else:
 
         def memory(source, control):
             output = module.ThreadData(2, dtype=types.int32)
-            return module.load(module.this_block(), source, output, offset=control)
+            return module.load(
+                module.this_block(), source, output, offset=control
+            )
 
     array_type = types.Array(types.int32, 1, "C")
     with pytest.raises(
@@ -2052,7 +2136,9 @@ def test_single_phase_rewrite_preserves_static_block_movement_bindings():
 
     load_match = next(match for match in matches if match.op_name == "load")
     assert len(load_match.runtime_args) == 2
-    assert load_match.factory_kwargs["num_valid_items"] == ArgumentBinding.static(31)
+    assert load_match.factory_kwargs[
+        "num_valid_items"
+    ] == ArgumentBinding.static(31)
     assert load_match.factory_kwargs["oob_default"] == ArgumentBinding.static(
         np.int32(-1)
     )
@@ -2062,7 +2148,8 @@ def test_single_phase_rewrite_preserves_static_block_movement_bindings():
     assert len(store_match.runtime_args) == 3
     assert "offset" not in store_match.factory_kwargs
     assert all(
-        not isinstance(value, ArgumentBinding) or value.kind is not BindingKind.RUNTIME
+        not isinstance(value, ArgumentBinding)
+        or value.kind is not BindingKind.RUNTIME
         for value in load_match.factory_kwargs.values()
     )
 
@@ -2111,7 +2198,9 @@ def test_runtime_oob_default_rejects_before_provider_materialization(
         else getattr(types, default_type_name)
     )
     array_type = types.Array(types.int32, 1, "C")
-    with pytest.raises((CoopSinglePhaseRewriteError, TypeError), match=error) as exc:
+    with pytest.raises(
+        (CoopSinglePhaseRewriteError, TypeError), match=error
+    ) as exc:
         _run_single_phase_to_provider_boundary(
             memory,
             arg_types=(array_type, types.int32, default_type),
@@ -2259,9 +2348,13 @@ def test_block_algorithms_use_their_declared_provider(
     assert materializations[0][1]["storage_abi"] is (
         StorageABI.NONE if storage_free else StorageABI.LEADING_POINTER
     )
-    assert materializations[0][1]["execution_scope"] is SynchronizationScope.BLOCK
+    assert (
+        materializations[0][1]["execution_scope"] is SynchronizationScope.BLOCK
+    )
     assert materializations[0][1]["synchronization_scope"] is (
-        SynchronizationScope.NONE if storage_free else SynchronizationScope.BLOCK
+        SynchronizationScope.NONE
+        if storage_free
+        else SynchronizationScope.BLOCK
     )
 
 
@@ -2329,7 +2422,9 @@ def test_warp_algorithms_use_their_declared_provider(
     )
     factory = getattr(
         _load_store,
-        f"warp_{operation}" if storage_free else f"_warp_{operation}_with_storage",
+        f"warp_{operation}"
+        if storage_free
+        else f"_warp_{operation}_with_storage",
     )
 
     specialization, invocation_kwargs = factory(
@@ -2345,7 +2440,9 @@ def test_warp_algorithms_use_their_declared_provider(
     assert materializations[0][1]["storage_abi"] is (
         StorageABI.NONE if storage_free else StorageABI.LEADING_POINTER
     )
-    assert materializations[0][1]["execution_scope"] is SynchronizationScope.WARP
+    assert (
+        materializations[0][1]["execution_scope"] is SynchronizationScope.WARP
+    )
     assert materializations[0][1]["synchronization_scope"] is (
         SynchronizationScope.NONE if storage_free else SynchronizationScope.WARP
     )
@@ -2478,7 +2575,7 @@ def test_unsupported_dtypes_fail_before_provider_materialization(
         pytest.param(1 << 65, id="outside-64-bit"),
     ],
 )
-def test_direct_provider_rejects_invalid_static_oob_default_before_materialization(
+def test_direct_provider_rejects_invalid_static_oob_default_before_materialization(  # noqa: E501 - Preserve descriptive test name.
     monkeypatch,
     oob_default,
 ):
@@ -2516,7 +2613,9 @@ def test_static_valid_items_beyond_the_exact_tile_fail_before_nvrtc(
     monkeypatch.setattr(
         _load_store.NumbaMlirCoreAdapter,
         "materialize",
-        lambda *args, **kwargs: pytest.fail("invalid tile reached materialization"),
+        lambda *args, **kwargs: pytest.fail(
+            "invalid tile reached materialization"
+        ),
     )
     factory = getattr(_load_store, operation)
 

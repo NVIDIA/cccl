@@ -97,7 +97,8 @@ def load(
     thread. Each block loads up to 256 elements. The last block pads its
     missing values with zero and stores only the valid prefix.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_load_example.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_load_example.py
         :language: python
         :start-after: # example-begin
         :end-before: # example-end
@@ -188,7 +189,8 @@ def store(
     suffix keep their sentinel values. The input payload is not used after
     the transpose Store.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_store_example.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_store_example.py
         :language: python
         :start-after: # example-begin
         :end-before: # example-end

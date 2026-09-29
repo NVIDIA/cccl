@@ -90,7 +90,8 @@ def _phi_incoming_values(definition):
     incoming_values = definition.incoming_values
     if not isinstance(incoming_values, (list, tuple)):
         raise CoopSinglePhaseRewriteError(
-            "Unsupported Numba phi expression shape: incoming_values is not a sequence."
+            "Unsupported Numba phi expression shape: "
+            "incoming_values is not a sequence."
         )
     return tuple(incoming_values)
 
@@ -108,14 +109,18 @@ def _next_power_of_two(value: int) -> int:
 
 
 def _default_temp_storage_alignment(required_alignment: int) -> int:
-    return max(_MIN_TEMP_STORAGE_ALIGNMENT, _next_power_of_two(required_alignment))
+    return max(
+        _MIN_TEMP_STORAGE_ALIGNMENT, _next_power_of_two(required_alignment)
+    )
 
 
 def _normalize_temp_storage_alignment(
     alignment: int, *, context: str = "TempStorage alignment"
 ) -> int:
     if alignment <= 0:
-        raise CoopSinglePhaseRewriteError(f"{context} must be a positive integer.")
+        raise CoopSinglePhaseRewriteError(
+            f"{context} must be a positive integer."
+        )
     if alignment & alignment - 1 != 0:
         raise CoopSinglePhaseRewriteError(f"{context} must be a power of 2.")
     return max(_MIN_TEMP_STORAGE_ALIGNMENT, alignment)
@@ -158,12 +163,16 @@ def _query_device_shared_memory_limits() -> dict[str, int]:
         driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK,
         device,
     )
-    _check_driver_error(err, "cuDeviceGetAttribute(MAX_SHARED_MEMORY_PER_BLOCK)")
+    _check_driver_error(
+        err, "cuDeviceGetAttribute(MAX_SHARED_MEMORY_PER_BLOCK)"
+    )
     err, max_optin = driver.cuDeviceGetAttribute(
         driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN,
         device,
     )
-    _check_driver_error(err, "cuDeviceGetAttribute(MAX_SHARED_MEMORY_PER_BLOCK_OPTIN)")
+    _check_driver_error(
+        err, "cuDeviceGetAttribute(MAX_SHARED_MEMORY_PER_BLOCK_OPTIN)"
+    )
     if int(max_optin) <= 0:
         max_optin = max_default
     return {

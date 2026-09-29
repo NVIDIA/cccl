@@ -42,7 +42,9 @@ def test_warp_copy():
             valid_items=valid,
             oob_default=0,
         )
-        coop.store(group, destination, items, offset=block_origin, valid_items=valid)
+        coop.store(
+            group, destination, items, offset=block_origin, valid_items=valid
+        )
 
     source = np.arange(531, dtype=np.int32)
     destination = np.full_like(source, -1)

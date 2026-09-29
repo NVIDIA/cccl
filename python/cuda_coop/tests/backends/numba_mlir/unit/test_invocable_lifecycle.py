@@ -77,7 +77,8 @@ def test_invocable_typing_is_local_to_compiler_owners():
 
     assert len(first_type.templates) == 2
     assert all(
-        issubclass(template, overload_template) for template in first_type.templates
+        issubclass(template, overload_template)
+        for template in first_type.templates
     )
     assert first_type is mlir_target.typing_context.resolve_value_type(first)
     assert second_type is mlir_target.typing_context.resolve_value_type(second)

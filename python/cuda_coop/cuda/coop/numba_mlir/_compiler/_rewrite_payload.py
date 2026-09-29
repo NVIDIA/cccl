@@ -55,7 +55,9 @@ class PayloadInference:
         if name not in self.allowed_factory_kwargs or value is None:
             return
         if name in self.seen_factory_kwargs:
-            if not self._factory_kwarg_matches(name, self.factory_kwargs[name], value):
+            if not self._factory_kwarg_matches(
+                name, self.factory_kwargs[name], value
+            ):
                 raise CoopSinglePhaseRewriteError(
                     f"cooperative group operation {self.op_name!r} factory "
                     f"argument {name!r} does not match the value inferred "
@@ -65,7 +67,9 @@ class PayloadInference:
         self.factory_kwargs[name] = value
         self.seen_factory_kwargs.add(name)
 
-    def candidate(self, index: int) -> tuple[ir.Var | None, _ThreadDataSpec | None]:
+    def candidate(
+        self, index: int
+    ) -> tuple[ir.Var | None, _ThreadDataSpec | None]:
         if not 0 <= index < len(self.runtime_args):
             return (None, None)
         value = self.runtime_args[index]

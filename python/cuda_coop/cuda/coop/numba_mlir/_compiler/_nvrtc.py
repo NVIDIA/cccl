@@ -102,7 +102,9 @@ def CHECK_NVRTC(err, prog, *, nvrtc=None):
     log_result = nvrtc.nvrtcGetProgramLog(prog, log)
     log_err = log_result[0] if isinstance(log_result, tuple) else log_result
     if log_err != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-        raise RuntimeError(f"NVRTC error: {original_err}; failed to get log: {log_err}")
+        raise RuntimeError(
+            f"NVRTC error: {original_err}; failed to get log: {log_err}"
+        )
     rendered = bytes(log).rstrip(b"\0").decode("ascii", errors="replace")
     raise RuntimeError(f"NVRTC error: {original_err}: {rendered}")
 
@@ -194,7 +196,8 @@ def compile_impl(
     )
     if compiler_options != expected_options:
         raise RuntimeError(
-            "NVRTC compiler-option identity does not match the requested compile."
+            "NVRTC compiler-option identity does "
+            "not match the requested compile."
         )
     nvrtc = _load_nvrtc()
     loaded_version = _nvrtc_version(nvrtc)

@@ -55,7 +55,8 @@ def ThreadData(
     Construct two items per thread, fill them with squared indices, and
     store the resulting blocked tiles:
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
         :language: python
         :start-after: # thread-data-example-begin
         :end-before: # thread-data-example-end

@@ -40,7 +40,9 @@ class _ArgumentRewrite:
             )
         runtime_arg_count = len(call.args)
         if runtime_arg_count not in spec.runtime_arg_counts:
-            expected_csv = ", ".join(str(v) for v in sorted(spec.runtime_arg_counts))
+            expected_csv = ", ".join(
+                str(v) for v in sorted(spec.runtime_arg_counts)
+            )
             raise CoopSinglePhaseRewriteError(
                 f"cooperative group operation {op_name!r} expects a positional "
                 f"runtime argument count in {{{expected_csv}}}; got "
@@ -55,7 +57,9 @@ class _ArgumentRewrite:
         factory_kwargs: dict[str, object] = {}
         runtime_temp_storage = getitem_temp_storage
         runtime_factory_kwargs = spec.runtime_factory_kwargs
-        runtime_factory_kw_prerequisites = dict(spec.runtime_factory_kw_prerequisites)
+        runtime_factory_kw_prerequisites = dict(
+            spec.runtime_factory_kw_prerequisites
+        )
         scalar_binding_kwargs = spec.scalar_binding_kwargs
         extra_runtime_arg_count = runtime_arg_count - base_runtime_arg_count
         positional_runtime_factory_kwargs = set(
@@ -91,7 +95,9 @@ class _ArgumentRewrite:
                         continue
                 runtime_args.append(value_var)
                 factory_kwargs[name] = (
-                    ArgumentBinding.runtime() if name in scalar_binding_kwargs else True
+                    ArgumentBinding.runtime()
+                    if name in scalar_binding_kwargs
+                    else True
                 )
                 seen_factory_kwargs.add(name)
                 seen_runtime_factory_kwargs.add(name)
@@ -127,7 +133,10 @@ class _ArgumentRewrite:
                 runtime_temp_storage = value_var
                 continue
             if name == spec.runtime_offset_kwarg:
-                if runtime_offset_var is not None or name in seen_factory_kwargs:
+                if (
+                    runtime_offset_var is not None
+                    or name in seen_factory_kwargs
+                ):
                     raise CoopSinglePhaseRewriteError(
                         f"cooperative group operation {op_name!r} received a "
                         f"duplicate runtime argument {name!r}."
@@ -182,11 +191,15 @@ class _ArgumentRewrite:
                 continue
             if name not in allowed_factory_kwargs:
                 allowed = ", ".join(
-                    sorted(set(allowed_factory_kwargs) | set(runtime_factory_kwargs))
+                    sorted(
+                        set(allowed_factory_kwargs)
+                        | set(runtime_factory_kwargs)
+                    )
                 )
                 raise CoopSinglePhaseRewriteError(
                     f"cooperative group operation {op_name!r} does not support "
-                    f"factory keyword {name!r}. Allowed keywords are: {allowed}."
+                    f"factory keyword {name!r}. "
+                    f"Allowed keywords are: {allowed}."
                 )
             if name in seen_factory_kwargs:
                 raise CoopSinglePhaseRewriteError(
@@ -221,7 +234,9 @@ class _ArgumentRewrite:
                 )
             runtime_args.append(value_var)
             factory_kwargs[name] = (
-                ArgumentBinding.runtime() if name in scalar_binding_kwargs else True
+                ArgumentBinding.runtime()
+                if name in scalar_binding_kwargs
+                else True
             )
             seen_factory_kwargs.add(name)
             seen_runtime_factory_kwargs.add(name)
@@ -274,7 +289,8 @@ class _ArgumentRewrite:
                     )
             missing_csv = ", ".join(sorted(missing))
             raise CoopSinglePhaseRewriteError(
-                f"coop operation '{op_name}' requires explicit factory keywords: {missing_csv}."
+                f"coop operation '{op_name}' requires explicit factory "
+                f"keywords: {missing_csv}."
             )
         if runtime_temp_storage is not None and not spec.accepts_temp_storage:
             raise CoopSinglePhaseRewriteError(

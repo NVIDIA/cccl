@@ -247,9 +247,14 @@ class CoopSinglePhaseRewrite(
                     inst.value
                 )
                 thread_data_spec = self._thread_data_specs.get(inst.target.name)
-                if thread_data_spec is not None and thread_data_spec.dtype is None:
+                if (
+                    thread_data_spec is not None
+                    and thread_data_spec.dtype is None
+                ):
                     self._infer_thread_data_dtype_from_writes(inst.target)
-                    thread_data_spec = self._thread_data_specs.get(inst.target.name)
+                    thread_data_spec = self._thread_data_specs.get(
+                        inst.target.name
+                    )
                 if thread_data_spec is None or thread_data_spec.dtype is None:
                     subject = (
                         "typed group payload"
@@ -258,7 +263,8 @@ class CoopSinglePhaseRewrite(
                     )
                     raise CoopSinglePhaseRewriteError(
                         f"Failed to infer dtype for {subject}. Use it with a "
-                        "cooperative group operation that provides dtype context."
+                        "cooperative group operation "
+                        "that provides dtype context."
                     )
                 if thread_data_spec.common_root:
                     from ._parameters import _validate_common_numeric_dtype
@@ -285,8 +291,12 @@ class CoopSinglePhaseRewrite(
                         inst.loc,
                     )
                 )
-                rewritten_args = [] if is_typed_group_payload else list(inst.value.args)
-                rewritten_kws = [] if is_typed_group_payload else list(inst.value.kws)
+                rewritten_args = (
+                    [] if is_typed_group_payload else list(inst.value.args)
+                )
+                rewritten_kws = (
+                    [] if is_typed_group_payload else list(inst.value.kws)
+                )
                 rewritten_kws = [
                     ("shape" if name == "items_per_thread" else name, value)
                     for name, value in rewritten_kws
@@ -405,11 +415,14 @@ class CoopSinglePhaseRewrite(
                 ctor_key = self._resolve_temp_storage_ctor_key(inst.target)
                 if ctor_key is None:
                     raise CoopSinglePhaseRewriteError(
-                        f"Missing TempStorage metadata for '{inst.target.name}'."
+                        f"Missing TempStorage metadata "
+                        f"for '{inst.target.name}'."
                     )
                 if ctor_key not in self._func_temp_storage_requirements:
                     new_block.append(
-                        ir.Assign(ir.Const(None, inst.loc), inst.target, inst.loc)
+                        ir.Assign(
+                            ir.Const(None, inst.loc), inst.target, inst.loc
+                        )
                     )
                     continue
                 plan = self._finalize_temp_storage_plan_for_var(ctor_key)
@@ -472,7 +485,9 @@ class CoopSinglePhaseRewrite(
                 )
             new_block.append(
                 ir.Assign(
-                    ir.Expr.call(call_func, rewritten_runtime_args, (), match.loc),
+                    ir.Expr.call(
+                        call_func, rewritten_runtime_args, (), match.loc
+                    ),
                     inst.target,
                     match.loc,
                 )
@@ -489,7 +504,8 @@ class CoopSinglePhaseRewrite(
                 # Barrier emission consults both parsers; refuse to continue
                 # when they disagree instead of silently emitting nothing.
                 raise CoopSinglePhaseRewriteError(
-                    "cooperative provider TempStorage automatic synchronization "
+                    "cooperative provider TempStorage "
+                    "automatic synchronization "
                     "disagrees between the group lowering plan and the "
                     "descriptor."
                 )
@@ -497,9 +513,13 @@ class CoopSinglePhaseRewrite(
                 runtime_temp_storage_plan is not None
                 and runtime_temp_storage_plan.auto_sync
             ):
-                synchronization_scope = match.factory_metadata.synchronization_scope
+                synchronization_scope = (
+                    match.factory_metadata.synchronization_scope
+                )
                 if match.lowering_plan is not None:
-                    planned_synchronization = match.lowering_plan.synchronization
+                    planned_synchronization = (
+                        match.lowering_plan.synchronization
+                    )
                     if planned_synchronization is None:
                         raise CoopSinglePhaseRewriteError(
                             "cooperative provider storage requires a "
@@ -522,7 +542,8 @@ class CoopSinglePhaseRewrite(
                 used_var_names.update(
                     var.name
                     for var in stmt.list_vars()
-                    if not isinstance(stmt, ir.Assign) or var.name != stmt.target.name
+                    if not isinstance(stmt, ir.Assign)
+                    or var.name != stmt.target.name
                 )
         if candidate_dead_factory_kw_vars:
             filtered_block = ir.Block(new_block.scope, new_block.loc)
@@ -548,7 +569,9 @@ class CoopSinglePhaseRewrite(
             new_block if block is self._block else block
             for block in self._func_ir.blocks.values()
         ]
-        candidates = self._thread_data_func_vars | self._typed_group_payload_func_vars
+        candidates = (
+            self._thread_data_func_vars | self._typed_group_payload_func_vars
+        )
         while candidates:
             used_names = set()
             for block in blocks:
@@ -602,7 +625,10 @@ class CoopWholeFunctionPlanner(WholeFunctionPlanner):
                     modified = True
 
         apply_matches()
-        if rewrite._deferred_launch_dim_inference and not self.is_device_function:
+        if (
+            rewrite._deferred_launch_dim_inference
+            and not self.is_device_function
+        ):
             require_launch_config(self.state)
             rewrite = CoopSinglePhaseRewrite(
                 self.state,
