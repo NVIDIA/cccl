@@ -25,6 +25,7 @@
 #  include <cuda/std/__compare/synth_three_way.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
+#include <cuda/std/__concepts/different_from.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/get.h>
@@ -377,8 +378,12 @@ public:
       : __base(__p.first, __p.second)
   {}
 
+  // pair(pair<U>&) beats the copy constructor for a non-const lvalue. NVCC rejects copy-list-initialization when that
+  // better match is explicit, instead of using the implicit copy constructor. Exclude only this explicit overload.
+  // The implicit overload stays unconstrained: a same-type reference element, such as NonCopyable&&, is converted.
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&, _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(pair<_U1, _U2>& __p) noexcept(
@@ -396,6 +401,7 @@ public:
 
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&, const _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(const pair<_U1, _U2>& __p) noexcept(
@@ -405,6 +411,7 @@ public:
 
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&, const _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(const pair<_U1, _U2>& __p) noexcept(
@@ -415,6 +422,7 @@ public:
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&, const _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr pair(const pair<_U1, _U2>&) = delete;
@@ -422,6 +430,7 @@ public:
 
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&&, _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(pair<_U1, _U2>&& __p) noexcept(
@@ -431,6 +440,7 @@ public:
 
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&&, _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(pair<_U1, _U2>&& __p) noexcept(
@@ -441,6 +451,7 @@ public:
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&&, _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr pair(pair<_U1, _U2>&&) = delete;
@@ -455,8 +466,12 @@ public:
       : __base(static_cast<const _U1&&>(__p.first), static_cast<const _U2&&>(__p.second))
   {}
 
+  // pair(const pair<U>&&) beats the copy constructor for a const rvalue. NVCC rejects copy-list-initialization when that
+  // better match is explicit, instead of using the implicit copy constructor. Exclude only this explicit overload.
+  // The implicit overload stays unconstrained: a same-type reference element, such as NonCopyable&&, is converted.
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&&, const _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(const pair<_U1, _U2>&& __p) noexcept(

@@ -10,10 +10,9 @@
 
 // template <class T1, class T2> struct pair
 
-// template <class U, class V> pair(pair<U, V>&& p);
+// template <class U, class V> pair(const pair<U, V>&& p);
 
 #include <cuda/std/cassert>
-#include <cuda/std/memory>
 #include <cuda/std/utility>
 
 #include "archetypes.h"
@@ -22,27 +21,17 @@
 using namespace ImplicitTypes; // Get implicitly archetypes
 
 template <class T1, class U1, bool CanCopy = true, bool CanConvert = CanCopy>
-TEST_FUNC void test_pair_rv()
+TEST_FUNC constexpr void test_pair_rv()
 {
   using P1  = cuda::std::pair<T1, int>;
   using P2  = cuda::std::pair<int, T1>;
-  using UP1 = cuda::std::pair<U1, int>&&;
-  using UP2 = cuda::std::pair<int, U1>&&;
+  using UP1 = const cuda::std::pair<U1, int>&&;
+  using UP2 = const cuda::std::pair<int, U1>&&;
   static_assert(cuda::std::is_constructible_v<P1, UP1> == CanCopy);
   static_assert(test_convertible<P1, UP1>() == CanConvert);
   static_assert(cuda::std::is_constructible_v<P2, UP2> == CanCopy);
   static_assert(test_convertible<P2, UP2>() == CanConvert);
 }
-
-#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
-struct Base
-{
-  TEST_FUNC virtual ~Base() {}
-};
-
-struct Derived : public Base
-{};
-#endif // !_CCCL_TILE_COMPILATION()
 
 template <class T, class U>
 struct DPair : public cuda::std::pair<T, U>
@@ -85,7 +74,7 @@ struct MoveSensitive
   }
 };
 
-// Explicit element constructors select the explicit pair(pair<U, V>&&) overload.
+// Explicit element constructors select the explicit pair(const pair<U, V>&&) overload.
 struct ExplicitMoveSensitive
 {
   int value;
@@ -103,7 +92,7 @@ struct ExplicitMoveSensitive
   }
 };
 
-// A deleted move constructor makes pair(pair<U, V>&&) ill-formed if reference elements are moved.
+// A deleted move constructor makes pair(const pair<U, V>&&) ill-formed if reference elements are moved.
 struct CopyOnlyElement
 {
   int value;
@@ -121,19 +110,19 @@ static_assert(cuda::std::is_nothrow_copy_constructible_v<MoveSensitive>);
 static_assert(!cuda::std::is_nothrow_move_constructible_v<MoveSensitive>);
 static_assert(cuda::std::is_nothrow_copy_constructible_v<ExplicitMoveSensitive>);
 static_assert(!cuda::std::is_nothrow_move_constructible_v<ExplicitMoveSensitive>);
-static_assert(
-  test_convertible<cuda::std::pair<MoveSensitive, MoveSensitive>, cuda::std::pair<MoveSensitive&, MoveSensitive&>&&>());
+static_assert(test_convertible<cuda::std::pair<MoveSensitive, MoveSensitive>,
+                               const cuda::std::pair<MoveSensitive&, MoveSensitive&>&&>());
 static_assert(!test_convertible<cuda::std::pair<ExplicitMoveSensitive, ExplicitMoveSensitive>,
-                                cuda::std::pair<ExplicitMoveSensitive&, ExplicitMoveSensitive&>&&>());
+                                const cuda::std::pair<ExplicitMoveSensitive&, ExplicitMoveSensitive&>&&>());
 
-// pair(pair<U, V>&&) forwards each element with forward<U>, so an lvalue-reference element is copied.
+// pair(const pair<U, V>&&) forwards each element with forward<const U>, so an lvalue-reference element is copied.
 template <class T>
 TEST_FUNC constexpr void test_lvalue_ref_source()
 {
   T first(1);
   T second(2);
-  cuda::std::pair<T&, T&> source(first, second);
-  static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::pair<T, T>, cuda::std::pair<T&, T&>&&>);
+  const cuda::std::pair<T&, T&> source(first, second);
+  static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::pair<T, T>, const cuda::std::pair<T&, T&>&&>);
   cuda::std::pair<T, T> dest(cuda::std::move(source));
   assert(dest.first.value == 1);
   assert(dest.second.value == 2);
@@ -141,13 +130,13 @@ TEST_FUNC constexpr void test_lvalue_ref_source()
   assert(second.value == 2);
 }
 
-// An rvalue-reference element is an xvalue after forward<U&&> and is moved.
+// An rvalue-reference element stays an xvalue after forward<const U&&> and is moved.
 template <class T>
 TEST_FUNC constexpr void test_rvalue_ref_source()
 {
   T first(1);
   T second(2);
-  cuda::std::pair<T&&, T&&> source(cuda::std::move(first), cuda::std::move(second));
+  const cuda::std::pair<T&&, T&&> source(cuda::std::move(first), cuda::std::move(second));
   cuda::std::pair<T, T> dest(cuda::std::move(source));
   assert(dest.first.value == 1);
   assert(dest.second.value == 2);
@@ -155,26 +144,26 @@ TEST_FUNC constexpr void test_rvalue_ref_source()
   assert(second.value == -1);
 }
 
-// Each element is forwarded independently.
+// Each element is forwarded independently. A const value element is copied.
 template <class T>
 TEST_FUNC constexpr void test_mixed_ref_source()
 {
   {
     T referenced(1);
-    cuda::std::pair<T&, T> source(referenced, T(2));
+    const cuda::std::pair<T&, T> source(referenced, T(2));
     cuda::std::pair<T, T> dest(cuda::std::move(source));
     assert(dest.first.value == 1);
     assert(dest.second.value == 2);
     assert(referenced.value == 1);
-    assert(source.second.value == -1);
+    assert(source.second.value == 2);
   }
   {
     T referenced(2);
-    cuda::std::pair<T, T&> source(T(1), referenced);
+    const cuda::std::pair<T, T&> source(T(1), referenced);
     cuda::std::pair<T, T> dest(cuda::std::move(source));
     assert(dest.first.value == 1);
     assert(dest.second.value == 2);
-    assert(source.first.value == -1);
+    assert(source.first.value == 1);
     assert(referenced.value == 2);
   }
 }
@@ -183,9 +172,9 @@ TEST_FUNC constexpr void test_copy_only_ref_source()
 {
   CopyOnlyElement first(1);
   CopyOnlyElement second(2);
-  cuda::std::pair<CopyOnlyElement&, CopyOnlyElement&> source(first, second);
+  const cuda::std::pair<CopyOnlyElement&, CopyOnlyElement&> source(first, second);
   static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::pair<CopyOnlyElement, CopyOnlyElement>,
-                                                      cuda::std::pair<CopyOnlyElement&, CopyOnlyElement&>&&>);
+                                                      const cuda::std::pair<CopyOnlyElement&, CopyOnlyElement&>&&>);
   cuda::std::pair<CopyOnlyElement, CopyOnlyElement> dest(cuda::std::move(source));
   assert(dest.first.value == 1);
   assert(dest.second.value == 2);
@@ -196,31 +185,22 @@ TEST_FUNC constexpr void test_copy_only_ref_source()
 TEST_FUNC constexpr bool test()
 {
   {
-    using P1 = cuda::std::pair<cuda::std::unique_ptr<Derived>, int>;
-    using P2 = cuda::std::pair<cuda::std::unique_ptr<Base>, long>;
-    P1 p1(cuda::std::unique_ptr<Derived>(), 4);
-    P2 p2 = cuda::std::move(p1);
-    assert(p2.first == nullptr);
-    assert(p2.second == 4);
-  }
-
-  {
     // We allow derived types to use this constructor
     using P1 = DPair<long, long>;
     using P2 = cuda::std::pair<int, int>;
-    P1 p1(42, 101);
-    P2 p2(cuda::std::move(p1));
+    const P1 p1(42, 101);
+    const P2 p2(cuda::std::move(p1));
     assert(p2.first == 42);
     assert(p2.second == 101);
   }
   {
-    cuda::std::pair<int, int> p1(42, 43);
+    const cuda::std::pair<int, int> p1(42, 43);
     const cuda::std::pair<ExplicitT, ExplicitT> p2(cuda::std::move(p1));
     assert(p2.first.value == 42);
     assert(p2.second.value == 43);
   }
   {
-    cuda::std::pair<int, int> p1(42, 43);
+    const cuda::std::pair<int, int> p1(42, 43);
     const cuda::std::pair<ImplicitT, ImplicitT> p2 = cuda::std::move(p1);
     assert(p2.first.value == 42);
     assert(p2.second.value == 43);
@@ -238,11 +218,12 @@ TEST_FUNC constexpr bool test()
     test_pair_rv<ExplicitTypes::AllCtors, const ExplicitTypes::AllCtors&, true, false>();
     test_pair_rv<ExplicitTypes::AllCtors, const ExplicitTypes::AllCtors&&, true, false>();
 
-    test_pair_rv<MoveOnly, MoveOnly>();
+    // const pair<MoveOnly, int>&& forwards const MoveOnly&&, which cannot bind to the move constructor.
+    test_pair_rv<MoveOnly, MoveOnly, false>();
     test_pair_rv<MoveOnly, MoveOnly&, false>();
     test_pair_rv<MoveOnly, MoveOnly&&>();
 
-    test_pair_rv<ExplicitTypes::MoveOnly, ExplicitTypes::MoveOnly>(); // copy construction
+    test_pair_rv<ExplicitTypes::MoveOnly, ExplicitTypes::MoveOnly, false>();
     test_pair_rv<ExplicitTypes::MoveOnly, ExplicitTypes::MoveOnly&, false>();
     test_pair_rv<ExplicitTypes::MoveOnly, ExplicitTypes::MoveOnly&&, true, false>();
 
@@ -265,16 +246,17 @@ TEST_FUNC constexpr bool test()
     test_pair_rv<NonCopyable&, NonCopyable&&>();
     test_pair_rv<NonCopyable&, NonCopyable const&, false>();
     test_pair_rv<NonCopyable const&, NonCopyable&&>();
+    // const pair<NonCopyable&&, int>&& forwards the reference element as an rvalue.
     test_pair_rv<NonCopyable&&, NonCopyable&&>();
 
     test_pair_rv<ConvertingType&, int, false>();
     test_pair_rv<ExplicitTypes::ConvertingType&, int, false>();
-    // Unfortunately the below conversions are allowed and create dangling
-    // references.
-    // test_pair_rv<ConvertingType&&, int>();
-    // test_pair_rv<ConvertingType const&, int>();
-    // test_pair_rv<ConvertingType const&&, int>();
-    // But these are not because the converting constructor is explicit.
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+    // Constructing a reference element from a temporary is deleted.
+    test_pair_rv<ConvertingType&&, int, false>();
+    test_pair_rv<ConvertingType const&, int, false>();
+    test_pair_rv<ConvertingType const&&, int, false>();
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
     test_pair_rv<ExplicitTypes::ConvertingType&&, int, false>();
     test_pair_rv<ExplicitTypes::ConvertingType const&, int, false>();
     test_pair_rv<ExplicitTypes::ConvertingType const&&, int, false>();
