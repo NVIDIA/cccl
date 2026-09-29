@@ -66,7 +66,9 @@ def device_array(values):
     cutlass.cuda.initialize_cuda_context()
     allocation = check_cuda(driver.cuMemAlloc(values.nbytes))
     try:
-        check_cuda(driver.cuMemcpyHtoD(allocation, values.ctypes.data, values.nbytes))
+        check_cuda(
+            driver.cuMemcpyHtoD(allocation, values.ctypes.data, values.nbytes)
+        )
         pointer = make_ptr(
             cutlass_dtype(values.dtype),
             int(allocation),
@@ -75,7 +77,9 @@ def device_array(values):
         )
         yield pointer
         check_cuda(driver.cuCtxSynchronize())
-        check_cuda(driver.cuMemcpyDtoH(values.ctypes.data, allocation, values.nbytes))
+        check_cuda(
+            driver.cuMemcpyDtoH(values.ctypes.data, allocation, values.nbytes)
+        )
     finally:
         check_cuda(driver.cuMemFree(allocation))
 

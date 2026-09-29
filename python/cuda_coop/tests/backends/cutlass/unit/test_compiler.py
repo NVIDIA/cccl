@@ -83,9 +83,13 @@ def test_cache_reuses_only_intact_artifacts(compilation):
 
 def test_cache_identity_includes_source_target_headers_and_toolkit(compilation):
     paths = {_compile(), _compile("other"), _compile(arch="compute_90")}
-    compilation.context = replace(compilation.context, header_identity="headers-v2")
+    compilation.context = replace(
+        compilation.context, header_identity="headers-v2"
+    )
     paths.add(_compile())
-    compilation.context = replace(compilation.context, nvrtc_path="/other-nvrtc")
+    compilation.context = replace(
+        compilation.context, nvrtc_path="/other-nvrtc"
+    )
     paths.add(_compile())
     assert len(paths) == len(compilation.calls) == 5
 
@@ -153,10 +157,14 @@ def test_finalize_preserves_unrelated_session_and_user_link_libraries(
 
     options = Options()
     owned_module, unrelated_module = object(), object()
-    session = _state.get_or_create_bundle_session(options, trace_module_op=owned_module)
+    session = _state.get_or_create_bundle_session(
+        options, trace_module_op=owned_module
+    )
     session.add(_request())
     path = _compile()
-    options.options[LinkLibraries] = LinkLibraries(f"/user/provider.ltoir,{path}")
+    options.options[LinkLibraries] = LinkLibraries(
+        f"/user/provider.ltoir,{path}"
+    )
     dsl = SimpleNamespace(compile_options=options)
     _finalize._trace_finalize_hook(dsl, unrelated_module, "unrelated")
     assert _state.lookup_bundle_session(options) is session

@@ -23,8 +23,12 @@ from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 from numba_cuda_mlir.numba_cuda.misc.special import literal_unroll
 
 import cuda.coop.numba_mlir as numba_coop
-from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
-from cuda.coop.numba_mlir._compiler._rewrite_support import CoopSinglePhaseRewriteError
+from cuda.coop.numba_mlir._compiler._group_planner_support import (
+    GroupRewriteError,
+)
+from cuda.coop.numba_mlir._compiler._rewrite_support import (
+    CoopSinglePhaseRewriteError,
+)
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
@@ -366,7 +370,7 @@ def test_release_retains_last_primitive_barrier_without_adding_one():
 
 
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
@@ -413,8 +417,12 @@ def test_load_store_unexpected_keyword_raises_type_error(
     assert "primitive(block, data, items, make_fast=True)" in message
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
-@pytest.mark.parametrize("dtype", (None, types.int32), ids=("inferred", "explicit"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
+@pytest.mark.parametrize(
+    "dtype", (None, types.int32), ids=("inferred", "explicit")
+)
 def test_load_return_cannot_be_used_as_a_store_payload(qualified, dtype):
     from cuda import coop as common_coop
 
@@ -477,7 +485,9 @@ def test_default_helper_accepts_descriptor_alias_chain():
     @cuda.jit(device=True)
     def helper(source, storage):
         payload = numba_coop.ThreadData(1, types.int32)
-        numba_coop.load(numba_coop.this_block(), source, payload, temp_storage=storage)
+        numba_coop.load(
+            numba_coop.this_block(), source, payload, temp_storage=storage
+        )
         return payload[0]
 
     @cuda.jit(chip="sm_90")
@@ -487,7 +497,9 @@ def test_default_helper_accepts_descriptor_alias_chain():
         chained = alias
         destination[cuda.threadIdx.x] = helper(source, chained)
 
-    assert _compile(kernel, types.int32[::1], types.int32[::1]).metadata["ltoir"]
+    assert _compile(kernel, types.int32[::1], types.int32[::1]).metadata[
+        "ltoir"
+    ]
 
 
 def test_none_alias_reports_descriptor_error_before_type_inference():
@@ -498,7 +510,9 @@ def test_none_alias_reports_descriptor_error_before_type_inference():
         if source[0] > 0:
             storage = empty
         payload = numba_coop.ThreadData(1, types.int32)
-        numba_coop.load(numba_coop.this_block(), source, payload, temp_storage=storage)
+        numba_coop.load(
+            numba_coop.this_block(), source, payload, temp_storage=storage
+        )
         destination[cuda.threadIdx.x] = payload[0]
 
     with pytest.raises(
@@ -525,7 +539,9 @@ def test_standalone_primitive_helper_reports_inline_requirement():
 @pytest.mark.parametrize(
     "payload_kind", ["thread_data", "local_array", "local_array_keyword"]
 )
-def test_literal_unroll_cannot_determine_cooperative_payload_shape(payload_kind):
+def test_literal_unroll_cannot_determine_cooperative_payload_shape(
+    payload_kind,
+):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         for count in literal_unroll((1, 2)):
@@ -539,7 +555,8 @@ def test_literal_unroll_cannot_determine_cooperative_payload_shape(payload_kind)
             destination[cuda.threadIdx.x] = payload[0]
 
     with pytest.raises(
-        (GroupRewriteError, TypingError), match="does not support literal_unroll values"
+        (GroupRewriteError, TypingError),
+        match="does not support literal_unroll values",
     ):
         _compile(kernel, types.int32[::1], types.int32[::1])
 
@@ -560,7 +577,9 @@ def test_storage_free_operation_can_coexist_with_user_dynamic_shared_memory():
     def kernel(destination):
         mine = cuda.shared.array(0, types.int32)
         mine[cuda.threadIdx.x] = 42
-        numba_coop.store(numba_coop.this_block(), destination, mine[cuda.threadIdx.x])
+        numba_coop.store(
+            numba_coop.this_block(), destination, mine[cuda.threadIdx.x]
+        )
 
     assert _compile(kernel, types.int32[::1]).metadata["ltoir"]
 
@@ -577,7 +596,8 @@ def test_literal_unroll_cannot_determine_cooperative_selector():
             )
 
     with pytest.raises(
-        (GroupRewriteError, TypingError), match="does not support literal_unroll values"
+        (GroupRewriteError, TypingError),
+        match="does not support literal_unroll values",
     ):
         _compile(kernel, types.int32[::1], types.int32[::1])
 
@@ -604,7 +624,9 @@ def test_numpy_integer_shared_shapes_coexist_with_cooperative_storage(shape):
     ]
 
 
-@pytest.mark.parametrize("dynamic_backing", [False, True], ids=["static", "dynamic"])
+@pytest.mark.parametrize(
+    "dynamic_backing", [False, True], ids=["static", "dynamic"]
+)
 @pytest.mark.parametrize("user_shape", ["static", "zero", "runtime"])
 def test_inlined_user_shared_allocation_is_checked_after_inlining(
     monkeypatch, dynamic_backing, user_shape
@@ -655,17 +677,24 @@ def test_inlined_user_shared_allocation_is_checked_after_inlining(
         )
 
     if not dynamic_backing and user_shape == "static":
-        assert _compile(kernel, types.int32[::1], types.int32[::1]).metadata["ltoir"]
+        assert _compile(kernel, types.int32[::1], types.int32[::1]).metadata[
+            "ltoir"
+        ]
     else:
         with pytest.raises(
             CoopSinglePhaseRewriteError,
-            match=r"shared-memory backing.*test_storage_diagnostics.py.*would alias",
+            match=(
+                r"shared-memory backing.*test_storage_diagnostics.py.*"
+                r"would alias"
+            ),
         ):
             _compile(kernel, types.int32[::1], types.int32[::1])
 
 
 @pytest.mark.parametrize("argument", ["storage", "group_by"])
-def test_literal_unroll_cannot_determine_cooperative_storage_or_partition(argument):
+def test_literal_unroll_cannot_determine_cooperative_storage_or_partition(
+    argument,
+):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         for count in literal_unroll((32, 64)):
@@ -686,12 +715,15 @@ def test_literal_unroll_cannot_determine_cooperative_storage_or_partition(argume
                 numba_coop.store(group, destination, source[cuda.threadIdx.x])
 
     with pytest.raises(
-        (GroupRewriteError, TypingError), match="does not support literal_unroll values"
+        (GroupRewriteError, TypingError),
+        match="does not support literal_unroll values",
     ):
         _compile(kernel, types.int32[::1], types.int32[::1])
 
 
-def test_implicit_oversized_storage_rejects_user_static_shared_allocation(monkeypatch):
+def test_implicit_oversized_storage_rejects_user_static_shared_allocation(
+    monkeypatch,
+):
     from cuda.coop.numba_mlir._compiler import _rewrite_storage
 
     monkeypatch.setattr(
@@ -717,7 +749,10 @@ def test_implicit_oversized_storage_rejects_user_static_shared_allocation(monkey
 
     with pytest.raises(
         CoopSinglePhaseRewriteError,
-        match="dynamic shared-memory backing.*static cuda.shared.array.*would alias",
+        match=(
+            "dynamic shared-memory backing.*static cuda.shared.array.*"
+            "would alias"
+        ),
     ):
         _compile(kernel, types.int32[::1], types.int32[::1], block=(1024, 1, 1))
 

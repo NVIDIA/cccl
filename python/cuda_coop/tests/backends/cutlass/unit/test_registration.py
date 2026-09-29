@@ -65,7 +65,9 @@ def test_root_import_does_not_load_cutlass_or_cuda_bindings():
 @pytest.mark.parametrize(
     "activate", ("import cuda.coop.cutlass", 'coop.register("cutlass")')
 )
-def test_missing_cutlass_preserves_root_and_has_actionable_qualified_error(activate):
+def test_missing_cutlass_preserves_root_and_has_actionable_qualified_error(
+    activate,
+):
     _run_import_probe(
         """
         import importlib.abc
@@ -91,7 +93,7 @@ def test_missing_cutlass_preserves_root_and_has_actionable_qualified_error(activ
         assert callable(coop.load)
         assert "cuda.coop.cutlass" not in sys.modules
         assert "cuda.coop.cutlass" not in _dispatch._COMPILER_CONTEXT_PROBES
-        """.replace("ACTIVATE_CUTLASS", activate)
+        """.replace("ACTIVATE_CUTLASS", activate)  # noqa: E501 - Preserve embedded source bytes.
     )
 
 
@@ -113,9 +115,13 @@ def test_cutlass_first_root_import_activates_backend():
 
 
 @pytest.mark.skipif(not _CUTLASS_AVAILABLE, reason="requires CUTLASS DSL")
-@pytest.mark.parametrize("registration", (False, True), ids=("qualified", "register"))
+@pytest.mark.parametrize(
+    "registration", (False, True), ids=("qualified", "register")
+)
 @pytest.mark.parametrize("disable_auto", (False, True))
-def test_root_first_qualified_import_activates_backend(registration, disable_auto):
+def test_root_first_qualified_import_activates_backend(
+    registration, disable_auto
+):
     _run_import_probe(
         f"""
         import os
@@ -142,7 +148,7 @@ def test_root_first_qualified_import_activates_backend(registration, disable_aut
         assert coop.register("cutlass") is None
         assert coop.register("cutlass") is None
         assert _dispatch._COMPILER_CONTEXT_PROBES["cuda.coop.cutlass"] is probe
-        """
+        """  # noqa: E501 - Preserve embedded source bytes.
     )
 
 
@@ -178,7 +184,9 @@ def test_broken_cutlass_activation_can_recover_without_reimporting_root():
     reason="requires CUTLASS DSL and Numba-CUDA-MLIR",
 )
 @pytest.mark.parametrize("first", ("cutlass", "numba_cuda_mlir"))
-@pytest.mark.parametrize("registration", (False, True), ids=("automatic", "register"))
+@pytest.mark.parametrize(
+    "registration", (False, True), ids=("automatic", "register")
+)
 def test_compiler_backends_coexist(first, registration):
     second = "numba_cuda_mlir" if first == "cutlass" else "cutlass"
     _run_import_probe(
@@ -251,5 +259,5 @@ def test_register_retry(failure):
         assert coop.register("cutlass") is None
         assert "cuda.coop.cutlass" in _dispatch._COMPILER_CONTEXT_PROBES
         assert _dispatch._backend_module_name() is None
-        """
+        """  # noqa: E501 - Preserve embedded source bytes.
     )

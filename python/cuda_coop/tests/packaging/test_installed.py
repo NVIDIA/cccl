@@ -163,12 +163,16 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_isolated_cutlass_backend_uses_installed_modules(tmp_path: Path) -> None:
+def test_isolated_cutlass_backend_uses_installed_modules(
+    tmp_path: Path,
+) -> None:
     try:
         importlib.metadata.distribution("cuda-coop")
         importlib.metadata.distribution("nvidia-cutlass-dsl")
     except importlib.metadata.PackageNotFoundError:
-        pytest.skip("requires installed cuda-coop and CUTLASS DSL distributions")
+        pytest.skip(
+            "requires installed cuda-coop and CUTLASS DSL distributions"
+        )
 
     probe = textwrap.dedent(
         """
@@ -195,7 +199,7 @@ def test_isolated_cutlass_backend_uses_installed_modules(tmp_path: Path) -> None
         assert callable(coop.load) and callable(cutlass_coop.load)
         assert "cuda.coop.cutlass" in _dispatch._COMPILER_CONTEXT_PROBES
         assert _dispatch._backend_module_name() is None
-        """
+        """  # noqa: E501 - Preserve embedded source bytes.
     )
     environment = os.environ.copy()
     environment.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)

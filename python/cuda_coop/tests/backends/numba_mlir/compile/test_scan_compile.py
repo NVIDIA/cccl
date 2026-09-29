@@ -337,8 +337,8 @@ def test_physical_and_logical_warp_methods_prefixes_and_aggregates_compile(
         width = kwargs["threads_in_warp"]
         assert method in source
         assert (
-            f"cub::WarpScan<{_types.numba_type_to_cpp(kwargs['dtype'])}, {width}>"
-            in source
+            f"cub::WarpScan<{_types.numba_type_to_cpp(kwargs['dtype'])}, "
+            f"{width}>" in source
         )
         assert "TempStorage" in source
         assert "__shared__" in source

@@ -49,10 +49,14 @@ def test_probe_selects_only_the_current_compiler(compiler_environment):
 
 
 def test_competing_compiler_environments_fail_closed(compiler_environment):
-    _dispatch._register_compiler_context_probe("test_backend_second", lambda: True)
+    _dispatch._register_compiler_context_probe(
+        "test_backend_second", lambda: True
+    )
     token = compiler_environment.set("first")
     try:
-        with pytest.raises(CoopCompilerContextRequiredError, match="Multiple backends"):
+        with pytest.raises(
+            CoopCompilerContextRequiredError, match="Multiple backends"
+        ):
             coop.ThreadData(1)
     finally:
         compiler_environment.reset(token)
@@ -64,7 +68,9 @@ def test_probe_failure_preserves_cause(compiler_environment):
     def failed_probe():
         raise failure
 
-    _dispatch._register_compiler_context_probe("test_backend_first", failed_probe)
+    _dispatch._register_compiler_context_probe(
+        "test_backend_first", failed_probe
+    )
     with pytest.raises(CoopCompilerContextRequiredError) as caught:
         coop.ThreadData(1)
     assert caught.value.__cause__ is failure
