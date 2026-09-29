@@ -155,7 +155,8 @@ class _ReducePlanning:
     def _provider(plan: GroupLoweringPlan, *, operator_kind: str):
         if plan.provenance is None or plan.topology is None:
             raise GroupRewriteError(
-                "cuda.coop.numba_mlir.reduce requires provider provenance and topology"
+                "cuda.coop.numba_mlir.reduce requires "
+                "provider provenance and topology"
             )
         provenance = plan.provenance
         if (

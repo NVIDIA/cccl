@@ -125,7 +125,9 @@ def test_cluster_group_example():
         output[2, index] = cluster.is_member()
 
     output = cuda.device_array((3, 64), dtype=np.int64)
-    configured = cluster_coordinates.configure((2, 1, 1), (32, 1, 1), cluster=(2, 1, 1))
+    configured = cluster_coordinates.configure(
+        (2, 1, 1), (32, 1, 1), cluster=(2, 1, 1)
+    )
     configured(output)
     expected = np.stack(
         (np.arange(64) // 32, np.full(64, 2), np.ones(64, dtype=np.int64))

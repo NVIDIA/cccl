@@ -440,8 +440,8 @@ def test_deterministic_cub_reduce_variants_compile_with_scoped_storage(
         width = kwargs["threads_in_warp"]
         assert method in source
         assert (
-            f"cub::WarpReduce<{_types.numba_type_to_cpp(kwargs['dtype'])}, {width}>"
-            in source
+            f"cub::WarpReduce<{_types.numba_type_to_cpp(kwargs['dtype'])}, "
+            f"{width}>" in source
         )
         assert "TempStorage" in source
         assert "__shared__" in source
