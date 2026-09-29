@@ -22,3 +22,4 @@ do not predict GPU performance.
    shuffle
    reduce
    scan
+   merge-sort
