@@ -40,7 +40,9 @@ def test_runtime_control_types_are_rejected(parameter, dtype_name):
 
         def kernel(value):
             keys = coop.ThreadData(2, dtype=types.int32)
-            return coop.topk_min_keys(coop.this_block(), keys, k=1, valid_items=value)
+            return coop.topk_min_keys(
+                coop.this_block(), keys, k=1, valid_items=value
+            )
 
     with pytest.raises(TypeError, match=parameter):
         _plan(kernel, (dtype,))
@@ -85,5 +87,7 @@ def test_warp_topk_is_rejected():
         keys = coop.ThreadData(2, dtype=types.int32)
         return coop.topk_min_keys(coop.this_warp(), keys, k=1)
 
-    with pytest.raises((ValueError, TypeError, NotImplementedError), match="block"):
+    with pytest.raises(
+        (ValueError, TypeError, NotImplementedError), match="block"
+    ):
         _plan(kernel)
