@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile logical-warp primitives against exact launch and scratch facts."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")

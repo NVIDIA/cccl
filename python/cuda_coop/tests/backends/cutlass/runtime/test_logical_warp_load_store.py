@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Logical-Warp layouts, independent group controls, and scratch reuse."""
-
 import importlib.util
 import re
 import shutil
