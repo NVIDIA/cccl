@@ -918,13 +918,6 @@ combination carries a reason that the backend reports before provider
 compilation. For instance, having a ``ThreadGroup`` descriptor for a scope
 does not imply that every primitive supports that scope.
 
-``Algorithm`` describes a CUB template specialization and its method
-parameters without compiler types. Parameter descriptors such as ``Value``,
-``Pointer``, and ``Array`` describe the method's arguments. For example,
-``Array`` records a parameter's type and extent; ``ThreadData`` constructs
-the payload passed to that parameter. ``NumbaMlirCoreAdapter`` maps the
-core types and parameter descriptors to the Numba backend's representation.
-
 Reduce uses CUB BlockReduce for blocks and CUB WarpReduce for physical or
 logical warps. Supported logical widths are powers of two from 1 through 32
 or widths from 17 through 31: CUB permits only one non-power-of-two group per
@@ -935,6 +928,27 @@ accept an optional ``TempStorage`` descriptor; warp reductions use
 compiler-managed scratch. Non-exhaustive logical groups restart their scratch
 indices within each physical warp, and only complete groups participate.
 
+.. _cuda.coop.semantics_and_specializations:
+
+Semantics and Specializations
+-----------------------------
+
+Semantics records describe a normalized primitive call. Specializations bind
+that
+description to a C++ specialization. Both are Python descriptions used
+before backend lowering and compilation.
+
+``make_*_semantics()`` functions record inputs such as the dtype and
+operators, normalize modes and item counts, and validate optional controls.
+An ``ArgumentBinding`` records whether a control is omitted, static, or runtime;
+only a static binding carries its value. These records can already include
+an algorithm choice or logical warp width.
+
+``make_*_specialization()`` functions use those semantics to select a C++ class,
+method, headers, and parameter signatures, and bind template arguments such
+as the block dimensions. They also check constraints that depend on the
+specialization.
+
 Construct ``Algorithm(..., template_arguments={...})`` with the template
 arguments and auxiliary dependency values. Construction validates and
 freezes those bindings, so the resulting algorithm is ready for backend
@@ -943,6 +957,30 @@ materialization.
 The Block and Warp Load/Store specialization factories return this
 ``Algorithm`` directly, including its bound arguments, method parameters,
 and operation metadata.
+
+For the tile copy above, ``make_block_load_store_semantics()`` describes
+an ``int32`` Load with two items per thread and the direct algorithm.
+``make_block_load_store_specialization()`` adds the 128-thread block dimensions
+and
+describes ``cub::BlockLoad<int, 128, 2, cub::BLOCK_LOAD_DIRECT>``. The tile
+capacity is then 256 elements, so a static ``valid_items`` can be checked
+against that bound. The same call semantics can describe a Load for a
+256-thread block, which needs a different specialization.
+
+At the group level, ``Group*Semantics`` records the operation requested by the
+frontend. ``GroupPrimitiveCall`` pairs it with a ``ThreadGroup``. The shared
+planner combines the call with ``LaunchFacts`` to select an implementation. Its
+``GroupLoweringPlan`` carries the selected ``Algorithm`` and the execution
+contracts described above. The backend then lowers the plan into callable
+providers. ``NumbaMlirCoreAdapter`` translates core parameter descriptors such
+as ``Array`` and ``Pointer`` into Numba representations. Provider generation,
+compilation, and final linking follow.
+
+Both semantics and specializations have a ``semantic_key`` for identity
+comparisons
+and reuse. A specialization's key includes its bound specialization arguments;
+the
+name does not imply that the object is a semantics record.
 
 Payloads, layouts, and results
 ------------------------------
