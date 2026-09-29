@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common cooperative Shuffle entry point."""
+"""Expose the common API marker for returning a unit-shifted block payload."""
 
 from __future__ import annotations
 

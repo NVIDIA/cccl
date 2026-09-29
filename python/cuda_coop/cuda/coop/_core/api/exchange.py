@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common cooperative exchange entry point."""
+"""Expose the common API marker for returning a rearranged group payload."""
 
 from __future__ import annotations
 
