@@ -150,8 +150,10 @@ def _render_reduce_batched(request):
         "  typename implementation_type::TempStorage storage;",
         f"  const {cpp} inputs[{p.batches}] = {{{inputs}}};",
         f"  {cpp} outputs[{request.outputs_per_thread}] = {{}};",
-        f"  implementation_type(storage).{request.implementation.method_name}("
-        f"inputs, outputs, {operator_expression(request.op)});",
+        (
+            f"  implementation_type(storage).{request.implementation.method_name}("
+            f"inputs, outputs, {operator_expression(request.op)});"
+        ),
         *(f"  result[{i}] = outputs[{i}];" for i in range(request.outputs_per_thread)),
         "}",
     ]
