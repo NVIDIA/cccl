@@ -120,9 +120,9 @@ using AgentScanPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan
 
 namespace detail::scan
 {
-_CCCL_IKET_CREATE_PUSH_POP_RANGE(Load);
-_CCCL_IKET_CREATE_PUSH_POP_RANGE(Scan);
-_CCCL_IKET_CREATE_PUSH_POP_RANGE(Store);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LookbackLoad);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LookbackScan);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LookbackStore);
 
 /**
  * @brief AgentScan implements a stateful abstraction of CUDA thread blocks for
@@ -345,7 +345,7 @@ struct AgentScan
     // Load items
     AccumT items[ITEMS_PER_THREAD];
 
-    _CCCL_IKET_RANGE_PUSH(Load);
+    _CCCL_IKET_RANGE_PUSH(LookbackLoad);
     if constexpr (IsLastTile)
     {
       // Fill last element with the first element because collectives are
@@ -361,7 +361,7 @@ struct AgentScan
     __syncthreads();
 
     // Perform tile scan
-    _CCCL_IKET_RANGE_PUSH(Scan);
+    _CCCL_IKET_RANGE_PUSH(LookbackScan);
     if (tile_idx == 0)
     {
       // Scan first tile
@@ -389,7 +389,7 @@ struct AgentScan
     }
 
     // Store items
-    _CCCL_IKET_RANGE_PUSH(Store);
+    _CCCL_IKET_RANGE_PUSH(LookbackStore);
     if constexpr (IsLastTile)
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, num_remaining);
@@ -462,7 +462,7 @@ struct AgentScan
     // Load items
     AccumT items[ITEMS_PER_THREAD];
 
-    _CCCL_IKET_RANGE_PUSH(Load);
+    _CCCL_IKET_RANGE_PUSH(LookbackLoad);
     if constexpr (IsLastTile)
     {
       // Fill last element with the first element because collectives are
@@ -478,7 +478,7 @@ struct AgentScan
     __syncthreads();
 
     // Block scan
-    _CCCL_IKET_RANGE_PUSH(Scan);
+    _CCCL_IKET_RANGE_PUSH(LookbackScan);
     if constexpr (IsFirstTile)
     {
       AccumT block_aggregate;
@@ -494,7 +494,7 @@ struct AgentScan
     __syncthreads();
 
     // Store items
-    _CCCL_IKET_RANGE_PUSH(Store);
+    _CCCL_IKET_RANGE_PUSH(LookbackStore);
     if constexpr (IsLastTile)
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, valid_items);
