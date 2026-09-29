@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Physical and logical Warp Load/Store runtime qualification."""
 
@@ -10,7 +9,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import textwrap
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 import numpy as np
@@ -78,7 +77,7 @@ def _dtype_sentinel(dtype: np.dtype) -> object:
     return dtype.type(211 if dtype.kind == "u" else -101)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _load_kernel(algorithm: str, qualified: bool):
     if qualified:
         selector = algorithm
@@ -126,7 +125,7 @@ def _load_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@lru_cache(maxsize=None)
+@cache
 def _store_kernel(algorithm: str, qualified: bool):
     if qualified:
         selector = algorithm
@@ -176,7 +175,7 @@ def _store_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@lru_cache(maxsize=None)
+@cache
 def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     if qualified:
 
@@ -385,7 +384,7 @@ def _logical_tile_index(algorithm: str, lane: int, item: int, width: int) -> int
     return lane * _ITEMS_PER_THREAD + item
 
 
-@lru_cache(maxsize=None)
+@cache
 def _logical_load_store_kernel(algorithm: str, qualified: bool):
     if qualified:
         load_algorithm = algorithm
@@ -523,7 +522,7 @@ def test_logical_warp_algorithms_use_independent_group_tiles(
     np.testing.assert_array_equal(destination, expected_destination)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _logical_partial_transpose_load_kernel(qualified: bool):
     if qualified:
 
@@ -608,7 +607,7 @@ def test_logical_transpose_load_preserves_invalid_slots_in_nonzero_groups(
     np.testing.assert_array_equal(observed, expected)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _logical_width_direct_kernel(width: int, qualified: bool):
     if qualified:
 
@@ -666,7 +665,7 @@ def test_every_logical_warp_width_addresses_consecutive_tiles(
     np.testing.assert_array_equal(observed, source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     if qualified:
 
@@ -753,7 +752,7 @@ def test_logical_direct_load_store_matches_every_dtype_oracle(
     np.testing.assert_array_equal(destination, store_source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _partial_load_preserving_kernel(algorithm: str, qualified: bool):
     if qualified:
         selector = algorithm
@@ -833,7 +832,7 @@ def test_partial_load_preserves_invalid_slots_for_each_layout_and_warp(
     np.testing.assert_array_equal(observed, expected)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _per_warp_valid_items_kernel(qualified: bool):
     if qualified:
 
@@ -901,7 +900,7 @@ def test_runtime_valid_items_can_differ_between_physical_warps(
     np.testing.assert_array_equal(observed, expected)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _multidimensional_load_kernel(qualified: bool):
     if qualified:
 
@@ -964,7 +963,7 @@ def test_physical_warp_origin_uses_x_major_multidimensional_rank(
     np.testing.assert_array_equal(observed, source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _logical_multidimensional_load_kernel(qualified: bool):
     if qualified:
 
@@ -1024,7 +1023,7 @@ def test_logical_warp_origin_uses_x_major_multidimensional_rank(
     np.testing.assert_array_equal(observed, source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _static_control_load_kernel(qualified: bool):
     if qualified:
 
@@ -1091,7 +1090,7 @@ def test_physical_warp_static_controls_share_runtime_addressing(
     np.testing.assert_array_equal(observed, expected)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _scalar_store_kernel(qualified: bool):
     if qualified:
 
@@ -1138,7 +1137,7 @@ def test_physical_warp_scalar_store_uses_destination_dtype(
     np.testing.assert_array_equal(destination, expected)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _literal_scalar_store_kernel(qualified: bool):
     if qualified:
 
@@ -1180,7 +1179,7 @@ def test_physical_warp_scalar_literal_infers_the_destination_dtype(
     np.testing.assert_array_equal(destination, expected)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _grid_stride_transpose_kernel(qualified: bool):
     if qualified:
 
@@ -1260,7 +1259,7 @@ def test_grid_stride_tail_clamps_valid_items_per_physical_warp(
     np.testing.assert_array_equal(destination, source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _logical_grid_stride_transpose_kernel(qualified: bool):
     if qualified:
 

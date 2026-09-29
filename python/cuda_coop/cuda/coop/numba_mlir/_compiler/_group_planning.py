@@ -388,11 +388,12 @@ class GroupPlanningContext:
                     continue
                 next_seen = {*seen, current.name}
                 for packed in payload_definitions(definition.value, next_seen):
-                    if isinstance(packed, ir.Expr) and packed.op == "build_tuple":
-                        if -len(packed.items) <= index < len(packed.items):
-                            yield from payload_definitions(
-                                packed.items[index], next_seen
-                            )
+                    if (
+                        isinstance(packed, ir.Expr)
+                        and packed.op == "build_tuple"
+                        and -len(packed.items) <= index < len(packed.items)
+                    ):
+                        yield from payload_definitions(packed.items[index], next_seen)
 
         for definition in payload_definitions(value, set()):
             if (
