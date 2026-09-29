@@ -67,7 +67,6 @@ def _make_group_exchange_plan(
     rank_dtype: Any = None,
     valid_flag_dtype: Any = None,
     warp_time_slicing: bool = False,
-    source: str = "cutlass_root",
 ) -> GroupLoweringPlan:
     """Build the canonical shared-core exchange plan."""
 
@@ -83,7 +82,6 @@ def _make_group_exchange_plan(
     call = make_group_primitive_call(
         group,
         GroupExchangeSemantics(primitive),
-        source=source,
     )
     return plan_group_primitive(call, launch)
 
