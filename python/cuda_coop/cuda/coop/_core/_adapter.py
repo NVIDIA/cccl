@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol
 
 from ._algorithm import AlgorithmSpec
 from ._types import (
@@ -12,7 +12,6 @@ from ._types import (
 )
 
 
-@runtime_checkable
 class CoreBackendAdapter(Protocol):
     """Operations a backend supplies to materialize a core algorithm spec.
 
