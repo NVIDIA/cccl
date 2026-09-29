@@ -84,8 +84,8 @@ def store(
 
     Parameters, algorithm choices, tile addressing, and the ``None`` return
     follow :func:`cuda.coop.store`. ``value`` may be a numeric scalar or a
-    supported fixed-size Numba local array. Store preserves that input,
-    including for transpose algorithms.
+    supported fixed-size Numba local array. Transpose algorithms may rearrange
+    that input in place; copy values before Store if they are needed later.
 
     See :ref:`per-thread payloads <coop-thread-data>` and
     :ref:`temporary storage <coop-temp-storage>` for allocation rules, and
