@@ -132,6 +132,10 @@ struct ScanLookbackPolicy
 };
 
 //! The tuning policy for the lookahead scan algorithm in @ref DeviceScan.
+// block_idx_stages is [[deprecated]] below, which also makes the compiler-generated copy/move constructors of this
+// struct (used wherever a ScanLookaheadPolicy is copied or returned by value) trigger -Wdeprecated-declarations, so
+// we suppress it for the whole struct rather than only at the explicit uses of block_idx_stages further down.
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 struct ScanLookaheadPolicy
 {
   int reduce_and_scan_warps; //!< Number of warps used for reduction and scanning
@@ -158,11 +162,9 @@ struct ScanLookaheadPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ScanLookaheadPolicy& lhs, const ScanLookaheadPolicy& rhs) noexcept
   {
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return lhs.reduce_and_scan_warps == rhs.reduce_and_scan_warps && lhs.items_per_thread == rhs.items_per_thread
         && lhs.lookahead_items_per_thread == rhs.lookahead_items_per_thread
         && lhs.lookahead_stages == rhs.lookahead_stages && lhs.block_idx_stages == rhs.block_idx_stages;
-    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -174,15 +176,14 @@ struct ScanLookaheadPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookaheadPolicy& p)
   {
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
     return os
         << "ScanLookaheadPolicy { .reduce_and_scan_warps = " << p.reduce_and_scan_warps << ", .items_per_thread = "
         << p.items_per_thread << ", .lookahead_items_per_thread = " << p.lookahead_items_per_thread
         << ", .lookahead_stages = " << p.lookahead_stages << ", .block_idx_stages = " << p.block_idx_stages << " }";
-    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 #endif // _CCCL_HOSTED()
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 //! The tuning policy for all algorithms in @ref DeviceScan.
 struct ScanPolicy
