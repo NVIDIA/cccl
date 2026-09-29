@@ -98,10 +98,13 @@ The common API is exposed through ``cuda.coop`` and implemented in
 ``_core/api/``. The private ``_core/`` package also holds the planners and
 other implementation shared by both backends.
 
-A :term:`family` groups related primitives and their implementation.
-Load and Store share planning under ``_core/group/load_store.py``.
-CUTLASS validates their CuTe operands in ``cutlass/_group_load_store.py``
-and emits provider calls in ``cutlass/_lowering/_load_store.py``.
+A :term:`family` groups related primitives and their implementation. The
+Scan family includes ``scan``, ``inclusive_scan``, ``exclusive_scan``,
+``inclusive_sum``, and ``exclusive_sum``. Its shared declarations live in
+``_core/api/scan.py`` and ``scan.pyi``, with planning in
+``_core/group/scan.py``. CUTLASS adds its entry points and type declarations
+in ``cutlass/_group_scan.py`` and ``_group_scan.pyi``, and adapts the plan to
+CuTe in ``cutlass/_lowering/_scan.py``.
 
 .. _from-a-call-to-a-typed-provider-request:
 
@@ -246,7 +249,7 @@ provider emission belong under ``cutlass``.
        ``cutlass/_temp_storage.py``, and their ``.pyi`` files
    * - Family validation and lowering
      - ``cutlass/_group_load_store.py`` and
-       ``cutlass/_lowering/_load_store.py``; the Reduce
+       ``cutlass/_lowering/_load_store.py``; the Reduce, Scan
        files follow the same organization
    * - Launch facts and provider sessions
      - ``cutlass/_compiler/_launch.py``, ``cutlass/_compiler/_state.py``,
@@ -653,7 +656,7 @@ Adapt the shared plan in ``cutlass/_lowering``. The lowering must agree
 with its provider wrapper about argument types, result buffers, and
 scratch operands. Register the typed request with the current session
 and preserve rollback if emission fails. Load/Store illustrates in-place
-payloads and typed memory controls.
+payloads; Scan and Reduce show result contracts and additional controls.
 Reuse the existing renderer registration, bundle finalizer, and storage
 planner when their contracts express the operation.
 

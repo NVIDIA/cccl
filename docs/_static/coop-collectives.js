@@ -204,10 +204,10 @@
       "The local and incoming prefixes are mathematical decompositions. Raking stages through shared segments; memoization retains partials in registers; warp_scans propagates totals between warp scans. The figure does not specify exact instructions or storage padding.",
       state.scope === "block" ? "Block scans accept scalar values or ThreadData, and return a separate result without changing the input." : "Physical and logical warp scans accept one scalar per lane. Every lane participates; ranks beyond valid_items have undefined scan outputs.",
     ];
-    if (state.prefix === "callback") notes.push(`The qualified block prefix callback receives input aggregate ${aggregates[0]} and returns ${seeds[0]} (aggregate + 7). That returned value is combined before the scanned sequence.`);
-    if (state.prefix === "stateful") notes.push("The qualified StatefulFunction receives one-item mutable running state as the third positional argument. Here it returns 10 and combines the tile aggregate into the state for a later scan.");
-    if (state.operator === "custom_max" && !state.variant.endsWith("_sum")) notes.push("Custom maximum is a device callback passed as scan_op through cuda.coop.numba_mlir.");
-    if (state.aggregate === "emit") notes.push("aggregate_output is a qualified-backend one-item output. It excludes any initial prefix and cannot be combined with a prefix callback.");
+    if (state.prefix === "callback") notes.push(`The Numba-qualified block prefix callback receives input aggregate ${aggregates[0]} and returns ${seeds[0]} (aggregate + 7). That returned value is combined before the scanned sequence.`);
+    if (state.prefix === "stateful") notes.push("The Numba-qualified StatefulFunction receives one-item mutable running state as the third positional argument. Here it returns 10 and combines the tile aggregate into the state for a later scan.");
+    if (state.operator === "custom_max" && !state.variant.endsWith("_sum")) notes.push("Custom maximum is a device callback passed as scan_op through cuda.coop.numba_mlir. CUTLASS supports built-in scan operators and does not accept callbacks.");
+    if (state.aggregate === "emit") notes.push("Both qualified APIs support aggregate_output as a one-item output. It excludes any initial prefix and cannot be combined with a prefix callback.");
     return {
       detail: `${algorithm.label}: ${state.variant.replaceAll("_", " ")} over ${width * items} ordered items per ${state.scope.replaceAll("_", " ")} group.`,
       rows,
