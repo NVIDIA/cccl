@@ -196,7 +196,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     && ::cuda::is_trivially_copyable_v<_TpIn> //
     && __have_default_accessors;
 
-  if (__tensor_size == 1 && __are_byte_copyable)
+  if (__tensor_size == 1)
   {
     auto __src_ptr = __src.data_handle();
     auto __dst_ptr = __dst.data_handle();
@@ -208,7 +208,16 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     {
       __dst_ptr += __dst.mapping().offset();
     }
-    ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, sizeof(_TpIn), __stream.get());
+    if constexpr (__are_byte_copyable)
+    {
+      ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, sizeof(_TpIn), __stream.get());
+    }
+    else
+    {
+      const __raw_tensor<int, int, _TpIn, 1> __src_raw{__src_ptr, 1, {1}, {1}};
+      const __raw_tensor<int, int, _TpOut, 1> __dst_raw{__dst_ptr, 1, {1}, {1}};
+      ::cuda::__copy_optimized(__src_raw, __dst_raw, 1, __stream, __src.accessor(), __dst.accessor());
+    }
     return;
   }
 

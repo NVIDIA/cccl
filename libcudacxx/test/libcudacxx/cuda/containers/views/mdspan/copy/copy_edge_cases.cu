@@ -32,6 +32,34 @@ TEST_CASE("copy d2d scalar", "[copy][d2d][0d]")
   test_copy<layout_right>(data, 1);
 }
 
+// src: float  (), (1,1):(1,1)
+// dst: double (), (1,1):(1,1)
+// single element, not byte-copyable -> element-wise kernel instead of memcpy
+TEST_CASE("copy d2d single element different types", "[copy][d2d][0d][mixed_types]")
+{
+  thrust::device_vector<float> d_src(1, 42.5f);
+  thrust::device_vector<double> d_dst(1, 0.0);
+  auto* src_ptr = thrust::raw_pointer_cast(d_src.data());
+  auto* dst_ptr = thrust::raw_pointer_cast(d_dst.data());
+
+  SECTION("rank 0")
+  {
+    using extents_t = cuda::std::extents<int>;
+    cuda::copy(cuda::device_mdspan<const float, extents_t>(src_ptr, extents_t{}),
+               cuda::device_mdspan<double, extents_t>(dst_ptr, extents_t{}),
+               copy_stream);
+  }
+  SECTION("rank 2 singleton")
+  {
+    using extents_t = cuda::std::dextents<int, 2>;
+    cuda::copy(cuda::device_mdspan<const float, extents_t>(src_ptr, extents_t(1, 1)),
+               cuda::device_mdspan<double, extents_t>(dst_ptr, extents_t(1, 1)),
+               copy_stream);
+  }
+  copy_stream.sync();
+  REQUIRE(d_dst[0] == 42.5);
+}
+
 // src: int   (8):(1)
 // dst: float (8):(1)
 // __to_raw_tensor removes singleton dims, so we use N > 1 to avoid rank-0 tensors.
