@@ -61,7 +61,7 @@ def resolve_thread_group(
     """Resolve a group against exact launch facts through a hierarchy level.
 
     ``through_level`` requests the enclosing hierarchy needed by group queries.
-    Collective planners omit it because the group's own level is sufficient.
+    Primitive planners omit it because the group's own level is sufficient.
     Exact dimensions remain distinct from upper bounds, and cluster state must
     be verified before a missing cluster extent can be treated as one block.
     """

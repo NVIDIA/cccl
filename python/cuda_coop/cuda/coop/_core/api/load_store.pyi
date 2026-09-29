@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for portable cooperative load and store."""
+"""Typing contract for common cooperative load and store."""
 
 from typing import overload
 

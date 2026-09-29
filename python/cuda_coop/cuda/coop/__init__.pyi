@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable cooperative primitives shared by supported CUDA Python DSLs."""
+"""Common cooperative primitives shared by supported CUDA Python DSLs."""
 
 from typing import Literal
 
