@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <stdexcept>
 
 #include <cuda_runtime_api.h>
 #include <unistd.h>
@@ -244,98 +245,106 @@ bool probe_endpoint_support(
   return true;
 }
 
-int child_import_unicast(const cuda::logical_endpoint_fabric_handle& handle, int result_fd)
+cuda::unicast_logical_endpoint import_unicast(const cuda::logical_endpoint_fabric_handle& handle)
+{
+  cuda::unicast_logical_endpoint imported{handle};
+  if (!imported.wait_ready_for(logical_endpoint_test::ready_timeout))
+  {
+    throw std::runtime_error("imported unicast logical endpoint did not become ready");
+  }
+  return imported;
+}
+
+cuda::multicast_logical_endpoint import_multicast(
+  const cuda::logical_endpoint_fabric_handle& handle, cuda::device_ref device)
+{
+  cuda::multicast_logical_endpoint imported{handle};
+  imported.add_device(device);
+  if (!imported.wait_ready_for(logical_endpoint_test::ready_timeout))
+  {
+    throw std::runtime_error("imported multicast logical endpoint did not become ready");
+  }
+  return imported;
+}
+
+void put_to_imported_unicast(const cuda::logical_endpoint_fabric_handle& handle)
+{
+  cuda::device_ref device{0};
+  cuda::stream stream{device};
+  auto status = cuda::make_device_buffer<cuda::std::uint32_t>(stream, device, 1, cuda::no_init);
+  cuda::fill_bytes(stream, status, 0);
+
+  cuda::unicast_logical_endpoint imported = import_unicast(handle);
+  auto config = cuda::make_config(cuda::make_hierarchy(cuda::grid_dims(1), cuda::block_dims<1>()));
+  cuda::launch(
+    stream,
+    config,
+    logical_endpoint_test::fabric_try_put_smoke_kernel,
+    imported,
+    cuda::std::uint64_t{0},
+    status.data());
+  stream.sync();
+
+  cuda::std::uint32_t host_status = 0;
+  cuda::copy_bytes(stream, status, cuda::std::span<cuda::std::uint32_t>{&host_status, 1});
+  stream.sync();
+  if (host_status != logical_endpoint_test::status_success)
+  {
+    throw std::runtime_error("child fabric put kernel failed");
+  }
+}
+
+template <class Action>
+int run_child_action(int result_fd, const char* failure_message, const char* report_failure_message, Action action)
 {
   try
   {
-    cuda::unicast_logical_endpoint imported{handle};
-    if (!imported.wait_ready_for(logical_endpoint_test::ready_timeout))
-    {
-      std::fprintf(stderr, "imported unicast logical endpoint did not become ready\n");
-      static_cast<void>(report_child_result(result_fd, child_result::failure));
-      return EXIT_FAILURE;
-    }
+    action();
   }
   catch (const std::exception& e)
   {
-    std::fprintf(stderr, "child failed to import the unicast logical endpoint: %s\n", e.what());
+    std::fprintf(stderr, "%s: %s\n", failure_message, e.what());
     static_cast<void>(report_child_result(result_fd, child_result::failure));
     return EXIT_FAILURE;
   }
 
   if (!report_child_result(result_fd, child_result::success))
   {
-    std::fprintf(stderr, "child failed to report unicast import success\n");
+    std::fprintf(stderr, "%s\n", report_failure_message);
     return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;
 }
 
+int child_import_unicast(const cuda::logical_endpoint_fabric_handle& handle, int result_fd)
+{
+  return run_child_action(
+    result_fd,
+    "child failed to import the unicast logical endpoint",
+    "child failed to report unicast import success",
+    [&handle] {
+      static_cast<void>(import_unicast(handle));
+    });
+}
+
 int child_put_to_unicast(const cuda::logical_endpoint_fabric_handle& handle, int result_fd)
 {
-  try
-  {
-    cuda::device_ref device{0};
-    cuda::stream stream{device};
-    auto status = cuda::make_device_buffer<cuda::std::uint32_t>(stream, device, 1, cuda::no_init);
-    cuda::fill_bytes(stream, status, 0);
-
-    cuda::unicast_logical_endpoint imported{handle};
-    if (!imported.wait_ready_for(logical_endpoint_test::ready_timeout))
-    {
-      std::fprintf(stderr, "imported unicast logical endpoint did not become ready\n");
-      static_cast<void>(report_child_result(result_fd, child_result::failure));
-      return EXIT_FAILURE;
-    }
-
-    auto config = cuda::make_config(cuda::make_hierarchy(cuda::grid_dims(1), cuda::block_dims<1>()));
-    cuda::launch(
-      stream,
-      config,
-      logical_endpoint_test::fabric_try_put_smoke_kernel,
-      imported,
-      cuda::std::uint64_t{0},
-      status.data());
-    stream.sync();
-
-    cuda::std::uint32_t host_status = 0;
-    cuda::copy_bytes(stream, status, cuda::std::span<cuda::std::uint32_t>{&host_status, 1});
-    stream.sync();
-    if (host_status != logical_endpoint_test::status_success)
-    {
-      std::fprintf(stderr, "child fabric put kernel status was %u\n", host_status);
-      static_cast<void>(report_child_result(result_fd, child_result::failure));
-      return EXIT_FAILURE;
-    }
-  }
-  catch (const std::exception& e)
-  {
-    std::fprintf(stderr, "child failed to put to imported unicast logical endpoint: %s\n", e.what());
-    static_cast<void>(report_child_result(result_fd, child_result::failure));
-    return EXIT_FAILURE;
-  }
-
-  if (!report_child_result(result_fd, child_result::success))
-  {
-    std::fprintf(stderr, "child failed to report fabric put success\n");
-    return EXIT_FAILURE;
-  }
-  return EXIT_SUCCESS;
+  return run_child_action(
+    result_fd,
+    "child failed to put to imported unicast logical endpoint",
+    "child failed to report fabric put success",
+    [&handle] {
+      put_to_imported_unicast(handle);
+    });
 }
 
 int child_import_multicast(const cuda::logical_endpoint_fabric_handle& handle, int request_fd, int result_fd)
 {
   try
   {
-    cuda::device_ref device{1};
-    cuda::multicast_logical_endpoint imported{handle};
-    imported.add_device(device);
-    if (!imported.wait_ready_for(logical_endpoint_test::ready_timeout))
-    {
-      std::fprintf(stderr, "imported multicast logical endpoint did not become ready\n");
-      static_cast<void>(report_child_result(result_fd, child_result::failure));
-      return EXIT_FAILURE;
-    }
+    cuda::multicast_logical_endpoint imported = import_multicast(handle, cuda::device_ref{1});
+    // Keep the imported endpoint alive until the parent has completed its multicast bind check.
+    static_cast<void>(imported.id());
 
     if (!report_child_result(result_fd, child_result::success))
     {
