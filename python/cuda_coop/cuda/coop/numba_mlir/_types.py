@@ -139,11 +139,6 @@ def _normalize_block_threads(threads_per_block):
     return block_threads
 
 
-def _symbol_component(value):
-    component = re.sub(r"\W+", "_", str(value)).strip("_")
-    return component or "anon"
-
-
 def _hash_symbol_value(hasher, value, depth=0):
     del depth
     hasher.update(
@@ -891,20 +886,6 @@ def war_introspection(fn, n):
     def impl({arglist}):
         return fn({arglist})
     """)
-    mod_code = compile(mod_str, "<string>", "exec")
-    func_code = mod_code.co_consts[0]
-    return PyFunctionType(func_code, {"fn": fn})
-
-
-def war_introspection_call(fn, n, returns_value):
-    arglist = ", ".join(f"param{i}" for i in range(n))
-    mod_lines = [f"def impl({arglist}):"]
-    if returns_value:
-        mod_lines.append(f"    return fn({arglist})")
-    else:
-        mod_lines.append(f"    fn({arglist})")
-        mod_lines.append("    return")
-    mod_str = "\n".join(mod_lines) + "\n"
     mod_code = compile(mod_str, "<string>", "exec")
     func_code = mod_code.co_consts[0]
     return PyFunctionType(func_code, {"fn": fn})
@@ -1786,11 +1767,6 @@ class _SharedTempFile:
         return self._temp_file.name
 
 
-def _collect_udf_decls(algo):
-    del algo
-    return OrderedDict()
-
-
 def _collect_extra_ltoirs(algo):
     extras = []
     if algo.type_definitions:
@@ -2053,7 +2029,6 @@ def prepare_ltoir_bundle(
         else:
             algo._temp_storage_bytes = 0
             algo._temp_storage_alignment = 1
-        algo._lto_irs = extras
         algo._precompiled_ltoir_files = (bundle_temp_file,)
         algo.__dict__["_lto_ir_cache_key"] = algo._make_lto_ir_cache_key(
             threads=threads_by_algo.get(

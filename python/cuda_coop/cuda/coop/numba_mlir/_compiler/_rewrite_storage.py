@@ -528,8 +528,6 @@ class _StorageRewrite:
             max_alignment=max_alignment,
             uses_dynamic_smem=uses_dynamic_smem,
             dynamic_shared_bytes=dynamic_shared_bytes,
-            max_default_smem=max_default,
-            max_optin_smem=max_optin,
         )
         self._temp_storage_global_plan = plan
         return plan
