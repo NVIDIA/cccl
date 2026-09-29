@@ -975,8 +975,6 @@ C2H_CCCLRT_TEST("multicast logical endpoint exports and imports endpoint handles
   cuda::multicast_logical_endpoint endpoint{ids, 0, spec, bytes};
   CHECK(endpoint.size() == bytes);
   endpoint.add_device(device);
-  endpoint.add_device(peer_device);
-  REQUIRE(endpoint.wait_ready_for(logical_endpoint_test::ready_timeout));
 
   cuda::logical_endpoint_fabric_handle handle = endpoint.export_endpoint(cuda::fabric_handle);
 
@@ -988,6 +986,8 @@ C2H_CCCLRT_TEST("multicast logical endpoint exports and imports endpoint handles
   CHECK(imported.id() == ids[1]);
   CHECK(imported.size() == endpoint.size());
   CHECK(imported.bind_alignment() == endpoint.bind_alignment());
+  imported.add_device(peer_device);
+  REQUIRE(endpoint.wait_ready_for(logical_endpoint_test::ready_timeout));
   REQUIRE(imported.wait_ready_for(logical_endpoint_test::ready_timeout));
 }
 
