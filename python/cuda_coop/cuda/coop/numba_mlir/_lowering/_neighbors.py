@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUB providers for block Adjacent Difference and Discontinuity."""
-
 from cuda.coop._core import (
     INT8,
     CxxOperator,

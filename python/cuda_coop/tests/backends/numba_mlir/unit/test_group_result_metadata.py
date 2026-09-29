@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Result metadata follows independent output shapes and static variants."""
-
 from types import SimpleNamespace
 
 import pytest

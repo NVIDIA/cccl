@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Reject unsupported neighbor arguments before provider compilation."""
-
 from types import SimpleNamespace
 
 import pytest
