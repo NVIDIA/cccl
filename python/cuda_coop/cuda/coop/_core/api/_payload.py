@@ -251,7 +251,8 @@ def _validate_common_numeric_scalar(
     if not _is_common_numeric_scalar(value):
         raise TypeError(
             f"cuda.coop.{operation} {parameter} must be a numeric scalar "
-            "supported by the common API; use a backend-qualified import for backend-specific values"
+            "supported by the common API; use a backend-qualified import "
+            "for backend-specific values"
         )
     dtype = getattr(value, "dtype", None)
     if dtype is None:

@@ -71,7 +71,12 @@ def _exercise_copy(api_name, *, nested=False, repeats=1):
 @pytest.mark.parametrize("api", ("common", "qualified"))
 @pytest.mark.parametrize(
     "order",
-    ("cutlass-first", "root-first", "root-first-register", "cutlass-first-register"),
+    (
+        "cutlass-first",
+        "root-first",
+        "root-first-register",
+        "cutlass-first-register",
+    ),
 )
 def test_fresh_process_traces_with_either_import_order(tmp_path, api, order):
     if order.endswith("-register"):
@@ -103,7 +108,10 @@ def test_fresh_process_traces_with_either_import_order(tmp_path, api, order):
     script.write_text(
         "import sys\n"
         + textwrap.dedent(imports)
-        + "from tests.backends.cutlass.compile.test_compiler_lifecycle import _exercise_copy\n"
+        + (
+            "from tests.backends.cutlass.compile.test_compiler_lifecycle "
+            "import _exercise_copy\n"
+        )
         + f"_exercise_copy({api!r})\n"
     )
     env = os.environ.copy()
@@ -128,7 +136,9 @@ def test_repeated_compile_and_nested_jit_leave_no_active_backend(api, nested):
 
 
 @pytest.mark.parametrize("failure", ("provider-compile", "final-link"))
-def test_failed_compilation_or_linking_can_retry(monkeypatch, tmp_path, failure):
+def test_failed_compilation_or_linking_can_retry(
+    monkeypatch, tmp_path, failure
+):
     launch = _copy_launcher(coop)
     source = values_for(np.int32, _TILE, shift=47)
     destination = np.full(_TILE, -101, dtype=np.int32)
@@ -170,7 +180,9 @@ def test_failed_compilation_or_linking_can_retry(monkeypatch, tmp_path, failure)
 def test_failed_trace_after_registering_a_provider_can_retry():
     @cute.kernel
     def kernel(
-        source: cute.Pointer, destination: cute.Pointer, reject: cutlass.Constexpr
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        reject: cutlass.Constexpr,
     ):
         payload = coop.ThreadData(_ITEMS)
         coop.load(coop.this_block(), source, payload)
@@ -180,7 +192,9 @@ def test_failed_trace_after_registering_a_provider_can_retry():
 
     @cute.jit
     def launch(
-        source: cute.Pointer, destination: cute.Pointer, reject: cutlass.Constexpr
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        reject: cutlass.Constexpr,
     ):
         kernel(source, destination, reject).launch(grid=1, block=_THREADS)
 

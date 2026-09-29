@@ -46,7 +46,9 @@ def test_upper_bound_never_becomes_an_exact_fact():
     )
     assert facts == LaunchFacts()
     with pytest.raises(NotImplementedError, match="exact block dimensions"):
-        _resolve_primitive_group_from_launch(this_block(), facts, feature="load")
+        _resolve_primitive_group_from_launch(
+            this_block(), facts, feature="load"
+        )
 
 
 @pytest.mark.parametrize(
@@ -92,9 +94,13 @@ def test_unavailable_compiler_facts_preserve_the_error(monkeypatch):
     def unavailable():
         raise error
 
-    runtime = SimpleNamespace(cute=SimpleNamespace(_get_launch_facts=unavailable))
+    runtime = SimpleNamespace(
+        cute=SimpleNamespace(_get_launch_facts=unavailable)
+    )
     monkeypatch.setattr(_launch, "validate_cutlass_runtime", lambda: runtime)
-    with pytest.raises(RuntimeError, match="launch facts are unavailable") as caught:
+    with pytest.raises(
+        RuntimeError, match="launch facts are unavailable"
+    ) as caught:
         _launch.current_kernel_launch_facts()
     assert caught.value is error
 

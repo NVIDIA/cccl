@@ -114,7 +114,8 @@ def coerce_plain_scalar(
             limit = float(np.finfo(numpy_type).max)
             if not -limit <= value <= limit:
                 raise ValueError(
-                    f"{scope}.{name}={value} is not representable in {value_type.__name__}"
+                    f"{scope}.{name}={value} is not representable in "
+                    f"{value_type.__name__}"
                 )
             return value_type(value) if convert else value
         if token not in _INTEGER_TYPE_TOKENS:
@@ -128,7 +129,8 @@ def coerce_plain_scalar(
         )
         if not lower <= value <= upper:
             raise ValueError(
-                f"{scope}.{name}={value} is not representable in {value_type.__name__}"
+                f"{scope}.{name}={value} is not representable in "
+                f"{value_type.__name__}"
             )
         return value_type(value) if convert else value
     if type(value) is float:
@@ -142,7 +144,8 @@ def coerce_plain_scalar(
         limit = float(np.finfo(numpy_type).max)
         if math.isfinite(value) and abs(value) > limit:
             raise ValueError(
-                f"{scope}.{name}={value} is not representable in {value_type.__name__}"
+                f"{scope}.{name}={value} is not representable in "
+                f"{value_type.__name__}"
             )
         return value_type(value) if convert else value
     return _NOT_PLAIN_SCALAR

@@ -13,7 +13,10 @@ from .._core.api.thread_group import ThreadGroup as CommonThreadGroup
 from .._typing import ThreadGroupKind
 
 _GroupKindT_co = TypeVar(
-    "_GroupKindT_co", bound=ThreadGroupKind, covariant=True, default=ThreadGroupKind
+    "_GroupKindT_co",
+    bound=ThreadGroupKind,
+    covariant=True,
+    default=ThreadGroupKind,
 )
 
 Hierarchy = ThreadHierarchy
