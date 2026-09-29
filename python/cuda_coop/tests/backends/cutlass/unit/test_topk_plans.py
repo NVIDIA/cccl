@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared TopK policy, checked count ABI, and storage transactions."""
-
 import inspect
 from dataclasses import replace
 from types import SimpleNamespace

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Input-preserving TopK selection for complete one-dimensional CuTe blocks."""
-
 from cuda.coop._core.thread_group import ThreadGroup
 
 from ._temp_storage import TempStorage
