@@ -62,7 +62,7 @@ in the programming guides.
      - Available
    * - Run Length Decode, windowed and bulk
      - Available
-     - Not implemented
+     - Available
    * - Batched Warp Reduction
      - Available
      - Not implemented
