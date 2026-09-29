@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared static contracts for compiler-selected ``cuda.coop`` values."""
-
 from typing import Any, Literal, Protocol, TypeAlias, TypeVar
 
 import numpy

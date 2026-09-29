@@ -2,12 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load/store semantics and block, physical-warp, or logical-warp lowering.
-
-This module owns common load/store algorithm normalization and selects the
-corresponding CUB specialization after group resolution. It does not own
-ThreadData allocation, backend activation, or compiler rendering.
-"""
+"""Select CUB BlockLoad/Store or WarpLoad/Store for a resolved thread group."""
 
 from __future__ import annotations
 

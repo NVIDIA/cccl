@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Import-light dtype policy for the common API."""
-
 from __future__ import annotations
 
 _PORTABLE_NUMERIC_DTYPE_NAMES = (

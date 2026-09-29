@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-neutral cooperative algorithm descriptions."""
-
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
