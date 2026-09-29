@@ -95,8 +95,10 @@ def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
     lines.extend(
         (
             "  auto group_warp_rank = ::cuda::warp.rank(group_parent);",
-            f"  constexpr ::cuda::std::uint32_t group_warp_count = "
-            f"{group.mapping.count};",
+            (
+                f"  constexpr ::cuda::std::uint32_t group_warp_count = "
+                f"{group.mapping.count};"
+            ),
             f"  constexpr ::cuda::std::uint32_t grouped_warp_count = {grouped_warps};",
         )
     )
