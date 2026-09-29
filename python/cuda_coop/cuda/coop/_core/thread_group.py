@@ -427,7 +427,8 @@ def _validate_mapped_group_extent(
     block_threads = hierarchy.block_thread_count
     if block_threads is not None and block_threads % 32 != 0:
         raise ValueError(
-            "mapped group_by requires an enclosing block composed of complete warps"
+            "mapped group_by requires an enclosing block "
+            "composed of complete warps"
         )
     if kind == "threads_within_warp":
         parent_units = 32
@@ -473,7 +474,8 @@ class ThreadGroup:
     Query thread, warp, block, and grid coordinates with Numba-CUDA-MLIR.
     Every row below has one result per launched thread.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
         :language: python
         :start-after: # queries-example-begin
         :end-before: # queries-example-end
@@ -802,7 +804,8 @@ class ThreadGroup:
         Form eight-lane groups, then partition a three-warp block into pairs
         of warps. The final warp is outside the latter partition.
 
-        .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
+        .. literalinclude::
+            ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
             :language: python
             :start-after: # partition-example-begin
             :end-before: # partition-example-end
@@ -832,7 +835,8 @@ class ThreadGroup:
             synchronizer = "barrier"
         else:
             raise NotImplementedError(
-                "ThreadGroup.group_by supports only physical warp and block parents"
+                "ThreadGroup.group_by supports only physical warp "
+                "and block parents"
             )
 
         mapping = GroupByMapping(

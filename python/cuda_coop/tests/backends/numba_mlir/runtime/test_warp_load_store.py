@@ -71,7 +71,9 @@ _SAFE_PATH_FLAG = "-P" if sys.version_info >= (3, 11) else "-I"
 
 
 def _values(size: int, *, shift: int = 0) -> np.ndarray:
-    return ((np.arange(size, dtype=np.int64) * 3 + shift) % 211 - 101).astype(np.int32)
+    return ((np.arange(size, dtype=np.int64) * 3 + shift) % 211 - 101).astype(
+        np.int32
+    )
 
 
 def _dtype_values(dtype: np.dtype, size: int, *, shift: int = 0) -> np.ndarray:
@@ -229,7 +231,9 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
         @cuda.jit
         def kernel(load_source, store_source, observed, destination):
             thread = cuda.threadIdx.x
-            load_payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=numba_dtype)
+            load_payload = root_coop.ThreadData(
+                _ITEMS_PER_THREAD, dtype=numba_dtype
+            )
             root_coop.load(
                 root_coop.this_warp(),
                 load_source,
@@ -254,7 +258,9 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 def test_direct_multi_item_load_store_matches_oracles_for_every_dtype(
     qualified: bool,
@@ -338,13 +344,15 @@ def _expected_stored_payload(
             payload_index = thread * _ITEMS_PER_THREAD + item
             tile_index = _tile_index(algorithm, lane, item)
             if tile_index < valid_items:
-                expected[offset + warp * _WARP_TILE_ITEMS + tile_index] = source[
-                    payload_index
-                ]
+                expected[offset + warp * _WARP_TILE_ITEMS + tile_index] = (
+                    source[payload_index]
+                )
     return expected
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid_items",
@@ -377,7 +385,9 @@ def test_each_warp_load_algorithm_matches_an_independent_two_warp_oracle(
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid_items",
@@ -409,7 +419,9 @@ def test_each_warp_store_algorithm_masks_each_warp(
     np.testing.assert_array_equal(destination, expected)
 
 
-def _logical_tile_index(algorithm: str, lane: int, item: int, width: int) -> int:
+def _logical_tile_index(
+    algorithm: str, lane: int, item: int, width: int
+) -> int:
     if algorithm == "striped":
         return lane + item * width
     return lane * _ITEMS_PER_THREAD + item
@@ -510,7 +522,9 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 def test_logical_warp_algorithms_use_independent_group_tiles(
     qualified: bool,
@@ -542,7 +556,9 @@ def test_logical_warp_algorithms_use_independent_group_tiles(
                 _LOGICAL_WARP_THREADS,
             )
             if tile_index < valid_items:
-                memory_index = offset + group_index * _LOGICAL_TILE_ITEMS + tile_index
+                memory_index = (
+                    offset + group_index * _LOGICAL_TILE_ITEMS + tile_index
+                )
                 expected_observed[payload_index] = load_source[memory_index]
                 expected_destination[memory_index] = store_source[payload_index]
 
@@ -586,7 +602,10 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
             )
             for item in range(_ITEMS_PER_THREAD):
                 lane = thread % _LOGICAL_WARP_THREADS
-                if lane * _ITEMS_PER_THREAD + item < valid_by_group[group_index]:
+                if (
+                    lane * _ITEMS_PER_THREAD + item
+                    < valid_by_group[group_index]
+                ):
                     observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     else:
@@ -608,13 +627,18 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
             )
             for item in range(_ITEMS_PER_THREAD):
                 lane = thread % _LOGICAL_WARP_THREADS
-                if lane * _ITEMS_PER_THREAD + item < valid_by_group[group_index]:
+                if (
+                    lane * _ITEMS_PER_THREAD + item
+                    < valid_by_group[group_index]
+                ):
                     observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_logical_transpose_load_reads_valid_items_in_nonzero_groups(
     qualified: bool,
 ) -> None:
@@ -687,7 +711,9 @@ def _logical_width_direct_kernel(width: int, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 def test_every_logical_warp_width_addresses_consecutive_tiles(
     qualified: bool,
@@ -742,7 +768,9 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
         def kernel(load_source, store_source, observed, destination):
             thread = cuda.threadIdx.x
             group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-            load_payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=numba_dtype)
+            load_payload = root_coop.ThreadData(
+                _ITEMS_PER_THREAD, dtype=numba_dtype
+            )
             root_coop.load(
                 group,
                 load_source,
@@ -767,7 +795,9 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 def test_logical_direct_load_store_matches_every_dtype_oracle(
     qualified: bool,
@@ -780,7 +810,9 @@ def test_logical_direct_load_store_matches_every_dtype_oracle(
     observed = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
     destination = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
 
-    _logical_direct_dtype_load_store_kernel(numba_dtype, qualified)[1, _BLOCK_THREADS](
+    _logical_direct_dtype_load_store_kernel(numba_dtype, qualified)[
+        1, _BLOCK_THREADS
+    ](
         load_source,
         store_source,
         observed,
@@ -857,7 +889,9 @@ def _partial_load_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 def test_partial_load_reads_valid_items_for_each_layout_and_warp(
     qualified: bool,
@@ -874,7 +908,9 @@ def test_partial_load_reads_valid_items_for_each_layout_and_warp(
             payload_index = thread * _ITEMS_PER_THREAD + item
             tile_index = _tile_index(algorithm, lane, item)
             if tile_index < valid_items:
-                expected[payload_index] = source[warp * _WARP_TILE_ITEMS + tile_index]
+                expected[payload_index] = source[
+                    warp * _WARP_TILE_ITEMS + tile_index
+                ]
 
     _partial_load_kernel(algorithm, qualified)[1, _BLOCK_THREADS](
         source,
@@ -932,7 +968,9 @@ def _per_warp_valid_items_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_runtime_valid_items_can_differ_between_physical_warps(
     qualified: bool,
 ) -> None:
@@ -942,7 +980,9 @@ def test_runtime_valid_items_can_differ_between_physical_warps(
     expected = np.full(_BLOCK_ITEMS, -83, dtype=np.int32)
     for warp, valid_items in enumerate(valid_by_warp):
         begin = warp * _WARP_TILE_ITEMS
-        expected[begin : begin + valid_items] = source[begin : begin + valid_items]
+        expected[begin : begin + valid_items] = source[
+            begin : begin + valid_items
+        ]
 
     _per_warp_valid_items_kernel(qualified)[1, _BLOCK_THREADS](
         source,
@@ -998,7 +1038,9 @@ def _multidimensional_load_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(
     "block_shape",
     ((16, 4), (8, 4, 2)),
@@ -1061,7 +1103,9 @@ def _logical_multidimensional_load_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_logical_warp_origin_uses_x_major_multidimensional_rank(
     qualified: bool,
 ) -> None:
@@ -1123,7 +1167,9 @@ def _static_control_load_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_physical_warp_static_controls_share_runtime_addressing(
     qualified: bool,
 ) -> None:
@@ -1176,12 +1222,16 @@ def _scalar_store_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_physical_warp_scalar_store_uses_destination_dtype(
     qualified: bool,
 ) -> None:
     source = _values(_BLOCK_THREADS, shift=91)
-    destination = np.full(_STORE_OFFSET + _BLOCK_THREADS + 3, -17, dtype=np.int32)
+    destination = np.full(
+        _STORE_OFFSET + _BLOCK_THREADS + 3, -17, dtype=np.int32
+    )
     expected = destination.copy()
     expected[_STORE_OFFSET : _STORE_OFFSET + _BLOCK_THREADS] = source + 1
 
@@ -1219,11 +1269,15 @@ def _literal_scalar_store_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_physical_warp_scalar_literal_infers_the_destination_dtype(
     qualified: bool,
 ) -> None:
-    destination = np.full(_STORE_OFFSET + _BLOCK_THREADS + 3, -17, dtype=np.int32)
+    destination = np.full(
+        _STORE_OFFSET + _BLOCK_THREADS + 3, -17, dtype=np.int32
+    )
     expected = destination.copy()
     expected[_STORE_OFFSET : _STORE_OFFSET + _BLOCK_THREADS] = 23
 
@@ -1303,14 +1357,18 @@ def _grid_stride_transpose_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_grid_stride_tail_clamps_valid_items_per_physical_warp(
     qualified: bool,
 ) -> None:
     source = _values(_GRID_STRIDE_ITEMS, shift=103)
     destination = np.full(_GRID_STRIDE_ITEMS, -1, dtype=np.int32)
 
-    _grid_stride_transpose_kernel(qualified)[_GRID_STRIDE_BLOCKS, _BLOCK_THREADS](
+    _grid_stride_transpose_kernel(qualified)[
+        _GRID_STRIDE_BLOCKS, _BLOCK_THREADS
+    ](
         source,
         destination,
     )
@@ -1333,7 +1391,9 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
             block_offset = cuda.blockIdx.x * _BLOCK_ITEMS
-            remaining = source.size - block_offset - group_index * _LOGICAL_TILE_ITEMS
+            remaining = (
+                source.size - block_offset - group_index * _LOGICAL_TILE_ITEMS
+            )
             valid_items = min(max(remaining, 0), _LOGICAL_TILE_ITEMS)
             group = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             payload = qualified_coop.ThreadData(
@@ -1364,7 +1424,9 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
             block_offset = cuda.blockIdx.x * _BLOCK_ITEMS
-            remaining = source.size - block_offset - group_index * _LOGICAL_TILE_ITEMS
+            remaining = (
+                source.size - block_offset - group_index * _LOGICAL_TILE_ITEMS
+            )
             valid_items = min(max(remaining, 0), _LOGICAL_TILE_ITEMS)
             group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             payload = root_coop.ThreadData(
@@ -1391,7 +1453,9 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_grid_stride_tail_clamps_valid_items_per_logical_warp(
     qualified: bool,
 ) -> None:
@@ -1408,7 +1472,9 @@ def test_grid_stride_tail_clamps_valid_items_per_logical_warp(
     np.testing.assert_array_equal(destination, source)
 
 
-def _run_divergent_warp_probe(qualified: bool) -> subprocess.CompletedProcess[str]:
+def _run_divergent_warp_probe(
+    qualified: bool,
+) -> subprocess.CompletedProcess[str]:
     """Run a one-warp collective with a child-process timeout.
 
     A barrier that includes the inactive warp could stall the kernel. The
@@ -1471,7 +1537,7 @@ expected[: _WARP_THREADS * _ITEMS_PER_THREAD] = source[: _WARP_THREADS * _ITEMS_
 kernel[1, _BLOCK_THREADS](source, observed)
 cuda.synchronize()
 np.testing.assert_array_equal(observed, expected)
-"""
+"""  # noqa: E501 - Preserve embedded source bytes.
     return subprocess.run(
         [sys.executable, _SAFE_PATH_FLAG, "-B", "-c", script],
         check=False,
@@ -1481,7 +1547,9 @@ np.testing.assert_array_equal(observed, expected)
     )
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_one_physical_warp_can_take_a_transpose_primitive_path(
     qualified: bool,
 ) -> None:
@@ -1559,7 +1627,7 @@ for warp in range(_BLOCK_THREADS // _WARP_THREADS):
 kernel[1, _BLOCK_THREADS](source, observed)
 cuda.synchronize()
 np.testing.assert_array_equal(observed, expected)
-"""
+"""  # noqa: E501 - Preserve embedded source bytes.
     return subprocess.run(
         [sys.executable, _SAFE_PATH_FLAG, "-B", "-c", script],
         check=False,
@@ -1569,7 +1637,9 @@ np.testing.assert_array_equal(observed, expected)
     )
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
 def test_one_logical_warp_per_physical_warp_can_diverge_at_transpose(
     qualified: bool,
 ) -> None:

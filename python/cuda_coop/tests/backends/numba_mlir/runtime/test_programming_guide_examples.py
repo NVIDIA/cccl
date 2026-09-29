@@ -55,7 +55,9 @@ def test_first_kernel():
             oob_default=0,
         )
         prefixes = coop.exclusive_sum(block, items)
-        coop.store(block, destination, prefixes, offset=offset, valid_items=valid)
+        coop.store(
+            block, destination, prefixes, offset=offset, valid_items=valid
+        )
 
     source = (np.arange(785) % 7).astype(np.int32)
     d_source = cuda.to_device(source)
@@ -178,7 +180,9 @@ def test_warp_copy():
             valid_items=valid,
             oob_default=0,
         )
-        coop.store(group, destination, items, offset=block_origin, valid_items=valid)
+        coop.store(
+            group, destination, items, offset=block_origin, valid_items=valid
+        )
 
     source = np.arange(531, dtype=np.int32)
     destination = np.full_like(source, -1)
@@ -202,7 +206,9 @@ def test_shared_scratch():
         scratch = coop.TempStorage(auto_sync=True)
         items = coop.ThreadData(2, dtype=np.int32)
 
-        coop.load(block, source, items, algorithm="transpose", temp_storage=scratch)
+        coop.load(
+            block, source, items, algorithm="transpose", temp_storage=scratch
+        )
         prefixes = coop.exclusive_sum(block, items, temp_storage=scratch)
         coop.store(
             block,
@@ -255,7 +261,9 @@ def test_manual_scratch():
     np.testing.assert_array_equal(destination, source)
     # coop-pg-manual-scratch-end
 
-    compiled = next(iter(copy_tiles_with_manual_sync._launch_config_overloads.values()))
+    compiled = next(
+        iter(copy_tiles_with_manual_sync._launch_config_overloads.values())
+    )
     # The descriptor adds no barriers to the explicit block.sync() calls.
     assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 0
 
@@ -286,7 +294,8 @@ def test_reduce():
     tile_sums[4, 128](source, totals, source.size)
     cuda.synchronize()
     expected = [
-        source[start : start + 256].sum() for start in range(0, source.size, 256)
+        source[start : start + 256].sum()
+        for start in range(0, source.size, 256)
     ]
     np.testing.assert_array_equal(totals, expected)
     # coop-pg-reduce-end

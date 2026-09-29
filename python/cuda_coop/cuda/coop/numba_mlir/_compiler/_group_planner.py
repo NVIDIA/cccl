@@ -1546,7 +1546,8 @@ class _GroupCallPlanner:
         state = self._is_array_value(value, thread_data_only=True)
         if state is None:
             raise GroupRewriteError(
-                f"cuda.coop.{operation} could not resolve {parameter} payload provenance"
+                f"cuda.coop.{operation} could not "
+                f"resolve {parameter} payload provenance"
             )
         return state
 
@@ -2227,7 +2228,8 @@ class _GroupCallPlanner:
         if bound.arguments.get("kwargs"):
             names = ", ".join(sorted(bound.arguments["kwargs"]))
             raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} got unexpected keyword(s): {names}"
+                f"cuda.coop.numba_mlir.{operation} "
+                f"got unexpected keyword(s): {names}"
             )
         group = self._group(bound.arguments["group"])
         if group is None:
@@ -2398,7 +2400,8 @@ class _GroupCallPlanner:
                 if level_order[level] > level_order[group.mapping.parent]:
                     raise NotImplementedError(
                         "cuda.coop.numba_mlir mapped ThreadGroup queries above "
-                        "the immediate parent require recursive group composition"
+                        "the immediate parent require "
+                        "recursive group composition"
                     )
             group = self._resolve_group(
                 group, feature=f"ThreadGroup.{operation}", through_level=level
@@ -2418,7 +2421,8 @@ class _GroupCallPlanner:
         if group.kind == "grid" and operation in {"sync", "sync_aligned"}:
             raise NotImplementedError(
                 "cuda.coop.numba_mlir grid synchronization requires a verified "
-                "cooperative launch, which the current launch descriptor cannot "
+                "cooperative launch, which the "
+                "current launch descriptor cannot "
                 "request"
             )
 

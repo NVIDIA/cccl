@@ -49,7 +49,9 @@ def _common_group_operation(
     """
 
     if not name or not group_kinds:
-        raise ValueError("common group operations require a name and group kinds")
+        raise ValueError(
+            "common group operations require a name and group kinds"
+        )
 
     def decorate(function: _CallableT) -> _CallableT:
         """Register one function in both tables and reject conflicts."""
@@ -59,7 +61,9 @@ def _common_group_operation(
         )
         existing = _COMMON_GROUP_OPERATIONS_BY_NAME.get(name)
         if existing is not None and existing != registration:
-            raise RuntimeError(f"common group operation {name!r} is already registered")
+            raise RuntimeError(
+                f"common group operation {name!r} is already registered"
+            )
         existing_function = _COMMON_GROUP_OPERATIONS_BY_FUNCTION.get(function)
         if existing_function is not None and existing_function != registration:
             raise RuntimeError(

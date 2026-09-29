@@ -83,7 +83,8 @@ def run_length_decode(
     relative run-offset outputs.
     """
     raise CoopCompilerContextRequiredError(
-        "cuda.coop.run_length_decode must be called from a supported GPU kernel."
+        "cuda.coop.run_length_decode must be called from a supported "
+        "GPU kernel."
     )
 
 
@@ -145,7 +146,8 @@ def run_length_decode_into(
     windows. Both run inputs are preserved.
     """
     raise CoopCompilerContextRequiredError(
-        "cuda.coop.run_length_decode_into must be called from a supported GPU kernel."
+        "cuda.coop.run_length_decode_into must be called from a supported "
+        "GPU kernel."
     )
 
 
