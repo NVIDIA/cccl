@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# ruff: noqa: E402
 
 """Histogram counts, striped ownership, preservation, and scratch reuse."""
 
