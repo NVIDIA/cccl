@@ -255,15 +255,20 @@ def test_kernel_discovery_rejects_non_kernel_functions(
         }
         with ir.InsertionPoint(parent.regions[0].blocks[0]):
             function = _region_op(function_name, attributes)
-        with ir.InsertionPoint(function.regions[0].blocks[0]):
-            with pytest.raises(_storage.DSLRuntimeError, match="enclosing CUDA kernel"):
-                _storage._active_cuda_kernel_op()
+        with (
+            ir.InsertionPoint(function.regions[0].blocks[0]),
+            pytest.raises(_storage.DSLRuntimeError, match="enclosing CUDA kernel"),
+        ):
+            _storage._active_cuda_kernel_op()
 
 
 def test_kernel_discovery_requires_an_active_trace():
-    with ir.Context(), ir.Location.unknown():
-        with pytest.raises(_storage.DSLRuntimeError, match="active CuTe kernel trace"):
-            _storage._active_cuda_kernel_op()
+    with (
+        ir.Context(),
+        ir.Location.unknown(),
+        pytest.raises(_storage.DSLRuntimeError, match="active CuTe kernel trace"),
+    ):
+        _storage._active_cuda_kernel_op()
 
 
 def test_requirement_key_must_be_hashable():
