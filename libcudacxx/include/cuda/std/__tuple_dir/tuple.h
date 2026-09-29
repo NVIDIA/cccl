@@ -781,6 +781,19 @@ _CCCL_API constexpr __pair_base<_T1, _T2, _IsRef>::__pair_base(
     , second(::cuda::std::forward<_Args2>(::cuda::std::get<_I2>(__second_args))...)
 {}
 
+// __pair_base<T1, T2, true> is a partial specialization, so the primary definition above does not cover it.
+template <class _T1, class _T2>
+template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
+_CCCL_API constexpr __pair_base<_T1, _T2, true>::__pair_base(
+  piecewise_construct_t,
+  tuple<_Args1...>& __first_args,
+  tuple<_Args2...>& __second_args,
+  __tuple_indices<_I1...>,
+  __tuple_indices<_I2...>)
+    : first(::cuda::std::forward<_Args1>(::cuda::std::get<_I1>(__first_args))...)
+    , second(::cuda::std::forward<_Args2>(::cuda::std::get<_I2>(__second_args))...)
+{}
+
 // specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::tuple
 
 template <class... _Tp>

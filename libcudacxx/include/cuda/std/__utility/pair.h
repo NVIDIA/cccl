@@ -259,6 +259,50 @@ private:
   using __get_t = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));
 #endif // !_CCCL_COMPILER(GCC, <, 8)
 
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _Tp, class... _Args>
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __piecewise_reference_from_temporary_pack() noexcept
+  {
+    if constexpr (sizeof...(_Args) == 1)
+    {
+      return reference_constructs_from_temporary_v<_Tp, _Args...>;
+    }
+    else
+    {
+      return false;
+    }
+  }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
+  // The two packs are deduced from the tag pointers. A single function template cannot be given both packs as
+  // explicit template arguments.
+  template <class... _Args1, class... _Args2>
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor
+  __select_piecewise_constructible(__tuple_types<_Args1...>, __tuple_types<_Args2...>) noexcept
+  {
+    // NOLINTBEGIN(bugprone-branch-clone)
+    if constexpr (!is_constructible_v<_T1, _Args1...>)
+    { // [pairs#pair]-18.1: is_constructible_v<T1, Args1...> is true
+      return __select_constructor::__invalid;
+    }
+    else if constexpr (!is_constructible_v<_T2, _Args2...>)
+    { // [pairs#pair]-18.2: is_constructible_v<T2, Args2...> is true
+      return __select_constructor::__invalid;
+    }
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+    else if constexpr (pair::__piecewise_reference_from_temporary_pack<_T1, _Args1...>()
+                       || pair::__piecewise_reference_from_temporary_pack<_T2, _Args2...>())
+    { // [pairs#pair] note 2: defined as deleted if a reference member would bind to a temporary
+      return __select_constructor::__deleted;
+    }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+    else
+    {
+      return __select_constructor::__implicit;
+    }
+    // NOLINTEND(bugprone-branch-clone)
+  }
+
   using __base = __pair_base<_T1, _T2>;
 
 public:
@@ -469,7 +513,12 @@ public:
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
-  template <class... _Args1, class... _Args2>
+  // NOTE: GCC7 fails to instantiate __select_piecewise_constructible without the explicit pair::
+  template <class... _Args1,
+            class... _Args2,
+            __select_constructor _Constraints =
+              pair::__select_piecewise_constructible(__tuple_types<_Args1...>{}, __tuple_types<_Args2...>{}),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(piecewise_construct_t __pc,
                            tuple<_Args1...> __first_args,
                            tuple<_Args2...> __second_args) noexcept((is_nothrow_constructible_v<_T1, _Args1...>
@@ -480,6 +529,15 @@ public:
                __make_tuple_indices_t<sizeof...(_Args1)>(),
                __make_tuple_indices_t<sizeof...(_Args2)>())
   {}
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class... _Args1,
+            class... _Args2,
+            __select_constructor _Constraints =
+              pair::__select_piecewise_constructible(__tuple_types<_Args1...>{}, __tuple_types<_Args2...>{}),
+            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
+  constexpr pair(piecewise_construct_t, tuple<_Args1...>, tuple<_Args2...>) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   // assignments
   _CCCL_HIDE_FROM_ABI pair& operator=(const pair&) = default;
