@@ -54,6 +54,18 @@ Terms
       Key and value payloads have the same extent but may have different
       dtypes. See :ref:`Merge Sort <coop-merge-sort>`.
 
+   stable sort
+      A sort that preserves the input order of elements with equal keys.
+      A function's contract must promise stability before a program relies
+      on it. Radix Sort in ``cuda.coop`` is stable; Merge Sort does not
+      promise equal-key order. See :ref:`radix sorting <coop-radix>`.
+
+   radix digit
+      A fixed-width interval of key bits used in one ranking or sorting
+      step. ``radix_rank`` assigns ranks according to one such digit;
+      ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
+      requested bit interval. See :ref:`radix sorting and ranks <coop-radix>`.
+
    common API
       .. raw:: html
 
