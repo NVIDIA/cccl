@@ -12,7 +12,10 @@ from pathlib import Path
 import pytest
 
 from cuda.coop._headers import _identity
-from cuda.coop._headers._identity import HeaderIdentityError, include_dirs_identity
+from cuda.coop._headers._identity import (
+    HeaderIdentityError,
+    include_dirs_identity,
+)
 
 
 def _record_hash(content: bytes) -> str:
@@ -26,7 +29,9 @@ def _include_root(path: Path, content: bytes) -> Path:
     return path
 
 
-def test_identity_preserves_include_order_and_provenance(tmp_path: Path) -> None:
+def test_identity_preserves_include_order_and_provenance(
+    tmp_path: Path,
+) -> None:
     first = _include_root(tmp_path / "first", b"same header")
     second = _include_root(tmp_path / "second", b"same header")
 

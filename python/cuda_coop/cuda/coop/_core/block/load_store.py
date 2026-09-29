@@ -89,7 +89,9 @@ def _algorithm_cpp_map(
     kind: BlockLoadStoreKind,
 ) -> dict[BlockLoadStoreAlgorithm, str]:
     return (
-        _LOAD_ALGORITHM_CPP if kind is BlockLoadStoreKind.LOAD else _STORE_ALGORITHM_CPP
+        _LOAD_ALGORITHM_CPP
+        if kind is BlockLoadStoreKind.LOAD
+        else _STORE_ALGORITHM_CPP
     )
 
 
@@ -104,7 +106,9 @@ def _normalize_algorithm(
         for candidate, cpp in mapping.items():
             if algorithm in {candidate.value, cpp}:
                 return candidate
-    raise ValueError(f"unsupported Block{kind.value.title()} algorithm {algorithm!r}")
+    raise ValueError(
+        f"unsupported Block{kind.value.title()} algorithm {algorithm!r}"
+    )
 
 
 def _base_parameters(kind: BlockLoadStoreKind) -> list[Any]:
@@ -275,7 +279,9 @@ def make_block_load_store_semantics(
 
     pointer_offset_overload_cohort = isinstance(include_pointer_offset, bool)
     kind = BlockLoadStoreKind(kind)
-    items_per_thread = normalize_positive_int("items_per_thread", items_per_thread)
+    items_per_thread = normalize_positive_int(
+        "items_per_thread", items_per_thread
+    )
     algorithm = _normalize_algorithm(kind, algorithm)
     valid_items = _normalize_optional_binding(valid_items, name="valid_items")
     valid_items = _normalize_i32_binding(valid_items, name="valid_items")
@@ -284,10 +290,18 @@ def make_block_load_store_semantics(
         include_pointer_offset,
         name="include_pointer_offset",
     )
-    pointer_offset = _normalize_i64_binding(pointer_offset, name="pointer offset")
-    if pointer_offset.kind is BindingKind.STATIC and int(pointer_offset.value) < 0:
+    pointer_offset = _normalize_i64_binding(
+        pointer_offset, name="pointer offset"
+    )
+    if (
+        pointer_offset.kind is BindingKind.STATIC
+        and int(pointer_offset.value) < 0
+    ):
         raise ValueError("static pointer offset must be nonnegative")
-    if kind is BlockLoadStoreKind.STORE and oob_default.kind is not BindingKind.OMITTED:
+    if (
+        kind is BlockLoadStoreKind.STORE
+        and oob_default.kind is not BindingKind.OMITTED
+    ):
         raise ValueError("oob_default is only valid for BlockLoad")
     if (
         oob_default.kind is not BindingKind.OMITTED
@@ -301,7 +315,8 @@ def make_block_load_store_semantics(
     has_full_tile = valid_items.kind is BindingKind.OMITTED or include_full_tile
     methods: list[tuple[Any, ...]] = []
     if has_full_tile and (
-        pointer_offset.kind is BindingKind.OMITTED or pointer_offset_overload_cohort
+        pointer_offset.kind is BindingKind.OMITTED
+        or pointer_offset_overload_cohort
     ):
         methods.append(tuple(base))
     if valid_items.kind is not BindingKind.OMITTED:
@@ -318,7 +333,10 @@ def make_block_load_store_semantics(
                     name="oob_default",
                 )
             )
-        if pointer_offset.kind is BindingKind.OMITTED or pointer_offset_overload_cohort:
+        if (
+            pointer_offset.kind is BindingKind.OMITTED
+            or pointer_offset_overload_cohort
+        ):
             methods.append(tuple(partial))
         if pointer_offset.kind is not BindingKind.OMITTED:
             methods.append(_with_pointer_offset(partial, pointer_offset))
@@ -368,7 +386,9 @@ def make_block_load_store_spec(
         if isinstance(value, bool) or not isinstance(value, Integral):
             raise TypeError("static valid_items must be an integer")
         value = int(value)
-        tile_items = call.items_per_thread * block_dim[0] * block_dim[1] * block_dim[2]
+        tile_items = (
+            call.items_per_thread * block_dim[0] * block_dim[1] * block_dim[2]
+        )
         if not 0 <= value <= tile_items:
             raise ValueError(
                 "static valid_items must be between zero and the block tile "
@@ -384,7 +404,8 @@ def make_block_load_store_spec(
         and block_threads % 32 != 0
     ):
         raise ValueError(
-            f"Block{call.kind.value.title()} algorithm {call.algorithm.value!r} "
+            f"Block{call.kind.value.title()} algorithm "
+            f"{call.algorithm.value!r} "
             "requires a block size that is a multiple of 32"
         )
     title = call.kind.value.title()

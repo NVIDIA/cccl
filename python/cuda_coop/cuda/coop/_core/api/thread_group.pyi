@@ -87,7 +87,9 @@ class ThreadGroup(Generic[_GroupKindT_co]):
     ) -> ThreadGroup[Literal["warps_within_block"]]:
         """Partition a block into groups of physical warps."""
 
-MemoryGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp", "block"]]
+MemoryGroup: TypeAlias = ThreadGroup[
+    Literal["warp", "threads_within_warp", "block"]
+]
 ReductionGroup: TypeAlias = ThreadGroup[
     Literal["thread", "warp", "threads_within_warp", "block", "cluster"]
 ]

@@ -80,8 +80,12 @@ class GroupLoadStoreSemantics:
     dtype: Any
     items_per_thread: int
     algorithm: GroupLoadStoreAlgorithm = GroupLoadStoreAlgorithm.DIRECT
-    valid_items: ArgumentBinding = field(default_factory=ArgumentBinding.omitted)
-    oob_default: ArgumentBinding = field(default_factory=ArgumentBinding.omitted)
+    valid_items: ArgumentBinding = field(
+        default_factory=ArgumentBinding.omitted
+    )
+    oob_default: ArgumentBinding = field(
+        default_factory=ArgumentBinding.omitted
+    )
     offset: ArgumentBinding = field(default_factory=ArgumentBinding.omitted)
     storage_ownership: StorageOwnership = StorageOwnership.IMPLEMENTATION
     storage_sharing: str | None = None
@@ -120,7 +124,10 @@ class GroupLoadStoreSemantics:
             "offset",
             _normalize_i64_binding(self.offset, name="offset"),
         )
-        if self.offset.kind is BindingKind.STATIC and int(self.offset.value) < 0:
+        if (
+            self.offset.kind is BindingKind.STATIC
+            and int(self.offset.value) < 0
+        ):
             raise ValueError("static offset must be nonnegative")
         if self.kind is GroupLoadStoreKind.STORE and (
             self.oob_default.kind is not BindingKind.OMITTED
@@ -136,7 +143,9 @@ class GroupLoadStoreSemantics:
         for name in ("storage_size_in_bytes", "storage_alignment"):
             value = getattr(self, name)
             if value is not None and (
-                not isinstance(value, int) or isinstance(value, bool) or value <= 0
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or value <= 0
             ):
                 raise ValueError(f"{name} must be a positive integer or None")
         if not isinstance(self.storage_auto_sync, bool):
@@ -155,7 +164,9 @@ class GroupLoadStoreSemantics:
                     self.storage_alignment,
                 )
             ):
-                raise ValueError("storage-free operations cannot carry storage layout")
+                raise ValueError(
+                    "storage-free operations cannot carry storage layout"
+                )
             if self.storage_auto_sync:
                 raise ValueError(
                     "storage-free operations cannot request automatic sync"
@@ -231,7 +242,9 @@ def _call_classifications(
 ) -> tuple[ParameterClassification, ...]:
     classifications = [
         ParameterClassification(
-            "source" if operation.kind is GroupLoadStoreKind.LOAD else "destination",
+            "source"
+            if operation.kind is GroupLoadStoreKind.LOAD
+            else "destination",
             ArgumentKind.RUNTIME,
             (
                 ParameterRole.INPUT
@@ -298,7 +311,9 @@ def _plan_load_store(
     tile_items = group_size * operation.items_per_thread
     if operation.valid_items.kind is BindingKind.STATIC:
         valid_items = operation.valid_items.value
-        if isinstance(valid_items, bool) or not isinstance(valid_items, Integral):
+        if isinstance(valid_items, bool) or not isinstance(
+            valid_items, Integral
+        ):
             raise TypeError("static valid_items must be an integer")
         valid_items = int(valid_items)
         if not 0 <= valid_items <= tile_items:
@@ -383,7 +398,9 @@ def _plan_load_store(
         group_instances = block_threads // warp_width
         maximum_tile_origin = (group_instances - 1) * tile_items
         if maximum_tile_origin > maximum_user_offset:
-            raise ValueError("warp-group tile origin must fit a signed 64-bit offset")
+            raise ValueError(
+                "warp-group tile origin must fit a signed 64-bit offset"
+            )
         maximum_user_offset -= maximum_tile_origin
     if operation.offset.kind is BindingKind.STATIC and (
         int(operation.offset.value) > maximum_user_offset
@@ -399,14 +416,18 @@ def _plan_load_store(
         launch,
         result=None,
         storage_ownership=(
-            StorageOwnership.NONE if storage_free else operation.storage_ownership
+            StorageOwnership.NONE
+            if storage_free
+            else operation.storage_ownership
         ),
         cpp_type=None,
         storage_sharing=None if storage_free else operation.storage_sharing,
         requested_size_in_bytes=(
             None if storage_free else operation.storage_size_in_bytes
         ),
-        requested_alignment=(None if storage_free else operation.storage_alignment),
+        requested_alignment=(
+            None if storage_free else operation.storage_alignment
+        ),
         auto_sync=False if storage_free else operation.storage_auto_sync,
         uniform_arguments=(
             *(("valid_items",) if operation.has_valid_items else ()),
@@ -414,7 +435,9 @@ def _plan_load_store(
             *(("offset",) if operation.has_offset else ()),
         ),
         valid_member_selection=(
-            "first valid_items tile elements" if operation.has_valid_items else None
+            "first valid_items tile elements"
+            if operation.has_valid_items
+            else None
         ),
         argument_preconditions=(
             *(

@@ -77,7 +77,7 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
         )
         assert paths.origin == "cuda-coop wheel header bundle"
         assert all(path.resolve().is_relative_to(distribution_root) for path in paths.cccl)
-        """
+        """  # noqa: E501 - Preserve embedded source bytes.
     )
 
     environment = os.environ.copy()

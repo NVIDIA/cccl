@@ -29,7 +29,9 @@ def _load_store(kind="load", **overrides):
         valid_items=overrides.pop("valid_items", ArgumentBinding.omitted()),
         oob_default=overrides.pop("oob_default", ArgumentBinding.omitted()),
         offset=overrides.pop("offset", ArgumentBinding.omitted()),
-        storage_ownership=overrides.pop("storage_ownership", default_storage_ownership),
+        storage_ownership=overrides.pop(
+            "storage_ownership", default_storage_ownership
+        ),
         storage_sharing=overrides.pop("storage_sharing", None),
         storage_size_in_bytes=overrides.pop("storage_size_in_bytes", None),
         storage_alignment=overrides.pop("storage_alignment", None),

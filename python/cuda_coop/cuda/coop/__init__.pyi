@@ -22,7 +22,9 @@ from ._core.api.thread_group import (
 
 __version__: str
 
-def register(backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"]) -> None: ...
+def register(
+    backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"],
+) -> None: ...
 
 __all__ = [
     "Hierarchy",

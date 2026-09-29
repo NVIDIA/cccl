@@ -24,15 +24,20 @@ def normalize_block_dim(value: Any) -> tuple[int, int, int]:
     try:
         dimensions = tuple(value)
     except TypeError as exc:
-        raise ValueError("block_dim must contain three positive dimensions") from exc
+        raise ValueError(
+            "block_dim must contain three positive dimensions"
+        ) from exc
     if len(dimensions) != 3:
         raise ValueError("block_dim must contain three positive dimensions")
     try:
         x, y, z = (
-            normalize_positive_int("block_dim", dimension) for dimension in dimensions
+            normalize_positive_int("block_dim", dimension)
+            for dimension in dimensions
         )
     except ValueError as exc:
-        raise ValueError("block_dim must contain three positive dimensions") from exc
+        raise ValueError(
+            "block_dim must contain three positive dimensions"
+        ) from exc
     return x, y, z
 
 
