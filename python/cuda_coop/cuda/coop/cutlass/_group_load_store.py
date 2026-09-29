@@ -72,8 +72,8 @@ def load(
     agree with it when already declared.
 
     Load populates the payload in place. Beyond
-    ``valid_items``, initialized slots keep their values unless
-    ``oob_default`` is supplied. Supplying ``oob_default`` also
+    ``valid_items``, slots have unspecified values unless ``oob_default`` is
+    supplied, even if initialized before Load. Supplying ``oob_default`` also
     requires ``valid_items``. A runtime default must have the memory dtype.
 
     The count ranges from zero through the full tile size. ``offset`` is a
@@ -143,6 +143,9 @@ def store(
     as :func:`load`. DIRECT, STRIPED, and VECTORIZE need no shared scratch
     or reuse barrier. Transpose algorithms use shared scratch; an optional
     TempStorage descriptor controls allocation and reuse.
+
+    Transpose algorithms may rearrange the input payload, so do not rely on
+    its contents after Store.
     """
 
     group, launch, algorithm = _resolve_group(
