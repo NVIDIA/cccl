@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""GPU-hidden, real-toolchain compilation contracts for Scan providers."""
-
 from __future__ import annotations
 
 import os

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Scan payload inference and scalar-control validation."""
-
 from __future__ import annotations
 
 from numbers import Integral

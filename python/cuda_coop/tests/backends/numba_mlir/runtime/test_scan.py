@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block and Warp Scan runtime qualification for Numba-CUDA-MLIR."""
-
 from __future__ import annotations
 
 import operator
