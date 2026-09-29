@@ -293,7 +293,7 @@ def test_custom_exclusive_scan_requires_initial_value():
 
 def test_block_prefix_callback_defines_custom_exclusive_rank_zero():
     def maximum(left, right):
-        return left if left > right else right
+        return max(right, left)
 
     def running_prefix(state, aggregate):
         previous = state[0]
@@ -389,7 +389,7 @@ def test_static_warp_prefix_is_bounded_to_group_width(valid_items):
 
 
 def test_common_scan_defers_to_compiler_activation_and_exports_root():
-    import cuda.coop as coop
+    from cuda import coop
 
     api = import_module("cuda.coop._core.api.scan")
     with pytest.raises(CoopCompilerContextRequiredError):
