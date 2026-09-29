@@ -23,8 +23,9 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
-#include <cuda/std/inplace_vector>
+#include <cuda/std/initializer_list>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk
@@ -141,12 +142,81 @@ inline constexpr sort_policy sorted_output_policies[] = {
 inline constexpr int sorted_output_policy_count =
   static_cast<int>(sizeof(sorted_output_policies) / sizeof(sorted_output_policies[0]));
 
+//! Fixed-capacity, dynamically sized list of @ref worker_policy. `cuda::std::inplace_vector` would be the natural
+//! choice here, but its backing storage is private, which disqualifies it (and anything embedding it, such as
+//! @ref baseline_topk_policy and @ref topk_policy) as a C++20 non-type template parameter -- CC dispatch
+//! (`cub::detail::policy_constant`/`cuda::std::integral_constant`, see `cub/detail/cc_dispatch.cuh`) instantiates the
+//! resolved policy that way, which requires a "structural type": every base class and non-static data member must be
+//! public. Keeping the array and the element count as plain public members preserves that property.
+struct worker_policy_list
+{
+  static constexpr ::cuda::std::size_t capacity = 10;
+
+  ::cuda::std::array<worker_policy, capacity> policies{};
+  ::cuda::std::size_t count = 0;
+
+  _CCCL_HOST_DEVICE_API constexpr worker_policy_list(::cuda::std::initializer_list<worker_policy> ilist)
+  {
+    for (const auto& wp : ilist)
+    {
+      policies[count++] = wp;
+    }
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t size() const noexcept
+  {
+    return count;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr worker_policy& operator[](::cuda::std::size_t i) noexcept
+  {
+    return policies[i];
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const worker_policy& operator[](::cuda::std::size_t i) const noexcept
+  {
+    return policies[i];
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const worker_policy* begin() const noexcept
+  {
+    return policies.data();
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const worker_policy* end() const noexcept
+  {
+    return policies.data() + count;
+  }
+
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const worker_policy_list& lhs, const worker_policy_list& rhs)
+  {
+    if (lhs.count != rhs.count)
+    {
+      return false;
+    }
+    for (::cuda::std::size_t i = 0; i < lhs.count; ++i)
+    {
+      if (lhs.policies[i] != rhs.policies[i])
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const worker_policy_list& lhs, const worker_policy_list& rhs)
+  {
+    return !(lhs == rhs);
+  }
+};
+
 //! Sub-policy for the baseline (worker-per-segment) backend of @ref DeviceBatchedTopK.
 struct baseline_topk_policy
 {
   //! Per-segment worker policies ordered by decreasing tile size. At compile time the smallest policy whose tile size
-  //! still covers the upper bound of the segment size is selected. At most 10 policies can be specified.
-  ::cuda::std::inplace_vector<worker_policy, 10> worker_per_segment_policies;
+  //! still covers the upper bound of the segment size is selected. At most `worker_policy_list::capacity` policies
+  //! can be specified.
+  worker_policy_list worker_per_segment_policies;
   multi_worker_policy multi_worker_per_segment_policy; //!< Worker policy for segments too large for a single block.
 
   _CCCL_HOST_DEVICE_API friend constexpr bool
