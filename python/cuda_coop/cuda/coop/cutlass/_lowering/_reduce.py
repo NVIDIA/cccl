@@ -486,8 +486,10 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
     if request.plan.target is GroupLoweringTarget.CUB_WARP:
         instances, logical_width = _warp_instances(request.plan)
         storage_lines = [
-            "  __shared__ typename implementation_type::TempStorage "
-            f"storage[{instances}];",
+            (
+                "  __shared__ typename implementation_type::TempStorage "
+                f"storage[{instances}];"
+            ),
             "  unsigned int storage_instance =",
             f"      (threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) / {logical_width}u;",
         ]
@@ -497,8 +499,10 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
 
     return [
         f"{spec.cpp_type} {request.symbol_name}({', '.join(params)}) {{",
-        f"  using implementation_type = ::cub::{implementation.struct_name}<"
-        f"{template_arguments}>;",
+        (
+            f"  using implementation_type = ::cub::{implementation.struct_name}<"
+            f"{template_arguments}>;"
+        ),
         *(
             [
                 f"  if (valid_items < 1 || valid_items > {request.group.static_size}) {{",
@@ -510,8 +514,10 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
         ),
         *storage_lines,
         *input_lines,
-        f"  {spec.cpp_type} result = implementation_type({storage})."
-        f"{implementation.method_name}({', '.join(call_arguments)});",
+        (
+            f"  {spec.cpp_type} result = implementation_type({storage})."
+            f"{implementation.method_name}({', '.join(call_arguments)});"
+        ),
         barrier_line,
         "  return result;",
         "}",
@@ -689,7 +695,7 @@ def provider_reduce(
 
 
 __all__ = [
-    "_CudaxReduceRequest",
     "_CubReduceRequest",
+    "_CudaxReduceRequest",
     "provider_reduce",
 ]

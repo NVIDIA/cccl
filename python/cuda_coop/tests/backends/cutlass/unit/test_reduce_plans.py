@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """CUTLASS Reduce consumes shared routing and result contracts."""
 
@@ -35,20 +34,20 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _plan(group=None, **options):
-    kwargs = dict(
-        group=this_block() if group is None else group,
-        launch=LaunchFacts(
+    kwargs = {
+        "group": this_block() if group is None else group,
+        "launch": LaunchFacts(
             exact_block_dim=(8, 4, 2),
             exact_cluster_dim=(1, 1, 1),
             cluster_launch=False,
             provenance=LaunchFactOrigin("cluster_launch", "test", verified=True),
         ),
-        dtype=cutlass.Int32,
-        value_kind="scalar",
-        items_per_thread=1,
-        op="sum",
-        broadcast=True,
-    )
+        "dtype": cutlass.Int32,
+        "value_kind": "scalar",
+        "items_per_thread": 1,
+        "op": "sum",
+        "broadcast": True,
+    }
     kwargs.update(options)
     return _reduce._make_group_reduce_plan(**kwargs).require_supported()
 
