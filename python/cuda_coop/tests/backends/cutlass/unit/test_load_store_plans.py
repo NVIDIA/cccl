@@ -13,7 +13,7 @@ from cutlass import Int32
 from cuda.coop._core import ArgumentBinding, StorageOwnership, this_block
 from cuda.coop.cutlass._compiler import _rendering
 from cuda.coop.cutlass._lowering._load_store import _CubLoadStoreRequest
-from tests.support.group_planning import _load_store, _plan
+from tests._group_planning import _load_store, _plan
 
 pytestmark = [pytest.mark.unit, pytest.mark.backend_cutlass]
 
