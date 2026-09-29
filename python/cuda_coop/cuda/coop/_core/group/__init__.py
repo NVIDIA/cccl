@@ -54,8 +54,6 @@ from .shuffle import GroupShuffleSemantics
 from .topk import GroupTopKSemantics
 
 __all__ = [
-    "GroupReduceBatchedSemantics",
-    "GroupMergeSortSemantics",
     "ArgumentPrecondition",
     "CudaxCallDescription",
     "CudaxReturnKind",
@@ -67,11 +65,13 @@ __all__ = [
     "GroupLoadStoreSemantics",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
+    "GroupMergeSortSemantics",
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
     "GroupRadixRankSemantics",
     "GroupRadixSortSemantics",
+    "GroupReduceBatchedSemantics",
     "GroupReduceSemantics",
     "GroupRunLengthDecodeSemantics",
     "GroupScanMode",

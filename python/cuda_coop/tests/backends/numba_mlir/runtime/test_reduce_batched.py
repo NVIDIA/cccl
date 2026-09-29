@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Independent numerical oracles for batched warp reductions."""
 
@@ -79,7 +78,7 @@ def test_batch_builtin_operators(operator):
 def test_custom_operator_and_chained_result_extent():
     @cuda.jit(device=True)
     def maximum(left, right):
-        return left if left > right else right
+        return max(right, left)
 
     @cuda.jit
     def kernel(source, output):
