@@ -487,6 +487,9 @@ The plan records more than the selected CUB class:
    * - Topology and participation
      - Which threads form a group, how many group instances exist in a
        block, and which participants must reach the call.
+   * - Result
+     - Whether the result aliases an input, needs new storage, or is a
+       scalar; which threads have a defined result.
    * - Temporary storage
      - Who owns scratch, how many instances are needed, and which layout
        requirements must be obtained from the compiled provider.
@@ -529,7 +532,8 @@ establishes the dtype:
    coop.load(block, source, items)
    coop.store(block, destination, items)
 
-The planner propagates the dtype from ``source`` to ``items``. A later Store can then use ``items`` even though its constructor did not
+The planner propagates the dtype from ``source`` to ``items``. A later Store
+or Exchange can then use ``items`` even though its constructor did not
 specify a dtype. Load fills ``items`` in place and returns ``None``.
 
 Layout describes which logical tile elements each thread owns. A striped
@@ -538,11 +542,20 @@ Load gives it ``items_per_thread * t + i`` for each local index ``i``.
 The ``transpose`` algorithm uses striped memory transactions internally
 and fills the payload in blocked order;
 ``striped`` exposes the striped payload to the caller. The caller must
-choose Load and Store algorithms that agree on that arrangement.
+choose operations that agree on that arrangement or insert an Exchange.
 
-Load and Store return ``None``. Load fills the supplied output in place.
-Store follows CUB: transpose algorithms may rearrange the input payload
-in place. Invalid Load slots are unspecified unless a default is supplied.
+The result contracts preserve the following public behavior:
+
+* Load and Store return ``None``. Load fills the supplied output in place.
+  Store preserves its input, including when its CUB implementation reorders
+  data internally.
+* Exchange returns a fresh payload. Its input remains available to
+  subsequent kernel code.
+
+Output ownership is part of lowering. A CUB method that overwrites an
+array does not, by itself, implement a Python operation that promises to
+preserve that array. The backend may need a copy or a separate result
+payload around the provider call.
 
 The qualified namespace accepts additional compiler-specific values, such
 as local-array payloads where supported. Type support is still checked by
@@ -637,7 +650,8 @@ kernels. Passing coexistence tests against a development compiler alone does
 not remove the compatibility guard.
 
 These controls are operation-specific. Warp Load/Store uses
-compiler-owned storage and reject an explicit ``TempStorage``.
+compiler-owned storage and reject an explicit ``TempStorage``. Exchange
+and Shuffle also manage their own scratch in the current API.
 
 
 Activation and compilation reuse
@@ -1123,7 +1137,7 @@ provide an explicit target. Runtime tests check the resulting kernels.
 
 
 Use tests that exercise the part you changed. A result-ownership change
-needs a check of the operation's documented mutation behavior. A storage change needs repeated calls
+needs an input-preservation check. A storage change needs repeated calls
 and multiple independent groups. A callable ABI change needs a real link
 and a runtime result. A mocked compiler test cannot establish that the
 generated wrapper and operator agree on their ABI.
