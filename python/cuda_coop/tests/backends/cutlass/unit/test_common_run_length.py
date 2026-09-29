@@ -38,10 +38,15 @@ def test_common_run_inputs_accept_readonly_payloads_and_reject_float_lengths(
     dispatch = import_module("cuda.coop._core.api._dispatch")
     calls = []
     monkeypatch.setattr(
-        api, "_group_primitive_marker", lambda *args, **kwargs: calls.append(args)
+        api,
+        "_group_primitive_marker",
+        lambda *args, **kwargs: calls.append(args),
     )
     operation = coop.run_length_decode_into if bulk else coop.run_length_decode
-    args = (_ReadonlyThreadData(dtype=np.int16), _ReadonlyThreadData(dtype=np.uint64))
+    args = (
+        _ReadonlyThreadData(dtype=np.int16),
+        _ReadonlyThreadData(dtype=np.uint64),
+    )
     with monkeypatch.context() as compiler_context:
         compiler_context.setattr(
             dispatch, "_backend_module_name", lambda: "test.backend"
@@ -59,7 +64,10 @@ def test_common_run_inputs_accept_readonly_payloads_and_reject_float_lengths(
         )
         with pytest.raises(
             TypeError,
-            match=f"cuda\\.coop\\.{operation.__name__} supports run_lengths dtypes",
+            match=(
+                f"cuda\\.coop\\.{operation.__name__} "
+                "supports run_lengths dtypes"
+            ),
         ):
             operation(
                 this_block(),
