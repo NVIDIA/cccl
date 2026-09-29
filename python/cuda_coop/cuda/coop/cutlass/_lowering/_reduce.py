@@ -65,7 +65,6 @@ def _make_group_reduce_plan(
     broadcast: bool,
     valid_items: ArgumentBinding | None = None,
     algorithm: Any = None,
-    source: str = "cutlass_root",
 ) -> GroupLoweringPlan:
     """Build the canonical shared-core plan for one CUTLASS reduction."""
 
@@ -101,7 +100,6 @@ def _make_group_reduce_plan(
             broadcast=broadcast,
             cub_algorithm=algorithm,
         ),
-        source=source,
     )
     return plan_group_primitive(call, launch)
 
@@ -684,7 +682,6 @@ def provider_reduce(
             broadcast=broadcast,
             valid_items=valid_items_binding,
             algorithm=algorithm,
-            source="cutlass_group_reduce_provider",
         ).require_supported()
         if plan.target is GroupLoweringTarget.CUDAX_GROUP:
             request: _CudaxReduceRequest | _CubReduceRequest = (
