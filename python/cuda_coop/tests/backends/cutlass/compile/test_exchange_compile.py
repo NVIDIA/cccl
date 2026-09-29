@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exchange compile gates cover group ABI, payloads, and ranked controls."""
-
 from enum import Enum
 
 import pytest

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block array shifts and qualified scalar selection for CuTe kernels."""
-
 from enum import Enum
 
 from cuda.coop._core.thread_group import ThreadGroup

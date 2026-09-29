@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed shared-planner provider for CUB BlockShuffle."""
-
 from __future__ import annotations
 
 import hashlib

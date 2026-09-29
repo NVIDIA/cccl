@@ -7,7 +7,7 @@
 The runner compares each marked line and error code with mypy output. These
 calls are static inputs, not kernels to execute. They cover query levels and
 dtypes, synchronization, Load/Store groups and controls, payload forms, and
-Reduce, Scan, Exchange, and Shuffle controls.
+Reduce and Scan controls.
 """
 
 from __future__ import annotations
