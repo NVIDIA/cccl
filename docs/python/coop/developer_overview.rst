@@ -529,7 +529,8 @@ fragment, the Load's source establishes the dtype:
    coop.load(block, source, items)
    coop.store(block, destination, items)
 
-The planner propagates the dtype from ``source`` to ``items``. A later Store can then use ``items`` even though its constructor did not
+The planner propagates the dtype from ``source`` to ``items``. A later Store
+or Exchange can then use ``items`` even though its constructor did not
 specify a dtype. Load fills ``items`` in place and returns ``None``.
 
 Layout describes which logical tile elements each thread owns. A striped
@@ -537,13 +538,15 @@ Load gives thread ``t`` elements ``t`` and ``t + block_size``. A blocked
 Load gives it ``2 * t`` and ``2 * t + 1``. The ``transpose`` algorithm uses
 striped memory transactions internally and fills the payload in blocked order;
 ``striped`` exposes the striped payload to the caller. The caller must
-choose Load and Store algorithms that agree on that arrangement.
+choose operations that agree on that arrangement or insert an Exchange.
 
 The result contracts preserve the following public behavior:
 
 * Load and Store return ``None``. Load fills the supplied output in place.
   Store preserves its input, including when its CUB implementation reorders
   data internally.
+* Exchange returns a fresh payload. Its input remains available to
+  subsequent kernel code.
 
 Output ownership is part of lowering. A CUB method that overwrites an
 array does not, by itself, implement a Python operation that promises to
@@ -643,7 +646,8 @@ kernels. Passing coexistence tests against a development compiler alone does
 not remove the compatibility guard.
 
 These controls are operation-specific. Warp Load/Store uses
-compiler-owned storage and reject an explicit ``TempStorage``.
+compiler-owned storage and reject an explicit ``TempStorage``. Exchange
+and Shuffle also manage their own scratch in the current API.
 
 
 Activation and compilation reuse

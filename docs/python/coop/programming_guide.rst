@@ -89,6 +89,13 @@ several operations:
      - ``ThreadData``; scalar inputs where the operation accepts them
      - Also accepts fixed local arrays in supported array operations;
        exposes ``local`` and ``shared`` memory namespaces
+   * - Layout exchange
+     - Blocked-to-striped and striped-to-blocked conversion
+     - Also supports block scatter and warp-striped layouts, with optional
+       warp time slicing where supported
+   * - Shifting values
+     - Unit ``up`` and ``down`` shifts of a block's ``ThreadData`` tile
+     - Also supports scalar block ``offset`` and ``rotate`` modes
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -257,7 +264,8 @@ If you initialize the payload yourself, specifying a dtype usually makes
 the code easier to follow. Conflicting dtype requirements are errors.
 
 Load writes into the payload supplied by the caller. Store preserves its
-input. Both return ``None``.
+input. Both return ``None``. Exchange and array Shuffle return fresh payloads,
+so their input values remain available afterwards.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -339,6 +347,29 @@ measure alternatives with the actual dtype, item count, and surrounding
 work. Coalesced accesses can justify rearrangement costs, but the best
 choice depends on the kernel.
 
+An explicit layout conversion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exchange converts per-thread values between blocked and striped layouts.
+
+The common Exchange API also supports ``blocked_to_striped``. Qualified
+block scatter modes let you supply destination ranks for finer control.
+For scatter, valid ranks and unique active destinations are caller
+requirements; duplicate destinations and holes leave unspecified slots.
+
+The :doc:`Exchange visualization <visualizations/exchange>` shows both
+layout conversions and ranked scatters, including the holes left by
+suppressed writes.
+
+Shuffle operates on a block's flattened blocked tile. The common ``up``
+and ``down`` modes shift it by one element and return a fresh payload.
+The first ``up`` slot or last ``down`` slot is unspecified. Set that
+boundary yourself before consuming it. Qualified scalar ``offset`` and
+``rotate`` modes have different distance rules; see :doc:`../coop_api`
+before substituting them for an array shift.
+
+Use the :doc:`Shuffle visualization <visualizations/shuffle>` to compare
+the array shifts with scalar offsets and rotation.
 
 Warp tile addresses
 ^^^^^^^^^^^^^^^^^^^
@@ -396,6 +427,8 @@ allocation. Its contents are opaque; keep application values in
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store
      - Automatic scratch per group; explicit descriptors are rejected
+   * - Exchange and Shuffle
+     - Compiler-owned scratch and reuse synchronization
 
 Capacity, alignment, and lifetime
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
