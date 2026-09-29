@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Built-in group Scan and Sum entry points for CuTe kernels."""
-
 from enum import Enum
 
 from cuda.coop._core.api._payload import _validate_common_temp_storage

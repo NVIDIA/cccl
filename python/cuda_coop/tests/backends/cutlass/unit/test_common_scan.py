@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common scan frontend checks for CUTLASS tracing."""
-
 from enum import Enum
 from importlib import import_module
 from types import SimpleNamespace

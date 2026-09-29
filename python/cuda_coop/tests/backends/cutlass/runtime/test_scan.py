@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent prefix, aggregate, and payload-preservation Scan oracles."""
-
 import importlib.util
 import os
 import re
