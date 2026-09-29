@@ -79,15 +79,13 @@ def test_direct_layout_matches_independent_oracle(api, dtype, operation):
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("valid", (0, 35, _TILE))
 @pytest.mark.parametrize("runtime_valid", (False, True), ids=("static", "runtime"))
-@pytest.mark.parametrize("default", (None, -7), ids=("preserve", "default"))
-def test_partial_load_preserves_or_fills_invalid_items(
+@pytest.mark.parametrize("default", (None, -7), ids=("no-default", "default"))
+def test_partial_load_valid_items_and_explicit_default(
     api, valid, runtime_valid, default
 ):
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int32):
         payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = cutlass.Int32(113 + item)
         if cutlass.const_expr(runtime_valid):
             api.load(
                 api.this_block(),
@@ -106,7 +104,12 @@ def test_partial_load_preserves_or_fills_invalid_items(
                 oob_default=default,
                 offset=3,
             )
-        api.store(api.this_block(), destination, payload)
+        api.store(
+            api.this_block(),
+            destination,
+            payload,
+            valid_items=count if default is None else None,
+        )
 
     @cute.jit
     def launch(source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int32):
@@ -114,7 +117,7 @@ def test_partial_load_preserves_or_fills_invalid_items(
 
     source = values_for(np.int32, _TILE + 3)
     destination = np.zeros(_TILE, dtype=np.int32)
-    expected = np.tile(np.array([113, 114], dtype=np.int32), _THREADS)
+    expected = np.zeros(_TILE, dtype=np.int32)
     if default is not None:
         expected.fill(default)
     expected[:valid] = source[3 : 3 + valid]

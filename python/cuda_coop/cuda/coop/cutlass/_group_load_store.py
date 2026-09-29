@@ -54,9 +54,10 @@ def load(
 ) -> None:
     """Load a contiguous block tile into a writable per-thread payload.
 
-    The payload is populated in place. Beyond ``valid_items``, initialized
-    slots keep their values unless ``oob_default`` is supplied. DIRECT requires
-    no shared scratch or synchronization. ``offset`` is measured in elements.
+    The payload is populated in place. Beyond ``valid_items``, slots have
+    unspecified values unless ``oob_default`` is supplied, even if initialized
+    before Load. DIRECT requires no shared scratch or synchronization.
+    ``offset`` is measured in elements.
     """
 
     if not isinstance(output, ThreadData):
