@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Radix plan, ABI, storage, and side-output transaction contracts."""
-
 from dataclasses import replace
 from types import SimpleNamespace
 

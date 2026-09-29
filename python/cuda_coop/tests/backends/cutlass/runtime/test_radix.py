@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Stable radix ordering, inverse ranks, and independent bin-prefix oracles."""
-
 from contextlib import ExitStack
 
 import numpy as np

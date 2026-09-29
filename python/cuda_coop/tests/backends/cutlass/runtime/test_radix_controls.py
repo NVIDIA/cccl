@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Radix runtime guards, storage reuse, failure recovery, and final code."""
-
 import os
 import re
 import shutil

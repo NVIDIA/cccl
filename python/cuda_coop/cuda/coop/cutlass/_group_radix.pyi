@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block radix ordering signatures for qualified CuTe payloads and scalars."""
-
 from typing import Any, TypeAlias, overload
 
 import numpy as np

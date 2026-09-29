@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Stable block radix ordering and digit ranks for CuTe kernels."""
-
 from cuda.coop._core.thread_group import ThreadGroup
 
 from ._temp_storage import TempStorage
