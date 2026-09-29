@@ -28,12 +28,26 @@ from .._typing import (
     TempStorageLike,
     ThreadDataLike,
 )
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _IntegerKey: TypeAlias = (
-    int | np.int32 | np.uint32 | np.int64 | np.uint64 | Int32 | Uint32 | Int64 | Uint64
+    int
+    | np.int32
+    | np.uint32
+    | np.int64
+    | np.uint64
+    | Int32
+    | Uint32
+    | Int64
+    | Uint64
 )
-_SortKey: TypeAlias = _IntegerKey | float | np.float32 | np.float64 | Float32 | Float64
+_SortKey: TypeAlias = (
+    _IntegerKey | float | np.float32 | np.float64 | Float32 | Float64
+)
 _KeyT = TypeVar("_KeyT", bound=_SortKey)
 _RankKeyT = TypeVar("_RankKeyT", bound=_IntegerKey)
 _ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)

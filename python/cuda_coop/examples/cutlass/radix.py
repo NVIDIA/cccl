@@ -68,7 +68,9 @@ def run_example(api="common"):
             )
             # Match the Store layout to the striped result registers.
             module.store(block, digit_keys, pair_keys, algorithm="striped")
-            module.store(block, digit_positions, pair_positions, algorithm="striped")
+            module.store(
+                block, digit_positions, pair_positions, algorithm="striped"
+            )
             prefixes = module.ThreadData(1, cutlass.Int32)
             ranks = module.radix_rank(
                 block,
@@ -138,9 +140,13 @@ def run_example(api="common"):
         pointers = []
         for array in arrays:
             allocation = _check(driver.cuMemAlloc(array.nbytes))
-            cleanup.callback(lambda ptr=allocation: _check(driver.cuMemFree(ptr)))
+            cleanup.callback(
+                lambda ptr=allocation: _check(driver.cuMemFree(ptr))
+            )
             allocations.append(allocation)
-            _check(driver.cuMemcpyHtoD(allocation, array.ctypes.data, array.nbytes))
+            _check(
+                driver.cuMemcpyHtoD(allocation, array.ctypes.data, array.nbytes)
+            )
             pointers.append(
                 make_ptr(
                     cutlass.Int32,
@@ -152,7 +158,9 @@ def run_example(api="common"):
         launch(*pointers)
         _check(driver.cuCtxSynchronize())
         for array, allocation in zip(outputs, allocations[1:]):
-            _check(driver.cuMemcpyDtoH(array.ctypes.data, allocation, array.nbytes))
+            _check(
+                driver.cuMemcpyDtoH(array.ctypes.data, allocation, array.nbytes)
+            )
 
     full_keys, digit_keys, positions, ranks, prefixes, original_keys = outputs
     # Signed radix keys invert the sign bit before selecting the digit.

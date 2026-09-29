@@ -31,7 +31,11 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 @pytest.mark.parametrize("auto_sync", (False, True))
 def test_sort_storage_reuse(sharing, auto_sync):
     _run_sort(
-        reuse=True, sharing=sharing, auto_sync=auto_sync, alignment=128, chain=True
+        reuse=True,
+        sharing=sharing,
+        auto_sync=auto_sync,
+        alignment=128,
+        chain=True,
     )
 
 
@@ -42,7 +46,9 @@ def test_storage_alignment(sharing):
 
 @pytest.mark.parametrize("bits", (4, 8))
 def test_rank_reuse(bits):
-    _run_rank(cutlass_coop, radix_bits=bits, prefix=True, reuse=True, chain=True)
+    _run_rank(
+        cutlass_coop, radix_bits=bits, prefix=True, reuse=True, chain=True
+    )
 
 
 def test_undersized_storage():
@@ -66,7 +72,8 @@ def test_invalid_runtime_bits_trap(begin, end, control):
     script = (
         "import cutlass\n"
         "from tests.backends.cutlass.runtime.test_radix import _run_sort\n"
-        f"_run_sort(begin_bit={begin}, end_bit={end}, bounds='runtime', control_type=cutlass.{control})\n"
+        f"_run_sort(begin_bit={begin}, end_bit={end}, "
+        f"bounds='runtime', control_type=cutlass.{control})\n"
         "raise AssertionError('invalid bit interval did not trap')\n"
     )
     environment = os.environ.copy()
@@ -120,7 +127,9 @@ def test_final_cubin(tmp_path, operation):
     cubins = list(tmp_path.rglob("*.cubin"))
     assert cubins
     for cubin in cubins:
-        sass = subprocess.check_output([tool, "--dump-sass", str(cubin)], text=True)
+        sass = subprocess.check_output(
+            [tool, "--dump-sass", str(cubin)], text=True
+        )
         assert "cuda_coop_cutlass_radix_" not in sass
         assert re.search(r"\bCALL\b", sass) is None
 
@@ -147,7 +156,8 @@ def test_provider_failure_retry(monkeypatch, tmp_path, failure):
     assert attempted
     message = str(caught.value).lower()
     assert any(
-        token in message for token in ("compile", "compilation", "link", "lto", "nvvm")
+        token in message
+        for token in ("compile", "compilation", "link", "lto", "nvvm")
     ), message
     assert get_current_env_manager() is None
     assert _backend_module_name() is None

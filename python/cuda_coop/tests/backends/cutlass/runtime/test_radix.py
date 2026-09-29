@@ -106,7 +106,9 @@ def _permutation(keys, begin, end, descending):
 
 
 def _assert_bits(actual, expected):
-    np.testing.assert_array_equal(actual.view(np.uint8), expected.view(np.uint8))
+    np.testing.assert_array_equal(
+        actual.view(np.uint8), expected.view(np.uint8)
+    )
 
 
 def _check_result(result, source, dtype, items, scalar, alignment):
@@ -196,7 +198,9 @@ def _run_sort(
                 items, dtype=None if inferred else key_type, alignment=alignment
             )
             values = api.ThreadData(
-                items, dtype=None if inferred else value_type, alignment=alignment
+                items,
+                dtype=None if inferred else value_type,
+                alignment=alignment,
             )
             for item in cutlass.range_constexpr(items):
                 keys[item] = sources[offset + thread * items + item]
@@ -209,7 +213,10 @@ def _run_sort(
             storage = None
         else:
             storage = api.TempStorage(
-                capacity, sharing=sharing, auto_sync=auto_sync, alignment=alignment
+                capacity,
+                sharing=sharing,
+                auto_sync=auto_sync,
+                alignment=alignment,
             )
         if cutlass.const_expr(bounds in {"runtime", "runtime-begin"}):
             begin = dynamic_begin
@@ -289,7 +296,9 @@ def _run_sort(
                     storage.sync()
         _check_result(result, keys, key_type, items, scalar, alignment)
         if cutlass.const_expr(pairs):
-            _check_result(result_values, values, value_type, items, scalar, alignment)
+            _check_result(
+                result_values, values, value_type, items, scalar, alignment
+            )
         if cutlass.const_expr(scalar):
             outputs[offset + thread] = result
             associated[offset + thread] = result_values
@@ -333,12 +342,26 @@ def _run_sort(
     source = _keys(dtype, size)
     payload = (np.arange(size) % 113).astype(value_dtype)
     if np.dtype(value_dtype).kind == "f":
-        payload = np.arange(size, dtype=value_dtype) + np.dtype(value_dtype).type(0.25)
+        payload = np.arange(size, dtype=value_dtype) + np.dtype(
+            value_dtype
+        ).type(0.25)
     observed, associated = np.empty_like(source), np.empty_like(payload)
-    preserved_keys, preserved_values = np.empty_like(source), np.empty_like(payload)
-    arrays = (source, payload, observed, associated, preserved_keys, preserved_values)
+    preserved_keys, preserved_values = (
+        np.empty_like(source),
+        np.empty_like(payload),
+    )
+    arrays = (
+        source,
+        payload,
+        observed,
+        associated,
+        preserved_keys,
+        preserved_values,
+    )
     with ExitStack() as stack:
-        pointers = [stack.enter_context(device_array(array)) for array in arrays]
+        pointers = [
+            stack.enter_context(device_array(array)) for array in arrays
+        ]
         args = (
             *pointers,
             control_type(begin_bit),
@@ -362,7 +385,8 @@ def _run_sort(
         )
         if pairs:
             _assert_bits(
-                associated[start : start + tile], payload[start : start + tile][order]
+                associated[start : start + tile],
+                payload[start : start + tile][order],
             )
     return observed, associated
 
@@ -477,7 +501,9 @@ def _run_rank(
                 outputs[offset + thread * items + item] = result[item]
                 checks[offset + thread * items + item] = keys[item]
                 if cutlass.const_expr(chain):
-                    ordered_out[offset + thread * items + item] = sorted_ranks[item]
+                    ordered_out[offset + thread * items + item] = sorted_ranks[
+                        item
+                    ]
 
     @cute.jit
     def launch(
@@ -488,9 +514,9 @@ def _run_rank(
         ordered: cute.Pointer,
         repeats: cutlass.Int32,
     ):
-        kernel(source, output, prefix_output, preserved, ordered, repeats).launch(
-            grid=blocks, block=block
-        )
+        kernel(
+            source, output, prefix_output, preserved, ordered, repeats
+        ).launch(grid=blocks, block=block)
 
     source = _keys(dtype, size)
     observed = np.empty(size, dtype=np.int32)
@@ -531,7 +557,8 @@ def _run_rank(
                 if descending
                 else np.r_[0, np.cumsum(counts[:-1])]
             )
-            # Both directions retain ascending bin ownership; trailing slots are undefined.
+            # Both directions retain ascending bin ownership; trailing slots
+            # are undefined.
             first = block_index * prefix_tile
             np.testing.assert_array_equal(
                 prefixes[first : first + bins], expected_prefix
@@ -550,7 +577,9 @@ def test_common_integral_sort(dtype, descending, pairs):
 @pytest.mark.parametrize("descending", (False, True))
 @pytest.mark.parametrize("striped", (False, True))
 @pytest.mark.parametrize("selected", (False, True))
-def test_qualified_float_bits_and_stable_ties(dtype, descending, striped, selected):
+def test_qualified_float_bits_and_stable_ties(
+    dtype, descending, striped, selected
+):
     width = np.dtype(dtype).itemsize * 8
     _run_sort(
         cutlass_coop,
@@ -571,7 +600,9 @@ def test_independent_pair_value_dtypes(value_dtype):
     "bounds", ("static", "runtime", "runtime-begin", "runtime-end")
 )
 def test_mixed_bit_bounds(bounds):
-    _run_sort(dtype=np.int64, begin_bit=59, end_bit=64, bounds=bounds, descending=True)
+    _run_sort(
+        dtype=np.int64, begin_bit=59, end_bit=64, bounds=bounds, descending=True
+    )
 
 
 @pytest.mark.parametrize("dtype", (np.int32, np.uint64))
@@ -579,11 +610,18 @@ def test_nonzero_begin_with_default_end(dtype):
     _run_sort(dtype=dtype, begin_bit=3, end_bit=None, bounds="runtime-begin")
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("pairs", (False, True))
 def test_readonly_inferred_sort_composes(api, pairs):
     _run_sort(
-        api, dtype=np.int64, pairs=pairs, readonly=True, inferred=True, chain=True
+        api,
+        dtype=np.int64,
+        pairs=pairs,
+        readonly=True,
+        inferred=True,
+        chain=True,
     )
 
 
@@ -598,7 +636,11 @@ def test_readonly_inferred_sort_composes(api, pairs):
 )
 def test_qualified_scalar_sort(dtype, pairs, descending):
     _run_sort(
-        cutlass_coop, dtype=dtype, pairs=pairs, descending=descending, scalar=True
+        cutlass_coop,
+        dtype=dtype,
+        pairs=pairs,
+        descending=descending,
+        scalar=True,
     )
 
 
@@ -632,7 +674,9 @@ def test_prefix_ascending_bin_ownership(bits, block, descending):
     )
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_readonly_inferred_rank_composes(api):
     _run_rank(api, dtype=np.uint64, readonly=True, inferred=True, chain=True)
 

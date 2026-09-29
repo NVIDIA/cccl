@@ -44,23 +44,28 @@ def _sort(
     ):
         if not isinstance(value, bool):
             raise TypeError(
-                f"cuda.coop.cutlass.{primitive} {name} must be a compile-time bool"
+                f"cuda.coop.cutlass.{primitive} {name} must be "
+                "a compile-time bool"
             )
     if temp_storage is not None and not isinstance(temp_storage, TempStorage):
-        raise TypeError("cuda.coop.cutlass radix temp_storage must be TempStorage")
+        raise TypeError(
+            "cuda.coop.cutlass radix temp_storage must be TempStorage"
+        )
     keys = _input(keys, "keys", primitive)
     if values is not None:
         values = _input(values, "values", primitive)
         if isinstance(keys, ThreadData) != isinstance(values, ThreadData):
             raise TypeError(
-                "radix_sort_pairs keys and values must have matching scalar or array shapes"
+                "radix_sort_pairs keys and values must have matching "
+                "scalar or array shapes"
             )
         if (
             isinstance(keys, ThreadData)
             and keys.items_per_thread != values.items_per_thread
         ):
             raise ValueError(
-                "radix_sort_pairs keys and values must have matching items_per_thread"
+                "radix_sort_pairs keys and values must have matching "
+                "items_per_thread"
             )
     from ._compiler._launch import current_kernel_launch_facts
     from ._lowering._radix import provider_radix_sort
@@ -217,7 +222,9 @@ def radix_sort_pairs(
     cuda.coop.cutlass.radix_sort_keys
     """
     if values is None:
-        raise TypeError("radix_sort_pairs values must be a numeric scalar or payload")
+        raise TypeError(
+            "radix_sort_pairs values must be a numeric scalar or payload"
+        )
     return _sort(
         group,
         keys,
@@ -297,10 +304,13 @@ def radix_rank(
     _validate_group(group)
     if not isinstance(descending, bool):
         raise TypeError(
-            "cuda.coop.cutlass.radix_rank descending must be a compile-time bool"
+            "cuda.coop.cutlass.radix_rank descending must be "
+            "a compile-time bool"
         )
     if exclusive_digit_prefix is keys:
-        raise ValueError("radix_rank exclusive_digit_prefix must be distinct from keys")
+        raise ValueError(
+            "radix_rank exclusive_digit_prefix must be distinct from keys"
+        )
     keys = _input(keys, "keys", "radix_rank")
     from ._compiler._launch import current_kernel_launch_facts
     from ._lowering._radix import provider_radix_rank
