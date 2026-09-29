@@ -283,7 +283,7 @@ def test_custom_exclusive_scan_requires_initial_value():
 
 def test_block_prefix_callback_defines_custom_exclusive_rank_zero():
     def maximum(left, right):
-        return left if left > right else right
+        return max(right, left)
 
     def running_prefix(state, aggregate):
         previous = state[0]
