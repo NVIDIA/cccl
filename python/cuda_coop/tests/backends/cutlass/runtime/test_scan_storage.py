@@ -45,7 +45,9 @@ _SETUP_NAMES = (
 )
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(
     "sharing,capacity,auto_sync,alignment", _SETUPS, ids=_SETUP_NAMES
 )
@@ -64,7 +66,10 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
             storage = None
         else:
             storage = api.TempStorage(
-                capacity, sharing=sharing, auto_sync=auto_sync, alignment=alignment
+                capacity,
+                sharing=sharing,
+                auto_sync=auto_sync,
+                alignment=alignment,
             )
         group = api.this_block()
         for tile in range(tiles):
@@ -117,7 +122,10 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
     expected = np.concatenate(
         [
             np.concatenate(
-                (np.array([7], dtype=np.int64), 7 + row[:-1].cumsum(dtype=np.int64))
+                (
+                    np.array([7], dtype=np.int64),
+                    7 + row[:-1].cumsum(dtype=np.int64),
+                )
             )
             for row in source.reshape(tiles, _TILE)
         ]
@@ -132,14 +140,18 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
     np.testing.assert_array_equal(preserved, source)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("width", (1, 8, 32))
 @pytest.mark.parametrize(
     "divergent", (False, True), ids=("all-groups", "selected-group")
 )
 def test_warp_loop(api, width, divergent):
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
@@ -156,7 +168,9 @@ def test_warp_loop(api, width, divergent):
             outputs[thread] = total
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+    ):
         kernel(source, observed, iterations).launch(grid=1, block=_BLOCK)
 
     iterations = 8
@@ -164,12 +178,16 @@ def test_warp_loop(api, width, divergent):
     observed = np.full_like(source, -101)
     expected = observed.copy()
     for start in range(0, _THREADS, width):
-        selected = start // 32 == 1 if width == 32 else (start % 32) // width == 2
+        selected = (
+            start // 32 == 1 if width == 32 else (start % 32) // width == 2
+        )
         if divergent and not selected:
             continue
         expected[start : start + width] = iterations * source[
             start : start + width
-        ].cumsum(dtype=np.int32) + np.arange(1, width + 1) * sum(range(iterations))
+        ].cumsum(dtype=np.int32) + np.arange(1, width + 1) * sum(
+            range(iterations)
+        )
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out, iterations)
     np.testing.assert_array_equal(observed, expected)
