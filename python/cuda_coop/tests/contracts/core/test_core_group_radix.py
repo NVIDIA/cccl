@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Radix group contracts remain independent of compiler packages."""
-
 import pytest
 
 from cuda.coop._core import (

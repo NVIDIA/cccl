@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUB providers for block radix sorting and stable digit ranking."""
-
 from numba_cuda_mlir import types
 
 from cuda.coop._core import SynchronizationScope

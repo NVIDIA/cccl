@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate radix payload extents and types before generating a provider."""
-
 from numba_cuda_mlir import types
 
 from ._rewrite_support import CoopSinglePhaseRewriteError
