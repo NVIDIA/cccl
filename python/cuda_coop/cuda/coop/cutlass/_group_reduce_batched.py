@@ -60,16 +60,22 @@ def reduce_batched(group, value, /, *, binary_op=None, output_layout="striped"):
     <coop/visualizations/reduce-batched>` for lane and result ownership.
     """
     if not isinstance(group, ThreadGroup):
-        raise TypeError("cuda.coop.cutlass.reduce_batched group must be a ThreadGroup")
+        raise TypeError(
+            "cuda.coop.cutlass.reduce_batched group must be a ThreadGroup"
+        )
     if not isinstance(output_layout, str) or isinstance(output_layout, Enum):
         raise TypeError("reduce_batched output_layout must be a string")
     output_layout = output_layout.strip().lower().replace("-", "_")
     if output_layout not in {"striped", "blocked"}:
-        raise ValueError("reduce_batched output_layout must be striped or blocked")
+        raise ValueError(
+            "reduce_batched output_layout must be striped or blocked"
+        )
     from ._operators import normalize_operator
 
     op = normalize_operator(binary_op, primitive="reduce_batched")
-    value = _snapshot_readable_payload(value, name="value", primitive="reduce_batched")
+    value = _snapshot_readable_payload(
+        value, name="value", primitive="reduce_batched"
+    )
     launch = current_kernel_launch_facts()
     _require_complete_warp_partition(
         group, feature="reduce_batched", exact_block_dim=launch.exact_block_dim
@@ -77,7 +83,11 @@ def reduce_batched(group, value, /, *, binary_op=None, output_layout="striped"):
     from ._lowering._reduce_batched import provider_reduce_batched
 
     return provider_reduce_batched(
-        group=group, launch=launch, value=value, op=op, output_layout=output_layout
+        group=group,
+        launch=launch,
+        value=value,
+        op=op,
+        output_layout=output_layout,
     )
 
 

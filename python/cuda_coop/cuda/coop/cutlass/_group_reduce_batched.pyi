@@ -10,7 +10,11 @@ from cuda.coop._core.api.thread_group import WarpGroup
 from cuda.coop._typing import CommonNumericScalar, CommonThreadDataLike
 
 from ._group_reduce import _BuiltinReduceOperator
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 

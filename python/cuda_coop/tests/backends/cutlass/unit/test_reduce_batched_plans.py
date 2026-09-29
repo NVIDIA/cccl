@@ -45,7 +45,10 @@ def test_storage_free_abi(width, layout):
     assert "__syncthreads" not in source
     assert "__syncwarp" not in source
     assert _rendering.bundle_scratch_layout_probes([request]) == {}
-    assert request.implementation.template_arguments["SYNC_PHYSICAL_WARP"] == "false"
+    assert (
+        request.implementation.template_arguments["SYNC_PHYSICAL_WARP"]
+        == "false"
+    )
 
 
 @pytest.mark.parametrize("dtype", tuple(_types.ALL_PROVIDER_TYPES))
@@ -57,7 +60,9 @@ def test_numeric_types(dtype):
     "group", (this_block(), this_warp().group_by(3, exhaustive=False))
 )
 def test_unsupported_groups(group):
-    with pytest.raises((ValueError, NotImplementedError), match="warp|power|width"):
+    with pytest.raises(
+        (ValueError, NotImplementedError), match="warp|power|width"
+    ):
         _request(group=group)
 
 
@@ -83,7 +88,9 @@ def test_request_plan_consistency():
         values=(replace(request.plan.result.values[0], items_per_member=3),),
     )
     with pytest.raises(ValueError, match="result does not match"):
-        lowering._CubReduceBatchedRequest(replace(request.plan, result=result), "sum")
+        lowering._CubReduceBatchedRequest(
+            replace(request.plan, result=result), "sum"
+        )
 
 
 def test_request_identity():

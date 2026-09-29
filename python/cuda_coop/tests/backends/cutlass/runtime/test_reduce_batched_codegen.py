@@ -28,6 +28,8 @@ def test_final_cubin(tmp_path, width):
     cubins = list(tmp_path.rglob("*.cubin"))
     assert cubins
     for cubin in cubins:
-        sass = subprocess.check_output([tool, "--dump-sass", str(cubin)], text=True)
+        sass = subprocess.check_output(
+            [tool, "--dump-sass", str(cubin)], text=True
+        )
         assert "cuda_coop_cutlass_reduce_batched_" not in sass
         assert re.search(r"\b(CALL|LDS|STS|BAR)\b", sass) is None
