@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed out-of-place block TopK operations."""
-
 from typing_extensions import TypeVar
 
 from .._typing import (

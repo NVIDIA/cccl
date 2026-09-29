@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-independent TopK count and dimensional contracts."""
-
 import pytest
 
 from cuda.coop._core import INT32, INT64, ArgumentBinding, CxxFunction, Value

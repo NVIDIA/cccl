@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block TopK membership, pairing, and input-preservation checks."""
-
 import os
 import subprocess
 import sys
