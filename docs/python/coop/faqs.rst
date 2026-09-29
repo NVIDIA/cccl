@@ -124,6 +124,11 @@ surrounding program cannot establish it. It does not initialize the payload,
 resolve conflicting typed values, or enable unsupported types. Initialize
 every item before reading it.
 
+Advanced CUTLASS interop can expose a raw integer IR value with a width but
+no signedness. Preserve that information in a typed producer or supply
+explicit element-type metadata. See :ref:`CUTLASS element-type inference
+<coop-cutlass-dtype-inference>` for this case.
+
 .. _coop-faq-exclusive-storage:
 
 Why use ``sharing="exclusive"`` instead of omitting storage?

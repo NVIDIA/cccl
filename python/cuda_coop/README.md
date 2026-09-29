@@ -138,11 +138,11 @@ CuTe register conversions and the controls documented in its guide. Custom
 operators and Scan prefix callbacks are currently supported only by
 Numba-CUDA-MLIR.
 
-Both integrations accept `ThreadData(..., alignment=None)`: use a compile-time
-positive power of two in bytes to request minimum payload storage alignment,
-or omit it to let the compiler choose. This does not assert alignment of Load
-or Store memory operands. Results belong to the active compiler; a NumPy dtype
-selector in a CuTe kernel still produces CuTe values.
+Both integrations accept `ThreadData(items_per_thread=..., alignment=None)`:
+use a compile-time positive power of two in bytes to request minimum payload
+storage alignment, or omit it to let the compiler choose. This does not assert
+alignment of Load or Store memory operands. Results belong to the active
+compiler; a NumPy dtype selector in a CuTe kernel still produces CuTe values.
 
 The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html)
 explain namespace choices and temporary storage. The
@@ -223,7 +223,7 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(2)
+items = coop.ThreadData(items_per_thread=2)
 tile_items = cuda.blockDim.x * 2
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
@@ -399,6 +399,12 @@ every call that passes the same descriptor on one region, while
 reuses its slice under either layout, so `auto_sync` is independent of
 `sharing` and defaults to `False` for both.
 
+Exclusive slices use more shared memory to avoid barriers needed solely for
+cross-call scratch reuse when `auto_sync=False`. Repeated execution of one
+call site still reuses its slice and must be synchronized. Omitting storage
+lets the compiler choose the layout and insert reuse barriers; it does not
+guarantee a separate slice per call site.
+
 A descriptor names one region. Distinct descriptors and compiler-owned storage
 never alias each other. With `auto_sync=True`, the compiler appends
 `cuda.syncthreads()` immediately after every block call that consumes the
@@ -469,7 +475,7 @@ from cuda import coop
 @cuda.jit
 def block_sum(source, output):
     thread = cuda.threadIdx.x
-    values = coop.ThreadData(2, dtype=types.int32)
+    values = coop.ThreadData(items_per_thread=2)
     values[0] = source[2 * thread]
     values[1] = source[2 * thread + 1]
     total = coop.sum(coop.this_block(), values)
@@ -593,7 +599,7 @@ def carry_prefix(state, block_aggregate):
 running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
 
 # Inside a kernel, before a loop over tiles:
-state = coop.ThreadData(1, dtype=types.int64)
+state = coop.ThreadData(items_per_thread=1)
 state[0] = types.int64(0)
 scanned = coop.exclusive_sum(
     coop.this_block(),
@@ -639,7 +645,7 @@ from cuda import coop
 @cuda.jit
 def block_scan_kernel(values, prefixes):
     block = coop.this_block()
-    items = coop.ThreadData(2, dtype=np.int32)
+    items = coop.ThreadData(items_per_thread=2)
     coop.load(block, values, items)
     scanned = coop.exclusive_sum(block, items)
     coop.store(block, prefixes, scanned)
