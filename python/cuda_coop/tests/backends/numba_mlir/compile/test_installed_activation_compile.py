@@ -161,7 +161,7 @@ _COMPILE_PROBE = textwrap.dedent(
     ptx = next(iter(ptx_by_specialization.values()))
     assert isinstance(ptx, str)
     assert ".visible .entry" in ptx
-    """
+    """  # noqa: E501 - Preserve embedded source bytes.
 )
 
 
@@ -173,9 +173,13 @@ def test_installed_wheel_import_order_compiles_block_load(
     try:
         distribution = importlib.metadata.distribution("cuda-coop")
     except importlib.metadata.PackageNotFoundError:
-        pytest.fail("the Numba-CUDA-MLIR compile stage requires an installed wheel")
+        pytest.fail(
+            "the Numba-CUDA-MLIR compile stage requires an installed wheel"
+        )
 
-    expected_module = Path(distribution.locate_file("cuda/coop/__init__.py")).resolve()
+    expected_module = Path(
+        distribution.locate_file("cuda/coop/__init__.py")
+    ).resolve()
     assert expected_module.is_file()
 
     environment = os.environ.copy()

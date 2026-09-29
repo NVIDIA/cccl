@@ -173,7 +173,8 @@ def _plan(
     if resolved_group.kind not in expected_group_kinds:
         expected = ", ".join(sorted(expected_group_kinds))
         raise ValueError(
-            f"{semantics.operation} requires one of these group kinds: {expected}"
+            f"{semantics.operation} requires one of these group kinds: "
+            f"{expected}"
         )
     storage_abi = _STORAGE_ABI_BY_OPERATION[semantics.operation]
     storage_ownership = (
@@ -224,7 +225,9 @@ _dispatch._register_group_operation_family(
     classifications=_classifications,
     planner=_plan,
     group_kinds=frozenset({"thread", "warp", "threads_within_warp", "block"}),
-    unsupported_group_message="lazy fake family requires thread, warp, or block",
+    unsupported_group_message=(
+        "lazy fake family requires thread, warp, or block"
+    ),
 )
 
 

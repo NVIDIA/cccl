@@ -90,7 +90,8 @@ def _phi_incoming_values(definition):
     incoming_values = definition.incoming_values
     if not isinstance(incoming_values, (list, tuple)):
         raise CoopSinglePhaseRewriteError(
-            "Unsupported Numba phi expression shape: incoming_values is not a sequence."
+            "Unsupported Numba phi expression shape: "
+            "incoming_values is not a sequence."
         )
     return tuple(incoming_values)
 

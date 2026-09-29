@@ -60,7 +60,8 @@ def TempStorage(
     The loop processes two independent tiles. Explicit ``auto_sync=True``
     enables barriers between operations and between iterations.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
         :language: python
         :start-after: # temp-storage-example-begin
         :end-before: # temp-storage-example-end

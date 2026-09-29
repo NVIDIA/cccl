@@ -42,7 +42,9 @@ def main() -> None:
     block_load[1, _THREADS](source, observed, np.int32(valid_items))
 
     expected = np.full(_TILE_ITEMS, -1, dtype=np.int32)
-    expected[:valid_items] = source[_SOURCE_OFFSET : _SOURCE_OFFSET + valid_items]
+    expected[:valid_items] = source[
+        _SOURCE_OFFSET : _SOURCE_OFFSET + valid_items
+    ]
     np.testing.assert_array_equal(observed, expected)
 
 

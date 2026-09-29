@@ -89,7 +89,8 @@ class _StorageRewrite:
             storage.instance_index != topology.instance_index
         ):
             raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage layout disagrees with its group topology."
+                "cooperative provider storage layout "
+                "disagrees with its group topology."
             )
         caller_owned = storage.ownership is StorageOwnership.CALLER
         if caller_owned != (match.runtime_temp_storage_var is not None):
@@ -519,7 +520,8 @@ class _StorageRewrite:
         dynamic_shared_bytes = total_size if uses_dynamic_smem else 0
         if dynamic_shared_bytes > max_optin:
             raise CoopSinglePhaseRewriteError(
-                f"TempStorage requires {dynamic_shared_bytes} bytes dynamic shared memory, but device max opt-in is {max_optin} bytes."
+                f"TempStorage requires {dynamic_shared_bytes} bytes dynamic "
+                f"shared memory, but device max opt-in is {max_optin} bytes."
             )
         if dynamic_shared_bytes > 0:
             set_required_dynamic_shared_memory(
@@ -542,7 +544,8 @@ class _StorageRewrite:
         if self._temp_storage_backing_emitted:
             if self._temp_storage_backing_var is None:
                 raise CoopSinglePhaseRewriteError(
-                    "TempStorage backing was marked emitted without an IR value."
+                    "TempStorage backing was marked "
+                    "emitted without an IR value."
                 )
             return self._temp_storage_backing_var
         plan = self._ensure_temp_storage_global_plan()
@@ -638,7 +641,8 @@ class _StorageRewrite:
         if self._temp_storage_backing_emitted:
             if self._temp_storage_backing_var is None:
                 raise CoopSinglePhaseRewriteError(
-                    "TempStorage backing was marked emitted without an IR value."
+                    "TempStorage backing was marked "
+                    "emitted without an IR value."
                 )
             return self._temp_storage_backing_var
         loc = block.loc
@@ -807,7 +811,8 @@ class _StorageRewrite:
         else:
             if slice_info.lowering_plan is None:
                 raise CoopSinglePhaseRewriteError(
-                    "multi-instance cooperative storage requires a group lowering plan."
+                    "multi-instance cooperative storage "
+                    "requires a group lowering plan."
                 )
             instance_index = self._emit_storage_instance_index(
                 block,
@@ -887,7 +892,8 @@ class _StorageRewrite:
             )
             if slice_info is None:
                 raise CoopSinglePhaseRewriteError(
-                    f"Could not resolve TempStorage slice for call at {call_assign.loc}."
+                    f"Could not resolve TempStorage "
+                    f"slice for call at {call_assign.loc}."
                 )
             if (
                 temp_storage_plan.sharing == "exclusive"
@@ -916,12 +922,14 @@ class _StorageRewrite:
         backing = self._temp_storage_backing_var
         if plan is None or backing is None:
             raise CoopSinglePhaseRewriteError(
-                "Missing implementation-owned TempStorage plan for an implicit call."
+                "Missing implementation-owned "
+                "TempStorage plan for an implicit call."
             )
         slice_info = plan.slices_by_call_id.get(id(call_assign))
         if slice_info is None:
             raise CoopSinglePhaseRewriteError(
-                f"Could not resolve implicit TempStorage slice for call at {call_assign.loc}."
+                f"Could not resolve implicit TempStorage "
+                f"slice for call at {call_assign.loc}."
             )
         sliced_var = ir.Var(
             call_assign.target.scope,
@@ -1131,7 +1139,8 @@ class _StorageRewrite:
                         and match.runtime_temp_storage_var is not None
                     ):
                         raise CoopSinglePhaseRewriteError(
-                            "cooperative group temp_storage= must originate from a "
+                            "cooperative group temp_storage= "
+                            "must originate from a "
                             "TempStorage constructor in the compiled function."
                         )
                     continue
@@ -1185,14 +1194,16 @@ class _StorageRewrite:
                     helper = self._resolve_python_value(inst.value.func)
                     helper_name = helper.py_func.__qualname__
                     raise CoopSinglePhaseRewriteError(
-                        f"TempStorage descriptor {names!r} is passed to a device "
+                        f"TempStorage descriptor "
+                        f"{names!r} is passed to a device "
                         "function that was not inlined into this kernel "
                         f"({helper_name!r}); let Numba-CUDA-MLIR inline the "
                         "collective helper (inline='always') or move its "
                         "cooperative calls into the kernel."
                     )
                 raise CoopSinglePhaseRewriteError(
-                    "TempStorage values are opaque compile-time descriptors and "
+                    "TempStorage values are opaque "
+                    "compile-time descriptors and "
                     "may only be passed as temp_storage= to a registered "
                     "cooperative primitive; a use involving "
                     f"{names!r} would escape to runtime."

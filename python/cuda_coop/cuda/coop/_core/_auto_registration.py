@@ -124,7 +124,8 @@ def _warn_incompatible(candidate: _Candidate, error: Exception) -> None:
     warnings.warn(
         f"{_WARNING_PREFIX} {candidate.display_name}{detected} was detected "
         f"but was not enabled because {reason}. The cuda.coop root import "
-        "continued and other DSL backends were unaffected. Install a compatible "
+        "continued and other DSL backends were unaffected. "
+        "Install a compatible "
         f"{candidate.install_hint}. "
         f"Set {_DISABLE_ENV}=1 to disable automatic DSL probing.",
         CudaCoopAutoRegistrationWarning,
