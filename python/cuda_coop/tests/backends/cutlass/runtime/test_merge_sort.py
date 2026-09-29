@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent Merge Sort ordering, association, and preservation oracles."""
-
 import os
 import re
 import shutil

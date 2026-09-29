@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Input-preserving built-in Merge Sort for CuTe block and warp groups."""
-
 from cuda.coop._core.api._payload import (
     _validate_common_temp_storage,
 )
