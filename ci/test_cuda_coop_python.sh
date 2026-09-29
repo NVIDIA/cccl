@@ -115,4 +115,4 @@ PY
 tests_root="$repo_root/python/cuda_coop/tests"
 
 cd "$tests_root"
-python -m pytest -v contracts/ packaging/
+python -m pytest -v test_*.py
