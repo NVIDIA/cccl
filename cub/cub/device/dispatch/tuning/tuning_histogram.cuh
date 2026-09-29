@@ -305,7 +305,7 @@ public:
         if (sample_size == 1)
         {
           // ipt_7.tpb_128.rle_0.ws_0.mem_1.ld_1.laid_2.vec_0 1.005  0.991  1.537  2.076
-          return HistogramPolicy{128, 7, 1, BLOCK_LOAD_STRIPED, LOAD_LDG, false, SMEM, false, 2048};
+          return HistogramPolicy{128, 7, 1, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
         }
         if (sample_size == 2)
         {
