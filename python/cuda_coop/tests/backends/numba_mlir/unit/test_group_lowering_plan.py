@@ -547,7 +547,6 @@ def test_group_plan_allows_storage_free_group_execution(monkeypatch):
     topology, participation, synchronization, storage = _contracts(
         resolved_group,
         launch,
-        result=None,
         storage_ownership=plan.temp_storage.ownership,
         cpp_type=plan.temp_storage.cpp_type,
     )
@@ -631,7 +630,6 @@ def test_group_plan_preserves_other_group_execution_rejections(
     topology, participation, synchronization, storage = _contracts(
         resolved_group,
         launch,
-        result=None,
         storage_ownership=plan.temp_storage.ownership,
         cpp_type=plan.temp_storage.cpp_type,
     )
