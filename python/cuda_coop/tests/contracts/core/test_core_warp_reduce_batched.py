@@ -11,12 +11,12 @@ from cuda.coop._core.warp.reduce_batched import (
 
 
 def _specialization(**kwargs):
-    arguments = dict(
-        dtype="int",
-        batches=3,
-        threads_in_warp=8,
-        reduce_operator=CxxOperator("::cuda::std::plus<T>", Dependency("T")),
-    )
+    arguments = {
+        "dtype": "int",
+        "batches": 3,
+        "threads_in_warp": 8,
+        "reduce_operator": CxxOperator("::cuda::std::plus<T>", Dependency("T")),
+    }
     arguments.update(kwargs)
     return make_warp_reduce_batched_specialization(**arguments)
 
