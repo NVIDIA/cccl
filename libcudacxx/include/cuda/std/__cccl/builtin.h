@@ -296,10 +296,6 @@
 #  define _CCCL_BUILTIN_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_nothrow_copy) && gcc >= 4.3
 
-#if _CCCL_HAS_BUILTIN(__integer_pack)
-#  define _CCCL_BUILTIN_INTEGER_PACK(...) __integer_pack(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__integer_pack)
-
 #if _CCCL_CHECK_BUILTIN(is_array)
 #  define _CCCL_BUILTIN_IS_ARRAY(...) __is_array(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_array)
@@ -361,10 +357,6 @@
 #if 0 // _CCCL_HAS_BUILTIN(__is_scalar)
 #  define _CCCL_BUILTIN_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_scalar)
-
-#if _CCCL_CHECK_BUILTIN(make_integer_seq) || _CCCL_COMPILER(MSVC, >=, 19, 23)
-#  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>
-#endif // _CCCL_CHECK_BUILTIN(make_integer_seq)
 
 #if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
 #  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)

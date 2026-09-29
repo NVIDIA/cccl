@@ -228,10 +228,10 @@ struct __transposed_layout
 {
   using __layout_type = layout_transpose<_Layout>;
 
-  template <class __OriginalMapping>
-  _CCCL_API static constexpr auto __mapping(const __OriginalMapping& __orig_map)
+  template <class _OriginalMapping>
+  _CCCL_API static constexpr auto __mapping(const _OriginalMapping& __orig_map)
   {
-    using __extents_type        = __transpose_extents_t<typename __OriginalMapping::__extents_type>;
+    using __extents_type        = __transpose_extents_t<typename _OriginalMapping::__extents_type>;
     using __return_mapping_type = typename __layout_type::template __mapping<__extents_type>;
     return __return_mapping_type{__orig_map};
   }

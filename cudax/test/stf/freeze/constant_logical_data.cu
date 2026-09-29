@@ -29,7 +29,7 @@ int main()
   /* Create a constant value */
   auto ld_cst = ctx.logical_data(shape_of<slice<int>>(N));
   ctx.parallel_for(ld_cst.shape(), ld_cst.write())->*[] __device__(size_t i, slice<int> res) {
-    res(i) = 18 * i - 9;
+    res(i) = static_cast<int>(18 * i - 9);
   };
   auto cst = constant_logical_data(ctx, mv(ld_cst));
 
@@ -52,7 +52,7 @@ int main()
     auto cst2 = run_once()->*[&]() {
       auto ld = ctx.logical_data(shape_of<slice<int>>(N));
       ctx.parallel_for(ld.shape(), ld.write())->*[] __device__(size_t i, slice<int> res) {
-        res(i) = 4 * i - 2;
+        res(i) = static_cast<int>(4 * i - 2);
       };
       return constant_logical_data(ctx, mv(ld));
     };
