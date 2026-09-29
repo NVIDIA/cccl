@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Neighbor calls preserve the shared planner's types and storage contract."""
-
 from dataclasses import replace
 from types import SimpleNamespace
 
