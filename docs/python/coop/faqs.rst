@@ -94,8 +94,8 @@ Start with an inferred payload:
 
 .. code-block:: python
 
-   # Inside a kernel; source and items_per_thread are kernel arguments.
-   items = coop.ThreadData(items_per_thread)
+   # Inside a kernel; source is a typed memory operand.
+   items = coop.ThreadData(items_per_thread=2)
    coop.load(coop.this_block(), source, items)
 
 Load supplies the source element type. In Numba-CUDA-MLIR, supported indexed
@@ -166,9 +166,9 @@ share scratch while the values stay in each thread's payload:
 
 .. code-block:: python
 
-   # Inside a Numba kernel; source, destination, and items_per_thread are kernel arguments.
+   # Inside a kernel; source and destination are kernel arguments.
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
+   items = coop.ThreadData(items_per_thread=2)
    scratch = coop.TempStorage(auto_sync=True)
    coop.load(
        block, source, items, algorithm="transpose", temp_storage=scratch
@@ -191,7 +191,7 @@ synchronization.
 
 Numba accepts explicit descriptors for its supported block primitives;
 see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
-CUTLASS currently provides storage-free block Load/Store only.
+CUTLASS currently accepts explicit descriptors for block transpose-family Load/Store.
 See the :ref:`shared storage model <coop-common-storage>` and the
 :doc:`CUTLASS Programming Guide <../coop_cutlass>` for reuse rules.
 Numba's restrictions on combining cooperative backing with user static or
