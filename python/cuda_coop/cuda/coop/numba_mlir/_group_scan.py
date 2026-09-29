@@ -40,10 +40,10 @@ def scan(
         Blocks also accept a fixed-size one-dimensional local array, with
         the same dtype and extent across threads. Warps accept scalars only.
     scan_op : str or device callable, optional
-        Also accepts ``operator``/NumPy aliases for the built-in strings or
-        a stateless device function ``op(left, right)``. The compile-time
-        operator must be associative and return the input dtype. ``None``
-        selects sum. Exclusive custom scans require ``initial_value``. Stateful binary
+        Also accepts ``operator``/NumPy aliases for the built-in strings or a
+        stateless device function ``op(left, right)``. The compile-time operator
+        must be associative and return the input dtype. ``None`` selects sum.
+        Exclusive custom scans require ``initial_value``. Stateful binary
         operators are unsupported.
     valid_items : int or integer scalar, optional
         Warp-only count of contributing lanes, from one through the group
@@ -200,9 +200,10 @@ def exclusive_sum(
     """Return exclusive sums starting from zero.
 
     Extends :func:`cuda.coop.exclusive_sum` with the parameters and return
-    behavior of :func:`cuda.coop.numba_mlir.scan`, with exclusive mode and
-    sum fixed. Each group starts from zero. Use :func:`cuda.coop.numba_mlir.exclusive_scan` for
-    an explicit ``initial_value`` or a different operator.
+    behavior of :func:`cuda.coop.numba_mlir.scan`, with exclusive mode and sum
+    fixed. Each group starts from zero. Use
+    :func:`cuda.coop.numba_mlir.exclusive_scan` for an explicit
+    ``initial_value`` or a different operator.
 
     See Also
     --------
