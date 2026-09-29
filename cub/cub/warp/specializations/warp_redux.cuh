@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /**
  * @file
@@ -18,7 +18,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/interger_utility.cuh>
+#include <cub/detail/integer_utility.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 

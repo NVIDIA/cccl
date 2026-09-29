@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -13,10 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/array>
-#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 
@@ -29,11 +29,12 @@ template <typename Input, ::cuda::std::size_t NumWords = sizeof(Input) / sizeof(
   static_assert(sizeof(Input) == 2 * sizeof(unsigned) || sizeof(Input) == 4 * sizeof(unsigned));
   using unsigned_t = ::cuda::std::make_unsigned_t<Input>;
 
+  constexpr auto word_bits  = 32;
   const auto unsigned_input = static_cast<unsigned_t>(input);
   ::cuda::std::array<unsigned, NumWords> result{};
   for (::cuda::std::size_t word = 0; word < NumWords; ++word)
   {
-    result[word] = static_cast<unsigned>(unsigned_input >> (word * 32));
+    result[word] = static_cast<unsigned>(unsigned_input >> (word * word_bits));
   }
   return result;
 }
