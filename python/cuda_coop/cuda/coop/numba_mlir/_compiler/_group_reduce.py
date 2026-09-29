@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Hierarchy-aware Reduce and Sum IR planning."""
-
 from __future__ import annotations
 
 from enum import Enum

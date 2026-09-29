@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Scope-independent reduction operation semantics."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

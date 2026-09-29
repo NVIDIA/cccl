@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Sum a per-thread payload with the common ``cuda.coop`` API."""
+"""Sum a block's inputs and write the result from thread zero."""
 
 import numpy as np
 from numba_cuda_mlir import cuda, types
