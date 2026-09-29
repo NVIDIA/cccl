@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Scan semantics for physical block and physical or logical warp groups."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
