@@ -173,7 +173,7 @@ tests_root="$repo_root/python/cuda_coop/tests"
 case "$stage" in
   contracts)
     cd "$tests_root"
-    python -m pytest -v test_*.py packaging/
+    python -m pytest -v test_*.py contracts/ packaging/
     ;;
   numba-mlir-compile)
     python -m pyright --project "$repo_root/python/cuda_coop" \
