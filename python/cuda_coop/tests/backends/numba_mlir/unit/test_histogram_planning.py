@@ -41,7 +41,9 @@ def test_reject_counter_dtype(dtype):
 
     def kernel():
         samples = coop.ThreadData(2, dtype=np.int32)
-        return coop.histogram(coop.this_block(), samples, bins=16, counter_dtype=dtype)
+        return coop.histogram(
+            coop.this_block(), samples, bins=16, counter_dtype=dtype
+        )
 
     with pytest.raises(TypeError, match="counter_dtype"):
         _plan(kernel)
@@ -56,7 +58,10 @@ def test_reject_invalid_capacity(bins, bins_per_thread):
     def kernel():
         samples = coop.ThreadData(2, dtype=np.int32)
         return coop.histogram(
-            coop.this_block(), samples, bins=bins, bins_per_thread=bins_per_thread
+            coop.this_block(),
+            samples,
+            bins=bins,
+            bins_per_thread=bins_per_thread,
         )
 
     with pytest.raises((TypeError, ValueError), match="bins"):
