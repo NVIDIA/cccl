@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common-profile diagnostics and qualified register input compilation."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")

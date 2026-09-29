@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed CUB WarpReduceBatched requests using the shared group planner."""
-
 import hashlib
 from dataclasses import dataclass
 

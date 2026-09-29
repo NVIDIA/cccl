@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Qualified backends preserve the common kernel surface and call shapes."""
-
 import importlib
 import inspect
 
