@@ -1131,7 +1131,7 @@ def test_lazy_fake_logical_warp_uses_one_aligned_slice_per_group(frontend_name):
 def test_lazy_fake_single_lane_groups_emit_the_high_lane_mask():
     from numba_cuda_mlir import cuda
 
-    import cuda.coop as coop
+    from cuda import coop
 
     sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
     operations, markers = _register_lazy_fake_frontends()
@@ -1234,7 +1234,7 @@ def test_lazy_fake_storage_reuses_only_identical_execution_domains():
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
-    import cuda.coop as coop
+    from cuda import coop
 
     sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
     operations, markers = _register_lazy_fake_frontends()

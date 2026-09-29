@@ -754,7 +754,7 @@ def test_static_oob_default_boundaries_use_the_load_payload_dtype(
                 source,
                 output,
                 valid_items=1,
-                oob_default=oob_default,
+                oob_default=oob_default,  # noqa: B023 - the planner consumes each closure in this iteration.
             )
 
         array_type = types.Array(getattr(types, dtype_name), 1, "C")
