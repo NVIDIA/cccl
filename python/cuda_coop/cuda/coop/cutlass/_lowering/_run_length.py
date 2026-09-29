@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed Run Length Decode providers using the shared checked CUB driver."""
-
 import hashlib
 from dataclasses import dataclass, replace
 from enum import Enum

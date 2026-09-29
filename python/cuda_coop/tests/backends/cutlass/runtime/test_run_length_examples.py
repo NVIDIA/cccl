@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Executable Run Length Decode example for the programming guide."""
-
 import numpy as np
 import pytest
 

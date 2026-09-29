@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run Length Decode signatures for qualified CuTe payloads."""
-
 from typing import Any, TypeAlias, overload
 
 from cutlass import Uint32
