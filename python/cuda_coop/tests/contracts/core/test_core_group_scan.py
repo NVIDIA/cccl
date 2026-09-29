@@ -31,7 +31,7 @@ from cuda.coop._core import (
     this_warp,
 )
 from cuda.coop._core.thread_group import CoopCompilerContextRequiredError
-from tests.support.group_planning import _plan, _scan
+from tests._group_planning import _plan, _scan
 
 
 @pytest.mark.parametrize(
