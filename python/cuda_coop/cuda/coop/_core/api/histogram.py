@@ -7,7 +7,10 @@ from __future__ import annotations
 from typing import Any
 
 from ..block._common import normalize_positive_int
-from ..block.histogram import normalize_histogram_algorithm, validate_histogram_dtype
+from ..block.histogram import (
+    normalize_histogram_algorithm,
+    validate_histogram_dtype,
+)
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
@@ -93,7 +96,9 @@ def histogram(
             "histogram", "samples", samples, allow_readonly=True
         )
         _common_thread_data_extent("histogram", "samples", samples)
-        validate_histogram_dtype(_common_payload_dtype("histogram", "samples", samples))
+        validate_histogram_dtype(
+            _common_payload_dtype("histogram", "samples", samples)
+        )
     return _group_primitive_marker(
         "histogram",
         group,

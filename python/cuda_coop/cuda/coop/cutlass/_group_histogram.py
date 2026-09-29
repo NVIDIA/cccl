@@ -64,15 +64,21 @@ def histogram(
     contract is shared with :func:`cuda.coop.histogram`.
     """
     if not isinstance(group, ThreadGroup):
-        raise TypeError("cuda.coop.cutlass.histogram group must be a ThreadGroup")
+        raise TypeError(
+            "cuda.coop.cutlass.histogram group must be a ThreadGroup"
+        )
     if group.kind != "block":
-        raise NotImplementedError("cuda.coop.cutlass.histogram requires a block group")
+        raise NotImplementedError(
+            "cuda.coop.cutlass.histogram requires a block group"
+        )
     bins = normalize_positive_int("bins", bins)
     bins_per_thread = normalize_positive_int("bins_per_thread", bins_per_thread)
     algorithm = normalize_histogram_algorithm(algorithm)
     if temp_storage is not None and not isinstance(temp_storage, TempStorage):
         raise TypeError("histogram temp_storage must be CUTLASS TempStorage")
-    samples = _snapshot_readable_payload(samples, name="samples", primitive="histogram")
+    samples = _snapshot_readable_payload(
+        samples, name="samples", primitive="histogram"
+    )
     from ._compiler._launch import current_kernel_launch_facts
     from ._lowering._histogram import provider_histogram
 

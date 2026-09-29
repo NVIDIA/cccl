@@ -37,14 +37,18 @@ def _request(**options):
         "algorithm": "atomic",
     }
     arguments.update(options)
-    return _histogram._CubHistogramRequest(_histogram._make_histogram_plan(**arguments))
+    return _histogram._CubHistogramRequest(
+        _histogram._make_histogram_plan(**arguments)
+    )
 
 
 @pytest.mark.parametrize("sample", tuple(_histogram._SAMPLES))
 @pytest.mark.parametrize("counter", tuple(_histogram._COUNTERS))
 @pytest.mark.parametrize("algorithm", ("atomic", "sort"))
 def test_types_and_result(sample, counter, algorithm):
-    request = _request(sample_type=sample, counter_type=counter, algorithm=algorithm)
+    request = _request(
+        sample_type=sample, counter_type=counter, algorithm=algorithm
+    )
     assert request.plan.result.values[0].dtype is counter
     assert request.plan.result.values[0].items_per_member == 2
     probe = _histogram._scratch_probe(request)
@@ -77,7 +81,9 @@ def test_invalid_contract(options):
 @pytest.mark.parametrize("auto_sync", (False, True))
 def test_storage_controls(sharing, auto_sync):
     request = _request(
-        temp_storage=TempStorage(sharing=sharing, auto_sync=auto_sync, alignment=1)
+        temp_storage=TempStorage(
+            sharing=sharing, auto_sync=auto_sync, alignment=1
+        )
     )
     assert request.plan.temp_storage.exact_layout_required
     assert request.plan.temp_storage.ownership is StorageOwnership.CALLER
@@ -96,9 +102,9 @@ def test_output_and_algorithm_affect_identity():
         _request(bins_per_thread=3),
     ]
     assert len({request.symbol_name for request in requests}) == len(requests)
-    assert len({request.scratch_requirement_key for request in requests}) == len(
-        requests
-    )
+    assert len(
+        {request.scratch_requirement_key for request in requests}
+    ) == len(requests)
 
 
 def test_mismatched_result_rejected():
