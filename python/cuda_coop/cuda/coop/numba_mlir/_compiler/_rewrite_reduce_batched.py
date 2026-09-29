@@ -23,7 +23,9 @@ def infer_reduce_batched_payload(context, inference):
     batches = input_spec.items_per_thread
     width = inference.factory_value("threads_in_warp")
     if not isinstance(width, int) or isinstance(width, bool) or width < 1:
-        raise CoopSinglePhaseRewriteError("reduce_batched requires a static warp width")
+        raise CoopSinglePhaseRewriteError(
+            "reduce_batched requires a static warp width"
+        )
     if output_spec.items_per_thread != (batches + width - 1) // width:
         raise CoopSinglePhaseRewriteError(
             "reduce_batched result extent does not match batches"
@@ -33,7 +35,9 @@ def infer_reduce_batched_payload(context, inference):
         dtype = inference.factory_value("dtype")
     dtype = _validate_common_numeric_dtype(dtype, operation="reduce_batched")
     output_dtype = inference.inferred_array_dtype(output_var, output_spec)
-    if output_dtype is not None and not _dtype_values_match(dtype, output_dtype):
+    if output_dtype is not None and not _dtype_values_match(
+        dtype, output_dtype
+    ):
         raise CoopSinglePhaseRewriteError(
             "reduce_batched input and output dtypes must match"
         )

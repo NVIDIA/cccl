@@ -134,7 +134,9 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
             getattr(portable_coop, operation)
         )
 
-    assert call_shape(coop.reduce_batched) == call_shape(portable_coop.reduce_batched)
+    assert call_shape(coop.reduce_batched) == call_shape(
+        portable_coop.reduce_batched
+    )
 
     portable_exchange = inspect.signature(portable_coop.exchange)
     qualified_exchange = inspect.signature(coop.exchange)
