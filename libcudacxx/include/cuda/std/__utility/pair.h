@@ -831,29 +831,7 @@ template <class _T1, class _T2>
   return ::cuda::std::__get_pair<1>::get(::cuda::std::move(__p));
 }
 
-// specialize cuda::std::tuple_size and cuda::std::tuple_element for std::pair and cuda::std::pair
-
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::pair<_Tp, _Up>> : integral_constant<size_t, 2>
-{};
-
-template <size_t _Ip, class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::pair<_Tp, _Up>>
-{
-  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::pair<_Tp, _Up>>");
-};
-template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, ::std::pair<_Tp, _Up>>
-{
-  using type _CCCL_NODEBUG = _Tp;
-};
-template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, ::std::pair<_Tp, _Up>>
-{
-  using type _CCCL_NODEBUG = _Up;
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::pair
 
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<pair<_Tp, _Up>> : integral_constant<size_t, 2>
