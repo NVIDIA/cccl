@@ -90,7 +90,9 @@ def lower_method_parameters(
     *,
     include_temp_storage: bool,
 ) -> tuple[Any, ...]:
-    """Dispatch one core method signature through an adapter's lowering hooks."""
+    """Dispatch one core method signature through an adapter's lowering
+    hooks.
+    """
 
     lowered = []
     for parameter in method:

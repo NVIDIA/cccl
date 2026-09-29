@@ -73,7 +73,9 @@ def validate_portable_integer_value_dtype_name(
     operation: str,
     parameter: str = "value",
 ) -> str:
-    """Validate one normalized dtype name for an integer value in the common API."""
+    """Validate one normalized dtype name for an integer value in the common
+    API.
+    """
 
     return _validate_portable_dtype_name(
         dtype_name,
