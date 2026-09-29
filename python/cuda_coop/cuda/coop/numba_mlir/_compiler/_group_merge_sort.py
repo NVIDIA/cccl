@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Family-local Merge Sort group planning and input-preserving lowering."""
+"""Copy keys and values before calling CUB's in-place merge sort."""
 
 import math
 from dataclasses import replace

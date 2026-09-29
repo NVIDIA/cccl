@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Merge Sort diagnostics before provider compilation."""
-
 from types import SimpleNamespace
 
 import numpy as np
