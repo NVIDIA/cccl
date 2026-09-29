@@ -70,7 +70,7 @@ def _canonical_operator_cpp(operator: CxxOperator) -> str:
     return operator.cpp.strip().replace("<T>", "<>").removesuffix("{}")
 
 
-def _has_cudax_builtin_operator(operation: "GroupReduceSemantics") -> bool:
+def _has_cudax_builtin_operator(operation: GroupReduceSemantics) -> bool:
     if operation.operation is ReduceOperation.SUM:
         return True
     operator = operation.reduce_operator

@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Runtime qualification for Numba-CUDA-MLIR group hierarchy methods."""
 
@@ -75,6 +74,7 @@ np.testing.assert_array_equal(output, np.array([1] * 30 + [0, 0]))
 """
     result = subprocess.run(
         [sys.executable, "-c", script],
+        check=False,
         capture_output=True,
         text=True,
         timeout=180,
