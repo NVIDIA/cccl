@@ -48,6 +48,13 @@ Terms
       accept scalars or backend-specific arrays. See
       :ref:`thread data <coop-thread-data>`.
 
+   batch
+      One independent reduction in :func:`cuda.coop.reduce_batched`.
+      Each lane contributes the value in the same local payload slot:
+      slot ``j`` contributes to batch ``j``. A batch spans the selected
+      warp, and its result belongs to the lane and slot selected by the
+      output layout. See :doc:`batched reduction <visualizations/reduce-batched>`.
+
    bin
       A counter indexed by an input sample in :func:`cuda.coop.histogram`.
       A sample with value ``b`` increments bin ``b``. Every sample must
