@@ -215,7 +215,7 @@ Exclusive slices still need reuse synchronization when one call site runs
 again in a loop. Explicit descriptors default to ``auto_sync=False`` for both
 sharing modes, so the kernel must call ``storage.sync()`` before reuse. Set
 ``auto_sync=True`` to insert automatic trailing synchronization. Compiler-managed
-scratch synchronizes automatically. Physical warp primitives use
+scratch synchronizes automatically. Physical and logical warp primitives use
 independent per-group storage and the appropriate warp mask rather than a
 block barrier. See the programming guide for each family's explicit-storage
 support and participation rules.

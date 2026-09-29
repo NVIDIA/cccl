@@ -211,9 +211,9 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 
 ## Block and Warp Load and Store
 
-The common and qualified Load/Store APIs share tile controls and in-place
-Load behavior. The following complete Load/Store vocabulary describes Numba;
-check the CUTLASS guide for its currently supported groups and algorithms. The following Numba kernel body clamps a grid tile tail, where
+The common `cuda.coop` and qualified `numba_coop` and `cutlass_coop`
+Load/Store calls share algorithm names, tile controls, and in-place Load
+behavior. The following Numba kernel body clamps a grid tile tail, where
 `source`, `destination`, and `count` are kernel arguments:
 
 ```python
@@ -371,7 +371,7 @@ coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
 For block, physical Warp, and logical Warp calls, `direct`, `striped`, and
-`vectorize` are storage-free where implemented: they need no shared-memory
+`vectorize` are storage-free in both integrations: they need no shared-memory
 allocation, storage pointer arguments, or reuse barriers. An explicit block
 descriptor is validated but does not change that code generation.
 
