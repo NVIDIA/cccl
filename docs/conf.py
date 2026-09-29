@@ -223,6 +223,8 @@ autodoc_mock_imports = [
     # Render real cooperative markers without initializing an optional compiler.
     "numba_cuda_mlir",
     "cuda.coop.numba_mlir._compiler._activation",
+    "cutlass",
+    "cuda.coop.cutlass._compiler._activation",
     "numba",
     "numba.core",
     "numba.core.cgutils",

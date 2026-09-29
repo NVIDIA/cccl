@@ -203,7 +203,8 @@ def _auto_register_known_dsls() -> tuple[str, ...]:
     compiler or CUDA bindings. Inspect ``sys.modules`` first: installing a
     runtime is insufficient to activate it. Compiler-first imports get this
     automatic activation; root-first callers can use
-    ``cuda.coop.register("numba-cuda-mlir")`` explicitly.
+    ``cuda.coop.register("numba-cuda-mlir")`` or
+    ``cuda.coop.register("cutlass")`` explicitly.
 
     Respect ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` and reuse qualified
     backends already in ``sys.modules``. For a new attempt, snapshot loaded
