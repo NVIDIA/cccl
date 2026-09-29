@@ -29,9 +29,12 @@ def ThreadData(
         This extent is fixed for the lifetime of the payload and is available
         inside the kernel as ``items.items_per_thread``.
     dtype : dtype-like, optional
-        Numeric element dtype, for example ``numpy.int32``. ``None`` lets
-        the compiler infer it from a supported producer such as
-        :func:`cuda.coop.load`. All items have the same dtype.
+        Optional numeric element type. Leave unspecified for normal use:
+        a supported producer such as :func:`cuda.coop.load` supplies it.
+        Backend-supported typed assignments can also establish the type.
+        Supply it explicitly when the available type information cannot
+        identify the intended representation. All items have the same type;
+        conflicting typed values are an error.
     alignment : int, optional
         Compile-time minimum storage alignment in bytes, expressed as a
         positive power of two. ``None`` lets the compiler choose. The request

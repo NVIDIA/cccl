@@ -4,8 +4,7 @@
 
 from __future__ import annotations
 
-import operator
-from typing import Protocol, SupportsIndex, TypeVar, runtime_checkable
+from typing import Protocol, TypeVar, runtime_checkable
 
 _ItemT = TypeVar("_ItemT")
 
@@ -47,22 +46,6 @@ class TempStorageLike(Protocol):
     alignment: int | None
     auto_sync: bool
     sharing: str
-
-
-def _normalize_alignment(alignment: SupportsIndex | None) -> int | None:
-    if alignment is None:
-        return None
-    if isinstance(alignment, bool):
-        raise TypeError("alignment must be an integer or None")
-    try:
-        alignment = operator.index(alignment)
-    except TypeError as exc:
-        raise TypeError("alignment must be an integer or None") from exc
-    if alignment <= 0:
-        raise ValueError("alignment must be a positive integer")
-    if alignment & (alignment - 1):
-        raise ValueError("alignment must be a power of 2")
-    return alignment
 
 
 __all__ = ["TempStorageLike", "ThreadDataLike"]
