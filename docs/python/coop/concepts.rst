@@ -250,10 +250,10 @@ or a reuse barrier.
 Per-thread payloads
 ^^^^^^^^^^^^^^^^^^^
 
-``ThreadData(K, dtype=None, *, alignment=None)`` describes a fixed-size
-payload of ``K`` values owned by each thread. Load fills the supplied payload
-in place and returns ``None``. Its source can establish the dtype of an
-untyped output. Other operations either consume that payload or return a new
+``coop.ThreadData(items_per_thread=K)`` describes a fixed-size payload of
+``K`` values owned by each thread. Leave the element type unspecified for
+normal use: Load infers it from its source, fills the payload in place, and
+returns ``None``. Other operations either consume that payload or return a new
 scalar or payload according to their contract. As in CUB, transpose Store
 algorithms may rearrange the input payload in place. Copy values before Store
 if they are needed later.
@@ -268,10 +268,11 @@ The payload extent is a compile-time value available as
 without ``oob_default`` leaves invalid slots unspecified. Assign those slots
 after Load before reading them. Backend value rules still apply:
 Numba-qualified calls can accept supported local arrays, while
-CUTLASS-qualified ``ThreadData`` supports CuTe register-tensor conversions. A
-dtype selector describes the element representation; the active compiler still
-owns the scalar values. For example, selecting a NumPy dtype in a CuTe kernel
-produces CuTe values. See the :ref:`Numba type rules <coop-thread-data>` and
+CUTLASS-qualified ``ThreadData`` supports CuTe register-tensor conversions.
+Supported typed assignments and cooperative producers can establish the
+element type. The :ref:`element-type inference FAQ
+<coop-faq-thread-data-dtype>` covers cases that need explicit information. For
+backend details, see the :ref:`Numba type rules <coop-thread-data>` and
 :ref:`CUTLASS payload conversions <coop-cutlass-register-payloads>`.
 
 .. _coop-common-layouts:
@@ -333,8 +334,11 @@ For operations that accept an explicit descriptor, construct ``TempStorage``
 inside the kernel. A descriptor lets several calls reuse one region or request
 capacity and minimum alignment. An undersized request is an error.
 ``sharing="shared"`` overlaps the uses of one descriptor;
-``sharing="exclusive"`` assigns distinct call sites separate slices.
-Independent descriptors do not alias.
+``sharing="exclusive"`` assigns distinct call sites separate slices. With
+automatic synchronization disabled, separate slices avoid barriers needed
+solely for cross-call scratch reuse, at the cost of more shared memory.
+Independent descriptors do not alias. See :ref:`the exclusive-storage FAQ
+<coop-faq-exclusive-storage>`.
 
 Explicit descriptors default to ``auto_sync=False`` for both sharing modes.
 The kernel must provide the required barrier before reuse, including across
