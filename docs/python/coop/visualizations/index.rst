@@ -19,3 +19,4 @@ do not predict GPU performance.
    store
    exchange
    shuffle
+   reduce
