@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exchange payload inference and pre-provider validation."""
-
 from enum import Enum
 
 from numba_cuda_mlir import types
