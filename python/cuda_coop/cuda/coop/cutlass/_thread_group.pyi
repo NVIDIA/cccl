@@ -4,7 +4,8 @@
 
 """Thread-group descriptors and constructors for the qualified backend."""
 
-from typing import Callable, Generic, Literal, TypeAlias, overload
+from collections.abc import Callable
+from typing import Generic, Literal, TypeAlias, overload
 
 from cutlass import Uint8, Uint32, Uint64
 from typing_extensions import TypeVar

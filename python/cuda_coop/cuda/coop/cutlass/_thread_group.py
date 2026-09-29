@@ -142,8 +142,8 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "this_block",
-    "this_warp",
-    "this_thread",
     "this_cluster",
     "this_grid",
+    "this_thread",
+    "this_warp",
 ]
