@@ -61,7 +61,7 @@ def test_qualified_exclusive_scan_example():
     def partial_prefixes(source, destination, totals, initial, valid):
         thread = cuda.threadIdx.x
         group = numba_coop.this_warp().group_by(8)
-        aggregate = numba_coop.ThreadData(1, dtype=np.int32)
+        aggregate = numba_coop.ThreadData(items_per_thread=1)
         prefix = numba_coop.exclusive_scan(
             group,
             source[thread],
