@@ -180,6 +180,6 @@ coop.exchange(  # expected-error: [call-overload]
     coop.this_block(),
     values,
     mode="scatter_to_striped_flagged",
-    ranks=np.int32(0),
+    ranks=values,
     valid_flags=floating_flags,
 )
