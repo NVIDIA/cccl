@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent batches reduced across a complete physical or logical warp."""
-
 from enum import Enum
 
 from cuda.coop._core.thread_group import ThreadGroup

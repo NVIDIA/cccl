@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent batch/layout oracles, input preservation, and subgroup calls."""
-
 from contextlib import ExitStack
 
 import numpy as np

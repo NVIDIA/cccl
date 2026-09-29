@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Sum three independent features across each warp with common or qualified
-calls.
-"""
+"""Sum three features independently across each warp."""
 
 import cutlass
 import numpy as np
