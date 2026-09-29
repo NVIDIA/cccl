@@ -61,7 +61,7 @@ def test_qualified_exclusive_scan_example():
     def partial_prefixes(source, destination, totals, initial, valid):
         thread = cuda.threadIdx.x
         group = numba_coop.this_warp().group_by(8)
-        aggregate = numba_coop.ThreadData(1, dtype=np.int32)
+        aggregate = numba_coop.ThreadData(items_per_thread=1)
         prefix = numba_coop.exclusive_scan(
             group,
             source[thread],
@@ -108,7 +108,7 @@ def test_qualified_exclusive_sum_example():
     @cuda.jit
     def scan_successive_tiles(source, destination, final_total):
         block = numba_coop.this_block()
-        state = numba_coop.ThreadData(1, dtype=types.int64)
+        state = numba_coop.ThreadData(items_per_thread=1)
         state[0] = types.int64(0)
         scratch = numba_coop.TempStorage(auto_sync=True)
         for tile in range(3):

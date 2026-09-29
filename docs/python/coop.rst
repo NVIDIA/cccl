@@ -257,7 +257,7 @@ The common and qualified APIs expose matching entry points:
 
    # Inside a Numba-CUDA-MLIR kernel:
    block = coop.this_block()
-   items = coop.ThreadData(2)
+   items = coop.ThreadData(items_per_thread=2)
    tile_items = cuda.blockDim.x * 2
    tile_offset = cuda.blockIdx.x * tile_items
    valid_items = count - tile_offset
@@ -337,8 +337,8 @@ excluded threads. Do not use that branch to skip a primitive unless the
 primitive's participation contract explicitly permits it; every required
 group or parent-group participant must still reach the primitive.
 
-``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes the
-fixed-size register payload owned by each participating thread. Common and
+``coop.ThreadData(items_per_thread=2)`` gives each participating thread a
+fixed-size payload of two items. Common and
 qualified calls use the same inference rules: an untyped Load output infers
 its dtype from the source, and Store combines the destination dtype with
 payload writes. Load fills the supplied output in place and returns ``None``.
@@ -346,7 +346,7 @@ payload writes. Load fills the supplied output in place and returns ``None``.
 Both namespaces accept ``alignment`` as a compile-time positive power of two
 in bytes. It specifies minimum alignment when the compiler materializes
 payload storage; ``None`` lets the compiler choose. For example,
-``coop.ThreadData(4, dtype=np.float32, alignment=16)`` requests at least
+``coop.ThreadData(items_per_thread=4, alignment=16)`` requests at least
 16-byte alignment. The backend may use stronger alignment, including for
 requests smaller than its minimum allocation alignment. This option does not
 assert alignment of source or destination arrays passed to Load or Store.
@@ -604,7 +604,7 @@ positional argument:
    running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
 
    # Inside a kernel, before a loop over tiles:
-   state = coop.ThreadData(1, dtype=types.int64)
+   state = coop.ThreadData(items_per_thread=1)
    state[0] = types.int64(0)
    result = coop.exclusive_sum(
        coop.this_block(),
