@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""RLD window masking, prepared-state reuse and checked boundary behavior."""
-
 import os
 import subprocess
 import sys

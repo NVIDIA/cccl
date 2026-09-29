@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Cooperative operations such as loading and storing a block of values.
-
-This module exports the public functions and group descriptions. Compiler
-adapters recognize these functions by identity and lower their kernel calls.
-"""
-
 from .exchange import exchange
 from .histogram import histogram as histogram
 from .load_store import load, store

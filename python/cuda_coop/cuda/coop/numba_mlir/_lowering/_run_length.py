@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUB complete-operation Run Length Decode factories."""
-
 from cuda.coop._core import SynchronizationScope
 from cuda.coop._core.block.run_length import make_block_run_length_decode_spec
 
