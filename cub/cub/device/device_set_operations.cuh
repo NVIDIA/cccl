@@ -55,7 +55,7 @@ private:
             typename OffsetT,
             typename CompareOp,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t set_op_keys(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t set_op_keys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -102,7 +102,7 @@ private:
             typename OffsetT,
             typename CompareOp,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t set_op_pairs(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t set_op_pairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
@@ -149,7 +149,7 @@ private:
             typename OffsetT,
             typename CompareOp,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t set_op_keys_env(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t set_op_keys_env(
     KeyIteratorIn1 d_keys_in1,
     OffsetT num_keys1,
     KeyIteratorIn2 d_keys_in2,
@@ -191,7 +191,7 @@ private:
             typename OffsetT,
             typename CompareOp,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t set_op_pairs_env(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t set_op_pairs_env(
     KeyIteratorIn1 d_keys_in1,
     ValueIteratorIn1 d_values_in1,
     OffsetT num_pairs1,
