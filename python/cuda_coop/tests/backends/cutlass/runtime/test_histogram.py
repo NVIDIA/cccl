@@ -270,7 +270,7 @@ def test_documented_histogram():
     @cute.kernel
     def count_samples(source: cute.Pointer, destination: cute.Pointer):
         block = coop.this_block()
-        samples = coop.ThreadData(3, dtype=cutlass.Int32)
+        samples = coop.ThreadData(items_per_thread=3)
         coop.load(block, source, samples)
         counts = coop.histogram(
             block, samples, bins=65, bins_per_thread=2, counter_dtype=np.int64
