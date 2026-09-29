@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """RLD traps, final linked providers, and scratch race checking."""
 
@@ -54,6 +53,7 @@ def test_invalid_runtime_controls_trap(arguments):
         capture_output=True,
         text=True,
         timeout=180,
+        check=False,
     )
     output = completed.stdout + completed.stderr
     assert completed.returncode != 0, output
@@ -120,6 +120,7 @@ def test_scratch_reuse_racecheck():
         capture_output=True,
         text=True,
         timeout=240,
+        check=False,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "RACECHECK SUMMARY: 0 hazards" in completed.stdout + completed.stderr
