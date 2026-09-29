@@ -140,7 +140,10 @@ def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
                 f"  constexpr ::cuda::std::uint32_t group_warp_count = "
                 f"{group.mapping.count};"
             ),
-            f"  constexpr ::cuda::std::uint32_t grouped_warp_count = {grouped_warps};",
+            (
+                "  constexpr ::cuda::std::uint32_t grouped_warp_count = "
+                f"{grouped_warps};"
+            ),
         )
     )
     return lines
@@ -199,7 +202,10 @@ def _render_cudax_group(request):
         return [
             f"{cpp_type} {request.symbol_name}() {{",
             *_group_prelude(group),
-            f"  return static_cast<{cpp_type}>({_query_expr(group, op, request.level)});",
+            (
+                f"  return static_cast<{cpp_type}>"
+                f"({_query_expr(group, op, request.level)});"
+            ),
             "}",
         ]
     if op == "is_member":

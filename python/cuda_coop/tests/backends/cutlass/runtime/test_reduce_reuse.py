@@ -19,7 +19,9 @@ from tests.backends.cutlass.support import check_cuda, device_array, values_for
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("kind", ("block", "mapped", "cluster"))
 def test_cudax_loop(api, kind):
     block_threads = 128
@@ -30,7 +32,8 @@ def test_cudax_loop(api, kind):
         device = check_cuda(driver.cuCtxGetDevice())
         supported = check_cuda(
             driver.cuDeviceGetAttribute(
-                driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_CLUSTER_LAUNCH, device
+                driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_CLUSTER_LAUNCH,
+                device,
             )
         )
         if not supported:
@@ -40,8 +43,12 @@ def test_cudax_loop(api, kind):
     total_threads = block_threads * grid
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32):
-        thread = cute.arch.block_idx()[0] * block_threads + cute.arch.thread_idx()[0]
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+    ):
+        thread = (
+            cute.arch.block_idx()[0] * block_threads + cute.arch.thread_idx()[0]
+        )
         inputs = cute.make_tensor(source, cute.make_layout(total_threads))
         outputs = cute.make_tensor(observed, cute.make_layout(total_threads))
         if cutlass.const_expr(kind == "block"):
@@ -58,13 +65,17 @@ def test_cudax_loop(api, kind):
         outputs[thread] = accumulated
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+    ):
         if cutlass.const_expr(kind == "cluster"):
             kernel(source, observed, iterations).launch(
                 grid=grid, block=block_threads, cluster=(2, 1, 1)
             )
         else:
-            kernel(source, observed, iterations).launch(grid=grid, block=block_threads)
+            kernel(source, observed, iterations).launch(
+                grid=grid, block=block_threads
+            )
 
     iterations = 5
     source = values_for(np.int32, total_threads, shift=79)

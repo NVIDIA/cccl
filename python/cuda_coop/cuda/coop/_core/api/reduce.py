@@ -123,7 +123,8 @@ def _validate_common_reduce_options(
         )
         if group.kind not in _PARTIAL_REDUCTION_GROUP_KINDS:
             raise ValueError(
-                f"cuda.coop.{operation} valid_items requires a block or warp group"
+                f"cuda.coop.{operation} valid_items requires "
+                "a block or warp group"
             )
         if isinstance(value, _ReadableThreadDataLike):
             raise ValueError(
@@ -142,11 +143,10 @@ def _validate_common_reduce_options(
                     f"cuda.coop.{operation} valid_items {static_valid_items} "
                     f"exceeds group size {group.static_size}"
                 )
-    if algorithm is not None:
-        if group.kind != "block":
-            raise ValueError(
-                f"cuda.coop.{operation} algorithm selection requires a block group"
-            )
+    if algorithm is not None and group.kind != "block":
+        raise ValueError(
+            f"cuda.coop.{operation} algorithm selection requires a block group"
+        )
 
 
 def _validate_common_reduce_value(

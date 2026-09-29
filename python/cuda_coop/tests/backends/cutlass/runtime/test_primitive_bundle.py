@@ -18,24 +18,34 @@ from tests.backends.cutlass.support import device_array, values_for
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_mixed_primitives(api):
     @cute.kernel
-    def kernel(source: cute.Pointer, copied: cute.Pointer, observed: cute.Pointer):
+    def kernel(
+        source: cute.Pointer, copied: cute.Pointer, observed: cute.Pointer
+    ):
         group = api.this_block()
         thread = group.rank()
         outputs = cute.make_tensor(observed, cute.make_layout(65))
         payload = api.ThreadData(2)
         storage = api.TempStorage(sharing="shared", auto_sync=True)
-        api.load(group, source, payload, algorithm="transpose", temp_storage=storage)
+        api.load(
+            group, source, payload, algorithm="transpose", temp_storage=storage
+        )
         outputs[thread] = api.sum(group, payload)
         prefix = api.sum(group, payload[0], broadcast=False, valid_items=45)
         if thread == 0:
             outputs[64] = prefix
-        api.store(group, copied, payload, algorithm="transpose", temp_storage=storage)
+        api.store(
+            group, copied, payload, algorithm="transpose", temp_storage=storage
+        )
 
     @cute.jit
-    def launch(source: cute.Pointer, copied: cute.Pointer, observed: cute.Pointer):
+    def launch(
+        source: cute.Pointer, copied: cute.Pointer, observed: cute.Pointer
+    ):
         kernel(source, copied, observed).launch(grid=1, block=(8, 4, 2))
 
     source = values_for(np.int32, 128, shift=83)

@@ -21,7 +21,9 @@ def _pointer():
     return make_ptr(cutlass.Uint64, 0, cute.AddressSpace.gmem, assumed_align=16)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_hierarchy_compile(api):
     @cute.kernel
     def kernel(memory: cute.Pointer):
@@ -88,7 +90,9 @@ def test_unsupported_synchronization(group_kind, method):
         cute.compile[(GPUArch("sm_80"),)](launch)
 
 
-@pytest.mark.parametrize("dtype", (float, bool, cutlass.Float32, cutlass.Float64))
+@pytest.mark.parametrize(
+    "dtype", (float, bool, cutlass.Float32, cutlass.Float64)
+)
 def test_query_rejects_noninteger(dtype):
     @cute.kernel
     def kernel():

@@ -23,7 +23,13 @@ _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 _ScalarValueT = TypeVar("_ScalarValueT", bound=CommonNumericScalar)
 
 _NumpyReduceUfuncName: TypeAlias = Literal[
-    "add", "multiply", "minimum", "maximum", "bitwise_and", "bitwise_or", "bitwise_xor"
+    "add",
+    "multiply",
+    "minimum",
+    "maximum",
+    "bitwise_and",
+    "bitwise_or",
+    "bitwise_xor",
 ]
 
 class _NumpyReduceUfunc(Protocol):
