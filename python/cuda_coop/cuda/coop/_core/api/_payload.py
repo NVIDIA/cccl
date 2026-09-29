@@ -186,9 +186,12 @@ def _common_numeric_dtype_name(dtype: Any) -> str:
     if width is None:
         width = getattr(dtype, "bitwidth", None)
     signed = getattr(dtype, "signed", None)
-    if isinstance(width, Integral) and not isinstance(width, bool):
-        if isinstance(signed, bool):
-            return f"{'int' if signed else 'uint'}{int(width)}"
+    if (
+        isinstance(width, Integral)
+        and (not isinstance(width, bool))
+        and isinstance(signed, bool)
+    ):
+        return f"{'int' if signed else 'uint'}{int(width)}"
 
     if isinstance(dtype_name, str):
         return dtype_name

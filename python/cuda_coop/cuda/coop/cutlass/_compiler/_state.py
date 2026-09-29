@@ -251,7 +251,7 @@ def _same_mlir_operation(lhs: Any, rhs: Any) -> bool:
         return True
     try:
         result = lhs == rhs
-    except Exception:
+    except Exception:  # noqa: BLE001 - Foreign MLIR wrappers may reject equality.
         return False
     return isinstance(result, bool) and result
 
@@ -262,7 +262,7 @@ def _active_trace_module_op() -> Any | None:
 
         current_ip = ir.InsertionPoint.current
         op = None if current_ip is None else current_ip.block.owner
-    except Exception:
+    except Exception:  # noqa: BLE001 - No usable insertion point means no active trace.
         return None
 
     while op is not None:
