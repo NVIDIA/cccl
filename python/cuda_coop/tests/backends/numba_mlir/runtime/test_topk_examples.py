@@ -30,8 +30,8 @@ def test_topk_pairs_example():
     @cuda.jit
     def select_tile(source, count, selected_keys, original_positions):
         block = coop.this_block()
-        keys = coop.ThreadData(2, dtype=np.int32)
-        positions = coop.ThreadData(2, dtype=np.int32)
+        keys = coop.ThreadData(items_per_thread=2)
+        positions = coop.ThreadData(items_per_thread=2)
         coop.load(block, source, keys, valid_items=count, oob_default=0)
         for item in range(2):
             positions[item] = types.int32(cuda.threadIdx.x * 2 + item)
