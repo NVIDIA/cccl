@@ -30,17 +30,17 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exchange",
+    "load",
+    "local",
+    "shared",
+    "shuffle",
+    "store",
     "this_block",
     "this_cluster",
     "this_grid",
     "this_thread",
     "this_warp",
-    "exchange",
-    "load",
-    "shuffle",
-    "store",
-    "local",
-    "shared",
 ]
 
 

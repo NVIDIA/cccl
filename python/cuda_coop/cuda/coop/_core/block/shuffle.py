@@ -42,7 +42,7 @@ class BlockShuffleMode(str, Enum):
         return self is BlockShuffleMode.OFFSET
 
     @classmethod
-    def from_cub_method_name(cls, method_name: str) -> "BlockShuffleMode":
+    def from_cub_method_name(cls, method_name: str) -> BlockShuffleMode:
         try:
             return cls(method_name.lower())
         except (AttributeError, ValueError) as exc:
