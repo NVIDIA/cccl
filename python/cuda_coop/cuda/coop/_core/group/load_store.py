@@ -4,7 +4,7 @@
 
 """Load/store semantics and block, physical-warp, or logical-warp lowering.
 
-This module owns portable load/store algorithm normalization and selects the
+This module owns common load/store algorithm normalization and selects the
 corresponding CUB specialization after group resolution. It does not own
 ThreadData allocation, backend activation, or compiler rendering.
 """

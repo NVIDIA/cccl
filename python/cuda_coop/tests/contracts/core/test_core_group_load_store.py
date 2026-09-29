@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable Block Load/Store planning and root API contracts."""
+"""Common Block Load/Store planning and root API contracts."""
 
 from dataclasses import replace
 from importlib import import_module
