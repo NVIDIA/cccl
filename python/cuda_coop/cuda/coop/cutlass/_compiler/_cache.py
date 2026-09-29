@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-"""Provider artifact cache paths, atomic I/O, and metadata validation."""
+"""Write compiled LTO-IR atomically and verify cached contents before reuse."""
 
 from __future__ import annotations
 

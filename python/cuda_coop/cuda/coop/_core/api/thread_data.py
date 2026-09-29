@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common per-thread payload construction.
-
-ThreadData is a compiler-owned fixed-size value container; this frontend only
-forwards its static extent, optional dtype, and alignment to the active backend.
-Primitive payload validation lives in the family frontends and shared helpers.
-"""
-
 from __future__ import annotations
 
 from typing import Any

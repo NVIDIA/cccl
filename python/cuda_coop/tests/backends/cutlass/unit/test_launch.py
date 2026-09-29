@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compiler-owned launch facts and shared group resolution."""
-
 from types import SimpleNamespace
 
 import pytest

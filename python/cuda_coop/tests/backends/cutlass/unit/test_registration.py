@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Optional CUTLASS activation in fresh interpreters and both import orders."""
-
 from __future__ import annotations
 
 import importlib.util

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Provider artifact identity, corruption recovery, and trace finalization."""
-
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
