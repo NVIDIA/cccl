@@ -357,6 +357,20 @@ TEST_CASE("copy d2d mismatched shapes", "[copy][d2d][negative]")
   CHECK_THROWS_AS(cuda::copy(src, dst, copy_stream), std::invalid_argument);
 }
 
+TEST_CASE("copy d2d mismatched empty shapes", "[copy][d2d][negative][zero_size]")
+{
+  using cuda::std::layout_right;
+  using extents_t = cuda::std::dextents<int, 2>;
+  thrust::device_vector<float> d_src(1);
+  thrust::device_vector<float> d_dst(1);
+
+  const cuda::device_mdspan<const float, extents_t, layout_right> src(
+    thrust::raw_pointer_cast(d_src.data()), extents_t(0, 3));
+  const cuda::device_mdspan<float, extents_t, layout_right> dst(thrust::raw_pointer_cast(d_dst.data()), extents_t(0, 2));
+
+  CHECK_THROWS_AS(cuda::copy(src, dst, copy_stream), std::invalid_argument);
+}
+
 /***********************************************************************************************************************
  * Mismatched extents/strides types between src and dst
  **********************************************************************************************************************/

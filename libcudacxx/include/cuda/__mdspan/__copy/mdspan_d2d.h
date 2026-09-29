@@ -160,6 +160,10 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   {
     _CCCL_THROW(::std::invalid_argument, "mdspans must have the same size");
   }
+  if (!::cuda::__same_non_singleton_extents(__src.extents(), __dst.extents()))
+  {
+    _CCCL_THROW(::std::invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");
+  }
   const auto __tensor_size = __src.size();
   if (__tensor_size == 0)
   {
@@ -237,10 +241,6 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     static constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
     const auto __src_raw             = ::cuda::__to_raw_tensor<__common_extent_t, __src_stride_t, __max_rank>(__src);
     const auto __dst_raw             = ::cuda::__to_raw_tensor<__common_extent_t, __dst_stride_t, __max_rank>(__dst);
-    if (!::cuda::__same_extents(__src_raw, __dst_raw))
-    {
-      _CCCL_THROW(::std::invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");
-    }
 
     auto __src_simplified = __src_raw;
     auto __dst_simplified = __dst_raw;
