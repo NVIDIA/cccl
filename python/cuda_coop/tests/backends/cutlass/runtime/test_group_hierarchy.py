@@ -18,7 +18,11 @@ from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 from cuda import coop
 from cuda.coop import cutlass as cutlass_coop
-from tests.backends.cutlass.support import NUMPY_DTYPES, cutlass_dtype, device_array
+from tests.backends.cutlass.support import (
+    NUMPY_DTYPES,
+    cutlass_dtype,
+    device_array,
+)
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
@@ -39,7 +43,9 @@ def test_queries(api):
         thread_index = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         block_index = bx + _GRID[0] * (by + _GRID[1] * bz)
         index = block_index * _BLOCK_THREADS + thread_index
-        outputs = cute.make_tensor(observed, cute.make_layout(_FIELDS * _THREADS))
+        outputs = cute.make_tensor(
+            observed, cute.make_layout(_FIELDS * _THREADS)
+        )
         thread = api.this_thread()
         warp = api.this_warp()
         block = api.this_block()
@@ -221,7 +227,9 @@ def test_nonpower_mapping(api):
 def test_mapped_query_cubin(tmp_path):
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
-        pytest.skip("cuobjdump is required to inspect final linked instructions")
+        pytest.skip(
+            "cuobjdump is required to inspect final linked instructions"
+        )
 
     @cute.kernel
     def kernel(observed: cute.Pointer):
@@ -237,7 +245,9 @@ def test_mapped_query_cubin(tmp_path):
 
     observed = np.full(96, -1, dtype=np.int32)
     with device_array(observed) as out:
-        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](launch, out)
+        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
+            launch, out
+        )
         compiled(out)
     expected = np.full_like(observed, -1)
     expected[:32] = np.arange(32) + 64

@@ -41,13 +41,17 @@ def run_example(api="common"):
         thread = block.rank()
         lanes = module.this_warp().group_by(8)
         inputs = cute.make_tensor(source, cute.make_layout(_BLOCK_TILE))
-        outputs = cute.make_tensor(destination, cute.make_layout(2 * _THREADS + 1))
+        outputs = cute.make_tensor(
+            destination, cute.make_layout(2 * _THREADS + 1)
+        )
         payload = module.ThreadData(_ITEMS, dtype=cutlass.Int32)
         for item in cutlass.range_constexpr(_ITEMS):
             payload[item] = inputs[thread * _ITEMS + item]
         # Full reductions broadcast a scalar to every member of the group.
         outputs[thread] = module.sum(block, payload)
-        outputs[_THREADS + thread] = module.reduce(lanes, payload, binary_op="max")
+        outputs[_THREADS + thread] = module.reduce(
+            lanes, payload, binary_op="max"
+        )
         # A valid prefix counts contributing threads. Every thread calls;
         # only rank zero consumes the result when broadcast is disabled.
         prefix = module.sum(block, payload[0], broadcast=False, valid_items=23)
@@ -69,18 +73,28 @@ def run_example(api="common"):
         try:
             _check(driver.cuMemcpyHtoD(src, source.ctypes.data, source.nbytes))
             _check(
-                driver.cuMemcpyHtoD(dst, destination.ctypes.data, destination.nbytes)
+                driver.cuMemcpyHtoD(
+                    dst, destination.ctypes.data, destination.nbytes
+                )
             )
             src_pointer = make_ptr(
-                cutlass.Int32, int(src), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(src),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             dst_pointer = make_ptr(
-                cutlass.Int32, int(dst), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(dst),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             launch(src_pointer, dst_pointer)
             _check(driver.cuCtxSynchronize())
             _check(
-                driver.cuMemcpyDtoH(destination.ctypes.data, dst, destination.nbytes)
+                driver.cuMemcpyDtoH(
+                    destination.ctypes.data, dst, destination.nbytes
+                )
             )
         finally:
             _check(driver.cuMemFree(dst))
@@ -91,7 +105,8 @@ def run_example(api="common"):
             np.full(_THREADS, source.sum(dtype=np.int32), dtype=np.int32),
             np.repeat(source.reshape(-1, 8 * _ITEMS).max(axis=1), 8),
             np.array(
-                [source[0 : 23 * _ITEMS : _ITEMS].sum(dtype=np.int32)], dtype=np.int32
+                [source[0 : 23 * _ITEMS : _ITEMS].sum(dtype=np.int32)],
+                dtype=np.int32,
             ),
         )
     )

@@ -18,7 +18,9 @@ from tests.backends.cutlass.support import device_array, values_for
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(
     "width,prefix",
     ((1, False), (3, False), (32, False), (1, True), (32, True)),
@@ -32,7 +34,9 @@ def test_logical_width(api, width, prefix):
         outputs = cute.make_tensor(observed, cute.make_layout(128))
         group = api.this_warp().group_by(width, exhaustive=False)
         if cutlass.const_expr(prefix):
-            result = api.sum(group, inputs[thread], broadcast=False, valid_items=1)
+            result = api.sum(
+                group, inputs[thread], broadcast=False, valid_items=1
+            )
             if thread % width == 0:
                 outputs[thread] = result
         else:
@@ -53,9 +57,9 @@ def test_logical_width(api, width, prefix):
             if prefix:
                 expected[start] = source[start]
             else:
-                expected[start : start + width] = source[start : start + width].sum(
-                    dtype=np.int32
-                )
+                expected[start : start + width] = source[
+                    start : start + width
+                ].sum(dtype=np.int32)
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out)
     np.testing.assert_array_equal(observed, expected)

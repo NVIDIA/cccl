@@ -21,10 +21,14 @@ from .._typing import (
 
 _ItemT = TypeVar("_ItemT", bound=ThreadGroupQueryScalar)
 _BuiltinIntDType: TypeAlias = Callable[[str | bytes | bytearray, int], int]
-_PhysicalGroupKind: TypeAlias = Literal["thread", "warp", "block", "cluster", "grid"]
+_PhysicalGroupKind: TypeAlias = Literal[
+    "thread", "warp", "block", "cluster", "grid"
+]
 _UniversalQueryLevel: TypeAlias = Literal["thread", "gpu_thread", "warp"]
 _ThreadsWithinWarpLevel: TypeAlias = Literal["thread", "gpu_thread", "warp"]
-_WarpsWithinBlockLevel: TypeAlias = Literal["thread", "gpu_thread", "warp", "block"]
+_WarpsWithinBlockLevel: TypeAlias = Literal[
+    "thread", "gpu_thread", "warp", "block"
+]
 _GroupKindT_co = TypeVar(
     "_GroupKindT_co",
     bound=ThreadGroupKind,

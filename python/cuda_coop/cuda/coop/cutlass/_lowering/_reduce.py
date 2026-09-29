@@ -40,7 +40,11 @@ from cuda.coop._core.thread_group import ThreadGroup
 from .._compiler import _rendering, _state, _types
 from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECS
 from .._group_reduce import _classify_valid_items
-from .._operators import OPERATOR_CPP, operator_expression, validate_operator_dtype
+from .._operators import (
+    OPERATOR_CPP,
+    operator_expression,
+    validate_operator_dtype,
+)
 from .._thread_data import ThreadData
 
 _provider_rendering = _rendering
@@ -131,15 +135,23 @@ def _validate_reduce_request_plan(
         raise TypeError("group reduce request requires reduce semantics")
     if operation.dtype is not value_type:
         raise ValueError("group reduce request dtype does not match its plan")
-    expected_operation = ReduceOperation.SUM if op == "sum" else ReduceOperation.REDUCE
+    expected_operation = (
+        ReduceOperation.SUM if op == "sum" else ReduceOperation.REDUCE
+    )
     if operation.operation is not expected_operation:
-        raise ValueError("group reduce request operator does not match its plan")
+        raise ValueError(
+            "group reduce request operator does not match its plan"
+        )
     if expected_operation is ReduceOperation.REDUCE:
         expected_cpp = _REDUCE_OPERATOR_CPP.get(op)
         if expected_cpp is None or operation.reduce_operator is None:
-            raise ValueError("group reduce request operator does not match its plan")
+            raise ValueError(
+                "group reduce request operator does not match its plan"
+            )
         if operation.reduce_operator.cpp != expected_cpp:
-            raise ValueError("group reduce request operator does not match its plan")
+            raise ValueError(
+                "group reduce request operator does not match its plan"
+            )
     return operation
 
 
@@ -157,13 +169,17 @@ class _CudaxReduceRequest:
         if self.plan.resolved_group.kind == "grid":
             raise NotImplementedError(_GRID_REDUCE_UNAVAILABLE)
         if not isinstance(self.plan.implementation, CudaxCallDescription):
-            raise TypeError("cudax reduce request requires a CUDAX call description")
+            raise TypeError(
+                "cudax reduce request requires a CUDAX call description"
+            )
         operation = _validate_reduce_request_plan(
             self.plan,
             op=self.op,
             value_type=self.value_type,
         )
-        expected_overload = "broadcasted" if operation.broadcast else "root_only"
+        expected_overload = (
+            "broadcasted" if operation.broadcast else "root_only"
+        )
         expected_return = (
             CudaxReturnKind.VALUE
             if operation.broadcast
@@ -173,7 +189,9 @@ class _CudaxReduceRequest:
             self.plan.implementation.overload != expected_overload
             or self.plan.implementation.return_kind is not expected_return
         ):
-            raise ValueError("cudax reduce request result mode does not match its plan")
+            raise ValueError(
+                "cudax reduce request result mode does not match its plan"
+            )
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
@@ -202,7 +220,10 @@ class _CudaxReduceRequest:
 
     @property
     def _arity_suffix(self) -> str:
-        if self.plan.call.operation.primitive.value_kind is ReduceValueKind.ARRAY:
+        if (
+            self.plan.call.operation.primitive.value_kind
+            is ReduceValueKind.ARRAY
+        ):
             return f"_x{self.items_per_thread}"
         return ""
 
@@ -239,14 +260,21 @@ def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
         else:
             group = plan.resolved_group
             logical_width = 32 if group.kind == "warp" else group.static_size
-            if group.kind not in {"warp", "threads_within_warp"} or not isinstance(
+            if group.kind not in {
+                "warp",
+                "threads_within_warp",
+            } or not isinstance(
                 logical_width,
                 int,
             ):
                 raise ValueError("Reduce plan requires a static warp group")
         mask = "0xffffffffu"
         if logical_width < 32:
-            mask = f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) % 32u / {logical_width}u * {logical_width}u)"
+            mask = (
+                f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) % 32u / "
+                f"{logical_width}u * {logical_width}u)"
+            )
         return f"  __syncwarp({mask});"
     if synchronization.storage_reuse_barrier is SynchronizationScope.GROUP:
         return "  group.sync_aligned();"
@@ -260,7 +288,10 @@ def _render_group_prelude(group: ThreadGroup) -> list[str]:
         assert group.mapping is None
         hierarchy = "::cuda::experimental::implicit_hierarchy()"
         return [
-            f"  ::cuda::experimental::coop::this_{group.kind} group{{{hierarchy}}};"
+            (
+                f"  ::cuda::experimental::coop::this_{group.kind} "
+                f"group{{{hierarchy}}};"
+            )
         ]
     return [
         *render_hierarchy_decl(group.hierarchy),
@@ -287,7 +318,9 @@ def _render_cudax_reduce(request: _CudaxReduceRequest) -> list[str]:
         )
 
     spec = TYPE_SPECS[request.value_type]
-    params = [f"{spec.cpp_type} item{idx}" for idx in range(request.items_per_thread)]
+    params = [
+        f"{spec.cpp_type} item{idx}" for idx in range(request.items_per_thread)
+    ]
     values = ", ".join(f"item{idx}" for idx in range(request.items_per_thread))
     lines = [
         f"{spec.cpp_type} {request.symbol_name}({', '.join(params)}) {{",
@@ -302,7 +335,10 @@ def _render_cudax_reduce(request: _CudaxReduceRequest) -> list[str]:
             and request.group.complete_membership is False
             else []
         ),
-        f"  {spec.cpp_type} thread_data[{request.items_per_thread}] = {{{values}}};",
+        (
+            f"  {spec.cpp_type} thread_data[{request.items_per_thread}] "
+            f"= {{{values}}};"
+        ),
     ]
     barrier_line = _storage_reuse_barrier_line(request.plan)
     if request.broadcast:
@@ -320,8 +356,14 @@ def _render_cudax_reduce(request: _CudaxReduceRequest) -> list[str]:
         lines.extend(
             [
                 "  auto reduced = ::cuda::experimental::coop::reduce(",
-                f"      group, thread_data, {operator_expression(request.op)});",
-                f"  {spec.cpp_type} result = reduced.value_or({spec.cpp_type}{{}});",
+                (
+                    "      group, thread_data, "
+                    f"{operator_expression(request.op)});"
+                ),
+                (
+                    f"  {spec.cpp_type} result = "
+                    f"reduced.value_or({spec.cpp_type}{{}});"
+                ),
                 *([barrier_line] if barrier_line else []),
                 "  return result;",
             ]
@@ -400,7 +442,9 @@ class _CubReduceRequest:
     def algorithm_suffix(self) -> str:
         if self.plan.target is GroupLoweringTarget.CUB_WARP:
             return "warp"
-        algorithm = self.operation.cub_algorithm or BlockReduceAlgorithm.WARP_REDUCTIONS
+        algorithm = (
+            self.operation.cub_algorithm or BlockReduceAlgorithm.WARP_REDUCTIONS
+        )
         return _BLOCK_ALGORITHM_TOKENS[algorithm]
 
     @property
@@ -410,7 +454,9 @@ class _CubReduceRequest:
             if self.operation.primitive.value_kind is ReduceValueKind.ARRAY
             else ""
         )
-        signature = hashlib.sha256(repr(self.semantic_key).encode()).hexdigest()[:12]
+        signature = hashlib.sha256(
+            repr(self.semantic_key).encode()
+        ).hexdigest()[:12]
         return (
             "cuda_coop_cutlass_cub_reduce_"
             f"{self.group.symbol_suffix}_{self.op}_"
@@ -426,13 +472,17 @@ def _render_cub_template_argument(
 ) -> str:
     if name == "T":
         if value is not request.value_type:
-            raise ValueError("CUB reduce template dtype does not match its request")
+            raise ValueError(
+                "CUB reduce template dtype does not match its request"
+            )
         return TYPE_SPECS[request.value_type].cpp_type
     if isinstance(value, int) and not isinstance(value, bool):
         return str(value)
     if isinstance(value, str):
         return value
-    raise TypeError(f"cannot render CUB reduce template argument {name}={value!r}")
+    raise TypeError(
+        f"cannot render CUB reduce template argument {name}={value!r}"
+    )
 
 
 def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
@@ -443,7 +493,9 @@ def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
     block_threads = block_dim[0] * block_dim[1] * block_dim[2]
     implementation = plan.implementation
     assert isinstance(implementation, AlgorithmSpec)
-    logical_width = implementation.template_arguments.get("VIRTUAL_WARP_THREADS")
+    logical_width = implementation.template_arguments.get(
+        "VIRTUAL_WARP_THREADS"
+    )
     if not isinstance(logical_width, int) or logical_width < 1:
         raise ValueError("WarpReduce plan requires a static logical warp width")
     if block_threads < logical_width or block_threads % logical_width != 0:
@@ -459,18 +511,26 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
         _render_cub_template_argument(request, name, value)
         for name, value in implementation.ordered_template_arguments
     )
-    runtime_valid_items = request.operation.valid_items.kind is BindingKind.RUNTIME
+    runtime_valid_items = (
+        request.operation.valid_items.kind is BindingKind.RUNTIME
+    )
     params = [
-        *(f"{spec.cpp_type} item{index}" for index in range(request.items_per_thread)),
+        *(
+            f"{spec.cpp_type} item{index}"
+            for index in range(request.items_per_thread)
+        ),
         *(["int valid_items"] if runtime_valid_items else []),
     ]
     input_name = "item0"
     input_lines: list[str] = []
     if request.operation.primitive.value_kind is ReduceValueKind.ARRAY:
-        values = ", ".join(f"item{index}" for index in range(request.items_per_thread))
+        values = ", ".join(
+            f"item{index}" for index in range(request.items_per_thread)
+        )
         input_name = "thread_data"
         input_lines.append(
-            f"  {spec.cpp_type} thread_data[{request.items_per_thread}] = {{{values}}};"
+            f"  {spec.cpp_type} thread_data[{request.items_per_thread}] "
+            f"= {{{values}}};"
         )
 
     call_arguments = [input_name]
@@ -482,7 +542,9 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
         call_arguments.append(str(request.operation.valid_items.value))
 
     storage = "storage"
-    storage_lines = ["  __shared__ typename implementation_type::TempStorage storage;"]
+    storage_lines = [
+        "  __shared__ typename implementation_type::TempStorage storage;"
+    ]
     if request.plan.target is GroupLoweringTarget.CUB_WARP:
         instances, logical_width = _warp_instances(request.plan)
         storage_lines = [
@@ -491,7 +553,11 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
                 f"storage[{instances}];"
             ),
             "  unsigned int storage_instance =",
-            f"      (threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) / {logical_width}u;",
+            (
+                "      (threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) / "
+                f"{logical_width}u;"
+            ),
         ]
         storage = "storage[storage_instance]"
 
@@ -500,12 +566,16 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
     return [
         f"{spec.cpp_type} {request.symbol_name}({', '.join(params)}) {{",
         (
-            f"  using implementation_type = ::cub::{implementation.struct_name}<"
+            "  using implementation_type = "
+            f"::cub::{implementation.struct_name}<"
             f"{template_arguments}>;"
         ),
         *(
             [
-                f"  if (valid_items < 1 || valid_items > {request.group.static_size}) {{",
+                (
+                    "  if (valid_items < 1 || valid_items > "
+                    f"{request.group.static_size}) {{"
+                ),
                 '    asm volatile("trap;" : : :);',
                 "  }",
             ]
@@ -545,7 +615,10 @@ def _register_renderer() -> None:
                 "#include <cuda/experimental/coop/algorithm>",
                 "cuda/experimental/coop/algorithm",
             ),
-            ("#include <cuda/experimental/coop/group>", "cuda/experimental/coop/group"),
+            (
+                "#include <cuda/experimental/coop/group>",
+                "cuda/experimental/coop/group",
+            ),
         ),
     )
     _provider_rendering.register_bundle_renderer(
@@ -558,7 +631,10 @@ def _register_renderer() -> None:
             "#include <cub/warp/warp_reduce.cuh>",
         ),
         cccl_headers=(
-            ("#include <cub/block/block_reduce.cuh>", "cub/block/block_reduce.cuh"),
+            (
+                "#include <cub/block/block_reduce.cuh>",
+                "cub/block/block_reduce.cuh",
+            ),
             ("#include <cub/warp/warp_reduce.cuh>", "cub/warp/warp_reduce.cuh"),
         ),
     )
@@ -613,10 +689,12 @@ def provider_reduce(
             source="cutlass_group_reduce_provider",
         ).require_supported()
         if plan.target is GroupLoweringTarget.CUDAX_GROUP:
-            request: _CudaxReduceRequest | _CubReduceRequest = _CudaxReduceRequest(
-                plan=plan,
-                op=op,
-                value_type=value_type,
+            request: _CudaxReduceRequest | _CubReduceRequest = (
+                _CudaxReduceRequest(
+                    plan=plan,
+                    op=op,
+                    value_type=value_type,
+                )
             )
         elif plan.target in {
             GroupLoweringTarget.CUB_BLOCK,
@@ -628,7 +706,9 @@ def provider_reduce(
                 value_type=value_type,
             )
         else:
-            raise AssertionError("supported group Reduce plan has no provider target")
+            raise AssertionError(
+                "supported group Reduce plan has no provider target"
+            )
 
         runtime_valid_items = valid_items_binding.kind is BindingKind.RUNTIME
         runtime_valid_args = (

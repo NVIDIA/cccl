@@ -105,7 +105,9 @@ def check_cutlass_surface(source: object, destination: object) -> None:
     assert_type(restored_vector, cutlass_coop.ThreadData[np.int32])
 
 
-def check_cutlass_dynamic_memory_controls(signed: Int32, unsigned: Uint32) -> None:
+def check_cutlass_dynamic_memory_controls(
+    signed: Int32, unsigned: Uint32
+) -> None:
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(2, Float64)
     assert_type(
@@ -225,8 +227,12 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     assert_type(cutlass_coop.sum(block, scalar), Uint32)
     assert_type(common_coop.sum(block, scalar), Uint32)
     assert_type(cutlass_coop.sum(common_coop.this_block(), scalar), Uint32)
-    assert_type(cutlass_coop.reduce(block, scalar, binary_op=operator.add), Uint32)
-    assert_type(cutlass_coop.reduce(block, values, binary_op=np.maximum), np.int32)
+    assert_type(
+        cutlass_coop.reduce(block, scalar, binary_op=operator.add), Uint32
+    )
+    assert_type(
+        cutlass_coop.reduce(block, values, binary_op=np.maximum), np.int32
+    )
     assert_type(
         cutlass_coop.sum(block, scalar, broadcast=False, valid_items=17), Uint32
     )
@@ -236,12 +242,16 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     )
     assert_type(
         cutlass_coop.sum(
-            cutlass_coop.this_warp().group_by(8), scalar, broadcast=False, valid_items=7
+            cutlass_coop.this_warp().group_by(8),
+            scalar,
+            broadcast=False,
+            valid_items=7,
         ),
         Uint32,
     )
     assert_type(cutlass_coop.sum(cutlass_coop.this_thread(), scalar), Uint32)
     assert_type(cutlass_coop.sum(block.group_by(2), values), np.int32)
     assert_type(
-        cutlass_coop.sum(cutlass_coop.this_cluster(), values, broadcast=False), np.int32
+        cutlass_coop.sum(cutlass_coop.this_cluster(), values, broadcast=False),
+        np.int32,
     )

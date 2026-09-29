@@ -164,7 +164,10 @@ def test_public_stubs_pass_strict_consumer_type_checks(
 ) -> None:
     if importlib.util.find_spec("mypy") is None:
         pytest.skip("mypy is not installed")
-    if consumer_family == "cutlass" and importlib.util.find_spec("cutlass") is None:
+    if (
+        consumer_family == "cutlass"
+        and importlib.util.find_spec("cutlass") is None
+    ):
         pytest.skip("qualified CUTLASS scalar typing requires CUTLASS DSL")
 
     package_root = _package_stub_source()
@@ -182,7 +185,9 @@ def test_public_stubs_pass_strict_consumer_type_checks(
     consumer_root.mkdir()
     valid_consumers = []
     consumer_names = (
-        ("cutlass_consumer.py",) if consumer_family == "cutlass" else _VALID_CONSUMERS
+        ("cutlass_consumer.py",)
+        if consumer_family == "cutlass"
+        else _VALID_CONSUMERS
     )
     for name in consumer_names:
         destination = consumer_root / name
@@ -191,7 +196,9 @@ def test_public_stubs_pass_strict_consumer_type_checks(
 
     mypy_args = _mypy_args(tmp_path / "mypy-cache")
     if consumer_family == "cutlass":
-        mypy_args.extend(["--config-file", str(_CONSUMER_ROOT / "cutlass_mypy.ini")])
+        mypy_args.extend(
+            ["--config-file", str(_CONSUMER_ROOT / "cutlass_mypy.ini")]
+        )
     result = _run_mypy(
         mypy_args,
         valid_consumers,
