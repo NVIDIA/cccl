@@ -416,7 +416,8 @@ private:
 
 public:
   /// @smemstorage{BlockScan}
-  using TempStorage = Uninitialized<_TempStorage>;
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
   //! @name Collective constructors
   //! @{
@@ -632,7 +633,8 @@ private:
 
 public:
   /// @smemstorage{BlockRadixRankMatch}
-  using TempStorage = Uninitialized<_TempStorage>;
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
   //! @name Collective constructors
   //! @{

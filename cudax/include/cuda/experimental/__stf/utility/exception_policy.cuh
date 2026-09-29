@@ -4844,7 +4844,8 @@ auto operator->*(with_location<exit> where, F&& f)
     // lets `SCOPE(exit, name)` tell the body whether the scope is being left by an exception.
     int exceptions = ::std::uncaught_exceptions();
 
-    result(F&& f, ::cuda::std::source_location loc)
+    // F can be a reference, so preserve its value category.
+    result(F&& f, ::cuda::std::source_location loc) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
         : f(::cuda::std::forward<F>(f))
         , loc(loc)
     {}
@@ -4897,7 +4898,10 @@ auto operator->*(with_location<fail> where, F&& f)
     // Expected uncaught count, or -1 when disarmed by move.
     int exceptions;
 
-    result(F&& f, ::cuda::std::source_location loc, int exceptions)
+    // F can be a reference, so preserve its value category.
+    result(F&& f, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+           ::cuda::std::source_location loc,
+           int exceptions)
         : f(::cuda::std::forward<F>(f))
         , loc(loc)
         , exceptions(exceptions)
@@ -4939,7 +4943,8 @@ auto operator->*(success, F&& f)
     // Expected uncaught count, or -1 when disarmed by move.
     int exceptions;
 
-    result(F&& f, int exceptions)
+    // F can be a reference, so preserve its value category.
+    result(F&& f, int exceptions) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
         : f(::cuda::std::forward<F>(f))
         , exceptions(exceptions)
     {}

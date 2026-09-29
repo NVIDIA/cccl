@@ -513,7 +513,8 @@ public:
             enable_if_t<is_assignable_v<_T1&, _U1>, int> = 0,
             enable_if_t<is_assignable_v<_T2&, _U2>, int> = 0>
   _CCCL_API constexpr pair&
-  operator=(pair<_U1, _U2>&& __p) noexcept(is_nothrow_assignable_v<_T1&, _U1> && is_nothrow_assignable_v<_T2&, _U2>)
+  operator=(pair<_U1, _U2>&& __p) noexcept( // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    is_nothrow_assignable_v<_T1&, _U1> && is_nothrow_assignable_v<_T2&, _U2>)
   {
     this->first  = ::cuda::std::forward<_U1>(__p.first);
     this->second = ::cuda::std::forward<_U2>(__p.second);
@@ -524,7 +525,8 @@ public:
             class _U2,
             enable_if_t<is_assignable_v<const _T1&, _U1>, int> = 0,
             enable_if_t<is_assignable_v<const _T2&, _U2>, int> = 0>
-  _CCCL_API constexpr const pair& operator=(pair<_U1, _U2>&& __p) const
+  _CCCL_API constexpr const pair&
+  operator=(pair<_U1, _U2>&& __p) const // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     noexcept(is_nothrow_assignable_v<const _T1&, _U1> && is_nothrow_assignable_v<const _T2&, _U2>)
   {
     this->first  = ::cuda::std::forward<_U1>(__p.first);
@@ -719,7 +721,8 @@ struct __get_pair<0>
   }
 
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API static constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _T1&&
+  get(pair<_T1, _T2>&& __p) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     return ::cuda::std::forward<_T1>(__p.first);
   }
@@ -747,7 +750,8 @@ struct __get_pair<1>
   }
 
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API static constexpr _T2&& get(pair<_T1, _T2>&& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _T2&&
+  get(pair<_T1, _T2>&& __p) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     return ::cuda::std::forward<_T2>(__p.second);
   }
