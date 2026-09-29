@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Describe explicit shared-memory storage for cooperative operations."""
-
 from enum import Enum
 
 from .._core.api._payload import _normalize_alignment

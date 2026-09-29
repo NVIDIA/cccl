@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""C++ scratch layout and block participation errors are compile-time
-failures.
-"""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")

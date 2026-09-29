@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Execute both passes of the downloadable CUTLASS debugger example."""
-
 import os
 import subprocess
 import sys
