@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Batched-reduction topology, provider identity, and failure transactions."""
 
@@ -20,14 +19,14 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _request(**kwargs):
-    options = dict(
-        group=this_warp(),
-        launch=LaunchFacts(exact_block_dim=(8, 4, 2)),
-        dtype=cutlass.Int32,
-        batches=33,
-        op="sum",
-        output_layout="striped",
-    )
+    options = {
+        "group": this_warp(),
+        "launch": LaunchFacts(exact_block_dim=(8, 4, 2)),
+        "dtype": cutlass.Int32,
+        "batches": 33,
+        "op": "sum",
+        "output_layout": "striped",
+    }
     options.update(kwargs)
     return lowering._CubReduceBatchedRequest(
         lowering._make_reduce_batched_plan(**options), options["op"]
