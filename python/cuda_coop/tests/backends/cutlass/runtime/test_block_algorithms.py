@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block movement layouts and scratch reuse, checked against scalar oracles."""
-
 import importlib.util
 import re
 import shutil

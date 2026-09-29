@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Recover exact C++ storage layouts from NVRTC template-name expressions."""
+"""Recover C++ scratch sizes and alignments from NVRTC template names."""
 
 from __future__ import annotations
 

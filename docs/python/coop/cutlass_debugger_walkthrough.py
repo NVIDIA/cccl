@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run the CUTLASS Developer Guide's Debugger Walkthrough."""
+"""Run a CUTLASS copy kernel twice with direct or transpose load/store."""
 
 import argparse
 import os
