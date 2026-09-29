@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """TopK wide count guards, scratch reuse, mixed bundles, and final code."""
 
@@ -63,7 +62,7 @@ def test_undersized_storage():
 @pytest.mark.parametrize("name", ("k", "valid_items"))
 @pytest.mark.parametrize("value", (-1, 129, 1 << 32))
 def test_invalid_runtime_counts_trap(name, value):
-    args = dict(k=17, valid_items=91)
+    args = {"k": 17, "valid_items": 91}
     args[name] = value
     script = (
         "from tests.backends.cutlass.runtime.test_topk import _run\n"
@@ -80,6 +79,7 @@ def test_invalid_runtime_counts_trap(name, value):
         capture_output=True,
         text=True,
         timeout=180,
+        check=False,
     )
     output = completed.stdout + completed.stderr
     assert completed.returncode != 0, output
