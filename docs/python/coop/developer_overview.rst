@@ -7,7 +7,7 @@
 ``cuda.coop`` Developer Overview
 ================================
 
-``cuda.coop`` makes CUB cooperative primitives callable inside a
+``cuda.coop`` makes CUB and CUDAX cooperative primitives callable inside a
 Python GPU kernel. The Python compiler compiles the surrounding kernel;
 ``cuda.coop`` generates the C++ device functions for its primitive calls.
 The two are linked together before the kernel runs.
@@ -73,29 +73,40 @@ All 128 threads execute both calls. There is one kernel launch. Neither
 Positional operands and keyword-only options
 --------------------------------------------
 
-
 Primitive calls take the participating group first, followed by their data
 operands. These arguments are positional-only. Options such as
-``algorithm``, ``valid_items``, and ``offset`` are keyword-only:
+``algorithm``, ``valid_items``, and ``broadcast`` are keyword-only:
 
 .. code-block:: python
 
+   total = coop.sum(block, value)
+   leader_total = coop.sum(block, value, broadcast=False)
    coop.load(block, source, items, algorithm="direct", valid_items=n)
-   coop.store(block, destination, items, algorithm="direct", valid_items=n)
+
+Reduction usually needs just a group and a value. Load and Store
+add a source or destination. This short operand list keeps primitive
+calls compact inside a kernel, while named options make choices such as
+partial-tile handling and result broadcasting explicit. New optional
+keyword parameters can be added without changing existing calls.
 
 In the API reference, ``/`` marks the end of the positional-only arguments
-and ``*`` introduces keyword-only parameters. Pass the group and data
-operands in their documented order, and use names for optional controls.
-This keeps the primitive call compact while making algorithm and partial-tile
-choices visible. New optional controls can be added without changing the
-operand order.
+and ``*`` introduces keyword-only parameters. For example, pass the group
+and value as ``coop.sum(block, value)``, and select result broadcasting with
+``broadcast=False``. With that option, only group rank zero has a defined
+result; every member must still participate in the call.
 
-``cuda.compute`` uses keyword-only arguments for device-wide algorithms,
-as described in its :doc:`API conventions <../compute/index>`. Those calls
-can contain several input/output arrays, item counts, offsets, and a stream.
-For ``cuda.coop``, the group already names the participants and the smaller
-operand list describes the data handled within the kernel.
+``cuda.compute`` uses keyword-only parameters for all its algorithms, as
+described in its :doc:`API conventions <../compute/index>`. Device-wide
+algorithms can take several input and output arrays, item counts, offsets,
+and a stream. Naming those arguments helps distinguish their roles and
+allows callers to omit optional arguments, such as unused value buffers in
+a key-only sort.
 
+For ``cuda.coop``, the group already describes the participating threads,
+and Reduction returns its result directly.
+The positional operands and named controls fit that smaller call shape.
+When extending an API, keep the operand order consistent and use
+keyword-only parameters for additional options.
 
 Calling CUB from the kernel
 ---------------------------
@@ -370,6 +381,10 @@ For Warp Load/Store, the enclosing block must contain complete physical
 warps, and every member of a participating logical group must reach the
 call.
 
+Group methods such as ``rank()`` and ``count()`` produce integer values
+that the kernel can use. The group descriptor itself remains compile-time
+information. Adding a descriptor or query for a scope does not supply an
+implementation of a primitive with a runtime group size.
 
 There is also a distinction between a static group size and a runtime
 quantity measured within that group. A tail Load may use:
@@ -497,7 +512,7 @@ The plan records more than the selected CUB class:
    * - Synchronization
      - Which barrier is required before another call can reuse scratch.
    * - Implementation
-     - The CUB specialization, along with its source library
+     - The CUB specialization or CUDAX call, along with its source library
        and header.
 
 A supported plan must contain the required contracts. An unsupported
@@ -507,8 +522,15 @@ does not imply that every primitive supports that scope.
 
 ``AlgorithmSpec`` describes a CUB template specialization and its method
 parameters without compiler types. ``NumbaMlirCoreAdapter`` maps those
-types and parameters to the Numba backend's representation.
+types and parameters to the Numba backend's representation. CUDAX group
+calls use a separate call description and generated wrapper.
 
+Reduce illustrates why implementation selection belongs in the family
+planner. Full reductions with supported built-in operators use CUDAX's
+hierarchy-aware implementation. Prefix reductions, explicit CUB algorithm
+selection, and qualified custom operators take supported CUB paths. The
+same public operation can therefore have different implementation and
+storage contracts depending on its arguments.
 
 Payloads, layouts, and results
 ------------------------------
@@ -552,6 +574,10 @@ The result contracts preserve the following public behavior:
   in place. Invalid Load slots are unspecified unless a default is supplied.
 * Exchange returns a fresh payload. Its input remains available to
   subsequent kernel code.
+* Reduce returns a scalar. The default ``broadcast=True`` makes the result
+  available throughout the group. With ``broadcast=False``, only group
+  rank zero has a defined result, although every required thread must
+  still participate.
 
 Output ownership is part of lowering. A CUB method that overwrites an
 array does not, by itself, implement a Python operation that promises to
@@ -652,7 +678,10 @@ not remove the compatibility guard.
 
 These controls are operation-specific. Warp Load/Store uses
 compiler-owned storage and reject an explicit ``TempStorage``. Exchange
-and Shuffle also manage their own scratch in the current API.
+and Shuffle also manage their own scratch in the current API. CUDAX
+Reduce manages scratch inside its generated C++ implementation, so an
+absence of a leading scratch pointer does not mean the reduction uses no
+shared memory.
 
 
 Activation and compilation reuse
@@ -1198,7 +1227,7 @@ Paths below are relative to ``python/cuda_coop/cuda/coop/``:
    * - ``numba_mlir/_compiler/_rewrite.py`` and ``_rewrite_*.py``
      - Materialize payloads, invocables, result handling, and storage.
    * - ``numba_mlir/_lowering/``
-     - Translate core specifications and generate CUB providers.
+     - Translate core specifications and generate CUB or CUDAX providers.
    * - ``numba_mlir/_types.py``
      - Device ABIs, Python operator compilation, source generation, and
        invocable link inputs.

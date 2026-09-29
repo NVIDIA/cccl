@@ -12,6 +12,7 @@ _EXPLORERS = {
     "store": "coop-movement.js",
     "exchange": "coop-movement.js",
     "shuffle": "coop-shuffle.js",
+    "reduce": "coop-collectives.js",
 }
 
 _VISUALIZATION_TITLES = {}
@@ -21,6 +22,8 @@ _API_VISUALIZATIONS = {
     "store": "store",
     "exchange": "exchange",
     "shuffle": "shuffle",
+    "reduce": "reduce",
+    "sum": "reduce",
 }
 
 
