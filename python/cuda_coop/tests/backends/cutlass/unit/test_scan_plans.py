@@ -31,15 +31,15 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _plan(group=None, **options):
-    kwargs = dict(
-        group=this_block() if group is None else group,
-        launch=LaunchFacts(exact_block_dim=(8, 4, 2)),
-        dtype=cutlass.Int32,
-        value_kind=ScanValueKind.SCALAR,
-        items_per_thread=1,
-        mode="exclusive",
-        op="sum",
-    )
+    kwargs = {
+        "group": this_block() if group is None else group,
+        "launch": LaunchFacts(exact_block_dim=(8, 4, 2)),
+        "dtype": cutlass.Int32,
+        "value_kind": ScanValueKind.SCALAR,
+        "items_per_thread": 1,
+        "mode": "exclusive",
+        "op": "sum",
+    }
     kwargs.update(options)
     return _scan._make_group_scan_plan(**kwargs).require_supported()
 
