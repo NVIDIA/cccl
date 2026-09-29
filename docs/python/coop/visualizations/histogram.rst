@@ -6,9 +6,8 @@
 Histogram
 =========
 
-These primitives are currently implemented by Numba-CUDA-MLIR. CUTLASS does
-not yet implement them; see :ref:`backend operation support
-<coop-backend-operation-support>`.
+This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
+operation support <coop-backend-operation-support>` for CUTLASS availability.
 
 :func:`cuda.coop.histogram` counts how many samples fall in each bin. Each
 sample is already an integer bin index; the operation does not divide a

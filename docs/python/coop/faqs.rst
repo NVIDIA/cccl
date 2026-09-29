@@ -189,18 +189,18 @@ barriers automatically. See :ref:`exclusive scratch slices
 <coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
 synchronization.
 
-Both backends accept explicit descriptors for block transpose-family
-Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, and TopK. Warp
-operations use compiler-owned storage and reject explicit descriptors. See the
-:ref:`shared storage model <coop-common-storage>`, :ref:`Numba storage rules
-<coop-temp-storage>`, and the :ref:`CUTLASS storage rules
-<coop-cutlass-storage>` for each family's limits.
+Explicit descriptors control scratch for Numba's supported block primitives;
+see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
+Storage-free block Load/Store accept and validate a descriptor but do not use
+it. See the :ref:`shared storage model <coop-common-storage>` for descriptor
+sharing and the :doc:`CUTLASS Programming Guide <../coop_cutlass>` for the
+block operations that accept descriptors and their reuse rules.
+
 Numba's restrictions on combining cooperative backing with user static or
-dynamic shared arrays are specific to that backend. Numba also accepts
-explicit block scratch for Adjacent Difference, Discontinuity, Histogram, and
-both Run Length Decode forms. CUTLASS does not yet implement these families or
-Batched Warp Reduction; see :ref:`backend operation support
-<coop-backend-operation-support>`.
+dynamic shared arrays are specific to that backend.
+
+Warp operations reject explicit descriptors. When a Warp operation uses CUB,
+the compiler allocates any scratch that CUB requires.
 
 .. _coop-faq-installed-extra:
 
@@ -374,9 +374,9 @@ missing or incompatible backend at setup time. The switch
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` disables only automatic probing;
 explicit registration and qualified imports still work.
 
-Check the selected backend's :ref:`coverage <coop-backends>`, launch shape,
-dtypes, and participation requirements. An API name alone does not establish
-support for that compiler. In a process using both DSLs, keep Numba values
+Check the operation's launch shape, dtype, and participation requirements.
+Check backend coverage for the common operation; qualified extensions follow
+their compiler's guide. In a process using both DSLs, keep Numba values
 inside Numba kernels and CuTe values inside CuTe kernels.
 
 For provider compilation errors, verify the toolkit and matching CCCL
