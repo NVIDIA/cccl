@@ -178,5 +178,7 @@ def test_unsigned_64_bit_runtime_controls_are_rejected():
     with pytest.raises(TypeError, match="unsigned integer up to 32 bits"):
         _compile(
             kernel,
-            types.void(types.int32[::1], types.int32[::1], types.uint64, types.uint64),
+            types.void(
+                types.int32[::1], types.int32[::1], types.uint64, types.uint64
+            ),
         )
