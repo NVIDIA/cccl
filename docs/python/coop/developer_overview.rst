@@ -611,8 +611,8 @@ choose operations that agree on that arrangement or insert an Exchange.
 The result contracts preserve the following public behavior:
 
 * Load and Store return ``None``. Load fills the supplied output in place.
-  Store preserves its input, including when its CUB implementation reorders
-  data internally.
+  Store follows CUB: transpose algorithms may rearrange the input payload
+  in place. Invalid Load slots are unspecified unless a default is supplied.
 * Exchange and array Scan return a fresh payload. Their inputs remain
   available to subsequent kernel code.
 * Reduce returns a scalar. The default ``broadcast=True`` makes the result
@@ -1291,7 +1291,7 @@ provide an explicit target. Runtime tests check the resulting kernels.
 
 
 Use tests that exercise the part you changed. A result-ownership change
-needs an input-preservation check. A storage change needs repeated calls
+needs a check of the operation's documented mutation behavior. A storage change needs repeated calls
 and multiple independent groups. A callable ABI change needs a real link
 and a runtime result. A mocked compiler test cannot establish that the
 generated wrapper and operator agree on their ABI.
