@@ -6,9 +6,6 @@
 Neighbor operations
 ===================
 
-These primitives are currently implemented by Numba-CUDA-MLIR. CUTLASS
-does not yet implement them; see :ref:`backend coverage <coop-backends>`.
-
 Adjacent Difference and Discontinuity read neighboring items in a block's
 flattened, blocked sequence. They return new per-thread payloads and
 preserve their inputs. A neighbor can belong to the same thread, another
