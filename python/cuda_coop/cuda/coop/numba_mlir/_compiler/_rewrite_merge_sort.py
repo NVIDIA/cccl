@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Merge Sort payload inference for copied in-place provider operands."""
-
 from ._parameters import _validate_common_numeric_dtype
 from ._rewrite_support import CoopSinglePhaseRewriteError
 
