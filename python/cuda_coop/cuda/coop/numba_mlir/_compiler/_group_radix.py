@@ -110,7 +110,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         count = context.array_extent(value) if is_array else 1
         if count is None:
             raise GroupRewriteError(
-                f"cuda.coop.{operation} requires a static items_per_thread extent"
+                f"cuda.coop.{operation} requires "
+                f"a static items_per_thread extent"
             )
         if extent is not None and (
             extent != count or is_array != array_map["keys"]
@@ -176,7 +177,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
                 or prefix_extent != expected
             ):
                 raise ValueError(
-                    f"exclusive_digit_prefix must contain {expected} items per thread"
+                    f"exclusive_digit_prefix must "
+                    f"contain {expected} items per thread"
                 )
             dtype = context.dtype(prefix)
             if (
@@ -246,7 +248,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         descriptor = context.temp_storage(temp_storage)
         if descriptor is None:
             raise TypeError(
-                "radix sort temp_storage must resolve to a TempStorage descriptor"
+                "radix sort temp_storage must "
+                "resolve to a TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(
