@@ -73,6 +73,17 @@ def topk_min_keys(
     signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
     They reject invalid static counts during compilation and trap
     on invalid runtime counts.
+
+    Qualified Numba-CUDA-MLIR calls also accept fixed-size local arrays;
+    qualified CUTLASS calls accept CuTe register payloads. Both return fresh
+    per-thread payloads with the same defined-prefix contract.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.topk_min_keys
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.topk_min_keys
+        CuTe payloads and qualified controls.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -156,6 +167,17 @@ def topk_min_pairs(
     signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
     They reject invalid static counts during compilation and trap
     on invalid runtime counts.
+
+    Qualified Numba-CUDA-MLIR calls also accept fixed-size local arrays;
+    qualified CUTLASS calls accept CuTe register payloads. Both return fresh
+    per-thread payloads with the same defined-prefix contract.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.topk_min_pairs
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.topk_min_pairs
+        CuTe payloads and qualified controls.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -241,6 +263,17 @@ def topk_max_keys(
     signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
     They reject invalid static counts during compilation and trap
     on invalid runtime counts.
+
+    Qualified Numba-CUDA-MLIR calls also accept fixed-size local arrays;
+    qualified CUTLASS calls accept CuTe register payloads. Both return fresh
+    per-thread payloads with the same defined-prefix contract.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.topk_max_keys
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.topk_max_keys
+        CuTe payloads and qualified controls.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -324,6 +357,17 @@ def topk_max_pairs(
     signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
     They reject invalid static counts during compilation and trap
     on invalid runtime counts.
+
+    Qualified Numba-CUDA-MLIR calls also accept fixed-size local arrays;
+    qualified CUTLASS calls accept CuTe register payloads. Both return fresh
+    per-thread payloads with the same defined-prefix contract.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.topk_max_pairs
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.topk_max_pairs
+        CuTe payloads and qualified controls.
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
