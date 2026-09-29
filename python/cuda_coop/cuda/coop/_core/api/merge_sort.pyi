@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed Merge Sort payload and group contracts."""
-
 from typing import overload
 
 from typing_extensions import TypeVar
