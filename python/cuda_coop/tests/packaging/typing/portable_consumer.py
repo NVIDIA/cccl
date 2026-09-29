@@ -270,7 +270,9 @@ def check_topk_surface() -> None:
     block = coop.this_block()
     keys = coop.ThreadData(3, np.int16)
     values = coop.ThreadData(3, np.float64)
-    assert_type(coop.topk_min_keys(block, keys, k=7), coop.ThreadDataLike[np.int16])
+    assert_type(
+        coop.topk_min_keys(block, keys, k=7), coop.ThreadDataLike[np.int16]
+    )
     assert_type(
         coop.topk_max_keys(block, keys, k=np.int64(7), valid_items=31),
         coop.ThreadDataLike[np.int16],
@@ -280,6 +282,8 @@ def check_topk_surface() -> None:
         tuple[coop.ThreadDataLike[np.int16], coop.ThreadDataLike[np.float64]],
     )
     assert_type(
-        coop.topk_max_pairs(block, keys, values, k=7, temp_storage=coop.TempStorage()),
+        coop.topk_max_pairs(
+            block, keys, values, k=7, temp_storage=coop.TempStorage()
+        ),
         tuple[coop.ThreadDataLike[np.int16], coop.ThreadDataLike[np.float64]],
     )

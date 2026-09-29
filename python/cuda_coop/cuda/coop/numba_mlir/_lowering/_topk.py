@@ -9,8 +9,15 @@ from __future__ import annotations
 from cuda.coop._core import SynchronizationScope
 from cuda.coop._core.block.topk import make_block_topk_spec
 
-from .._compiler._operations import StorageABI, factory_operation, register_factory
-from .._compiler._parameters import _validate_common_numeric_dtype, normalize_dim_param
+from .._compiler._operations import (
+    StorageABI,
+    factory_operation,
+    register_factory,
+)
+from .._compiler._parameters import (
+    _validate_common_numeric_dtype,
+    normalize_dim_param,
+)
 from .._types import make_invocable_from_specialization
 from ._core import NumbaMlirCoreAdapter
 
@@ -36,7 +43,9 @@ def _topk(
         )
     spec = make_block_topk_spec(
         key_dtype=adapter.core_dtype(key_dtype),
-        value_dtype=None if value_dtype is None else adapter.core_dtype(value_dtype),
+        value_dtype=None
+        if value_dtype is None
+        else adapter.core_dtype(value_dtype),
         block_dim=tuple(normalize_dim_param(threads_per_block)),
         items_per_thread=items_per_thread,
         selection=selection,

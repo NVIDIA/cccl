@@ -35,7 +35,9 @@ class GroupTopKSemantics:
     selection: str
     k: ArgumentBinding
     value_dtype: Any = None
-    valid_items: ArgumentBinding = field(default_factory=ArgumentBinding.omitted)
+    valid_items: ArgumentBinding = field(
+        default_factory=ArgumentBinding.omitted
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.k, ArgumentBinding):
@@ -74,13 +76,20 @@ class GroupTopKSemantics:
 
 def _classifications(operation):
     result = [
-        ParameterClassification("keys", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+        ParameterClassification(
+            "keys", ArgumentKind.RUNTIME, ParameterRole.INPUT
+        )
     ]
     if operation.value_dtype is not None:
         result.append(
-            ParameterClassification("values", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+            ParameterClassification(
+                "values", ArgumentKind.RUNTIME, ParameterRole.INPUT
+            )
         )
-    for name, binding in (("k", operation.k), ("valid_items", operation.valid_items)):
+    for name, binding in (
+        ("k", operation.k),
+        ("valid_items", operation.valid_items),
+    ):
         if binding.argument_kind is not None:
             result.append(
                 ParameterClassification(

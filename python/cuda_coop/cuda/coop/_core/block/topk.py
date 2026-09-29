@@ -119,7 +119,7 @@ public:
   }
 };
 } // namespace cub
-""".strip(),
+""".strip(),  # noqa: E501 - Embedded C++ source.
 )
 
 
@@ -157,7 +157,9 @@ def make_block_topk_spec(
     block_dim = normalize_block_dim(block_dim)
     if block_dim[1:] != (1, 1):
         raise ValueError("TopK supports only one-dimensional blocks")
-    items_per_thread = normalize_positive_int("items_per_thread", items_per_thread)
+    items_per_thread = normalize_positive_int(
+        "items_per_thread", items_per_thread
+    )
     if selection not in {"min", "max"}:
         raise ValueError("topk selection must be min or max")
     if not isinstance(k, ArgumentBinding) or k.kind is BindingKind.OMITTED:
@@ -211,7 +213,9 @@ def make_block_topk_spec(
             "KeyT": key_dtype,
             "BLOCK_DIM_X": block_dim[0],
             "ITEMS_PER_THREAD": items_per_thread,
-            "ValueT": value_dtype if value_dtype is not None else "::cub::NullType",
+            "ValueT": value_dtype
+            if value_dtype is not None
+            else "::cub::NullType",
         },
         metadata={
             "scope": "block",
