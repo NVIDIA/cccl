@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Input-preserving CUB block neighbor operations."""
+"""CUB neighbor operations that preserve their inputs."""
 
 from __future__ import annotations
 
