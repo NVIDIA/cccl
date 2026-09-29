@@ -217,7 +217,7 @@ def test_multiblock_delta_example():
         # source tile's last value, so an in-place launch would race.
         block = coop.this_block()
         base = cuda.blockIdx.x * 512
-        values = coop.ThreadData(4)
+        values = coop.ThreadData(items_per_thread=4)
         coop.load(block, source, values, offset=base)
         previous = np.int32(0)
         if base > 0:
@@ -242,7 +242,7 @@ def test_tile_run_labels_example():
         # Full 512-item tiles; IDs restart at zero in each block.
         block = coop.this_block()
         base = cuda.blockIdx.x * 512
-        values = coop.ThreadData(4)
+        values = coop.ThreadData(items_per_thread=4)
         coop.load(block, keys, values, offset=base)
         heads = coop.discontinuity(block, values, mode="heads")
         labels = coop.inclusive_sum(block, heads)
