@@ -21,3 +21,4 @@ do not predict GPU performance.
    exchange
    shuffle
    reduce
+   scan
