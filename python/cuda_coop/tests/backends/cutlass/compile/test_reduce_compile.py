@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Built-in Reduce traces validate routing, payloads, and integer controls."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")

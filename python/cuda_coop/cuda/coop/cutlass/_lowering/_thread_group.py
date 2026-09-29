@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed CUDAX providers for exact-launch group queries and synchronization."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

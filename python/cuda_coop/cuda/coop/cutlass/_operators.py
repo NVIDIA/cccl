@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Built-in operator normalization shared by CUTLASS Reduce and Scan."""
-
 import operator
 from enum import Enum
 
