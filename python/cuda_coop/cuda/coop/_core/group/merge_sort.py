@@ -193,7 +193,6 @@ def _plan_merge_sort(
     requirements = _build_execution_requirements(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
         uniform_arguments=("valid_items", "oob_default")
