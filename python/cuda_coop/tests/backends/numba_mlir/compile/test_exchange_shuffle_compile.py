@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """GPU-free, real-toolchain compilation contracts for Exchange and Shuffle."""
 
@@ -603,7 +602,7 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(width, monkeypatc
     )
     assert result.metadata["cubin"]
     mlir = result.metadata["mlir_module_str"]
-    definitions = dict(re.findall(r"^\s*(%[\w-]+) = (.*)$", mlir, flags=re.M))
+    definitions = dict(re.findall(r"^\s*(%[\w-]+) = (.*)$", mlir, flags=re.MULTILINE))
     operands = re.findall(r"nvvm.bar.warp.sync\s+(%[\w-]+)", mlir)
     assert len(operands) == 2
     assert "gpu.barrier" not in mlir
