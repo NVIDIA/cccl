@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Physical and logical Warp Load/Store runtime qualification."""
-
 from __future__ import annotations
 
 import subprocess

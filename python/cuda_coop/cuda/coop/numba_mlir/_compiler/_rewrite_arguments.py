@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Generic provider argument binding and runtime splitting.
-
-This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
-ordering remain in the rewrite orchestrator.
-"""
-
 from cuda.coop._core import ArgumentBinding, GroupLoweringPlan
 
 from ._group_rewriting import GroupRewriteContext

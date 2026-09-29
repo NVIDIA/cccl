@@ -5,14 +5,6 @@
 # The family planners import this module's private support names explicitly.
 # ruff: noqa: F401
 
-"""Whole-function planning for Numba-CUDA-MLIR group-first primitives.
-
-This module owns IR provenance, hierarchy caching, and call rewriting shared by
-all primitive families.  Public signatures and provider construction live in
-semantic ``_group_*`` and ``_lowering`` modules; callable recognition is exact
-identity based.
-"""
-
 from __future__ import annotations
 
 import inspect

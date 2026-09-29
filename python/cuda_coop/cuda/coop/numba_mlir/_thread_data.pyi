@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Fixed-size per-thread data and backend memory namespace declarations."""
-
 from typing import Any, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar

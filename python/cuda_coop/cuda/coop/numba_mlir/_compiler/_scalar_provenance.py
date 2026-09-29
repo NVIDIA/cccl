@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared scalar provenance helpers for cooperative IR planning."""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable

@@ -2,10 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Persistent content-addressed cache helpers for Numba-CUDA-MLIR.
+"""Cache results on disk by function identity and serialized arguments.
 
-Persistence is separate from semantic operation identities. Cache entries
-are partitioned by function identity and keyed by serialized arguments.
+Set ``CUDA_COOP_ENABLE_CACHE=1`` before import to enable caching.
 """
 
 import hashlib

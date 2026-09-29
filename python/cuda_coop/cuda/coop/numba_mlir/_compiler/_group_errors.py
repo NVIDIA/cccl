@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Derived group-planning errors with readable, wrapped diagnostics."""
-
 from textwrap import fill
 
 from ._group_planner_support import GroupRewriteError

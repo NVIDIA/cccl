@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Construct fixed-size thread data and expose compiler memory namespaces."""
-
 from __future__ import annotations
 
 import struct
