@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 650" role="img" aria-labelledby="title desc">
+<title id="title">A Run Length Decode window begins inside a run</title>
+<desc id="desc">Four threads hold runs with values 7, 9, 2, 5 and lengths 3, 2, 0, 0. The last two runs are padding. Exclusive starts are 0, 3, 5, 5; total size is 5. Starting at decoded offset 2, the window values are 7, 9, 9, 0 and relative offsets are 2, 0, 1, MAX. The out-of-stream slot is zero-filled. Inputs remain unchanged.</desc>
+<rect width="900" height="650" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif" fill="#203341">
+<text x="26" y="36" font-size="23" font-weight="600">Run Length Decode: one explicit window</text>
+<text x="26" y="65" font-size="15">4 teaching threads · 1 run and 1 decoded item per thread · offset 2 · total 5</text>
+<text x="26" y="156" font-size="16" font-weight="600">Run values</text>
+<text x="303" y="120" text-anchor="middle" font-size="13">T0</text>
+<rect x="250" y="130" width="106" height="48" rx="7" fill="#dceac1" stroke="#9facba"/>
+<text x="303" y="161" text-anchor="middle" font-size="22">7</text>
+<text x="448" y="120" text-anchor="middle" font-size="13">T1</text>
+<rect x="395" y="130" width="106" height="48" rx="7" fill="#c9eaf0" stroke="#9facba"/>
+<text x="448" y="161" text-anchor="middle" font-size="22">9</text>
+<text x="593" y="120" text-anchor="middle" font-size="13">T2</text>
+<rect x="540" y="130" width="106" height="48" rx="7" fill="#e4e8ec" stroke="#9facba"/>
+<text x="593" y="161" text-anchor="middle" font-size="22">2</text>
+<text x="738" y="120" text-anchor="middle" font-size="13">T3</text>
+<rect x="685" y="130" width="106" height="48" rx="7" fill="#e4e8ec" stroke="#9facba"/>
+<text x="738" y="161" text-anchor="middle" font-size="22">5</text>
+<text x="26" y="251" font-size="16" font-weight="600">Run lengths</text>
+<rect x="250" y="225" width="106" height="48" rx="7" fill="#dceac1" stroke="#9facba"/>
+<text x="303" y="256" text-anchor="middle" font-size="22">3</text>
+<rect x="395" y="225" width="106" height="48" rx="7" fill="#c9eaf0" stroke="#9facba"/>
+<text x="448" y="256" text-anchor="middle" font-size="22">2</text>
+<rect x="540" y="225" width="106" height="48" rx="7" fill="#e4e8ec" stroke="#9facba"/>
+<text x="593" y="256" text-anchor="middle" font-size="22">0</text>
+<rect x="685" y="225" width="106" height="48" rx="7" fill="#e4e8ec" stroke="#9facba"/>
+<text x="738" y="256" text-anchor="middle" font-size="22">0</text>
+<text x="26" y="346" font-size="16" font-weight="600">Exclusive starts</text>
+<rect x="250" y="320" width="106" height="48" rx="7" fill="#dceac1" stroke="#9facba"/>
+<text x="303" y="351" text-anchor="middle" font-size="22">0</text>
+<rect x="395" y="320" width="106" height="48" rx="7" fill="#c9eaf0" stroke="#9facba"/>
+<text x="448" y="351" text-anchor="middle" font-size="22">3</text>
+<rect x="540" y="320" width="106" height="48" rx="7" fill="#e4e8ec" stroke="#9facba"/>
+<text x="593" y="351" text-anchor="middle" font-size="22">5</text>
+<rect x="685" y="320" width="106" height="48" rx="7" fill="#e4e8ec" stroke="#9facba"/>
+<text x="738" y="351" text-anchor="middle" font-size="22">5</text>
+<text x="26" y="441" font-size="16" font-weight="600">Window values</text>
+<text x="303" y="405" text-anchor="middle" font-size="13">T0</text>
+<rect x="250" y="415" width="106" height="48" rx="7" fill="#dceac1" stroke="#9facba"/>
+<text x="303" y="446" text-anchor="middle" font-size="22">7</text>
+<text x="448" y="405" text-anchor="middle" font-size="13">T1</text>
+<rect x="395" y="415" width="106" height="48" rx="7" fill="#c9eaf0" stroke="#9facba"/>
+<text x="448" y="446" text-anchor="middle" font-size="22">9</text>
+<text x="593" y="405" text-anchor="middle" font-size="13">T2</text>
+<rect x="540" y="415" width="106" height="48" rx="7" fill="#c9eaf0" stroke="#9facba"/>
+<text x="593" y="446" text-anchor="middle" font-size="22">9</text>
+<text x="738" y="405" text-anchor="middle" font-size="13">T3</text>
+<rect x="685" y="415" width="106" height="48" rx="7" fill="#e4e8ec" stroke="#9facba"/>
+<text x="738" y="446" text-anchor="middle" font-size="22">0</text>
+<text x="26" y="536" font-size="16" font-weight="600">Relative offsets</text>
+<rect x="250" y="510" width="106" height="48" rx="7" fill="#dceac1" stroke="#9facba"/>
+<text x="303" y="541" text-anchor="middle" font-size="22">2</text>
+<rect x="395" y="510" width="106" height="48" rx="7" fill="#c9eaf0" stroke="#9facba"/>
+<text x="448" y="541" text-anchor="middle" font-size="22">0</text>
+<rect x="540" y="510" width="106" height="48" rx="7" fill="#c9eaf0" stroke="#9facba"/>
+<text x="593" y="541" text-anchor="middle" font-size="22">1</text>
+<rect x="685" y="510" width="106" height="48" rx="7" fill="#e4e8ec" stroke="#9facba"/>
+<text x="738" y="541" text-anchor="middle" font-size="22">MAX</text>
+<text x="26" y="605" font-size="15">Decoded indices 2, 3, 4, 5 map to values 7, 9, 9, then the defined zero fill.</text>
+<text x="26" y="629" font-size="15">MAX = UINT32_MAX for default offsets. A bulk call reuses one table across its windows.</text>
+</g>
+</svg>
