@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Stateful device-callable descriptor for qualified cooperative Scan."""
-
 from collections.abc import Callable
 from typing import Generic, Protocol
 
