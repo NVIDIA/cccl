@@ -39,28 +39,28 @@ compare_swap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, C
   }
 }
 
-template <bool Unroll = true, typename KeyT, typename ValueT, typename CompareOp, int ItemPerThread>
+template <bool Unroll = true, typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-stable_odd_even_sort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThread], CompareOp compare_op)
+stable_odd_even_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  constexpr int unroll = Unroll ? ItemPerThread : 1;
+  constexpr int unroll = Unroll ? ItemsPerThread : 1;
   _CCCL_PRAGMA_UNROLL(unroll)
-  for (int i = 0; i < ItemPerThread; ++i)
+  for (int i = 0; i < ItemsPerThread; ++i)
   {
     _CCCL_PRAGMA_UNROLL(unroll) // unroll count is higher than loop count, but that's fine
-    for (int j = i % 2; j < ItemPerThread - 1; j += 2)
+    for (int j = i % 2; j < ItemsPerThread - 1; j += 2)
     {
       cub::detail::compare_swap(keys[j], keys[j + 1], items[j], items[j + 1], compare_op);
     } // inner loop
   } // outer loop
 }
 
-template <typename KeyT, typename ValueT, typename CompareOp, int ItemPerThread>
+template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-unstable_pairwise_sort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThread], CompareOp compare_op)
+unstable_pairwise_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  constexpr int network_degree = cuda::ceil_ilog2(ItemPerThread);
-  constexpr int network_size   = cuda::next_power_of_two(ItemPerThread);
+  constexpr int network_degree = cuda::ceil_ilog2(ItemsPerThread);
+  constexpr int network_size   = cuda::next_power_of_two(ItemsPerThread);
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int group_size = 1; group_size < network_size; group_size *= 2)
@@ -69,7 +69,7 @@ unstable_pairwise_sort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThrea
     for (int group_offset = 0; group_offset < group_size; ++group_offset)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int lhs = group_offset; lhs < ItemPerThread - group_size; lhs += 2 * group_size)
+      for (int lhs = group_offset; lhs < ItemsPerThread - group_size; lhs += 2 * group_size)
       {
         const int rhs = lhs + group_size;
         cub::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
@@ -89,12 +89,12 @@ unstable_pairwise_sort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThrea
       const int stride = group_size * step;
 
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int lhs = 0; lhs < ItemPerThread; ++lhs)
+      for (int lhs = 0; lhs < ItemsPerThread; ++lhs)
       {
         if ((lhs / group_size) % 2 == 1)
         {
           const int rhs = lhs + stride;
-          if (rhs < ItemPerThread)
+          if (rhs < ItemsPerThread)
           {
             cub::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
           }
@@ -121,7 +121,7 @@ unstable_pairwise_sort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThrea
  * @tparam CompareOp
  *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`
  *
- * @tparam ItemPerThread
+ * @tparam ItemsPerThread
  *   The number of items per thread
  *
  * @param[in,out] keys
@@ -134,9 +134,9 @@ unstable_pairwise_sort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThrea
  *   Comparison function object which returns true if the first argument is
  *   ordered before the second
  */
-template <typename KeyT, typename ValueT, typename CompareOp, int ItemPerThread>
+template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-StableOddEvenSort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThread], CompareOp compare_op)
+StableOddEvenSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
   return cub::detail::stable_odd_even_sort(keys, items, compare_op);
 }
@@ -152,7 +152,7 @@ StableOddEvenSort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThread], C
 //! @tparam KeyT Key type.
 //! @tparam ValueT Value type. If @c cub::NullType is used, only keys are sorted.
 //! @tparam CompareOp Comparison function object that provides a strict weak ordering.
-//! @tparam ItemPerThread Number of items per thread.
+//! @tparam ItemsPerThread Number of items per thread.
 //!
 //! @param[in,out] keys Keys to sort.
 //! @param[in,out] items Values to reorder with their corresponding keys.
@@ -160,9 +160,9 @@ StableOddEvenSort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThread], C
 //!
 //! @see Ian Parberry, "The Pairwise Sorting Network", Parallel Processing Letters,
 //! Vol. 2, No. 2-3, pp. 205-211, 1992. https://ianparberry.com/pubs/pairwise.pdf
-template <typename KeyT, typename ValueT, typename CompareOp, int ItemPerThread>
+template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-UnstablePairwiseSort(KeyT (&keys)[ItemPerThread], ValueT (&items)[ItemPerThread], CompareOp compare_op)
+UnstablePairwiseSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
   return cub::detail::unstable_pairwise_sort(keys, items, compare_op);
 }
