@@ -25,14 +25,14 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _plan(**kwargs):
-    options = dict(
-        group=this_block(),
-        launch=LaunchFacts(exact_block_dim=(8, 3, 2)),
-        dtype=cutlass.Int32,
-        items_per_thread=None,
-        mode="offset",
-        distance=1,
-    )
+    options = {
+        "group": this_block(),
+        "launch": LaunchFacts(exact_block_dim=(8, 3, 2)),
+        "dtype": cutlass.Int32,
+        "items_per_thread": None,
+        "mode": "offset",
+        "distance": 1,
+    }
     options.update(kwargs)
     return _shuffle._make_shuffle_plan(**options)
 
