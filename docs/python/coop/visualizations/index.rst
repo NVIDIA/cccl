@@ -19,6 +19,7 @@ timing and geometry do not predict GPU performance.
    exchange
    shuffle
    reduce
+   reduce-batched
    scan
    adjacent-difference
    discontinuity
