@@ -304,3 +304,19 @@ that total and relative run offsets to auxiliary payloads; invalid
 relative offsets contain the maximum value of the selected unsigned
 offset dtype. Bulk decoding writes only valid items, leaving the rest
 of the destination unchanged.
+
+.. _coop-faq-batched-reduce:
+
+How does Batched Warp Reduction differ from ordinary Reduce?
+------------------------------------------------------------
+
+Ordinary ``reduce(group, values)`` combines the group's payload items
+into one aggregate. ``reduce_batched(warp, values)`` reduces each local
+slot independently across the warp. Three slots per lane mean three
+independent results, one for each slot.
+
+The results are distributed among lanes in blocked or striped order;
+they are not broadcast to every lane. Each returned payload has
+``ceil(batches / warp_width)`` slots, and slots without a corresponding
+batch are unspecified. The :doc:`feature-sum example
+<visualizations/reduce-batched>` guards its stores by batch index.

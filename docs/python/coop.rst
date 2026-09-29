@@ -120,15 +120,12 @@ To work on the integration, follow a kernel through the
    <span id="coop-numba-context-lifetime"></span>
    <span id="coop-numba-validation"></span>
    <span id="cuda-devices-and-context-lifetime"></span>
-   <span id="data-layouts-and-algorithms"></span>
    <span id="exchange-semantics"></span>
    <span id="groups-and-thread-data"></span>
    <span id="installation"></span>
    <span id="kernel-api"></span>
    <span id="load-and-store-semantics"></span>
    <span id="numba-cuda-mlir-validation-scope"></span>
-   <span id="participation-and-synchronization"></span>
-   <span id="per-thread-payloads"></span>
    <span id="registering-a-backend"></span>
    <span id="runtime-environment-variables"></span>
    <span id="scan-semantics"></span>
