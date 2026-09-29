@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Declare shared-memory requirements for the kernel compiler."""
-
 from __future__ import annotations
 
 from ..thread_group import CoopCompilerContextRequiredError

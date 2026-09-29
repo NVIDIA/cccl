@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Histogram type, capacity, ownership, and import-light API contracts."""
-
 import numpy as np
 import pytest
 
