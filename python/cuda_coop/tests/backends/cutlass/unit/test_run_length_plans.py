@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run Length Decode plan, ABI, scratch, and transaction contracts."""
-
 import inspect
 from dataclasses import replace
 from types import SimpleNamespace
