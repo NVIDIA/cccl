@@ -93,6 +93,31 @@ struct ExplicitMove
   {}
 };
 
+// Constructible from the staging tuple. tuple_cat must still copy the source element.
+struct StagingTupleConstructible
+{
+  int value;
+  TEST_FUNC constexpr StagingTupleConstructible(int v)
+      : value(v)
+  {}
+  template <class... _Ts>
+  TEST_FUNC constexpr StagingTupleConstructible(cuda::std::tuple<_Ts...> const&)
+      : value(99)
+  {}
+};
+
+struct ExplicitStagingTupleConstructible
+{
+  int value;
+  TEST_FUNC constexpr ExplicitStagingTupleConstructible(int v)
+      : value(v)
+  {}
+  template <class... _Ts>
+  TEST_FUNC constexpr explicit ExplicitStagingTupleConstructible(cuda::std::tuple<_Ts...> const&)
+      : value(99)
+  {}
+};
+
 TEST_FUNC constexpr bool test()
 {
   {
@@ -406,6 +431,20 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<1>(combined) == 6);
     assert(cuda::std::get<2>(combined).value == 7);
     assert(cuda::std::get<0>(tail).value == 7);
+  }
+  {
+    // A one-element result is built from the source element, not from the staging tuple.
+    cuda::std::tuple<StagingTupleConstructible> source(StagingTupleConstructible(7));
+    cuda::std::tuple<StagingTupleConstructible> result = cuda::std::tuple_cat(source);
+    assert(cuda::std::get<0>(result).value == 7);
+
+    cuda::std::tuple<ExplicitStagingTupleConstructible> explicit_source(ExplicitStagingTupleConstructible(7));
+    cuda::std::tuple<ExplicitStagingTupleConstructible> explicit_result = cuda::std::tuple_cat(explicit_source);
+    assert(cuda::std::get<0>(explicit_result).value == 7);
+
+    cuda::std::tuple<StagingTupleConstructible, int> two(StagingTupleConstructible(7), 1);
+    cuda::std::tuple<StagingTupleConstructible, int> two_result = cuda::std::tuple_cat(two);
+    assert(cuda::std::get<0>(two_result).value == 7);
   }
 
   return true;
