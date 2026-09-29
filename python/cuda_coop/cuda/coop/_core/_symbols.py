@@ -484,7 +484,8 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
             malformed_attributes.append(
                 ("__closure__", _dependency_token(exposed_closure, state))
             )
-        implementation = getattr(value, "__call__", _MISSING)
+        # Inspect the implementation itself, rather than test callability.
+        implementation = getattr(value, "__call__", _MISSING)  # noqa: B004
         implementation_code = getattr(implementation, "__code__", _MISSING)
         if implementation_code is not _MISSING and not isinstance(
             implementation_code, CodeType
