@@ -19,6 +19,7 @@ _EXPLORERS = {
     "topk": "coop-topk.js",
     "adjacent-difference": "coop-neighbors.js",
     "discontinuity": "coop-neighbors.js",
+    "histogram": "coop-histogram.js",
 }
 
 _VISUALIZATION_TITLES = {
@@ -27,6 +28,7 @@ _VISUALIZATION_TITLES = {
     "topk": "TopK",
     "adjacent-difference": "Adjacent Difference",
     "discontinuity": "Discontinuity",
+    "histogram": "Histogram",
 }
 
 _API_VISUALIZATIONS = {
@@ -45,6 +47,7 @@ _API_VISUALIZATIONS = {
     "topk": "topk",
     "adjacent-difference": "adjacent-difference",
     "discontinuity": "discontinuity",
+    "histogram": "histogram",
     "sum": "reduce",
     "adjacent_difference": "adjacent-difference",
     "merge_sort_keys": "merge-sort",
