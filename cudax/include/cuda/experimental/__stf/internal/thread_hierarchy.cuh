@@ -104,12 +104,9 @@ public:
    */
   thread_hierarchy(int devid, interpreted_execution_policy<spec...>& p)
       : devid(devid)
+      , launch_config(p.get_config())
+      , cg_system(p.get_cg_system())
   {
-    launch_config = p.get_config();
-
-    // If we may synchronize across multiple devices.
-    cg_system = p.cg_system;
-
     size_t i = 0;
     for (auto& l : p.get_levels())
     {

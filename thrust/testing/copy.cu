@@ -409,15 +409,13 @@ struct object_with_non_trivial_ctor
   int magic;
 
   _CCCL_HOST_DEVICE object_with_non_trivial_ctor()
-  {
-    magic = expected_magic;
-    field = 0;
-  }
+      : field(0)
+      , magic(expected_magic)
+  {}
   _CCCL_HOST_DEVICE object_with_non_trivial_ctor(int f)
-  {
-    magic = expected_magic;
-    field = f;
-  }
+      : field(f)
+      , magic(expected_magic)
+  {}
 
   object_with_non_trivial_ctor(const object_with_non_trivial_ctor& x) = default;
 
