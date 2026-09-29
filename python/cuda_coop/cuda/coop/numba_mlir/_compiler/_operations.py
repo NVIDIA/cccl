@@ -11,11 +11,12 @@ function names are diagnostic metadata only and never establish identity.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from importlib import import_module
 from threading import RLock
-from typing import TYPE_CHECKING, Any, Callable, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 if TYPE_CHECKING:
     from ._group_rewriting import GroupRewriteContext
@@ -465,9 +466,9 @@ __all__ = [
     "RewriteOperationSpec",
     "StorageABI",
     "factory_operation",
-    "group_primitive",
     "group_operation",
     "group_operation_name",
+    "group_primitive",
     "register_factory",
     "register_group_primitive",
     "register_rewrite_operation",
