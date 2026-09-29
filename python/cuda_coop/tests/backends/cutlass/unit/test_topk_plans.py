@@ -45,7 +45,9 @@ def _request(**kwargs):
 @pytest.mark.parametrize("dtype", tuple(_types.ALL_PROVIDER_TYPES))
 @pytest.mark.parametrize("selection", ("min", "max"))
 def test_numeric_plans(dtype, selection):
-    request = _request(key_type=dtype, value_type=cutlass.Float64, selection=selection)
+    request = _request(
+        key_type=dtype, value_type=cutlass.Float64, selection=selection
+    )
     assert request.implementation.struct_name == "BlockTopKCoop"
     assert request.implementation.method_name == f"{selection}_pairs_full"
     assert tuple(result.dtype for result in request.plan.result.values) == (
@@ -117,7 +119,8 @@ def test_result_mismatch():
 
 
 @pytest.mark.parametrize(
-    "name", ("topk_min_keys", "topk_max_keys", "topk_min_pairs", "topk_max_pairs")
+    "name",
+    ("topk_min_keys", "topk_max_keys", "topk_min_pairs", "topk_max_pairs"),
 )
 def test_common_signature(name):
     expected = inspect.signature(getattr(coop, name))
@@ -139,7 +142,9 @@ def test_failed_storage_restores_session(monkeypatch):
     monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: saved)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)
     monkeypatch.setattr(_state, "register_request", lambda request: None)
-    monkeypatch.setattr(_topk, "_make_rmem_tensor", lambda *args: SimpleNamespace())
+    monkeypatch.setattr(
+        _topk, "_make_rmem_tensor", lambda *args: SimpleNamespace()
+    )
 
     def fail(*args, **kwargs):
         raise RuntimeError("TopK scratch emission failed")
