@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/single_pass_scan_operators.cuh> // ScanTileState, TilePrefixCallbackOp
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
@@ -60,7 +60,7 @@ merge_path(It1 a, Offset a_count, It2 b, Offset b_count, Offset diag, CompareOp 
   Offset end   = (::cuda::std::min) (diag, a_count);
   while (begin < end)
   {
-    // FIXME(set-ops): `(begin + end) >> 1` can overflow for very large ranges; an overflow-safe MidPoint would be
+    // FIXME(bgruber): `(begin + end) >> 1` can overflow for very large ranges; an overflow-safe MidPoint would be
     // correct but changes the SASS, so we keep this form to match the original Thrust implementation.
     const Offset mid  = (begin + end) >> 1;
     const key_t a_key = a[mid];

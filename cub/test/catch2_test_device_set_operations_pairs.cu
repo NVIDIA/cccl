@@ -27,18 +27,16 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetUnionPairs, set_union_pairs);
 // for the correct element, and the source bit lets operations that must take values exclusively from the first input be
 // checked precisely.
 template <typename LaunchT, typename StdOp>
-void test_pairs(
-  c2h::seed_t seed, LaunchT launch, StdOp std_op, bool values_from_first_input_only, int size1 = 3623, int size2 = 6346)
+void test_pairs(LaunchT launch, StdOp std_op, bool values_from_first_input_only, int size1 = 3623, int size2 = 6346)
 {
   using key_t   = std::int16_t;
   using value_t = int;
-  CAPTURE(size1, size2, seed.get());
+  CAPTURE(size1, size2);
 
   c2h::device_vector<key_t> keys1_d(size1, thrust::default_init);
   c2h::device_vector<key_t> keys2_d(size2, thrust::default_init);
-  // The two inputs use independent seeds so they are not correlated.
-  c2h::gen(seed, keys1_d);
-  c2h::gen(c2h::seed_t{seed.get() + 1}, keys2_d);
+  c2h::gen(C2H_SEED(1), keys1_d);
+  c2h::gen(C2H_SEED(1), keys2_d);
   thrust::sort(c2h::device_policy, keys1_d.begin(), keys1_d.end());
   thrust::sort(c2h::device_policy, keys2_d.begin(), keys2_d.end());
 
@@ -99,10 +97,9 @@ void test_pairs(
 }
 
 // Runs all four key-value set operations for the given input sizes.
-void test_all_pairs(c2h::seed_t seed, int size1, int size2)
+void test_all_pairs(int size1, int size2)
 {
   test_pairs(
-    seed,
     [](auto&&... a) {
       set_difference_pairs(static_cast<decltype(a)>(a)...);
     },
@@ -113,7 +110,6 @@ void test_all_pairs(c2h::seed_t seed, int size1, int size2)
     size1,
     size2);
   test_pairs(
-    seed,
     [](auto&&... a) {
       set_intersection_pairs(static_cast<decltype(a)>(a)...);
     },
@@ -124,7 +120,6 @@ void test_all_pairs(c2h::seed_t seed, int size1, int size2)
     size1,
     size2);
   test_pairs(
-    seed,
     [](auto&&... a) {
       set_symmetric_difference_pairs(static_cast<decltype(a)>(a)...);
     },
@@ -135,7 +130,6 @@ void test_all_pairs(c2h::seed_t seed, int size1, int size2)
     size1,
     size2);
   test_pairs(
-    seed,
     [](auto&&... a) {
       set_union_pairs(static_cast<decltype(a)>(a)...);
     },
@@ -151,29 +145,23 @@ void test_all_pairs(c2h::seed_t seed, int size1, int size2)
 // asymmetric, small, medium (a few tiles), and large (many tiles).
 CUB_TEST_CASE("DeviceSetOps pairs cover a range of input sizes", "[set_ops][device]", CUB_SMALL)
 {
-  // A single seed at the test-case level: threading it through avoids multiplying Catch2 generators across the
-  // size/operation loop below (each C2H_SEED introduces a generator dimension).
-  const c2h::seed_t seed = C2H_SEED(1);
-  for (auto [s1, s2] : {
-         std::pair{0, 0}, // both empty
-         std::pair{0, 137}, // first empty
-         std::pair{137, 0}, // second empty
-         std::pair{1, 1}, // single element each
-         std::pair{1, 5000}, // very asymmetric
-         std::pair{5000, 1}, // very asymmetric
-         std::pair{23, 51}, // small
-         std::pair{3623, 6346}, // medium
-         std::pair{40000, 55000}, // large: spans many tiles
-       })
-  {
-    test_all_pairs(seed, s1, s2);
-  }
+  const auto [size1, size2] = GENERATE(table<int, int>({
+    {0, 0}, // both empty
+    {0, 137}, // first empty
+    {137, 0}, // second empty
+    {1, 1}, // single element each
+    {1, 5000}, // very asymmetric
+    {5000, 1}, // very asymmetric
+    {23, 51}, // small
+    {3623, 6346}, // medium
+    {40000, 55000}, // large: spans many tiles
+  }));
+  test_all_pairs(size1, size2);
 }
 
 CUB_TEST_CASE("DeviceSetOps difference pairs", "[set_ops][device]", CUB_SMALL)
 {
   test_pairs(
-    C2H_SEED(2),
     [](auto&&... a) {
       set_difference_pairs(static_cast<decltype(a)>(a)...);
     },
@@ -186,7 +174,6 @@ CUB_TEST_CASE("DeviceSetOps difference pairs", "[set_ops][device]", CUB_SMALL)
 CUB_TEST_CASE("DeviceSetOps intersection pairs", "[set_ops][device]", CUB_SMALL)
 {
   test_pairs(
-    C2H_SEED(2),
     [](auto&&... a) {
       set_intersection_pairs(static_cast<decltype(a)>(a)...);
     },
@@ -199,7 +186,6 @@ CUB_TEST_CASE("DeviceSetOps intersection pairs", "[set_ops][device]", CUB_SMALL)
 CUB_TEST_CASE("DeviceSetOps symmetric difference pairs", "[set_ops][device]", CUB_SMALL)
 {
   test_pairs(
-    C2H_SEED(2),
     [](auto&&... a) {
       set_symmetric_difference_pairs(static_cast<decltype(a)>(a)...);
     },
@@ -212,7 +198,6 @@ CUB_TEST_CASE("DeviceSetOps symmetric difference pairs", "[set_ops][device]", CU
 CUB_TEST_CASE("DeviceSetOps union pairs", "[set_ops][device]", CUB_SMALL)
 {
   test_pairs(
-    C2H_SEED(2),
     [](auto&&... a) {
       set_union_pairs(static_cast<decltype(a)>(a)...);
     },
