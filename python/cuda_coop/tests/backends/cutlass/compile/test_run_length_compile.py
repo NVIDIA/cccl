@@ -15,7 +15,10 @@ from cutlass.cute.runtime import make_ptr
 
 from cuda import coop
 from cuda.coop import cutlass as cutlass_coop
-from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES, INTEGER_VALUE_TYPES
+from cuda.coop.cutlass._compiler._types import (
+    ALL_PROVIDER_TYPES,
+    INTEGER_VALUE_TYPES,
+)
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
@@ -33,9 +36,13 @@ def _compile(
     dynamic_capacity=False,
 ):
     @cute.kernel
-    def kernel(memory: cute.Pointer, offset: control_type, capacity: cutlass.Int64):
+    def kernel(
+        memory: cute.Pointer, offset: control_type, capacity: cutlass.Int64
+    ):
         values = api.ThreadData(2, dtype=dtype)
-        lengths = api.ThreadData(1 if bad == "extent" else 2, dtype=length_dtype)
+        lengths = api.ThreadData(
+            1 if bad == "extent" else 2, dtype=length_dtype
+        )
         for i in cutlass.range_constexpr(2):
             values[i] = dtype(i)
         for i in cutlass.range_constexpr(lengths.items_per_thread):
@@ -50,12 +57,17 @@ def _compile(
             shape = capacity if dynamic_capacity else 256
             destination = cute.recast_tensor(
                 cute.make_tensor(
-                    memory, cute.make_layout(shape, stride=2 if bad == "strided" else 1)
+                    memory,
+                    cute.make_layout(
+                        shape, stride=2 if bad == "strided" else 1
+                    ),
                 ),
                 dtype,
             )
             if cutlass.const_expr(bad == "rank"):
-                destination = cute.make_tensor(memory, cute.make_layout((16, 16)))
+                destination = cute.make_tensor(
+                    memory, cute.make_layout((16, 16))
+                )
             if cutlass.const_expr(bad == "pointer"):
                 destination = memory
             if cutlass.const_expr(bad == "dtype"):
@@ -86,7 +98,9 @@ def _compile(
             output[0] = decoded[0]
 
     @cute.jit
-    def launch(memory: cute.Pointer, offset: control_type, capacity: cutlass.Int64):
+    def launch(
+        memory: cute.Pointer, offset: control_type, capacity: cutlass.Int64
+    ):
         kernel(memory, offset, capacity).launch(grid=1, block=block)
 
     pointer = make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
@@ -95,7 +109,9 @@ def _compile(
     )
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("bulk", (False, True))
 def test_entrypoints(api, bulk):
     assert _compile(api, bulk=bulk) is not None
@@ -136,7 +152,8 @@ def test_destination_contract(bad):
 )
 def test_input_contract(bad, message):
     with pytest.raises(
-        (TypeError, ValueError, NotImplementedError, DSLRuntimeError), match=message
+        (TypeError, ValueError, NotImplementedError, DSLRuntimeError),
+        match=message,
     ):
         _compile(bad=bad)
 

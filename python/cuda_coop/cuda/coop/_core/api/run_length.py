@@ -187,7 +187,9 @@ def run_length_decode_into(
             require_thread_data=True,
         )
         validate_common_integer_value_dtype_name(
-            length_dtype, operation="run_length_decode_into", parameter="run_lengths"
+            length_dtype,
+            operation="run_length_decode_into",
+            parameter="run_lengths",
         )
     return _group_primitive_marker(
         "run_length_decode_into",
