@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Built-in Scan signatures for the qualified CUTLASS backend."""
-
 from collections.abc import Callable
 from typing import Any, Generic, Literal, Protocol, TypeAlias, overload
 

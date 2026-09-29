@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Repeated Scan calls and shared scratch across Load, Scan, and Store."""
-
 import numpy as np
 import pytest
 
