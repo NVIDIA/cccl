@@ -13,7 +13,10 @@ from typing import Any
 from numba_cuda_mlir import types
 
 from cuda.coop._core import ArgumentBinding, BindingKind, SynchronizationScope
-from cuda.coop._core.block.shuffle import BlockShuffleMode, make_block_shuffle_spec
+from cuda.coop._core.block.shuffle import (
+    BlockShuffleMode,
+    make_block_shuffle_spec,
+)
 
 from .._compiler._operations import (
     StorageABI,
@@ -75,7 +78,9 @@ def _provider_metadata(factory, *, operation: str):
     if registered is None:
         raise RuntimeError(f"unregistered cuda.coop provider {factory!r}")
     if registered.operation != operation or registered.namespace != "block":
-        raise RuntimeError(f"invalid {operation} provider registration {registered!r}")
+        raise RuntimeError(
+            f"invalid {operation} provider registration {registered!r}"
+        )
     return {
         "storage_abi": registered.storage_abi,
         "execution_scope": registered.execution_scope,
@@ -83,7 +88,9 @@ def _provider_metadata(factory, *, operation: str):
     }
 
 
-def _static_rotate_distance(distance: ArgumentBinding, block_threads: int) -> None:
+def _static_rotate_distance(
+    distance: ArgumentBinding, block_threads: int
+) -> None:
     if distance.kind is BindingKind.RUNTIME:
         return
     value = 1 if distance.kind is BindingKind.OMITTED else distance.value

@@ -84,7 +84,9 @@ def _provider_metadata(factory, *, operation: str, namespace: str):
     if registered is None:
         raise RuntimeError(f"unregistered cuda.coop provider {factory!r}")
     if registered.operation != operation or registered.namespace != namespace:
-        raise RuntimeError(f"invalid {operation} provider registration {registered!r}")
+        raise RuntimeError(
+            f"invalid {operation} provider registration {registered!r}"
+        )
     return {
         "storage_abi": registered.storage_abi,
         "execution_scope": registered.execution_scope,
@@ -124,7 +126,9 @@ def _block_exchange(
     )
     rank_dtype = None if rank_dtype is None else _rank_dtype(rank_dtype)
     valid_flag_dtype = (
-        None if valid_flag_dtype is None else _valid_flag_dtype(valid_flag_dtype)
+        None
+        if valid_flag_dtype is None
+        else _valid_flag_dtype(valid_flag_dtype)
     )
     adapter = NumbaMlirCoreAdapter()
     core_spec = make_block_exchange_spec(
@@ -134,9 +138,13 @@ def _block_exchange(
         mode=mode,
         value_form=BlockExchangeValueForm.OUT_OF_PLACE,
         warp_time_slicing=warp_time_slicing,
-        rank_dtype=(None if rank_dtype is None else adapter.core_dtype(rank_dtype)),
+        rank_dtype=(
+            None if rank_dtype is None else adapter.core_dtype(rank_dtype)
+        ),
         valid_flag_dtype=(
-            None if valid_flag_dtype is None else adapter.core_dtype(valid_flag_dtype)
+            None
+            if valid_flag_dtype is None
+            else adapter.core_dtype(valid_flag_dtype)
         ),
     )
     specialization = adapter.materialize(
@@ -245,7 +253,9 @@ def _warp_exchange(
     )
     mode = _mode(mode, WarpExchangeMode, operation="warp exchange")
     expected_operation = (
-        "exchange_ranked" if mode is WarpExchangeMode.SCATTER_TO_STRIPED else "exchange"
+        "exchange_ranked"
+        if mode is WarpExchangeMode.SCATTER_TO_STRIPED
+        else "exchange"
     )
     rank_dtype = None if rank_dtype is None else _rank_dtype(rank_dtype)
     adapter = NumbaMlirCoreAdapter()
@@ -255,7 +265,9 @@ def _warp_exchange(
         threads_in_warp=threads_in_warp,
         mode=mode,
         value_form=WarpExchangeValueForm.OUT_OF_PLACE,
-        rank_dtype=(None if rank_dtype is None else adapter.core_dtype(rank_dtype)),
+        rank_dtype=(
+            None if rank_dtype is None else adapter.core_dtype(rank_dtype)
+        ),
     )
     specialization = adapter.materialize(
         core_spec.specialization,

@@ -56,7 +56,9 @@ def _mode_token(value: object, *, group_kind: str) -> str:
         )
     token = value.strip().lower().replace("-", "_")
     allowed = (
-        _WARP_MODES if group_kind in {"warp", "threads_within_warp"} else _BLOCK_MODES
+        _WARP_MODES
+        if group_kind in {"warp", "threads_within_warp"}
+        else _BLOCK_MODES
     )
     if token not in allowed:
         choices = ", ".join(sorted(allowed))
@@ -98,7 +100,8 @@ def _array_dtype(
         dtype = context.payload_write_dtype(value)
     if dtype is None:
         raise GroupRewriteError(
-            f"cuda.coop.numba_mlir.exchange could not infer a dtype for {parameter}"
+            f"cuda.coop.numba_mlir.exchange could "
+            f"not infer a dtype for {parameter}"
         )
     return dtype
 
@@ -108,7 +111,8 @@ def _rank_dtype(dtype: Any) -> Any:
         dtype = normalize_dtype_param(dtype)
     except (TypeError, ValueError) as exc:
         raise TypeError(
-            "cuda.coop.numba_mlir.exchange ranks must have a signed integer dtype"
+            "cuda.coop.numba_mlir.exchange ranks "
+            "must have a signed integer dtype"
         ) from exc
     dtype = getattr(dtype, "literal_type", dtype)
     if (
@@ -117,7 +121,8 @@ def _rank_dtype(dtype: Any) -> Any:
         or not dtype.signed
     ):
         raise TypeError(
-            "cuda.coop.numba_mlir.exchange ranks must have a signed integer dtype"
+            "cuda.coop.numba_mlir.exchange ranks "
+            "must have a signed integer dtype"
         )
     return dtype
 
@@ -212,7 +217,9 @@ class _ExchangePlanning:
                 "scatter and warp-striped modes"
             )
 
-        warp_time_slicing_value = bound.arguments.get("warp_time_slicing", False)
+        warp_time_slicing_value = bound.arguments.get(
+            "warp_time_slicing", False
+        )
         warp_time_slicing = self._context.constant(warp_time_slicing_value)
         if not isinstance(warp_time_slicing, bool):
             raise TypeError(
@@ -264,10 +271,13 @@ class _ExchangePlanning:
             )
         if normalized_mode.uses_valid_flags != has_valid_flags:
             requirement = (
-                "requires" if normalized_mode.uses_valid_flags else "does not accept"
+                "requires"
+                if normalized_mode.uses_valid_flags
+                else "does not accept"
             )
             raise ValueError(
-                f"cuda.coop.numba_mlir.exchange {mode} {requirement} valid_flags"
+                f"cuda.coop.numba_mlir.exchange "
+                f"{mode} {requirement} valid_flags"
             )
 
         rank_dtype = None
@@ -289,7 +299,9 @@ class _ExchangePlanning:
             if is_common_root and not self._context.is_thread_data(
                 "exchange", "ranks", ranks
             ):
-                raise TypeError("cuda.coop.exchange requires ranks to be ThreadData")
+                raise TypeError(
+                    "cuda.coop.exchange requires ranks to be ThreadData"
+                )
 
         valid_flag_dtype = None
         if has_valid_flags:
@@ -484,7 +496,9 @@ for _operation, _namespaces, _runtime_arg_count in (
         _operation,
         RewriteOperationSpec(
             factory_namespaces=_namespaces,
-            dtype_factory_kwargs=frozenset({"dtype", "rank_dtype", "valid_flag_dtype"}),
+            dtype_factory_kwargs=frozenset(
+                {"dtype", "rank_dtype", "valid_flag_dtype"}
+            ),
             runtime_arg_counts=frozenset({_runtime_arg_count}),
             runtime_factory_kwargs=(),
             runtime_factory_kw_prerequisites=(),

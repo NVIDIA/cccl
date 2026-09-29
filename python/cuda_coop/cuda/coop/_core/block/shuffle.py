@@ -251,14 +251,18 @@ def make_block_shuffle_spec(
         if call.distance.kind is not BindingKind.OMITTED:
             raise ValueError("CUB array BlockShuffle does not accept distance")
     elif call.mode not in {BlockShuffleMode.OFFSET, BlockShuffleMode.ROTATE}:
-        raise ValueError("CUB scalar BlockShuffle supports only Offset and Rotate")
+        raise ValueError(
+            "CUB scalar BlockShuffle supports only Offset and Rotate"
+        )
     elif (
         call.mode is BlockShuffleMode.ROTATE
         and call.distance.kind is not BindingKind.RUNTIME
     ):
         block_threads = block_dim[0] * block_dim[1] * block_dim[2]
         distance_value = (
-            1 if call.distance.kind is BindingKind.OMITTED else int(call.distance.value)
+            1
+            if call.distance.kind is BindingKind.OMITTED
+            else int(call.distance.value)
         )
         if not 1 <= distance_value < block_threads:
             raise ValueError(

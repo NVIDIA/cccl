@@ -40,7 +40,8 @@ def _planned_factory_calls(func_ir):
         statement.target.name: statement.value.value
         for block in func_ir.blocks.values()
         for statement in block.body
-        if isinstance(statement, ir.Assign) and isinstance(statement.value, ir.Global)
+        if isinstance(statement, ir.Assign)
+        and isinstance(statement.value, ir.Global)
     }
     return [
         (globals_by_name.get(statement.value.func.name), statement.value)
@@ -54,7 +55,9 @@ def _planned_factory_calls(func_ir):
 
 def _provider_call(func_ir, provider):
     calls = [
-        call for target, call in _planned_factory_calls(func_ir) if target is provider
+        call
+        for target, call in _planned_factory_calls(func_ir)
+        if target is provider
     ]
     assert len(calls) == 1
     return calls[0]
@@ -96,7 +99,7 @@ def _match_before_inference(func_ir, *, arg_types):
     assert matched
 
 
-def test_exchange_and_shuffle_register_declarative_result_and_rewrite_contracts():
+def test_exchange_and_shuffle_register_declarative_result_and_rewrite_contracts():  # noqa: E501 - Preserve descriptive test name.
     from cuda.coop.numba_mlir._compiler import _group_exchange, _group_shuffle
     from cuda.coop.numba_mlir._compiler._operations import (
         GroupResultSource,
@@ -105,13 +108,25 @@ def test_exchange_and_shuffle_register_declarative_result_and_rewrite_contracts(
     )
 
     del _group_exchange, _group_shuffle
-    assert group_primitive("exchange").results == (GroupResultSource("value", "value"),)
-    assert group_primitive("shuffle").results == (GroupResultSource("value", "value"),)
+    assert group_primitive("exchange").results == (
+        GroupResultSource("value", "value"),
+    )
+    assert group_primitive("shuffle").results == (
+        GroupResultSource("value", "value"),
+    )
     assert rewrite_operation("exchange").runtime_arg_counts == frozenset({2})
-    assert rewrite_operation("exchange_ranked").runtime_arg_counts == frozenset({3})
-    assert rewrite_operation("exchange_flagged").runtime_arg_counts == frozenset({4})
-    assert rewrite_operation("shuffle_scalar").runtime_arg_counts == frozenset({1, 2})
-    assert rewrite_operation("shuffle_array").runtime_arg_counts == frozenset({2})
+    assert rewrite_operation("exchange_ranked").runtime_arg_counts == frozenset(
+        {3}
+    )
+    assert rewrite_operation(
+        "exchange_flagged"
+    ).runtime_arg_counts == frozenset({4})
+    assert rewrite_operation("shuffle_scalar").runtime_arg_counts == frozenset(
+        {1, 2}
+    )
+    assert rewrite_operation("shuffle_array").runtime_arg_counts == frozenset(
+        {2}
+    )
 
 
 def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
@@ -193,7 +208,9 @@ def test_public_modes_reject_non_plain_strings_before_provider(
 
 @pytest.mark.parametrize("operation", ("exchange", "shuffle"))
 @pytest.mark.parametrize("mode_kind", ("value_object", "string_enum"))
-def test_private_lowering_mode_validation_requires_plain_strings(operation, mode_kind):
+def test_private_lowering_mode_validation_requires_plain_strings(
+    operation, mode_kind
+):
     from cuda.coop._core.block.exchange import BlockExchangeMode
     from cuda.coop._core.block.shuffle import BlockShuffleMode
     from cuda.coop.numba_mlir._lowering import _exchange, _shuffle
@@ -225,7 +242,10 @@ def test_private_lowering_mode_validation_requires_plain_strings(operation, mode
 
 @pytest.mark.parametrize("operation", ("exchange", "shuffle"))
 def test_rewrite_mode_validation_requires_plain_strings(operation):
-    from cuda.coop.numba_mlir._compiler import _rewrite_exchange, _rewrite_shuffle
+    from cuda.coop.numba_mlir._compiler import (
+        _rewrite_exchange,
+        _rewrite_shuffle,
+    )
     from cuda.coop.numba_mlir._compiler._rewrite_support import (
         CoopSinglePhaseRewriteError,
     )
@@ -234,7 +254,9 @@ def test_rewrite_mode_validation_requires_plain_strings(operation):
     token = "blocked_to_striped" if operation == "exchange" else "down"
     string_enum = _StringMode(token)
     for mode in (SimpleNamespace(value=token), string_enum, 0):
-        with pytest.raises(CoopSinglePhaseRewriteError, match="compile-time string"):
+        with pytest.raises(
+            CoopSinglePhaseRewriteError, match="compile-time string"
+        ):
             rewrite._mode_token(mode)
 
 
@@ -344,7 +366,9 @@ def test_exchange_selects_fixed_arity_provider(
     assert len(call.args) == 2 + int(uses_ranks) + int(uses_flags)
 
 
-@pytest.mark.parametrize("logical_width", (None, 8), ids=("physical", "logical"))
+@pytest.mark.parametrize(
+    "logical_width", (None, 8), ids=("physical", "logical")
+)
 def test_warp_exchange_rejects_block_only_scatter_before_provider(
     monkeypatch,
     logical_width,
@@ -544,7 +568,8 @@ def test_shuffle_selects_scalar_or_array_provider(
     if runtime_distance:
         assert "shuffle_distance_i64" in dict(call.kws)["distance"].name
         assert any(
-            target is types.int64 for target, _ in _planned_factory_calls(func_ir)
+            target is types.int64
+            for target, _ in _planned_factory_calls(func_ir)
         )
 
 
@@ -591,7 +616,9 @@ def test_runtime_shuffle_distance_rejects_noninteger_dtype():
     value = ir.Var(scope, "value", scope.loc)
     distance = ir.Var(scope, "distance", scope.loc)
     context = SimpleNamespace(
-        numba_type=lambda var: types.float32 if var is distance else types.int32,
+        numba_type=lambda var: (
+            types.float32 if var is distance else types.int32
+        ),
         dtype=lambda _var: None,
     )
     with pytest.raises(CoopSinglePhaseRewriteError, match="must be an integer"):

@@ -49,7 +49,9 @@ from ._rewrite_shuffle import (
     validate_shuffle_scalar_runtime_controls,
 )
 
-_ARRAY_MODES = frozenset({BlockShuffleMode.UP.value, BlockShuffleMode.DOWN.value})
+_ARRAY_MODES = frozenset(
+    {BlockShuffleMode.UP.value, BlockShuffleMode.DOWN.value}
+)
 _SCALAR_MODES = frozenset(
     {BlockShuffleMode.OFFSET.value, BlockShuffleMode.ROTATE.value}
 )
@@ -64,7 +66,9 @@ def _mode_token(value: object) -> str:
     token = value.strip().lower().replace("-", "_")
     if token not in _ALL_MODES:
         choices = ", ".join(sorted(_ALL_MODES))
-        raise ValueError(f"cuda.coop.numba_mlir.shuffle mode must be one of: {choices}")
+        raise ValueError(
+            f"cuda.coop.numba_mlir.shuffle mode must be one of: {choices}"
+        )
     return token
 
 
@@ -95,7 +99,9 @@ class _ShufflePlanning:
             or plan.provenance.cpp_class != "cub::BlockShuffle"
         ):
             provenance = (
-                None if plan.provenance is None else plan.provenance.semantic_key
+                None
+                if plan.provenance is None
+                else plan.provenance.semantic_key
             )
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir.shuffle received unknown CUB provider "
@@ -128,7 +134,8 @@ class _ShufflePlanning:
         if is_common_root:
             if not self._context.is_thread_data("shuffle", "value", value):
                 raise TypeError(
-                    "cuda.coop.shuffle requires a fixed-size ThreadData payload; "
+                    "cuda.coop.shuffle requires a "
+                    "fixed-size ThreadData payload; "
                     "use cuda.coop.numba_mlir for backend-qualified scalar or "
                     "local-array shuffle support"
                 )
@@ -173,7 +180,8 @@ class _ShufflePlanning:
             distance_binding = self._context.planning_binding(distance_value)
             if distance_binding.kind is BindingKind.OMITTED:
                 raise ValueError(
-                    "cuda.coop.numba_mlir.shuffle scalar values require distance"
+                    "cuda.coop.numba_mlir.shuffle "
+                    "scalar values require distance"
                 )
             if distance_binding.kind is BindingKind.STATIC:
                 distance = distance_binding.value
@@ -181,7 +189,8 @@ class _ShufflePlanning:
                     distance, Integral
                 ):
                     raise TypeError(
-                        "cuda.coop.numba_mlir.shuffle distance must be an integer"
+                        "cuda.coop.numba_mlir.shuffle "
+                        "distance must be an integer"
                     )
                 if mode == BlockShuffleMode.ROTATE.value:
                     block_threads = self._context.launch.exact_block_threads
@@ -396,7 +405,9 @@ register_rewrite_operation(
         runtime_factory_kwargs=("distance",),
         runtime_factory_kw_prerequisites=(),
         allowed_factory_kwargs=_SCALAR_REWRITE_KWARGS,
-        required_factory_kwargs=frozenset({"distance", "dtype", "threads_per_block"}),
+        required_factory_kwargs=frozenset(
+            {"distance", "dtype", "threads_per_block"}
+        ),
         accepts_temp_storage=False,
         scalar_binding_kwargs=frozenset({"distance"}),
         runtime_offset_kwarg=None,
