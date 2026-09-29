@@ -220,7 +220,7 @@ using __make_integer_sequence _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_INTEGER_SEQ(int
 #elif defined(_CCCL_BUILTIN_INTEGER_PACK)
 
 template <class _Tp, _Tp _Ep>
-using __make_integer_sequence _CCCL_NODEBUG = integer_sequence<_Tp, __integer_pack(_Ep)...>;
+using __make_integer_sequence _CCCL_NODEBUG = integer_sequence<_Tp, _CCCL_BUILTIN_INTEGER_PACK(_Ep)...>;
 
 #else // ^^^ _CCCL_BUILTIN_INTEGER_PACK ^^^ / vvv !_CCCL_BUILTIN_INTEGER_PACK vvv
 
