@@ -50,6 +50,25 @@ For a minimal install without a JIT backend (useful when you supply your own
    pip install cuda-cccl[minimal-cu13]      # pip-installed CUDA toolkit
    pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
 
+Optional: Cooperative primitives (``cuda-coop``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:doc:`cuda.coop <coop>` ships as a separate package for primitives called
+inside Numba-CUDA-MLIR and CUTLASS / CuTe DSL kernels:
+
+.. code-block:: bash
+
+   pip install cuda-coop
+
+The base wheel includes both integrations and matching CCCL headers, with
+no Python package dependencies. Each integration needs its compiler runtime
+installed separately. Numba-CUDA-MLIR dependency extras are available;
+CUTLASS's public extra and minimum version await official-artifact
+qualification. See :doc:`coop` for installation and registration, then use
+the :doc:`Numba-CUDA-MLIR <coop/programming_guide>` or
+:doc:`CUTLASS <coop_cutlass>` Programming Guide for runtime requirements
+and launch examples.
+
 Optional: Sequential Task Flow (``cuda-stf``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -150,4 +169,5 @@ Next Steps
 Now that you have ``cuda-cccl`` installed, check out:
 
 * :doc:`compute/index` - Parallel computing primitives for operations on arrays or data ranges
+* :doc:`coop` - Cooperative primitives inside Numba-CUDA-MLIR or CuTe kernels (installed separately via ``cuda-coop``)
 * :doc:`stf` - Sequential Task Flow for CUDA (installed separately via ``cuda-stf``)

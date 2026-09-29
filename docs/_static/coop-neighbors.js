@@ -77,7 +77,7 @@
       notes: [
         "The subtraction order is current minus neighbor for both directions. A thread boundary does not break the sequence; only the tile boundary needs an external value.",
         "With valid_items, only the first valid_items positions take part. The last valid right-difference item is copied unchanged. Right partial tiles do not accept tile_successor_item, so that control is disabled when direction is right and a count is supplied, even for a full-capacity count.",
-        "All input slots must be initialized because the invalid suffix is copied. valid_items and any boundary scalar must be uniform across the complete block. The explorer uses the default subtraction; the qualified API also accepts difference_op(current, neighbor).",
+        "All input slots must be initialized because the invalid suffix is copied. valid_items and any boundary scalar must be uniform across the complete block. The explorer uses the default subtraction; the Numba-qualified API also accepts difference_op(current, neighbor).",
       ],
     };
   }
@@ -137,7 +137,7 @@
       notes: [
         "A head marks an item's difference from its predecessor; a tail marks its difference from its successor. A run can span several threads. Returning both produces two int32 payloads in (heads, tails) order.",
         "This operation requires a full tile. It has no valid_items argument. Padding becomes input and can change the last valid tail flag; do not treat arbitrary padding as partial-tile support.",
-        "The explorer uses !=. A qualified flag_op(previous, current) defines heads, and flag_op(current, next) defines tails; operand order matters for predicates such as <. Boundaries and mode must agree across the block.",
+        "The explorer uses !=. A Numba-qualified flag_op(previous, current) defines heads, and flag_op(current, next) defines tails; operand order matters for predicates such as <. Boundaries and mode must agree across the block.",
       ],
     };
   }

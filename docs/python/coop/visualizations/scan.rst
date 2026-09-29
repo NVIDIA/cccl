@@ -6,6 +6,9 @@
 Scan
 ====
 
+This page describes the Numba-CUDA-MLIR implementation. See
+:ref:`backend coverage <coop-backends>` for CUTLASS availability.
+
 A scan gives each item the aggregate of earlier items in its group. An
 inclusive scan includes the current item; an exclusive scan stops before it.
 The order is blocked: all of thread zero's items, then thread one's items,

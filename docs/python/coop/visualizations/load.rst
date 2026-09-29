@@ -6,6 +6,9 @@
 Load
 ====
 
+This page describes the Numba-CUDA-MLIR implementation. See
+:ref:`backend coverage <coop-backends>` for CUTLASS availability.
+
 :func:`cuda.coop.load` fills each thread's ``ThreadData`` from a contiguous
 tile in memory. The algorithm determines which thread reads each value and
 whether a shared-memory exchange rearranges it afterward.

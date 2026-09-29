@@ -6,6 +6,9 @@
 Store
 =====
 
+This page describes the Numba-CUDA-MLIR implementation. See
+:ref:`backend coverage <coop-backends>` for CUTLASS availability.
+
 :func:`cuda.coop.store` writes each thread's values into a contiguous memory
 tile. The algorithm determines which input ownership it expects and whether
 a shared-memory exchange rearranges the values before the writes.
