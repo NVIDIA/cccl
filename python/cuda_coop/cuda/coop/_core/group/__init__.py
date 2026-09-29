@@ -46,7 +46,6 @@ from .scan import GroupScanMode, GroupScanSemantics
 from .shuffle import GroupShuffleSemantics
 
 __all__ = [
-    "GroupMergeSortSemantics",
     "ArgumentPrecondition",
     "CudaxCallDescription",
     "CudaxReturnKind",
@@ -57,6 +56,7 @@ __all__ = [
     "GroupLoadStoreSemantics",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
+    "GroupMergeSortSemantics",
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",

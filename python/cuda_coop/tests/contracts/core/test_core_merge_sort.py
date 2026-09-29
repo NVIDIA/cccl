@@ -124,7 +124,7 @@ def test_non_power_of_two_block_is_unsupported():
     ],
 )
 def test_primitive_controls(kwargs):
-    controls = dict(key_dtype=INT32, items_per_thread=3, compare_operator=_COMPARE)
+    controls = {"key_dtype": INT32, "items_per_thread": 3, "compare_operator": _COMPARE}
     controls.update(kwargs)
     with pytest.raises((ValueError, TypeError)):
         make_block_merge_sort_semantics(**controls)
