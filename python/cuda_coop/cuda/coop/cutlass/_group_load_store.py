@@ -227,7 +227,8 @@ def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
     if isinstance(value, Integer):
         return ArgumentBinding.runtime()
     raise TypeError(
-        f"{_SCOPE}.load/store {name} must be an integer, not {type(value).__name__}"
+        f"{_SCOPE}.load/store {name} must be an integer, "
+        f"not {type(value).__name__}"
     )
 
 

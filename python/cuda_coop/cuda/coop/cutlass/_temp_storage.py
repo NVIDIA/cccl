@@ -33,8 +33,12 @@ class TempStorage:
         sharing="shared",
     ):
         if size_in_bytes is not None:
-            if not isinstance(size_in_bytes, int) or isinstance(size_in_bytes, bool):
-                raise TypeError("TempStorage size_in_bytes must be an integer or None.")
+            if not isinstance(size_in_bytes, int) or isinstance(
+                size_in_bytes, bool
+            ):
+                raise TypeError(
+                    "TempStorage size_in_bytes must be an integer or None."
+                )
             if size_in_bytes <= 0:
                 raise ValueError(
                     "TempStorage size_in_bytes must be a positive integer."
@@ -48,7 +52,9 @@ class TempStorage:
             )
         sharing_value = sharing.strip().lower()
         if sharing_value not in {"shared", "exclusive"}:
-            raise ValueError("TempStorage sharing must be 'shared' or 'exclusive'.")
+            raise ValueError(
+                "TempStorage sharing must be 'shared' or 'exclusive'."
+            )
 
         if auto_sync is not None and not isinstance(auto_sync, bool):
             raise TypeError("TempStorage auto_sync must be None/True/False.")
