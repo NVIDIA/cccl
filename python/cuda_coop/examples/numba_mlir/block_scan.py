@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run a block load, exclusive scan, and store through the common API with Numba."""
+"""Run a block load, exclusive scan, and store through the common API with
+Numba.
+"""
 
 from __future__ import annotations
 
