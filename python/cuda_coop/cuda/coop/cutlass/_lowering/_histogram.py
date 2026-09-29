@@ -193,12 +193,18 @@ def _render_histogram(request):
         f"void {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
         "  using storage_type = typename implementation_type::TempStorage;",
-        "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+        (
+            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+            "< sizeof(storage_type) ||"
+        ),
         "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
         '    asm volatile("trap;");',
         "  }",
         "  unsigned long long generic_address;",
-        '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
+        (
+            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+            '"l"((unsigned long long)storage_address));'
+        ),
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         f"  {sample_cpp} samples[{operation.items_per_thread}] = {{{values}}};",
         f"  {counter_cpp} counts[{operation.bins_per_thread}];",

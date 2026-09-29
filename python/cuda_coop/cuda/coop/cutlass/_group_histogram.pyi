@@ -11,13 +11,25 @@ from typing_extensions import TypeVar
 from .._core.api.histogram import _Sample
 from .._core.api.thread_group import BlockGroup
 from .._typing import CommonThreadDataLike, TempStorageLike
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _Samples: TypeAlias = (
     CommonThreadDataLike[_Sample] | CutlassTensorSample | CutlassTensorSSASample
 )
 _Counter = TypeVar(
-    "_Counter", np.int32, np.uint32, np.int64, np.uint64, Int32, Uint32, Int64, Uint64
+    "_Counter",
+    np.int32,
+    np.uint32,
+    np.int64,
+    np.uint64,
+    Int32,
+    Uint32,
+    Int64,
+    Uint64,
 )
 
 @overload
