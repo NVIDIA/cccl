@@ -189,7 +189,6 @@ def _plan_merge_sort(
     contracts = _contracts(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
         uniform_arguments=("valid_items", "oob_default")
