@@ -34,6 +34,8 @@ else
     fi
 fi
 
+/home/coder/cccl/.devcontainer/ensure-ci.sh
+
 cd /home/coder/cccl/
 
 if test $# -gt 0; then

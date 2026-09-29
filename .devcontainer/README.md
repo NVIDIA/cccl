@@ -9,6 +9,12 @@ CCCL uses [Dev Containers](https://containers.dev/) to provide consistent and co
 
 VSCode offers the most convenient experience with Dev Containers due to its tight native integration, however, our containers are also fully usable without VSCode by leveraging Docker directly.
 
+The `ci` branch is the source of truth for this directory. Automation
+promotes it to `main` and adds `.devcontainer/.ci-source` to the promoted copy
+with the exact CI commit that supplied the files. Dev containers use that
+revision for `/home/coder/cccl-ci`, keeping their definitions and CI tooling in
+sync.
+
 ## Table of Contents
 1. [Quickstart: VSCode on Linux (Recommended)](#vscode)
 2. [Quickstart: VSCode on WSL (Recommended for Windows)](#wsl)
@@ -220,14 +226,28 @@ Click the badge above or [click here](https://codespaces.new/NVIDIA/cccl?quickst
 
 ### Overview
 
-[`make_devcontainers.sh`](./make_devcontainers.sh) generates devcontainer configurations for the unique combinations of CUDA Toolkit (CTK) versions and host compilers in [`ci/matrix.yaml`](../ci/matrix.yaml).
+The [`ci`](https://github.com/NVIDIA/cccl/tree/ci) branch owns the
+generator, its matrix, and the generated configurations. Work in a checkout of
+that branch (conventionally the `cccl-ci` sibling worktree), not in the promoted
+copy on a source branch. From the `cccl-ci` root, run:
+
+```bash
+.devcontainer/make_devcontainers.sh --clean
+```
+
+[`make_devcontainers.sh`](./make_devcontainers.sh) generates devcontainer
+configurations for the unique combinations of CUDA Toolkit (CTK) versions and
+host compilers in
+[`ci/matrix.yaml`](https://github.com/NVIDIA/cccl/blob/ci/ci/matrix.yaml).
 
 ### How It Works:
 
-1. Parses the matrix from `ci/matrix.yaml`.
+1. Parses the matrix from `ci/matrix.yaml` in the same `ci`-branch checkout.
 2. Use the top-level [`.devcontainer/devcontainer.json`](./devcontainer.json) as a template. For each unique combination of CTK version and host compiler, generate a corresponding `devcontainer.json` configuration, adjusting only the base Docker image to match the desired environment.
 3. Place the generated configurations in the `.devcontainer` directory, organizing them into subdirectories following the naming convention `cuda<CTK_VERSION>-<COMPILER_VERSION>`.
 
 For more information, see the `.devcontainer/make_devcontainers.sh --help` message.
 
-**Note**: When adding or updating supported environments, modify `matrix.yaml` and then rerun this script to synchronize the `devcontainer` configurations.
+**Note**: When adding or updating supported environments, modify the matrix on
+the `ci` branch and rerun this script there. Promotion automation copies the
+result to source branches; do not hand-edit the promoted copy.

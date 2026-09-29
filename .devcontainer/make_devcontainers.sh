@@ -9,7 +9,12 @@
 set -euo pipefail
 
 # Ensure the script is being executed in its containing directory
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
+devcontainer_root="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+readonly devcontainer_root
+cd "${devcontainer_root}"
+
+ci_root="$(realpath "${devcontainer_root}/..")"
+readonly ci_root
 
 function usage {
     echo "Usage: $0 [--clean] [-h/--help] [-v/--verbose]"
@@ -127,8 +132,8 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-MATRIX_FILE="../ci/matrix.yaml"
-COMPUTE_MATRIX="../.github/actions/workflow-build/build-workflow.py"
+MATRIX_FILE="${ci_root}/ci/matrix.yaml"
+COMPUTE_MATRIX="${ci_root}/.github/actions/workflow-build/build-workflow.py"
 
 # Enable verbose mode if requested
 if [[ "$VERBOSE" = true ]]; then

@@ -36,9 +36,11 @@ Image tags follow the pattern
 ``rapidsai/devcontainers:<version>-cpp-<compiler><version>-cuda<ctk>[ext]``.
 The ``-cuda<ctk>`` segment is present for every combination except nvhpc, which
 bundles its own CUDA toolkit; nvhpc images omit it.
-The ``<version>`` tag is defined in ``ci/matrix.yaml`` under
+The ``<version>`` tag is defined in ``@ci:ci/matrix.yaml`` under
 ``devcontainer_version``. A generated ``.devcontainer/<combo>/devcontainer.json``
-contains the resolved tag for any given combination.
+in the ``ci`` branch contains the resolved tag for any given combination. The
+promotion workflow copies those canonical configs to source branches for
+Codespaces and local development.
 
 This upstream dependency gates toolchain changes. Adding a CUDA toolkit version
 or a host compiler requires the matching image to exist in rapidsai/devcontainers
@@ -46,7 +48,8 @@ first. The sequence is:
 
 #. Update rapidsai/devcontainers to build and publish images for the new
    combination.
-#. Update CCCL's ``ci/matrix.yaml`` to reference the new version.
-#. Regenerate CCCL's devcontainer configs to match all matrix workflow requirements.
+#. Update ``@ci:ci/matrix.yaml`` to reference the new version.
+#. Regenerate the canonical ``@ci:.devcontainer`` configs to match all matrix
+   workflow requirements; the promotion workflow then updates the source branch.
 
 :ref:`infra-devcontainer-adding-toolchain` has additional details on this process.

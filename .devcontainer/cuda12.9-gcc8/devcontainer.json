@@ -16,6 +16,10 @@
     "-c",
     "set -euo pipefail; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/.{aws,cache,config}; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/{build,wheelhouse}; if test -z \"${localEnv:WSLENV}\"; then docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/build\" --opt o=bind cccl-build >/dev/null; docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/wheelhouse\" --opt o=bind cccl-wheelhouse >/dev/null; else docker volume create cccl-build >/dev/null; docker volume create cccl-wheelhouse >/dev/null; fi;"
   ],
+  "postCreateCommand": [
+    "/bin/bash",
+    "/home/coder/cccl/.devcontainer/ensure-ci.sh"
+  ],
   "postAttachCommand": [
     "/bin/bash",
     "-c",
@@ -25,6 +29,8 @@
     "AWS_IDP_URL": "https://token.rapids.nvidia.com",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/rapids-token-sccache-devs",
     "CI": "${localEnv:CI}",
+    "CCCL_CI_ROOT": "/home/coder/cccl-ci",
+    "CCCL_SOURCE_ROOT": "/home/coder/cccl",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE": "${localEnv:SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE:true}",
     "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:4}",
