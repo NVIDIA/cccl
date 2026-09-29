@@ -96,12 +96,12 @@ TEST_CASE("aligned_reinterpret_cast", "[alignment]")
 {
   struct alignas(128) T1
   {
-    char data_[128];
+    char data[128];
   };
 
   struct alignas(512) T2
   {
-    char data_[512];
+    char data[512];
   };
 
   T1* a1 = nullptr;

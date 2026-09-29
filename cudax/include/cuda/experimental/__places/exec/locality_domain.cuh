@@ -778,7 +778,7 @@ public:
     return exec_place::device(old_dev_id);
   }
 
-  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  void deactivate(const exec_place& prev, size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for locality-domain exec_place");
 

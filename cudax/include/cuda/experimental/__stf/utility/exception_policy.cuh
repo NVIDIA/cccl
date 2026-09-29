@@ -17,6 +17,7 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/std/expected>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -65,6 +66,7 @@
 #include <limits>
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -668,6 +670,7 @@ struct backoff_t
 
     // maybe_unused: like __cap above, __left is referenced only inside
     // _CCCL_CATCH_ALL, so CTK <= 12.9's cudafe reports #177 without it.
+    // NOLINTNEXTLINE(misc-const-correctness) -- decremented in the catch arm, which some instantiations never reach
     for ([[maybe_unused]] int __left = __n_;;)
     {
       ::std::this_thread::sleep_for(::std::chrono::milliseconds{__sleep});
@@ -827,6 +830,178 @@ inline circuit_breaker_t circuit_breaker(::std::shared_ptr<int> __budget)
   _CCCL_ASSERT(__budget, "circuit_breaker requires a non-null budget");
   const int __initial = *__budget;
   return circuit_breaker_t{::std::move(__budget), __initial};
+}
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+namespace detail
+{
+// Whether a store target's variant can decline: only typed-exception targets do (on a
+// dynamic-type mismatch or a throwing copy). exception_ptr, span, and string never decline;
+// their pointer forms fall through these specializations to false.
+template <class _Target>
+inline constexpr bool __store_may_decline = false;
+template <class _E>
+inline constexpr bool __store_may_decline<_E*> = ::cuda::std::is_base_of_v<::std::exception, _E>;
+template <class _E>
+inline constexpr bool __store_may_decline<::std::shared_ptr<_E>> = ::cuda::std::is_base_of_v<::std::exception, _E>;
+} // namespace detail
+#endif // _CCCL_DOXYGEN_INVOKED
+
+/**
+ * @brief Storing effect: puts the active exception into a caller-owned target, then lets the
+ * chain continue. The boundary pattern's missing name. (Named `store`, not `capture`: that word
+ * already means stream capture in CUDA and lambda capture in C++.)
+ *
+ * Four target families, selected by the target's type:
+ * - `std::exception_ptr*` (or `shared_ptr` of one): stores `std::current_exception()`,
+ *   full dynamic type preserved, rethrowable later. Never fails.
+ * - `cuda::std::span<char>`: stores the `what()` text (or a fixed note for a nonstandard
+ *   exception), allocation-free via `snprintf`. Fit for a thread-local buffer at a C ABI
+ *   boundary where `bad_alloc` may be the very exception in flight. Never fails. The span is
+ *   a view; the buffer's lifetime stays the caller's.
+ * - `std::string*` (or `shared_ptr` of one): stores the `what()` text, allocating. If the
+ *   assignment itself throws, the target is left unchanged and the chain continues: store
+ *   never substitutes its own storage problems for the exception being handled.
+ * - a `std::exception` derivative `_E*` (or `shared_ptr` of one): copy-assigns the caught
+ *   object when its dynamic type is EXACTLY `_E` (no slicing, same discipline as typed
+ *   catches elsewhere in this file); any other type declines by rethrowing, so
+ *   `store(&typed) | store(&eptr)` is a ladder whose fallback cannot fail. If `_E`'s
+ *   copy assignment throws, the store declines with the ORIGINAL exception, never with its
+ *   own bookkeeping failure.
+ *
+ * The hook answers `void`: store is an `&` citizen and an `always` finalizer, never a
+ * final answer. The `exception_ptr`, span, and string variants are `noexcept`, so the
+ * alternation dead-arm theorem correctly rejects them as non-final `|` arms; the typed
+ * variant may decline and composes there deliberately.
+ *
+ * The two canonical boundary spellings:
+ * @code
+ * store(&last_exc) & store(msg_span) & subst(nullptr)  // a C API entry's whole guard
+ * always(subst(fallback), store(&first_error))           // callback: safe result now, rethrow later
+ * @endcode
+ */
+template <class _Target>
+struct store_t
+{
+  //! @cond
+  using __exception_sink_tag = void;
+  //! @endcond
+
+  _Target __target_;
+
+  template <class _Fn>
+  void operator()([[maybe_unused]] const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) noexcept(
+    !detail::__store_may_decline<_Target>)
+  {
+    if constexpr (::cuda::std::is_same_v<_Target, ::cuda::std::span<char>>)
+    {
+      if (!__target_.empty())
+      {
+        ::std::snprintf(__target_.data(), __target_.size(), "%s", __e ? __e->what() : "nonstandard exception");
+      }
+    }
+    else
+    {
+      auto& __t   = *__target_; // raw pointer and shared_ptr alike
+      using _Held = ::cuda::std::remove_reference_t<decltype(__t)>;
+      if constexpr (::cuda::std::is_same_v<_Held, ::std::exception_ptr>)
+      {
+        // current_exception, deliberately: building from `*__e` would slice to the static
+        // type; this preserves the full dynamic exception (and is the cheaper call besides).
+        __t = ::std::current_exception();
+      }
+      else if constexpr (::cuda::std::is_same_v<_Held, ::std::string>)
+      {
+        _CCCL_TRY
+        {
+          __t.assign(__e ? __e->what() : "nonstandard exception");
+        }
+        _CCCL_CATCH_ALL
+        {
+          // Best effort: storage failure leaves the target unchanged, the chain continues.
+        }
+      }
+      else
+      {
+        // Typed store: exact dynamic type only; anything else declines by rethrowing.
+        if (__e == nullptr || typeid(*__e) != typeid(_Held))
+        {
+          throw;
+        }
+        bool __stored = false;
+        _CCCL_TRY
+        {
+          // dynamic_cast, not static_cast: the exact-type check above guarantees success, and
+          // unlike static_cast it is well-formed when std::exception is a virtual base of _Held.
+          __t      = dynamic_cast<const _Held&>(*__e);
+          __stored = true;
+        }
+        _CCCL_CATCH_ALL
+        {
+          // Swallow the copy failure; the decline below re-raises the ORIGINAL exception
+          // (outside this handler, the enclosing catch's exception is current again).
+        }
+        if (!__stored)
+        {
+          throw;
+        }
+      }
+    }
+  }
+};
+
+//! @brief Store the active exception, full dynamic type preserved, into `*__target`.
+inline auto store(::std::exception_ptr* __target)
+{
+  _CCCL_ASSERT(__target != nullptr, "store requires a non-null target");
+  return store_t<::std::exception_ptr*>{__target};
+}
+
+//! @brief See @ref store. Shared-ownership form.
+inline auto store(::std::shared_ptr<::std::exception_ptr> __target)
+{
+  _CCCL_ASSERT(__target, "store requires a non-null target");
+  return store_t<::std::shared_ptr<::std::exception_ptr>>{::cuda::std::move(__target)};
+}
+
+//! @brief Store the active exception's message into a caller-owned buffer, allocation-free.
+inline auto store(::cuda::std::span<char> __target)
+{
+  return store_t<::cuda::std::span<char>>{__target};
+}
+
+//! @brief Store the active exception's message into `*__target`, allocating; best effort.
+inline auto store(::std::string* __target)
+{
+  _CCCL_ASSERT(__target != nullptr, "store requires a non-null target");
+  return store_t<::std::string*>{__target};
+}
+
+//! @brief See @ref store. Shared-ownership form.
+inline auto store(::std::shared_ptr<::std::string> __target)
+{
+  _CCCL_ASSERT(__target, "store requires a non-null target");
+  return store_t<::std::shared_ptr<::std::string>>{::cuda::std::move(__target)};
+}
+
+//! @brief Store an exception of dynamic type exactly `_E` into `*__target`; decline otherwise.
+template <
+  class _E,
+  ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<::std::exception, _E> && !::cuda::std::is_const_v<_E>, int> = 0>
+auto store(_E* __target)
+{
+  _CCCL_ASSERT(__target != nullptr, "store requires a non-null target");
+  return store_t<_E*>{__target};
+}
+
+//! @brief See @ref store. Shared-ownership form.
+template <
+  class _E,
+  ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<::std::exception, _E> && !::cuda::std::is_const_v<_E>, int> = 0>
+auto store(::std::shared_ptr<_E> __target)
+{
+  _CCCL_ASSERT(__target, "store requires a non-null target");
+  return store_t<::std::shared_ptr<_E>>{::cuda::std::move(__target)};
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -1434,13 +1609,12 @@ constexpr bool __value_preserving_impl()
 {
   using _F = typename __integral_base<::cuda::std::remove_cvref_t<_From>>::type;
   using _T = ::cuda::std::remove_cvref_t<_To>;
-  if constexpr (!::cuda::std::is_arithmetic_v<_F> || !::cuda::std::is_arithmetic_v<_T>)
+  if constexpr (!::cuda::std::is_arithmetic_v<_F> || !::cuda::std::is_arithmetic_v<_T>
+                || ::cuda::std::is_floating_point_v<_T>)
   {
-    return true; // non-arithmetic pairs: the is_convertible baseline is the whole law
-  }
-  else if constexpr (::cuda::std::is_floating_point_v<_T>)
-  {
-    return true; // precision loss is tolerated where range loss is not
+    // Non-arithmetic pairs: the is_convertible baseline is the whole law. A floating target:
+    // precision loss is tolerated where range loss is not.
+    return true;
   }
   else if constexpr (::cuda::std::is_floating_point_v<_F>)
   {
@@ -1557,10 +1731,14 @@ __on_throw_policy(_R, ::cuda::std::source_location) -> __on_throw_policy<_R>;
 template <class _Reaction, class _Fn>
 // A resuming chain reads neither exception nor location in some instantiations; gcc 9 flags the
 // unread policy without the attribute.
+// In clang-tidy's device pass _CCCL_TRY/_CCCL_CATCH expand to no handler, so bugprone-exception-escape
+// sees the callable's throw escape this runner in every instantiation whose policy makes it noexcept.
+// NOLINTNEXTLINE(bugprone-exception-escape)
 decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept(
   __exception_path_nothrow_v<_Reaction, _Fn> && __on_enter_nothrow_v<_Reaction>)
 {
-  // Bind as a non-const lvalue: a hook may invoke it again later.
+  // Bind as a non-const lvalue: a hook may invoke it again later, and a mutable callable needs it.
+  // NOLINTNEXTLINE(misc-const-correctness)
   _Fn& __f = __fn;
 
   // A `noexcept` callable puts the policy out of reach: an exception raised inside it ends the
@@ -2320,12 +2498,13 @@ private:
         if (const _Stored* __p = ::std::any_cast<_Stored>(&__box))
         {
           if constexpr (::cuda::std::is_floating_point_v<typename detail::__integral_base<_T>::type>)
-          {
+          { // NOLINT(bugprone-branch-clone) -- same body as the fits() arm, for a different reason
             __out = static_cast<_T>(*__p); // anything -> floating: by fiat
             __hit = true;
           }
           else if constexpr (::cuda::std::is_floating_point_v<_Stored>)
-          {
+          { // NOLINT(bugprone-branch-clone) -- same outcome as the last arm for a different reason; one arm is
+            // constexpr
             __found_lossy = true; // floating never converts to integral
           }
           else if (__fits(*__p))
@@ -2334,7 +2513,7 @@ private:
             __hit = true;
           }
           else
-          {
+          { // NOLINT(bugprone-branch-clone)
             __found_lossy = true; // right category, unrepresentable value
           }
         }
@@ -2395,7 +2574,10 @@ public:
   exception_sink& operator=(exception_sink&&) noexcept = default;
   exception_sink& operator=(const exception_sink& __other)
   {
-    __p_.reset(__other.__p_->clone());
+    if (this != &__other)
+    {
+      __p_.reset(__other.__p_->clone());
+    }
     return *this;
   }
 
@@ -2600,7 +2782,73 @@ auto on_throw(_Reaction&& __reaction,
   }()                                                               \
     << [&]()
 
+/**
+ * @brief Runs `__step`; if it throws, the exception is kept in `__first` unless one is already
+ * there, and control continues.
+ *
+ * This is the spelling for a function that *ends* something (a pop, a finalize, a release):
+ * such a function must complete its state transition whatever its individual steps report,
+ * and only then act on the failure. Write each step as `e |= [&] { ... };` on a
+ * `std::exception_ptr e;`, and finish with the algebra deciding what the failure becomes:
+ * `if (e) on_throw(policy) << [&] { std::rethrow_exception(e); };`. Later failures are dropped;
+ * in practice they are echoes of the first (an asynchronous CUDA fault surfaces again at every
+ * later synchronize). `|=` reads as the algebra's `|`: first claim, the left operand keeps its
+ * failure if it has one. Implemented on @ref exception_policies::defer_t "defer", so it
+ * inherits the header's behaviour when exceptions are disabled. Nothing is allocated unless a
+ * step fails.
+ *
+ * Lookup: the operator lives in this namespace and is found through the closure type's
+ * associated namespace, so it works unqualified wherever the lambda is written inside
+ * `cuda::experimental::stf`; user code elsewhere names it with
+ * `using cuda::experimental::stf::operator|=;`.
+ */
+template <class _Fn, ::cuda::std::enable_if_t<::cuda::std::is_invocable_v<_Fn&>, int> = 0>
+::std::exception_ptr& operator|=(::std::exception_ptr& __first, _Fn&& __step) noexcept
+{
+  ::std::exception_ptr __e = on_throw(exception_policies::defer) << [&]() -> ::std::exception_ptr {
+    __step();
+    return {};
+  };
+  if (!__first)
+  {
+    __first = ::cuda::std::move(__e);
+  }
+  return __first;
+}
+
 #ifdef UNITTESTED_FILE
+UNITTEST("exception_ptr |= step")
+{
+  using namespace cuda::experimental::stf;
+  ::std::exception_ptr e;
+  e |= [] {}; // a step that succeeds leaves the slot empty
+  EXPECT(!e);
+  e |= [] {
+    throw ::std::runtime_error("first");
+  };
+  e |= [] {
+    throw ::std::runtime_error("second"); // dropped: the slot already has its failure
+  };
+  e |= [] {}; // success after a failure changes nothing
+  EXPECT(static_cast<bool>(e));
+  bool rethrown = false;
+  try
+  {
+    ::std::rethrow_exception(e);
+  }
+  catch (const ::std::runtime_error& x)
+  {
+    rethrown = ::std::string(x.what()) == "first";
+  }
+  EXPECT(rethrown);
+  // The policy algebra decides the terminal action: here, report and resume.
+  ::std::ostringstream log;
+  on_throw(exception_policies::notify(log)) << [&] {
+    ::std::rethrow_exception(e);
+  };
+  EXPECT(log.str().find("first") != ::std::string::npos);
+};
+
 UNITTEST("nullval")
 {
   using namespace cuda::experimental::stf;
@@ -2696,9 +2944,9 @@ UNITTEST("circuit_breaker")
   EXPECT(__gated);
 
   // The erased form carries the gate through: sinks re-erase, gates survive.
-  *budget                      = 0;
-  pol::exception_sink __erased = pol::type_erase(pol::circuit_breaker(budget) & pol::subst(-1));
-  __gated                      = false;
+  *budget                            = 0;
+  const pol::exception_sink __erased = pol::type_erase(pol::circuit_breaker(budget) & pol::subst(-1));
+  __gated                            = false;
   _CCCL_TRY
   {
     on_throw(__erased) << flaky;
@@ -2898,7 +3146,7 @@ UNITTEST("on_throw")
   on_throw(notify(log), site) << [] {
     throw 42;
   };
-  ::rewind(log);
+  EXPECT(::fseek(log, 0, SEEK_SET) == 0);
   char message[1024]{};
   char expected[1024]{};
   EXPECT(::fgets(message, sizeof(message), log));
@@ -3335,6 +3583,7 @@ UNITTEST("re-running policies")
     bool escaped = false;
     try
     {
+      // NOLINTNEXTLINE(misc-redundant-expression) -- p | p is what this test exercises
       on_throw(retry | retry) << [&]() -> int {
         ++calls;
         throw ::std::runtime_error("always");
@@ -4097,6 +4346,108 @@ UNITTEST("ON_THROW macro")
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
+UNITTEST("store")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+#  if _CCCL_HAS_EXCEPTIONS()
+  // exception_ptr target: the deferred-rethrow pattern, full fidelity.
+  {
+    ::std::exception_ptr last;
+    const int v = on_throw(store(&last) & subst(-1)) << []() -> int {
+      throw ::std::runtime_error("boom");
+    };
+    EXPECT(v == -1);
+    EXPECT(!!last);
+    bool round = false;
+    _CCCL_TRY
+    {
+      ::std::rethrow_exception(last);
+    }
+    _CCCL_CATCH (const ::std::runtime_error& e)
+    {
+      round = ::std::string_view{e.what()} == "boom"; // dynamic type survived: no slicing
+    }
+    _CCCL_CATCH_ALL
+    {
+      throw;
+    }
+    EXPECT(round);
+  }
+  // span target: allocation-free message transport, the C-boundary shape.
+  {
+    char msg[64] = {};
+    const int v  = on_throw(store(::cuda::std::span<char>{msg}) & subst(0)) << []() -> int {
+      throw ::std::runtime_error("registered twice");
+    };
+    EXPECT(v == 0);
+    EXPECT(::std::string_view{msg} == "registered twice");
+  }
+  // string target, allocating; and the always spelling from the callback pattern.
+  {
+    ::std::string text;
+    const int v = on_throw(always(subst(7), store(&text))) << []() -> int {
+      throw ::std::logic_error("mapper failed");
+    };
+    EXPECT(v == 7);
+    EXPECT(text == "mapper failed");
+  }
+  // Typed target: exact dynamic type stores and continues...
+  {
+    ::std::runtime_error err{"unset"};
+    const int v = on_throw(store(&err) & subst(-2)) << []() -> int {
+      throw ::std::runtime_error("typed");
+    };
+    EXPECT(v == -2);
+    EXPECT(::std::string_view{err.what()} == "typed");
+  }
+  // ...a DERIVATIVE declines (no slicing), and the eptr fallback of the ladder takes it.
+  {
+    ::std::runtime_error err{"unset"};
+    ::std::exception_ptr last;
+    const int v = on_throw(store(&err) & subst(-2) | store(&last) & subst(-3)) << []() -> int {
+      throw ::std::range_error("derived");
+    };
+    EXPECT(v == -3);
+    EXPECT(::std::string_view{err.what()} == "unset");
+    EXPECT(!!last);
+  }
+  // ...and a type with std::exception as a VIRTUAL base stores too (static_cast could not
+  // downcast across a virtual base; the typed path uses dynamic_cast).
+  {
+    struct virt_error : virtual ::std::exception
+    {
+      explicit virt_error(int c)
+          : code(c)
+      {}
+      int code;
+    };
+    virt_error err{0};
+    const int v = on_throw(store(&err) & subst(-4)) << []() -> int {
+      throw virt_error{42};
+    };
+    EXPECT(v == -4);
+    EXPECT(err.code == 42);
+  }
+  // shared_ptr form shares one target across policy copies.
+  {
+    auto text = ::std::make_shared<::std::string>();
+    static_cast<void>(on_throw((store(text) & retry) * 2 | subst(0)) << []() -> int {
+      throw ::std::runtime_error("each attempt");
+    });
+    EXPECT(*text == "each attempt");
+  }
+  // noexcept bookkeeping: untyped stores never decline, typed ones may.
+  static_assert(!detail::__store_may_decline<::std::exception_ptr*>);
+  static_assert(!detail::__store_may_decline<::std::string*>);
+  static_assert(detail::__store_may_decline<::std::runtime_error*>);
+
+  // Negative-compile expectations (do not compile; kept as comments near the code they guard):
+  //  - on_throw(store(&eptr_target) | subst(0)) << ...;
+  //      -> "the left policy never declines; alternatives after it are unreachable"
+#  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
 UNITTEST("type erasure")
 {
   using namespace cuda::experimental::stf;
@@ -4134,7 +4485,7 @@ UNITTEST("type erasure")
   }
   // One sink object serves callables of different result types (passthrough).
   {
-    exception_sink r = type_erase(retry * 2);
+    const exception_sink r = type_erase(retry * 2);
     {
       int calls   = 0;
       const int x = on_throw(r) << [&]() -> int {
@@ -4290,7 +4641,7 @@ UNITTEST("type erasure")
         return ::std::any(21);
       }
     };
-    exception_sink custom{::std::unique_ptr<exception_sink::sink_base>(new halving_sink())};
+    const exception_sink custom{::std::unique_ptr<exception_sink::sink_base>(new halving_sink())};
     const int x = on_throw(custom) << []() -> int {
       throw ::std::runtime_error("x");
     };
@@ -4474,6 +4825,9 @@ void invoke_body(F& f, bool failing)
 template <class F>
 void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false) noexcept
 {
+  // The body may throw; that is what the abort policy is for. In clang-tidy's device pass the policy's
+  // catch is erased, so the check sees the throw escape this noexcept function.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   on_throw(exception_policies::abort, loc) << [&] {
     invoke_body(f, failing);
   };
@@ -4495,7 +4849,7 @@ auto operator->*(with_location<exit> where, F&& f)
         , loc(loc)
     {}
     result(result&) = delete;
-    result(result&& rhs)
+    result(result&& rhs) noexcept(::cuda::std::is_nothrow_move_constructible_v<F>)
         : f(mv(rhs.f))
         , loc(rhs.loc)
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
@@ -4549,7 +4903,7 @@ auto operator->*(with_location<fail> where, F&& f)
         , exceptions(exceptions)
     {}
     result(result&) = delete;
-    result(result&& rhs)
+    result(result&& rhs) noexcept(::cuda::std::is_nothrow_move_constructible_v<F>)
         : f(mv(rhs.f))
         , loc(rhs.loc)
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
@@ -4590,7 +4944,7 @@ auto operator->*(success, F&& f)
         , exceptions(exceptions)
     {}
     result(result&) = delete;
-    result(result&& rhs)
+    result(result&& rhs) noexcept(::cuda::std::is_nothrow_move_constructible_v<F>)
         : f(mv(rhs.f))
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}

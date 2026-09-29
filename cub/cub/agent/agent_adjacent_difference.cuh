@@ -80,8 +80,7 @@ struct AgentDifference
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   static constexpr int BLOCK_THREADS      = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD   = Policy::ITEMS_PER_THREAD;

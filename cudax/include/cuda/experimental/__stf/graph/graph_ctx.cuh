@@ -143,7 +143,7 @@ private:
     static const int ndevices = cuda_try<cudaGetDeviceCount>();
     // We need to declare who may access this buffer
     ::std::vector<cudaMemAccessDesc> desc(ndevices);
-    for (int peer : each(0, ndevices))
+    for (const int peer : each(0, ndevices))
     {
       desc[peer].location.type = cudaMemLocationTypeDevice;
       desc[peer].location.id   = peer;
@@ -234,7 +234,7 @@ class graph_ctx : public backend_ctx<graph_ctx>
       reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
     }
 
-    ~impl() override {}
+    ~impl() override = default;
 
     ::std::string to_string() const override
     {
@@ -487,7 +487,7 @@ public:
   // Execute the CUDA graph in the provided stream.
   ::std::shared_ptr<cudaGraphExec_t> instantiate()
   {
-    ::std::shared_ptr<cudaGraph_t> g = finalize_as_graph();
+    const ::std::shared_ptr<cudaGraph_t> g = finalize_as_graph();
 
     size_t nedges;
     size_t nnodes;
@@ -514,8 +514,8 @@ public:
     // the cache
     if (get_graph_cache_policy().has_value())
     {
-      ::std::function<bool()> policy = get_graph_cache_policy().value();
-      use_cache                      = policy();
+      const ::std::function<bool()> policy = get_graph_cache_policy().value();
+      use_cache                            = policy();
     }
 
     if (use_cache)
@@ -749,7 +749,7 @@ private:
       auto e_graph_ptr = graph_instantiate(g);
 
       // Save for future use
-      state.previous_exec_graphs.push_back(::std::make_tuple(nnodes, nedges, e_graph_ptr, stage));
+      state.previous_exec_graphs.emplace_back(nnodes, nedges, e_graph_ptr, stage);
 
       local_exec_graph = *e_graph_ptr;
     }
@@ -776,24 +776,27 @@ public:
 UNITTEST("movable graph_ctx")
 {
   graph_ctx ctx;
-  graph_ctx ctx2 = mv(ctx);
+  const graph_ctx ctx2 = mv(ctx);
 };
 
 UNITTEST("copyable graph_ctx")
 {
-  graph_ctx ctx;
-  graph_ctx ctx2 = ctx;
+  const graph_ctx ctx;
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization) -- the copy is what this test exercises
+  const graph_ctx ctx2 = ctx;
 };
 
 UNITTEST("movable graph_task<>")
 {
   graph_ctx ctx;
-  graph_task<> t     = ctx.task();
-  graph_task<> t_cpy = mv(t);
+  graph_task<> t           = ctx.task();
+  const graph_task<> t_cpy = mv(t);
 };
 
 UNITTEST("set_symbol on graph_task and graph_task<>")
 {
+  // Should a step throw, the guards below end the tasks and unpin the buffers, in that order. Each
+  // task lives in its own block, since a task holds its data locked until it ends.
   graph_ctx ctx;
 
   double X[1024], Y[1024];
@@ -801,27 +804,44 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   auto lY = ctx.logical_data(Y);
 
   pin_memory(X);
+  SCOPE(exit)
+  {
+    unpin_memory(X);
+  };
   pin_memory(Y);
+  SCOPE(exit)
+  {
+    unpin_memory(Y);
+  };
+  // SCOPE(success), since finalize() may throw: a failing step leaves the context alone and its
+  // own exception propagates, instead of an exit guard aborting while unwinding.
+  SCOPE(success)
+  {
+    ctx.finalize();
+  };
 
-  graph_task<> t = ctx.task();
-  t.add_deps(lX.rw(), lY.rw());
-  t.set_symbol("graph_task<>");
-  t.start();
-  cudaGraphNode_t n;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
-  t.end();
+  {
+    graph_task<> t = ctx.task();
+    t.add_deps(lX.rw(), lY.rw());
+    t.set_symbol("graph_task<>");
+    t.start();
+    SCOPE(exit)
+    {
+      t.end();
+    };
+    ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
+  }
 
-  graph_task<slice<double>, slice<double>> t2 = ctx.task(lX.rw(), lY.rw());
-  t2.set_symbol("graph_task");
-  t2.start();
-  cudaGraphNode_t n2;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n2, t2.get_graph(), nullptr, 0));
-  t2.end();
-
-  ctx.finalize();
-
-  unpin_memory(X);
-  unpin_memory(Y);
+  {
+    graph_task<slice<double>, slice<double>> t2 = ctx.task(lX.rw(), lY.rw());
+    t2.set_symbol("graph_task");
+    t2.start();
+    SCOPE(exit)
+    {
+      t2.end();
+    };
+    ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t2.get_graph(), nullptr, 0);
+  }
 };
 
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
@@ -837,7 +857,7 @@ inline void unit_test_graph_stage()
   ::std::vector<double> A(N);
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
   pin_memory(A);
@@ -858,7 +878,7 @@ inline void unit_test_graph_stage()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = cos(Ai_ref);
@@ -885,7 +905,7 @@ inline void unit_test_graph_empty_stage()
   double A[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
   pin_memory(A);
@@ -908,7 +928,7 @@ inline void unit_test_graph_empty_stage()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = cos(Ai_ref);
@@ -935,7 +955,7 @@ inline void unit_test_graph_stage_2()
   double A[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
   pin_memory(A);
@@ -966,7 +986,7 @@ inline void unit_test_graph_stage_2()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = ((k % 2) == 0) ? cos(Ai_ref) : sin(Ai_ref);
@@ -994,8 +1014,8 @@ inline void unit_test_graph_stage_3()
   double B[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
-    B[i] = -1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
+    B[i] = -1.0 * static_cast<double>(i);
   }
 
   pin_memory(A);
@@ -1028,8 +1048,8 @@ inline void unit_test_graph_stage_3()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
-    double Bi_ref = -1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
+    double Bi_ref = -1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       if ((k % 2) == 0)
@@ -1058,7 +1078,10 @@ UNITTEST("graph with stage 3")
 inline void unit_test_launch_graph()
 {
   graph_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };
