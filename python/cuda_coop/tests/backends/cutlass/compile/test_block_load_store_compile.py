@@ -49,19 +49,29 @@ def test_invalid_movement_inputs(case, message):
                 group, memory, cutlass_coop.ThreadData(1), valid_items=True
             )
         elif cutlass.const_expr(case == "float-offset"):
-            cutlass_coop.load(group, memory, cutlass_coop.ThreadData(1), offset=1.5)
+            cutlass_coop.load(
+                group, memory, cutlass_coop.ThreadData(1), offset=1.5
+            )
         elif cutlass.const_expr(case == "negative-offset"):
-            cutlass_coop.load(group, memory, cutlass_coop.ThreadData(1), offset=-1)
+            cutlass_coop.load(
+                group, memory, cutlass_coop.ThreadData(1), offset=-1
+            )
         elif cutlass.const_expr(case == "too-many-valid"):
-            cutlass_coop.load(group, memory, cutlass_coop.ThreadData(1), valid_items=33)
+            cutlass_coop.load(
+                group, memory, cutlass_coop.ThreadData(1), valid_items=33
+            )
         else:
-            cutlass_coop.load(group, memory, cutlass_coop.ThreadData(1), valid_items=-1)
+            cutlass_coop.load(
+                group, memory, cutlass_coop.ThreadData(1), valid_items=-1
+            )
 
     @cute.jit
     def launch(memory: cute.Pointer):
         kernel(memory).launch(grid=1, block=32)
 
-    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
     with pytest.raises(Exception, match=message):
         cute.compile[(GPUArch("sm_80"),)](launch, pointer)
 
@@ -69,12 +79,16 @@ def test_invalid_movement_inputs(case, message):
 def test_dynamic_block_dimensions_are_not_assumed_exact():
     @cute.kernel
     def kernel(memory: cute.Pointer):
-        cutlass_coop.load(cutlass_coop.this_block(), memory, cutlass_coop.ThreadData(1))
+        cutlass_coop.load(
+            cutlass_coop.this_block(), memory, cutlass_coop.ThreadData(1)
+        )
 
     @cute.jit
     def launch(memory: cute.Pointer, block_size: cutlass.Int32):
         kernel(memory).launch(grid=1, block=(block_size, 1, 1))
 
-    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
     with pytest.raises(Exception, match="exact block dimensions"):
         cute.compile[(GPUArch("sm_80"),)](launch, pointer, 32)

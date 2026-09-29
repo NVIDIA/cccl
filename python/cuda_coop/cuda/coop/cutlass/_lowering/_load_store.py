@@ -151,14 +151,18 @@ def _render_cub_load_store(request):
     )
     lines = [
         f"void {request.symbol_name}({', '.join(params)}) {{",
-        f"  using implementation_type = ::cub::{request.implementation.struct_name}<{template_arguments}>;",
+        (
+            "  using implementation_type = "
+            f"::cub::{request.implementation.struct_name}<{template_arguments}>;"
+        ),
     ]
     if operation.valid_items.kind is BindingKind.RUNTIME:
         count = (
             request.plan.resolved_group.static_size * operation.items_per_thread
         )
         lines.append(
-            f'  if (valid_items < 0 || valid_items > {count}) {{ asm volatile("trap;"); }}'
+            f"  if (valid_items < 0 || valid_items > {count}) {{ "
+            'asm volatile("trap;"); }'
         )
     if operation.offset.kind is BindingKind.RUNTIME:
         lines.append('  if (offset < 0) { asm volatile("trap;"); }')
@@ -172,8 +176,8 @@ def _render_cub_load_store(request):
         else ", ".join(f"item{i}" for i in range(operation.items_per_thread))
     )
     lines.append(
-        f"  {type_specification.cpp_type} items["
-        f"{operation.items_per_thread}] = {{{initial}}};"
+        f"  {type_specification.cpp_type} items[{operation.items_per_thread}] "
+        f"= {{{initial}}};"
     )
     args = ["tile_ptr", "items"]
     for binding, name in (
@@ -189,7 +193,8 @@ def _render_cub_load_store(request):
         if expression is not None:
             args.append(expression)
     lines.append(
-        f"  implementation_type().{request.implementation.method_name}({', '.join(args)});"
+        "  implementation_type()."
+        f"{request.implementation.method_name}({', '.join(args)});"
     )
     if is_load:
         lines.extend(
@@ -322,7 +327,8 @@ def provider_store(
         is not value_type
     ):
         raise TypeError(
-            "cuda.coop.cutlass.store destination dtype does not match value dtype"
+            "cuda.coop.cutlass.store destination dtype does not match "
+            "value dtype"
         )
     request = _make_request(
         group=group,
@@ -487,11 +493,13 @@ def _is_local_memory_space(value: Any) -> bool:
     try:
         if int(value) == _LLVM_LOCAL_ADDRESS_SPACE:
             return True
-    except Exception:  # noqa: BLE001, S110 - Foreign memory-space values may only support symbolic names.
+    except Exception:  # noqa: BLE001, S110
+        # Foreign memory-space values may only support symbolic names.
         pass
     try:
         name = str(getattr(value, "name", value)).strip().lower()
-    except Exception:  # noqa: BLE001 - Uninspectable metadata cannot prove a memory space.
+    except Exception:  # noqa: BLE001
+        # Uninspectable metadata cannot prove a memory space.
         return False
     return name in {"local", "local_memory", "rmem"}
 
@@ -501,7 +509,8 @@ def _uses_local_memory(value: Any) -> bool:
     for name in ("iterator", "pointer", "ptr", "_pointer", "_ptr"):
         try:
             candidate = getattr(value, name)
-        except Exception:  # noqa: BLE001, S112 - Optional pointer metadata may reject access.
+        except Exception:  # noqa: BLE001, S112
+            # Optional pointer metadata may reject access.
             continue
         if candidate is not None:
             candidates.append(candidate)
@@ -509,7 +518,8 @@ def _uses_local_memory(value: Any) -> bool:
         for name in ("memspace", "space", "address_space"):
             try:
                 memory_space = getattr(candidate, name)
-            except Exception:  # noqa: BLE001, S112 - Optional memory-space metadata may reject access.
+            except Exception:  # noqa: BLE001, S112
+                # Optional memory-space metadata may reject access.
                 continue
             if _is_local_memory_space(memory_space):
                 return True
@@ -522,7 +532,8 @@ def _try_raw_memory_pointer(value: Any) -> Any | None:
     if callable(data_ptr):
         try:
             candidates.append(data_ptr())
-        except Exception:  # noqa: BLE001, S110 - Try other pointer protocols if this optional conversion fails.
+        except Exception:  # noqa: BLE001, S110
+            # Try other pointer protocols if this optional conversion fails.
             pass
     for name in ("iterator", "pointer", "ptr", "_pointer", "_ptr"):
         try:
@@ -542,7 +553,9 @@ def _try_raw_memory_pointer(value: Any) -> Any | None:
             continue
         try:
             pointer_type = llvm.PointerType(pointer.type)
-        except Exception:  # noqa: BLE001, S112 - A non-pointer candidate does not establish raw-pointer eligibility.
+        except Exception:  # noqa: BLE001, S112
+            # A non-pointer candidate does not establish raw-pointer
+            # eligibility.
             continue
         if pointer_type.address_space == _LLVM_LOCAL_ADDRESS_SPACE:
             return None
@@ -614,7 +627,8 @@ def _resolve_memory_type(value: Any, *, primitive_name: str) -> type:
     dtype = _memory_dtype(value)
     if dtype is None:
         raise TypeError(
-            f"{_ROOT_SCOPE}.{primitive_name} memory operand must expose element_type "
+            f"{_ROOT_SCOPE}.{primitive_name} memory operand must expose "
+            "element_type "
             "or dtype"
         )
     return _resolve_type(

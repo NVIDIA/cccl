@@ -17,7 +17,9 @@ from cutlass.base_dsl.common import DSLRuntimeError
 from ._rendering import canonical_bundle_requests
 
 _SESSION_SCOPE = "cuda.coop.cutlass"
-_TRACE_HOOK_DISPATCHER_ATTR = "_cuda_coop_cutlass_provider_trace_finalize_dispatcher"
+_TRACE_HOOK_DISPATCHER_ATTR = (
+    "_cuda_coop_cutlass_provider_trace_finalize_dispatcher"
+)
 _TRACE_HOOK_TARGET_ATTR = "_cuda_coop_cutlass_provider_trace_finalize_hook"
 _BUNDLE_FINALIZER: Callable[[Any, Any, str], None] | None = None
 _STATE_LOCK = threading.RLock()
@@ -25,7 +27,8 @@ _SESSIONS: weakref.WeakKeyDictionary[Any, list[BundleSession]] = (
     weakref.WeakKeyDictionary()
 )
 _ID_SESSIONS: dict[
-    int, tuple[weakref.ReferenceType[Any], list[BundleSession], weakref.finalize]
+    int,
+    tuple[weakref.ReferenceType[Any], list[BundleSession], weakref.finalize],
 ] = {}
 _UNSPECIFIED_MODULE = object()
 
@@ -196,7 +199,9 @@ def _drop_id_session(key: int) -> None:
         _ID_SESSIONS.pop(key, None)
 
 
-def _store_bundle_sessions(compile_options: Any, sessions: list[BundleSession]) -> None:
+def _store_bundle_sessions(
+    compile_options: Any, sessions: list[BundleSession]
+) -> None:
     try:
         _SESSIONS[compile_options] = sessions
     except TypeError:
@@ -204,7 +209,8 @@ def _store_bundle_sessions(compile_options: Any, sessions: list[BundleSession]) 
             options_ref = weakref.ref(compile_options)
         except TypeError as exc:
             raise DSLRuntimeError(
-                f"{_SESSION_SCOPE} provider compile_options must be weak-referenceable."
+                f"{_SESSION_SCOPE} provider compile_options must be "
+                "weak-referenceable."
             ) from exc
         key = id(compile_options)
         finalizer = weakref.finalize(compile_options, _drop_id_session, key)
@@ -253,7 +259,8 @@ def _same_mlir_operation(lhs: Any, rhs: Any) -> bool:
         return True
     try:
         result = lhs == rhs
-    except Exception:  # noqa: BLE001 - Foreign MLIR wrappers may reject equality.
+    except Exception:  # noqa: BLE001
+        # Foreign MLIR wrappers may reject equality.
         return False
     return isinstance(result, bool) and result
 
@@ -264,7 +271,8 @@ def _active_trace_module_op() -> Any | None:
 
         current_ip = ir.InsertionPoint.current
         op = None if current_ip is None else current_ip.block.owner
-    except Exception:  # noqa: BLE001 - No usable insertion point means no active trace.
+    except Exception:  # noqa: BLE001
+        # No usable insertion point means no active trace.
         return None
 
     while op is not None:
@@ -285,7 +293,9 @@ def get_or_create_bundle_session(
             compile_options, trace_module_op=trace_module_op
         )
         if session is None and trace_module_op is not None:
-            unbound = lookup_bundle_session(compile_options, trace_module_op=None)
+            unbound = lookup_bundle_session(
+                compile_options, trace_module_op=None
+            )
             if unbound is not None:
                 unbound.bind_trace_module(trace_module_op)
                 session = unbound
@@ -314,7 +324,11 @@ def snapshot_active_session_state_for(*, get_cute_dsl: Callable[[], Any]):
     module = _active_trace_module_op()
     with _STATE_LOCK:
         session = lookup_bundle_session(compile_options, trace_module_op=module)
-        return compile_options, module, None if session is None else session.snapshot()
+        return (
+            compile_options,
+            module,
+            None if session is None else session.snapshot(),
+        )
 
 
 def snapshot_active_session_state():
@@ -338,7 +352,9 @@ def restore_active_session_state_for(
         if session_snapshot is None:
             pop_bundle_session(compile_options, trace_module_op=module)
             return
-        session = get_or_create_bundle_session(compile_options, trace_module_op=module)
+        session = get_or_create_bundle_session(
+            compile_options, trace_module_op=module
+        )
         session.restore(session_snapshot)
 
 
