@@ -63,7 +63,9 @@ TYPE_SPECS: dict[type, TypeSpec] = {
 }
 ALL_PROVIDER_TYPES = frozenset(TYPE_SPECS)
 INTEGER_VALUE_TYPES = frozenset(
-    value_type for value_type in TYPE_SPECS if value_type not in {Float32, Float64}
+    value_type
+    for value_type in TYPE_SPECS
+    if value_type not in {Float32, Float64}
 )
 ORDINARY_PROVIDER_TYPES = {
     int: Int32,
@@ -111,7 +113,8 @@ def coerce_plain_scalar(
             limit = float(np.finfo(numpy_type).max)
             if not -limit <= value <= limit:
                 raise ValueError(
-                    f"{scope}.{name}={value} is not representable in {value_type.__name__}"
+                    f"{scope}.{name}={value} is not representable in "
+                    f"{value_type.__name__}"
                 )
             return value_type(value) if convert else value
         if token not in _INTEGER_TYPE_TOKENS:
@@ -120,10 +123,13 @@ def coerce_plain_scalar(
             )
         bits = int(token.lstrip("iu"))
         lower = 0 if token.startswith("u") else -(1 << (bits - 1))
-        upper = (1 << bits) - 1 if token.startswith("u") else (1 << (bits - 1)) - 1
+        upper = (
+            (1 << bits) - 1 if token.startswith("u") else (1 << (bits - 1)) - 1
+        )
         if not lower <= value <= upper:
             raise ValueError(
-                f"{scope}.{name}={value} is not representable in {value_type.__name__}"
+                f"{scope}.{name}={value} is not representable in "
+                f"{value_type.__name__}"
             )
         return value_type(value) if convert else value
     if type(value) is float:
@@ -137,7 +143,8 @@ def coerce_plain_scalar(
         limit = float(np.finfo(numpy_type).max)
         if math.isfinite(value) and abs(value) > limit:
             raise ValueError(
-                f"{scope}.{name}={value} is not representable in {value_type.__name__}"
+                f"{scope}.{name}={value} is not representable in "
+                f"{value_type.__name__}"
             )
         return value_type(value) if convert else value
     return _NOT_PLAIN_SCALAR
@@ -156,7 +163,9 @@ def as_valid_items_arg(value: Any, *, scope: str) -> Any:
         raise TypeError(f"{scope} valid_items must have an integer dtype")
     if isinstance(value, Integral):
         if not 0 <= int(value) <= (1 << 31) - 1:
-            raise ValueError(f"{scope} valid_items must be between 0 and 2147483647")
+            raise ValueError(
+                f"{scope} valid_items must be between 0 and 2147483647"
+            )
         return Int32(int(value))
     if isinstance(value, Int32):
         return value
@@ -274,7 +283,9 @@ def validate_thread_data_output(
     if output is None:
         return None
     if not isinstance(output, ThreadData):
-        raise TypeError(f"{scope}.{primitive_name} {output_name} must be {type_label}")
+        raise TypeError(
+            f"{scope}.{primitive_name} {output_name} must be {type_label}"
+        )
     if output.items_per_thread != expected_items_per_thread:
         if item_count_message is None:
             item_count_message = (
@@ -289,7 +300,9 @@ def validate_thread_data_output(
             feature=primitive_name,
         )
     else:
-        output.dtype = resolved_dtype if assigned_dtype is None else assigned_dtype
+        output.dtype = (
+            resolved_dtype if assigned_dtype is None else assigned_dtype
+        )
     return output
 
 

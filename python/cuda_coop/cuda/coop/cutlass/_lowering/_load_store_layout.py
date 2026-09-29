@@ -13,7 +13,8 @@ from typing import Any
 def _optional_attr(value: Any, name: str) -> Any:
     try:
         return getattr(value, name, None)
-    except Exception:  # noqa: BLE001 - Optional foreign metadata may reject access.
+    except Exception:  # noqa: BLE001
+        # Optional foreign metadata may reject access.
         return None
 
 
@@ -22,7 +23,8 @@ def _static_layout_int(value: Any) -> int | None:
         return None
     try:
         normalized = value.__index__()
-    except Exception:  # noqa: BLE001 - Dynamic DSL extents may reject integer conversion.
+    except Exception:  # noqa: BLE001
+        # Dynamic DSL extents may reject integer conversion.
         return None
     if isinstance(normalized, bool):
         return None

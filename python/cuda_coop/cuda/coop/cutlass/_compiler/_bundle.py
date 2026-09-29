@@ -44,7 +44,9 @@ def compile_bundle_source(
             _cache.ensure_cache_dir("cuda.coop.cutlass"), f"{key}.ltoir"
         )
         with _cache.artifact_lock(path, scope="cuda.coop.cutlass"):
-            cached = _cache.memory_cached_bundle(key) or _cache.load_bundle(path, key)
+            cached = _cache.memory_cached_bundle(key) or _cache.load_bundle(
+                path, key
+            )
             if cached is None:
                 blob = _nvrtc.compile_ltoir(source, options)
                 cached = _cache.publish_bundle(path, key, blob)

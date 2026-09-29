@@ -453,7 +453,9 @@ def test_qualified_callable_aliases_plan_as_builtin_cudax_operations(
     from cuda.coop.numba_mlir._lowering import _reduce
 
     def kernel(value):
-        return numba_coop.reduce(numba_coop.this_block(), value, binary_op=binary_op)
+        return numba_coop.reduce(
+            numba_coop.this_block(), value, binary_op=binary_op
+        )
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
     assert planner.run()
@@ -575,7 +577,9 @@ def test_direct_cub_reduce_selects_operation_and_scope(
     import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._lowering import _reduce
 
-    descriptor = numba_coop.this_block() if kind == "block" else numba_coop.this_warp()
+    descriptor = (
+        numba_coop.this_block() if kind == "block" else numba_coop.this_warp()
+    )
 
     def callback(lhs, rhs):
         return lhs + rhs
@@ -770,7 +774,9 @@ def test_float_bitwise_reduce_rejects_before_provider(monkeypatch):
     from cuda.coop.numba_mlir._compiler import _group_reduce
 
     def kernel(value):
-        return numba_coop.reduce(numba_coop.this_block(), value, binary_op="bit_or")
+        return numba_coop.reduce(
+            numba_coop.this_block(), value, binary_op="bit_or"
+        )
 
     monkeypatch.setattr(
         _group_reduce._ReducePlanning,

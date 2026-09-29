@@ -332,7 +332,9 @@ def test_production_routes_compile_common_and_qualified_warp_kernels(
             offset,
         ):
             thread = compiler_cuda.threadIdx.x
-            load_payload = numba_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+            load_payload = numba_coop.ThreadData(
+                _ITEMS_PER_THREAD, dtype=types.int32
+            )
             numba_coop.load(
                 numba_coop.this_warp(),
                 load_source,

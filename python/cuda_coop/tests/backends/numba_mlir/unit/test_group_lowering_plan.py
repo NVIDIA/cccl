@@ -852,7 +852,9 @@ def test_logical_warp_plan_selects_typed_cub_provider(monkeypatch):
 
     def memory(source):
         output = numba_coop.ThreadData(2, dtype=types.int32)
-        return numba_coop.load(numba_coop.this_warp().group_by(8), source, output)
+        return numba_coop.load(
+            numba_coop.this_warp().group_by(8), source, output
+        )
 
     array_type = types.Array(types.int32, 1, "C")
     planner = _planner(memory, arg_types=(array_type,))
@@ -1130,7 +1132,9 @@ def test_scalar_scan_of_a_loaded_payload_element_plans_as_a_scalar(monkeypatch):
             algorithm="transpose",
         )
         # Indexing the loaded payload selects one scalar element.
-        output[0] = numba_coop.inclusive_sum(numba_coop.this_block(), payload[0])
+        output[0] = numba_coop.inclusive_sum(
+            numba_coop.this_block(), payload[0]
+        )
 
     array_type = types.Array(types.int32, 1, "C")
     planner = _planner(kernel, arg_types=(array_type, array_type))

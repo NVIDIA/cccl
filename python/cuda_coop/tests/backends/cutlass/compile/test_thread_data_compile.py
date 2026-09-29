@@ -20,7 +20,9 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_dynamic_payload(dtype, api):
     @cute.jit
     def increment(payload):
@@ -36,8 +38,12 @@ def test_dynamic_payload(dtype, api):
             payload = increment(payload)
             if iteration % 2 == 0:
                 payload[1] = dtype(payload[1] + dtype(2))
-        if cutlass.const_expr(payload.alignment != 64 or payload.dtype is not dtype):
-            raise AssertionError("ThreadData metadata changed across control flow")
+        if cutlass.const_expr(
+            payload.alignment != 64 or payload.dtype is not dtype
+        ):
+            raise AssertionError(
+                "ThreadData metadata changed across control flow"
+            )
         output = cute.make_tensor(memory, cute.make_layout(2))
         output[0] = payload[0]
         output[1] = payload[1]

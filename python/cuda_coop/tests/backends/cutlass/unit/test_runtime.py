@@ -30,7 +30,9 @@ def compiler_modules(monkeypatch):
         spec.loader.exec_module(module)
         modules.append(module)
     monkeypatch.setattr(_dispatch, "_COMPILER_CONTEXT_PROBES", {})
-    monkeypatch.setattr(modules[0], "_runtime_requirement", lambda: "Test runtime.")
+    monkeypatch.setattr(
+        modules[0], "_runtime_requirement", lambda: "Test runtime."
+    )
     return modules
 
 
@@ -103,12 +105,18 @@ def test_runtime_rejects_missing_capability(
     assert capability in str(caught.value)
 
 
-def test_runtime_rejects_unrecognized_link_option(monkeypatch, compiler_modules):
+def test_runtime_rejects_unrecognized_link_option(
+    monkeypatch, compiler_modules
+):
     runtime, _ = compiler_modules
     modules = _compatible_modules()
-    modules["cutlass.base_dsl.compiler"].LinkLibraries._option_name = "libraries"
+    modules[
+        "cutlass.base_dsl.compiler"
+    ].LinkLibraries._option_name = "libraries"
     monkeypatch.setattr(runtime.importlib, "import_module", modules.__getitem__)
-    with pytest.raises(runtime.CutlassRuntimeDependencyError, match="link-libraries"):
+    with pytest.raises(
+        runtime.CutlassRuntimeDependencyError, match="link-libraries"
+    ):
         runtime.validate_cutlass_runtime()
 
 
@@ -148,7 +156,9 @@ def test_activation_tracks_compiler_environment(monkeypatch, compiler_modules):
     modules = _compatible_modules()
     monkeypatch.setattr(runtime.importlib, "import_module", modules.__getitem__)
     active = [None]
-    modules["cutlass.base_dsl.common"].get_current_env_manager = lambda: active[0]
+    modules["cutlass.base_dsl.common"].get_current_env_manager = lambda: active[
+        0
+    ]
     activation.register_trace_context()
     assert _dispatch._backend_module_name() is None
     active[0] = object()
@@ -159,11 +169,15 @@ def test_activation_tracks_compiler_environment(monkeypatch, compiler_modules):
     assert _dispatch._backend_module_name() is None
 
 
-def test_failed_initialization_does_not_register_a_probe(monkeypatch, compiler_modules):
+def test_failed_initialization_does_not_register_a_probe(
+    monkeypatch, compiler_modules
+):
     runtime, activation = compiler_modules
     modules = _compatible_modules()
     modules["cutlass.cutlass_dsl"].CuTeDSL._get_dsl = lambda: SimpleNamespace()
     monkeypatch.setattr(runtime.importlib, "import_module", modules.__getitem__)
-    with pytest.raises(runtime.CutlassRuntimeDependencyError, match="environment"):
+    with pytest.raises(
+        runtime.CutlassRuntimeDependencyError, match="environment"
+    ):
         activation.register_trace_context()
     assert _dispatch._COMPILER_CONTEXT_PROBES == {}

@@ -278,7 +278,9 @@ def test_qualified_array_shuffle_rejects_enum_and_impostor_distance(
         items = numba_coop.ThreadData(2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        return numba_coop.shuffle(numba_coop.this_block(), items, distance=distance)
+        return numba_coop.shuffle(
+            numba_coop.this_block(), items, distance=distance
+        )
 
     monkeypatch.setattr(
         _group_shuffle._ShufflePlanning,

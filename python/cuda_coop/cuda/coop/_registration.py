@@ -8,7 +8,9 @@ import importlib
 from typing import Literal
 
 
-def register(backend: Literal["numba-cuda-mlir", "numba_cuda_mlir", "cutlass"]) -> None:
+def register(
+    backend: Literal["numba-cuda-mlir", "numba_cuda_mlir", "cutlass"],
+) -> None:
     """Register cooperative primitives with the selected compiler backend.
 
     Call this on the host before compiling a kernel, including when

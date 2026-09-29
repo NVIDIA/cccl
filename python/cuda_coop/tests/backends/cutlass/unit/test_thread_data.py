@@ -200,7 +200,9 @@ def test_export_rejects_incomplete_or_inconsistent_payload():
 
 @pytest.mark.parametrize(
     "dtype",
-    tuple(import_module("cuda.coop.cutlass._compiler._types").ALL_PROVIDER_TYPES),
+    tuple(
+        import_module("cuda.coop.cutlass._compiler._types").ALL_PROVIDER_TYPES
+    ),
 )
 @pytest.mark.parametrize("inferred", (False, True))
 def test_control_flow_roundtrip(dtype, inferred):
@@ -224,7 +226,9 @@ def test_control_flow_roundtrip(dtype, inferred):
             assert rebuilt.alignment == 128
             assert rebuilt._common_root
             assert all(isinstance(item, dtype) for item in rebuilt)
-            assert all(before is after for before, after in zip(original, data._values))
+            assert all(
+                before is after for before, after in zip(original, data._values)
+            )
             with pytest.raises(TypeError, match="dtypes"):
                 rebuilt[0] = True
         assert module.operation.verify()

@@ -49,7 +49,10 @@ def test_all_common_numeric_types(numpy_type, dsl_type):
             is dsl_type
         )
     assert _types.type_size_bytes(dsl_type) == np.dtype(numpy_type).itemsize
-    assert _types.TYPE_SPECS[dsl_type].width_bits == 8 * np.dtype(numpy_type).itemsize
+    assert (
+        _types.TYPE_SPECS[dsl_type].width_bits
+        == 8 * np.dtype(numpy_type).itemsize
+    )
 
 
 @pytest.mark.parametrize(("numpy_type", "dsl_type"), _DTYPE_CASES[:8])
@@ -70,12 +73,18 @@ def test_integer_literal_range_checks(numpy_type, dsl_type):
     for value in (int(limits.min) - 1, int(limits.max) + 1):
         with pytest.raises(ValueError, match="representable"):
             _types.coerce_plain_scalar(
-                value, dsl_type, name="item", scope="test", allow_nonfinite=False
+                value,
+                dsl_type,
+                name="item",
+                scope="test",
+                allow_nonfinite=False,
             )
 
 
 @pytest.mark.parametrize(("numpy_type", "dsl_type"), _DTYPE_CASES[:8])
-def test_integer_ir_requires_signedness_or_explicit_payload_dtype(numpy_type, dsl_type):
+def test_integer_ir_requires_signedness_or_explicit_payload_dtype(
+    numpy_type, dsl_type
+):
     width = 8 * np.dtype(numpy_type).itemsize
     signed = np.issubdtype(numpy_type, np.signedinteger)
     item = SimpleNamespace(type=f"i{width}", signed=bool(signed))
@@ -132,11 +141,19 @@ def test_float_literal_must_match_and_fit_dtype():
     for value in (float("inf"), float("nan")):
         with pytest.raises(ValueError, match="finite"):
             _types.coerce_plain_scalar(
-                value, typing.Float32, name="item", scope="test", allow_nonfinite=False
+                value,
+                typing.Float32,
+                name="item",
+                scope="test",
+                allow_nonfinite=False,
             )
     with pytest.raises(ValueError, match="representable"):
         _types.coerce_plain_scalar(
-            1e100, typing.Float32, name="item", scope="test", allow_nonfinite=True
+            1e100,
+            typing.Float32,
+            name="item",
+            scope="test",
+            allow_nonfinite=True,
         )
     with pytest.raises(TypeError, match="does not match"):
         _types.coerce_plain_scalar(

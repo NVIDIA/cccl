@@ -105,7 +105,9 @@ def artifact_lock(path: str, *, scope: str):
                 raise OSError("provider artifact lock is not a regular file")
             getuid = getattr(os, "getuid", None)
             if getuid is not None and lock_stat.st_uid != getuid():
-                raise OSError("provider artifact lock is not owned by this user")
+                raise OSError(
+                    "provider artifact lock is not owned by this user"
+                )
             if os.name == "nt":
                 if lock_stat.st_size == 0:
                     os.write(descriptor, b"\0")
@@ -186,7 +188,9 @@ def ensure_cache_dir(scope: str) -> str:
     try:
         os.makedirs(cache_dir, mode=0o700, exist_ok=True)
         cache_stat = os.lstat(cache_dir)
-        if stat.S_ISLNK(cache_stat.st_mode) or not stat.S_ISDIR(cache_stat.st_mode):
+        if stat.S_ISLNK(cache_stat.st_mode) or not stat.S_ISDIR(
+            cache_stat.st_mode
+        ):
             raise DSLRuntimeError(
                 f"{scope} provider cache path is not a real directory."
             )
@@ -205,7 +209,9 @@ def ensure_cache_dir(scope: str) -> str:
     return cache_dir
 
 
-def write_binary_atomic(path: str, blob: bytes | bytearray, *, scope: str) -> None:
+def write_binary_atomic(
+    path: str, blob: bytes | bytearray, *, scope: str
+) -> None:
     cache_dir = ensure_cache_dir(scope)
     temp_path = ""
     try:

@@ -66,9 +66,17 @@ class _FakeSemantics:
 @pytest.mark.parametrize(
     ("override", "error", "message"),
     [
-        ({"classifications": None}, TypeError, "classifications must be callable"),
+        (
+            {"classifications": None},
+            TypeError,
+            "classifications must be callable",
+        ),
         ({"planner": None}, TypeError, "planner must be callable"),
-        ({"group_kinds": frozenset()}, ValueError, "group_kinds must not be empty"),
+        (
+            {"group_kinds": frozenset()},
+            ValueError,
+            "group_kinds must not be empty",
+        ),
         (
             {"group_kinds": frozenset({"not_a_group"})},
             ValueError,
@@ -144,7 +152,9 @@ def _rewrite_spec(**overrides):
         "runtime_arg_counts": frozenset({1, 2}),
         "runtime_factory_kwargs": ("tail",),
         "runtime_factory_kw_prerequisites": (),
-        "allowed_factory_kwargs": frozenset({"guard", "offset", "tail", "value_type"}),
+        "allowed_factory_kwargs": frozenset(
+            {"guard", "offset", "tail", "value_type"}
+        ),
         "required_factory_kwargs": frozenset({"value_type"}),
         "accepts_temp_storage": False,
         "scalar_binding_kwargs": frozenset({"tail"}),
@@ -310,8 +320,12 @@ def test_generated_synchronization_uses_metadata_not_struct_names(
         compile_identity=(90, True, "lto", (), "test-toolchain")
     )[0]
     mangled_name = algorithm.mangled_name(algorithm.parameters[0])
-    alloc_body = source.split(f"void {mangled_name}_alloc(", 1)[1].split("\n}\n", 1)[0]
-    pointer_body = source.split(f"void {mangled_name}(", 1)[1].split("\n}\n", 1)[0]
+    alloc_body = source.split(f"void {mangled_name}_alloc(", 1)[1].split(
+        "\n}\n", 1
+    )[0]
+    pointer_body = source.split(f"void {mangled_name}(", 1)[1].split(
+        "\n}\n", 1
+    )[0]
 
     for token in ("__syncthreads();", "__syncwarp();"):
         assert (token in source) is (token == sync_token)
@@ -346,8 +360,12 @@ def test_group_synchronization_scope_fails_with_stable_diagnostic():
         synchronization_scope=SynchronizationScope.GROUP,
     )
 
-    with pytest.raises(NotImplementedError, match="scope 'group' has no emitter"):
-        algorithm._source_code(compile_identity=(90, True, "lto", (), "test-toolchain"))
+    with pytest.raises(
+        NotImplementedError, match="scope 'group' has no emitter"
+    ):
+        algorithm._source_code(
+            compile_identity=(90, True, "lto", (), "test-toolchain")
+        )
 
 
 def test_storage_free_provider_uses_default_constructor_and_zero_storage():
@@ -435,7 +453,9 @@ def _resolved_calls(func_ir):
         for inst in block.body:
             value = getattr(inst, "value", None)
             if isinstance(value, ir.Expr) and value.op == "call":
-                calls.append((resolver._resolve_python_value(value.func), value))
+                calls.append(
+                    (resolver._resolve_python_value(value.func), value)
+                )
     return calls
 
 
@@ -475,7 +495,9 @@ def _evaluate_ir_value(func_ir, value, *, thread, block):
         if current.op == "call":
             function = evaluate(current.func)
             return function(*(evaluate(argument) for argument in current.args))
-        raise AssertionError(f"unsupported cooperative storage IR: {current.op}")
+        raise AssertionError(
+            f"unsupported cooperative storage IR: {current.op}"
+        )
 
     return evaluate(value)
 
@@ -720,7 +742,9 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
     from cuda.coop.numba_mlir._compiler._group_planner_support import (
         _group_operation_name,
     )
-    from cuda.coop.numba_mlir._compiler._group_planning import GroupPlanningContext
+    from cuda.coop.numba_mlir._compiler._group_planning import (
+        GroupPlanningContext,
+    )
 
     registries = (
         core_dispatch._GROUP_OPERATION_FAMILIES,
@@ -758,9 +782,12 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
             qualified_marker = markers["qualified"][shape]
             assert common_marker is not qualified_marker
             assert (
-                common_dispatch._common_group_operation_name(common_marker) == operation
+                common_dispatch._common_group_operation_name(common_marker)
+                == operation
             )
-            assert _operations.group_operation_name(qualified_marker) == operation
+            assert (
+                _operations.group_operation_name(qualified_marker) == operation
+            )
             assert _group_operation_name(common_marker) == operation
             assert _group_operation_name(qualified_marker) == operation
 
@@ -874,7 +901,8 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
             assert plan.temp_storage.instance_index == expected_instance_index
             assert len(plan.result.values) == result_count
             assert tuple(
-                classification.name for classification in call.argument_classifications
+                classification.name
+                for classification in call.argument_classifications
             ) == (
                 ("key", "values")
                 if shape == "pair"
@@ -915,7 +943,10 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
                 )
                 result = _return_value(func_ir)
                 assert planner.context.dtype(result) == expected_dtype
-                assert planner.context.is_array(operations[shape], result) is is_array
+                assert (
+                    planner.context.is_array(operations[shape], result)
+                    is is_array
+                )
                 assert planner.context.array_extent(result) == extent
 
         pipeline_cases = [
@@ -978,7 +1009,9 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
                 storage_instances,
             ) = expected_rewrite[shape]
             calls = _resolved_calls(func_ir)
-            invocable_calls = [call for target, call in calls if target is invocable]
+            invocable_calls = [
+                call for target, call in calls if target is invocable
+            ]
             assert len(invocable_calls) == 1
             assert len(invocable_calls[0].args) == arg_count
             sync_calls = [
@@ -987,9 +1020,13 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
                 if target in {cuda.syncthreads, cuda.syncwarp}
             ]
             assert sync_calls == ([] if sync is None else [sync])
-            shared_allocations = sum(target is cuda.shared.array for target, _ in calls)
+            shared_allocations = sum(
+                target is cuda.shared.array for target, _ in calls
+            )
             assert shared_allocations == (0 if shape == "scalar" else 1)
-            assert (rewrite._temp_storage_global_plan is None) is (shape == "scalar")
+            assert (rewrite._temp_storage_global_plan is None) is (
+                shape == "scalar"
+            )
             assert not any(
                 isinstance(statement, ir.Assign)
                 and isinstance(statement.value, ir.Global)
@@ -998,14 +1035,21 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
                 for statement in block.body
             )
             if storage_bytes is not None:
-                assert rewrite._temp_storage_global_plan.total_size == storage_bytes
+                assert (
+                    rewrite._temp_storage_global_plan.total_size
+                    == storage_bytes
+                )
                 storage_plan = rewrite._implicit_temp_storage_plan
                 assert storage_plan.size_in_bytes == storage_bytes
-                storage_slice = next(iter(storage_plan.slices_by_call_id.values()))
+                storage_slice = next(
+                    iter(storage_plan.slices_by_call_id.values())
+                )
                 assert storage_slice.stride == storage_stride
                 assert storage_slice.instances == storage_instances
 
-        assert {(operation, dtype) for operation, dtype in family.FACTORY_CALLS} == {
+        assert {
+            (operation, dtype) for operation, dtype in family.FACTORY_CALLS
+        } == {
             (operations["scalar"], types.int32),
             (operations["thread_storage"], types.int32),
             (operations["array"], types.float32),
@@ -1013,7 +1057,12 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
         }
         assert {
             (operation, group_kind, is_common_root)
-            for operation, group_kind, is_common_root, _ in family.PLANNING_EVENTS
+            for (
+                operation,
+                group_kind,
+                is_common_root,
+                _,
+            ) in family.PLANNING_EVENTS
         } == {
             (operations["scalar"], "thread", True),
             (operations["thread_storage"], "thread", True),
@@ -1056,7 +1105,10 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
         for marker in frontend_markers.values()
     )
     assert family is not None
-    assert family.LazyFamilySemantics not in core_dispatch._GROUP_OPERATION_FAMILIES
+    assert (
+        family.LazyFamilySemantics
+        not in core_dispatch._GROUP_OPERATION_FAMILIES
+    )
     assert all(
         provider not in _operations._FACTORY_OPERATIONS
         for provider in family.PROVIDERS.values()
@@ -1102,7 +1154,9 @@ def test_lazy_fake_logical_warp_uses_one_aligned_slice_per_group(frontend_name):
     assert topology.instance_index == "linear_thread_rank / 8"
 
     sync_calls = [
-        call for target, call in _resolved_calls(func_ir) if target is cuda.syncwarp
+        call
+        for target, call in _resolved_calls(func_ir)
+        if target is cuda.syncwarp
     ]
     assert len(sync_calls) == 1
     assert len(sync_calls[0].args) == 1
@@ -1161,7 +1215,9 @@ def test_lazy_fake_single_lane_groups_emit_the_high_lane_mask():
     ) == [slice(992, 1016)]
 
     sync_calls = [
-        call for target, call in _resolved_calls(func_ir) if target is cuda.syncwarp
+        call
+        for target, call in _resolved_calls(func_ir)
+        if target is cuda.syncwarp
     ]
     assert len(sync_calls) == 1
     assert len(sync_calls[0].args) == 1
@@ -1177,7 +1233,9 @@ def test_lazy_fake_single_lane_groups_emit_the_high_lane_mask():
 
 
 @pytest.mark.parametrize("frontend_name", ["common", "qualified"])
-def test_lazy_fake_thread_scope_uses_one_aligned_slice_per_thread(frontend_name):
+def test_lazy_fake_thread_scope_uses_one_aligned_slice_per_thread(
+    frontend_name,
+):
     from numba_cuda_mlir import cuda
 
     import cuda.coop as common_coop
@@ -1216,7 +1274,9 @@ def test_lazy_fake_thread_scope_uses_one_aligned_slice_per_thread(frontend_name)
 
     calls = _resolved_calls(func_ir)
     assert sum(target is cuda.shared.array for target, _ in calls) == 1
-    assert not any(target in {cuda.syncthreads, cuda.syncwarp} for target, _ in calls)
+    assert not any(
+        target in {cuda.syncthreads, cuda.syncwarp} for target, _ in calls
+    )
     for thread, expected_slice in (
         ((3, 2, 1), slice(216, 221)),
         ((3, 0, 2), slice(280, 285)),
@@ -1263,8 +1323,12 @@ def test_lazy_fake_storage_reuses_only_identical_execution_domains():
         slices_by_width.setdefault(width, []).append(storage_slice)
     assert set(slices_by_width) == {8, 32}
     assert len(slices_by_width[32]) == 2
-    assert {storage_slice.offset for storage_slice in slices_by_width[32]} == {0}
-    assert {storage_slice.instances for storage_slice in slices_by_width[32]} == {2}
+    assert {storage_slice.offset for storage_slice in slices_by_width[32]} == {
+        0
+    }
+    assert {
+        storage_slice.instances for storage_slice in slices_by_width[32]
+    } == {2}
     assert len(slices_by_width[8]) == 1
     assert slices_by_width[8][0].offset == 64
     assert slices_by_width[8][0].instances == 8
@@ -1280,7 +1344,9 @@ def test_lazy_fake_storage_reuses_only_identical_execution_domains():
         block=(64, 1, 1),
     ) == [slice(32, 56), slice(32, 56), slice(224, 248)]
     sync_calls = [
-        call for target, call in _resolved_calls(func_ir) if target is cuda.syncwarp
+        call
+        for target, call in _resolved_calls(func_ir)
+        if target is cuda.syncwarp
     ]
     assert [len(call.args) for call in sync_calls] == [0, 0, 1]
     assert (
@@ -1295,7 +1361,9 @@ def test_lazy_fake_storage_reuses_only_identical_execution_domains():
 
 
 @pytest.mark.parametrize("frontend_name", ["common", "qualified"])
-@pytest.mark.parametrize("logical_width", [None, 8], ids=["physical", "logical"])
+@pytest.mark.parametrize(
+    "logical_width", [None, 8], ids=["physical", "logical"]
+)
 def test_lazy_fake_warp_rejects_caller_owned_storage_before_provider(
     frontend_name,
     logical_width,
@@ -1458,8 +1526,12 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
             runtime_arg_counts=frozenset({1}),
             runtime_factory_kwargs=(),
             runtime_factory_kw_prerequisites=(),
-            allowed_factory_kwargs=frozenset({"element_type", "inferred", "token"}),
-            required_factory_kwargs=frozenset({"element_type", "inferred", "token"}),
+            allowed_factory_kwargs=frozenset(
+                {"element_type", "inferred", "token"}
+            ),
+            required_factory_kwargs=frozenset(
+                {"element_type", "inferred", "token"}
+            ),
             accepts_temp_storage=False,
             scalar_binding_kwargs=frozenset(),
             runtime_offset_kwarg=None,
@@ -1496,7 +1568,9 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
     assert len(invocable_calls[0].args) == 3
     assert sum(target is cuda.shared.array for target, _ in calls) == 1
     sync_targets = {
-        target for target, _ in calls if target in {cuda.syncthreads, cuda.syncwarp}
+        target
+        for target, _ in calls
+        if target in {cuda.syncthreads, cuda.syncwarp}
     }
     assert sync_targets == {cuda.syncthreads}
     assert rewrite._temp_storage_global_plan.total_size == 24
@@ -1617,7 +1691,9 @@ def test_storage_free_provider_accepts_unused_temp_storage_descriptor():
     assert len(invocable_calls) == 1
     assert len(invocable_calls[0].args) == 1
     assert all(target is not cuda.shared.array for target, _ in calls)
-    assert all(target not in {cuda.syncthreads, cuda.syncwarp} for target, _ in calls)
+    assert all(
+        target not in {cuda.syncthreads, cuda.syncwarp} for target, _ in calls
+    )
     assert rewrite._temp_storage_global_plan is None
     assert rewrite._temp_storage_backing_var is None
 
@@ -1636,7 +1712,9 @@ def test_provider_metadata_must_match_registered_rewrite_contract(
 ):
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir._compiler import _operations
-    from cuda.coop.numba_mlir._compiler._rewrite_invocables import _InvocableRewrite
+    from cuda.coop.numba_mlir._compiler._rewrite_invocables import (
+        _InvocableRewrite,
+    )
     from cuda.coop.numba_mlir._compiler._rewrite_support import (
         CoopSinglePhaseRewriteError,
     )

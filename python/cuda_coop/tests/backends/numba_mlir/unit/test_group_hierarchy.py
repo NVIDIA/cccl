@@ -75,7 +75,9 @@ def _capture_group_method_provider(monkeypatch):
     return lowering, created
 
 
-def _resolved_provider_group(group, *, through_level="thread", block=(64, 1, 1)):
+def _resolved_provider_group(
+    group, *, through_level="thread", block=(64, 1, 1)
+):
     launch = LaunchFacts(
         exact_block_dim=block,
         exact_grid_dim=(2, 1, 1),
@@ -219,7 +221,9 @@ def test_block_warp_queries_reject_a_block_smaller_than_one_warp():
         _GroupCallPlanner(_state(query), _launch(block=(16, 1, 1))).run()
 
 
-def test_thread_parent_warp_queries_allow_a_block_smaller_than_one_warp(monkeypatch):
+def test_thread_parent_warp_queries_allow_a_block_smaller_than_one_warp(
+    monkeypatch,
+):
     lowering = _thread_group_lowering_module()
     captured = []
 
@@ -271,7 +275,9 @@ def _query_mapped_warp_sync_aligned():
     (_query_mapped_warp_sync, _query_mapped_warp_sync_aligned),
 )
 def test_mapped_warp_synchronization_requires_planner_owned_barriers(query):
-    with pytest.raises(NotImplementedError, match="planner-owned barrier lifetime"):
+    with pytest.raises(
+        NotImplementedError, match="planner-owned barrier lifetime"
+    ):
         _GroupCallPlanner(_state(query), _launch()).run()
 
 
@@ -480,15 +486,20 @@ def test_mapped_warp_queries_and_membership_do_not_construct_barrier_group(
     )
 
     assert len(created) == 3
-    assert "constexpr ::cuda::std::uint32_t group_warp_count = 3;" in rank.source
-    assert "constexpr ::cuda::std::uint32_t grouped_warp_count = 3;" in rank.source
+    assert (
+        "constexpr ::cuda::std::uint32_t group_warp_count = 3;" in rank.source
+    )
+    assert (
+        "constexpr ::cuda::std::uint32_t grouped_warp_count = 3;" in rank.source
+    )
     assert "(group_warp_rank % group_warp_count) * 32" in rank.source
     assert "4 / group_warp_count" in count.source
     assert "group_warp_rank < grouped_warp_count ? 1u : 0u" in membership.source
     assert membership.return_type is types.uint8
     for source in (rank.source, count.source, membership.source):
         assert (
-            "::cuda::experimental::coop::this_block group_parent{hierarchy};" in source
+            "::cuda::experimental::coop::this_block group_parent{hierarchy};"
+            in source
         )
         assert "barrier_synchronizer" not in source
         assert "::cuda::experimental::coop::generic_group group{" not in source
@@ -499,7 +510,9 @@ def test_mapped_warp_provider_rejects_synchronization(monkeypatch, operation):
     lowering, created = _capture_group_method_provider(monkeypatch)
     group = _resolved_provider_group(numba_coop.this_block().group_by(2))
 
-    with pytest.raises(NotImplementedError, match="planner-owned barrier lifetime"):
+    with pytest.raises(
+        NotImplementedError, match="planner-owned barrier lifetime"
+    ):
         lowering.make_group_method_invocable(
             group=group,
             operation=operation,
@@ -551,11 +564,14 @@ def test_group_method_provider_symbols_include_compile_context(monkeypatch):
     assert all(item["abi_transforms"] == () for item in created)
     assert all(item["storage_abi"] is StorageABI.NONE for item in created)
     assert all(
-        item["synchronization_scope"] is SynchronizationScope.NONE for item in created
+        item["synchronization_scope"] is SynchronizationScope.NONE
+        for item in created
     )
 
 
-def test_group_marker_detection_does_not_semantically_resolve_group_by(monkeypatch):
+def test_group_marker_detection_does_not_semantically_resolve_group_by(
+    monkeypatch,
+):
     def grouped(count):
         return _GLOBAL_BLOCK_GROUP.group_by(count)
 
@@ -585,7 +601,9 @@ def test_group_marker_detection_follows_merged_group_by_receivers(monkeypatch):
     assert has_group_markers(run_frontend(grouped))
 
 
-@pytest.mark.parametrize("api", (common_coop, numba_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (common_coop, numba_coop), ids=("common", "qualified")
+)
 def test_standalone_primitive_helper_is_rejected_without_requesting_launch(
     api, monkeypatch
 ):
@@ -601,7 +619,10 @@ def test_standalone_primitive_helper_is_rejected_without_requesting_launch(
         args=(),
         metadata={"targetoptions": {"device": True}},
     )
-    before = {label: tuple(block.body) for label, block in state.func_ir.blocks.items()}
+    before = {
+        label: tuple(block.body)
+        for label, block in state.func_ir.blocks.items()
+    }
 
     monkeypatch.setattr(
         _group_planner,
@@ -616,11 +637,14 @@ def test_standalone_primitive_helper_is_rejected_without_requesting_launch(
     ):
         CoopWholeFunctionPlanner(state).run()
     assert {
-        label: tuple(block.body) for label, block in state.func_ir.blocks.items()
+        label: tuple(block.body)
+        for label, block in state.func_ir.blocks.items()
     } == before
 
 
-@pytest.mark.parametrize("api", (common_coop, numba_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (common_coop, numba_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(("constructor_name", "kind"), _GROUP_KINDS)
 def test_planner_recognizes_the_full_group_descriptor_vocabulary(
     api,
