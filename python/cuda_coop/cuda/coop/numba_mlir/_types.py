@@ -1456,7 +1456,10 @@ class StatefulOperator(Parameter):
         )
 
     def __repr__(self) -> str:
-        return f"StatefulOperator(name={self.name!r}, state_dtype={self.state_dtype})"
+        return (
+            f"StatefulOperator(name={self.name!r}"
+            f", state_dtype={self.state_dtype})"
+        )
 
     def mangled_name(self):
         return self.name
@@ -1472,7 +1475,10 @@ class StatefulOperator(Parameter):
         )
         if self.ret_cpp_type == "storage_t":
             arg_decls.append("void*")
-        return f'extern "C" __device__ {return_type} {self.name}({", ".join(arg_decls)});'
+        return (
+            f'extern "C" __device__ {return_type} '
+            f"{self.name}({', '.join(arg_decls)});"
+        )
 
     def cpp_decl(self, name):
         return f"char *{name}_state"
@@ -2291,7 +2297,8 @@ class Algorithm:
                     )
                 elif isinstance(param, StatefulOperator):
                     body_lines.append(
-                        f"    char *{cast_name} = reinterpret_cast<char *>({name});"
+                        f"    char *{cast_name} = "
+                        f"reinterpret_cast<char *>({name});"
                     )
                 else:
                     pointee_type = numba_type_to_cpp(param.value_dtype)
