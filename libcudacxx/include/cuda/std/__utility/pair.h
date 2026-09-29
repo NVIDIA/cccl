@@ -57,6 +57,7 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
@@ -264,7 +265,9 @@ private:
   template <class _Tp, class... _Args>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __piecewise_reference_from_temporary_pack() noexcept
   {
-    if constexpr (sizeof...(_Args) == 1)
+    // The builtin is only valid for a reference element. Instantiating it for a value element
+    // removes the constructor during overload resolution.
+    if constexpr (sizeof...(_Args) == 1 && is_reference_v<_Tp>)
     {
       return reference_constructs_from_temporary_v<_Tp, _Args...>;
     }
@@ -466,8 +469,8 @@ public:
       : __base(static_cast<const _U1&&>(__p.first), static_cast<const _U2&&>(__p.second))
   {}
 
-  // pair(const pair<U>&&) beats the copy constructor for a const rvalue. NVCC rejects copy-list-initialization when that
-  // better match is explicit, instead of using the implicit copy constructor. Exclude only this explicit overload.
+  // pair(const pair<U>&&) beats the copy constructor for a const rvalue. NVCC rejects copy-list-initialization when
+  // that better match is explicit, instead of using the implicit copy constructor. Exclude only this explicit overload.
   // The implicit overload stays unconstrained: a same-type reference element, such as NonCopyable&&, is converted.
   template <class _U1,
             class _U2,
