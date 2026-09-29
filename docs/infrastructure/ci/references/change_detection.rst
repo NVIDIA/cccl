@@ -109,8 +109,9 @@ two. A project absent from both lists contributes no jobs.
 
 The additional ``HAS_NON_IGNORED_CHANGES`` output is ``true`` if any changed file
 survives the global ignore filter, or ``false`` otherwise. The pull-request workflow
-uses this to skip the optional MatX, PyTorch, and RAPIDS builds for documentation-only
-and other ignored changes. Their own workflows and build scripts belong to the internal
+uses this when exporting its existing ``matx_enabled``, ``pytorch_enabled``, and
+``rapids_enabled`` flags to skip optional builds for documentation-only and other
+ignored changes. Their own workflows and build scripts belong to the internal
 ``third_party`` project, so changes to those files still run third-party tests without
 adding CCCL matrix jobs. The existing third-party skip tags continue to apply.
 

@@ -54,22 +54,8 @@ jobs:
       rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
       matx_enabled: ${{ steps.export-flags.outputs.matx_enabled }}
       pytorch_enabled: ${{ steps.export-flags.outputs.pytorch_enabled }}
-      third_party_changes: ${{ steps.inspect-third-party-changes.outputs.HAS_NON_IGNORED_CHANGES }}
       branch_notes_dirt: ${{ steps.branch-notes-dirt.outputs.branch_notes_dirt }}
     steps:
-      - name: Export workflow flags
-        id: export-flags
-        env:
-          skip_tpt: ${{ contains(github.event.head_commit.message, '[bench-only]') || contains(github.event.head_commit.message, '[skip-tpt]') || contains(github.event.head_commit.message, '[skip-third-party-testing]') }}
-        run: |
-          output() { echo "$1=$2" | tee -a "${GITHUB_OUTPUT}"; }
-
-          output matrix_enabled  "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-matrix]') }}"
-          output vdc_enabled     "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-vdc]') }}"
-          output docs_enabled    "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-docs]') }}"
-          output rapids_enabled  "${{ !contains(github.event.head_commit.message, '[skip-rapids]')  && !fromJSON(env.skip_tpt) }}"
-          output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]')    && !fromJSON(env.skip_tpt) }}"
-          output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
@@ -95,6 +81,19 @@ jobs:
         run: |
           # This also runs when the main matrix is disabled with [skip-matrix].
           ./ci/inspect_changes.py --refs "${BASE_SHA}" "${GITHUB_SHA}"
+      - name: Export workflow flags
+        id: export-flags
+        env:
+          skip_tpt: ${{ steps.inspect-third-party-changes.outputs.HAS_NON_IGNORED_CHANGES != 'true' || contains(github.event.head_commit.message, '[bench-only]') || contains(github.event.head_commit.message, '[skip-tpt]') || contains(github.event.head_commit.message, '[skip-third-party-testing]') }}
+        run: |
+          output() { echo "$1=$2" | tee -a "${GITHUB_OUTPUT}"; }
+
+          output matrix_enabled  "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-matrix]') }}"
+          output vdc_enabled     "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-vdc]') }}"
+          output docs_enabled    "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-docs]') }}"
+          output rapids_enabled  "${{ !contains(github.event.head_commit.message, '[skip-rapids]')  && !fromJSON(env.skip_tpt) }}"
+          output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]')    && !fromJSON(env.skip_tpt) }}"
+          output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
       - name: Build benchmark dispatch matrix
         id: build-bench-matrix
         run: |
@@ -381,7 +380,6 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.rapids_enabled == 'true' &&
-        needs.build-workflow.outputs.third_party_changes == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
     secrets: inherit
@@ -399,7 +397,6 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.matx_enabled == 'true' &&
-        needs.build-workflow.outputs.third_party_changes == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
     secrets: inherit
@@ -414,7 +411,6 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pytorch_enabled == 'true' &&
-        needs.build-workflow.outputs.third_party_changes == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
     secrets: inherit
