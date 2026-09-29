@@ -269,6 +269,7 @@
 
 #include <cuda/__fp/fpmp.h>
 #include <cuda/__fp/fpmp_limits.h>
+#include <cuda/__fp/fptool_common.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>

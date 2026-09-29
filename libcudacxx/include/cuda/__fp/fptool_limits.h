@@ -49,6 +49,7 @@
 // they stay well-formed and readable; they do not describe the format in effect.
 */
 
+#include <cuda/__fp/fptool_common.h>
 #include <cuda/__fp/fptool_custom.h>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>

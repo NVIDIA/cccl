@@ -194,6 +194,7 @@
 //! @note Thread Safety: All operations are thread-safe (no shared mutable state) unless a
 //! setter runs concurrently with arithmetic.
 
+#include <cuda/__fp/fptool_common.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>

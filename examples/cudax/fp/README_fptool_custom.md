@@ -169,6 +169,18 @@ side.
 Using the type
 --------------
 
+The feature is opt-in. `fp_custom`'s runtime field sizes live in mutable variables at
+namespace scope, one copy shared by every translation unit, so an `#include` left behind
+after an experiment would put that state into a shipping binary. `<cuda/fptool>` therefore
+refuses to compile until the project asks for it:
+
+```bash
+nvcc -DCCCL_ENABLE_FPTOOL ...
+```
+
+Define it for the whole project rather than per file, since the state above is shared
+across translation units.
+
 ```c++
 #include <cuda/fptool>     // one header for the whole feature
 ```

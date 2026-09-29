@@ -80,6 +80,13 @@
 #include <cstdio>
 #include <exception>
 
+// fptool is opt-in: its types carry mutable state at namespace scope, shared across
+// translation units, so <cuda/fptool> refuses to compile until a project asks for it.
+// A real project passes -DCCCL_ENABLE_FPTOOL on the build line, which is the only way
+// to be sure every translation unit agrees; defining it here keeps the example to a
+// single file.
+#define CCCL_ENABLE_FPTOOL
+
 // One header for the whole feature: the analysis types and the math functions
 // that go with them.
 #include <cuda/fptool>

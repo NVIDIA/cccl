@@ -23,6 +23,10 @@
 
 // One header for the whole feature, math functions included, as <cuda/fpmp> is.
 
+// The CCCL_ENABLE_FPTOOL opt-in gate. First, so that a project which has not opted in is
+// told so before it pays to parse anything else.
+#include <cuda/__fp/fptool_common.h>
+
 // fp_custom: a drop-in `double` with a configurable exponent and mantissa size.
 #include <cuda/__fp/fptool_custom.h>
 // cuda::std::numeric_limits<> specialization for fp_custom.

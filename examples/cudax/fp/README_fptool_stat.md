@@ -103,6 +103,19 @@ since those internals use plain `fpmp2` and never reach the record.
 Running a measurement
 ---------------------
 
+The feature is opt-in. The counter record is a mutable object at namespace scope, one copy
+shared by every translation unit, and every instrumented operation updates it with an
+`atomicAdd` — so an `#include` left behind after a measurement would carry both the record
+and that traffic into a shipping binary. `<cuda/fptool>` therefore refuses to compile until
+the project asks for it:
+
+```bash
+nvcc -DCCCL_ENABLE_FPTOOL ...
+```
+
+Define it for the whole project rather than per file, since the record above is shared
+across translation units.
+
 ```c++
 #include <cuda/fptool>
 ```

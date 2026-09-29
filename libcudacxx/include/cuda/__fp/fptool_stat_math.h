@@ -42,6 +42,7 @@
 //! its `fpmp2` result converts implicitly, as in `fp32mp2_stat v = icdf(bits);`.
 
 #include <cuda/__fp/fpmp_math.h>
+#include <cuda/__fp/fptool_common.h>
 #include <cuda/__fp/fptool_stat.h>
 
 #include <cuda/std/__cccl/prologue.h>
