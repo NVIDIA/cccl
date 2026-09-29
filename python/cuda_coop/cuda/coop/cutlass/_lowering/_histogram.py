@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed CUB Histogram calls with deferred scratch and fresh counters."""
-
 import hashlib
 from dataclasses import dataclass, replace
 
