@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent numerical oracles for batched warp reductions."""
-
 import numpy as np
 import pytest
 

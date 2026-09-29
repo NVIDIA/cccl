@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Payload checks for batched warp reduction providers."""
-
 from ._parameters import _validate_common_numeric_dtype
 from ._rewrite_support import CoopSinglePhaseRewriteError, _dtype_values_match
 
