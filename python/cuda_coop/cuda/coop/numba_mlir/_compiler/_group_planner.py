@@ -45,6 +45,7 @@ from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
     _GROUP_METHODS,
     _NAME_COUNTER,
+    _PAYLOAD_DTYPE_LIKE,
     _PORTABLE_GROUP_CONSTRUCTORS,
     GroupRewriteError,
     _group_operation_name,
@@ -1032,6 +1033,66 @@ class _GroupCallPlanner:
             ir.Assign(ir.Expr.call(function_var, args, (), loc), payload, loc)
         )
         return payload
+
+    def _boxed_group_operand(
+        self,
+        statements: list[Any],
+        *,
+        operation: str,
+        value: ir.Var,
+        scope: Any,
+        loc: ir.Loc,
+    ) -> tuple[ir.Var, bool]:
+        """Represent a scalar as a one-item payload for array-only providers."""
+
+        is_array = self._array_operand_state(operation, value)
+        if is_array:
+            return value, True
+        payload = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_input",
+            prototype=value,
+            is_array=False,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        index = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_input_index",
+            value=0,
+        )
+        statements.append(ir.SetItem(payload, index, value, loc))
+        return payload, False
+
+    def _result_value(
+        self,
+        statements: list[Any],
+        *,
+        payload: ir.Var,
+        is_array: bool,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+    ) -> ir.Var:
+        """Return an array payload or unbox its sole scalar item."""
+
+        if is_array:
+            return payload
+        index = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_index",
+            value=0,
+        )
+        result = self._new_var(scope, loc, f"{stem}_scalar")
+        statements.append(
+            ir.Assign(ir.Expr.getitem(payload, index, loc), result, loc)
+        )
+        return result
 
     def _lower_root_operation(
         self, inst: ir.Assign, call: ir.Expr, function: Any, operation: str
