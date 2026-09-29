@@ -89,6 +89,10 @@ several operations:
      - ``ThreadData``; scalar inputs where the operation accepts them
      - Also accepts fixed local arrays in supported array operations;
        exposes ``local`` and ``shared`` memory namespaces
+   * - Reduction operator
+     - Built-in string operators such as ``"sum"`` and ``"max"``
+     - Also accepts supported Python operators and device callbacks;
+       callback restrictions depend on the operation and group
    * - Layout exchange
      - Blocked-to-striped and striped-to-blocked conversion
      - Also supports block scatter and warp-striped layouts, with optional
@@ -133,21 +137,104 @@ backend. Registration itself is a host-side operation.
 Groups: which threads cooperate
 -------------------------------
 
-
 A group defines the participants in an operation. ``this_block()`` uses
-all threads in the current block; ``this_warp()`` uses a complete physical
-warp of 32 threads. ``this_warp().group_by(8)`` partitions it into four
-consecutive logical warps of eight threads. The compiler obtains the block
-shape from the kernel launch; the group factories take no size arguments.
+the current block; ``this_warp()`` uses the current physical warp of 32
+threads. The compiler obtains the launch dimensions from the kernel launch.
+The group factories take no size arguments.
 
-Load and Store support blocks, physical warps, and logical warp widths of
-1, 2, 4, 8, 16, or 32. Warp operations require a block size divisible by 32.
-The partition width is a compile-time constant. Every member of a
-participating group must reach the same primitive invocation.
+The hierarchy vocabulary includes the following groups. Availability of a
+descriptor and availability of a primitive on that descriptor are separate
+parts of the API.
 
-The common API also declares other hierarchy descriptors. Their presence
-does not imply executable operations or queries on those scopes in this
-backend.
+.. list-table::
+   :header-rows: 1
+   :widths: 30 35 35
+
+   * - Expression
+     - Participants
+     - Current use
+   * - ``coop.this_thread()``
+     - One thread
+     - Hierarchy queries and full built-in Reduce
+   * - ``coop.this_warp()``
+     - One physical warp
+     - Load, Store, Exchange, Reduce
+   * - ``coop.this_warp().group_by(8)``
+     - Eight consecutive lanes within a physical warp
+     - Logical-warp forms of those operations
+   * - ``coop.this_block()``
+     - All threads in the block
+     - Load, Store, Exchange, Shuffle, Reduce
+   * - ``coop.this_block().group_by(2)``
+     - Two consecutive physical warps
+     - Mapped-group queries; limited Reduce support
+   * - ``coop.this_cluster()``
+     - Blocks in the launch's cluster
+     - Full built-in Reduce with supported hardware and cluster launch facts
+   * - ``coop.this_grid()``
+     - The kernel grid
+     - Hierarchy queries; grid primitives and grid synchronization are unavailable
+
+``group_by`` counts units in the next inner hierarchy level: threads for a
+warp parent, physical warps for a block parent. Thus
+``this_block().group_by(2)`` describes 64 threads. For logical Warp
+primitives, choose a width of 1, 2, 4, 8, 16, or 32. Use a block size
+divisible by 32 for these Warp operations; the last physical warp must be
+complete. Nested ``group_by`` calls are unsupported.
+
+The count and ``exhaustive`` flag are compile-time constants. By default,
+the partition must cover the parent exactly. A non-exhaustive partition
+can leave a remainder. For instance, partitioning a 96-thread block into
+pairs of warps leaves the last warp outside a complete group.
+``is_member()`` identifies participating threads. Guard queries that require
+membership for excluded threads, and check the primitive's participation
+requirements before using that guard around an operation.
+
+*Mapped groups of physical warps have narrower support than blocks and
+logical warps. Their explicit synchronization methods are unavailable.*
+*Use the block and logical-warp forms for the examples in this guide.*
+
+.. _coop-group-queries:
+
+Ranks and sizes
+^^^^^^^^^^^^^^^
+
+``group.rank()`` gives the calling thread's rank within the group;
+``group.count()`` gives the number of threads in it. Ranks start at zero.
+For a multidimensional block, the linear thread rank is
+``x + blockDim.x * (y + blockDim.y * z)``.
+
+The optional ``level`` argument lets you query the hierarchy in other units.
+For a 128-thread block:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Query
+     - Meaning
+   * - ``block.rank("thread")``
+     - Calling thread's linear rank, 0 through 127
+   * - ``block.count("thread")``
+     - 128 threads
+   * - ``block.rank("warp")``
+     - Calling warp's rank in the block, 0 through 3
+   * - ``block.count("warp")``
+     - Four physical warps
+   * - ``block.rank("grid")``
+     - This block's linear rank in the grid
+   * - ``block.count("grid")``
+     - Number of blocks in the grid
+
+Queries accept ``thread`` (also ``gpu_thread``), ``warp``, ``block``,
+``cluster``, and ``grid`` where the relationship is supported. Mapped groups
+can query their constituents and immediate physical parent. Queries above
+that parent are rejected.
+
+Results normally use unsigned 32-bit integers; queries involving the grid
+use unsigned 64-bit integers. ``rank_as`` and ``count_as`` take an explicit
+integer dtype, for example ``block.rank_as(types.int32)``. A signed result
+can be convenient for address calculations involving subtraction; choose a
+type large enough for the launch.
 
 
 .. _coop-participation:
@@ -167,8 +254,11 @@ missing input, as in the first kernel. An early return by some block threads
 has the same problem if the remaining threads later execute a block
 primitive.
 
-Use ``cuda.syncthreads()`` for explicit block synchronization in
-Numba kernels. Every thread in the block must reach the barrier.
+``group.sync()`` provides a barrier for supported groups. Every member must
+reach it. ``sync_aligned()`` has the additional requirement that the group
+be aligned and converged; use ``sync()`` unless your code establishes that
+stronger precondition. For explicit block synchronization in Numba kernels,
+``cuda.syncthreads()`` is also available.
 
 An operation's scratch-reuse barrier protects its temporary storage.
 Automatic synchronization inserts a trailing barrier after each call that
@@ -177,15 +267,14 @@ every member must still reach the primitive and its barrier.
 Arrange synchronization for your own shared-memory communication as well.
 Constructing a group or a ``ThreadData`` object does not synchronize threads.
 
-
 .. _coop-thread-data:
 
 ``ThreadData``: the part of a tile owned by one thread
 ------------------------------------------------------
 
-``coop.ThreadData(items_per_thread)`` gives each thread that many slots.
-With 128 threads, the group owns ``128 * items_per_thread`` values. Each thread
-indexes its own slots with ``items[i]``. Each thread accesses only its own slots.
+``coop.ThreadData(2, dtype=np.int32)`` gives each thread two integer slots.
+With 128 threads, the group owns 256 values. Each thread
+indexes its own slots with ``items[0]`` and ``items[1]``. Each thread accesses only its own slots.
 
 :class:`~cuda.coop.ThreadDataLike` names the common payload interface used
 in API signatures. It describes the item count, dtype, and indexed reads and
@@ -193,10 +282,8 @@ writes. Use :func:`~cuda.coop.ThreadData` to construct a payload for the active
 compiler backend. Other payload representations require support from that
 backend.
 
-The item count must be a positive compile-time integer. Pass
-``items_per_thread`` as a kernel argument; the compiler specializes the
-kernel for each supplied value. You can also use ``items.items_per_thread``
-as a loop bound:
+The item count must be a positive compile-time integer. You can use
+``items.items_per_thread`` as a loop bound:
 
 .. code-block:: python
 
@@ -260,19 +347,17 @@ Dtypes and storage
 The current numeric payload types are signed and unsigned integers of 8,
 16, 32, or 64 bits, and 32- or 64-bit floating point. Boolean, half
 precision, complex, and structured payloads are outside this contract.
+Bitwise operators require integer values.
 
-Leave the constructor's element type unspecified for normal use.
-Load infers it from the source, and Store can establish it from the destination.
-Supported typed assignments also provide the element type; use a typed scalar
-when your computation needs a particular width or precision. Inference follows
-the backend's supported producers and assignments. Conflicting type requirements
-are errors. See :ref:`element-type inference <coop-faq-thread-data-dtype>` for
-cases that need additional information.
+You may omit ``dtype`` when surrounding operations establish it:
+``items = coop.ThreadData(2)`` followed by Load infers the source dtype.
+If you initialize the payload yourself, specifying a dtype usually makes
+the code easier to follow. Conflicting dtype requirements are errors.
 
-Load writes into the payload supplied by the caller. Transpose Store
-algorithms may rearrange their input payload in place, as in CUB. Copy values
-before Store if they are needed later. Both operations return ``None``. Exchange and array Shuffle return fresh payloads,
-so their input values remain available afterwards.
+Load writes into the payload supplied by the caller. Store preserves its
+input. Both return ``None``. Exchange and array Shuffle return fresh payloads,
+so their input values remain available afterwards. Reduction returns a scalar, including when each thread
+contributes several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -286,7 +371,7 @@ Increasing the item count increases the amount of live data per thread.
 
 The optional ``alignment`` keyword requests a minimum power-of-two alignment
 in bytes when the compiler materializes the payload. For example,
-``coop.ThreadData(items_per_thread, alignment=16)`` requests at least
+``coop.ThreadData(4, dtype=np.float32, alignment=16)`` requests at least
 16-byte alignment. The compiler may strengthen it. This setting applies
 to payload storage; alignment of the input and output arrays remains a
 separate property.
@@ -305,8 +390,7 @@ For a physical or logical warp, it holds
 range before calling Load or Store. An out-of-range runtime count causes
 a device trap and invalidates the CUDA context.
 
-Load leaves invalid slots unspecified unless you pass ``oob_default``,
-even if those slots were initialized before Load.
+Load leaves invalid slots unchanged unless you pass ``oob_default``.
 Store leaves destination elements outside the valid prefix untouched.
 Supply an operation-appropriate identity when processing padded data:
 zero for sum, one for multiplication, and a suitable upper or lower bound
@@ -402,67 +486,6 @@ Adding ``group_origin`` to ``offset`` here would count it twice. This
 automatic origin applies to Warp Load and Store; ordinary array indexing
 in a kernel uses exactly the index you write.
 
-.. _coop-numba-device-helpers:
-
-Device helpers
---------------
-
-Use ``@cuda.jit(device=True)`` to put cooperative operations in a reusable
-helper. Pass a group and a ``ThreadData`` payload as arguments just as you
-would pass them to an operation in the kernel. The group still names the
-caller's participating threads; each thread passes its own payload. Changes
-to that payload's items are visible to the caller.
-
-Cooperative helpers must be inlined into the calling kernel before planning.
-Numba-CUDA-MLIR defaults device helpers to ``inline="always"``; the example
-spells it out on ``load_into``. ``inline="never"`` prevents this frontend
-inlining and is unsupported for a helper containing cooperative operations.
-Inlining during later optimization or device linking comes too late to
-supply the group and payload information this planner needs.
-
-This example uses nested helpers. ``load_tile`` creates a payload, passes it
-and the group to ``load_into``, and returns the initialized payload to the
-kernel. Load infers the element type from ``source``:
-
-.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_device_helpers_example.py
-   :language: python
-   :name: coop-pg-device-helpers
-   :start-after: # coop-pg-device-helpers-begin
-   :end-before: # coop-pg-device-helpers-end
-   :dedent: 4
-
-After inlining, the planner can see the helpers' operations, group arguments,
-and payload uses together. The calling kernel supplies the compiler context
-and launch dimensions. An inlined helper can also create or return a group.
-``coop.this_block()`` inside the helper refers to the same block as the
-caller. Group descriptors are resolved during compilation and have no
-separate runtime representation for an out-of-line device call.
-
-Every required group member must reach each cooperative call inside the
-helper, including through nested calls or loops. Moving an operation into a
-helper does not change its participation or synchronization requirements.
-Cooperative operations inside standalone operation callbacks remain
-unsupported; those callbacks may perform ordinary device computation.
-
-An ordinary ``inline="never"`` helper can index and modify a payload whose
-element type is already established. It receives a local array, so
-``items.items_per_thread`` is unavailable there. Continue using the original
-payload in the caller: returning the array from an out-of-line helper loses
-the payload metadata needed by subsequent common cooperative calls. Inline
-helpers that need that metadata or return a payload for those calls.
-
-Ordinary scalar helpers can also remain out of line. Their return values may
-need a typed assignment or another supported operation to establish a
-``ThreadData`` element type, even when the helper has an explicit signature.
-This is separate from cooperative helper inlining; see
-:ref:`element-type inference <coop-faq-thread-data-dtype>` for workarounds.
-
-Keep cooperative group mappings, operation selectors, and payload or storage
-shapes known at compile time. The current planner does not support
-``literal_unroll`` values that determine these properties. Write those calls
-with compile-time constants. Ordinary runtime loops with fixed cooperative
-shapes, and unrelated uses of ``literal_unroll``, remain supported.
-
 .. _coop-temp-storage:
 
 .. _tempstorage-scratch-used-during-a-collective:
@@ -499,6 +522,9 @@ allocation. Its contents are opaque; keep application values in
    * - Exchange and Shuffle
      - Compiler-owned scratch and reuse synchronization
 
+Reduce has its own group-dependent implementation and does not accept
+``temp_storage`` in the public signature.
+
 Capacity, alignment, and lifetime
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -510,21 +536,22 @@ capacity must be large enough for the operations using it. An explicit
 can strengthen it.
 Only ``size_in_bytes`` may be positional. The other options are keyword-only.
 
-``sharing="exclusive"`` gives distinct call sites separate slices. With
-``auto_sync=False``, those calls need no barrier solely to reuse each other's
-scratch. This uses more shared memory than sharing a slice. A loop reuses each
-call site's slice on its next iteration, so that reuse still needs a barrier.
-``sharing`` and ``auto_sync`` are independent controls; application data
-dependencies may require additional synchronization. See
-:ref:`the exclusive-storage FAQ <coop-faq-exclusive-storage>`.
-
-Omitted storage also participates in the backend's shared-memory plan and
-launch accounting. The compiler may reuse its scratch across compatible calls
-and inserts the required reuse barriers.
+``sharing="exclusive"`` gives distinct call sites separate slices. A loop can reach
+the same call site again and reuse its slice, so exclusive storage still needs
+reuse barriers. It can also consume more shared memory when several calls could
+otherwise share a slice. ``sharing`` controls allocation layout independently
+of ``auto_sync``.
 
 With the default ``auto_sync=False``, the kernel must provide reuse barriers.
-Put an explicit block barrier before a later call reuses the same scratch,
-including between loop iterations.
+For example, this kernel uses explicit block barriers after each storage-using
+call, including between loop iterations:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
+   :name: coop-pg-manual-scratch
+   :start-after: # coop-pg-manual-scratch-begin
+   :end-before: # coop-pg-manual-scratch-end
+   :dedent: 4
 
 Set ``auto_sync=True`` to insert automatic trailing barriers for scratch reuse.
 Without an explicit descriptor, the compiler synchronizes scratch automatically.
@@ -561,6 +588,59 @@ Extra shared memory can reduce resident blocks per multiprocessor. The
 default inferred allocation and unsized shared descriptor are sufficient
 for the kernels above; use an explicit capacity when you have a reason to
 reserve that amount of shared memory.
+
+Helpers and compile-time values
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Device helpers containing primitives must be inlined into the kernel so the
+planner can resolve their groups, descriptors, and launch dimensions. Default
+helper inlining is supported. A surviving non-inlined primitive helper, a
+descriptor escaping through a runtime object, or a primitive inside a
+standalone callback receives a compilation error. Move the primitive into the
+kernel or an inlined helper; callbacks may perform ordinary device computation.
+
+The MVP does not support ``literal_unroll`` values that determine cooperative
+groups, operation selectors, or payload and storage shapes. Write the affected
+calls explicitly with compile-time constants. Ordinary runtime loops with fixed
+cooperative shapes, and unrelated uses of ``literal_unroll``, remain supported.
+
+.. _coop-reductions:
+
+Reduction and result ownership
+------------------------------
+
+``coop.sum`` and ``coop.reduce`` combine the group's inputs into a scalar.
+For a ``ThreadData`` input, every item in every thread contributes.
+The default ``broadcast=True`` makes the result available to every group
+member. With ``broadcast=False``, consume it only on group rank zero.
+All required members still execute the reduction.
+
+The :doc:`Reduce visualization <visualizations/reduce>` shows which values
+contribute and which group members receive a defined result.
+
+This kernel writes one sum per block, including a partial final tile:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
+   :name: coop-pg-reduce
+   :start-after: # coop-pg-reduce-begin
+   :end-before: # coop-pg-reduce-end
+   :dedent: 4
+
+The group-rank test surrounds only the result write. Moving the reduction
+into that branch would leave the other threads out of a primitive.
+
+For another built-in operator, use ``coop.reduce`` with ``binary_op`` set
+to ``"min"``, ``"max"``, ``"multiplies"``, ``"bit_and"``,
+``"bit_or"``, or ``"bit_xor"``. Choose the padding value accordingly.
+Qualified custom Reduce callbacks have narrower group and result contracts;
+check their overloads before replacing a built-in operation.
+
+Partial scalar Reduce also accepts ``valid_items`` on block and warp
+groups with ``broadcast=False``. There it counts contributing threads,
+must be at least one, and requires a scalar input. The example instead
+pads a multi-item Load and reduces the full payload. These two techniques
+have different valid-count contracts.
 
 
 Checking and tuning a kernel
