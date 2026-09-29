@@ -97,6 +97,8 @@ cat "$version_override_file"
 # Configure and build
 rm -rf build
 
+# MatX includes <cub/cub.cuh> directly and builds with -Werror, so disable CUB's compile-time
+# warning about including the umbrella header to avoid breaking the build.
 SCCACHE_NO_DIST_COMPILE=1 cmake \
   -B build -S MatX -G Ninja \
   "-DCMAKE_CUDA_ARCHITECTURES=75;120" \
@@ -104,7 +106,9 @@ SCCACHE_NO_DIST_COMPILE=1 cmake \
   -DMATX_BUILD_TESTS=ON \
   -DMATX_BUILD_EXAMPLES=ON \
   -DMATX_BUILD_BENCHMARKS=ON \
-  -DMATX_EN_CUTENSOR=ON
+  -DMATX_EN_CUTENSOR=ON \
+  -DCMAKE_CXX_FLAGS=-DCCCL_DISABLE_CUB_CUH_COMPILE_TIME_WARNING \
+  -DCMAKE_CUDA_FLAGS=-DCCCL_DISABLE_CUB_CUH_COMPILE_TIME_WARNING
 
 # Disabled because `cmake --build -j ""` is invalid, but so is
 # `cmake --build -j8`. CMake expects a space between `-j` and
