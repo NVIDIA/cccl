@@ -56,7 +56,7 @@ def TempStorage(
 
     Examples
     --------
-    Reuse one descriptor for transpose Load and Store.
+    Reuse one descriptor for transpose Load, Scan, and transpose Store.
     The loop processes two independent tiles. Explicit ``auto_sync=True``
     enables barriers between operations and between iterations.
 

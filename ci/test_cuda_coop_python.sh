@@ -220,7 +220,7 @@ PY
     for example in "${examples[@]}"; do
       case "${example##*/}" in
         source_dumps.py)
-          for source_dump_mode in direct transpose; do
+          for source_dump_mode in direct transpose scan; do
             python -I "$example" "$source_dump_mode"
           done
           ;;

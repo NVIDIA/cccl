@@ -81,7 +81,7 @@ operands. These arguments are positional-only. Options such as
    leader_total = coop.sum(block, value, broadcast=False)
    coop.load(block, source, items, algorithm="direct", valid_items=n)
 
-Reduction usually needs just a group and a value. Load and Store
+Reduction and Scan usually need just a group and a value. Load and Store
 add a source or destination. This short operand list keeps primitive
 calls compact inside a kernel, while named options make choices such as
 partial-tile handling and result broadcasting explicit. New optional
@@ -101,7 +101,7 @@ allows callers to omit optional arguments, such as unused value buffers in
 a key-only sort.
 
 For ``cuda.coop``, the group already describes the participating threads,
-and Reduction returns its result directly.
+and operations such as Reduction and Scan return their results directly.
 The positional operands and named controls fit that smaller call shape.
 When extending an API, keep the operand order consistent and use
 keyword-only parameters for additional options.
@@ -208,18 +208,23 @@ Kernels and their generated C++
    </style>
 
 The following pairs use source captured while compiling real kernels. Each
-kernel runs as one block of 128 threads and copies 256 ``int32`` values,
-with two values per thread.
+kernel runs as one block of 128 threads. The copy kernels process 256
+``int32`` values, with two values per thread; the Scan processes 128 values,
+one per thread.
 
 The C++ excerpts retain the emitted types, casts, and calls. Generated
 identifiers have been shortened to names such as ``load_impl`` and
 ``load_abi``, and whitespace has been formatted to fit the page. The copy
 excerpts show the no-offset Load helper and its ABI wrapper. Their full
-translation units also contain Store and offset overloads.
+translation units also contain Store and offset overloads. The Scan excerpt
+shows the helper that accepts a scratch pointer.
 
-These excerpts were captured with Numba-CUDA-MLIR 0.5.1, targeting compute
-capability 12.0. Generated names and emitted overloads can change with the
-compiler, toolkit, and source checkout.
+The :download:`original captures <source_dumps/captures.zip>` contain all
+three unmodified translation units and a manifest with their checksums and
+the identifier substitutions used here. They were captured with
+Numba-CUDA-MLIR 0.5.1, targeting compute capability 12.0. Generated names
+and the set of emitted overloads can change with the compiler, toolkit, and
+source checkout.
 
 Capturing the source yourself
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -236,6 +241,9 @@ dependencies installed:
 
    export CUDA_COOP_SOURCE_DUMP_DIR="$PWD/coop-source-dumps/transpose"
    python python/cuda_coop/examples/numba_mlir/source_dumps.py transpose
+
+   export CUDA_COOP_SOURCE_DUMP_DIR="$PWD/coop-source-dumps/scan"
+   python python/cuda_coop/examples/numba_mlir/source_dumps.py scan
 
 Each command launches the selected kernel, checks its result against NumPy,
 and writes ``cuda_coop_numba_mlir_<hash>.cu`` under the selected directory.
@@ -323,6 +331,40 @@ inserts the barriers in the Python kernel's lowered code. The full source
 also contains ``_alloc`` variants with local ``__shared__`` storage and
 ``__syncthreads()``; those are separate entry points.
 
+Scan with a Python device operator
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. grid:: 1 1 2 2
+   :gutter: 3
+   :class-container: coop-shim-pair
+
+   .. grid-item::
+
+      Python kernel and operator
+
+      .. literalinclude:: ../../../python/cuda_coop/examples/numba_mlir/source_dumps.py
+         :language: python
+         :start-after: # docs: start dump-scan
+         :end-before: # docs: end dump-scan
+
+   .. grid-item::
+
+      Generated C++: Scan excerpt
+
+      .. literalinclude:: source_dumps/scan.cpp.txt
+         :language: cpp
+         :start-after: // excerpt-begin
+
+The generated source declares ``maximum_device`` and wraps its call in a
+C++ lambda for CUB's ``InclusiveScan``. Numba compiles the Python
+``maximum`` function into a separate LTO-IR input that supplies the declared
+device symbol. Its Python body therefore has no C++ definition in this dump.
+
+The scalar input arrives by value as ``input``. The wrapper creates
+references for CUB's input and output arguments, invokes Scan, and writes
+the result through ``__ret``. It still returns zero as the ABI status.
+Although this Python call omits ``temp_storage``, the planner can supply
+compiler-owned scratch through the same pointer-taking interface.
 
 Recovering the specialization
 -----------------------------
@@ -474,12 +516,12 @@ implementation used by the backends. The package name describes that
 implementation layer; the user-facing API is called the common API.
 
 A :term:`family` groups related primitives and their implementation. The
-Load/Store family has shared declarations in ``_core/api/load_store.py``
-and ``load_store.pyi``, semantic descriptions in
-``_core/group/load_store.py``, and Numba-specific entry points in
-``numba_mlir/_group_load_store.py`` and ``_group_load_store.pyi``. Compiler
-analysis and lowering have their own Load/Store modules. A family spans
-common operations and qualified extensions.
+Scan family, for example, has shared API declarations in
+``_core/api/scan.py`` and ``scan.pyi``, semantic descriptions in
+``_core/group/scan.py``, and Numba-specific entry points in
+``numba_mlir/_group_scan.py`` and ``_group_scan.pyi``. Compiler analysis and
+lowering have their own Scan modules. A family can span several modules
+and include both common operations and qualified extensions.
 
 The shared core describes what a primitive means and which C++ implementation
 can perform it. It does not import Numba or invoke a compiler. The Numba
@@ -567,8 +609,8 @@ The result contracts preserve the following public behavior:
 * Load and Store return ``None``. Load fills the supplied output in place.
   Store preserves its input, including when its CUB implementation reorders
   data internally.
-* Exchange returns a fresh payload. Its input remains available to
-  subsequent kernel code.
+* Exchange and array Scan return a fresh payload. Their inputs remain
+  available to subsequent kernel code.
 * Reduce returns a scalar. The default ``broadcast=True`` makes the result
   available throughout the group. With ``broadcast=False``, only group
   rank zero has a defined result, although every required thread must
@@ -582,7 +624,7 @@ payload around the provider call.
 The qualified namespace accepts additional compiler-specific values, such
 as local-array payloads where supported. Type support is still checked by
 each primitive. An ABI helper for aggregate values does not imply that
-public payload operations accept arbitrary structures. The current
+public Load, Reduce, or Scan accepts arbitrary structures. The current
 common payload APIs require their supported numeric dtypes.
 
 Shared memory and reuse
@@ -671,12 +713,91 @@ the device limit, moving the user buffer to global memory, or using separate
 kernels. Passing coexistence tests against a development compiler alone does
 not remove the compatibility guard.
 
-These controls are operation-specific. Warp Load/Store uses
+These controls are operation-specific. Warp Load/Store and Warp Scan use
 compiler-owned storage and reject an explicit ``TempStorage``. Exchange
 and Shuffle also manage their own scratch in the current API. CUDAX
 Reduce manages scratch inside its generated C++ implementation, so an
 absence of a leading scratch pointer does not mean the reduction uses no
 shared memory.
+
+Adding a Scan
+-------------
+
+With Load and Store connected, we can put a primitive between them:
+
+.. code-block:: python
+
+   @cuda.jit
+   def scan_tile(source, destination):
+       block = coop.this_block()
+       items = coop.ThreadData(2, dtype=np.int32)
+       coop.load(block, source, items)
+       scanned = coop.exclusive_sum(block, items)
+       coop.store(block, destination, scanned)
+
+
+   source = np.arange(256, dtype=np.int32)
+   destination = np.zeros_like(source)
+   scan_tile[1, 128](source, destination)
+   cuda.synchronize()
+
+   expected = np.zeros_like(source)
+   expected[1:] = np.cumsum(source[:-1], dtype=np.int32)
+   np.testing.assert_array_equal(destination, expected)
+
+The blocked arrangement defines the scan order across the tile. The
+result is a new two-item payload for each thread. Block Scan uses CUB
+temporary storage even though this example's Load and Store do not.
+
+The :doc:`Scan visualization <visualizations/scan>` shows the ordered
+prefixes and per-thread results for this operation.
+
+This computes one block's prefix sum. Processing multiple blocks requires
+the caller to assign separate tiles and, for a device-wide scan, arrange
+the carry between them. Merely increasing the grid size does not do that.
+
+Python operators and prefix state
+---------------------------------
+
+A built-in sum can use a C++ operator directly. A Python-defined operator
+adds another compilation input. This example uses the qualified namespace,
+which supports stateless Python Scan operators:
+
+.. code-block:: python
+
+   import cuda.coop.numba_mlir as numba_coop
+
+
+   @cuda.jit(device=True)
+   def maximum(lhs, rhs):
+       return lhs if lhs > rhs else rhs
+
+
+   @cuda.jit
+   def prefix_maximum(source, destination):
+       block = numba_coop.this_block()
+       value = source[cuda.threadIdx.x]
+       result = numba_coop.inclusive_scan(block, value, scan_op=maximum)
+       destination[cuda.threadIdx.x] = result
+
+
+   source = np.array([3, 1, 4, 2] * 32, dtype=np.int32)
+   destination = np.zeros_like(source)
+   prefix_maximum[1, 128](source, destination)
+   cuda.synchronize()
+   np.testing.assert_array_equal(destination, np.maximum.accumulate(source))
+
+Once the operand dtype is known, the backend compiles ``maximum`` with
+``cuda.compile(..., output="ltoir", cc=...)`` for the same target as the
+provider. The generated C++ declares its device symbol and creates a C++
+callable that invokes it. CUB receives that callable as its scan operator.
+The operator's LTO-IR joins the provider's link inputs. No Python callback
+runs while the GPU executes the scan.
+
+This uses the same general technique as Python operators in
+``cuda.compute``. The operator must satisfy the primitive's mathematical
+contract, including associativity, and the supported input and output
+dtype contract. Successful compilation cannot establish associativity.
 
 
 Activation and compilation reuse
@@ -1135,7 +1256,7 @@ that should use it. Work out the payload arrangement, participation,
 output ownership, and scratch lifetime before writing its public wrapper.
 These choices determine which signatures the backend can implement.
 
-The existing Load/Store family shows the usual path:
+The existing Load/Store and Scan families show the usual path:
 
 #. Add the shared signature and type declarations in ``_core/api/`` when
    the operation belongs in the common API. Put compiler-specific

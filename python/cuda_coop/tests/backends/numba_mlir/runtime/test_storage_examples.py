@@ -54,7 +54,7 @@ def test_temp_storage_example():
     from cuda import coop
 
     @cuda.jit
-    def copy_tiles(source, destination):
+    def scan_tiles(source, destination):
         block = coop.this_block()
         scratch = coop.TempStorage(alignment=16, auto_sync=True)
         items = coop.ThreadData(2, dtype=np.int32)
@@ -68,10 +68,11 @@ def test_temp_storage_example():
                 algorithm="transpose",
                 temp_storage=scratch,
             )
+            prefixes = coop.exclusive_sum(block, items, temp_storage=scratch)
             coop.store(
                 block,
                 destination,
-                items,
+                prefixes,
                 offset=offset,
                 algorithm="transpose",
                 temp_storage=scratch,
@@ -80,6 +81,8 @@ def test_temp_storage_example():
     values = (np.arange(512) % 7).astype(np.int32)
     source = cuda.to_device(values)
     destination = cuda.device_array_like(source)
-    copy_tiles[1, 128](source, destination)
-    np.testing.assert_array_equal(destination.copy_to_host(), values)
+    scan_tiles[1, 128](source, destination)
+    tiles = values.reshape(2, 256)
+    expected = (np.cumsum(tiles, axis=1) - tiles).ravel()
+    np.testing.assert_array_equal(destination.copy_to_host(), expected)
     # temp-storage-example-end

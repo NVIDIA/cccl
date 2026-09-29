@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for the portable scan family."""
+"""Typing contract for the common scan family."""
 
 from typing import Literal, overload
 
