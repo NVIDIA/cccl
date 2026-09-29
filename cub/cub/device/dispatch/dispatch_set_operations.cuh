@@ -15,9 +15,9 @@
 
 #include <cub/agent/agent_set_operations.cuh>
 #include <cub/detail/cc_dispatch.cuh>
-#include <cub/device/dispatch/kernels/kernel_scan.cuh> // DeviceCompactInitKernel
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_set_operations.cuh>
-#include <cub/util_arch.cuh> // current_tuning_cc
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
@@ -25,10 +25,11 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/cmath> // cuda::ceil_div
+#include <cuda/cmath>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__execution/env.h> // cuda::std::execution::env, __query_or
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/pair.h>
 
@@ -99,7 +100,6 @@ __launch_bounds__(device_policy_getter<PolicySelector, current_tuning_cc().get()
                  SetOp,
                  NumSelectedIteratorT>;
 
-  // Back the agent's temporary storage with shared memory when it fits, otherwise with virtual (global) shared memory.
   using vsmem_helper_t = vsmem_helper_impl<agent_t>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
   auto& storage = vsmem_helper_t::get_temp_storage(static_temp_storage, global_temp_storage);
@@ -149,15 +149,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   SetOp set_op,
   NumSelectedIteratorT d_num_selected_out,
   cudaStream_t stream,
-  const TuningEnvT& tuning_env           = {},
+  const TuningEnvT&                      = {},
   KernelLauncherFactory launcher_factory = {})
 {
   using scan_tile_state_t = ScanTileState<Offset>;
 
-  // Resolve the tuning policy from the (optional) tuning environment, defaulting to the type-derived selector.
+  // Resolve the tuning policy selector from the (optional) tuning environment, defaulting to the type-derived selector.
   using default_policy_selector = policy_selector_from_types<KeysIt1, ValuesIt1, KeysIt2, ValuesIt2, Offset>;
-  auto policy_selector    = ::cuda::std::execution::__query_or(tuning_env, SetOpsPolicy{}, default_policy_selector{});
-  using policy_selector_t = decltype(policy_selector);
+  using policy_selector_t =
+    ::cuda::std::decay_t<::cuda::std::execution::__query_result_or_t<TuningEnvT, SetOpsPolicy, default_policy_selector>>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(set_ops_policy_selector<policy_selector_t>, "invalid policy selector for set-ops dispatch");
 #endif // _CCCL_HAS_CONCEPTS()
@@ -168,7 +168,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+  return dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
     using agent_t =
       agent_set_op<decltype(policy_getter),
                    KeysIt1,
@@ -181,9 +181,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                    CompareOp,
                    SetOp,
                    NumSelectedIteratorT>;
-    const auto policy        = policy_getter();
-    const int block_threads  = policy.threads_per_block;
-    const int items_per_tile = block_threads * policy.items_per_thread - 1;
+    constexpr auto policy        = decltype(policy_getter){}();
+    constexpr int block_threads  = policy.threads_per_block;
+    constexpr int items_per_tile = block_threads * policy.items_per_thread - 1;
 
     const Offset keys_total = num_keys1 + num_keys2;
     const Offset num_tiles  = ::cuda::ceil_div(keys_total, Offset{items_per_tile});

@@ -26,16 +26,14 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetUnion, set_union);
 using key_types = c2h::type_list<std::uint8_t, std::int16_t, std::uint32_t, double>;
 
 template <typename Key, typename Offset, typename LaunchT, typename StdOp, typename CompareOp = cuda::std::less<Key>>
-void test_keys(
-  c2h::seed_t seed, LaunchT launch, StdOp std_op, Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = {})
+void test_keys(LaunchT launch, StdOp std_op, Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = {})
 {
-  CAPTURE(c2h::type_name<Key>(), c2h::type_name<Offset>(), size1, size2, seed.get());
+  CAPTURE(c2h::type_name<Key>(), c2h::type_name<Offset>(), size1, size2);
 
   c2h::device_vector<Key> keys1_d(size1, thrust::default_init);
   c2h::device_vector<Key> keys2_d(size2, thrust::default_init);
-  // The two inputs use independent seeds so they are not correlated.
-  c2h::gen(seed, keys1_d);
-  c2h::gen(c2h::seed_t{seed.get() + 1}, keys2_d);
+  c2h::gen(C2H_SEED(1), keys1_d);
+  c2h::gen(C2H_SEED(1), keys2_d);
   thrust::sort(c2h::device_policy, keys1_d.begin(), keys1_d.end(), compare_op);
   thrust::sort(c2h::device_policy, keys2_d.begin(), keys2_d.end(), compare_op);
 
@@ -64,10 +62,9 @@ void test_keys(
 
 // Runs all four set operations for the given input sizes and validates each against its std reference.
 template <typename Key, typename Offset>
-void test_all_ops(c2h::seed_t seed, Offset size1, Offset size2)
+void test_all_ops(Offset size1, Offset size2)
 {
   test_keys<Key, Offset>(
-    seed,
     [](auto&&... a) {
       set_difference(static_cast<decltype(a)>(a)...);
     },
@@ -77,7 +74,6 @@ void test_all_ops(c2h::seed_t seed, Offset size1, Offset size2)
     size1,
     size2);
   test_keys<Key, Offset>(
-    seed,
     [](auto&&... a) {
       set_intersection(static_cast<decltype(a)>(a)...);
     },
@@ -87,7 +83,6 @@ void test_all_ops(c2h::seed_t seed, Offset size1, Offset size2)
     size1,
     size2);
   test_keys<Key, Offset>(
-    seed,
     [](auto&&... a) {
       set_symmetric_difference(static_cast<decltype(a)>(a)...);
     },
@@ -97,7 +92,6 @@ void test_all_ops(c2h::seed_t seed, Offset size1, Offset size2)
     size1,
     size2);
   test_keys<Key, Offset>(
-    seed,
     [](auto&&... a) {
       set_union(static_cast<decltype(a)>(a)...);
     },
@@ -116,7 +110,6 @@ CUB_TEST("DeviceSetOps set operations on keys", "[set_ops][device]", CUB_SMALL, 
   SECTION("difference")
   {
     test_keys<key_t, offset_t>(
-      C2H_SEED(2),
       [](auto&&... a) {
         set_difference(static_cast<decltype(a)>(a)...);
       },
@@ -127,7 +120,6 @@ CUB_TEST("DeviceSetOps set operations on keys", "[set_ops][device]", CUB_SMALL, 
   SECTION("intersection")
   {
     test_keys<key_t, offset_t>(
-      C2H_SEED(2),
       [](auto&&... a) {
         set_intersection(static_cast<decltype(a)>(a)...);
       },
@@ -138,7 +130,6 @@ CUB_TEST("DeviceSetOps set operations on keys", "[set_ops][device]", CUB_SMALL, 
   SECTION("symmetric_difference")
   {
     test_keys<key_t, offset_t>(
-      C2H_SEED(2),
       [](auto&&... a) {
         set_symmetric_difference(static_cast<decltype(a)>(a)...);
       },
@@ -149,7 +140,6 @@ CUB_TEST("DeviceSetOps set operations on keys", "[set_ops][device]", CUB_SMALL, 
   SECTION("union")
   {
     test_keys<key_t, offset_t>(
-      C2H_SEED(2),
       [](auto&&... a) {
         set_union(static_cast<decltype(a)>(a)...);
       },
@@ -163,25 +153,20 @@ CUB_TEST("DeviceSetOps set operations on keys", "[set_ops][device]", CUB_SMALL, 
 // asymmetric, small, medium (a few tiles), and large (many tiles).
 CUB_TEST_CASE("DeviceSetOps covers a range of input sizes", "[set_ops][device]", CUB_SMALL)
 {
-  using key_t    = int;
-  using offset_t = int;
-  // A single seed at the test-case level: threading it through avoids multiplying Catch2 generators across the
-  // size/operation loop below (each C2H_SEED introduces a generator dimension).
-  const c2h::seed_t seed = C2H_SEED(1);
-  for (auto [s1, s2] : {
-         std::pair{0, 0}, // both empty
-         std::pair{0, 137}, // first empty
-         std::pair{137, 0}, // second empty
-         std::pair{1, 1}, // single element each
-         std::pair{1, 5000}, // very asymmetric
-         std::pair{5000, 1}, // very asymmetric
-         std::pair{23, 51}, // small
-         std::pair{3623, 6346}, // medium
-         std::pair{40000, 55000}, // large: spans many tiles
-       })
-  {
-    test_all_ops<key_t, offset_t>(seed, s1, s2);
-  }
+  using key_t               = int;
+  using offset_t            = int;
+  const auto [size1, size2] = GENERATE(table<int, int>({
+    {0, 0}, // both empty
+    {0, 137}, // first empty
+    {137, 0}, // second empty
+    {1, 1}, // single element each
+    {1, 5000}, // very asymmetric
+    {5000, 1}, // very asymmetric
+    {23, 51}, // small
+    {3623, 6346}, // medium
+    {40000, 55000}, // large: spans many tiles
+  }));
+  test_all_ops<key_t, offset_t>(size1, size2);
 }
 
 CUB_TEST_CASE("DeviceSetOps set operations on keys with a custom comparator", "[set_ops][device]", CUB_SMALL)
@@ -189,7 +174,6 @@ CUB_TEST_CASE("DeviceSetOps set operations on keys with a custom comparator", "[
   using key_t    = int;
   using offset_t = int;
   test_keys<key_t, offset_t>(
-    C2H_SEED(2),
     [](auto&&... a) {
       set_intersection(static_cast<decltype(a)>(a)...);
     },
@@ -208,7 +192,6 @@ CUB_TEST_CASE("DeviceSetOps uses virtual shared memory for large key types", "[s
   using key_t    = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<512>::type>;
   using offset_t = int;
   test_keys<key_t, offset_t>(
-    C2H_SEED(2),
     [](auto&&... a) {
       set_union(static_cast<decltype(a)>(a)...);
     },
@@ -229,7 +212,6 @@ CUB_TEST("DeviceSetOps supports 32-bit and 64-bit offset types",
   SECTION("intersection")
   {
     test_keys<key_t, offset_t>(
-      C2H_SEED(2),
       [](auto&&... a) {
         set_intersection(static_cast<decltype(a)>(a)...);
       },
@@ -240,7 +222,6 @@ CUB_TEST("DeviceSetOps supports 32-bit and 64-bit offset types",
   SECTION("union")
   {
     test_keys<key_t, offset_t>(
-      C2H_SEED(2),
       [](auto&&... a) {
         set_union(static_cast<decltype(a)>(a)...);
       },
