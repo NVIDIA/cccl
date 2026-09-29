@@ -212,7 +212,6 @@ def _plan(
     requirements = _build_execution_requirements(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
         uniform_arguments=("begin_bit", "end_bit"),
