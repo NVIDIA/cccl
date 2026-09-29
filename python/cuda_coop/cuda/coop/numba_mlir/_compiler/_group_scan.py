@@ -84,12 +84,14 @@ class _ScanPlanning:
                 _COMMON_MODES,
             )
         if "algorithm" in bound.arguments:
-            bound.arguments["algorithm"] = self._context.validate_common_selector(
-                operation,
-                "algorithm",
-                bound.arguments["algorithm"],
-                _COMMON_ALGORITHMS,
-                allow_none=True,
+            bound.arguments["algorithm"] = (
+                self._context.validate_common_selector(
+                    operation,
+                    "algorithm",
+                    bound.arguments["algorithm"],
+                    _COMMON_ALGORITHMS,
+                    allow_none=True,
+                )
             )
 
     @staticmethod
@@ -162,7 +164,8 @@ class _ScanPlanning:
         binding = self._context.planning_binding(value)
         if mode == "inclusive" and binding.kind is not BindingKind.OMITTED:
             raise ValueError(
-                "cuda.coop.numba_mlir inclusive scans do not accept initial_value"
+                "cuda.coop.numba_mlir inclusive "
+                "scans do not accept initial_value"
             )
         if binding.kind is BindingKind.OMITTED:
             return binding, None
@@ -221,12 +224,14 @@ class _ScanPlanning:
         if not has_prefix:
             if has_state:
                 raise ValueError(
-                    "cuda.coop.numba_mlir scan prefix_state requires a prefix callback"
+                    "cuda.coop.numba_mlir scan "
+                    "prefix_state requires a prefix callback"
                 )
             return None, None, None
         if group.kind != "block":
             raise NotImplementedError(
-                "cuda.coop.numba_mlir scan prefix callbacks apply only to block groups"
+                "cuda.coop.numba_mlir scan prefix "
+                "callbacks apply only to block groups"
             )
 
         callback = self._context.constant(prefix_ref)
@@ -235,7 +240,8 @@ class _ScanPlanning:
         if isinstance(callback, StatefulFunction):
             if not has_state:
                 raise ValueError(
-                    "cuda.coop.numba_mlir scan StatefulFunction prefix callbacks "
+                    "cuda.coop.numba_mlir scan "
+                    "StatefulFunction prefix callbacks "
                     "require a third positional prefix_state argument"
                 )
             if not self._context.is_array(operation, state):
@@ -339,7 +345,8 @@ class _ScanPlanning:
     ) -> GroupLoweringPlan:
         if plan.target is not GroupLoweringTarget.CUB_BLOCK:
             raise ValueError(
-                "cuda.coop.numba_mlir scan temp_storage applies only to block groups"
+                "cuda.coop.numba_mlir scan temp_storage "
+                "applies only to block groups"
             )
         storage = plan.temp_storage
         synchronization = plan.synchronization
@@ -386,7 +393,9 @@ class _ScanPlanning:
         from .._lowering._scan import _block_scan_algorithm, _scan_mode
 
         mode = _scan_mode(self._context.constant(mode))
-        scan_op = None if raw_scan_op is None else self._context.constant(raw_scan_op)
+        scan_op = (
+            None if raw_scan_op is None else self._context.constant(raw_scan_op)
+        )
 
         value = bound.arguments["value"]
         is_array = self._context.is_array(operation, value)
@@ -406,7 +415,8 @@ class _ScanPlanning:
             )
         if group.kind in {"warp", "threads_within_warp"} and is_array:
             raise TypeError(
-                "cuda.coop.numba_mlir WarpScan supports one scalar value per lane"
+                "cuda.coop.numba_mlir WarpScan "
+                "supports one scalar value per lane"
             )
         items_per_thread = 1
         if is_array:
@@ -453,7 +463,8 @@ class _ScanPlanning:
             and prefix_operator is None
         ):
             raise ValueError(
-                "cuda.coop.numba_mlir non-sum exclusive scans require initial_value"
+                "cuda.coop.numba_mlir non-sum "
+                "exclusive scans require initial_value"
             )
         aggregate_raw = bound.arguments.get("aggregate_output")
         aggregate = self._aggregate_output(operation, aggregate_raw, dtype)
@@ -467,7 +478,8 @@ class _ScanPlanning:
             )
         if prefix_operator is not None and aggregate:
             raise ValueError(
-                "cuda.coop.numba_mlir scan aggregate_output and prefix callbacks "
+                "cuda.coop.numba_mlir scan "
+                "aggregate_output and prefix callbacks "
                 "are mutually exclusive"
             )
 
@@ -489,7 +501,9 @@ class _ScanPlanning:
         algorithm_raw = bound.arguments.get("algorithm")
         algorithm = None
         if not self._context.is_none(algorithm_raw):
-            algorithm = _block_scan_algorithm(self._context.constant(algorithm_raw))
+            algorithm = _block_scan_algorithm(
+                self._context.constant(algorithm_raw)
+            )
 
         from .._lowering._core import NumbaMlirCoreAdapter
 
@@ -543,7 +557,9 @@ class _ScanPlanning:
         from .._lowering import _scan
 
         if route == "block":
-            return _scan.block_scan_array if is_array else _scan.block_scan_scalar
+            return (
+                _scan.block_scan_array if is_array else _scan.block_scan_scalar
+            )
         if route == "warp":
             return _scan.warp_scan
         raise GroupRewriteError(
@@ -799,7 +815,11 @@ register_rewrite_operation(
         factory_namespaces=frozenset({"warp"}),
         dtype_factory_kwargs=frozenset({"dtype"}),
         runtime_arg_counts=frozenset({1, 2, 3, 4}),
-        runtime_factory_kwargs=("initial_value", "valid_items", "warp_aggregate"),
+        runtime_factory_kwargs=(
+            "initial_value",
+            "valid_items",
+            "warp_aggregate",
+        ),
         runtime_factory_kw_prerequisites=(),
         allowed_factory_kwargs=frozenset(
             {

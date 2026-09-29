@@ -16,7 +16,9 @@ from ._payload import (
 )
 
 
-@_common_group_operation("reduce_batched", group_kinds=("warp", "threads_within_warp"))
+@_common_group_operation(
+    "reduce_batched", group_kinds=("warp", "threads_within_warp")
+)
 def reduce_batched(
     group: ThreadGroup,
     value: _ReadableThreadDataLike[Any],
