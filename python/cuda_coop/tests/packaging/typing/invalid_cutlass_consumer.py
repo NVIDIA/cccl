@@ -444,7 +444,9 @@ cutlass_coop.discontinuity(  # expected-error: [call-overload]
 )
 
 cutlass_coop.histogram(warp, values, bins=32)  # expected-error: [arg-type]
-cutlass_coop.histogram(block, scalar, bins=32)  # expected-error: [call-overload]
+cutlass_coop.histogram(  # expected-error: [call-overload]
+    block, scalar, bins=32
+)
 cutlass_coop.histogram(
     block,
     values,

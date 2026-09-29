@@ -1007,7 +1007,11 @@ def check_cutlass_histogram() -> None:
     )
     assert_type(
         cutlass_coop.histogram(
-            block, samples.to_tensor_ssa(), bins=65, bins_per_thread=2, algorithm="sort"
+            block,
+            samples.to_tensor_ssa(),
+            bins=65,
+            bins_per_thread=2,
+            algorithm="sort",
         ),
         cutlass_coop.ThreadData[Int32],
     )

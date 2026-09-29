@@ -67,7 +67,9 @@ def test_structural_compiler_dtype_names(name):
     assert spec.specialization.template_arguments["CounterT"] is dtype
 
 
-@pytest.mark.parametrize("name", ["Bool", "Boolean", "Float32", "Float64", "Int16"])
+@pytest.mark.parametrize(
+    "name", ["Bool", "Boolean", "Float32", "Float64", "Int16"]
+)
 @pytest.mark.parametrize("parameter", ["sample_dtype", "counter_dtype"])
 def test_unsupported_structural_compiler_dtype_names(name, parameter):
     with pytest.raises(TypeError, match="dtype"):

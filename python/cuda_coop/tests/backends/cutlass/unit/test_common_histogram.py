@@ -31,7 +31,9 @@ def test_common_readonly_inputs_and_typed_controls(monkeypatch):
     dispatch = import_module("cuda.coop._core.api._dispatch")
     samples = _ReadonlySamples()
     sentinel = object()
-    monkeypatch.setattr(api, "_group_primitive_marker", lambda *a, **k: sentinel)
+    monkeypatch.setattr(
+        api, "_group_primitive_marker", lambda *a, **k: sentinel
+    )
     with monkeypatch.context() as compiler_context:
         compiler_context.setattr(
             dispatch, "_backend_module_name", lambda: "test.backend"
@@ -42,7 +44,9 @@ def test_common_readonly_inputs_and_typed_controls(monkeypatch):
             lambda: "test.backend",
         )
         assert (
-            coop.histogram(this_block(), samples, bins=4, counter_dtype=np.int64)
+            coop.histogram(
+                this_block(), samples, bins=4, counter_dtype=np.int64
+            )
             is sentinel
         )
         with pytest.raises(TypeError, match="ThreadData"):

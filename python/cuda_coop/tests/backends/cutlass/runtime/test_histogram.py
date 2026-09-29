@@ -60,12 +60,19 @@ def _run(
     default_counter=False,
     compile_options=(),
 ):
-    value_type, counter_type = cutlass_dtype(dtype), cutlass_dtype(counter_dtype)
+    value_type, counter_type = (
+        cutlass_dtype(dtype),
+        cutlass_dtype(counter_dtype),
+    )
     items, blocks, repeats = 3, 2, 4 if reuse else 1
     tile, projection = threads * items, threads * bins_per_thread
     size = tile * blocks * repeats
     selector = (
-        None if default_counter else counter_type if cute_selector else counter_dtype
+        None
+        if default_counter
+        else counter_type
+        if cute_selector
+        else counter_dtype
     )
 
     @cute.kernel
@@ -124,9 +131,9 @@ def _run(
                 temp_storage=scratch,
             )
             for item in cutlass.range_constexpr(bins_per_thread):
-                outputs[block_index * projection + thread + item * threads] = counts[
-                    item
-                ]
+                outputs[block_index * projection + thread + item * threads] = (
+                    counts[item]
+                )
             for item in cutlass.range_constexpr(items):
                 originals[start + item] = samples[item]
             if cutlass.const_expr(reuse and manual_sync):
@@ -139,9 +146,13 @@ def _run(
         preserved: cute.Pointer,
         iterations: cutlass.Int32,
     ):
-        kernel(source, output, preserved, iterations).launch(grid=blocks, block=threads)
+        kernel(source, output, preserved, iterations).launch(
+            grid=blocks, block=threads
+        )
 
-    source = ((np.arange(size) * 19 + np.arange(size) // tile) % bins).astype(dtype)
+    source = ((np.arange(size) * 19 + np.arange(size) // tile) % bins).astype(
+        dtype
+    )
     source[:tile] = bins - 1
     output = np.full(projection * blocks, 99, dtype=counter_dtype)
     preserved = np.zeros_like(source)
@@ -169,9 +180,15 @@ def _run(
         )
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
-@pytest.mark.parametrize("dtype", (np.uint8, np.int32, np.uint32, np.int64, np.uint64))
-@pytest.mark.parametrize("counter_dtype", (np.int32, np.uint32, np.int64, np.uint64))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
+@pytest.mark.parametrize(
+    "dtype", (np.uint8, np.int32, np.uint32, np.int64, np.uint64)
+)
+@pytest.mark.parametrize(
+    "counter_dtype", (np.int32, np.uint32, np.int64, np.uint64)
+)
 @pytest.mark.parametrize("algorithm", ("atomic", "sort"))
 def test_counts_types_and_preservation(api, dtype, counter_dtype, algorithm):
     _run(api, dtype=dtype, counter_dtype=counter_dtype, algorithm=algorithm)
@@ -201,7 +218,9 @@ def test_fresh_counters_on_scratch_reuse(sharing, manual_sync, algorithm):
     )
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_readonly_inference(api):
     _run(api, payload="readonly", inferred=True)
 
@@ -211,7 +230,9 @@ def test_qualified_register_payloads(payload):
     _run(cutlass_coop, payload=payload, cute_selector=True)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_default_counter(api):
     _run(api, default_counter=True, counter_dtype=np.int32)
 
@@ -232,11 +253,16 @@ def test_final_cubin(tmp_path, algorithm):
     tool = shutil.which("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
-    _run(algorithm=algorithm, compile_options=(KeepCUBIN(True), DumpDir(str(tmp_path))))
+    _run(
+        algorithm=algorithm,
+        compile_options=(KeepCUBIN(True), DumpDir(str(tmp_path))),
+    )
     cubins = list(tmp_path.rglob("*.cubin"))
     assert cubins
     for cubin in cubins:
-        sass = subprocess.check_output([tool, "--dump-sass", str(cubin)], text=True)
+        sass = subprocess.check_output(
+            [tool, "--dump-sass", str(cubin)], text=True
+        )
         assert "cuda_coop_cutlass_histogram_" not in sass
         assert re.search(r"\bCALL\b", sass) is None
 
@@ -263,5 +289,7 @@ def test_documented_histogram():
     output = np.full(128, -1, dtype=np.int64)
     with device_array(source) as src, device_array(output) as out:
         launch(src, out)
-    np.testing.assert_array_equal(output[:65], np.bincount(source, minlength=65))
+    np.testing.assert_array_equal(
+        output[:65], np.bincount(source, minlength=65)
+    )
     np.testing.assert_array_equal(output[65:], 0)

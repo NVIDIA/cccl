@@ -73,7 +73,10 @@ def test_tensor_ssa_conversion_across_regions():
     def launch(memory: cute.Pointer, iterations: cutlass.Int32):
         kernel(memory, iterations).launch(grid=1, block=1)
 
-    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
     assert (
-        cute.compile[(GPUArch("sm_80"),)](launch, pointer, cutlass.Int32(3)) is not None
+        cute.compile[(GPUArch("sm_80"),)](launch, pointer, cutlass.Int32(3))
+        is not None
     )

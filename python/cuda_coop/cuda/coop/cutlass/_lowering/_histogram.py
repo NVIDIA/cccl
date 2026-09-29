@@ -29,7 +29,9 @@ from .._thread_data import ThreadData, _make_rmem_tensor
 _SAMPLES = frozenset({Uint8, Int32, Uint32, Int64, Uint64})
 _COUNTERS = frozenset({Int32, Uint32, Int64, Uint64})
 _resolve_type = _types.make_provider_type_resolver(
-    scope="cuda.coop.cutlass", root_scope="cuda.coop.cutlass", namespace="histogram"
+    scope="cuda.coop.cutlass",
+    root_scope="cuda.coop.cutlass",
+    namespace="histogram",
 )
 
 
@@ -91,7 +93,9 @@ class _CubHistogramRequest:
             or not isinstance(self.plan.call.operation, GroupHistogramSemantics)
             or not isinstance(self.implementation, AlgorithmSpec)
         ):
-            raise TypeError("histogram request requires a shared CUB block plan")
+            raise TypeError(
+                "histogram request requires a shared CUB block plan"
+            )
         if (
             self.operation.sample_dtype not in _SAMPLES
             or self.operation.counter_dtype not in _COUNTERS
@@ -122,7 +126,8 @@ class _CubHistogramRequest:
             result is None
             or len(result.values) != 1
             or result.values[0].dtype is not self.operation.counter_dtype
-            or result.values[0].items_per_member != self.operation.bins_per_thread
+            or result.values[0].items_per_member
+            != self.operation.bins_per_thread
         ):
             raise ValueError("histogram result does not match its plan")
 
@@ -142,7 +147,9 @@ class _CubHistogramRequest:
             else str(value)
             for name, value in self.implementation.ordered_template_arguments
         ]
-        return f"::cub::{self.implementation.struct_name}<{', '.join(arguments)}>"
+        return (
+            f"::cub::{self.implementation.struct_name}<{', '.join(arguments)}>"
+        )
 
     @property
     def scratch_requirement_key(self):
@@ -150,7 +157,9 @@ class _CubHistogramRequest:
 
     @property
     def symbol_name(self):
-        digest = hashlib.sha256(repr(self.plan.artifact_key).encode()).hexdigest()[:16]
+        digest = hashlib.sha256(
+            repr(self.plan.artifact_key).encode()
+        ).hexdigest()[:16]
         return f"cuda_coop_cutlass_histogram_{digest}"
 
     def __eq__(self, other):
@@ -168,7 +177,9 @@ def _render_histogram(request):
     operation = request.operation
     sample_cpp = _types.TYPE_SPECS[operation.sample_dtype].cpp_type
     counter_cpp = _types.TYPE_SPECS[operation.counter_dtype].cpp_type
-    params = [f"{sample_cpp} item{i}" for i in range(operation.items_per_thread)]
+    params = [
+        f"{sample_cpp} item{i}" for i in range(operation.items_per_thread)
+    ]
     params.extend(
         (
             "unsigned int storage_address",
@@ -182,29 +193,42 @@ def _render_histogram(request):
         f"void {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
         "  using storage_type = typename implementation_type::TempStorage;",
-        "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+        (
+            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+            "< sizeof(storage_type) ||"
+        ),
         "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
         '    asm volatile("trap;");',
         "  }",
         "  unsigned long long generic_address;",
-        '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
+        (
+            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+            '"l"((unsigned long long)storage_address));'
+        ),
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         f"  {sample_cpp} samples[{operation.items_per_thread}] = {{{values}}};",
         f"  {counter_cpp} counts[{operation.bins_per_thread}];",
         "  implementation_type(storage).Histogram(samples, counts);",
         "  if (storage_auto_sync != 0) { __syncthreads(); }",
-        *(f"  result[{i}] = counts[{i}];" for i in range(operation.bins_per_thread)),
+        *(
+            f"  result[{i}] = counts[{i}];"
+            for i in range(operation.bins_per_thread)
+        ),
         "}",
     ]
 
 
 def _scratch_probe(request):
     return _rendering.make_scratch_layout_probe(
-        request.scratch_requirement_key, f"typename {request.cpp_type}::TempStorage"
+        request.scratch_requirement_key,
+        f"typename {request.cpp_type}::TempStorage",
     )
 
 
-_HEADERS = ("cub/block/block_histogram.cuh", "cuda/std/__type_traits/conditional.h")
+_HEADERS = (
+    "cub/block/block_histogram.cuh",
+    "cuda/std/__type_traits/conditional.h",
+)
 _rendering.register_bundle_renderer(
     "cub_group_histogram",
     render=_render_histogram,
@@ -257,7 +281,9 @@ def provider_histogram(
     try:
         _state.register_request(request)
         descriptor = (
-            TempStorage(auto_sync=True) if temp_storage is None else temp_storage
+            TempStorage(auto_sync=True)
+            if temp_storage is None
+            else temp_storage
         )
         arguments.extend(
             _storage.register_deferred_temp_storage_event(
@@ -269,9 +295,11 @@ def provider_histogram(
         parameter_types.extend((Uint32, Int32, Int32))
         arguments.append(tensor.iterator.llvm_ptr)
         parameter_types.append(llvm.PointerType.get(0))
-        ffi(name=request.symbol_name, params_types=parameter_types, return_type=None)(
-            *arguments
-        )
+        ffi(
+            name=request.symbol_name,
+            params_types=parameter_types,
+            return_type=None,
+        )(*arguments)
         return ThreadData(
             bins_per_thread,
             dtype=counter_type
