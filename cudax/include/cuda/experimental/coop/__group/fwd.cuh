@@ -29,30 +29,13 @@
 #  define _CCCL_HAS_COOPERATIVE_GROUPS() 0
 #endif // ^^^ no cooperative groups ^^^
 
-#include <cuda/__fwd/hierarchy.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 #if !defined(_CCCL_DOXYGEN_INVOKED)
-
-namespace cuda::experimental
-{
-using __implicit_hierarchy_t =
-  hierarchy<thread_level,
-            hierarchy_level_desc<grid_level, ::cuda::std::dims<3, unsigned>>,
-            hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
-            hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
-
-using __implicit_hierarchy_1d_t =
-  hierarchy<thread_level,
-            hierarchy_level_desc<grid_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
-            hierarchy_level_desc<cluster_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
-            hierarchy_level_desc<block_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>>;
-} // namespace cuda::experimental
 
 namespace cuda::experimental::coop
 {
