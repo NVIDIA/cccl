@@ -204,6 +204,8 @@ runs:
         & bash -c 'ci/util/retry.sh 5 30 sccache --start-server'
 
         $exitCode = 0
+        $startPwd = $pwd
+
         try {
           Write-Host "Executing command: $env:COMMAND"
           Write-Host "In directory: $(Get-Location)"
@@ -216,6 +218,7 @@ runs:
           $exitCode = 1
         } finally {
           Write-Host '::group::Uploading job result artifacts'
+          cd $startPwd
           Write-Host "In directory: $(Get-Location)"
           & bash -c "ci/upload_job_result_artifacts.sh $env:JOB_ID $exitCode"
           Write-Host '::endgroup::'
