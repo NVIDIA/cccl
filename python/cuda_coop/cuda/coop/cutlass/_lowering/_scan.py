@@ -181,17 +181,22 @@ def _validate_scan_request_plan(
             )
 
     initial_value = operation.initial_value
-    if initial_value is not None and not isinstance(initial_value, Reference):
-        if not (
-            isinstance(initial_value, CxxFunction)
-            and initial_value.cpp == "{T}{0}"
-            and op == "sum"
-            and operation.mode is ScanMode.EXCLUSIVE
-            and operation.valid_items.kind is not BindingKind.OMITTED
-        ):
-            raise NotImplementedError(
-                "Scan initial descriptor must be a runtime value or canonical typed zero"
+    if (
+        initial_value is not None
+        and (not isinstance(initial_value, Reference))
+        and (
+            not (
+                isinstance(initial_value, CxxFunction)
+                and initial_value.cpp == "{T}{0}"
+                and (op == "sum")
+                and (operation.mode is ScanMode.EXCLUSIVE)
+                and (operation.valid_items.kind is not BindingKind.OMITTED)
             )
+        )
+    ):
+        raise NotImplementedError(
+            "Scan initial descriptor must be a runtime value or canonical typed zero"
+        )
 
     implementation = plan.implementation
     expected_target = (
@@ -518,8 +523,10 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
     elif request.plan.target is GroupLoweringTarget.CUB_WARP:
         instances, logical_width = _warp_instances(request.plan)
         storage_lines = [
-            "  __shared__ typename implementation_type::TempStorage "
-            f"storage[{instances}];",
+            (
+                "  __shared__ typename implementation_type::TempStorage "
+                f"storage[{instances}];"
+            ),
             "  unsigned int storage_instance =",
             f"      (threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) / {logical_width}u;",
         ]
@@ -600,10 +607,14 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
         ["  *aggregate_output = aggregate;"] if request.has_aggregate else []
     )
     return [
-        f"{'void' if request.is_array else type_specification.cpp_type} "
-        f"{request.symbol_name}({', '.join(params)}) {{",
-        f"  using implementation_type = ::cub::{implementation.struct_name}<"
-        f"{template_arguments}>;",
+        (
+            f"{'void' if request.is_array else type_specification.cpp_type} "
+            f"{request.symbol_name}({', '.join(params)}) {{"
+        ),
+        (
+            f"  using implementation_type = ::cub::{implementation.struct_name}<"
+            f"{template_arguments}>;"
+        ),
         *(
             [
                 f"  if (valid_items < 1 || valid_items > {request.group.static_size}) {{",
@@ -615,8 +626,10 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
         ),
         *storage_lines,
         *input_lines,
-        f"  implementation_type({storage}).{implementation.method_name}("
-        f"{', '.join(call_arguments)});",
+        (
+            f"  implementation_type({storage}).{implementation.method_name}("
+            f"{', '.join(call_arguments)});"
+        ),
         *barrier_lines,
         *aggregate_lines,
         *output_lines,
@@ -672,11 +685,8 @@ def _typed_value(value, value_type, *, name="value", initial=False):
                 "cuda.coop.cutlass.scan initial_value dtype must match value dtype"
             )
         value = value.item()
-    if initial:
-        if type(value) is float and not math.isfinite(value):
-            raise ValueError(
-                "cuda.coop.cutlass.scan initial_value must be finite"
-            )
+    if initial and type(value) is float and (not math.isfinite(value)):
+        raise ValueError("cuda.coop.cutlass.scan initial_value must be finite")
     converted = _provider_types.coerce_plain_scalar(
         value,
         value_type,

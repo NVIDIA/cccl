@@ -202,4 +202,4 @@ def inclusive_sum(
     )
 
 
-__all__ = ["scan", "exclusive_scan", "inclusive_scan", "exclusive_sum", "inclusive_sum"]
+__all__ = ["exclusive_scan", "exclusive_sum", "inclusive_scan", "inclusive_sum", "scan"]
