@@ -30,7 +30,7 @@ def test_store_example():
     def store_prefix(destination):
         block = coop.this_block()
         rank = cuda.threadIdx.x
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         items[0] = types.int32(2 * rank)
         items[1] = types.int32(2 * rank + 1)
         coop.store(
