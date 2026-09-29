@@ -40,9 +40,8 @@ struct half_t
 
   /// Constructor from __half
   __host__ __device__ __forceinline__ explicit half_t(const __half& other)
-  {
-    __x = reinterpret_cast<const uint16_t&>(other);
-  }
+      : __x(reinterpret_cast<const uint16_t&>(other))
+  {}
 
   /// Constructor from integer
   __host__ __device__ __forceinline__ explicit half_t(int a)

@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -223,7 +224,7 @@ public:
   stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
-    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
+    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...); // NOLINT(cppcoreguidelines-slicing)
   }
 
   template <typename... Deps>
@@ -833,20 +834,16 @@ UNITTEST("logical_data_untyped moveable")
     scalar(stream_ctx& ctx)
     {
       const size_t s = sizeof(double);
-      double* h_addr = (double*) malloc(s);
-      SCOPE(fail)
-      {
-        free(h_addr);
-      };
+      auto owner     = ::cuda::std::make_unique<double>();
+      double* h_addr = owner.get();
       cuda_try<cudaHostRegister>(h_addr, s, cudaHostRegisterPortable);
-      // Registered memory must be unregistered before it is freed. Guards run in reverse
-      // order of declaration, so this one undoes the registration before the guard above
-      // releases the buffer.
+      // Unregister memory before owner deletes it on failure.
       SCOPE(fail)
       {
         cuda_safe_call(cudaHostUnregister(h_addr));
       };
       handle = ctx.logical_data(h_addr, 1);
+      owner.release();
     }
 
     scalar& operator=(scalar&& rhs) noexcept
