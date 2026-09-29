@@ -139,7 +139,8 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
                 actual = context.dtype(raw)
                 if actual != dtype:
                     raise TypeError(
-                        f"{operation} {name} dtype must match input dtype {dtype}"
+                        f"{operation} {name} dtype "
+                        f"must match input dtype {dtype}"
                     )
                 boundaries[name] = raw
     primitive = BlockNeighborSemantics(
@@ -163,7 +164,8 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
         descriptor = context.temp_storage(storage)
         if descriptor is None:
             raise GroupRewriteError(
-                f"{operation} temp_storage must resolve to a TempStorage descriptor"
+                f"{operation} temp_storage must "
+                f"resolve to a TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(

@@ -187,7 +187,7 @@ def make_block_neighbor_specialization(
     {
       asm volatile("trap;");
     }
-"""
+"""  # noqa: E501 - Embedded C++ source.
         if call.partial
         else ""
     )
@@ -209,7 +209,7 @@ struct {wrapper_name} : {primitive}<T, BlockDimX, BlockDimY, BlockDimZ>
   }}
 }};
 }}
-""",
+""",  # noqa: E501 - Embedded C++ source.
     )
     return Algorithm(
         struct_name=wrapper_name,
