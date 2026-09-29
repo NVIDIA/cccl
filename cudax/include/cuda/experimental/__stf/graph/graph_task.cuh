@@ -43,6 +43,41 @@ namespace cuda::experimental::stf
 template <typename... Deps>
 class graph_task;
 
+namespace reserved
+{
+/**
+ * @brief End a stream capture that a failing task body may have left open.
+ *
+ * Called from a fail guard, with the body's exception in flight. If `stream` is still capturing
+ * (an invalidated capture counts: it must be ended to restore the stream), the capture is ended.
+ * With `owns_graph`, the graph the capture produced belongs to nobody yet and is destroyed;
+ * `leftover` is the graph of a capture that had already ended into a local before the throw,
+ * destroyed for the same reason. Without `owns_graph`, EndCapture returns the context's own
+ * graph, which is left alone.
+ *
+ * Runs under `ON_THROW(abort)`: a failing status query must not be mistaken for "not capturing",
+ * and with an exception already in flight a second failure has nowhere to go.
+ */
+inline void abandon_capture(cudaStream_t stream, bool owns_graph, cudaGraph_t leftover = nullptr) noexcept
+{
+  ON_THROW(abort)
+  {
+    if (cuda_try<cudaStreamIsCapturing>(stream) != cudaStreamCaptureStatusNone)
+    {
+      cudaGraph_t discarded = cuda_try<cudaStreamEndCapture>(stream);
+      if (owns_graph && discarded)
+      {
+        cuda_try<cudaGraphDestroy>(discarded);
+      }
+    }
+    else if (owns_graph && leftover)
+    {
+      cuda_try<cudaGraphDestroy>(leftover);
+    }
+  };
+}
+} // namespace reserved
+
 /** @brief This describes an untyped task within a CUDA graph.
  *
  * A graph task is implemented as a child graph in the graph associated to the
@@ -372,30 +407,18 @@ public:
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
-    // cudaEvent_t start_event, end_event;
-
     const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
 
     start();
-
-    if (record_time)
-    {
-      // Events must be created here to avoid issues with multi-gpu
-      // cuda_safe_call(cudaEventCreate(&start_event));
-      // cuda_safe_call(cudaEventCreate(&end_event));
-      // cuda_safe_call(cudaEventRecord(start_event));
-    }
 
     SCOPE(exit)
     {
       end_uncleared();
       if (record_time)
       {
-        // cuda_safe_call(cudaEventRecord(end_event));
-        // cuda_safe_call(cudaEventSynchronize(end_event));
-
-        float milliseconds = 0;
-        // cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+        // Graph tasks are not timed (the event-based measurement is disabled), so the recorded
+        // duration is 0.
+        const float milliseconds = 0;
 
         if (dot.is_tracing())
         {
@@ -425,25 +448,11 @@ public:
       // the full capture interval, so graph_mutex must be held throughout.
       auto lock = lock_ctx_graph();
       begin_capture_into_ctx_graph(capture_stream, ctx_graph, ready_dependencies);
-      // If the user lambda throws, end the capture so the stream is not left
-      // capturing. EndCapture returns ctx_graph here — do not destroy it.
+      // If the user lambda throws, end the capture so the stream is not left capturing.
+      // EndCapture returns ctx_graph here, which stays owned by the context.
       SCOPE(fail)
       {
-        // This guard can fire after the success path has already ended the
-        // capture (throwing work follows EndCapture within this scope), so
-        // only end a capture that is still active.
-        cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
-        // cuda_safe_call: a failing status query here (e.g. a prior sticky
-        // error surfacing through this API) must not be mistaken for "not
-        // capturing" -- report and abort instead of skipping the EndCapture.
-        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
-        // != None on purpose: an Invalidated capture must still be ended to
-        // restore the stream.
-        if (status != cudaStreamCaptureStatusNone)
-        {
-          cudaGraph_t discarded = nullptr;
-          cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
-        }
+        reserved::abandon_capture(capture_stream, /* owns_graph */ false);
       };
 
       // Launch the user provided function
@@ -459,30 +468,9 @@ public:
       cuda_try<cudaStreamBeginCapture>(capture_stream, cudaStreamCaptureModeRelaxed);
       SCOPE(fail)
       {
-        // May fire after the success path already ended the capture; only
-        // end a capture that is still active. Past that point the captured
-        // graph sits in childGraph until set_child_graph takes ownership
-        // (childGraph is nulled right after); destroy it rather than leak.
-        cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
-        // cuda_safe_call: a failing status query here (e.g. a prior sticky
-        // error surfacing through this API) must not be mistaken for "not
-        // capturing" -- report and abort instead of skipping the EndCapture.
-        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
-        // != None on purpose: an Invalidated capture must still be ended to
-        // restore the stream.
-        if (status != cudaStreamCaptureStatusNone)
-        {
-          cudaGraph_t discarded = nullptr;
-          cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
-          if (discarded)
-          {
-            cuda_safe_call(cudaGraphDestroy(discarded));
-          }
-        }
-        else if (childGraph != nullptr)
-        {
-          cuda_safe_call(cudaGraphDestroy(childGraph));
-        }
+        // Past EndCapture the captured graph sits in childGraph until set_child_graph takes
+        // ownership (childGraph is nulled right after); destroy it rather than leak.
+        reserved::abandon_capture(capture_stream, /* owns_graph */ true, childGraph);
       };
 
       // Launch the user provided function
@@ -762,30 +750,18 @@ public:
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
-    // cudaEvent_t start_event, end_event;
-
     const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
 
     start();
-
-    if (record_time)
-    {
-      // Events must be created here to avoid issues with multi-gpu
-      // cuda_safe_call(cudaEventCreate(&start_event));
-      // cuda_safe_call(cudaEventCreate(&end_event));
-      // cuda_safe_call(cudaEventRecord(start_event));
-    }
 
     SCOPE(exit)
     {
       end_uncleared();
       if (record_time)
       {
-        // cuda_safe_call(cudaEventRecord(end_event));
-        // cuda_safe_call(cudaEventSynchronize(end_event));
-
-        float milliseconds = 0;
-        // cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+        // Graph tasks are not timed (the event-based measurement is disabled), so the recorded
+        // duration is 0.
+        const float milliseconds = 0;
 
         if (dot.is_tracing())
         {
@@ -827,25 +803,11 @@ public:
 #if _CCCL_CTK_AT_LEAST(12, 3)
       // New path: capture directly into ctx_graph.
       begin_capture_into_ctx_graph(capture_stream, ctx_graph, ready_dependencies);
-      // If the user lambda throws, end the capture so the stream is not left
-      // capturing. EndCapture returns ctx_graph here — do not destroy it.
+      // If the user lambda throws, end the capture so the stream is not left capturing.
+      // EndCapture returns ctx_graph here, which stays owned by the context.
       SCOPE(fail)
       {
-        // This guard can fire after the success path has already ended the
-        // capture (throwing work follows EndCapture within this scope), so
-        // only end a capture that is still active.
-        cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
-        // cuda_safe_call: a failing status query here (e.g. a prior sticky
-        // error surfacing through this API) must not be mistaken for "not
-        // capturing" -- report and abort instead of skipping the EndCapture.
-        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
-        // != None on purpose: an Invalidated capture must still be ended to
-        // restore the stream.
-        if (status != cudaStreamCaptureStatusNone)
-        {
-          cudaGraph_t discarded = nullptr;
-          cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
-        }
+        reserved::abandon_capture(capture_stream, /* owns_graph */ false);
       };
 
       // Launch the user provided function
@@ -870,30 +832,9 @@ public:
       cuda_try<cudaStreamBeginCapture>(capture_stream, cudaStreamCaptureModeRelaxed);
       SCOPE(fail)
       {
-        // May fire after the success path already ended the capture; only
-        // end a capture that is still active. Past that point the captured
-        // graph sits in childGraph until set_child_graph takes ownership
-        // (childGraph is nulled right after); destroy it rather than leak.
-        cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
-        // cuda_safe_call: a failing status query here (e.g. a prior sticky
-        // error surfacing through this API) must not be mistaken for "not
-        // capturing" -- report and abort instead of skipping the EndCapture.
-        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
-        // != None on purpose: an Invalidated capture must still be ended to
-        // restore the stream.
-        if (status != cudaStreamCaptureStatusNone)
-        {
-          cudaGraph_t discarded = nullptr;
-          cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
-          if (discarded)
-          {
-            cuda_safe_call(cudaGraphDestroy(discarded));
-          }
-        }
-        else if (childGraph != nullptr)
-        {
-          cuda_safe_call(cudaGraphDestroy(childGraph));
-        }
+        // Past EndCapture the captured graph sits in childGraph until set_child_graph takes
+        // ownership (childGraph is nulled right after); destroy it rather than leak.
+        reserved::abandon_capture(capture_stream, /* owns_graph */ true, childGraph);
       };
 
       // Launch the user provided function
