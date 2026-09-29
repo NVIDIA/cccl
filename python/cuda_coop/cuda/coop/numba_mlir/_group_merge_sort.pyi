@@ -4,7 +4,8 @@
 
 """Typed Merge Sort payload and group contracts."""
 
-from typing import Callable, Literal, overload
+from collections.abc import Callable
+from typing import Literal, overload
 
 import numpy as np
 from typing_extensions import TypeVar
