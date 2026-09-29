@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_set_operations.cuh>
 #include <cub/util_namespace.cuh>
@@ -232,29 +233,30 @@ public:
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
             typename NumSelectedIteratorT,
-            typename OffsetT,
+            typename NumKeysT,
             typename CompareOp = ::cuda::std::less<>,
             typename EnvT      = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetDifference(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
-    OffsetT num_keys1,
+    NumKeysT num_keys1,
     KeyIteratorIn2 d_keys_in2,
-    OffsetT num_keys2,
+    NumKeysT num_keys2,
     KeyIteratorOut d_keys_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetDifference");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys<detail::set_ops::serial_set_difference>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
-      num_keys1,
+      static_cast<offset_t>(num_keys1),
       d_keys_in2,
-      num_keys2,
+      static_cast<offset_t>(num_keys2),
       d_keys_out,
       d_num_selected_out,
       compare_op,
@@ -280,7 +282,7 @@ public:
     typename KeyIteratorIn2,
     typename KeyIteratorOut,
     typename NumSelectedIteratorT,
-    typename OffsetT,
+    typename NumKeysT,
     typename CompareOp                                                            = ::cuda::std::less<>,
     typename EnvT                                                                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
@@ -288,17 +290,25 @@ public:
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetDifference(
     KeyIteratorIn1 d_keys_in1,
-    OffsetT num_keys1,
+    NumKeysT num_keys1,
     KeyIteratorIn2 d_keys_in2,
-    OffsetT num_keys2,
+    NumKeysT num_keys2,
     KeyIteratorOut d_keys_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetDifference");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys_env<detail::set_ops::serial_set_difference>(
-      d_keys_in1, num_keys1, d_keys_in2, num_keys2, d_keys_out, d_num_selected_out, compare_op, env);
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
   }
 
   //! Computes the set intersection `keys1 ∩ keys2` of two sorted key sequences, writing the number of emitted keys to
@@ -307,29 +317,30 @@ public:
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
             typename NumSelectedIteratorT,
-            typename OffsetT,
+            typename NumKeysT,
             typename CompareOp = ::cuda::std::less<>,
             typename EnvT      = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetIntersection(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
-    OffsetT num_keys1,
+    NumKeysT num_keys1,
     KeyIteratorIn2 d_keys_in2,
-    OffsetT num_keys2,
+    NumKeysT num_keys2,
     KeyIteratorOut d_keys_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetIntersection");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys<detail::set_ops::serial_set_intersection>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
-      num_keys1,
+      static_cast<offset_t>(num_keys1),
       d_keys_in2,
-      num_keys2,
+      static_cast<offset_t>(num_keys2),
       d_keys_out,
       d_num_selected_out,
       compare_op,
@@ -355,7 +366,7 @@ public:
     typename KeyIteratorIn2,
     typename KeyIteratorOut,
     typename NumSelectedIteratorT,
-    typename OffsetT,
+    typename NumKeysT,
     typename CompareOp                                                            = ::cuda::std::less<>,
     typename EnvT                                                                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
@@ -363,17 +374,25 @@ public:
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetIntersection(
     KeyIteratorIn1 d_keys_in1,
-    OffsetT num_keys1,
+    NumKeysT num_keys1,
     KeyIteratorIn2 d_keys_in2,
-    OffsetT num_keys2,
+    NumKeysT num_keys2,
     KeyIteratorOut d_keys_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetIntersection");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys_env<detail::set_ops::serial_set_intersection>(
-      d_keys_in1, num_keys1, d_keys_in2, num_keys2, d_keys_out, d_num_selected_out, compare_op, env);
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
   }
 
   //! Computes the set symmetric difference `keys1 △ keys2` of two sorted key sequences, writing the number of emitted
@@ -382,29 +401,30 @@ public:
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
             typename NumSelectedIteratorT,
-            typename OffsetT,
+            typename NumKeysT,
             typename CompareOp = ::cuda::std::less<>,
             typename EnvT      = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifference(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
-    OffsetT num_keys1,
+    NumKeysT num_keys1,
     KeyIteratorIn2 d_keys_in2,
-    OffsetT num_keys2,
+    NumKeysT num_keys2,
     KeyIteratorOut d_keys_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetSymmetricDifference");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys<detail::set_ops::serial_set_symmetric_difference>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
-      num_keys1,
+      static_cast<offset_t>(num_keys1),
       d_keys_in2,
-      num_keys2,
+      static_cast<offset_t>(num_keys2),
       d_keys_out,
       d_num_selected_out,
       compare_op,
@@ -430,7 +450,7 @@ public:
     typename KeyIteratorIn2,
     typename KeyIteratorOut,
     typename NumSelectedIteratorT,
-    typename OffsetT,
+    typename NumKeysT,
     typename CompareOp                                                            = ::cuda::std::less<>,
     typename EnvT                                                                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
@@ -438,17 +458,25 @@ public:
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifference(
     KeyIteratorIn1 d_keys_in1,
-    OffsetT num_keys1,
+    NumKeysT num_keys1,
     KeyIteratorIn2 d_keys_in2,
-    OffsetT num_keys2,
+    NumKeysT num_keys2,
     KeyIteratorOut d_keys_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetSymmetricDifference");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys_env<detail::set_ops::serial_set_symmetric_difference>(
-      d_keys_in1, num_keys1, d_keys_in2, num_keys2, d_keys_out, d_num_selected_out, compare_op, env);
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
   }
 
   //! Computes the set union `keys1 ∪ keys2` of two sorted key sequences, writing the number of emitted keys to
@@ -457,29 +485,30 @@ public:
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
             typename NumSelectedIteratorT,
-            typename OffsetT,
+            typename NumKeysT,
             typename CompareOp = ::cuda::std::less<>,
             typename EnvT      = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetUnion(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
-    OffsetT num_keys1,
+    NumKeysT num_keys1,
     KeyIteratorIn2 d_keys_in2,
-    OffsetT num_keys2,
+    NumKeysT num_keys2,
     KeyIteratorOut d_keys_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetUnion");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys<detail::set_ops::serial_set_union>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
-      num_keys1,
+      static_cast<offset_t>(num_keys1),
       d_keys_in2,
-      num_keys2,
+      static_cast<offset_t>(num_keys2),
       d_keys_out,
       d_num_selected_out,
       compare_op,
@@ -504,7 +533,7 @@ public:
     typename KeyIteratorIn2,
     typename KeyIteratorOut,
     typename NumSelectedIteratorT,
-    typename OffsetT,
+    typename NumKeysT,
     typename CompareOp                                                            = ::cuda::std::less<>,
     typename EnvT                                                                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
@@ -512,17 +541,25 @@ public:
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetUnion(
     KeyIteratorIn1 d_keys_in1,
-    OffsetT num_keys1,
+    NumKeysT num_keys1,
     KeyIteratorIn2 d_keys_in2,
-    OffsetT num_keys2,
+    NumKeysT num_keys2,
     KeyIteratorOut d_keys_out,
     NumSelectedIteratorT d_num_selected_out,
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetUnion");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys_env<detail::set_ops::serial_set_union>(
-      d_keys_in1, num_keys1, d_keys_in2, num_keys2, d_keys_out, d_num_selected_out, compare_op, env);
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
   }
 
   //! Key-value variant of @ref SetDifference. Keys present in the output are accompanied by the value from the first
@@ -534,7 +571,7 @@ public:
             typename KeyIteratorOut,
             typename ValueIteratorOut,
             typename NumSelectedIteratorT,
-            typename OffsetT,
+            typename NumPairsT,
             typename CompareOp = ::cuda::std::less<>,
             typename EnvT      = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetDifferencePairs(
@@ -542,10 +579,10 @@ public:
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
     ValueIteratorIn1 d_values_in1,
-    OffsetT num_pairs1,
+    NumPairsT num_pairs1,
     KeyIteratorIn2 d_keys_in2,
     ValueIteratorIn2 d_values_in2,
-    OffsetT num_pairs2,
+    NumPairsT num_pairs2,
     KeyIteratorOut d_keys_out,
     ValueIteratorOut d_values_out,
     NumSelectedIteratorT d_num_selected_out,
@@ -553,15 +590,16 @@ public:
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetDifferencePairs");
+    using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs<detail::set_ops::serial_set_difference>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
       d_values_in1,
-      num_pairs1,
+      static_cast<offset_t>(num_pairs1),
       d_keys_in2,
       d_values_in2,
-      num_pairs2,
+      static_cast<offset_t>(num_pairs2),
       d_keys_out,
       d_values_out,
       d_num_selected_out,
@@ -592,7 +630,7 @@ public:
     typename KeyIteratorOut,
     typename ValueIteratorOut,
     typename NumSelectedIteratorT,
-    typename OffsetT,
+    typename NumPairsT,
     typename CompareOp                                                            = ::cuda::std::less<>,
     typename EnvT                                                                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
@@ -601,10 +639,10 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetDifferencePairs(
     KeyIteratorIn1 d_keys_in1,
     ValueIteratorIn1 d_values_in1,
-    OffsetT num_pairs1,
+    NumPairsT num_pairs1,
     KeyIteratorIn2 d_keys_in2,
     ValueIteratorIn2 d_values_in2,
-    OffsetT num_pairs2,
+    NumPairsT num_pairs2,
     KeyIteratorOut d_keys_out,
     ValueIteratorOut d_values_out,
     NumSelectedIteratorT d_num_selected_out,
@@ -612,13 +650,14 @@ public:
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetDifferencePairs");
+    using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs_env<detail::set_ops::serial_set_difference>(
       d_keys_in1,
       d_values_in1,
-      num_pairs1,
+      static_cast<offset_t>(num_pairs1),
       d_keys_in2,
       d_values_in2,
-      num_pairs2,
+      static_cast<offset_t>(num_pairs2),
       d_keys_out,
       d_values_out,
       d_num_selected_out,
@@ -635,7 +674,7 @@ public:
             typename KeyIteratorOut,
             typename ValueIteratorOut,
             typename NumSelectedIteratorT,
-            typename OffsetT,
+            typename NumPairsT,
             typename CompareOp = ::cuda::std::less<>,
             typename EnvT      = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetIntersectionPairs(
@@ -643,10 +682,10 @@ public:
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
     ValueIteratorIn1 d_values_in1,
-    OffsetT num_pairs1,
+    NumPairsT num_pairs1,
     KeyIteratorIn2 d_keys_in2,
     ValueIteratorIn2 d_values_in2,
-    OffsetT num_pairs2,
+    NumPairsT num_pairs2,
     KeyIteratorOut d_keys_out,
     ValueIteratorOut d_values_out,
     NumSelectedIteratorT d_num_selected_out,
@@ -654,15 +693,16 @@ public:
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetIntersectionPairs");
+    using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs<detail::set_ops::serial_set_intersection>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
       d_values_in1,
-      num_pairs1,
+      static_cast<offset_t>(num_pairs1),
       d_keys_in2,
       d_values_in2,
-      num_pairs2,
+      static_cast<offset_t>(num_pairs2),
       d_keys_out,
       d_values_out,
       d_num_selected_out,
@@ -692,7 +732,7 @@ public:
     typename KeyIteratorOut,
     typename ValueIteratorOut,
     typename NumSelectedIteratorT,
-    typename OffsetT,
+    typename NumPairsT,
     typename CompareOp                                                            = ::cuda::std::less<>,
     typename EnvT                                                                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
@@ -701,10 +741,10 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetIntersectionPairs(
     KeyIteratorIn1 d_keys_in1,
     ValueIteratorIn1 d_values_in1,
-    OffsetT num_pairs1,
+    NumPairsT num_pairs1,
     KeyIteratorIn2 d_keys_in2,
     ValueIteratorIn2 d_values_in2,
-    OffsetT num_pairs2,
+    NumPairsT num_pairs2,
     KeyIteratorOut d_keys_out,
     ValueIteratorOut d_values_out,
     NumSelectedIteratorT d_num_selected_out,
@@ -712,13 +752,14 @@ public:
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetIntersectionPairs");
+    using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs_env<detail::set_ops::serial_set_intersection>(
       d_keys_in1,
       d_values_in1,
-      num_pairs1,
+      static_cast<offset_t>(num_pairs1),
       d_keys_in2,
       d_values_in2,
-      num_pairs2,
+      static_cast<offset_t>(num_pairs2),
       d_keys_out,
       d_values_out,
       d_num_selected_out,
@@ -735,7 +776,7 @@ public:
             typename KeyIteratorOut,
             typename ValueIteratorOut,
             typename NumSelectedIteratorT,
-            typename OffsetT,
+            typename NumPairsT,
             typename CompareOp = ::cuda::std::less<>,
             typename EnvT      = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifferencePairs(
@@ -743,10 +784,10 @@ public:
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
     ValueIteratorIn1 d_values_in1,
-    OffsetT num_pairs1,
+    NumPairsT num_pairs1,
     KeyIteratorIn2 d_keys_in2,
     ValueIteratorIn2 d_values_in2,
-    OffsetT num_pairs2,
+    NumPairsT num_pairs2,
     KeyIteratorOut d_keys_out,
     ValueIteratorOut d_values_out,
     NumSelectedIteratorT d_num_selected_out,
@@ -754,15 +795,16 @@ public:
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetSymmetricDifferencePairs");
+    using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs<detail::set_ops::serial_set_symmetric_difference>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
       d_values_in1,
-      num_pairs1,
+      static_cast<offset_t>(num_pairs1),
       d_keys_in2,
       d_values_in2,
-      num_pairs2,
+      static_cast<offset_t>(num_pairs2),
       d_keys_out,
       d_values_out,
       d_num_selected_out,
@@ -792,7 +834,7 @@ public:
     typename KeyIteratorOut,
     typename ValueIteratorOut,
     typename NumSelectedIteratorT,
-    typename OffsetT,
+    typename NumPairsT,
     typename CompareOp                                                            = ::cuda::std::less<>,
     typename EnvT                                                                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
@@ -801,10 +843,10 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifferencePairs(
     KeyIteratorIn1 d_keys_in1,
     ValueIteratorIn1 d_values_in1,
-    OffsetT num_pairs1,
+    NumPairsT num_pairs1,
     KeyIteratorIn2 d_keys_in2,
     ValueIteratorIn2 d_values_in2,
-    OffsetT num_pairs2,
+    NumPairsT num_pairs2,
     KeyIteratorOut d_keys_out,
     ValueIteratorOut d_values_out,
     NumSelectedIteratorT d_num_selected_out,
@@ -812,13 +854,14 @@ public:
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetSymmetricDifferencePairs");
+    using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs_env<detail::set_ops::serial_set_symmetric_difference>(
       d_keys_in1,
       d_values_in1,
-      num_pairs1,
+      static_cast<offset_t>(num_pairs1),
       d_keys_in2,
       d_values_in2,
-      num_pairs2,
+      static_cast<offset_t>(num_pairs2),
       d_keys_out,
       d_values_out,
       d_num_selected_out,
@@ -834,7 +877,7 @@ public:
             typename KeyIteratorOut,
             typename ValueIteratorOut,
             typename NumSelectedIteratorT,
-            typename OffsetT,
+            typename NumPairsT,
             typename CompareOp = ::cuda::std::less<>,
             typename EnvT      = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetUnionPairs(
@@ -842,10 +885,10 @@ public:
     size_t& temp_storage_bytes,
     KeyIteratorIn1 d_keys_in1,
     ValueIteratorIn1 d_values_in1,
-    OffsetT num_pairs1,
+    NumPairsT num_pairs1,
     KeyIteratorIn2 d_keys_in2,
     ValueIteratorIn2 d_values_in2,
-    OffsetT num_pairs2,
+    NumPairsT num_pairs2,
     KeyIteratorOut d_keys_out,
     ValueIteratorOut d_values_out,
     NumSelectedIteratorT d_num_selected_out,
@@ -853,15 +896,16 @@ public:
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetUnionPairs");
+    using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs<detail::set_ops::serial_set_union>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in1,
       d_values_in1,
-      num_pairs1,
+      static_cast<offset_t>(num_pairs1),
       d_keys_in2,
       d_values_in2,
-      num_pairs2,
+      static_cast<offset_t>(num_pairs2),
       d_keys_out,
       d_values_out,
       d_num_selected_out,
@@ -891,7 +935,7 @@ public:
     typename KeyIteratorOut,
     typename ValueIteratorOut,
     typename NumSelectedIteratorT,
-    typename OffsetT,
+    typename NumPairsT,
     typename CompareOp                                                            = ::cuda::std::less<>,
     typename EnvT                                                                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
@@ -900,10 +944,10 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetUnionPairs(
     KeyIteratorIn1 d_keys_in1,
     ValueIteratorIn1 d_values_in1,
-    OffsetT num_pairs1,
+    NumPairsT num_pairs1,
     KeyIteratorIn2 d_keys_in2,
     ValueIteratorIn2 d_values_in2,
-    OffsetT num_pairs2,
+    NumPairsT num_pairs2,
     KeyIteratorOut d_keys_out,
     ValueIteratorOut d_values_out,
     NumSelectedIteratorT d_num_selected_out,
@@ -911,13 +955,14 @@ public:
     const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetUnionPairs");
+    using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs_env<detail::set_ops::serial_set_union>(
       d_keys_in1,
       d_values_in1,
-      num_pairs1,
+      static_cast<offset_t>(num_pairs1),
       d_keys_in2,
       d_values_in2,
-      num_pairs2,
+      static_cast<offset_t>(num_pairs2),
       d_keys_out,
       d_values_out,
       d_num_selected_out,

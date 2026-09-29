@@ -23,20 +23,23 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::set_ops
 {
 // One (biased) binary-search step for the upper bound (UpperBound) or lower bound of @p key. Larger @p shift biases the
 // probe toward @p begin (shift==1 is unbiased), which helps when the searched run is expected to be short.
-template <bool UpperBound, typename IntT, typename Offset, typename It, typename T, typename CompareOp>
+template <bool UpperBound, typename Offset, typename It, typename T, typename CompareOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 binary_search_iteration(It data, Offset& begin, Offset& end, T key, int shift, CompareOp compare_op)
 {
-  const IntT scale = (IntT{1} << shift) - 1;
-  const Offset mid = (begin + scale * end) >> shift;
+  using wide_t     = ::cuda::std::common_type_t<Offset, ::cuda::std::uint64_t>;
+  const int scale  = (1 << shift) - 1;
+  const Offset mid = static_cast<Offset>((static_cast<wide_t>(begin) + scale * static_cast<wide_t>(end)) >> shift);
   const T key2     = data[mid];
   const bool pred  = UpperBound ? !compare_op(key, key2) : compare_op(key2, key);
   if (pred)
@@ -55,8 +58,11 @@ template <bool UpperBound, typename Offset, typename It1, typename It2, typename
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Offset
 merge_path(It1 a, Offset a_count, It2 b, Offset b_count, Offset diag, CompareOp compare_op)
 {
-  using key_t  = it_value_t<It1>;
-  Offset begin = (::cuda::std::max) (Offset{0}, diag - b_count);
+  using key_t = it_value_t<It1>;
+  // TODO(bgruber): CUB now uses unsigned offsets (via choose_offset_t), unlike the signed offsets of the Thrust
+  // implementation this was ported from. Compute begin without underflowing: the Thrust form
+  // max(Offset{0}, diag - b_count) wraps to a huge value for unsigned offsets when diag < b_count.
+  Offset begin = diag < b_count ? Offset{0} : diag - b_count;
   Offset end   = (::cuda::std::min) (diag, a_count);
   while (begin < end)
   {
@@ -87,39 +93,39 @@ template <bool UpperBound, typename Offset, typename T, typename It, typename Co
   Offset end   = count;
   while (begin < end)
   {
-    binary_search_iteration<UpperBound, int>(data, begin, end, key, 1, compare_op);
+    binary_search_iteration<UpperBound>(data, begin, end, key, 1, compare_op);
   }
   return begin;
 }
 
 // Binary search that first probes near @p begin for up to @p levels steps, accelerating runs that start near the front.
-template <bool UpperBound, typename IntT, typename Offset, typename T, typename It, typename CompareOp>
+template <bool UpperBound, typename Offset, typename T, typename It, typename CompareOp>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Offset
-biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compare_op)
+biased_binary_search(It data, Offset count, T key, int levels, CompareOp compare_op)
 {
   Offset begin = 0;
   Offset end   = count;
 
   if (levels >= 4 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 9, compare_op);
+    binary_search_iteration<UpperBound>(data, begin, end, key, 9, compare_op);
   }
   if (levels >= 3 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 7, compare_op);
+    binary_search_iteration<UpperBound>(data, begin, end, key, 7, compare_op);
   }
   if (levels >= 2 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 5, compare_op);
+    binary_search_iteration<UpperBound>(data, begin, end, key, 5, compare_op);
   }
   if (levels >= 1 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 4, compare_op);
+    binary_search_iteration<UpperBound>(data, begin, end, key, 4, compare_op);
   }
 
   while (begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 1, compare_op);
+    binary_search_iteration<UpperBound>(data, begin, end, key, 1, compare_op);
   }
   return begin;
 }
@@ -127,9 +133,9 @@ biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compar
 //! Duplicate-aware merge path: intersects the diagonal @p diag while distributing runs of equal keys evenly between the
 //! inputs so set operations see consistent multiplicities. Returns (index into @p keys1, index into @p keys2); the
 //! latter may gain one (the "star") to break ties at an equal-run boundary.
-template <typename It1, typename It2, typename Offset, typename IntT, typename CompareOp>
+template <typename It1, typename It2, typename Offset, typename CompareOp>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset>
-balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, IntT levels, CompareOp compare_op)
+balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, int levels, CompareOp compare_op)
 {
   using key_t = it_value_t<It1>;
 
@@ -432,6 +438,13 @@ struct agent_set_op
   static constexpr int items_per_thread = policy.items_per_thread;
   // One item is left in reserve so the serial set operations can read one past their range without a bounds check.
   static constexpr int items_per_tile = block_threads * items_per_thread - 1;
+  static_assert(items_per_thread <= 32, "the serial set operations pack one live-slot bit per item into an int mask");
+  // A partition coordinate is packed into the high 16 bits of a signed int and recovered with an arithmetic >> 16, so
+  // it must stay below 2^15 to keep the packed value non-negative.
+  static_assert(items_per_tile < (1 << 15),
+                "per-thread partition coordinates are packed into 16-bit halves of a signed int");
+  static_assert(items_per_thread <= block_threads,
+                "the shared key buffer's one-past-the-end over-allocation assumes this");
 
   static constexpr CacheLoadModifier load_modifier = policy.load_modifier;
 
@@ -547,7 +560,7 @@ struct agent_set_op
   }
 
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(Offset tile_idx)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int tile_idx)
   {
     const ::cuda::std::pair<Offset, Offset> partition_beg = partitions[tile_idx + 0];
     const ::cuda::std::pair<Offset, Offset> partition_end = partitions[tile_idx + 1];
@@ -568,7 +581,7 @@ struct agent_set_op
     reg_to_shared(&storage.load_storage.keys_shared[0], keys_loc);
     __syncthreads();
 
-    const int diag_loc = (::cuda::std::min<int>) (items_per_thread * threadIdx.x, num_keys1 + num_keys2);
+    const int diag_loc = (::cuda::std::min) (items_per_thread * static_cast<int>(threadIdx.x), num_keys1 + num_keys2);
 
     const auto [keys1_beg_loc, keys2_beg_loc] = balanced_path(
       &storage.load_storage.keys_shared[0],
