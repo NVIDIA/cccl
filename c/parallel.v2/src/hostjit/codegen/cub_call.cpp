@@ -23,6 +23,7 @@
 #include <hostjit/codegen/iterators.hpp>
 #include <hostjit/codegen/operators.hpp>
 #include <hostjit/codegen/types.hpp>
+#include <util/build_utils.h>
 
 namespace hostjit::codegen
 {
@@ -566,6 +567,7 @@ hostjit::CompilerConfig CubCall::make_jit_config(
   if (ctk_path && ctk_path[0] != '\0')
   {
     jit_config.cuda_toolkit_path = ctk_path;
+    jit_config.libdevice_path    = cccl::detail::find_libdevice_bc(ctk_path);
     // Rebuild library_paths from the new toolkit root so the linker
     // can find libcudart.so in the pip-installed layout.
     jit_config.library_paths.clear();
