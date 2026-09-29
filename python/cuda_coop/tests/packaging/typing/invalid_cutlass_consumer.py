@@ -497,9 +497,9 @@ cutlass_coop.run_length_decode(
     values,
     decoded_items_per_thread=2,
 )
-cutlass_coop.run_length_decode(
+cutlass_coop.run_length_decode(  # expected-error: [call-overload]
     block, values, values
-)  # expected-error: [call-overload]
+)
 cutlass_coop.run_length_decode(  # expected-error: [call-overload]
     block, scalar, values, decoded_items_per_thread=2
 )

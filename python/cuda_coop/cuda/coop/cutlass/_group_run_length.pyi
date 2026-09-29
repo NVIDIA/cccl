@@ -16,7 +16,11 @@ from .._typing import (
     IntegralScalar,
     TempStorageLike,
 )
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 _LengthT = TypeVar("_LengthT", bound=IntegralScalar)
