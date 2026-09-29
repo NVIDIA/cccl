@@ -114,6 +114,8 @@ struct CompilerOptions
   std::string cuda_toolkit_path;
   std::string libdevice_path; // Full path to libdevice.10.bc; defaults to
                               // <cuda_toolkit_path>/nvvm/libdevice/libdevice.10.bc if empty
+  std::string extra_ctk_include_path; // Extra -isystem dir for nvcc-provided headers (crt/...) that live outside
+                                      // cuda_toolkit_path on some CUDA 12.x pip installs; empty if not needed
   std::string hostjit_include_path;
   std::string clang_headers_path;
   std::string device_pch_path;
@@ -156,6 +158,21 @@ static std::string resolved_libdevice_path(const CompilerOptions& config)
 {
   return config.libdevice_path.empty() ? config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc"
                                         : config.libdevice_path;
+}
+
+// Appends the CUDA toolkit's system include dir(s) to arg_strings as
+// -internal-isystem entries: cuda_toolkit_path/include, plus
+// extra_ctk_include_path when the nvcc-provided crt/ headers live in a
+// separate package (see util/build_utils.h find_extra_ctk_include_dir()).
+static void appendCudaToolkitIncludePaths(std::vector<std::string>& arg_strings, const CompilerOptions& config)
+{
+  arg_strings.push_back("-internal-isystem");
+  arg_strings.push_back(config.cuda_toolkit_path + "/include");
+  if (!config.extra_ctk_include_path.empty())
+  {
+    arg_strings.push_back("-internal-isystem");
+    arg_strings.push_back(config.extra_ctk_include_path);
+  }
 }
 
 struct LinkResult
@@ -370,6 +387,10 @@ static bool parseOptions(int num_options, const char* const* raw_options, Compil
     else if (option.starts_with("--libdevice-path="))
     {
       options.libdevice_path = value_after_equals(option, "--libdevice-path=");
+    }
+    else if (option.starts_with("--extra-ctk-include-path="))
+    {
+      options.extra_ctk_include_path = value_after_equals(option, "--extra-ctk-include-path=");
     }
     else if (option.starts_with("--hostjit-include-path="))
     {
@@ -981,8 +1002,7 @@ public:
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
+    appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
 
@@ -1384,8 +1404,7 @@ public:
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
+    appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
 
@@ -1541,8 +1560,7 @@ public:
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
+    appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
 
@@ -2016,8 +2034,7 @@ public:
     arg_strings.push_back(
       config.clang_headers_path.empty() ? std::string(CLANG_HEADERS_DIR) : config.clang_headers_path);
     appendSystemIncludePaths(arg_strings, config);
-    arg_strings.push_back("-internal-isystem");
-    arg_strings.push_back(config.cuda_toolkit_path + "/include");
+    appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
 

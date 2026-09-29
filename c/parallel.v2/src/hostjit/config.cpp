@@ -65,6 +65,10 @@ void CompilerConfig::appendCommandLineArguments(std::vector<std::string>& args) 
   {
     args.push_back("--libdevice-path=" + libdevice_path);
   }
+  if (!extra_ctk_include_path.empty())
+  {
+    args.push_back("--extra-ctk-include-path=" + extra_ctk_include_path);
+  }
   if (!hostjit_include_path.empty())
   {
     args.push_back("--hostjit-include-path=" + hostjit_include_path);

@@ -11,6 +11,8 @@ struct CompilerConfig
   std::string cuda_toolkit_path;
   std::string libdevice_path; // Full path to libdevice.10.bc; defaults to
                               // <cuda_toolkit_path>/nvvm/libdevice/libdevice.10.bc if empty
+  std::string extra_ctk_include_path; // Extra -isystem dir for nvcc-provided headers (crt/...) that live outside
+                                      // cuda_toolkit_path on some CUDA 12.x pip installs; empty if not needed
   std::string hostjit_include_path; // Path to hostjit include directory (for minimal CUDA runtime)
   std::string clang_headers_path; // Path to Clang's built-in CUDA headers (overrides CLANG_HEADERS_DIR)
   std::string cccl_include_path; // Path to CCCL headers (overrides CCCL_SOURCE_DIR); contains cub/, thrust/, cuda/
