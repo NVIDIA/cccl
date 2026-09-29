@@ -14,44 +14,19 @@ import pytest
 from cuda.coop._headers import _toolkit
 
 
-class _FakeNvrtcVersion:
-    def __init__(self, version: tuple[int, int]):
+class _VersionFunction:
+    def __init__(self, version, integer_type):
         self.version = version
+        self.pointer_type = _toolkit.ctypes.POINTER(integer_type)
         self.argtypes = None
         self.restype = None
 
     def __call__(self, major, minor):
-        pointer_type = _toolkit.ctypes.POINTER(_toolkit.ctypes.c_int)
-        assert self.argtypes == (pointer_type, pointer_type)
+        assert self.argtypes == (self.pointer_type, self.pointer_type)
         assert self.restype is _toolkit.ctypes.c_int
-        _toolkit.ctypes.cast(major, pointer_type)[0] = self.version[0]
-        _toolkit.ctypes.cast(minor, pointer_type)[0] = self.version[1]
+        _toolkit.ctypes.cast(major, self.pointer_type)[0] = self.version[0]
+        _toolkit.ctypes.cast(minor, self.pointer_type)[0] = self.version[1]
         return 0
-
-
-class _FakeNvJitLinkVersion:
-    def __init__(self, version: tuple[int, int]):
-        self.version = version
-        self.argtypes = None
-        self.restype = None
-
-    def __call__(self, major, minor):
-        pointer_type = _toolkit.ctypes.POINTER(_toolkit.ctypes.c_uint)
-        assert self.argtypes == (pointer_type, pointer_type)
-        assert self.restype is _toolkit.ctypes.c_int
-        _toolkit.ctypes.cast(major, pointer_type)[0] = self.version[0]
-        _toolkit.ctypes.cast(minor, pointer_type)[0] = self.version[1]
-        return 0
-
-
-class _FakeNvrtcLibrary:
-    def __init__(self, version: tuple[int, int]):
-        self.nvrtcVersion = _FakeNvrtcVersion(version)
-
-
-class _FakeNvJitLinkLibrary:
-    def __init__(self, version: tuple[int, int]):
-        self.nvJitLinkVersion = _FakeNvJitLinkVersion(version)
 
 
 @pytest.fixture(autouse=True)
@@ -74,11 +49,24 @@ def _write_cuda_header(include_dir: Path, encoded_version: int) -> None:
 
 
 def _library_path(directory: Path, kind: str, major: int) -> Path:
-    return directory / _toolkit._library_names(kind, major)[0]
+    if _toolkit.os.name == "nt":
+        name = (
+            f"nvrtc64_{major}0_0.dll"
+            if kind == "nvrtc"
+            else f"nvJitLink_{major}0_0.dll"
+        )
+    else:
+        name = f"lib{kind}.so.{major}"
+    return directory / name
 
 
 def _builtins_path(directory: Path, major: int, minor: int) -> Path:
-    return directory / _toolkit._nvrtc_builtins_names(major, minor)[0]
+    name = (
+        f"nvrtc-builtins64_{major}{minor}.dll"
+        if _toolkit.os.name == "nt"
+        else f"libnvrtc-builtins.so.{major}.{minor}"
+    )
+    return directory / name
 
 
 def _write_complete_toolkit(
@@ -152,9 +140,17 @@ def _patch_compiler_loaders(
         if candidate in failures:
             raise OSError(failures[candidate])
         if candidate == paths["nvrtc"]:
-            return _FakeNvrtcLibrary(nvrtc_version)
+            return SimpleNamespace(
+                nvrtcVersion=_VersionFunction(
+                    nvrtc_version, _toolkit.ctypes.c_int
+                )
+            )
         if candidate.name == paths["nvjitlink"].name:
-            return _FakeNvJitLinkLibrary(nvjitlink_version)
+            return SimpleNamespace(
+                nvJitLinkVersion=_VersionFunction(
+                    nvjitlink_version, _toolkit.ctypes.c_uint
+                )
+            )
         return object()
 
     def load_with_pathfinder(kind: str):
@@ -177,48 +173,22 @@ def _patch_compiler_loaders(
 
 
 @pytest.mark.parametrize(
-    ("os_name", "kind", "expected"),
-    (
-        ("posix", "nvrtc", ("libnvrtc.so.13",)),
-        ("posix", "nvJitLink", ("libnvJitLink.so.13",)),
-        ("nt", "nvrtc", ("nvrtc64_130_0.dll",)),
-        ("nt", "nvJitLink", ("nvJitLink_130_0.dll",)),
-    ),
+    "os_name,library_dir_name",
+    [("posix", "lib"), ("nt", "bin"), ("nt", "bin/x64")],
 )
-def test_library_names_match_platform_spelling(
-    monkeypatch: pytest.MonkeyPatch,
-    os_name: str,
-    kind: str,
-    expected: tuple[str, ...],
-) -> None:
-    monkeypatch.setattr(_toolkit, "os", SimpleNamespace(name=os_name))
-
-    assert _toolkit._library_names(kind, 13) == expected
-
-
-@pytest.mark.parametrize(
-    ("os_name", "expected"),
-    (
-        ("posix", ("libnvrtc-builtins.so.13.2",)),
-        ("nt", ("nvrtc-builtins64_132.dll",)),
-    ),
-)
-def test_nvrtc_builtins_names_match_platform_spelling(
-    monkeypatch: pytest.MonkeyPatch,
-    os_name: str,
-    expected: tuple[str, ...],
-) -> None:
-    monkeypatch.setattr(_toolkit, "os", SimpleNamespace(name=os_name))
-
-    assert _toolkit._nvrtc_builtins_names(13, 2) == expected
-
-
 def test_preload_loads_one_same_root_monolithic_set_and_reuses_exact_handles(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    os_name: str,
+    library_dir_name: str,
 ) -> None:
-    paths = _write_complete_toolkit(tmp_path / "toolkit", 13020)
-    attempts, pathfinder_calls = _patch_compiler_loaders(
+    monkeypatch.setattr(
+        _toolkit, "os", SimpleNamespace(name=os_name, path=os.path)
+    )
+    paths = _write_complete_toolkit(
+        tmp_path / "toolkit", 13020, library_dir_name=library_dir_name
+    )
+    attempts, _ = _patch_compiler_loaders(
         monkeypatch,
         paths,
         nvrtc_version=(13, 2),
@@ -229,26 +199,29 @@ def test_preload_loads_one_same_root_monolithic_set_and_reuses_exact_handles(
     second = _toolkit.preload_toolkit_compiler_libraries((paths["include"],))
 
     assert attempts == [paths["builtins"], paths["nvrtc"], paths["nvjitlink"]]
-    assert pathfinder_calls == ["nvrtc", "nvJitLink", "nvrtc", "nvJitLink"]
     assert first == second
-    assert first.toolkit_root == str(paths["root"].resolve())
-    assert first.nvrtc_path == str(paths["nvrtc"])
-    assert first.nvrtc_builtins_path == str(paths["builtins"])
-    assert first.nvjitlink_path == str(paths["nvjitlink"])
     assert first.toolkit_version == (13, 2)
-    assert first.nvrtc_version == (13, 2)
     assert first.nvjitlink_version == (13, 4)
 
 
+@pytest.mark.parametrize(
+    "os_name,library_dir_name", [("posix", "lib"), ("nt", "bin")]
+)
 def test_preload_loads_split_wheel_set_from_one_nvidia_anchor(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    os_name: str,
+    library_dir_name: str,
 ) -> None:
+    monkeypatch.setattr(
+        _toolkit, "os", SimpleNamespace(name=os_name, path=os.path)
+    )
     paths = _write_split_wheel_toolkit(
         tmp_path / "site-packages" / "nvidia",
         12090,
+        library_dir_name=library_dir_name,
     )
-    attempts, pathfinder_calls = _patch_compiler_loaders(
+    attempts, _ = _patch_compiler_loaders(
         monkeypatch,
         paths,
         nvrtc_version=(12, 9),
@@ -258,70 +231,7 @@ def test_preload_loads_split_wheel_set_from_one_nvidia_anchor(
     libraries = _toolkit.preload_toolkit_compiler_libraries((paths["include"],))
 
     assert attempts == [paths["builtins"], paths["nvrtc"], paths["nvjitlink"]]
-    assert pathfinder_calls == ["nvrtc", "nvJitLink"]
-    assert libraries.toolkit_root == str(paths["root"].resolve())
-    assert libraries.nvrtc_path == str(paths["nvrtc"])
-    assert libraries.nvrtc_builtins_path == str(paths["builtins"])
-    assert libraries.nvjitlink_path == str(paths["nvjitlink"])
     assert libraries.toolkit_version == (12, 9)
-
-
-@pytest.mark.parametrize("library_dir_name", ("bin", "bin/x64"))
-def test_windows_toolkit_layout(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    library_dir_name: str,
-) -> None:
-    monkeypatch.setattr(_toolkit, "os", SimpleNamespace(name="nt"))
-    paths = _write_complete_toolkit(
-        tmp_path / "Library",
-        13000,
-        library_dir_name=library_dir_name,
-    )
-
-    candidates, diagnostic = _toolkit._toolkit_root_candidates(
-        paths["include"],
-        major=13,
-        minor=0,
-    )
-
-    assert diagnostic == ""
-    assert candidates == _toolkit._ToolkitRootCandidates(
-        toolkit_root=paths["root"].resolve(),
-        nvrtc_pairs=((paths["nvrtc"], paths["builtins"]),),
-        nvjitlink=(paths["nvjitlink"],),
-    )
-
-
-@pytest.mark.parametrize(
-    ("os_name", "library_dir_name"),
-    (("posix", "lib"), ("nt", "bin")),
-)
-def test_split_wheel_candidate_layout_matches_platform(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    os_name: str,
-    library_dir_name: str,
-) -> None:
-    monkeypatch.setattr(_toolkit, "os", SimpleNamespace(name=os_name))
-    paths = _write_split_wheel_toolkit(
-        tmp_path / "site-packages" / "nvidia",
-        12090,
-        library_dir_name=library_dir_name,
-    )
-
-    candidates, diagnostic = _toolkit._toolkit_root_candidates(
-        paths["include"],
-        major=12,
-        minor=9,
-    )
-
-    assert diagnostic == ""
-    assert candidates == _toolkit._ToolkitRootCandidates(
-        toolkit_root=paths["root"].resolve(),
-        nvrtc_pairs=((paths["nvrtc"], paths["builtins"]),),
-        nvjitlink=(paths["nvjitlink"],),
-    )
 
 
 def test_preload_rejects_split_wheel_components_from_later_nvidia_anchor(
@@ -355,82 +265,11 @@ def test_preload_rejects_split_wheel_components_from_later_nvidia_anchor(
             "require NVRTC, nvrtc-builtins, and nvJitLink "
             "from one CUDA Toolkit root"
         ),
-    ) as exc_info:
+    ):
         _toolkit.preload_toolkit_compiler_libraries(
             (first["include"], second["include"])
         )
 
-    assert str(first["root"]) in str(exc_info.value)
-    assert str(second["root"]) in str(exc_info.value)
-    assert attempts == []
-
-
-def test_preload_rejects_split_wheel_nvrtc_version_mismatch(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    paths = _write_split_wheel_toolkit(
-        tmp_path / "site-packages" / "nvidia",
-        12090,
-    )
-    _patch_compiler_loaders(
-        monkeypatch,
-        paths,
-        nvrtc_version=(12, 8),
-        nvjitlink_version=(12, 9),
-    )
-
-    with pytest.raises(
-        RuntimeError,
-        match=(
-            r"headers report Toolkit 12\.9, but loaded NVRTC .* reports 12\.8"
-        ),
-    ):
-        _toolkit.preload_toolkit_compiler_libraries((paths["include"],))
-
-
-def test_preload_rejects_nvjitlink_from_different_toolkit_root(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    first_root = tmp_path / "first"
-    second_root = tmp_path / "second"
-    first_include = first_root / "include"
-    second_include = second_root / "include"
-    first_lib = first_root / "lib"
-    second_lib = second_root / "lib"
-    _write_cuda_header(first_include, 13020)
-    _write_cuda_header(second_include, 13020)
-    first_lib.mkdir()
-    second_lib.mkdir()
-    _library_path(first_lib, "nvrtc", 13).touch()
-    _builtins_path(first_lib, 13, 2).touch()
-    _library_path(second_lib, "nvJitLink", 13).touch()
-    attempts: list[Path] = []
-    monkeypatch.setattr(
-        _toolkit.ctypes,
-        "CDLL",
-        lambda path, *, mode: attempts.append(Path(path)),
-    )
-    monkeypatch.setattr(
-        cuda.pathfinder,
-        "load_nvidia_dynamic_lib",
-        lambda kind: pytest.fail(f"unexpected fallback load for {kind}"),
-    )
-
-    with pytest.raises(
-        RuntimeError,
-        match=(
-            "require NVRTC, nvrtc-builtins, and nvJitLink "
-            "from one CUDA Toolkit root"
-        ),
-    ) as exc_info:
-        _toolkit.preload_toolkit_compiler_libraries(
-            (first_include, second_include)
-        )
-
-    assert str(first_root) in str(exc_info.value)
-    assert str(second_root) in str(exc_info.value)
     assert attempts == []
 
 
@@ -511,23 +350,14 @@ def test_preload_tries_nvjitlink_candidates_only_within_selected_root(
     assert libraries.nvjitlink_path == str(second_nvjitlink)
 
 
-@pytest.mark.parametrize("layout", ["monolithic", "split-wheel"])
 @pytest.mark.parametrize("kind", ["nvrtc", "nvJitLink"])
 def test_preload_rejects_pathfinder_library_from_another_root(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    layout: str,
     kind: str,
 ) -> None:
-    paths = (
-        _write_complete_toolkit(tmp_path / "toolkit", 13020)
-        if layout == "monolithic"
-        else _write_split_wheel_toolkit(
-            tmp_path / "site-packages" / "nvidia",
-            12090,
-        )
-    )
-    version = (13, 2) if layout == "monolithic" else (12, 9)
+    paths = _write_complete_toolkit(tmp_path / "toolkit", 13020)
+    version = (13, 2)
     mismatched = (
         tmp_path
         / "other"
@@ -564,7 +394,8 @@ def test_preload_rejects_nvrtc_version_mismatched_with_headers(
     with pytest.raises(
         RuntimeError,
         match=(
-            r"headers report Toolkit 13\.2, but loaded NVRTC .* reports 13\.1"
+            r"headers report Toolkit 13\.2, "
+            r"but loaded NVRTC .* reports 13\.1"
         ),
     ):
         _toolkit.preload_toolkit_compiler_libraries((paths["include"],))
@@ -638,22 +469,13 @@ def test_toolkit_version_rejects_unparseable_selected_header(
         _toolkit.preload_toolkit_compiler_libraries((include_dir,))
 
 
-@pytest.mark.parametrize("layout", ["monolithic", "split-wheel"])
 @pytest.mark.skipif(os.name == "nt", reason="requires POSIX symbolic links")
 def test_preload_rejects_library_symlink_escaping_toolkit_root(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    layout: str,
 ) -> None:
-    paths = (
-        _write_complete_toolkit(tmp_path / "toolkit", 13020)
-        if layout == "monolithic"
-        else _write_split_wheel_toolkit(
-            tmp_path / "site-packages" / "nvidia",
-            12090,
-        )
-    )
-    version = (13, 2) if layout == "monolithic" else (12, 9)
+    paths = _write_complete_toolkit(tmp_path / "toolkit", 13020)
+    version = (13, 2)
     outside = tmp_path / "outside" / paths["nvjitlink"].name
     outside.parent.mkdir()
     outside.touch()

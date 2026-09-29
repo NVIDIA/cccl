@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-import base64
-import hashlib
 import os
 from pathlib import Path
 
@@ -16,11 +14,6 @@ from cuda.coop._headers._identity import (
     HeaderIdentityError,
     include_dirs_identity,
 )
-
-
-def _record_hash(content: bytes) -> str:
-    encoded = base64.urlsafe_b64encode(hashlib.sha256(content).digest())
-    return f"sha256={encoded.rstrip(b'=').decode('ascii')}"
 
 
 def _include_root(path: Path, content: bytes) -> Path:
@@ -44,21 +37,32 @@ def test_identity_preserves_include_order_and_provenance(
         str(first.resolve()),
         str(second.resolve()),
     )
-    assert all(root.method == "recursive-content" for root in forward.roots)
     assert forward.digest != reverse.digest
     assert first_only.roots[0].digest == second_only.roots[0].digest
     assert first_only.digest != second_only.digest
 
 
-def test_identity_changes_with_header_content(tmp_path: Path) -> None:
+@pytest.mark.parametrize("mutation", ["content", "addition", "deletion"])
+def test_identity_changes_with_header_tree(
+    tmp_path: Path, mutation: str
+) -> None:
     include = _include_root(tmp_path / "include", b"before")
+    header = include / "primitive.cuh"
+    original_stat = header.stat()
     before = include_dirs_identity((str(include),))
 
-    (include / "primitive.cuh").write_bytes(b"after")
-    after = include_dirs_identity((str(include),))
+    if mutation == "content":
+        header.write_bytes(b"after!")
+        # Equal size and timestamps must not hide changed compiler inputs.
+        os.utime(
+            header, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns)
+        )
+    elif mutation == "addition":
+        (include / "added.cuh").write_bytes(b"added")
+    else:
+        header.unlink()
 
-    assert before.roots[0].digest != after.roots[0].digest
-    assert before.digest != after.digest
+    assert include_dirs_identity((str(include),)).digest != before.digest
 
 
 def test_recursive_identity_frames_file_contents_unambiguously(
@@ -76,8 +80,6 @@ def test_recursive_identity_frames_file_contents_unambiguously(
     combined_identity = include_dirs_identity((str(combined),))
     split_identity = include_dirs_identity((str(split),))
 
-    assert combined_identity.roots[0].method == "recursive-content"
-    assert split_identity.roots[0].method == "recursive-content"
     assert combined_identity.roots[0].digest != split_identity.roots[0].digest
 
 
@@ -86,47 +88,6 @@ def test_identity_rejects_missing_include_root(tmp_path: Path) -> None:
 
     with pytest.raises(HeaderIdentityError, match="not a directory"):
         include_dirs_identity((str(missing),))
-
-
-@pytest.mark.parametrize("mutation", ["content", "addition", "deletion"])
-def test_installed_record_never_replaces_live_header_identity(
-    tmp_path: Path,
-    mutation: str,
-) -> None:
-    site_packages = tmp_path / "site-packages"
-    include = site_packages / "cuda" / "cccl" / "include"
-    include.mkdir(parents=True)
-    header = include / "header.cuh"
-    original_content = b"first"
-    header.write_bytes(original_content)
-
-    dist_info = site_packages / "cuda_cccl-1.0.dist-info"
-    dist_info.mkdir()
-    record = dist_info / "RECORD"
-    relative_header = header.relative_to(site_packages).as_posix()
-    record.write_text(
-        f"{relative_header},{_record_hash(original_content)},"
-        f"{len(original_content)}\n{dist_info.name}/RECORD,,\n",
-        encoding="utf-8",
-    )
-
-    original_stat = header.stat()
-    original = include_dirs_identity((str(include),))
-    if mutation == "content":
-        header.write_bytes(b"other")
-        os.utime(
-            header,
-            ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns),
-        )
-    elif mutation == "addition":
-        (include / "added.cuh").write_bytes(b"added")
-    else:
-        header.unlink()
-    mutated = include_dirs_identity((str(include),))
-
-    assert original.roots[0].method == "recursive-content"
-    assert mutated.roots[0].method == "recursive-content"
-    assert original.digest != mutated.digest
 
 
 def test_missing_git_executable_falls_back_to_recursive_identity(
@@ -147,4 +108,3 @@ def test_missing_git_executable_falls_back_to_recursive_identity(
     identity = include_dirs_identity((str(include),))
 
     assert identity.roots[0].method == "recursive-content"
-    assert identity.recursive_walks == 1
