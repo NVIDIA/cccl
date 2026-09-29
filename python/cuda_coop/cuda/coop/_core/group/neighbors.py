@@ -116,7 +116,8 @@ def _plan_neighbors(call, resolved, launch, operation):
         and not 0 <= operation.valid_items.value <= capacity
     ):
         raise ValueError(
-            f"valid_items must be between 0 and the block tile size ({capacity})"
+            "valid_items must be between 0 and the block tile size "
+            f"({capacity})"
         )
     result = ResultContract(
         tuple(
