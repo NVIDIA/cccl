@@ -88,8 +88,6 @@ inline constexpr bool __tuple_like_ext<::cuda::std::ranges::subrange<_Ip, _Sp, _
 template <class... _Tp>
 inline constexpr bool __tuple_like_ext<__tuple_types<_Tp...>> = true;
 
-// True only for host standard-library tuple-likes. cuda::std tuple-likes stay false so their
-// explicit get overloads remain the ones selected.
 template <class _Tp>
 inline constexpr bool __is_std_tuple_like_v = false;
 
