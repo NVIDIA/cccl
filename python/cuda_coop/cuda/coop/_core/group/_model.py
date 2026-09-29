@@ -44,6 +44,7 @@ class GroupLoweringTarget(str, Enum):
     A backend still selects and validates a provider for that target.
     """
 
+    CUDAX_GROUP = "cudax_group"
     CUB_BLOCK = "cub_block"
     CUB_WARP = "cub_warp"
     UNSUPPORTED = "unsupported"
@@ -204,6 +205,11 @@ class UnsupportedReasonCode(str, Enum):
     LAUNCH_CAPABILITY = "launch_capability"
 
 
+class CudaxReturnKind(str, Enum):
+    VALUE = "value"
+    OPTIONAL_VALUE = "optional_value"
+
+
 class GroupOperationSemantics(Protocol):
     """Operation facts required by the common group-call model.
 
@@ -321,6 +327,45 @@ class GroupPrimitiveCall:
 
     def __hash__(self) -> int:
         return hash(self.semantic_key)
+
+
+@dataclass(frozen=True)
+class CudaxCallDescription:
+    primitive: str
+    header: str
+    namespace: str
+    overload: str | None = None
+    parameters: tuple[ParameterClassification, ...] = ()
+    return_kind: CudaxReturnKind = CudaxReturnKind.VALUE
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "parameters", tuple(self.parameters))
+        object.__setattr__(
+            self, "return_kind", CudaxReturnKind(self.return_kind)
+        )
+        if any(
+            not isinstance(parameter, ParameterClassification)
+            for parameter in self.parameters
+        ):
+            raise TypeError(
+                "CUDAX parameters must be ParameterClassification records"
+            )
+        forbidden = {"group", "launch", "launch_facts"}
+        if any(parameter.name in forbidden for parameter in self.parameters):
+            raise ValueError(
+                "CUDAX runtime ABI cannot contain group or launch markers"
+            )
+
+    @property
+    def semantic_key(self) -> tuple[Any, ...]:
+        return (
+            self.primitive,
+            self.header,
+            self.namespace,
+            self.overload,
+            self.parameters,
+            self.return_kind.value,
+        )
 
 
 @dataclass(frozen=True)
@@ -887,7 +932,7 @@ class GroupLoweringPlan:
         Original request, retained alongside the resolved group.
     resolved_group : ThreadGroup
         Group after applying launch facts, or the group retained on failure.
-    implementation : Algorithm or None
+    implementation : CudaxCallDescription or Algorithm or None
         Specialized primitive description; ``None`` for an unsupported plan.
     topology : GroupTopologyRequirements or None
         Group instances and rank rules used for indexing and execution.
@@ -917,7 +962,7 @@ class GroupLoweringPlan:
     target: GroupLoweringTarget
     call: GroupPrimitiveCall
     resolved_group: ThreadGroup
-    implementation: Algorithm | None
+    implementation: CudaxCallDescription | Algorithm | None
     topology: GroupTopologyRequirements | None
     participation: ParticipationRequirements | None
     result: ResultContract | None
@@ -1099,6 +1144,8 @@ class GroupLoweringPlan:
 
 __all__ = [
     "ArgumentPrecondition",
+    "CudaxCallDescription",
+    "CudaxReturnKind",
     "GroupExecutionRequirements",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
