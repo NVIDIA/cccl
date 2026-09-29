@@ -111,7 +111,7 @@ def test_warp_scan_partial_signature_and_aggregate_output():
 
 def test_warp_scan_accepts_runtime_initial_value_and_python_operator():
     def maximum(left, right):
-        return left if left > right else right
+        return max(right, left)
 
     spec = make_warp_scan_spec(
         dtype="int32",
