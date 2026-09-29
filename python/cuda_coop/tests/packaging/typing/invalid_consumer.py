@@ -266,7 +266,7 @@ coop.reduce(  # expected-error: [call-overload]
     broadcast=False,
     algorithm="raking_commutative_only",
 )
-coop.BlockScanAlgorithm  # expected-error: [attr-defined]
+coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
 portable.scan(  # expected-error: [call-overload]
     portable_block,
     np.int32(1),
