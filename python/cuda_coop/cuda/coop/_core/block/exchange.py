@@ -236,7 +236,8 @@ def make_block_exchange_semantics(
         items_per_thread,
     )
     if not isinstance(warp_time_slicing, bool):
-        raise ValueError("warp_time_slicing must be a boolean")
+        # Keep the established ValueError contract for invalid controls.
+        raise ValueError("warp_time_slicing must be a boolean")  # noqa: TRY004
     if warp_time_slicing and mode in {
         BlockExchangeMode.SCATTER_TO_STRIPED_GUARDED,
         BlockExchangeMode.SCATTER_TO_STRIPED_FLAGGED,
