@@ -92,11 +92,9 @@ def test_load_layout_and_runtime_bounds(api, algorithm, valid):
 @pytest.mark.parametrize(
     "valid", (0, _TILE - 19, _TILE), ids=("zero", "partial", "full")
 )
-def test_store_layout_bounds_and_payload_preservation(api, algorithm, valid):
+def test_store_layout_and_bounds(api, algorithm, valid):
     @cute.kernel
-    def kernel(
-        source: cute.Pointer, destination: cute.Pointer, preserved: cute.Pointer
-    ):
+    def kernel(source: cute.Pointer, destination: cute.Pointer):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_TILE))
@@ -111,54 +109,39 @@ def test_store_layout_bounds_and_payload_preservation(api, algorithm, valid):
             valid_items=valid,
             offset=5,
         )
-        outputs = cute.make_tensor(preserved, cute.make_layout(_TILE))
-        for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = payload[item]
 
     @cute.jit
-    def launch(
-        source: cute.Pointer, destination: cute.Pointer, preserved: cute.Pointer
-    ):
-        kernel(source, destination, preserved).launch(grid=1, block=_BLOCK)
+    def launch(source: cute.Pointer, destination: cute.Pointer):
+        kernel(source, destination).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _TILE, shift=37)
     destination = np.full(_TILE + 11, -41, dtype=np.int32)
-    preserved = np.full(_TILE, 73, dtype=np.int32)
     expected = destination.copy()
     for thread in range(_THREADS):
         for item in range(_ITEMS):
             index = _tile_index(algorithm, thread, item)
             if index < valid:
                 expected[5 + index] = source[thread * _ITEMS + item]
-    with (
-        device_array(source) as src,
-        device_array(destination) as dst,
-        device_array(preserved) as check,
-    ):
-        launch(src, dst, check)
+    with device_array(source) as src, device_array(destination) as dst:
+        launch(src, dst)
     np.testing.assert_array_equal(destination, expected)
-    np.testing.assert_array_equal(preserved, source)
 
 
 @pytest.mark.parametrize("algorithm", _SCRATCH_ALGORITHMS)
 @pytest.mark.parametrize("static_count", (False, True), ids=("runtime", "static"))
-def test_partial_transpose_preserves_each_invalid_register(algorithm, static_count):
+def test_partial_transpose_loads_valid_items_without_default(algorithm, static_count):
     valid = _TILE - 19
 
     @cute.kernel
     def kernel(
         source: cute.Pointer,
-        initial: cute.Pointer,
         observed: cute.Pointer,
         count: cutlass.Int32,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
-        inputs = cute.make_tensor(initial, cute.make_layout(_TILE))
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
         payload = cutlass_coop.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = inputs[thread * _ITEMS + item]
         if cutlass.const_expr(static_count):
             cutlass_coop.load(
                 cutlass_coop.this_block(),
@@ -176,28 +159,23 @@ def test_partial_transpose_preserves_each_invalid_register(algorithm, static_cou
                 valid_items=count,
             )
         for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = payload[item]
+            if thread * _ITEMS + item < count:
+                outputs[thread * _ITEMS + item] = payload[item]
 
     @cute.jit
     def launch(
         source: cute.Pointer,
-        initial: cute.Pointer,
         observed: cute.Pointer,
         count: cutlass.Int32,
     ):
-        kernel(source, initial, observed, count).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, count).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _TILE)
-    initial = -1000 - np.arange(_TILE, dtype=np.int32)
     observed = np.full(_TILE, 71, dtype=np.int32)
-    expected = initial.copy()
+    expected = observed.copy()
     expected[:valid] = source[:valid]
-    with (
-        device_array(source) as src,
-        device_array(initial) as seed,
-        device_array(observed) as out,
-    ):
-        launch(src, seed, out, valid)
+    with device_array(source) as src, device_array(observed) as out:
+        launch(src, out, valid)
     np.testing.assert_array_equal(observed, expected)
 
 

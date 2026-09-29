@@ -50,9 +50,10 @@ def load(
 ) -> None:
     """Load a contiguous block tile into a writable per-thread payload.
 
-    The payload is populated in place. Beyond ``valid_items``, initialized
-    slots keep their values unless ``oob_default`` is supplied. DIRECT, STRIPED,
-    and VECTORIZE require no shared scratch or synchronization. ``offset`` is measured in elements.
+    The payload is populated in place. Beyond ``valid_items``, slots have
+    unspecified values unless ``oob_default`` is supplied, even if initialized
+    before Load. DIRECT, STRIPED, and VECTORIZE require no shared scratch or
+    synchronization. ``offset`` is measured in elements.
     """
 
     if not isinstance(output, ThreadData):
@@ -92,8 +93,10 @@ def store(
     """Store per-thread values into a contiguous block tile.
 
     ``valid_items`` limits the written prefix; ``offset`` is in elements.
-    The value dtype must match the destination. Transpose algorithms use shared
-    scratch; an optional TempStorage descriptor controls allocation and reuse.
+    The value dtype must match the destination. Transpose algorithms may
+    rearrange the input payload, so do not rely on its contents after Store.
+    They use shared scratch; an optional TempStorage descriptor controls
+    allocation and reuse.
     """
 
     group, launch, algorithm = _resolve_group(group, algorithm, temp_storage, "store")
