@@ -136,16 +136,11 @@ local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
 CuTe register conversions and the controls documented in its guide. Custom operators and Scan prefix
 callbacks are currently supported only by Numba-CUDA-MLIR.
 
-Both integrations accept `ThreadData(items_per_thread, alignment=None)`: use a compile-time
+Both integrations accept `ThreadData(..., alignment=None)`: use a compile-time
 positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
 or Store memory operands. Results belong to the active compiler; a NumPy dtype
 selector in a CuTe kernel still produces CuTe values.
-
-Pass `items_per_thread` as a kernel argument. Numba-CUDA-MLIR specializes the
-kernel for its value; CuTe kernels and their launchers declare the argument
-as `items_per_thread: cutlass.Constexpr`. The payload count stays fixed
-during execution.
 
 The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
 namespace choices and temporary storage. The
@@ -218,7 +213,7 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 The common `cuda.coop` and qualified `numba_coop` and `cutlass_coop`
 Load/Store calls share algorithm names, tile controls, and in-place Load
 behavior. The following Numba kernel body clamps a grid tile tail, where
-`source`, `destination`, `count`, and `items_per_thread` are kernel arguments:
+`source`, `destination`, and `count` are kernel arguments:
 
 ```python
 from numba_cuda_mlir import cuda, types
@@ -226,8 +221,8 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(items_per_thread)
-tile_items = cuda.blockDim.x * items_per_thread
+items = coop.ThreadData(2)
+tile_items = cuda.blockDim.x * 2
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
 if valid_items < 0:
@@ -394,12 +389,6 @@ calls that pass the same descriptor on one region; `"exclusive"` gives each
 call site its own slice. A call site inside a loop reuses its slice under either
 policy. `auto_sync` defaults to `False` for both policies and both integrations.
 
-Exclusive slices use more shared memory to avoid barriers needed solely for
-cross-call scratch reuse when `auto_sync=False`. Repeated execution of one
-call site still reuses its slice and must be synchronized. Omitting storage
-lets the compiler choose the layout and insert reuse barriers; it does not
-guarantee a separate slice per call site.
-
 Distinct descriptors and compiler-owned storage do not alias each other. With
 the default `auto_sync=False`, call `storage.sync()` or the appropriate block
 barrier before reusing the scratch, including on the next loop iteration.
@@ -467,7 +456,7 @@ selected group must participate.
 By default, `broadcast=True` gives every group member the reduced scalar. With
 `broadcast=False`, only rank zero of each selected group has a defined result;
 other members must still execute the call and must not consume their returned
-value. For example, this full block reduction combines `items_per_thread` values per thread
+value. For example, this full block reduction combines two values per thread
 but writes only from the block root:
 
 ```python
@@ -477,11 +466,11 @@ from cuda import coop
 
 
 @cuda.jit
-def block_sum(source, output, items_per_thread):
+def block_sum(source, output):
     thread = cuda.threadIdx.x
-    values = coop.ThreadData(items_per_thread)
-    for item in range(items_per_thread):
-        values[item] = source[items_per_thread * thread + item]
+    values = coop.ThreadData(2, dtype=types.int32)
+    values[0] = source[2 * thread]
+    values[1] = source[2 * thread + 1]
     total = coop.sum(coop.this_block(), values, broadcast=False)
     if thread == 0:
         output[0] = total
@@ -539,37 +528,42 @@ with `mode="exclusive"` or `mode="inclusive"`; the other names make that choice
 explicit. Every form returns a fresh scalar or per-thread payload and leaves
 the input unchanged.
 
-Block Scan accepts a numeric scalar, fixed-size `ThreadData`, or, in the
-qualified `cuda.coop.numba_mlir` API, a fixed-size `cuda.local.array`. The
+Block Scan accepts a numeric scalar or fixed-size `ThreadData`. Qualified
+`numba_coop` calls also accept fixed-size `cuda.local.array` payloads;
+`cutlass_coop` calls accept CuTe register tensors and `TensorSSA` values. The
 `raking`, `raking_memoize`, and `warp_scans` algorithms are available for
 blocks. Physical- and logical-Warp Scan accept one scalar per thread and have
 no algorithm selector.
 
 Sum is the default operation. `scan`, `exclusive_scan`, and `inclusive_scan`
-accept the same built-in string aliases as Reduce. The qualified API also
-recognizes the corresponding Python `operator` functions and NumPy ufuncs, and
-accepts stateless device callbacks. A non-sum exclusive scan requires an
+accept the same built-in string aliases as Reduce. Both qualified APIs also
+recognize the corresponding Python `operator` functions and NumPy ufuncs.
+Numba-CUDA-MLIR additionally accepts stateless device callbacks; CUTLASS does
+not support custom scan operators. A non-sum exclusive scan requires an
 `initial_value` matching the payload dtype; ordinary Python literals are
-checked and converted in that context. A block-prefix callback can supply that
-prefix instead. Inclusive scans reject an initial value. The aggregate reports
+checked and converted in that context. A Numba block-prefix callback can
+supply that prefix instead. Inclusive scans reject an initial value. The aggregate reports
 only the input reduction and does not include the exclusive initial value.
 
-The qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
-`ThreadData` or local array populated with the group aggregate. Warp forms also
+Both qualified APIs accept `aggregate_output`, a one-item `ThreadData`
+populated with the group aggregate. Its dtype must match the input or be
+omitted for inference. Numba-CUDA-MLIR also accepts a one-item local array;
+CUTLASS requires writable `ThreadData` for this output. Warp forms also
 accept `valid_items`, which selects the first N lanes by group rank and requires
 `1 <= N <= warp_width`; only those N result lanes are defined. The initial
 value and `valid_items` must be uniform across participating members. An
 out-of-range runtime `valid_items` value triggers a deterministic device trap
 before CUB's 32-bit parameter is formed, invalidating the current CUDA context.
 
-All five qualified Block Scan spellings accept a block-prefix callback through
-the `prefix_op` keyword. A stateless callback receives the block aggregate and
+All five Numba-qualified Block Scan spellings accept a block-prefix callback
+through the `prefix_op` keyword. CUTLASS does not support prefix callbacks or
+callback state. A stateless callback receives the block aggregate and
 returns the prefix:
 
 ```python
 from numba_cuda_mlir import cuda, types
 
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 
 
 @cuda.jit(device=True)
@@ -578,8 +572,8 @@ def prefix_after_aggregate(block_aggregate):
 
 
 # Inside a kernel:
-scanned = coop.exclusive_sum(
-    coop.this_block(),
+scanned = numba_coop.exclusive_sum(
+    numba_coop.this_block(),
     value,
     prefix_op=prefix_after_aggregate,
 )
@@ -598,13 +592,13 @@ def carry_prefix(state, block_aggregate):
     return previous
 
 
-running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
+running_prefix = numba_coop.StatefulFunction(carry_prefix, types.int64)
 
 # Inside a kernel, before a loop over tiles:
-state = coop.ThreadData(1)
+state = numba_coop.ThreadData(1, dtype=types.int64)
 state[0] = types.int64(0)
-scanned = coop.exclusive_sum(
-    coop.this_block(),
+scanned = numba_coop.exclusive_sum(
+    numba_coop.this_block(),
     value,
     state,
     prefix_op=running_prefix,
@@ -618,22 +612,20 @@ every participating thread the same initial contents. CUB may invoke the
 callback in every lane of the block's first warp, but only lane 0's returned
 prefix is applied; only thread 0's state is authoritative after the calls.
 
-Prefix callbacks are available only through qualified Block Scan. They are
+Prefix callbacks are available only through Numba-qualified Block Scan. They are
 mutually exclusive with `initial_value` and `aggregate_output`, are not
 stateful binary `scan_op` values, and do not support Warp Scan, `valid_items`,
 or structured state.
 
-All Scan providers use CUB temporary storage. Block calls may use implicit,
-caller-owned, or dynamic `TempStorage`. Compiler-owned storage and explicit
-descriptors with `auto_sync=True` append a block reuse barrier. Explicit
-descriptors default to `auto_sync=False`, so the caller must synchronize before
-reuse. Physical and
+All Scan providers use CUB temporary storage. Block calls may use implicit or
+caller-owned `TempStorage`. Compiler-owned scratch and explicit descriptors with
+`auto_sync=True` append a block reuse barrier. Explicit descriptors default to
+`auto_sync=False`, requiring the caller to synchronize before reuse. Physical and
 logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
 for the exact participating mask. Prefix callbacks retain the same storage
 rules. When repeated calls reuse an explicit Block Scan descriptor, set
-`auto_sync=True` or issue `cuda.syncthreads()` before reuse. The prefix state is
-persistent per-thread data, not CUB
-temporary storage.
+`auto_sync=True` or call `storage.sync()` before reuse. The prefix state is
+persistent per-thread data, not CUB temporary storage.
 
 This example uses the common API to load a block tile, compute its exclusive
 sum, and store the out-of-place result:
@@ -646,15 +638,17 @@ from cuda import coop
 
 
 @cuda.jit
-def block_scan_kernel(values, prefixes, items_per_thread):
+def block_scan_kernel(values, prefixes):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread)
+    items = coop.ThreadData(2, dtype=np.int32)
     coop.load(block, values, items)
     scanned = coop.exclusive_sum(block, items)
     coop.store(block, prefixes, scanned)
 ```
 
-The complete runnable form is in `examples/numba_mlir/block_scan.py`.
+The complete Numba example is [block_scan.py](examples/numba_mlir/block_scan.py).
+The [CuTe Scan example](examples/cutlass/scan.py) performs the same tile
+composition with an explicit initial value and shared scratch.
 
 ## Exchange and Shuffle
 
