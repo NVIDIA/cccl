@@ -412,6 +412,19 @@ struct policy_selector
       auto async           = TransformAsyncCopyPolicy{async_block_size};
       async.store_vec_size = auto_ublkcp_store_vec_size(output.value_type_size);
 
+      // sm107 tuning from cub/benchmarks/bench/transform/babelstream.ublkcp.cu (1-byte value types)
+      bool all_value_types_are_one_byte = output.value_type_size == 1;
+      for (const auto& input : inputs)
+      {
+        all_value_types_are_one_byte &= input.value_type_size == 1;
+      }
+      if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0}
+          && all_value_types_are_one_byte)
+      {
+        // bif_-8.tpb_128.unrl_4.svsp_4  1.017  1.008  1.051  1.082  1.085
+        async.unroll_factor = 4;
+      }
+
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
       // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
