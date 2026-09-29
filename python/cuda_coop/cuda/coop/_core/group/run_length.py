@@ -171,5 +171,7 @@ _register_group_operation_family(
     classifications=_classifications,
     planner=_plan,
     group_kinds=frozenset({"block"}),
-    unsupported_group_message="run_length_decode requires a complete this_block() group",
+    unsupported_group_message=(
+        "run_length_decode requires a complete this_block() group"
+    ),
 )
