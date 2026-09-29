@@ -37,7 +37,9 @@ def test_merge_sort_pairs_example():
         coop.load(block, source, keys)
         for item in range(2):
             positions[item] = types.int32(cuda.threadIdx.x * 2 + item)
-        ordered_keys, ordered_positions = coop.merge_sort_pairs(block, keys, positions)
+        ordered_keys, ordered_positions = coop.merge_sort_pairs(
+            block, keys, positions
+        )
         coop.store(block, sorted_keys, ordered_keys)
         coop.store(block, original_positions, ordered_positions)
 

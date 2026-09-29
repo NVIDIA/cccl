@@ -42,7 +42,9 @@ def _run(
 ):
     api = numba_coop if qualified else coop
     dtype = np.dtype(dtype)
-    group_kind = "block" if width == 64 else "warp" if width == 32 else "logical"
+    group_kind = (
+        "block" if width == 64 else "warp" if width == 32 else "logical"
+    )
 
     def compare(left, right):
         return left > right
@@ -257,8 +259,12 @@ def test_static_infinite_sentinel(dtype, typed, descending, pairs, qualified):
     np.testing.assert_array_equal(output[:count], expected)
     np.testing.assert_array_equal(preserved, source)
     if pairs:
-        np.testing.assert_array_equal(np.sort(associations[:count]), np.arange(count))
-        np.testing.assert_array_equal(output[:count], source[associations[:count]])
+        np.testing.assert_array_equal(
+            np.sort(associations[:count]), np.arange(count)
+        )
+        np.testing.assert_array_equal(
+            output[:count], source[associations[:count]]
+        )
 
 
 def test_multidimensional_block_and_reused_scratch():
@@ -348,7 +354,7 @@ output = np.zeros_like(source)
 kernel[1, 64](source, output, np.int64({count}))
 cuda.synchronize()
 raise AssertionError('invalid count did not trap')
-"""
+"""  # noqa: E501 - Preserve embedded source bytes.
     result = subprocess.run(
         [
             sys.executable,
@@ -366,7 +372,10 @@ raise AssertionError('invalid count did not trap')
     assert result.returncode != 0, output
     assert any(
         error in output
-        for error in ("CUDA_ERROR_ILLEGAL_INSTRUCTION", "CUDA_ERROR_LAUNCH_FAILED")
+        for error in (
+            "CUDA_ERROR_ILLEGAL_INSTRUCTION",
+            "CUDA_ERROR_LAUNCH_FAILED",
+        )
     ), output
 
 
