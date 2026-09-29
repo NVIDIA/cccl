@@ -129,9 +129,8 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, tr
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
   identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
       : kth_key_bits(&kth_key_bits->bits)
-  {
-    start_bit = calc_start_bit<T, BitsPerPass>(pass - 1);
-  }
+      , start_bit(calc_start_bit<T, BitsPerPass>(pass - 1))
+  {}
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
