@@ -72,12 +72,16 @@ class TempStorage:
 
     @property
     def capacity_size_in_bytes(self):
-        """Return the optional explicit capacity; inferred sizes resolve at compile time."""
+        """Return the optional explicit capacity; inferred sizes resolve at
+        compile time.
+        """
         return self.size_in_bytes
 
     @property
     def is_deferred(self):
-        """All allocation plans resolve after the exact C++ scratch probes compile."""
+        """All allocation plans resolve after the exact C++ scratch probes
+        compile.
+        """
         return True
 
     def sync(self):
