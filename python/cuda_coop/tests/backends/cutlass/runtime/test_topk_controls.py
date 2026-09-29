@@ -112,7 +112,9 @@ def test_final_cubin(tmp_path, pairs, mode):
     cubins = list(tmp_path.rglob("*.cubin"))
     assert cubins
     for cubin in cubins:
-        sass = subprocess.check_output([tool, "--dump-sass", str(cubin)], text=True)
+        sass = subprocess.check_output(
+            [tool, "--dump-sass", str(cubin)], text=True
+        )
         assert "cuda_coop_cutlass_topk_" not in sass
         assert re.search(r"\bCALL\b", sass) is None
 
@@ -139,20 +141,25 @@ def test_provider_failure_retry(monkeypatch, tmp_path, failure):
     assert attempted
     message = str(caught.value).lower()
     assert any(
-        token in message for token in ("compile", "compilation", "link", "lto", "nvvm")
+        token in message
+        for token in ("compile", "compilation", "link", "lto", "nvvm")
     ), message
     assert get_current_env_manager() is None
     assert _backend_module_name() is None
     _run(valid_items=91)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_load_topk_sort_store_loop(api):
     threads, items, tiles, selected = 32, 2, 4, 11
     tile = threads * items
 
     @cute.kernel
-    def kernel(source: cute.Pointer, output: cute.Pointer, repeats: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, output: cute.Pointer, repeats: cutlass.Int32
+    ):
         scratch = api.TempStorage(alignment=128, auto_sync=True)
         group = api.this_block()
         for index in range(repeats):
@@ -165,7 +172,9 @@ def test_load_topk_sort_store_loop(api):
                 algorithm="transpose",
                 temp_storage=scratch,
             )
-            chosen = api.topk_min_keys(group, data, k=selected, temp_storage=scratch)
+            chosen = api.topk_min_keys(
+                group, data, k=selected, temp_storage=scratch
+            )
             ordered = api.merge_sort_keys(
                 group,
                 chosen,
@@ -184,7 +193,9 @@ def test_load_topk_sort_store_loop(api):
             )
 
     @cute.jit
-    def launch(source: cute.Pointer, output: cute.Pointer, repeats: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, output: cute.Pointer, repeats: cutlass.Int32
+    ):
         kernel(source, output, repeats).launch(grid=1, block=threads)
 
     source = np.random.default_rng(24).integers(
@@ -199,4 +210,6 @@ def test_load_topk_sort_store_loop(api):
             observed[start : start + selected],
             np.sort(source[start : start + tile])[:selected],
         )
-        np.testing.assert_array_equal(observed[start + selected : start + tile], -999)
+        np.testing.assert_array_equal(
+            observed[start + selected : start + tile], -999
+        )
