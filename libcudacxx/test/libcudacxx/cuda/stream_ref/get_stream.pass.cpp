@@ -23,6 +23,11 @@ TEST_DIAG_SUPPRESS_GCC("-Wattributes")
 
 TEST_HOST_DEVICE_FUNC void test()
 {
+  static_assert(cuda::std::is_same_v<typename cuda::stream_ref::property_keys,
+                                     cuda::execution::property_key_list<cuda::get_stream_t>>);
+  static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<cuda::stream_ref>,
+                                     cuda::execution::property_key_list<cuda::get_stream_t>>);
+
   ::cudaStream_t invalid_stream = reinterpret_cast<::cudaStream_t>(1337);
   ::cudaStream_t stream         = reinterpret_cast<::cudaStream_t>(42);
   { // Can call get_stream on a cudaStream_t

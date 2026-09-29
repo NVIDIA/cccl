@@ -37,6 +37,7 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__execution/checked_env.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
@@ -214,7 +215,7 @@ private:
       (void) reduction_op;
       using default_policy_selector = detail::reduce::
         policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
-      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      return detail::dispatch_with_env_validation_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::rfa::dispatch<InputIteratorT,
                                        OutputIteratorT,
@@ -237,7 +238,7 @@ private:
     {
       using default_policy_selector =
         detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
-      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      return detail::dispatch_with_env_validation_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::reduce::dispatch<accum_t, /* StableReductionOrder */ false>(
             storage,
@@ -256,7 +257,7 @@ private:
     {
       using default_policy_selector =
         detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
-      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      return detail::dispatch_with_env_validation_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
           return detail::reduce::dispatch<accum_t>(
             storage,
@@ -294,8 +295,8 @@ private:
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requirements_t = ::cuda::std::execution::__detail::
+      __advertised_query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using default_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                   ::cuda::execution::determinism::__get_determinism_t,
@@ -376,8 +377,8 @@ private:
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requirements_t = ::cuda::std::execution::__detail::
+      __advertised_query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using requested_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                   ::cuda::execution::determinism::__get_determinism_t,
@@ -982,8 +983,8 @@ private:
   {
     static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requirements_t = ::cuda::std::execution::__detail::
+      __advertised_query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using requested_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t, //
                                                   ::cuda::execution::determinism::__get_determinism_t,
@@ -1013,7 +1014,7 @@ private:
     using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
     using reduce_op_t         = detail::arg_reduce_op<CompareOpT>;
 
-    return detail::dispatch_with_env(
+    return detail::dispatch_with_env_validation(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
           storage,
@@ -1047,7 +1048,7 @@ private:
     using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
     using reduce_op_t         = detail::arg_reduce_op<CompareOpT>;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+    return detail::dispatch_with_env_validation(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
         storage,
         bytes,
@@ -2037,7 +2038,7 @@ private:
     using PerPartitionOffsetT = int;
     using GlobalOffsetT       = ::cuda::std::int64_t;
 
-    return detail::dispatch_with_env(
+    return detail::dispatch_with_env_validation(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT>(
           storage,
@@ -2291,7 +2292,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinMax");
-    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+    return detail::dispatch_with_env_validation(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
       return __arg_minmax<false>(
         storage, bytes, d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, compare_op, env);
     });
@@ -2320,7 +2321,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinMax");
-    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+    return detail::dispatch_with_env_validation(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
       return __arg_minmax<false>(
         storage,
         bytes,
@@ -2436,7 +2437,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinLastMax");
-    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+    return detail::dispatch_with_env_validation(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
       return __arg_minmax<true>(
         storage, bytes, d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, compare_op, env);
     });
@@ -2465,7 +2466,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinLastMax");
-    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+    return detail::dispatch_with_env_validation(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
       return __arg_minmax<true>(
         storage,
         bytes,
@@ -2836,7 +2837,7 @@ public:
       ReductionOpT,
       ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>>,
       detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return detail::dispatch_with_env_validation_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::reduce_by_key::dispatch(
           storage,
